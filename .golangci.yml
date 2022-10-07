@@ -1,0 +1,109 @@
+run:
+  timeout: 15m0s
+  skip-dirs-use-default: true
+  fast: false
+#  modules-download-mode: readonly
+
+linters-settings:
+  revive:
+    rules:
+      - name: indent-error-flow
+      - name: var-naming
+      - name: increment-decrement
+  wsl:
+    strict-append: false
+  gofmt:
+    simplify: true
+  funlen:
+    lines: 60
+    statements: 40
+  unused:
+    check-exported: true
+    go: "1.18"
+  stylecheck:
+    dot-import-whitelist:
+      - github.com/onsi/gomega
+      - github.com/onsi/ginkgo/v2
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.18"
+    # https://staticcheck.io/docs/options#checks
+    checks:
+      - all
+      - ST1001
+
+linters:
+  disable:
+    - structcheck
+  enable:
+    - asciicheck
+    - bidichk
+    - deadcode
+    - depguard
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - funlen
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - gofmt
+    - goheader
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - gosimple
+    - govet
+    - ifshort
+    - importas
+    - ineffassign
+    - ireturn
+    - lll
+    - makezero
+    - misspell
+    - nakedret
+    - nilnil
+    - nolintlint
+    - predeclared
+    - promlinter
+    - revive
+    - staticcheck
+    - stylecheck
+    - tenv
+    - thelper
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - varnamelen
+    - wsl
+    - nlreturn
+
+output:
+  format: colored-line-number
+issues:
+  exclude:
+    - "can't run linter goanalysis_metalinter: inspect: failed to load"
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+  include:
+    - EXC0002 # disable excluding of issues about comments from golint
+  exclude-rules:
+    #- # Exclude some linters from running on tests files.
+    - path: 'params/init.go'
+      linters:
+        - gochecknoinits
+    - path: 'tests/internal/config/init.go'
+      linters:
+        - gochecknoinits
+    - path: 'client/init.go'
+      linters:
+        - gochecknoinits
