@@ -997,6 +997,8 @@ github.com/opencontainers/runtime-tools v0.0.0-20181011054405-1d69bd0f9c39/go.mo
 github.com/opencontainers/selinux v1.6.0/go.mod h1:VVGKuOLlE7v4PJyT6h7mNWvq1rzqiriPsEqVhc+svHE=
 github.com/opencontainers/selinux v1.8.0/go.mod h1:RScLhm78qiWa2gbVCcGkC7tCGdgk3ogry1nUQF8Evvo=
 github.com/opencontainers/selinux v1.8.2/go.mod h1:MUIHuUEvKB1wtJjQdOyYRgOnLD2xAPP8dBsCoU0KuF8=
+github.com/openshift-kni/k8sreporter v0.1.0 h1:EbmAn7QAtBV+wu/JI5j9Jh2HRv/Lrsz8WJIEQ9PXPUs=
+github.com/openshift-kni/k8sreporter v0.1.0/go.mod h1:Bc075FJEln4XadhV+fPRNnow1bbpFQgOqTlwX6q/oLI=
 github.com/openshift-kni/numaresources-operator v0.4.11-0rc0.0.20220727175518-37b5d067b623 h1:ine8RIuBjXBR0Qf5ZIz/7Y9jiZhd+WV5T16TwWPyYE4=
 github.com/openshift-kni/numaresources-operator v0.4.11-0rc0.0.20220727175518-37b5d067b623/go.mod h1:hhFmzw1PZgXtXUVaBT8b65KHidNfOnMJ0qvrPpAFZJM=
 github.com/openshift/api v0.0.0-20220525145417-ee5b62754c68 h1:G4GBjFvaGlHc1dMFfJY8Z0LhMa0leRG75DvQ33PAgdY=

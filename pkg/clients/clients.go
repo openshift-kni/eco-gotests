@@ -42,6 +42,7 @@ import (
 
 // Settings provides the struct to talk with relevant API.
 type Settings struct {
+	KubeconfigPath string
 	coreV1Client.CoreV1Interface
 	clientConfigV1.ConfigV1Interface
 	clientMachineConfigV1.MachineconfigurationV1Interface
@@ -101,6 +102,8 @@ func New(kubeconfig string) *Settings {
 	if err != nil {
 		panic(err)
 	}
+
+	clientSet.KubeconfigPath = kubeconfig
 
 	return clientSet
 }

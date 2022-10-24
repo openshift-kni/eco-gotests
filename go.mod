@@ -7,6 +7,7 @@ require (
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.1-0.20210510153419-66a699ae3b05
 	github.com/k8snetworkplumbingwg/sriov-network-operator v0.0.0-20201204053545-49045c36efb9
 	github.com/metallb/metallb-operator v0.10.2
+	github.com/openshift-kni/k8sreporter v0.1.0
 	github.com/openshift-kni/numaresources-operator v0.4.11-0rc0.0.20220727175518-37b5d067b623
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3
