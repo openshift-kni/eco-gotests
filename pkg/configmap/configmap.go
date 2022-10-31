@@ -37,6 +37,7 @@ func NewBuilder(name, nsname string, apiClient *clients.Settings) *Builder {
 	if name == "" {
 		builder.errorMsg = "configmap 'name' cannot be empty"
 	}
+
 	if nsname == "" {
 		builder.errorMsg = "configmap 'nsname' cannot be empty"
 	}
@@ -67,7 +68,8 @@ func (builder *Builder) Delete() error {
 		return nil
 	}
 
-	return builder.apiClient.ConfigMaps(builder.Definition.Namespace).Delete(context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+	return builder.apiClient.ConfigMaps(builder.Definition.Namespace).Delete(
+		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
 }
 
 // Exists tells whether the given configmap exists.
