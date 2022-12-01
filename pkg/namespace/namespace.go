@@ -89,8 +89,6 @@ func (builder *Builder) Create() (*Builder, error) {
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.Namespaces().Create(
 			context.TODO(), builder.Definition, metaV1.CreateOptions{})
-
-		return builder, err
 	}
 
 	return builder, err

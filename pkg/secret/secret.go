@@ -56,8 +56,6 @@ func (builder *Builder) Create() (*Builder, error) {
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.Secrets(builder.Definition.Namespace).Create(
 			context.TODO(), builder.Definition, metaV1.CreateOptions{})
-
-		return builder, err
 	}
 
 	return builder, err

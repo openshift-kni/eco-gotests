@@ -55,8 +55,6 @@ func (builder *Builder) Create() (*Builder, error) {
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.ConfigMaps(builder.Definition.Namespace).Create(
 			context.TODO(), builder.Definition, metaV1.CreateOptions{})
-
-		return builder, err
 	}
 
 	return builder, err

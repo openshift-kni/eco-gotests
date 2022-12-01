@@ -137,15 +137,13 @@ func (builder *Builder) Create() (*Builder, error) {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
 
+	var err error
 	if !builder.Exists() {
-		var err error
 		builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Create(
 			context.TODO(), builder.Definition, metaV1.CreateOptions{})
-
-		return builder, err
 	}
 
-	return builder, nil
+	return builder, err
 }
 
 // Update updates existing deployment object with deployment definition in builder.
