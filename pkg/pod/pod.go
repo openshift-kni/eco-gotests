@@ -33,7 +33,7 @@ type Builder struct {
 }
 
 // NewBuilder creates new instance of Builder.
-func NewBuilder(name, nsName, image string, apiClient *clients.Settings) *Builder {
+func NewBuilder(apiClient *clients.Settings, name, nsName, image string) *Builder {
 	builder := &Builder{
 		apiClient:  apiClient,
 		Definition: getDefinition(name, nsName, image),

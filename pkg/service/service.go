@@ -26,10 +26,8 @@ type Builder struct {
 // NewBuilder creates new instance of Builder
 // Default type of service is ClusterIP
 // For a NodePort type use the WithNodePort().
-func NewBuilder(name, nsname string,
-	labels map[string]string,
-	servicePort v1.ServicePort,
-	apiClient *clients.Settings) *Builder {
+func NewBuilder(
+	apiClient *clients.Settings, name, nsname string, labels map[string]string, servicePort v1.ServicePort) *Builder {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Service{

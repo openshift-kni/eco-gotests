@@ -25,7 +25,7 @@ type Builder struct {
 }
 
 // NewBuilder creates new instance of Builder.
-func NewBuilder(name string, apiClient *clients.Settings) *Builder {
+func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Namespace{

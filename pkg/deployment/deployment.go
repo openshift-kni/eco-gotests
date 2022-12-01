@@ -27,7 +27,7 @@ type Builder struct {
 
 // NewBuilder creates new instance of Builder.
 func NewBuilder(
-	name, nsname string, labels map[string]string, containerSpec coreV1.Container, apiClient *clients.Settings) *Builder {
+	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec coreV1.Container) *Builder {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Deployment{
