@@ -66,8 +66,16 @@ func (builder *Builder) Delete() error {
 		return nil
 	}
 
-	return builder.apiClient.ConfigMaps(builder.Definition.Namespace).Delete(
+	err := builder.apiClient.ConfigMaps(builder.Definition.Namespace).Delete(
 		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	builder.Object = nil
+
+	return err
 }
 
 // Exists tells whether the given configmap exists.

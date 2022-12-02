@@ -113,7 +113,15 @@ func (builder *Builder) Delete() error {
 		return nil
 	}
 
-	return builder.apiClient.Namespaces().Delete(context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+	err := builder.apiClient.Namespaces().Delete(context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	builder.Object = nil
+
+	return err
 }
 
 // DeleteAndWait deletes and waits until namespace is removed from the cluster.
