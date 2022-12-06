@@ -100,7 +100,7 @@ func New(kubeconfig string) *Settings {
 		Scheme: crScheme,
 	})
 	if err != nil {
-		panic(err)
+		return nil
 	}
 
 	clientSet.KubeconfigPath = kubeconfig
