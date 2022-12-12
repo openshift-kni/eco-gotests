@@ -17,13 +17,7 @@ var (
 // init loads all variables automatically when this package is imported. Once package is imported a user has full
 // access to all vars within init function. It is recommended to import this package using dot import.
 func init() {
-	if APIClient := clients.New(""); APIClient == nil {
-		panic("can not load ApiClient. Please check your KUBECONFIG env var")
-	}
-
-	GeneralConfig = config.NewConfig()
-
-	if GeneralConfig == nil {
+	if GeneralConfig = config.NewConfig(); GeneralConfig == nil {
 		panic("error to load general config")
 	}
 
@@ -31,4 +25,8 @@ func init() {
 	_ = flag.Lookup("logtostderr").Value.Set("true")
 	_ = flag.Lookup("v").Value.Set(GeneralConfig.VerboseLevel)
 	flag.Parse()
+
+	if APIClient = clients.New(""); APIClient == nil {
+		panic("can not load ApiClient. Please check your KUBECONFIG env var")
+	}
 }
