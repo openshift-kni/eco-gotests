@@ -8,6 +8,7 @@ import (
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/pkg/slice"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -82,7 +83,7 @@ func (builder *PolicyBuilder) WithDevType(devType string) *PolicyBuilder {
 		return builder
 	}
 
-	if !contains(allowedDevTypes, devType) {
+	if !slice.Contains(allowedDevTypes, devType) {
 		builder.errorMsg = "invalid device type, allowed devType values are: vfio-pci or netdevice"
 
 		return builder
@@ -198,15 +199,4 @@ func (builder *PolicyBuilder) Exists() bool {
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
-}
-
-// contains checks if a string is present in a slice.
-func contains(slice []string, element string) bool {
-	for _, value := range slice {
-		if value == element {
-			return true
-		}
-	}
-
-	return false
 }
