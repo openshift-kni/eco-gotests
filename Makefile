@@ -16,5 +16,9 @@ deps-update:
 install-ginkgo:
 	scripts/install-ginkgo.sh
 
+build-docker-image:
+	@echo "Building docker image"
+	podman build -t eco-gotests:latest -f Dockerfile
+
 install: deps-update install-ginkgo
 	@echo "Installing needed dependencies"
