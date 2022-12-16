@@ -3,6 +3,8 @@ package clients
 import (
 	"os"
 
+	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
+
 	"github.com/golang/glog"
 	performanceV2 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1alpha1"
 	operatorV1 "github.com/openshift/api/operator/v1"
@@ -152,6 +154,10 @@ func setScheme() *runtime.Scheme {
 	}
 
 	if err := olm2.AddToScheme(crScheme); err != nil {
+		panic(err)
+	}
+
+	if err := bmhv1alpha1.AddToScheme(crScheme); err != nil {
 		panic(err)
 	}
 
