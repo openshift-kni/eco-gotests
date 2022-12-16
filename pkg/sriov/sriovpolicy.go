@@ -29,8 +29,13 @@ type PolicyBuilder struct {
 
 // NewBuilder creates new instance of Builder.
 func NewBuilder(
-	apiClient *clients.Settings, name, nsname, resName string, vfsNumber int,
-	nicNames []string, nodeSelector map[string]string) *PolicyBuilder {
+	apiClient *clients.Settings,
+	name string,
+	nsname string,
+	resName string,
+	vfsNumber int,
+	nicNames []string,
+	nodeSelector map[string]string) *PolicyBuilder {
 	builder := PolicyBuilder{
 		apiClient: apiClient,
 		Definition: &srIovV1.SriovNetworkNodePolicy{

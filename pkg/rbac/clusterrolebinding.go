@@ -27,8 +27,7 @@ type ClusterRoleBindingBuilder struct {
 
 // NewClusterRoleBindingBuilder creates new instance of ClusterRoleBindingBuilder.
 func NewClusterRoleBindingBuilder(
-	apiClient *clients.Settings, name,
-	clusterRole string, subject v1.Subject) *ClusterRoleBindingBuilder {
+	apiClient *clients.Settings, name, clusterRole string, subject v1.Subject) *ClusterRoleBindingBuilder {
 	builder := ClusterRoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &v1.ClusterRoleBinding{
