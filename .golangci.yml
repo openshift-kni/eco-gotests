@@ -18,7 +18,7 @@ linters-settings:
   gofmt:
     simplify: true
   funlen:
-    lines: 60
+    lines: 90
     statements: 40
   unused:
     check-exported: true
