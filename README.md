@@ -33,7 +33,28 @@ PtpConfig, SR-IOV, SriovFecClusterConfig configs .
 ### General environment variables
 #### Mandatory:
 * `KUBECONFIG` - Path to kubeconfig file. Default: empty
-#### Optional: 
+#### Optional:
+* Logging with glog
+
+We use glog library for logging in the project. In order to enable verbose logging the following needs to be done:
+
+1. Make sure to import inittool in your go script, per this example:
+
+<sup>
+    import (
+      . "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
+    )
+</sup>
+
+2.   Need to export the following SHELL variable: <sub>export VERBOSE_LEVEL=100.</sub>
+
+##### Notes:
+
+  1. The value for the variable has to be >= 100.
+  2. The variable can simply be exported in the shell where you run your automation.
+  3. The go file you work on has to be in a directory under github.com/openshift-kni/eco-gotests/tests/ directory for being able to import inittools.
+  4. Importing inittool also intializes the apiclient and it's available via "APIClient" variable.
+
 <!-- TODO Update this section with optional env vars for each test suite -->
 
 ## How to run

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +25,10 @@ type Builder struct {
 
 // NewBuilder creates new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType v1.SecretType) *Builder {
+	glog.V(100).Infof(
+		"Initializing new secret structure with the following params: %s, %s, %s",
+		name, nsname, string(secretType))
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Secret{
@@ -36,10 +41,14 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType v1.
 	}
 
 	if name == "" {
+		glog.V(100).Infof("The name of the secret is empty")
+
 		builder.errorMsg = "secret 'name' cannot be empty"
 	}
 
 	if nsname == "" {
+		glog.V(100).Infof("The namespace of the secret is empty")
+
 		builder.errorMsg = "secret 'nsname' cannot be empty"
 	}
 
@@ -48,6 +57,8 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType v1.
 
 // Create creates secret on cluster and stores created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
+	glog.V(100).Infof("Creating the secret %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -63,6 +74,8 @@ func (builder *Builder) Create() (*Builder, error) {
 
 // Delete removes secret from a cluster.
 func (builder *Builder) Delete() error {
+	glog.V(100).Infof("Deleting the secret %s from namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return nil
 	}
@@ -81,6 +94,10 @@ func (builder *Builder) Delete() error {
 
 // Exists tells whether the given secret exists.
 func (builder *Builder) Exists() bool {
+	glog.V(100).Infof(
+		"Checking if secret %s exists in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	var err error
 	builder.Object, err = builder.apiClient.Secrets(builder.Definition.Namespace).Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
@@ -90,7 +107,13 @@ func (builder *Builder) Exists() bool {
 
 // WithData defines the data placed in the secret.
 func (builder *Builder) WithData(data map[string][]byte) *Builder {
+	glog.V(100).Infof(
+		"Creating secret %s in namespace %s with this data: %s",
+		builder.Definition.Name, builder.Definition.Namespace, data)
+
 	if len(data) == 0 {
+		glog.V(100).Infof("The data of the secret is empty")
+
 		builder.errorMsg = "'data' cannot be empty"
 	}
 
