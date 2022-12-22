@@ -13,20 +13,21 @@ import (
 
 const srIovNetworkNodePolicyCRName = "SriovNetworkNodePolicy"
 
-// PolicyBuilder provides struct for srIovPolicy object which contains connection to cluster and srIovPolicy definition.
+// PolicyBuilder provides struct for srIovPolicy object containing connection to the cluster and the srIovPolicy
+// definitions.
 type PolicyBuilder struct {
 	// srIovPolicy definition. Used to create srIovPolicy object.
 	Definition *srIovV1.SriovNetworkNodePolicy
 	// Created srIovPolicy object.
 	Object *srIovV1.SriovNetworkNodePolicy
-	// Used in functions that defines or mutates srIovPolicy definition. errorMsg is processed before srIovPolicy
+	// Used in functions that define or mutate srIovPolicy definition. errorMsg is processed before the srIovPolicy
 	// object is created.
 	errorMsg string
-	// apiClient open api connection to cluster.
+	// apiClient opens api connection to the cluster.
 	apiClient *clients.Settings
 }
 
-// NewPolicyBuilder creates new instance of PolicyBuilder.
+// NewPolicyBuilder creates a new instance of PolicyBuilder.
 func NewPolicyBuilder(
 	apiClient *clients.Settings,
 	name string,
@@ -126,7 +127,7 @@ func (builder *PolicyBuilder) WithVFRange(firstVF, lastVF int) *PolicyBuilder {
 	return builder
 }
 
-// WithMTU sets required MTU on the given SriovNetworkNodePolicy.
+// WithMTU sets required MTU in the given SriovNetworkNodePolicy.
 func (builder *PolicyBuilder) WithMTU(mtu int) *PolicyBuilder {
 	if builder.Definition == nil {
 		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
@@ -145,7 +146,7 @@ func (builder *PolicyBuilder) WithMTU(mtu int) *PolicyBuilder {
 	return builder
 }
 
-// WithRDMA sets RDMA mode on SriovNetworkNodePolicy object.
+// WithRDMA sets RDMA mode in SriovNetworkNodePolicy object.
 func (builder *PolicyBuilder) WithRDMA(rdma bool) *PolicyBuilder {
 	if builder.Definition == nil {
 		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
@@ -158,7 +159,7 @@ func (builder *PolicyBuilder) WithRDMA(rdma bool) *PolicyBuilder {
 	return builder
 }
 
-// Create generates SriovNetworkNodePolicy on cluster and stores created object in struct.
+// Create generates an SriovNetworkNodePolicy in the cluster and stores the created object in struct.
 func (builder *PolicyBuilder) Create() (*PolicyBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -178,7 +179,7 @@ func (builder *PolicyBuilder) Create() (*PolicyBuilder, error) {
 	return builder, nil
 }
 
-// Delete removes SriovNetworkNodePolicy object.
+// Delete removes an SriovNetworkNodePolicy object.
 func (builder *PolicyBuilder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -196,7 +197,7 @@ func (builder *PolicyBuilder) Delete() error {
 	return err
 }
 
-// Exists tells whether the given SriovNetworkNodePolicy object exists on cluster.
+// Exists checks whether the given SriovNetworkNodePolicy object exists in the cluster.
 func (builder *PolicyBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.SriovNetworkNodePolicies(builder.Definition.Namespace).Get(

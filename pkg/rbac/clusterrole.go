@@ -11,14 +11,14 @@ import (
 )
 
 /* ClusterRoleBuilder provides struct for clusterrole object
-   which contains connection to cluster and clusterrole definition.
+   containing connection to the cluster and the clusterrole definitions.
 */
 type ClusterRoleBuilder struct {
-	// clusterrole definition. Used to create clusterrole object.
+	// Clusterrole definition. Used to create a clusterrole object.
 	Definition *v1.ClusterRole
 	// Created clusterrole object
 	Object *v1.ClusterRole
-	// Used in functions that defines or mutates clusterrole definition. errorMsg is processed before clusterrole
+	// Used in functions that define or mutate clusterrole definition. errorMsg is processed before clusterrole
 	// object is created.
 	errorMsg  string
 	apiClient *clients.Settings
@@ -45,7 +45,7 @@ func NewClusterRoleBuilder(apiClient *clients.Settings, name string, rule v1.Pol
 	return &builder
 }
 
-// WithRules appends additional rules to clusterrole definition.
+// WithRules appends additional rules to the clusterrole definition.
 func (builder *ClusterRoleBuilder) WithRules(rules []v1.PolicyRule) *ClusterRoleBuilder {
 	// Make sure NewClusterRoleBuilder was already called to set builder.Definition.
 	if builder.Definition == nil {
@@ -89,7 +89,7 @@ func (builder *ClusterRoleBuilder) WithRules(rules []v1.PolicyRule) *ClusterRole
 	return builder
 }
 
-// Create generates clusterrole on cluster and stores created object in struct.
+// Create generates a clusterrole in the cluster and stores the created object in struct.
 func (builder *ClusterRoleBuilder) Create() (*ClusterRoleBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -104,7 +104,7 @@ func (builder *ClusterRoleBuilder) Create() (*ClusterRoleBuilder, error) {
 	return builder, err
 }
 
-// Delete removes clusterrole from cluster.
+// Delete removes a clusterrole from the cluster.
 func (builder *ClusterRoleBuilder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -122,7 +122,7 @@ func (builder *ClusterRoleBuilder) Delete() error {
 	return err
 }
 
-// Update modifies clusterrole object on cluster.
+// Update modifies a clusterrole object in the cluster.
 func (builder *ClusterRoleBuilder) Update() (*ClusterRoleBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -135,7 +135,7 @@ func (builder *ClusterRoleBuilder) Update() (*ClusterRoleBuilder, error) {
 	return builder, err
 }
 
-// Exists checks if clusterrole exists on cluster.
+// Exists checks if a clusterrole exists in the cluster.
 func (builder *ClusterRoleBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.ClusterRoles().Get(

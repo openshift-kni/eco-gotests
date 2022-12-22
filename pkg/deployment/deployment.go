@@ -13,19 +13,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// Builder provides struct for deployment object which contains connection to cluster and deployment definition.
+// Builder provides struct for deployment object containing connection to the cluster and the deployment definitions.
 type Builder struct {
-	// deployment definition. Used to create deployment object.
+	// Deployment definition. Used to create the deployment object.
 	Definition *v1.Deployment
 	// Created deployment object
 	Object *v1.Deployment
-	// Used in functions that defines or mutates deployment definition. errorMsg is processed before deployment
+	// Used in functions that define or mutate deployment definition. errorMsg is processed before the deployment
 	// object is created.
 	errorMsg  string
 	apiClient *clients.Settings
 }
 
-// NewBuilder creates new instance of Builder.
+// NewBuilder creates a new instance of Builder.
 func NewBuilder(
 	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec coreV1.Container) *Builder {
 	builder := Builder{
@@ -131,7 +131,7 @@ func (builder *Builder) WithAdditionalContainerSpecs(specs []coreV1.Container) *
 	return builder
 }
 
-// Create creates deployment on cluster and stores created object in struct.
+// Create generates a deployment in cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -146,7 +146,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	return builder, err
 }
 
-// Update updates existing deployment object with deployment definition in builder.
+// Update renovates the existing deployment object with the deployment definition in builder.
 func (builder *Builder) Update() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -159,7 +159,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	return builder, err
 }
 
-// Delete deletes deployment.
+// Delete removes a deployment.
 func (builder *Builder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -177,14 +177,14 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
-// CreateAndWaitUntilReady creates a deployment on the cluster and waits until deployment is available.
+// CreateAndWaitUntilReady creates a deployment in the cluster and waits until the deployment is available.
 func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder, error) {
 	_, err := builder.Create()
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	// Polls every one second to determine if deployment is available.
+	// Polls every second to determine if the deployment is available.
 	err = wait.PollImmediate(time.Second, timeout, func() (bool, error) {
 		builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(
 			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
@@ -216,7 +216,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 		return err
 	}
 
-	// Polls the deployment every 1 second until it no longer exists.
+	// Polls the deployment every second until it's removed.
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
 		_, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
 			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
@@ -229,7 +229,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	})
 }
 
-// Exists tells whether the given deployment exists.
+// Exists checks whether the given deployment exists.
 func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(

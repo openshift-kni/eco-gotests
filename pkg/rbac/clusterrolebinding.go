@@ -12,20 +12,20 @@ import (
 )
 
 /* ClusterRoleBindingBuilder provides struct for clusterrolebinding object
-   which contains connection to cluster and clusterrolebinding definition.
+   containing connection to the cluster and the clusterrolebinding definitions.
 */
 type ClusterRoleBindingBuilder struct {
-	// clusterrolebinding definition. Used to create clusterrolebinding object.
+	// Clusterrolebinding definition. Used to create a clusterrolebinding object.
 	Definition *v1.ClusterRoleBinding
 	// Created clusterrolebinding object
 	Object *v1.ClusterRoleBinding
-	// Used in functions that defines or mutates clusterrolebinding definition.
-	// errorMsg is processed before clusterrolebinding object is created.
+	// Used in functions that define or mutate clusterrolebinding definition.
+	// errorMsg is processed before the clusterrolebinding object is created.
 	errorMsg  string
 	apiClient *clients.Settings
 }
 
-// NewClusterRoleBindingBuilder creates new instance of ClusterRoleBindingBuilder.
+// NewClusterRoleBindingBuilder creates a new instance of ClusterRoleBindingBuilder.
 func NewClusterRoleBindingBuilder(
 	apiClient *clients.Settings, name, clusterRole string, subject v1.Subject) *ClusterRoleBindingBuilder {
 	builder := ClusterRoleBindingBuilder{
@@ -85,7 +85,7 @@ func (builder *ClusterRoleBindingBuilder) WithSubjects(subjects []v1.Subject) *C
 	return builder
 }
 
-// Create generates clusterrolebinding on cluster and stores created object in struct.
+// Create generates a clusterrolebinding in the cluster and stores the created object in struct.
 func (builder *ClusterRoleBindingBuilder) Create() (*ClusterRoleBindingBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -100,7 +100,7 @@ func (builder *ClusterRoleBindingBuilder) Create() (*ClusterRoleBindingBuilder, 
 	return builder, err
 }
 
-// Delete removes clusterrolebinding from cluster.
+// Delete removes a clusterrolebinding from the cluster.
 func (builder *ClusterRoleBindingBuilder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -118,7 +118,7 @@ func (builder *ClusterRoleBindingBuilder) Delete() error {
 	return err
 }
 
-// Update modifies clusterrolebinding object on cluster.
+// Update modifies a clusterrolebinding object in the cluster.
 func (builder *ClusterRoleBindingBuilder) Update() (*ClusterRoleBindingBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -131,7 +131,7 @@ func (builder *ClusterRoleBindingBuilder) Update() (*ClusterRoleBindingBuilder, 
 	return builder, err
 }
 
-// Exists checks if clusterrolebinding exists on cluster.
+// Exists checks if clusterrolebinding exists in the cluster.
 func (builder *ClusterRoleBindingBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.ClusterRoleBindings().Get(

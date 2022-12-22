@@ -13,19 +13,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// Builder provides struct for daemonset object which contains connection to cluster and daemonset definition.
+// Builder provides struct for daemonset object containing connection to the cluster and the daemonset definitions.
 type Builder struct {
-	// daemonset definition. Used to create daemonset object.
+	// Daemonset definition. Used to create a daemonset object.
 	Definition *v1.DaemonSet
-	// Created daemonset object
+	// Created daemonset object.
 	Object *v1.DaemonSet
-	// Used in functions that defines or mutates daemonset definition. errorMsg is processed before daemonset
+	// Used in functions that define or mutate daemonset definition. errorMsg is processed before the daemonset
 	// object is created.
 	errorMsg  string
 	apiClient *clients.Settings
 }
 
-// NewBuilder creates new instance of Builder.
+// NewBuilder creates a new instance of Builder.
 func NewBuilder(
 	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec coreV1.Container) *Builder {
 	builder := Builder{
@@ -65,7 +65,7 @@ func NewBuilder(
 	return &builder
 }
 
-// WithNodeSelector applies a nodeSelector to the daemonset definition.
+// WithNodeSelector applies nodeSelector to the daemonset definition.
 func (builder *Builder) WithNodeSelector(selector map[string]string) *Builder {
 	if builder.errorMsg != "" {
 		return builder
@@ -113,7 +113,7 @@ func (builder *Builder) WithAdditionalContainerSpecs(specs []coreV1.Container) *
 	return builder
 }
 
-// Create creates daemonset on cluster and stores created object in struct.
+// Create builds daemonset in the cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -128,7 +128,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	return builder, err
 }
 
-// Update updates existing daemonset object with daemonset definition in builder.
+// Update renovates the existing daemonset object with daemonset definition in builder.
 func (builder *Builder) Update() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -141,7 +141,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	return builder, err
 }
 
-// Delete deletes daemonset.
+// Delete removes the daemonset.
 func (builder *Builder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -159,7 +159,7 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
-// CreateAndWaitUntilReady creates a daemonset on the cluster and waits until daemonset is available.
+// CreateAndWaitUntilReady creates a daemonset in the cluster and waits until the daemonset is available.
 func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder, error) {
 	_, err := builder.Create()
 	if err != nil {
@@ -198,7 +198,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 		return err
 	}
 
-	// Polls the daemonset every 1 second until it no longer exists.
+	// Polls the daemonset every second until it's removed.
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
 		_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
 			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
@@ -211,7 +211,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	})
 }
 
-// Exists tells whether the given daemonset exists.
+// Exists checks whether the given daemonset exists.
 func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(

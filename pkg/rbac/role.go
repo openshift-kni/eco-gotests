@@ -10,20 +10,20 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// RoleBuilder provides a struct for role object which contains connection to cluster and role definition.
+// RoleBuilder provides a struct for role object containing connection to the cluster and the role definitions.
 type RoleBuilder struct {
-	// role definition. Used to create role object
+	// Role definition. Used to create a role object
 	Definition *v1.Role
-	// created role object
+	// Created role object
 	Object *v1.Role
 
-	// used in functions that defines or mutates role definition. errorMsg is processed
-	// before role object is created
+	// Used in functions that define or mutate role definition. errorMsg is processed
+	// before the role object is created
 	errorMsg  string
 	apiClient *clients.Settings
 }
 
-// NewRoleBuilder create new instance of RoleBuilder.
+// NewRoleBuilder create a new instance of RoleBuilder.
 func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule v1.PolicyRule) *RoleBuilder {
 	builder := RoleBuilder{
 		apiClient: apiClient,
@@ -48,7 +48,7 @@ func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule v1.Po
 	return &builder
 }
 
-// WithRules adds specified PolicyRule to the Role.
+// WithRules adds the specified PolicyRule to the Role.
 func (builder *RoleBuilder) WithRules(rules []v1.PolicyRule) *RoleBuilder {
 	if builder.Definition == nil {
 		builder.errorMsg = "cannot redefine undefined role"
@@ -89,7 +89,7 @@ func (builder *RoleBuilder) WithRules(rules []v1.PolicyRule) *RoleBuilder {
 	return builder
 }
 
-// Create generates the role on cluster and stores created object in struct.
+// Create makes a Role in the cluster and stores the created object in struct.
 func (builder *RoleBuilder) Create() (*RoleBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -104,7 +104,7 @@ func (builder *RoleBuilder) Create() (*RoleBuilder, error) {
 	return builder, err
 }
 
-// Delete removes the Role.
+// Delete removes a Role.
 func (builder *RoleBuilder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -122,7 +122,7 @@ func (builder *RoleBuilder) Delete() error {
 	return err
 }
 
-// Update modifies existing role object with role definition in builder.
+// Update modifies the existing Role object with role definition in builder.
 func (builder *RoleBuilder) Update() (*RoleBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -135,7 +135,7 @@ func (builder *RoleBuilder) Update() (*RoleBuilder, error) {
 	return builder, err
 }
 
-// Exists tells whether the given Role exists.
+// Exists checks whether the given Role exists.
 func (builder *RoleBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.Roles(builder.Definition.Namespace).Get(

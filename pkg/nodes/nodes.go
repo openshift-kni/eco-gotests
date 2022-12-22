@@ -11,7 +11,7 @@ import (
 	labels "k8s.io/apimachinery/pkg/labels"
 )
 
-// Builder provides struct for Node object which contains connection to cluster and list of Node definitions.
+// Builder provides struct for Node object containing connection to the cluster and the list of Node definitions.
 type Builder struct {
 	Objects   []v1.Node
 	apiClient *clients.Settings

@@ -11,16 +11,16 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// RoleBindingBuilder provides struct for RoleBinding object which contains connection
-// to cluster RoleBinding definition.
+// RoleBindingBuilder provides struct for RoleBinding object containing connection
+// to the cluster RoleBinding definition.
 type RoleBindingBuilder struct {
-	// rolebinding definition. Used to create rolebinding object
+	// Rolebinding definition. Used to create rolebinding object
 	Definition *v1.RoleBinding
-	// created rolebinding object
+	// Created rolebinding object
 	Object *v1.RoleBinding
 
-	// used in functions that defines or mutates rolebinding definition. errorMsg is processed
-	// before rolebinding object is created
+	// Used in functions that define or mutate rolebinding definition. errorMsg is processed
+	// before the rolebinding object is created
 	errorMsg  string
 	apiClient *clients.Settings
 }
@@ -89,7 +89,7 @@ func (builder *RoleBindingBuilder) WithSubjects(subjects []v1.Subject) *RoleBind
 	return builder
 }
 
-// Create generates the RoleBinding and stores created object in struct.
+// Create generates a RoleBinding and stores the created object in struct.
 func (builder *RoleBindingBuilder) Create() (*RoleBindingBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -104,7 +104,7 @@ func (builder *RoleBindingBuilder) Create() (*RoleBindingBuilder, error) {
 	return builder, err
 }
 
-// Delete removes the RoleBinding.
+// Delete removes a RoleBinding.
 func (builder *RoleBindingBuilder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -118,7 +118,7 @@ func (builder *RoleBindingBuilder) Delete() error {
 	return err
 }
 
-// Update modifies existing RoleBinding on cluster.
+// Update modifies an existing RoleBinding in the cluster.
 func (builder *RoleBindingBuilder) Update() (*RoleBindingBuilder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -131,7 +131,7 @@ func (builder *RoleBindingBuilder) Update() (*RoleBindingBuilder, error) {
 	return builder, err
 }
 
-// Exists tells whether the given RoleBinding exists.
+// Exists checks whether the given RoleBinding exists.
 func (builder *RoleBindingBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.RoleBindings(builder.Definition.Namespace).Get(

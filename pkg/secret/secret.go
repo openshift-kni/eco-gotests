@@ -11,19 +11,19 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Builder provides struct for secret object which contains connection to cluster and secret definition.
+// Builder provides struct for secret object containing connection to the cluster and the secret definitions.
 type Builder struct {
-	// secret definition. Used to store secret object.
+	// Secret definition. Used to store the secret object.
 	Definition *v1.Secret
 	// Created secret object.
 	Object *v1.Secret
-	// Used in functions that defines or mutates secret definition. errorMsg is processed before secret
+	// Used in functions that define or mutate secret definitions. errorMsg is processed before the secret
 	// object is created.
 	errorMsg  string
 	apiClient *clients.Settings
 }
 
-// NewBuilder creates new instance of Builder.
+// NewBuilder creates a new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType v1.SecretType) *Builder {
 	glog.V(100).Infof(
 		"Initializing new secret structure with the following params: %s, %s, %s",
@@ -55,7 +55,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType v1.
 	return &builder
 }
 
-// Create creates secret on cluster and stores created object in struct.
+// Create makes a secret in the cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
 	glog.V(100).Infof("Creating the secret %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
@@ -72,7 +72,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	return builder, err
 }
 
-// Delete removes secret from a cluster.
+// Delete removes a secret from the cluster.
 func (builder *Builder) Delete() error {
 	glog.V(100).Infof("Deleting the secret %s from namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
@@ -92,7 +92,7 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
-// Exists tells whether the given secret exists.
+// Exists checks whether the given secret exists.
 func (builder *Builder) Exists() bool {
 	glog.V(100).Infof(
 		"Checking if secret %s exists in namespace %s",

@@ -14,8 +14,8 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Builder provides struct for bmh object which contains connection to
-// the cluster and bmh definition.
+// Builder provides struct for the bmh object containing connection to
+// the cluster and the bmh definitions.
 type Builder struct {
 	Definition *bmhv1alpha1.BareMetalHost
 	Object     *bmhv1alpha1.BareMetalHost
@@ -23,9 +23,7 @@ type Builder struct {
 	errorMsg   string
 }
 
-// NewBuilder creates new instance of Builder.
-// When namespace not provided default will be used: 'openshift-machine-api'.
-// When bootMode not provided default will be used: 'UEFI'.
+// NewBuilder creates a new instance of Builder.
 func NewBuilder(
 	apiClient *clients.Settings,
 	name string,
@@ -92,7 +90,7 @@ func NewBuilder(
 	return &builder
 }
 
-// Create generates bmh on cluster and stores created object in struct.
+// Create makes a bmh in the cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -126,7 +124,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 	return builder, nil
 }
 
-// Exists tells whether the given bmh exists.
+// Exists checks whether the given bmh exists.
 func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.Get()

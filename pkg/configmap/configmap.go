@@ -10,19 +10,19 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Builder provides struct for configmap object which contains connection to cluster and configmap definition.
+// Builder provides struct for configmap object containing connection to the cluster and the configmap definitions.
 type Builder struct {
-	// configMap definition. Used to create configmap object.
+	// ConfigMap definition. Used to create configmap object.
 	Definition *v1.ConfigMap
-	// Created configmap object
+	// Created configmap object.
 	Object *v1.ConfigMap
-	// Used in functions that defines or mutates configmap definition. errorMsg is processed before configmap
-	// object is created
+	// Used in functions that defines or mutates configmap definition. errorMsg is processed before the configmap
+	// object is created.
 	errorMsg  string
 	apiClient *clients.Settings
 }
 
-// NewBuilder creates new instance of Builder.
+// NewBuilder creates a new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 	builder := Builder{
 		apiClient: apiClient,
@@ -45,7 +45,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 	return &builder
 }
 
-// Create creates configmap on cluster and stores created object in struct.
+// Create makes a configmap in cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -60,7 +60,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	return builder, err
 }
 
-// Delete deletes configmap.
+// Delete removes a configmap.
 func (builder *Builder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -78,7 +78,7 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
-// Exists tells whether the given configmap exists.
+// Exists checks whether the given configmap exists.
 func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.ConfigMaps(builder.Definition.Namespace).Get(

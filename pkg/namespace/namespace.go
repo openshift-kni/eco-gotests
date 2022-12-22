@@ -12,13 +12,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// Builder provides struct for namespace object which contains connection to cluster and namespace definition.
+// Builder provides struct for namespace object containing connection to the cluster and the namespace definitions.
 type Builder struct {
 	// Namespace definition. Used to create namespace object.
 	Definition *v1.Namespace
 	// Created namespace object
 	Object *v1.Namespace
-	// Used in functions that defines or mutates namespace definition. errorMsg is processed before namespace
+	// Used in functions that define or mutate namespace definition. errorMsg is processed before the namespace
 	// object is created
 	errorMsg  string
 	apiClient *clients.Settings
@@ -42,7 +42,7 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 	return &builder
 }
 
-// WithLabel redefines namespace definition with given label.
+// WithLabel redefines namespace definition with the given label.
 func (builder *Builder) WithLabel(key string, value string) *Builder {
 	if builder.errorMsg != "" {
 		return builder
@@ -70,7 +70,7 @@ func (builder *Builder) WithLabel(key string, value string) *Builder {
 	return builder
 }
 
-// WithMultipleLabels redefines namespace definition with given labels.
+// WithMultipleLabels redefines namespace definition with the given labels.
 func (builder *Builder) WithMultipleLabels(labels map[string]string) *Builder {
 	for k, v := range labels {
 		builder.WithLabel(k, v)
@@ -79,7 +79,7 @@ func (builder *Builder) WithMultipleLabels(labels map[string]string) *Builder {
 	return builder
 }
 
-// Create creates namespace on cluster and stores created object in struct.
+// Create makes a namespace in the cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -94,7 +94,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	return builder, err
 }
 
-// Update updates existing namespace object with namespace definition in builder.
+// Update renovates the existing namespace object with the namespace definition in builder.
 func (builder *Builder) Update() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -107,7 +107,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	return builder, err
 }
 
-// Delete deletes namespace.
+// Delete removes a namespace.
 func (builder *Builder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -124,7 +124,7 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
-// DeleteAndWait deletes and waits until namespace is removed from the cluster.
+// DeleteAndWait deletes a namespace and waits until it's removed from the cluster.
 func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	if err := builder.Delete(); err != nil {
 		return err
@@ -141,7 +141,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	})
 }
 
-// Exists tells whether the given namespace exists.
+// Exists checks whether the given namespace exists.
 func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.Namespaces().Get(

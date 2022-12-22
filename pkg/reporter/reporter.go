@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// Dump runs reports and collect logs in to given directory.
+// Dump runs reports and collect logs under given directory.
 func Dump(client *clients.Settings, crds []k8sreporter.CRData, namespace, reportDirPath, testSuiteName string) {
 	dumpNamespace := func(ns string) bool {
 		return strings.HasPrefix(ns, namespace)

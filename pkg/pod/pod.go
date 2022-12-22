@@ -22,7 +22,7 @@ import (
 
 // Builder provides a struct for pod object from the cluster and a pod definition.
 type Builder struct {
-	// Pod definition, used to create pod object.
+	// Pod definition, used to create the pod object.
 	Definition *v1.Pod
 	// Created pod object.
 	Object *v1.Pod
@@ -32,7 +32,7 @@ type Builder struct {
 	apiClient *clients.Settings
 }
 
-// NewBuilder creates new instance of Builder.
+// NewBuilder creates a new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name, nsName, image string) *Builder {
 	builder := &Builder{
 		apiClient:  apiClient,
@@ -54,7 +54,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsName, image string) *Builde
 	return builder
 }
 
-// DefineOnNode adds node name on the pod's definition.
+// DefineOnNode adds node name in the pod's definition.
 func (builder *Builder) DefineOnNode(nodeName string) *Builder {
 	if builder.Definition == nil {
 		builder.errorMsg = "can not define pod on specific node because basic definition is empty"
@@ -76,7 +76,7 @@ func (builder *Builder) DefineOnNode(nodeName string) *Builder {
 	return builder
 }
 
-// Create creates a pod according to the pod definition and stores the created object in the pod builder.
+// Create makes a pod according to the pod definition and stores the created object in the pod builder.
 func (builder *Builder) Create() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -91,7 +91,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	return builder, err
 }
 
-// Delete deletes pod object and resets builder object.
+// Delete removes the pod object and resets the builder object.
 func (builder *Builder) Delete() (*Builder, error) {
 	if !builder.Exists() {
 		return builder, fmt.Errorf("pod cannot be deleted because it does not exist")
@@ -109,7 +109,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 	return builder, nil
 }
 
-// DeleteAndWait delete pod object and waits until deleted.
+// DeleteAndWait deletes the pod object and waits until the pod is deleted.
 func (builder *Builder) DeleteAndWait(timeout time.Duration) (*Builder, error) {
 	builder, err := builder.Delete()
 	if err != nil {
@@ -125,7 +125,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) (*Builder, error) {
 	return builder, nil
 }
 
-// CreateAndWaitUntilRunning creates pod object and waits until pod is running.
+// CreateAndWaitUntilRunning creates the pod object and waits until the pod is running.
 func (builder *Builder) CreateAndWaitUntilRunning(timeout time.Duration) (*Builder, error) {
 	builder, err := builder.Create()
 	if err != nil {
@@ -141,12 +141,12 @@ func (builder *Builder) CreateAndWaitUntilRunning(timeout time.Duration) (*Build
 	return builder, nil
 }
 
-// WaitUntilRunning waits for timeout duration or until pod is running.
+// WaitUntilRunning waits for the duration of the defined timeout or until the pod is running.
 func (builder *Builder) WaitUntilRunning(timeout time.Duration) error {
 	return builder.WaitUntilInStatus(v1.PodRunning, timeout)
 }
 
-// WaitUntilInStatus waits for timeout duration or until pod gets to a specific status.
+// WaitUntilInStatus waits for the duration of the defined timeout or until the pod gets to a specific status.
 func (builder *Builder) WaitUntilInStatus(status v1.PodPhase, timeout time.Duration) error {
 	if builder.errorMsg != "" {
 		return fmt.Errorf(builder.errorMsg)
@@ -163,7 +163,7 @@ func (builder *Builder) WaitUntilInStatus(status v1.PodPhase, timeout time.Durat
 	})
 }
 
-// WaitUntilDeleted waits for timeout duration or until pod is deleted.
+// WaitUntilDeleted waits for the duration of the defined timeout or until the pod is deleted.
 func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 	err := wait.Poll(time.Second, timeout, func() (bool, error) {
 		_, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
@@ -186,7 +186,7 @@ func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 	return err
 }
 
-// ExecCommand runs command in the pod and returns buffer output.
+// ExecCommand runs command in the pod and returns the buffer output.
 func (builder *Builder) ExecCommand(command []string, containerName ...string) (bytes.Buffer, error) {
 	var (
 		buffer bytes.Buffer
@@ -234,7 +234,7 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 	return buffer, nil
 }
 
-// Exists tells whether the given namespace exists.
+// Exists checks whether the given namespace exists.
 func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.Pods(builder.Definition.Namespace).Get(

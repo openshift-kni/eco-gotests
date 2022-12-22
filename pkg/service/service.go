@@ -11,21 +11,21 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// Builder provides struct for service object which contains connection to cluster and service definition.
+// Builder provides struct for service object containing connection to the cluster and the service definitions.
 type Builder struct {
-	// Service definition. Used to create service object
+	// Service definition. Used to create a service object
 	Definition *v1.Service
 	// Created service object
 	Object *v1.Service
-	// Used in functions that defines or mutates service definition.
-	// errorMsg is processed before service object is created
+	// Used in functions that define or mutate the service definition.
+	// errorMsg is processed before the service object is created
 	errorMsg  string
 	apiClient *clients.Settings
 }
 
-// NewBuilder creates new instance of Builder
+// NewBuilder creates a new instance of Builder
 // Default type of service is ClusterIP
-// For a NodePort type use the WithNodePort().
+// Use WithNodePort() for setting the NodePort type.
 func NewBuilder(
 	apiClient *clients.Settings, name, nsname string, labels map[string]string, servicePort v1.ServicePort) *Builder {
 	builder := Builder{
@@ -74,7 +74,7 @@ func (builder *Builder) WithNodePort() *Builder {
 	return builder
 }
 
-// Create the service on cluster and store created object in Object.
+// Create the service in the cluster and store the created object in Object.
 func (builder *Builder) Create() (*Builder, error) {
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
@@ -89,7 +89,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	return builder, err
 }
 
-// Exists tells whether the given service exists.
+// Exists checks whether the given service exists.
 func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.Services(builder.Definition.Namespace).Get(
@@ -98,7 +98,7 @@ func (builder *Builder) Exists() bool {
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
-// Delete the service.
+// Delete a service.
 func (builder *Builder) Delete() error {
 	if !builder.Exists() {
 		return nil
@@ -116,7 +116,7 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
-// DefineServicePort helper for creating Service with a ServicePort.
+// DefineServicePort helper for creating a Service with a ServicePort.
 func DefineServicePort(port, targetPort int32, protocol v1.Protocol) (*v1.ServicePort, error) {
 	if !isValidPort(port) {
 		return nil, fmt.Errorf("invalid port number")
@@ -136,7 +136,7 @@ func DefineServicePort(port, targetPort int32, protocol v1.Protocol) (*v1.Servic
 	}, nil
 }
 
-// isValidPort checks port is valid.
+// isValidPort checks if a port is valid.
 func isValidPort(port int32) bool {
 	if (port > 0) || (port < 65535) {
 		return true
