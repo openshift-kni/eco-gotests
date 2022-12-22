@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/pkg/slice"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const errorMessageObjectUndefined = "can not redefine undefined SriovNetworkNodePolicy"
+const srIovNetworkNodePolicyCRName = "SriovNetworkNodePolicy"
 
 // PolicyBuilder provides struct for srIovPolicy object which contains connection to cluster and srIovPolicy definition.
 type PolicyBuilder struct {
@@ -27,8 +26,8 @@ type PolicyBuilder struct {
 	apiClient *clients.Settings
 }
 
-// NewBuilder creates new instance of Builder.
-func NewBuilder(
+// NewPolicyBuilder creates new instance of PolicyBuilder.
+func NewPolicyBuilder(
 	apiClient *clients.Settings,
 	name string,
 	nsname string,
@@ -83,7 +82,7 @@ func (builder *PolicyBuilder) WithDevType(devType string) *PolicyBuilder {
 	allowedDevTypes := []string{"vfio-pci", "netdevice"}
 
 	if builder.Definition == nil {
-		builder.errorMsg = errorMessageObjectUndefined
+		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 
 		return builder
 	}
@@ -102,7 +101,7 @@ func (builder *PolicyBuilder) WithDevType(devType string) *PolicyBuilder {
 // WithVFRange sets specific VF range for each configured PF.
 func (builder *PolicyBuilder) WithVFRange(firstVF, lastVF int) *PolicyBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = errorMessageObjectUndefined
+		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 	}
 
 	if firstVF > lastVF {
@@ -130,7 +129,7 @@ func (builder *PolicyBuilder) WithVFRange(firstVF, lastVF int) *PolicyBuilder {
 // WithMTU sets required MTU on the given SriovNetworkNodePolicy.
 func (builder *PolicyBuilder) WithMTU(mtu int) *PolicyBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = errorMessageObjectUndefined
+		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 	}
 
 	if 1 > mtu || mtu > 9192 {
@@ -149,7 +148,7 @@ func (builder *PolicyBuilder) WithMTU(mtu int) *PolicyBuilder {
 // WithRDMA sets RDMA mode on SriovNetworkNodePolicy object.
 func (builder *PolicyBuilder) WithRDMA(rdma bool) *PolicyBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = errorMessageObjectUndefined
+		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 
 		return builder
 	}
