@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,7 +28,14 @@ type Builder struct {
 // Default type of service is ClusterIP
 // Use WithNodePort() for setting the NodePort type.
 func NewBuilder(
-	apiClient *clients.Settings, name, nsname string, labels map[string]string, servicePort v1.ServicePort) *Builder {
+	apiClient *clients.Settings,
+	name string,
+	nsname string,
+	labels map[string]string,
+	servicePort v1.ServicePort) *Builder {
+	glog.V(100).Infof(
+		"Initializing new service structure with the following params: %s, %s", name, nsname)
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Service{
@@ -43,10 +51,14 @@ func NewBuilder(
 	}
 
 	if name == "" {
+		glog.V(100).Infof("The name of the service is empty")
+
 		builder.errorMsg = "Service 'name' cannot be empty"
 	}
 
 	if nsname == "" {
+		glog.V(100).Infof("The namespace of the service is empty")
+
 		builder.errorMsg = "Namespace 'nsname' cannot be empty"
 	}
 
@@ -76,6 +88,8 @@ func (builder *Builder) WithNodePort() *Builder {
 
 // Create the service in the cluster and store the created object in Object.
 func (builder *Builder) Create() (*Builder, error) {
+	glog.V(100).Infof("Creating the service %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -91,6 +105,10 @@ func (builder *Builder) Create() (*Builder, error) {
 
 // Exists checks whether the given service exists.
 func (builder *Builder) Exists() bool {
+	glog.V(100).Infof(
+		"Checking if service %s exists in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	var err error
 	builder.Object, err = builder.apiClient.Services(builder.Definition.Namespace).Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
@@ -100,6 +118,8 @@ func (builder *Builder) Exists() bool {
 
 // Delete a service.
 func (builder *Builder) Delete() error {
+	glog.V(100).Infof("Deleting the service %s from namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return nil
 	}
@@ -118,6 +138,9 @@ func (builder *Builder) Delete() error {
 
 // DefineServicePort helper for creating a Service with a ServicePort.
 func DefineServicePort(port, targetPort int32, protocol v1.Protocol) (*v1.ServicePort, error) {
+	glog.V(100).Infof(
+		"Defining ServicePort with port %d and targetport %d", port, targetPort)
+
 	if !isValidPort(port) {
 		return nil, fmt.Errorf("invalid port number")
 	}
