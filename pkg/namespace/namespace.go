@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -26,6 +27,9 @@ type Builder struct {
 
 // NewBuilder creates new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name string) *Builder {
+	glog.V(100).Infof(
+		"Initializing new namespace structure with the following param: %s", name)
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Namespace{
@@ -36,6 +40,8 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 	}
 
 	if name == "" {
+		glog.V(100).Infof("The name of the namespace is empty")
+
 		builder.errorMsg = "namespace 'name' cannot be empty"
 	}
 
@@ -44,11 +50,15 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 
 // WithLabel redefines namespace definition with the given label.
 func (builder *Builder) WithLabel(key string, value string) *Builder {
+	glog.V(100).Infof("Labeling the namespace %s with %s=%s", builder.Definition.Name, key, value)
+
 	if builder.errorMsg != "" {
 		return builder
 	}
 
 	if key == "" {
+		glog.V(100).Infof("The key can't be empty")
+
 		builder.errorMsg = "'key' cannot be empty"
 
 		return builder
@@ -81,6 +91,8 @@ func (builder *Builder) WithMultipleLabels(labels map[string]string) *Builder {
 
 // Create makes a namespace in the cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
+	glog.V(100).Infof("Creating namespace %s", builder.Definition.Name)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -96,6 +108,8 @@ func (builder *Builder) Create() (*Builder, error) {
 
 // Update renovates the existing namespace object with the namespace definition in builder.
 func (builder *Builder) Update() (*Builder, error) {
+	glog.V(100).Infof("Updating the namespace %s with the namespace definition in the builder", builder.Definition.Name)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -109,6 +123,8 @@ func (builder *Builder) Update() (*Builder, error) {
 
 // Delete removes a namespace.
 func (builder *Builder) Delete() error {
+	glog.V(100).Infof("Deleting namespace %s", builder.Definition.Name)
+
 	if !builder.Exists() {
 		return nil
 	}
@@ -126,6 +142,8 @@ func (builder *Builder) Delete() error {
 
 // DeleteAndWait deletes a namespace and waits until it's removed from the cluster.
 func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
+	glog.V(100).Infof("Deleting namespace %s and waiting for the removal to complete", builder.Definition.Name)
+
 	if err := builder.Delete(); err != nil {
 		return err
 	}
@@ -143,6 +161,8 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 
 // Exists checks whether the given namespace exists.
 func (builder *Builder) Exists() bool {
+	glog.V(100).Infof("Checking if namespace %s exists", builder.Definition.Name)
+
 	var err error
 	builder.Object, err = builder.apiClient.Namespaces().Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
