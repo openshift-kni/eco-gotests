@@ -17,6 +17,9 @@ LABEL description="eco-gotests development image"
 LABEL go.version=${GO_VER}
 LABEL ginkgo.version=${GINKGO_VER}
 
+COPY pkg /workspace/pkg
+COPY vendor /workspace/vendor
+COPY tests /workspace/tests
 WORKDIR /workspace
 
 ENTRYPOINT ["/bin/bash", "-c"]

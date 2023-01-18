@@ -1,0 +1,34 @@
+name: Build Docker Image - CI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build and push docker image
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build docker image
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: eco-gotests
+        tags: ${{ github.ref_name }}
+        containerfiles: |
+          ./Dockerfile
+
+    - name: Push To quay.io
+      id: push-to-quay
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: eco-gotests
+        tags: ${{ github.event.inputs.tag }}-unstable
+        registry: quay.io/ocp-edge-qe
+        username: ocp-edge-qe+ocp_edge_qe_robot
+        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
+
+    - name: Print image url
+      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
