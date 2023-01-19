@@ -25,7 +25,7 @@ jobs:
       uses: redhat-actions/push-to-registry@v2
       with:
         image: eco-gotests
-        tags: ${{ github.ref_name }
+        tags: ${{ github.ref_name }}
         registry: quay.io/ocp-edge-qe
         username: ocp-edge-qe+ocp_edge_qe_robot
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
