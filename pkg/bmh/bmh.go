@@ -2,6 +2,10 @@ package bmh
 
 import (
 	"context"
+	"time"
+
+	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -145,4 +149,97 @@ func (builder *Builder) Get() (*bmhv1alpha1.BareMetalHost, error) {
 	}
 
 	return bmh, err
+}
+
+// CreateAndWaitUntilProvisioned creates bmh object and waits until bmh is provisioned.
+func (builder *Builder) CreateAndWaitUntilProvisioned(timeout time.Duration) (*Builder, error) {
+	builder, err := builder.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	err = builder.WaitUntilProvisioned(timeout)
+
+	return builder, err
+}
+
+// WaitUntilProvisioned waits for timeout duration or until bmh is provisioned.
+func (builder *Builder) WaitUntilProvisioned(timeout time.Duration) error {
+	return builder.WaitUntilInStatus(bmhv1alpha1.StateProvisioned, timeout)
+}
+
+// WaitUntilProvisioning waits for timeout duration or until bmh is provisioning.
+func (builder *Builder) WaitUntilProvisioning(timeout time.Duration) error {
+	return builder.WaitUntilInStatus(bmhv1alpha1.StateProvisioning, timeout)
+}
+
+// WaitUntilReady waits for timeout duration or until bmh is ready.
+func (builder *Builder) WaitUntilReady(timeout time.Duration) error {
+	return builder.WaitUntilInStatus(bmhv1alpha1.StateReady, timeout)
+}
+
+// WaitUntilAvailable waits for timeout duration or until bmh is available.
+func (builder *Builder) WaitUntilAvailable(timeout time.Duration) error {
+	return builder.WaitUntilInStatus(bmhv1alpha1.StateAvailable, timeout)
+}
+
+// WaitUntilInStatus waits for timeout duration or until bmh gets to a specific status.
+func (builder *Builder) WaitUntilInStatus(status bmhv1alpha1.ProvisioningState, timeout time.Duration) error {
+	if builder.errorMsg != "" {
+		return fmt.Errorf(builder.errorMsg)
+	}
+
+	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+		var err error
+		builder.Object, err = builder.Get()
+		if err != nil {
+			return false, nil
+		}
+
+		if builder.Object.Status.Provisioning.State == status {
+			return true, nil
+		}
+
+		return false, err
+	})
+}
+
+// DeleteAndWaitUntilDeleted delete bmh object and waits until deleted.
+func (builder *Builder) DeleteAndWaitUntilDeleted(timeout time.Duration) (*Builder, error) {
+	builder, err := builder.Delete()
+	if err != nil {
+		return builder, err
+	}
+
+	err = builder.WaitUntilDeleted(timeout)
+
+	return nil, err
+}
+
+// WaitUntilDeleted waits for timeout duration or until bmh is deleted.
+func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
+	err := wait.Poll(time.Second, timeout, func() (bool, error) {
+		_, err := builder.Get()
+		if err == nil {
+			glog.V(100).Infof("bmh %s/%s still present",
+				builder.Definition.Namespace,
+				builder.Definition.Name)
+
+			return false, nil
+		}
+		if k8serrors.IsNotFound(err) {
+			glog.V(100).Infof("bmh %s/%s is gone",
+				builder.Definition.Namespace,
+				builder.Definition.Name)
+
+			return true, nil
+		}
+		glog.V(100).Infof("failed to get bmh %s/%s: %v",
+			builder.Definition.Namespace,
+			builder.Definition.Name, err)
+
+		return false, err
+	})
+
+	return err
 }
