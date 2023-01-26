@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +25,9 @@ type Builder struct {
 
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
+	glog.V(100).Infof(
+		"Initializing new configmap structure with the following params: %s, %s", name, nsname)
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.ConfigMap{
@@ -35,10 +39,14 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 	}
 
 	if name == "" {
+		glog.V(100).Infof("The name of the configmap is empty")
+
 		builder.errorMsg = "configmap 'name' cannot be empty"
 	}
 
 	if nsname == "" {
+		glog.V(100).Infof("The namespace of the configmap is empty")
+
 		builder.errorMsg = "configmap 'nsname' cannot be empty"
 	}
 
@@ -47,6 +55,8 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 
 // Create makes a configmap in cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
+	glog.V(100).Infof("Creating the configmap %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -62,6 +72,8 @@ func (builder *Builder) Create() (*Builder, error) {
 
 // Delete removes a configmap.
 func (builder *Builder) Delete() error {
+	glog.V(100).Infof("Deleting the configmap %s from namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return nil
 	}
@@ -80,6 +92,10 @@ func (builder *Builder) Delete() error {
 
 // Exists checks whether the given configmap exists.
 func (builder *Builder) Exists() bool {
+	glog.V(100).Infof(
+		"Checking if configmap %s exists in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	var err error
 	builder.Object, err = builder.apiClient.ConfigMaps(builder.Definition.Namespace).Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
@@ -89,6 +105,10 @@ func (builder *Builder) Exists() bool {
 
 // WithData defines the data placed in the configmap.
 func (builder *Builder) WithData(data map[string]string) *Builder {
+	glog.V(100).Infof(
+		"Creating configmap %s in namespace %s with this data: %s",
+		builder.Definition.Name, builder.Definition.Namespace, data)
+
 	if builder.errorMsg != "" {
 		return builder
 	}
