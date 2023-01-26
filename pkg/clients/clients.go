@@ -40,6 +40,10 @@ import (
 
 	"k8s.io/client-go/kubernetes/scheme"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
+	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
+	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 )
 
 // Settings provides the struct to talk with relevant API.
@@ -158,6 +162,18 @@ func setScheme() *runtime.Scheme {
 	}
 
 	if err := bmhv1alpha1.AddToScheme(crScheme); err != nil {
+		panic(err)
+	}
+
+	if err := hiveextV1Beta1.AddToScheme(crScheme); err != nil {
+		panic(err)
+	}
+
+	if err := hiveV1.AddToScheme(crScheme); err != nil {
+		panic(err)
+	}
+
+	if err := agentInstallV1Beta1.AddToScheme(crScheme); err != nil {
 		panic(err)
 	}
 
