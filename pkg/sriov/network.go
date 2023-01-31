@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/openshift-kni/eco-gotests/pkg/msg"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
@@ -67,7 +69,7 @@ func NewNetworkBuilder(
 // WithVLAN sets vlan id in the SrIovNetwork definition. Allowed vlanId range is between 0-4094.
 func (builder *NetworkBuilder) WithVLAN(vlanID uint16) *NetworkBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 	}
 
 	if vlanID > 4094 {
@@ -86,7 +88,7 @@ func (builder *NetworkBuilder) WithVLAN(vlanID uint16) *NetworkBuilder {
 // WithSpoof sets spoof flag based on the given argument in the SrIovNetwork definition spec.
 func (builder *NetworkBuilder) WithSpoof(enabled bool) *NetworkBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 
 		return builder
 	}
@@ -105,7 +107,7 @@ func (builder *NetworkBuilder) WithLinkState(linkState string) *NetworkBuilder {
 	allowedLinkStates := []string{"enable", "disable", "auto"}
 
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 	}
 
 	if !slice.Contains(allowedLinkStates, linkState) {
@@ -124,7 +126,7 @@ func (builder *NetworkBuilder) WithLinkState(linkState string) *NetworkBuilder {
 // WithMaxTxRate sets maxTxRate parameters in the SrIovNetwork definition spec.
 func (builder *NetworkBuilder) WithMaxTxRate(maxTxRate uint16) *NetworkBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 
 		return builder
 	}
@@ -139,7 +141,7 @@ func (builder *NetworkBuilder) WithMaxTxRate(maxTxRate uint16) *NetworkBuilder {
 // WithMinTxRate sets minTxRate parameters in the SrIovNetwork definition spec.
 func (builder *NetworkBuilder) WithMinTxRate(minTxRate uint16) *NetworkBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 
 		return builder
 	}
@@ -153,7 +155,7 @@ func (builder *NetworkBuilder) WithMinTxRate(minTxRate uint16) *NetworkBuilder {
 // WithTrustFlag sets trust flag based on the given argument in the SrIoVNetwork definition spec.
 func (builder *NetworkBuilder) WithTrustFlag(enabled bool) *NetworkBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 
 		return builder
 	}
@@ -170,7 +172,7 @@ func (builder *NetworkBuilder) WithTrustFlag(enabled bool) *NetworkBuilder {
 // WithVlanQoS sets qoSClass parameters in the SrIovNetwork definition spec.
 func (builder *NetworkBuilder) WithVlanQoS(qoSClass uint16) *NetworkBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 	}
 
 	if qoSClass > 7 {
@@ -247,7 +249,7 @@ func (builder *NetworkBuilder) Exists() bool {
 
 func (builder *NetworkBuilder) withCapabilities(capability string) *NetworkBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkCrName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 	}
 
 	builder.Definition.Spec.Capabilities = fmt.Sprintf(`{ "%s": true }`, capability)

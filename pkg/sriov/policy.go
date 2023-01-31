@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/openshift-kni/eco-gotests/pkg/msg"
+
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/pkg/slice"
@@ -83,7 +85,7 @@ func (builder *PolicyBuilder) WithDevType(devType string) *PolicyBuilder {
 	allowedDevTypes := []string{"vfio-pci", "netdevice"}
 
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 
 		return builder
 	}
@@ -102,7 +104,7 @@ func (builder *PolicyBuilder) WithDevType(devType string) *PolicyBuilder {
 // WithVFRange sets specific VF range for each configured PF.
 func (builder *PolicyBuilder) WithVFRange(firstVF, lastVF int) *PolicyBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 	}
 
 	if firstVF > lastVF {
@@ -130,7 +132,7 @@ func (builder *PolicyBuilder) WithVFRange(firstVF, lastVF int) *PolicyBuilder {
 // WithMTU sets required MTU in the given SriovNetworkNodePolicy.
 func (builder *PolicyBuilder) WithMTU(mtu int) *PolicyBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 	}
 
 	if 1 > mtu || mtu > 9192 {
@@ -149,7 +151,7 @@ func (builder *PolicyBuilder) WithMTU(mtu int) *PolicyBuilder {
 // WithRDMA sets RDMA mode in SriovNetworkNodePolicy object.
 func (builder *PolicyBuilder) WithRDMA(rdma bool) *PolicyBuilder {
 	if builder.Definition == nil {
-		builder.errorMsg = undefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
+		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkNodePolicyCRName)
 
 		return builder
 	}
