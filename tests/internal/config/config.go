@@ -28,6 +28,7 @@ type General struct {
 // NewConfig returns instance of General config type.
 func NewConfig() *General {
 	glog.V(90).Infof("Creating new global config struct")
+
 	var conf General
 
 	_, filename, _, _ := runtime.Caller(0)
@@ -37,6 +38,7 @@ func NewConfig() *General {
 
 	if err != nil {
 		glog.V(90).Infof("Error to read config file %s", confFile)
+
 		return nil
 	}
 
@@ -44,6 +46,7 @@ func NewConfig() *General {
 
 	if err != nil {
 		glog.V(90).Infof("Error to read environment variables")
+
 		return nil
 	}
 
@@ -52,6 +55,7 @@ func NewConfig() *General {
 	if err != nil {
 		glog.V(90).Infof(
 			"Error to deploy report directory %s due to %s", conf.ReportsDirAbsPath, err.Error())
+
 		return nil
 	}
 

@@ -8,7 +8,7 @@ import (
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/pkg/slice"
+	"golang.org/x/exp/slices"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -90,7 +90,7 @@ func (builder *PolicyBuilder) WithDevType(devType string) *PolicyBuilder {
 		return builder
 	}
 
-	if !slice.Contains(allowedDevTypes, devType) {
+	if !slices.Contains(allowedDevTypes, devType) {
 		builder.errorMsg = "invalid device type, allowed devType values are: vfio-pci or netdevice"
 
 		return builder

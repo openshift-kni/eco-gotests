@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/pkg/slice"
+	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,7 +67,7 @@ func (builder *ClusterRoleBindingBuilder) WithSubjects(subjects []v1.Subject) *C
 	}
 
 	for _, subject := range subjects {
-		if !slice.Contains(allowedSubjectKinds(), subject.Kind) {
+		if !slices.Contains(allowedSubjectKinds(), subject.Kind) {
 			builder.errorMsg = "clusterrolebinding subject kind must be one of 'ServiceAccount', 'User', or 'Group'"
 		}
 

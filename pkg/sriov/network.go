@@ -10,7 +10,7 @@ import (
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/pkg/slice"
+	"golang.org/x/exp/slices"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -110,7 +110,7 @@ func (builder *NetworkBuilder) WithLinkState(linkState string) *NetworkBuilder {
 		builder.errorMsg = msg.UndefinedCrdObjectErrString(srIovNetworkCrName)
 	}
 
-	if !slice.Contains(allowedLinkStates, linkState) {
+	if !slices.Contains(allowedLinkStates, linkState) {
 		builder.errorMsg = "invalid 'linkState' parameters"
 	}
 
