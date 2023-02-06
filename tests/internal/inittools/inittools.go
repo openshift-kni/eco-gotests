@@ -3,6 +3,7 @@ package inittools
 import (
 	"flag"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/config"
 )
@@ -18,15 +19,13 @@ var (
 // access to all vars within init function. It is recommended to import this package using dot import.
 func init() {
 	if GeneralConfig = config.NewConfig(); GeneralConfig == nil {
-		panic("error to load general config")
+		glog.Fatalf("error to load general config")
 	}
 
-	// Init glong lib and dump logs to stdout
 	_ = flag.Lookup("logtostderr").Value.Set("true")
 	_ = flag.Lookup("v").Value.Set(GeneralConfig.VerboseLevel)
-	flag.Parse()
 
 	if APIClient = clients.New(""); APIClient == nil {
-		panic("can not load ApiClient. Please check your KUBECONFIG env var")
+		glog.Fatalf("can not load ApiClient. Please check your KUBECONFIG env var")
 	}
 }

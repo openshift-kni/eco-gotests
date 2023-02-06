@@ -46,7 +46,8 @@ We use glog library for logging in the project. In order to enable verbose loggi
     )
 </sup>
 
-2.   Need to export the following SHELL variable: <sub>export VERBOSE_LEVEL=100.</sub>
+2. Need to export the following SHELL variable:
+> export VERBOSE_LEVEL=100
 
 ##### Notes:
 
@@ -54,6 +55,17 @@ We use glog library for logging in the project. In order to enable verbose loggi
   2. The variable can simply be exported in the shell where you run your automation.
   3. The go file you work on has to be in a directory under github.com/openshift-kni/eco-gotests/tests/ directory for being able to import inittools.
   4. Importing inittool also intializes the apiclient and it's available via "APIClient" variable.
+
+* Collect logs from cluster with reporter
+
+We use k8reporter library for collecting resource from cluster in case of test failure.
+In order to enable k8reporter the following needs to be done:
+
+1. Export DUMP_FAILED_TESTS and set it to true. Use example below
+> export DUMP_FAILED_TESTS=true
+
+2. Specify absolute path for logs directory like it appears below. By default /tmp/reports directory is used.
+> export REPORTS_DUMP_DIR=/tmp/logs_directory
 
 <!-- TODO Update this section with optional env vars for each test suite -->
 

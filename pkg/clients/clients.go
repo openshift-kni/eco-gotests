@@ -1,11 +1,11 @@
 package clients
 
 import (
+	"log"
 	"os"
 
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 
-	"github.com/golang/glog"
 	performanceV2 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1alpha1"
 	operatorV1 "github.com/openshift/api/operator/v1"
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
@@ -75,10 +75,10 @@ func New(kubeconfig string) *Settings {
 	}
 
 	if kubeconfig != "" {
-		glog.V(4).Infof("Loading kube client config from path %q", kubeconfig)
+		log.Printf("Loading kube client config from path %q", kubeconfig)
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	} else {
-		glog.V(4).Infof("Using in-cluster kube client config")
+		log.Print("Using in-cluster kube client config")
 		config, err = rest.InClusterConfig()
 	}
 
@@ -100,12 +100,22 @@ func New(kubeconfig string) *Settings {
 
 	clientSet.Config = config
 
-	crScheme := setScheme()
+	crScheme := runtime.NewScheme()
+	err = SetScheme(crScheme)
+
+	if err != nil {
+		log.Print("Error to load apiClient scheme")
+
+		return nil
+	}
 
 	clientSet.Client, err = runtimeClient.New(config, runtimeClient.Options{
 		Scheme: crScheme,
 	})
+
 	if err != nil {
+		log.Print("Error to create apiClient")
+
 		return nil
 	}
 
@@ -114,68 +124,67 @@ func New(kubeconfig string) *Settings {
 	return clientSet
 }
 
-func setScheme() *runtime.Scheme {
-	crScheme := runtime.NewScheme()
-
+// SetScheme returns mutated apiClient's scheme.
+func SetScheme(crScheme *runtime.Scheme) error {
 	if err := scheme.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := netAttDefV1.SchemeBuilder.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := srIovV1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := mcv1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := fecV2.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := apiExt.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := metalLbOperatorV1Beta1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := metalLbV1Beta1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := performanceV2.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := operatorV1.Install(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := olm2.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := bmhv1alpha1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := hiveextV1Beta1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := hiveV1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := agentInstallV1Beta1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
 	}
 
-	return crScheme
+	return nil
 }

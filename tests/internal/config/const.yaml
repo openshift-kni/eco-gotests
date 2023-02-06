@@ -1,4 +1,6 @@
 ---
 # General configurations.
 verbose_level: 0
+dump_failed_tests: false
+reports_dump_dir: "/tmp/reports"
 ...

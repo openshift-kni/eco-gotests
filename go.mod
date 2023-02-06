@@ -9,7 +9,9 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/metal3-io/baremetal-operator/apis v0.1.2
 	github.com/metallb/metallb-operator v0.13.9
-	github.com/openshift-kni/k8sreporter v0.1.0
+	github.com/onsi/ginkgo/v2 v2.8.0
+	github.com/onsi/gomega v1.26.0
+	github.com/openshift-kni/k8sreporter v1.0.2
 	github.com/openshift-kni/numaresources-operator v0.4.11-0rc0.0.20220727175518-37b5d067b623
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0-20230125183155-2b97070428e1
@@ -111,11 +113,11 @@ require (
 	github.com/vincent-petithory/dataurl v0.0.0-20160330182126-9a301d65acbb // indirect
 	go4.org v0.0.0-20200104003542-c7e774b10ea0 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/net v0.0.0-20221004154528-8021a29435af // indirect
+	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220524215830-622c5d57e401 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
-	golang.org/x/text v0.3.8 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/term v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

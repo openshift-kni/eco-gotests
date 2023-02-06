@@ -27,6 +27,7 @@ linters-settings:
     dot-import-whitelist:
       - github.com/onsi/gomega
       - github.com/onsi/ginkgo/v2
+      - github.com/openshift-kni/eco-gotests/tests/internal/inittools
     # Select the Go version to target. The default is '1.13'.
     go: "1.18"
     # https://staticcheck.io/docs/options#checks
