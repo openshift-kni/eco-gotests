@@ -2,12 +2,11 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/golang/glog"
 
 	"github.com/kelseyhightower/envconfig"
 	"gopkg.in/yaml.v2"
@@ -27,7 +26,7 @@ type General struct {
 
 // NewConfig returns instance of General config type.
 func NewConfig() *General {
-	glog.V(90).Infof("Creating new global config struct")
+	log.Print("Creating new global config struct")
 
 	var conf General
 
@@ -37,7 +36,7 @@ func NewConfig() *General {
 	err := readFile(&conf, confFile)
 
 	if err != nil {
-		glog.V(90).Infof("Error to read config file %s", confFile)
+		log.Printf("Error to read config file %s", confFile)
 
 		return nil
 	}
@@ -45,7 +44,7 @@ func NewConfig() *General {
 	err = readEnv(&conf)
 
 	if err != nil {
-		glog.V(90).Infof("Error to read environment variables")
+		log.Print("Error to read environment variables")
 
 		return nil
 	}
@@ -53,8 +52,7 @@ func NewConfig() *General {
 	err = deployReportDir(conf.ReportsDirAbsPath)
 
 	if err != nil {
-		glog.V(90).Infof(
-			"Error to deploy report directory %s due to %s", conf.ReportsDirAbsPath, err.Error())
+		log.Printf("Error to deploy report directory %s due to %s", conf.ReportsDirAbsPath, err.Error())
 
 		return nil
 	}
@@ -62,11 +60,18 @@ func NewConfig() *General {
 	return &conf
 }
 
-// GetReportPath returns full path to the report file.
-func (c *General) GetReportPath(file string) string {
+// GetJunitReportPath returns full path to the junit report file.
+func (c *General) GetJunitReportPath(file string) string {
 	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
 
-	return fmt.Sprintf("%s.xml", filepath.Join(c.ReportsDirAbsPath, reportFileName))
+	return fmt.Sprintf("%s_junit.xml", filepath.Join(c.ReportsDirAbsPath, reportFileName))
+}
+
+// GetPolarionReportPath returns full path to the polarion report file.
+func (c *General) GetPolarionReportPath(file string) string {
+	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
+
+	return fmt.Sprintf("%s_polarion.xml", filepath.Join(c.ReportsDirAbsPath, reportFileName))
 }
 
 // GetDumpFailedTestReportLocation returns destination file for failed tests logs.
@@ -75,7 +80,7 @@ func (c *General) GetDumpFailedTestReportLocation(file string) string {
 		if _, err := os.Stat(c.ReportsDirAbsPath); os.IsNotExist(err) {
 			err := os.MkdirAll(c.ReportsDirAbsPath, 0744)
 			if err != nil {
-				glog.Fatalf("panic: Failed to create report dir due to %s", err)
+				log.Fatalf("panic: Failed to create report dir due to %s", err)
 			}
 		}
 
