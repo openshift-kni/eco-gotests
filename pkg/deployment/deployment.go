@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/apps/v1"
 	coreV1 "k8s.io/api/core/v1"
@@ -28,6 +29,11 @@ type Builder struct {
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(
 	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec coreV1.Container) *Builder {
+	glog.V(100).Infof(
+		"Initializing new deployment structure with the following params: "+
+			"name: %s, namespace: %s, labels: %s, containerSpec %v",
+		name, nsname, labels, containerSpec)
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Deployment{
@@ -51,14 +57,20 @@ func NewBuilder(
 	builder.WithAdditionalContainerSpecs([]coreV1.Container{containerSpec})
 
 	if name == "" {
+		glog.V(100).Infof("The name of the deployment is empty")
+
 		builder.errorMsg = "deployment 'name' cannot be empty"
 	}
 
 	if nsname == "" {
+		glog.V(100).Infof("The namespace of the deployment is empty")
+
 		builder.errorMsg = "deployment 'namespace' cannot be empty"
 	}
 
 	if labels == nil {
+		glog.V(100).Infof("There are no labels for the deployment")
+
 		builder.errorMsg = "deployment 'labels' cannot be empty"
 	}
 
@@ -67,12 +79,17 @@ func NewBuilder(
 
 // WithNodeSelector applies a nodeSelector to the deployment definition.
 func (builder *Builder) WithNodeSelector(selector map[string]string) *Builder {
+	glog.V(100).Infof("Applying nodeSelector %s to deployment %s in namespace %s",
+		selector, builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return builder
 	}
 
 	// Make sure NewBuilder was already called to set builder.Definition.
 	if builder.Definition == nil {
+		glog.V(100).Infof("The deployment is undefined")
+
 		builder.errorMsg = "cannot add nodeSelector to undefined deployment"
 
 		return builder
@@ -85,6 +102,9 @@ func (builder *Builder) WithNodeSelector(selector map[string]string) *Builder {
 
 // WithReplicas sets the desired number of replicas in the deployment definition.
 func (builder *Builder) WithReplicas(replicas int32) *Builder {
+	glog.V(100).Infof("Setting %d replicas in deployment %s in namespace %s",
+		replicas, builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return builder
 	}
@@ -103,18 +123,25 @@ func (builder *Builder) WithReplicas(replicas int32) *Builder {
 
 // WithAdditionalContainerSpecs appends a list of container specs to the deployment definition.
 func (builder *Builder) WithAdditionalContainerSpecs(specs []coreV1.Container) *Builder {
+	glog.V(100).Infof("Appending a list of container specs %v to deployment %s in namespace %s",
+		specs, builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return builder
 	}
 
 	// Make sure NewBuilder was already called to set builder.Definition.
 	if builder.Definition == nil {
+		glog.V(100).Infof("The deployment is undefined")
+
 		builder.errorMsg = "cannot add container specs to undefined deployment"
 
 		return builder
 	}
 
 	if specs == nil {
+		glog.V(100).Infof("The container specs are empty")
+
 		builder.errorMsg = "cannot accept nil or empty list as container specs"
 
 		return builder
@@ -133,6 +160,8 @@ func (builder *Builder) WithAdditionalContainerSpecs(specs []coreV1.Container) *
 
 // Create generates a deployment in cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
+	glog.V(100).Infof("Creating deployment %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -148,6 +177,8 @@ func (builder *Builder) Create() (*Builder, error) {
 
 // Update renovates the existing deployment object with the deployment definition in builder.
 func (builder *Builder) Update() (*Builder, error) {
+	glog.V(100).Infof("Updating deployment %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -161,6 +192,9 @@ func (builder *Builder) Update() (*Builder, error) {
 
 // Delete removes a deployment.
 func (builder *Builder) Delete() error {
+	glog.V(100).Infof("Deleting deployment %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return nil
 	}
@@ -179,6 +213,9 @@ func (builder *Builder) Delete() error {
 
 // CreateAndWaitUntilReady creates a deployment in the cluster and waits until the deployment is available.
 func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder, error) {
+	glog.V(100).Infof("Creating deployment %s in namespace %s and waiting for the defined period until it's ready",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	_, err := builder.Create()
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
@@ -212,6 +249,9 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 
 // DeleteAndWait deletes a deployment and waits until it is removed from the cluster.
 func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
+	glog.V(100).Infof("Deleting deployment %s in namespace %s and waiting for the defined period until it's removed",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if err := builder.Delete(); err != nil {
 		return err
 	}
@@ -231,6 +271,9 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 
 // Exists checks whether the given deployment exists.
 func (builder *Builder) Exists() bool {
+	glog.V(100).Infof("Checking if deployment %s exists in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	var err error
 	builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
