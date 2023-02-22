@@ -13,6 +13,11 @@ linters-settings:
       - name: exported
         arguments:
           - disableStutteringCheck
+  depguard:
+    list-type: blacklist
+    include-go-root: false
+    packages:
+      - "github.com/onsi**"
   wsl:
     strict-append: false
   gofmt:
@@ -110,3 +115,19 @@ issues:
     - path: 'tests/internal/polarion'
       linters:
         - exhaustive
+
+    - path: 'tests/internal/polarion'
+      linters:
+        - depguard
+
+    - path: 'tests/internal/reporter'
+      linters:
+        - depguard
+
+    - path: "tests/.*/tests/.*"
+      linters:
+        - depguard
+
+    - path: "tests/.*/.*suite_test.go"
+      linters:
+        - depguard

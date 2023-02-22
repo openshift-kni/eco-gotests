@@ -67,6 +67,14 @@ In order to enable k8reporter the following needs to be done:
 2. Specify absolute path for logs directory like it appears below. By default /tmp/reports directory is used.
 > export REPORTS_DUMP_DIR=/tmp/logs_directory
 
+* Generation Polarion XML reports
+
+We use polarion library for generating polarion compatible xml reports. 
+The reporter is enabled by default and stores reports under REPORTS_DUMP_DIR directory.
+In oder to disable polarion reporter the following needs to be done:
+> export POLARION_REPORT=false
+
+
 <!-- TODO Update this section with optional env vars for each test suite -->
 
 ## How to run

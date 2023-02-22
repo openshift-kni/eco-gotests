@@ -21,7 +21,8 @@ const (
 type General struct {
 	ReportsDirAbsPath string `yaml:"reports_dump_dir" envconfig:"REPORTS_DUMP_DIR"`
 	VerboseLevel      string `yaml:"verbose_level" envconfig:"VERBOSE_LEVEL"`
-	DumpFailedTests   string `yaml:"dump_failed_tests" envconfig:"DUMP_FAILED_TESTS"`
+	DumpFailedTests   bool   `yaml:"dump_failed_tests" envconfig:"DUMP_FAILED_TESTS"`
+	PolarionReport    bool   `yaml:"polarion_report" envconfig:"POLARION_REPORT"`
 }
 
 // NewConfig returns instance of General config type.
@@ -71,12 +72,16 @@ func (c *General) GetJunitReportPath(file string) string {
 func (c *General) GetPolarionReportPath(file string) string {
 	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
 
+	if !c.PolarionReport {
+		return ""
+	}
+
 	return fmt.Sprintf("%s_polarion.xml", filepath.Join(c.ReportsDirAbsPath, reportFileName))
 }
 
 // GetDumpFailedTestReportLocation returns destination file for failed tests logs.
 func (c *General) GetDumpFailedTestReportLocation(file string) string {
-	if c.DumpFailedTests == "true" {
+	if c.DumpFailedTests {
 		if _, err := os.Stat(c.ReportsDirAbsPath); os.IsNotExist(err) {
 			err := os.MkdirAll(c.ReportsDirAbsPath, 0744)
 			if err != nil {

@@ -63,6 +63,10 @@ type (
 
 // CreateReport writes polarion report to a given xml file.
 func CreateReport(report ginkgo.Report, destFile, projectTag string) {
+	if destFile == "" {
+		return
+	}
+
 	testSuite := setTestSuite(report)
 
 	for _, testCaseSpecReport := range report.SpecReports {
@@ -95,7 +99,7 @@ func CreateReport(report ginkgo.Report, destFile, projectTag string) {
 
 // ID sets polarion id for a test case.
 func ID(tag string) ginkgo.Labels {
-	return ginkgo.Label(fmt.Sprintf("%s:%s", testIDTag, tag))
+	return ginkgo.Label(tag, fmt.Sprintf("%s:%s", testIDTag, tag))
 }
 
 func setPolarionID(testReport types.SpecReport, projectTag string) *Property {
