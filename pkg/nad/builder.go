@@ -1,6 +1,7 @@
 package nad
 
 import (
+	"github.com/golang/glog"
 	nadV1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,12 +21,19 @@ type Builder struct {
 	errorMsg          string
 }
 
-// NewBuilder creates new instance of NAD Builder.
+// NewBuilder creates a new instance of NetworkAttachmentDefinition Builder.
 // arguments:       "apiClient" -       the nad network client.
-//                  "name"      -       the name of the nad network.
-//                  "nsname"    -       the nad network namespace.
+//
+//	"name"      -       the name of the nad network.
+//	"nsname"    -       the nad network namespace.
+//
 // return value:    the created Builder.
 func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
+	glog.V(100).Infof(
+		"Initializing new NetworkAttachmentDefinition structure with the following params: "+
+			"name: %s, namespace: %s",
+		name, nsname)
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &nadV1.NetworkAttachmentDefinition{
@@ -37,21 +45,31 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 	}
 
 	if builder.Definition.Name == "" {
+		glog.V(100).Infof("The name of the NetworkAttachmentDefinition is empty")
+
 		builder.errorMsg = "NAD name is empty"
 	}
 
 	if builder.Definition.Namespace == "" {
+		glog.V(100).Infof("The namespace of the NetworkAttachmentDefinition is empty")
+
 		builder.errorMsg = "NAD namespace is empty"
 	}
 
 	return &builder
 }
 
-// Create creates NAD resource with the builder configuration.
-//  if the creation failed, the builder errorMsg will be updated.
+// Create builds a NetworkAttachmentDefinition resource with the builder configuration.
+//
+//	if the creation failed, the builder errorMsg will be updated.
+//
 // return value:    the builder itself with the NAD object if the creation succeeded.
-//                  an error if any occurred.
+//
+//	an error if any occurred.
 func (builder *Builder) Create() (*Builder, error) {
+	glog.V(100).Infof("Creating NetworkAttachmentDefinition %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -77,6 +95,9 @@ func (builder *Builder) Create() (*Builder, error) {
 // (If NAD doesn't exist, nothing is done) and a nil error is returned.
 // return value:    an error if any occurred.
 func (builder *Builder) Delete() error {
+	glog.V(100).Infof("Deleting NetworkAttachmentDefinition %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return nil
 	}
@@ -95,8 +116,12 @@ func (builder *Builder) Delete() error {
 
 // Exists checks if a NAD is exists in the builder.
 // return value:    true    - NAD exists.
-//                  false   - NAD doesn't exist.
+//
+//	false   - NAD doesn't exist.
 func (builder *Builder) Exists() bool {
+	glog.V(100).Infof("Checking if NetworkAttachmentDefinition %s exists in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	_, err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Get(context.Background(),
 		builder.Definition.Name, metaV1.GetOptions{})
 
@@ -106,6 +131,8 @@ func (builder *Builder) Exists() bool {
 // GetString prints NetworkAttachmentDefinition resource.
 // return value:    the builder details in json string format, and an error if any occurred.
 func (builder *Builder) GetString() (string, error) {
+	glog.V(100).Infof("Returning NetworkAttachmentDefinition resource in json format")
+
 	nadByte, err := json.MarshalIndent(builder.Definition, "", "    ")
 	if err != nil {
 		return "", err
@@ -117,6 +144,8 @@ func (builder *Builder) GetString() (string, error) {
 // fillConfigureString adds a configuration string to builder definition specs configuration if needed.
 // return value:    an error if any occurred.
 func (builder *Builder) fillConfigureString() error {
+	glog.V(100).Infof("Adding configuration to NetworkAttachmentDefinition builder if needed")
+
 	if builder.metaPluginConfigs == nil {
 		return nil
 	}
