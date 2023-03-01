@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,6 +22,9 @@ type Builder struct {
 
 // NewBuilder method creates new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, selector map[string]string) *Builder {
+	glog.V(100).Infof(
+		"Initializing new node structure with labels: %s", selector)
+
 	// Serialize selector
 	serialSelector := labels.Set(selector).String()
 
@@ -30,7 +34,9 @@ func NewBuilder(apiClient *clients.Settings, selector map[string]string) *Builde
 	}
 
 	if serialSelector == "" {
-		builder.errorMsg = "error node selector is empty"
+		glog.V(100).Infof("The list of labels is empty")
+
+		builder.errorMsg = "The list of labels cannot be empty"
 	}
 
 	return builder
@@ -38,6 +44,8 @@ func NewBuilder(apiClient *clients.Settings, selector map[string]string) *Builde
 
 // Discover method gets the node items and stores them in the Builder struct.
 func (builder *Builder) Discover() error {
+	glog.V(100).Infof("Discovering nodes")
+
 	if builder.errorMsg != "" {
 		return fmt.Errorf(builder.errorMsg)
 	}
