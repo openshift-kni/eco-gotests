@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,6 +53,42 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, label map[stri
 	}
 
 	return &builder
+}
+
+// Pull retrieves an existing metallb.io object from the cluster.
+func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
+	glog.V(100).Infof(
+		"Pulling metallb.io object name:%s in namespace: %s", name, nsname)
+
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &v1beta1.MetalLB{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("The name of the metallb is empty")
+
+		builder.errorMsg = "metallb 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		glog.V(100).Infof("The namespace of the metallb is empty")
+
+		builder.errorMsg = "metallb 'nsname' cannot be empty"
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("metallb oject %s doesn't exist in namespace %s", name, nsname)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
 }
 
 // Exists checks whether the given MetalLb exists.
@@ -168,4 +205,27 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	}
 
 	return builder, err
+}
+
+// WithSpeakerNodeSelector adds the specified label to the MetalLbIo SpeakerNodeSelector.
+func (builder *Builder) WithSpeakerNodeSelector(label map[string]string) *Builder {
+	glog.V(100).Infof("Adding label selector %v to metallb.io object %s",
+		label, builder.Definition.Name,
+	)
+
+	if len(label) < 1 {
+		builder.errorMsg = "can not accept empty label and redefine metallb NodeSelector"
+	}
+
+	if builder.Definition == nil {
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("metallb")
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.SpeakerNodeSelector = label
+
+	return builder
 }
