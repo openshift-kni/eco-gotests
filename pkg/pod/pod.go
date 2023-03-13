@@ -33,39 +33,59 @@ type Builder struct {
 }
 
 // NewBuilder creates a new instance of Builder.
-func NewBuilder(apiClient *clients.Settings, name, nsName, image string) *Builder {
+func NewBuilder(apiClient *clients.Settings, name, nsname, image string) *Builder {
+	glog.V(100).Infof(
+		"Initializing new pod structure with the following params: "+
+			"name: %s, namespace: %s, image: %s",
+		name, nsname, image)
+
 	builder := &Builder{
 		apiClient:  apiClient,
-		Definition: getDefinition(name, nsName, image),
+		Definition: getDefinition(name, nsname, image),
 	}
 
 	if name == "" {
+		glog.V(100).Infof("The name of the pod is empty")
+
 		builder.errorMsg = "pod's name is empty"
 	}
 
-	if nsName == "" {
+	if nsname == "" {
+		glog.V(100).Infof("The namespace of the pod is empty")
+
 		builder.errorMsg = "namespace's name is empty"
 	}
 
 	if image == "" {
+		glog.V(100).Infof("The image of the pod is empty")
+
 		builder.errorMsg = "pod's image is empty"
 	}
 
 	return builder
 }
 
-// DefineOnNode adds node name in the pod's definition.
+// DefineOnNode adds nodeName to the pod's definition.
 func (builder *Builder) DefineOnNode(nodeName string) *Builder {
+	glog.V(100).Infof("Adding nodeName %s to the definition of pod %s in namespace %s",
+		nodeName, builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.Definition == nil {
+		glog.V(100).Infof("The pod is undefined")
+
 		builder.errorMsg = "can not define pod on specific node because basic definition is empty"
 	}
 
 	if builder.Object != nil {
+		glog.V(100).Infof("The pod is already running on node %s", builder.Object.Spec.NodeName)
+
 		builder.errorMsg = fmt.Sprintf(
 			"can not redefine running pod. pod already running on node %s", builder.Object.Spec.NodeName)
 	}
 
 	if nodeName == "" {
+		glog.V(100).Infof("The node name is empty")
+
 		builder.errorMsg = "can not define pod on empty node"
 	}
 
@@ -78,6 +98,9 @@ func (builder *Builder) DefineOnNode(nodeName string) *Builder {
 
 // Create makes a pod according to the pod definition and stores the created object in the pod builder.
 func (builder *Builder) Create() (*Builder, error) {
+	glog.V(100).Infof("Creating pod %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -93,6 +116,9 @@ func (builder *Builder) Create() (*Builder, error) {
 
 // Delete removes the pod object and resets the builder object.
 func (builder *Builder) Delete() (*Builder, error) {
+	glog.V(100).Infof("Deleting pod %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return builder, fmt.Errorf("pod cannot be deleted because it does not exist")
 	}
@@ -111,6 +137,9 @@ func (builder *Builder) Delete() (*Builder, error) {
 
 // DeleteAndWait deletes the pod object and waits until the pod is deleted.
 func (builder *Builder) DeleteAndWait(timeout time.Duration) (*Builder, error) {
+	glog.V(100).Infof("Deleting pod %s in namespace %s and waiting for the defined period until it's removed",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	builder, err := builder.Delete()
 	if err != nil {
 		return builder, err
@@ -127,6 +156,9 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) (*Builder, error) {
 
 // CreateAndWaitUntilRunning creates the pod object and waits until the pod is running.
 func (builder *Builder) CreateAndWaitUntilRunning(timeout time.Duration) (*Builder, error) {
+	glog.V(100).Infof("Creating pod %s in namespace %s and waiting for the defined period until it's ready",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	builder, err := builder.Create()
 	if err != nil {
 		return builder, err
@@ -143,11 +175,17 @@ func (builder *Builder) CreateAndWaitUntilRunning(timeout time.Duration) (*Build
 
 // WaitUntilRunning waits for the duration of the defined timeout or until the pod is running.
 func (builder *Builder) WaitUntilRunning(timeout time.Duration) error {
+	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s is running",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	return builder.WaitUntilInStatus(v1.PodRunning, timeout)
 }
 
 // WaitUntilInStatus waits for the duration of the defined timeout or until the pod gets to a specific status.
 func (builder *Builder) WaitUntilInStatus(status v1.PodPhase, timeout time.Duration) error {
+	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s has status %v",
+		builder.Definition.Name, builder.Definition.Namespace, status)
+
 	if builder.errorMsg != "" {
 		return fmt.Errorf(builder.errorMsg)
 	}
@@ -165,6 +203,9 @@ func (builder *Builder) WaitUntilInStatus(status v1.PodPhase, timeout time.Durat
 
 // WaitUntilDeleted waits for the duration of the defined timeout or until the pod is deleted.
 func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
+	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s is deleted",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	err := wait.Poll(time.Second, timeout, func() (bool, error) {
 		_, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
 			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
@@ -188,6 +229,9 @@ func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 
 // ExecCommand runs command in the pod and returns the buffer output.
 func (builder *Builder) ExecCommand(command []string, containerName ...string) (bytes.Buffer, error) {
+	glog.V(100).Infof("Execute command %v in the pod",
+		command)
+
 	var (
 		buffer bytes.Buffer
 		cName  string
@@ -236,6 +280,9 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 
 // Exists checks whether the given namespace exists.
 func (builder *Builder) Exists() bool {
+	glog.V(100).Infof("Checking if pod %s exists in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	var err error
 	builder.Object, err = builder.apiClient.Pods(builder.Definition.Namespace).Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
