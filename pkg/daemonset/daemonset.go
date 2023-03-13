@@ -77,6 +77,37 @@ func NewBuilder(
 	return &builder
 }
 
+// Pull loads an existing daemonSet into the Builder struct.
+func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing daemonset name:%s under namespace:%s", name, nsname)
+
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &v1.DaemonSet{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if name == "" {
+		builder.errorMsg = "daemonset 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		builder.errorMsg = "daemonset 'namespace' cannot be empty"
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("daemonset object %s doesn't exist in namespace %s", name, nsname)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
+}
+
 // WithNodeSelector applies nodeSelector to the daemonset definition.
 func (builder *Builder) WithNodeSelector(selector map[string]string) *Builder {
 	glog.V(100).Infof("Applying nodeSelector %s to daemonset %s in namespace %s",
