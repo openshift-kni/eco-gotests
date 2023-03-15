@@ -28,7 +28,7 @@ type Builder struct {
 
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(
-	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec coreV1.Container) *Builder {
+	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec *coreV1.Container) *Builder {
 	glog.V(100).Infof(
 		"Initializing new deployment structure with the following params: "+
 			"name: %s, namespace: %s, labels: %s, containerSpec %v",
@@ -54,7 +54,7 @@ func NewBuilder(
 		},
 	}
 
-	builder.WithAdditionalContainerSpecs([]coreV1.Container{containerSpec})
+	builder.WithAdditionalContainerSpecs([]coreV1.Container{*containerSpec})
 
 	if name == "" {
 		glog.V(100).Infof("The name of the deployment is empty")
@@ -75,6 +75,37 @@ func NewBuilder(
 	}
 
 	return &builder
+}
+
+// Pull loads an existing deployment into Builder struct.
+func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing deployment name: %s under namespace: %s", name, nsname)
+
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &v1.Deployment{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if name == "" {
+		builder.errorMsg = "deployment 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		builder.errorMsg = "deployment 'namespace' cannot be empty"
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("deployment oject %s doesn't exist in namespace %s", name, nsname)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
 }
 
 // WithNodeSelector applies a nodeSelector to the deployment definition.
@@ -216,35 +247,46 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 	glog.V(100).Infof("Creating deployment %s in namespace %s and waiting for the defined period until it's ready",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	_, err := builder.Create()
-	if err != nil {
+	if _, err := builder.Create(); err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	// Polls every second to determine if the deployment is available.
-	err = wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+	if builder.IsReady(timeout) {
+		return builder, nil
+	}
+
+	return nil, fmt.Errorf("deployment %s in namespace %s is not ready",
+		builder.Definition.Name, builder.Definition.Namespace,
+	)
+}
+
+// IsReady periodically checks if deployment is in ready status.
+func (builder *Builder) IsReady(timeout time.Duration) bool {
+	glog.V(100).Infof("Running periodic check until deployment %s in namespace %s is ready",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		return false
+	}
+
+	err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+
+		var err error
 		builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(
 			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 		if err != nil {
-			return false, nil
+			return false, err
 		}
 
-		for _, condition := range builder.Object.Status.Conditions {
-			if condition.Type == "Available" {
-				return condition.Status == "True", nil
-			}
+		if builder.Object.Status.ReadyReplicas > 0 && builder.Object.Status.Replicas == builder.Object.Status.ReadyReplicas {
+			return true, nil
 		}
 
-		return false, err
-
+		return false, nil
 	})
 
-	if err == nil {
-		return builder, nil
-	}
-
-	return nil, err
+	return err == nil
 }
 
 // DeleteAndWait deletes a deployment and waits until it is removed from the cluster.
