@@ -11,6 +11,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/pointer"
 )
 
 // Builder provides struct for namespace object containing connection to the cluster and the namespace definitions.
@@ -168,4 +169,60 @@ func (builder *Builder) Exists() bool {
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// Pull loads existing namespace in to Builder struct.
+func Pull(apiClient *clients.Settings, nsname string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing namespace: %s from cluster", nsname)
+
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &v1.Namespace{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name: nsname,
+			},
+		},
+	}
+
+	if nsname == "" {
+		builder.errorMsg = "'namespace' cannot be empty"
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("namespace oject %s doesn't exist", nsname)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
+}
+
+// CleanPodsAndWait removes all pods from the namespace and waits unit all of them are removed.
+func (builder *Builder) CleanPodsAndWait(cleanTimeout time.Duration) error {
+	glog.V(100).Infof("Removing pods from namespace: %s", builder.Definition.Name)
+
+	if !builder.Exists() {
+		return fmt.Errorf("failed to remove pods from non-existent namespace %s", builder.Definition.Name)
+	}
+
+	err := builder.apiClient.Pods(builder.Definition.Name).DeleteCollection(
+		context.Background(),
+		metaV1.DeleteOptions{
+			GracePeriodSeconds: pointer.Int64(0),
+		}, metaV1.ListOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	return wait.PollImmediate(3*time.Second, cleanTimeout, func() (bool, error) {
+		podList, err := builder.apiClient.Pods(builder.Definition.Name).List(context.Background(), metaV1.ListOptions{})
+
+		if err != nil || len(podList.Items) > 1 {
+
+			return false, err
+		}
+
+		return true, err
+	})
 }
