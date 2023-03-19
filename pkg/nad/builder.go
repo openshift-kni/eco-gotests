@@ -4,6 +4,7 @@ import (
 	"github.com/golang/glog"
 	nadV1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -88,7 +89,7 @@ func (builder *Builder) Create() (*Builder, error) {
 		}
 	}
 
-	return builder, fmt.Errorf(builder.errorMsg)
+	return builder, nil
 }
 
 // Delete removes NetworkAttachmentDefinition resource with the builder definition.
@@ -168,4 +169,29 @@ func (builder *Builder) fillConfigureString() error {
 	}
 
 	return nil
+}
+
+// WithMasterPlugin defines master plugin configuration in the NetworkAttachmentDefinition spec.
+func (builder *Builder) WithMasterPlugin(masterPlugin *MasterPlugin) *Builder {
+	glog.V(100).Infof("Adding masterPlugin %v to NAD %s", masterPlugin, builder.Definition.Name)
+
+	if builder.Definition == nil {
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("NAD")
+	}
+
+	emptyNadConfig := nadV1.NetworkAttachmentDefinitionSpec{}
+
+	if builder.Definition.Spec != emptyNadConfig {
+		builder.errorMsg = "error to redefine predefine NAD"
+	}
+
+	masterPluginSting, err := json.Marshal(masterPlugin)
+
+	if err != nil {
+		builder.errorMsg = err.Error()
+	}
+
+	builder.Definition.Spec.Config = string(masterPluginSting)
+
+	return builder
 }

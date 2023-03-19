@@ -34,6 +34,7 @@ type (
 		Capabilities     *Capability       `json:"capabilities,omitempty"`
 		Sysctl           map[string]string `json:"sysctl,omitempty"`
 		Links            []Link            `json:"links,omitempty"`
+		Ipam             *IPAM             `json:"ipam,omitempty"`
 	}
 
 	// MasterPlugin contains the master plugin configuration for a NAD.
@@ -42,6 +43,18 @@ type (
 		Name       string    `json:"name,omitempty"`
 		Type       string    `json:"type,omitempty"`
 		Master     string    `json:"master,omitempty"`
+		Mode       string    `json:"mode,omitempty"`
 		Plugins    *[]Plugin `json:"plugins,omitempty"`
+		Ipam       *IPAM     `json:"ipam,omitempty"`
+	}
+
+	// IPAM container the IPAM configuration for a NAD.
+	IPAM struct {
+		Type       string   `json:"type,omitempty"`
+		AddrRange  string   `json:"range,omitempty"`
+		RangeStart string   `json:"range_start,omitempty"`
+		RangeEnd   string   `json:"range_end,omitempty"`
+		Gateway    string   `json:"gateway,omitempty"`
+		Exclude    []string `json:"exclude,omitempty"`
 	}
 )
