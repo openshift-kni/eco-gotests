@@ -5,15 +5,25 @@ import (
 	"fmt"
 	"time"
 
+	"math/rand"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/pkg/msg"
+	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
+	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	agentInfraEnvLabel = "infraenvs.agent-install.openshift.io"
+	agentBMHLabel      = "agent-install.openshift.io/bmh"
 )
 
 // InfraEnvBuilder provides struct for the infraenv object containing connection to
@@ -290,9 +300,9 @@ func (builder *InfraEnvBuilder) WaitForDiscoveryISOCreation(timeout time.Duratio
 		return builder, nil
 	}
 
-	// Polls every second to determine if infraenv in desired state.
+	// Polls every retryInterval to determine if infraenv in desired state.
 	var err error
-	err = wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
 		builder.Object, err = builder.Get()
 
 		if err != nil {
@@ -308,6 +318,338 @@ func (builder *InfraEnvBuilder) WaitForDiscoveryISOCreation(timeout time.Duratio
 	}
 
 	return nil, err
+}
+
+// GetAllAgents returns a slice of agentBuilders of all agents belonging to the infraenv.
+func (builder *InfraEnvBuilder) GetAllAgents() ([]*agentBuilder, error) {
+	glog.V(100).Infof("Getting all agents from infraenv %s",
+		builder.Definition.Name)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("cannot get agents from non-existent infraenv")
+	}
+
+	agents, err := builder.GetAgentsByLabel(agentInfraEnvLabel, builder.Definition.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return agents, nil
+}
+
+// GetAgentsByRole returns a slice of agentBuilders of agents matching specified role belonging to the infraenv.
+func (builder *InfraEnvBuilder) GetAgentsByRole(role string) ([]*agentBuilder, error) {
+	glog.V(100).Infof("Getting agents from infraenv %s matching role %s",
+		builder.Definition.Name, role)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("Cannot get agents from non-existent infraenv: %s",
+			role)
+
+		return nil, fmt.Errorf("cannot get agents from non-existent infraenv")
+	}
+
+	var agents, agentsByRole []*agentBuilder
+
+	agents, err := builder.GetAllAgents()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, agent := range agents {
+		if string(agent.Object.Status.Role) == role {
+			agentsByRole = append(agentsByRole, agent)
+		}
+	}
+
+	return agentsByRole, nil
+}
+
+// GetAgentByBMH returns an agentBuilder for the agent matching specified BMH belonging to the infraenv.
+func (builder *InfraEnvBuilder) GetAgentByBMH(bmhName string) (*agentBuilder, error) {
+	glog.V(100).Infof("Getting agent from infraenv %s matching bmh %s",
+		builder.Definition.Name, bmhName)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("cannot get agents from non-existent infraenv")
+	}
+
+	agents, err := builder.GetAgentsByLabel(agentBMHLabel, bmhName)
+	if err != nil {
+		return nil, err
+	}
+
+	switch len(agents) {
+	case 1:
+		return agents[0], nil
+	case 0:
+		glog.V(100).Infof("Found no agents referencing bmh %s", bmhName)
+
+		return nil, fmt.Errorf("found no agents referencing bmh %s", bmhName)
+	default:
+		glog.V(100).Infof("Found multiple agent referencing bmh %s", bmhName)
+
+		return nil, fmt.Errorf("found multiple agents referencing bmh %s", bmhName)
+	}
+}
+
+// GetAgentByName returns an agentBuilder for the agent matching specified name belonging to the infraenv.
+func (builder *InfraEnvBuilder) GetAgentByName(name string) (*agentBuilder, error) {
+	glog.V(100).Infof("Getting agent from infraenv %s with name %s",
+		builder.Definition.Name, name)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("cannot get agents from non-existent infraenv")
+	}
+
+	agent, err := PullAgent(builder.apiClient, name, builder.Definition.Namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	return agent, nil
+}
+
+// GetAgentsByLabel returns a slice of agentBuilders for agents matching specified label.
+func (builder *InfraEnvBuilder) GetAgentsByLabel(key, value string) ([]*agentBuilder, error) {
+	glog.V(100).Infof("Getting agent matching label %s:%s",
+		key, value)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("cannot get agents from non-existent infraenv")
+	}
+
+	matchLabel := map[string]string{key: value}
+
+	var agents agentInstallV1Beta1.AgentList
+
+	err := builder.apiClient.List(context.TODO(), &agents, goclient.MatchingLabels(matchLabel))
+	if err != nil {
+		return nil, err
+	}
+
+	return builder.createBuilderListFromAgentList(agents.Items), nil
+}
+
+// WaitForAgentsToRegister waits the specified time for agents to register
+// matching the provisioninRequirements of the related AgentClusterInstall.
+func (builder *InfraEnvBuilder) WaitForAgentsToRegister(timeout time.Duration) ([]*agentBuilder, error) {
+	if !builder.Exists() {
+		return nil, fmt.Errorf("cannot get agents from non-existent infraenv")
+	}
+
+	agentclusterinstall, err := builder.GetAgentClusterInstallFromInfraEnv()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var agentList []*agentBuilder
+
+	agentCount := agentclusterinstall.Spec.ProvisionRequirements.ControlPlaneAgents +
+		agentclusterinstall.Spec.ProvisionRequirements.WorkerAgents
+
+	// Polls every retryInterval to determine if agent has registered.
+	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+
+		agentList, err = builder.GetAllAgents()
+
+		if err != nil {
+			return false, err
+		}
+
+		return len(agentList) == agentCount, nil
+	})
+
+	return agentList, err
+}
+
+// WaitForMasterAgents waits the specified time for agents with the role master
+// to register and match the ControlPlaneAgents count in ProvisionRequirements of the related AgentClusterInstall.
+func (builder *InfraEnvBuilder) WaitForMasterAgents(timeout time.Duration) ([]*agentBuilder, error) {
+	agentclusterinstall, err := builder.GetAgentClusterInstallFromInfraEnv()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var agentList []*agentBuilder
+
+	agentCount := agentclusterinstall.Spec.ProvisionRequirements.ControlPlaneAgents
+
+	// Polls every retryInterval to determine if agent has registered.
+	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+		agentList, err = builder.GetAgentsByRole("master")
+		if err != nil {
+
+			return false, err
+		}
+
+		return len(agentList) == agentCount, nil
+	})
+
+	return agentList, err
+}
+
+// WaitForMasterAgentCount waits the specified time for agents
+// with the role master to register and match the specified count.
+func (builder *InfraEnvBuilder) WaitForMasterAgentCount(count int, timeout time.Duration) ([]*agentBuilder, error) {
+	var agentList []*agentBuilder
+
+	// Polls every retryInterval to determine if agent has registered.
+	err := wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+
+		agentList, err := builder.GetAgentsByRole("master")
+		if err != nil {
+
+			return false, err
+		}
+
+		return len(agentList) == count, nil
+	})
+
+	return agentList, err
+}
+
+// GetRandomMasterAgent returns an agentBuilder of a random agent that has it's role set to master.
+func (builder *InfraEnvBuilder) GetRandomMasterAgent() (*agentBuilder, error) {
+	rand.Seed(time.Now().UnixNano())
+
+	agentList, err := builder.GetAgentsByRole("master")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(agentList) == 0 {
+		return nil, fmt.Errorf("could not find any master agents")
+	}
+
+	randInt := rand.Intn(len(agentList))
+
+	return agentList[randInt], nil
+}
+
+// WaitForWorkerAgents waits the specified time for agents with the role worker to register and match the WorkerAgents
+// count in ProvisionRequirements of the related AgentClusterInstall.
+func (builder *InfraEnvBuilder) WaitForWorkerAgents(timeout time.Duration) ([]*agentBuilder, error) {
+	agentclusterinstall, err := builder.GetAgentClusterInstallFromInfraEnv()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var agentList []*agentBuilder
+
+	agentCount := agentclusterinstall.Spec.ProvisionRequirements.WorkerAgents
+
+	// Polls every retryInterval to determine if agent has registered.
+	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+
+		agentList, err = builder.GetAgentsByRole("worker")
+		if err != nil {
+
+			return false, err
+		}
+
+		return len(agentList) == agentCount, nil
+	})
+
+	return agentList, err
+}
+
+// WaitForWorkerAgentCount waits the specified time
+// for agents with the role worker to register and match the specified count.
+func (builder *InfraEnvBuilder) WaitForWorkerAgentCount(count int, timeout time.Duration) ([]*agentBuilder, error) {
+	var agentList []*agentBuilder
+
+	// Polls every retryInterval to determine if agent has registered.
+	err := wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+
+		agentList, err := builder.GetAgentsByRole("worker")
+		if err != nil {
+
+			return false, err
+		}
+
+		return len(agentList) == count, nil
+	})
+
+	return agentList, err
+}
+
+// GetRandomWorkerAgent returns an agentBuilder of a random agent that has it's role set to worker.
+func (builder *InfraEnvBuilder) GetRandomWorkerAgent() (*agentBuilder, error) {
+	rand.Seed(time.Now().UnixNano())
+
+	agentList, err := builder.GetAgentsByRole("worker")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(agentList) == 0 {
+		return nil, fmt.Errorf("could not find any worker agents")
+	}
+
+	randInt := rand.Intn(len(agentList))
+
+	return agentList[randInt], nil
+}
+
+// createBuilderListFromAgentList takes an Agent slice and transforms it into an *agentBuilder slice.
+func (builder *InfraEnvBuilder) createBuilderListFromAgentList(agents []agentInstallV1Beta1.Agent) []*agentBuilder {
+	var buliderList []*agentBuilder
+
+	for _, agent := range agents {
+		copiedAgent := agent
+		buliderList = append(buliderList, newAgentBuilder(builder.apiClient, &copiedAgent))
+	}
+
+	return buliderList
+}
+
+// GetAgentClusterInstallFromInfraEnv returns the AgentClusterInstall that is referenced by this InfraEnv.
+func (builder *InfraEnvBuilder) GetAgentClusterInstallFromInfraEnv() (*hiveextV1Beta1.AgentClusterInstall, error) {
+	if !builder.Exists() {
+		glog.V(100).Infof("Getting infraenv %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, fmt.Errorf("cannot wait from agents to register with non-existent infraenv")
+	}
+
+	var clusterdeployment hiveV1.ClusterDeployment
+
+	glog.V(100).Infof("Getting clusterdeployment %s in namespace %s",
+		builder.Object.Spec.ClusterRef.Name, builder.Object.Spec.ClusterRef.Namespace)
+
+	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
+		Name:      builder.Object.Spec.ClusterRef.Name,
+		Namespace: builder.Object.Spec.ClusterRef.Namespace,
+	}, &clusterdeployment)
+
+	if err != nil {
+		glog.V(100).Infof("Unable to get clusterdeployment %s referenced by infraenv %s",
+			builder.Object.Spec.ClusterRef.Name, builder.Definition.Name)
+
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting agentclusterinstall %s",
+		clusterdeployment.Spec.ClusterInstallRef.Name)
+
+	var agentclusterinstall hiveextV1Beta1.AgentClusterInstall
+
+	err = builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
+		Name:      clusterdeployment.Spec.ClusterInstallRef.Name,
+		Namespace: clusterdeployment.Namespace,
+	}, &agentclusterinstall)
+
+	if err != nil {
+		glog.V(100).Infof("Unable to get agentclusterinstall %s referenced by clusterdeployment %s",
+			clusterdeployment.Spec.ClusterInstallRef.Name, clusterdeployment.Name)
+
+		return nil, err
+	}
+
+	return &agentclusterinstall, nil
 }
 
 // Get fetches the defined infraenv from the cluster.
