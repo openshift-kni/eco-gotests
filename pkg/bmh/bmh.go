@@ -13,6 +13,7 @@ import (
 
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/pkg/msg"
 	"golang.org/x/exp/slices"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,8 +36,7 @@ func NewBuilder(
 	bmcAddress string,
 	bmcSecretName string,
 	bootMacAddress string,
-	bootMode string,
-	deviceName string) *Builder {
+	bootMode string) *Builder {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &bmhv1alpha1.BareMetalHost{
@@ -51,9 +51,6 @@ func NewBuilder(
 				BootMACAddress:        bootMacAddress,
 				Online:                true,
 				ExternallyProvisioned: false,
-				RootDeviceHints: &bmhv1alpha1.RootDeviceHints{
-					DeviceName: deviceName,
-				},
 			},
 			ObjectMeta: metaV1.ObjectMeta{
 				Name:      name,
@@ -87,11 +84,271 @@ func NewBuilder(
 		builder.errorMsg = "BMH 'bootMacAddress' cannot be empty"
 	}
 
-	if deviceName == "" {
-		builder.errorMsg = "BMH 'bootMacAddress' cannot be empty"
+	return &builder
+}
+
+// WithRootDeviceDeviceName sets rootDeviceHints DeviceName to specified value.
+func (builder *Builder) WithRootDeviceDeviceName(deviceName string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
 	}
 
-	return &builder
+	if deviceName == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint deviceName is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint deviceName cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.DeviceName = deviceName
+
+	return builder
+}
+
+// WithRootDeviceHTCL sets rootDeviceHints HTCL to specified value.
+func (builder *Builder) WithRootDeviceHTCL(hctl string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if hctl == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint hctl is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint hctl cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.HCTL = hctl
+
+	return builder
+}
+
+// WithRootDeviceModel sets rootDeviceHints Model to specified value.
+func (builder *Builder) WithRootDeviceModel(model string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if model == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint model is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint model cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.Model = model
+
+	return builder
+}
+
+// WithRootDeviceVendor sets rootDeviceHints Vendor to specified value.
+func (builder *Builder) WithRootDeviceVendor(vendor string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if vendor == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint vendor is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint vendor cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.Model = vendor
+
+	return builder
+}
+
+// WithRootDeviceSerialNumber sets rootDeviceHints serialNumber to specified value.
+func (builder *Builder) WithRootDeviceSerialNumber(serialNumber string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if serialNumber == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint serialNumber is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint serialNumber cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.SerialNumber = serialNumber
+
+	return builder
+}
+
+// WithRootDeviceMinSizeGigabytes sets rootDeviceHints MinSizeGigabytes to specified value.
+func (builder *Builder) WithRootDeviceMinSizeGigabytes(size int) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if size < 0 {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint size is less than 0")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint size cannot be less than 0"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.MinSizeGigabytes = size
+
+	return builder
+}
+
+// WithRootDeviceWWN sets rootDeviceHints WWN to specified value.
+func (builder *Builder) WithRootDeviceWWN(wwn string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if wwn == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint wwn is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint wwn cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.WWN = wwn
+
+	return builder
+}
+
+// WithRootDeviceWWNWithExtension sets rootDeviceHints WWNWithExtension to specified value.
+func (builder *Builder) WithRootDeviceWWNWithExtension(wwnWithExtension string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if wwnWithExtension == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint wwnWithExtension is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint wwnWithExtension cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.WWNWithExtension = wwnWithExtension
+
+	return builder
+}
+
+// WithRootDeviceWWNVendorExtension sets rootDeviceHint WWNVendorExtension to specified value.
+func (builder *Builder) WithRootDeviceWWNVendorExtension(wwnVendorExtension string) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if wwnVendorExtension == "" {
+		glog.V(100).Infof("The baremetalhost rootDeviceHint wwnVendorExtension is empty")
+
+		builder.errorMsg = "the baremetalhost rootDeviceHint wwnVendorExtension cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.WWNVendorExtension = wwnVendorExtension
+
+	return builder
+}
+
+// WithRootDeviceRotationalDisk sets rootDeviceHint Rotational to specified value.
+func (builder *Builder) WithRootDeviceRotationalDisk(rotational bool) *Builder {
+	if builder.Definition == nil {
+		glog.V(100).Infof("The baremetalhost is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("BareMetalHost")
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.RootDeviceHints == nil {
+		builder.Definition.Spec.RootDeviceHints = &bmhv1alpha1.RootDeviceHints{}
+	}
+
+	builder.Definition.Spec.RootDeviceHints.Rotational = &rotational
+
+	return builder
 }
 
 // Create makes a bmh in the cluster and stores the created object in struct.
