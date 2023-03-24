@@ -25,6 +25,16 @@ github.com/cespare/xxhash/v2
 # github.com/clarketm/json v1.14.1
 ## explicit
 github.com/clarketm/json
+# github.com/containernetworking/cni v0.8.1
+## explicit
+github.com/containernetworking/cni/libcni
+github.com/containernetworking/cni/pkg/invoke
+github.com/containernetworking/cni/pkg/skel
+github.com/containernetworking/cni/pkg/types
+github.com/containernetworking/cni/pkg/types/020
+github.com/containernetworking/cni/pkg/types/current
+github.com/containernetworking/cni/pkg/utils
+github.com/containernetworking/cni/pkg/version
 # github.com/coreos/fcct v0.5.0
 ## explicit; go 1.12
 github.com/coreos/fcct/base/v0_1
@@ -207,12 +217,13 @@ github.com/josharian/intern
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
-# github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.1-0.20210510153419-66a699ae3b05
+# github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.2-0.20221215110210-ad3f3381681f
 ## explicit; go 1.12
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/scheme
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1
+github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
 # github.com/k8snetworkplumbingwg/sriov-network-operator v0.0.0-20201204053545-49045c36efb9 => github.com/openshift/sriov-network-operator v0.0.0-20220623160955-488941958967
 ## explicit; go 1.17
 github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1
@@ -546,6 +557,13 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
+# gopkg.in/k8snetworkplumbingwg/multus-cni.v3 v3.9.3
+## explicit; go 1.16
+gopkg.in/k8snetworkplumbingwg/multus-cni.v3/pkg/logging
+gopkg.in/k8snetworkplumbingwg/multus-cni.v3/pkg/types
+# gopkg.in/natefinch/lumberjack.v2 v2.0.0
+## explicit
+gopkg.in/natefinch/lumberjack.v2
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
@@ -904,6 +922,7 @@ k8s.io/client-go/util/exec
 k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/homedir
 k8s.io/client-go/util/keyutil
+k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
 # k8s.io/component-base v0.25.4 => k8s.io/component-base v0.24.3
 ## explicit; go 1.16

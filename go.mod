@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/golang/glog v1.0.0
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.1-0.20210510153419-66a699ae3b05
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.2-0.20221215110210-ad3f3381681f
 	github.com/k8snetworkplumbingwg/sriov-network-operator v0.0.0-20201204053545-49045c36efb9
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/metal3-io/baremetal-operator/apis v0.1.2
@@ -24,6 +24,7 @@ require (
 	github.com/smart-edge-open/sriov-fec-operator/sriov-fec v0.0.0-20220421094756-1803088bf003
 	go.universe.tf/metallb v0.1.1-0.20220422145807-099c8990dc55
 	golang.org/x/exp v0.0.0-20221212164502-fae10dda9338
+	gopkg.in/k8snetworkplumbingwg/multus-cni.v3 v3.9.3
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.25.4
 	k8s.io/apiextensions-apiserver v0.25.0
@@ -59,6 +60,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/clarketm/json v1.14.1 // indirect
+	github.com/containernetworking/cni v0.8.1 // indirect
 	github.com/coreos/fcct v0.5.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
@@ -124,6 +126,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-base v0.25.4 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
