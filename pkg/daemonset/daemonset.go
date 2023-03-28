@@ -26,6 +26,8 @@ type Builder struct {
 	apiClient *clients.Settings
 }
 
+var retryInterval = time.Second * 3
+
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(
 	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec coreV1.Container) *Builder {
@@ -231,8 +233,8 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	// Polls every one second to determine if daemonset is available.
-	err = wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+	// Polls every retryInterval to determine if daemonset is available.
+	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
 		builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
 			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
@@ -266,8 +268,8 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 		return err
 	}
 
-	// Polls the daemonset every second until it's removed.
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+	// Polls the daemonset every retryInterval until it's removed.
+	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
 		_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
 			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 		if k8serrors.IsNotFound(err) {
@@ -289,4 +291,42 @@ func (builder *Builder) Exists() bool {
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// IsReady waits for the daemonset to reach expected number of pods in Ready state.
+func (builder *Builder) IsReady(timeout time.Duration) bool {
+	glog.V(100).Infof("Running periodic check until daemonset %s in namespace %s is ready or "+
+		"timeout %s exceeded", builder.Definition.Name, builder.Definition.Namespace, timeout.String())
+
+	// Polls every retryInterval to determine if daemonset is available.
+	err := wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+		if !builder.Exists() {
+			return false, fmt.Errorf("daemonset %s is not present on cluster", builder.Object.Name)
+		}
+
+		var err error
+		builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+
+		if err != nil {
+			return false, nil
+		}
+
+		if builder.Object.Status.DesiredNumberScheduled < 1 {
+			return false, fmt.Errorf("daemonset %s is not set to run on any node", builder.Object.Name)
+		}
+
+		if builder.Object.Status.NumberReady == builder.Object.Status.DesiredNumberScheduled {
+			return true, nil
+		}
+
+		if builder.Object.Status.NumberReady == builder.Object.Status.UpdatedNumberScheduled {
+			return true, nil
+		}
+
+		return false, err
+
+	})
+
+	return err == nil
 }

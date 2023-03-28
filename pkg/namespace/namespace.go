@@ -226,3 +226,47 @@ func (builder *Builder) CleanPodsAndWait(cleanTimeout time.Duration) error {
 		return true, err
 	})
 }
+
+// CleanNADsAndWait removes all NetworkAttachmentDefinition from the namespace and waits until all of them are removed.
+func (builder *Builder) CleanNADsAndWait(cleanTimeout time.Duration) error {
+	glog.V(100).Infof("Removing NetworkAttachmentDefinition from namespace: %s", builder.Definition.Name)
+
+	if !builder.Exists() {
+		return fmt.Errorf("failed to remove NetworkAttachmentDefinition from non-existent namespace %s",
+			builder.Definition.Name)
+	}
+
+	err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Name).DeleteCollection(
+		context.Background(),
+		metaV1.DeleteOptions{
+			GracePeriodSeconds: pointer.Int64(0),
+		}, metaV1.ListOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	return wait.PollImmediate(3*time.Second, cleanTimeout, func() (bool, error) {
+		podList, err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Name).List(
+			context.Background(), metaV1.ListOptions{})
+
+		if err != nil || len(podList.Items) > 1 {
+
+			return false, err
+		}
+
+		return true, err
+	})
+}
+
+// Clean removes all objects from the namespace. This function needs to be updated periodically in order to handle
+// different object removals.
+func (builder *Builder) Clean(cleanTimeout time.Duration) error {
+	glog.V(100).Infof("Clean namespace: %s", builder.Definition.Name)
+
+	if err := builder.CleanPodsAndWait(cleanTimeout); err != nil {
+		return err
+	}
+
+	return builder.CleanNADsAndWait(cleanTimeout)
+}

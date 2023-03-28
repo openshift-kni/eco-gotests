@@ -19,10 +19,16 @@ const (
 
 // General type keeps general configuration.
 type General struct {
-	ReportsDirAbsPath string `yaml:"reports_dump_dir" envconfig:"REPORTS_DUMP_DIR"`
-	VerboseLevel      string `yaml:"verbose_level" envconfig:"VERBOSE_LEVEL"`
-	DumpFailedTests   bool   `yaml:"dump_failed_tests" envconfig:"DUMP_FAILED_TESTS"`
-	PolarionReport    bool   `yaml:"polarion_report" envconfig:"POLARION_REPORT"`
+	ReportsDirAbsPath    string `yaml:"reports_dump_dir" envconfig:"REPORTS_DUMP_DIR"`
+	VerboseLevel         string `yaml:"verbose_level" envconfig:"VERBOSE_LEVEL"`
+	DumpFailedTests      bool   `yaml:"dump_failed_tests" envconfig:"DUMP_FAILED_TESTS"`
+	PolarionReport       bool   `yaml:"polarion_report" envconfig:"POLARION_REPORT"`
+	KubernetesRolePrefix string `yaml:"kubernetes_role_prefix" envconfig:"KUBERNETES_ROLE_PREFIX"`
+	WorkerLabel          string `yaml:"worker_label" envconfig:"WORKER_LABEL"`
+	ControlPlaneLabel    string `yaml:"control_plane_label" envconfig:"CONTROL_PLANE_LABEL"`
+	PolarionTCPrefix     string `yaml:"polarion_tc_prefix" envconfig:"POLARION_TC_PREFIX"`
+	WorkerLabelMap       map[string]string
+	ControlPlaneLabelMap map[string]string
 }
 
 // NewConfig returns instance of General config type.
@@ -62,28 +68,28 @@ func NewConfig() *General {
 }
 
 // GetJunitReportPath returns full path to the junit report file.
-func (c *General) GetJunitReportPath(file string) string {
+func (cfg *General) GetJunitReportPath(file string) string {
 	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
 
-	return fmt.Sprintf("%s_junit.xml", filepath.Join(c.ReportsDirAbsPath, reportFileName))
+	return fmt.Sprintf("%s_junit.xml", filepath.Join(cfg.ReportsDirAbsPath, reportFileName))
 }
 
 // GetPolarionReportPath returns full path to the polarion report file.
-func (c *General) GetPolarionReportPath(file string) string {
+func (cfg *General) GetPolarionReportPath(file string) string {
 	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
 
-	if !c.PolarionReport {
+	if !cfg.PolarionReport {
 		return ""
 	}
 
-	return fmt.Sprintf("%s_polarion.xml", filepath.Join(c.ReportsDirAbsPath, reportFileName))
+	return fmt.Sprintf("%s_polarion.xml", filepath.Join(cfg.ReportsDirAbsPath, reportFileName))
 }
 
 // GetDumpFailedTestReportLocation returns destination file for failed tests logs.
-func (c *General) GetDumpFailedTestReportLocation(file string) string {
-	if c.DumpFailedTests {
-		if _, err := os.Stat(c.ReportsDirAbsPath); os.IsNotExist(err) {
-			err := os.MkdirAll(c.ReportsDirAbsPath, 0744)
+func (cfg *General) GetDumpFailedTestReportLocation(file string) string {
+	if cfg.DumpFailedTests {
+		if _, err := os.Stat(cfg.ReportsDirAbsPath); os.IsNotExist(err) {
+			err := os.MkdirAll(cfg.ReportsDirAbsPath, 0744)
 			if err != nil {
 				log.Fatalf("panic: Failed to create report dir due to %s", err)
 			}
@@ -91,7 +97,7 @@ func (c *General) GetDumpFailedTestReportLocation(file string) string {
 
 		dumpFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
 
-		return filepath.Join(c.ReportsDirAbsPath, fmt.Sprintf("failed_%s", dumpFileName))
+		return filepath.Join(cfg.ReportsDirAbsPath, fmt.Sprintf("failed_%s", dumpFileName))
 	}
 
 	return ""
@@ -117,11 +123,16 @@ func readFile(conf *General, cfgFile string) error {
 	return nil
 }
 
-func readEnv(c *General) error {
-	err := envconfig.Process("", c)
+func readEnv(cfg *General) error {
+	err := envconfig.Process("", cfg)
 	if err != nil {
 		return err
 	}
+
+	cfg.WorkerLabel = fmt.Sprintf("%s/%s", cfg.KubernetesRolePrefix, cfg.WorkerLabel)
+	cfg.ControlPlaneLabel = fmt.Sprintf("%s/%s", cfg.KubernetesRolePrefix, cfg.ControlPlaneLabel)
+	cfg.WorkerLabelMap = map[string]string{cfg.WorkerLabel: ""}
+	cfg.ControlPlaneLabelMap = map[string]string{cfg.ControlPlaneLabel: ""}
 
 	return nil
 }

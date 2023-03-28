@@ -535,9 +535,9 @@ func (builder *Builder) PullImage(timeout time.Duration, testCmd []string) error
 		return err
 	}
 
-	err = builder.WaitUntilInStatus(v1.PodSucceeded, timeout)
+	statusErr := builder.WaitUntilInStatus(v1.PodSucceeded, timeout)
 
-	if err != nil {
+	if statusErr != nil {
 		glog.V(100).Infof(
 			"Pod status timeout %s. Pod is not in status Succeeded in namespace %s. "+
 				"Fail to confirm that image %s was pulled to node: %s",
@@ -554,7 +554,7 @@ func (builder *Builder) PullImage(timeout time.Duration, testCmd []string) error
 			return err
 		}
 
-		return err
+		return statusErr
 	}
 
 	_, err = builder.Delete()

@@ -4,7 +4,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/params"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 
 	"github.com/onsi/ginkgo/v2/types"
@@ -46,6 +45,5 @@ var _ = ReportAfterEach(func(report types.SpecReport) {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(
-		report, GeneralConfig.GetPolarionReportPath(currentFile), params.PolarionTCPrefix)
+	polarion.CreateReport(report, GeneralConfig.GetPolarionReportPath(currentFile), GeneralConfig.PolarionTCPrefix)
 })
