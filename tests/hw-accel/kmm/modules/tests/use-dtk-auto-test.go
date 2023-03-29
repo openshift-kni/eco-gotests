@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	moduleName         = "ocp-54283-use-dtk"
-	moduleNamespace    = "ocp-54283-use-dtk"
+	moduleName         = tsparams.ModuleTestNamespace
 	kmodName           = "use-dtk"
 	buildArgName       = "MY_MODULE"
 	serviceAccountName = "dtk-manager"
@@ -31,15 +30,16 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
 	Context("Module", Label("use-dtk"), func() {
 
-		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION", tsparams.LocalImageRegistry, moduleNamespace, kmodName)
+		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
+			tsparams.LocalImageRegistry, tsparams.ModuleTestNamespace, kmodName)
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 
 		AfterEach(func() {
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, moduleName, moduleNamespace).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.ModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
-			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, moduleNamespace)
+			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.ModuleTestNamespace)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
@@ -48,14 +48,14 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, moduleNamespace).Delete()
+			err = namespace.NewBuilder(APIClient, tsparams.ModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
 
 		It("should use DTK_AUTO parameter", polarion.ID("54283"), func() {
 
 			By("Create Namespace")
-			testNamespace, err := namespace.NewBuilder(APIClient, moduleNamespace).Create()
+			testNamespace, err := namespace.NewBuilder(APIClient, tsparams.ModuleTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			configmapContents := define.MultiStageConfigMapContent(kmodName)
@@ -67,7 +67,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 
 			By("Create ServiceAccount")
-			svcAccount, err := serviceaccount.NewBuilder(APIClient, serviceAccountName, moduleNamespace).Create()
+			svcAccount, err := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.ModuleTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create ClusterRoleBinding")
@@ -92,7 +92,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, moduleNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.ModuleTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -100,15 +100,15 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, moduleNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, tsparams.ModuleTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleNamespace, time.Minute, GeneralConfig.WorkerLabelMap)
+			err = await.ModuleDeployment(APIClient, tsparams.ModuleTestNamespace, time.Minute, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, kmodName, moduleNamespace, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, tsparams.ModuleTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")

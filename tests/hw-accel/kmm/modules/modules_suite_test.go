@@ -4,7 +4,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/onsi/ginkgo/v2/types"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 
@@ -33,7 +32,7 @@ var _ = ReportAfterSuite("", func(report Report) {
 		report, GeneralConfig.GetPolarionReportPath(currentFile), GeneralConfig.PolarionTCPrefix)
 })
 
-var _ = ReportAfterEach(func(report types.SpecReport) {
+var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		report, currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump, clients.SetScheme)
+		CurrentSpecReport(), currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump, clients.SetScheme)
 })

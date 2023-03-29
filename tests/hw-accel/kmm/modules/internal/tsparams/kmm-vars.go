@@ -17,6 +17,7 @@ var (
 	ReporterNamespacesToDump = map[string]string{
 		"openshift-kmm":     "kmm",
 		"openshift-kmm-hub": "kmm-hub",
+		ModuleTestNamespace: "other",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
