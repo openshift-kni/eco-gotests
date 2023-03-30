@@ -112,6 +112,9 @@ issues:
     - path: 'tests/internal/inittools'
       linters:
         - gochecknoinits
+    - path: 'tests/cnf/core/network/internal/netinittools'
+      linters:
+        - gochecknoinits
     - path: 'tests/internal/polarion'
       linters:
         - exhaustive

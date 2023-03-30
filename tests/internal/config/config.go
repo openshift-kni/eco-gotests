@@ -13,33 +13,33 @@ import (
 )
 
 const (
-	// PathToConst path to config file with constants.
-	PathToConst = "const.yaml"
+	// PathToDefaultParamsFile path to config file with default parameters.
+	PathToDefaultParamsFile = "./default.yaml"
 )
 
-// General type keeps general configuration.
-type General struct {
-	ReportsDirAbsPath    string `yaml:"reports_dump_dir" envconfig:"REPORTS_DUMP_DIR"`
-	VerboseLevel         string `yaml:"verbose_level" envconfig:"VERBOSE_LEVEL"`
-	DumpFailedTests      bool   `yaml:"dump_failed_tests" envconfig:"DUMP_FAILED_TESTS"`
-	PolarionReport       bool   `yaml:"polarion_report" envconfig:"POLARION_REPORT"`
-	KubernetesRolePrefix string `yaml:"kubernetes_role_prefix" envconfig:"KUBERNETES_ROLE_PREFIX"`
-	WorkerLabel          string `yaml:"worker_label" envconfig:"WORKER_LABEL"`
-	ControlPlaneLabel    string `yaml:"control_plane_label" envconfig:"CONTROL_PLANE_LABEL"`
-	PolarionTCPrefix     string `yaml:"polarion_tc_prefix" envconfig:"POLARION_TC_PREFIX"`
+// GeneralConfig type keeps general configuration.
+type GeneralConfig struct {
+	ReportsDirAbsPath    string `yaml:"reports_dump_dir" envconfig:"ECO_REPORTS_DUMP_DIR"`
+	VerboseLevel         string `yaml:"verbose_level" envconfig:"ECO_VERBOSE_LEVEL"`
+	DumpFailedTests      bool   `yaml:"dump_failed_tests" envconfig:"ECO_DUMP_FAILED_TESTS"`
+	PolarionReport       bool   `yaml:"polarion_report" envconfig:"ECO_POLARION_REPORT"`
+	KubernetesRolePrefix string `yaml:"kubernetes_role_prefix" envconfig:"ECO_KUBERNETES_ROLE_PREFIX"`
+	WorkerLabel          string `yaml:"worker_label" envconfig:"ECO_WORKER_LABEL"`
+	ControlPlaneLabel    string `yaml:"control_plane_label" envconfig:"ECO_CONTROL_PLANE_LABEL"`
+	PolarionTCPrefix     string `yaml:"polarion_tc_prefix" envconfig:"ECO_POLARION_TC_PREFIX"`
 	WorkerLabelMap       map[string]string
 	ControlPlaneLabelMap map[string]string
 }
 
-// NewConfig returns instance of General config type.
-func NewConfig() *General {
-	log.Print("Creating new global config struct")
+// NewConfig returns instance of GeneralConfig config type.
+func NewConfig() *GeneralConfig {
+	log.Print("Creating new GeneralConfig struct")
 
-	var conf General
+	var conf GeneralConfig
 
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
-	confFile := filepath.Join(baseDir, PathToConst)
+	confFile := filepath.Join(baseDir, PathToDefaultParamsFile)
 	err := readFile(&conf, confFile)
 
 	if err != nil {
@@ -68,14 +68,14 @@ func NewConfig() *General {
 }
 
 // GetJunitReportPath returns full path to the junit report file.
-func (cfg *General) GetJunitReportPath(file string) string {
+func (cfg *GeneralConfig) GetJunitReportPath(file string) string {
 	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
 
 	return fmt.Sprintf("%s_junit.xml", filepath.Join(cfg.ReportsDirAbsPath, reportFileName))
 }
 
 // GetPolarionReportPath returns full path to the polarion report file.
-func (cfg *General) GetPolarionReportPath(file string) string {
+func (cfg *GeneralConfig) GetPolarionReportPath(file string) string {
 	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
 
 	if !cfg.PolarionReport {
@@ -86,7 +86,7 @@ func (cfg *General) GetPolarionReportPath(file string) string {
 }
 
 // GetDumpFailedTestReportLocation returns destination file for failed tests logs.
-func (cfg *General) GetDumpFailedTestReportLocation(file string) string {
+func (cfg *GeneralConfig) GetDumpFailedTestReportLocation(file string) string {
 	if cfg.DumpFailedTests {
 		if _, err := os.Stat(cfg.ReportsDirAbsPath); os.IsNotExist(err) {
 			err := os.MkdirAll(cfg.ReportsDirAbsPath, 0744)
@@ -103,7 +103,7 @@ func (cfg *General) GetDumpFailedTestReportLocation(file string) string {
 	return ""
 }
 
-func readFile(conf *General, cfgFile string) error {
+func readFile(cfg *GeneralConfig, cfgFile string) error {
 	openedCfgFile, err := os.Open(cfgFile)
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func readFile(conf *General, cfgFile string) error {
 	}()
 
 	decoder := yaml.NewDecoder(openedCfgFile)
-	err = decoder.Decode(&conf)
+	err = decoder.Decode(&cfg)
 
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func readFile(conf *General, cfgFile string) error {
 	return nil
 }
 
-func readEnv(cfg *General) error {
+func readEnv(cfg *GeneralConfig) error {
 	err := envconfig.Process("", cfg)
 	if err != nil {
 		return err

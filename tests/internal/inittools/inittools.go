@@ -12,7 +12,7 @@ var (
 	// APIClient provides access to cluster.
 	APIClient *clients.Settings
 	// GeneralConfig provides access to general configuration parameters.
-	GeneralConfig *config.General
+	GeneralConfig *config.GeneralConfig
 )
 
 // init loads all variables automatically when this package is imported. Once package is imported a user has full

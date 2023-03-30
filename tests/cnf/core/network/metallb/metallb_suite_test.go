@@ -8,9 +8,9 @@ import (
 
 	"github.com/onsi/ginkgo/v2/types"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/tests"
-	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -21,7 +21,7 @@ var _, currentFile, _, _ = runtime.Caller(0)
 
 func TestLB(t *testing.T) {
 	_, reporterConfig := GinkgoConfiguration()
-	reporterConfig.JUnitReport = GeneralConfig.GetJunitReportPath(currentFile)
+	reporterConfig.JUnitReport = NetConfig.GetJunitReportPath(currentFile)
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "MetalLB", Label(tsparams.Labels...), reporterConfig)
@@ -45,5 +45,5 @@ var _ = ReportAfterEach(func(report types.SpecReport) {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(report, GeneralConfig.GetPolarionReportPath(currentFile), GeneralConfig.PolarionTCPrefix)
+	polarion.CreateReport(report, NetConfig.GetPolarionReportPath(currentFile), NetConfig.PolarionTCPrefix)
 })

@@ -47,7 +47,7 @@ We use glog library for logging in the project. In order to enable verbose loggi
 </sup>
 
 2. Need to export the following SHELL variable:
-> export VERBOSE_LEVEL=100
+> export ECO_VERBOSE_LEVEL=100
 
 ##### Notes:
 
@@ -62,17 +62,17 @@ We use k8reporter library for collecting resource from cluster in case of test f
 In order to enable k8reporter the following needs to be done:
 
 1. Export DUMP_FAILED_TESTS and set it to true. Use example below
-> export DUMP_FAILED_TESTS=true
+> export ECO_DUMP_FAILED_TESTS=true
 
 2. Specify absolute path for logs directory like it appears below. By default /tmp/reports directory is used.
-> export REPORTS_DUMP_DIR=/tmp/logs_directory
+> export ECO_REPORTS_DUMP_DIR=/tmp/logs_directory
 
 * Generation Polarion XML reports
 
 We use polarion library for generating polarion compatible xml reports. 
 The reporter is enabled by default and stores reports under REPORTS_DUMP_DIR directory.
 In oder to disable polarion reporter the following needs to be done:
-> export POLARION_REPORT=false
+> export ECO_POLARION_REPORT=false
 
 
 <!-- TODO Update this section with optional env vars for each test suite -->
