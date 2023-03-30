@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/rbac/v1"
@@ -29,6 +30,10 @@ type RoleBindingBuilder struct {
 func NewRoleBindingBuilder(apiClient *clients.Settings,
 	name, nsname, role string,
 	subject v1.Subject) *RoleBindingBuilder {
+	glog.V(100).Infof(
+		"Initializing new rolebinding structure with the following params: "+
+			"name: %s, namespace: %s, role: %s, subject %v", name, nsname, role, subject)
+
 	builder := RoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &v1.RoleBinding{
@@ -45,10 +50,14 @@ func NewRoleBindingBuilder(apiClient *clients.Settings,
 	}
 
 	if name == "" {
+		glog.V(100).Infof("The name of the rolebinding is empty")
+
 		builder.errorMsg = "RoleBinding 'name' cannot be empty"
 	}
 
 	if nsname == "" {
+		glog.V(100).Infof("The namespace of the rolebinding is empty")
+
 		builder.errorMsg = "RoleBinding 'nsname' cannot be empty"
 	}
 
@@ -59,11 +68,18 @@ func NewRoleBindingBuilder(apiClient *clients.Settings,
 
 // WithSubjects adds specified Subject to the RoleBinding.
 func (builder *RoleBindingBuilder) WithSubjects(subjects []v1.Subject) *RoleBindingBuilder {
+	glog.V(100).Infof("Adding to the rolebinding %s these specified subjects: %v",
+		builder.Definition.Name, subjects)
+
 	if builder.Definition == nil {
+		glog.V(100).Infof("The rolebinding is undefined")
+
 		builder.errorMsg = "cannot redefine undefined rolebinding"
 	}
 
 	if len(subjects) == 0 {
+		glog.V(100).Infof("The list of subjects is empty")
+
 		builder.errorMsg = "cannot create rolebinding with empty subject"
 	}
 
@@ -73,10 +89,14 @@ func (builder *RoleBindingBuilder) WithSubjects(subjects []v1.Subject) *RoleBind
 
 	for _, subject := range subjects {
 		if !slices.Contains(allowedSubjectKinds(), subject.Kind) {
+			glog.V(100).Infof("The rolebinding subject kind must be one of 'ServiceAccount', 'User', or 'Group'")
+
 			builder.errorMsg = "rolebinding subject kind must be one of 'ServiceAccount', 'User', 'Group'"
 		}
 
 		if subject.Name == "" {
+			glog.V(100).Infof("The rolebinding subject name cannot be empty")
+
 			builder.errorMsg = "rolebinding subject name cannot be empty"
 		}
 
@@ -91,6 +111,9 @@ func (builder *RoleBindingBuilder) WithSubjects(subjects []v1.Subject) *RoleBind
 
 // Create generates a RoleBinding and stores the created object in struct.
 func (builder *RoleBindingBuilder) Create() (*RoleBindingBuilder, error) {
+	glog.V(100).Infof("Creating rolebinding %s under namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -106,6 +129,9 @@ func (builder *RoleBindingBuilder) Create() (*RoleBindingBuilder, error) {
 
 // Delete removes a RoleBinding.
 func (builder *RoleBindingBuilder) Delete() error {
+	glog.V(100).Infof("Removing rolebinding %s under namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return nil
 	}
@@ -120,6 +146,9 @@ func (builder *RoleBindingBuilder) Delete() error {
 
 // Update modifies an existing RoleBinding in the cluster.
 func (builder *RoleBindingBuilder) Update() (*RoleBindingBuilder, error) {
+	glog.V(100).Infof("Updating rolebinding %s under namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if builder.errorMsg != "" {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
@@ -133,6 +162,9 @@ func (builder *RoleBindingBuilder) Update() (*RoleBindingBuilder, error) {
 
 // Exists checks whether the given RoleBinding exists.
 func (builder *RoleBindingBuilder) Exists() bool {
+	glog.V(100).Infof("Checking if rolebinding %s exists under namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	var err error
 	builder.Object, err = builder.apiClient.RoleBindings(builder.Definition.Namespace).Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
