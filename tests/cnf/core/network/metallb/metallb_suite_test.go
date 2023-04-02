@@ -1,23 +1,32 @@
 package metallb
 
 import (
+	"fmt"
 	"runtime"
 	"testing"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
-	"github.com/onsi/ginkgo/v2/types"
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
-	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/tests"
-	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/pkg/namespace"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/tests"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
+	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
 
-var _, currentFile, _, _ = runtime.Caller(0)
+const (
+	requiredCPNodeNumber     = 1
+	requiredWorkerNodeNumber = 2
+)
+
+var (
+	_, currentFile, _, _ = runtime.Caller(0)
+	testNS               = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName)
+)
 
 func TestLB(t *testing.T) {
 	_, reporterConfig := GinkgoConfiguration()
@@ -29,19 +38,32 @@ func TestLB(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	By("Create test namespace")
-	_, err := tsparams.TestNS.Create()
+	_, err := testNS.Create()
 	Expect(err).ToNot(HaveOccurred(), "error to create test namespace")
+
+	By("Verify if metalLb tests can be executed on given cluster")
+	err = metallbenv.DoesClusterSupportMetalLbTests(requiredCPNodeNumber, requiredWorkerNodeNumber)
+
+	if err != nil {
+		Skip(
+			fmt.Sprintf("given cluster is not suitable for MetalLb tests due to the following error %s", err.Error()))
+	}
+
+	By("Pulling test images on cluster before running test cases")
+	err = cluster.PullTestImageOnNodes(APIClient, NetConfig.WorkerLabel, NetConfig.CnfNetTestContainer, 300)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull test image on nodes")
+
 })
 
 var _ = AfterSuite(func() {
 	By("Delete test namespace")
-	err := tsparams.TestNS.Delete()
+	err := testNS.Delete()
 	Expect(err).ToNot(HaveOccurred(), "error to delete test namespace")
 })
 
-var _ = ReportAfterEach(func(report types.SpecReport) {
+var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		report, currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump, clients.SetScheme)
+		CurrentSpecReport(), currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump, clients.SetScheme)
 })
 
 var _ = ReportAfterSuite("", func(report Report) {

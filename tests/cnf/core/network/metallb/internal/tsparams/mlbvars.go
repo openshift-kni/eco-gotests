@@ -2,9 +2,7 @@ package tsparams
 
 import (
 	metalLbOperatorV1Beta1 "github.com/metallb/metallb-operator/api/v1beta1"
-	"github.com/openshift-kni/eco-gotests/pkg/namespace"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/k8sreporter"
 	metalLbV1Beta1 "go.universe.tf/metallb/api/v1beta1"
 )
@@ -30,6 +28,16 @@ var (
 		{Cr: &metalLbV1Beta1.BGPPeerList{}},
 		{Cr: &metalLbOperatorV1Beta1.MetalLBList{}},
 	}
-	// TestNS object represents namespace that will be used for running test cases.
-	TestNS = namespace.NewBuilder(APIClient, "metallb-tests")
+	// TestNamespaceName metalLb namespace where all test cases are performed.
+	TestNamespaceName = "metallb-tests"
+	// OperatorControllerManager defaults metalLb daemonset controller name.
+	OperatorControllerManager = "metallb-operator-controller-manager"
+	// OperatorWebhook defaults metalLb webhook deployment name.
+	OperatorWebhook = "metallb-operator-webhook-server"
+	// MetalLbIo default metalLb.io resource name.
+	MetalLbIo = "metallb"
+	// MetalLbDsName default metalLb speaker daemonset names.
+	MetalLbDsName = "speaker"
+	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
+	ExternalMacVlanNADName = "external"
 )

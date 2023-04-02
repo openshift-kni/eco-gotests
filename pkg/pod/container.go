@@ -10,7 +10,22 @@ import (
 
 var (
 	// AllowedSCList list of allowed SecurityCapabilities.
-	AllowedSCList = []string{"NET_RAW", "NET_ADMIN", "SYS_ADMIN"}
+	AllowedSCList          = []string{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "ALL"}
+	falseVar               = false
+	trueVar                = true
+	capabilityAll          = []v1.Capability{"ALL"}
+	defaultGroupID         = int64(3000)
+	defaultUserID          = int64(2000)
+	defaultSecurityContext = &v1.SecurityContext{
+		AllowPrivilegeEscalation: &falseVar,
+		RunAsNonRoot:             &trueVar,
+		SeccompProfile:           &v1.SeccompProfile{Type: "RuntimeDefault"},
+		Capabilities: &v1.Capabilities{
+			Drop: capabilityAll,
+		},
+		RunAsGroup: &defaultGroupID,
+		RunAsUser:  &defaultUserID,
+	}
 )
 
 // ContainerBuilder provides a struct for container's object definition.
@@ -28,9 +43,10 @@ func NewContainerBuilder(name, image string, cmd []string) *ContainerBuilder {
 
 	builder := &ContainerBuilder{
 		definition: &v1.Container{
-			Name:    name,
-			Image:   image,
-			Command: cmd,
+			Name:            name,
+			Image:           image,
+			Command:         cmd,
+			SecurityContext: defaultSecurityContext,
 		},
 	}
 
