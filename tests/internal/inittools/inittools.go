@@ -26,6 +26,10 @@ func init() {
 	_ = flag.Lookup("v").Value.Set(GeneralConfig.VerboseLevel)
 
 	if APIClient = clients.New(""); APIClient == nil {
+		if GeneralConfig.DryRun {
+			return
+		}
+
 		glog.Fatalf("can not load ApiClient. Please check your KUBECONFIG env var")
 	}
 }

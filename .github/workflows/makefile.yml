@@ -25,3 +25,11 @@ jobs:
 
       - name: Run lint
         run: make lint
+
+      - name: Install
+        run: make install-ginkgo
+
+      - name: Run ginkgo Dry Run
+        run: ginkgo run -vv -r --dry-run ./tests/
+        env:
+          ECO_DRY_RUN: true
