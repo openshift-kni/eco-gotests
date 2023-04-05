@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/openshift-kni/eco-gotests/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -283,4 +285,11 @@ func (builder *BFDBuilder) withInterval(intervalName string, interval uint32) *B
 	}
 
 	return builder
+}
+
+// GetBFDProfileGVR returns bfdprofile's GroupVersionResource which could be used for Clean function.
+func GetBFDProfileGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "metallb.io", Version: "v1beta1", Resource: "bfdprofiles",
+	}
 }

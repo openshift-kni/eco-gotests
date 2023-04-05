@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"k8s.io/client-go/dynamic"
+
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 
 	performanceV2 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1alpha1"
@@ -62,6 +64,7 @@ type Settings struct {
 	ptpV1.PtpV1Interface
 	olm.OperatorsV1alpha1Interface
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
+	dynamic.Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -98,6 +101,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.RbacV1Interface = rbacV1Client.NewForConfigOrDie(config)
 	clientSet.OperatorsV1alpha1Interface = olm.NewForConfigOrDie(config)
 	clientSet.K8sCniCncfIoV1Interface = clientNetAttDefV1.NewForConfigOrDie(config)
+	clientSet.Interface = dynamic.NewForConfigOrDie(config)
 
 	clientSet.Config = config
 

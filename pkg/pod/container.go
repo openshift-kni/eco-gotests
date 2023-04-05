@@ -72,14 +72,18 @@ func NewContainerBuilder(name, image string, cmd []string) *ContainerBuilder {
 }
 
 // WithSecurityCapabilities applies SecurityCapabilities to the container definition.
-func (builder *ContainerBuilder) WithSecurityCapabilities(sCapabilities []string) *ContainerBuilder {
+func (builder *ContainerBuilder) WithSecurityCapabilities(sCapabilities []string, redefine bool) *ContainerBuilder {
 	glog.V(100).Infof("Applying a list of SecurityCapabilities %v to container %s",
 		sCapabilities, builder.definition.Name)
 
 	if builder.definition.SecurityContext != nil {
-		glog.V(100).Infof("Failed to redefine existing SecurityCapabilities")
+		if !redefine {
+			glog.V(100).Infof("Cannot modify pre-existing SecurityContext")
 
-		builder.errorMsg = "can not redefine existing security context"
+			builder.errorMsg = "can not modify pre-existing security context"
+		}
+
+		builder.definition.SecurityContext = nil
 	}
 
 	if !areCapabilitiesValid(sCapabilities) {

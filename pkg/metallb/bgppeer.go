@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/pkg/msg"
@@ -383,4 +385,11 @@ func (builder *BGPPeerBuilder) WithEBGPMultiHop(eBGPMultiHop bool) *BGPPeerBuild
 	builder.Definition.Spec.EBGPMultiHop = eBGPMultiHop
 
 	return builder
+}
+
+// GetBGPPeerGVR returns bgppeer's GroupVersionResource which could be used for Clean function.
+func GetBGPPeerGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "metallb.io", Version: "v1beta2", Resource: "bgppeers",
+	}
 }

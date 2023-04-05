@@ -9,6 +9,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Builder provides struct for configmap object containing connection to the cluster and the configmap definitions.
@@ -21,6 +22,42 @@ type Builder struct {
 	// object is created.
 	errorMsg  string
 	apiClient *clients.Settings
+}
+
+// Pull retrieves an existing configmap object from the cluster.
+func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &v1.ConfigMap{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("The name of the configmap is empty")
+
+		builder.errorMsg = "configmap 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		glog.V(100).Infof("The namespace of the configmap is empty")
+
+		builder.errorMsg = "configmap 'nsname' cannot be empty"
+	}
+
+	glog.V(100).Infof(
+		"Pulling configmap object name:%s in namespace: %s", name, nsname)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("configmap object %s doesn't exist in namespace %s", name, nsname)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
 }
 
 // NewBuilder creates a new instance of Builder.
@@ -129,4 +166,11 @@ func (builder *Builder) WithData(data map[string]string) *Builder {
 	builder.Definition.Data = data
 
 	return builder
+}
+
+// GetGVR returns configmap's GroupVersionResource which could be used for Clean function.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "", Version: "v1", Resource: "configmaps",
+	}
 }

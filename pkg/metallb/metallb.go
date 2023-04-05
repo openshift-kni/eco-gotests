@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/golang/glog"
 	"github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
@@ -228,4 +230,11 @@ func (builder *Builder) WithSpeakerNodeSelector(label map[string]string) *Builde
 	builder.Definition.Spec.SpeakerNodeSelector = label
 
 	return builder
+}
+
+// GetMetalLbIoGVR returns metalLb's GroupVersionResource which could be used for Clean function.
+func GetMetalLbIoGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "metallb.io", Version: "v1beta1", Resource: "metallbs",
+	}
 }

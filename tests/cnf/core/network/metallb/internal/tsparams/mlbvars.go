@@ -1,6 +1,8 @@
 package tsparams
 
 import (
+	"time"
+
 	metalLbOperatorV1Beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/k8sreporter"
@@ -40,4 +42,14 @@ var (
 	MetalLbDsName = "speaker"
 	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	ExternalMacVlanNADName = "external"
+	// SleepCMD represents shel sleep command.
+	SleepCMD = []string{"/bin/bash", "-c", "sleep INF"}
+	// VtySh represents default vtysh cmd prefix.
+	VtySh = []string{"vtysh", "-c"}
+	// FRRContainerName represents default FRR's container name.
+	FRRContainerName = "frr"
+	// DefaultTimeout represents the default timeout for most of Eventually/PollImmediate functions.
+	DefaultTimeout = 180 * time.Second
+	// DefaultRetryInterval represents the default retry interval for most of Eventually/PollImmediate functions.
+	DefaultRetryInterval = 10 * time.Second
 )

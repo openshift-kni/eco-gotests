@@ -7,6 +7,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"context"
 	"encoding/json"
@@ -194,4 +195,11 @@ func (builder *Builder) WithMasterPlugin(masterPlugin *MasterPlugin) *Builder {
 	builder.Definition.Spec.Config = string(masterPluginSting)
 
 	return builder
+}
+
+// GetGVR returns nad's GroupVersionResource which could be used for Clean function.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "k8s.cni.cncf.io", Version: "v1", Resource: "network-attachment-definitions",
+	}
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/core/v1"
@@ -197,76 +199,55 @@ func Pull(apiClient *clients.Settings, nsname string) (*Builder, error) {
 	return &builder, nil
 }
 
-// CleanPodsAndWait removes all pods from the namespace and waits unit all of them are removed.
-func (builder *Builder) CleanPodsAndWait(cleanTimeout time.Duration) error {
-	glog.V(100).Infof("Removing pods from namespace: %s", builder.Definition.Name)
+// CleanObjects removes given objects from the namespace.
+func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...schema.GroupVersionResource) error {
+	glog.V(100).Infof("Clean namespace: %s", builder.Definition.Name)
 
-	if !builder.Exists() {
-		return fmt.Errorf("failed to remove pods from non-existent namespace %s", builder.Definition.Name)
-	}
-
-	err := builder.apiClient.Pods(builder.Definition.Name).DeleteCollection(
-		context.Background(),
-		metaV1.DeleteOptions{
-			GracePeriodSeconds: pointer.Int64(0),
-		}, metaV1.ListOptions{})
-
-	if err != nil {
-		return err
-	}
-
-	return wait.PollImmediate(3*time.Second, cleanTimeout, func() (bool, error) {
-		podList, err := builder.apiClient.Pods(builder.Definition.Name).List(context.Background(), metaV1.ListOptions{})
-
-		if err != nil || len(podList.Items) > 1 {
-
-			return false, err
-		}
-
-		return true, err
-	})
-}
-
-// CleanNADsAndWait removes all NetworkAttachmentDefinition from the namespace and waits until all of them are removed.
-func (builder *Builder) CleanNADsAndWait(cleanTimeout time.Duration) error {
-	glog.V(100).Infof("Removing NetworkAttachmentDefinition from namespace: %s", builder.Definition.Name)
-
-	if !builder.Exists() {
-		return fmt.Errorf("failed to remove NetworkAttachmentDefinition from non-existent namespace %s",
+	if len(objects) == 0 {
+		return fmt.Errorf("failed to remove empty list of object from namespace %s",
 			builder.Definition.Name)
 	}
 
-	err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Name).DeleteCollection(
-		context.Background(),
-		metaV1.DeleteOptions{
-			GracePeriodSeconds: pointer.Int64(0),
-		}, metaV1.ListOptions{})
-
-	if err != nil {
-		return err
+	if !builder.Exists() {
+		return fmt.Errorf("failed to remove resources from non-existent namespace %s",
+			builder.Definition.Name)
 	}
 
-	return wait.PollImmediate(3*time.Second, cleanTimeout, func() (bool, error) {
-		podList, err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Name).List(
-			context.Background(), metaV1.ListOptions{})
+	for _, resource := range objects {
+		glog.V(100).Infof("Clean all resources: %s in namespace: %s",
+			resource.Resource, builder.Definition.Name)
 
-		if err != nil || len(podList.Items) > 1 {
+		err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).DeleteCollection(
+			context.Background(), metaV1.DeleteOptions{
+				GracePeriodSeconds: pointer.Int64(0),
+			}, metaV1.ListOptions{})
 
-			return false, err
+		if err != nil {
+			glog.V(100).Infof("Failed to remove resources: %s in namespace: %s",
+				resource.Resource, builder.Definition.Name)
+
+			return err
 		}
 
-		return true, err
-	})
-}
+		err = wait.PollImmediate(3*time.Second, cleanTimeout, func() (bool, error) {
+			objList, err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).List(
+				context.Background(), metaV1.ListOptions{})
 
-// Clean removes all objects from the namespace. This function needs to be updated periodically in order to handle
-// different object removals.
-func (builder *Builder) Clean(cleanTimeout time.Duration) error {
-	glog.V(100).Infof("Clean namespace: %s", builder.Definition.Name)
+			if err != nil || len(objList.Items) > 1 {
 
-	if err := builder.CleanPodsAndWait(cleanTimeout); err != nil {
-		return err
+				return false, err
+			}
+
+			return true, err
+		})
+
+		if err != nil {
+			glog.V(100).Infof("Failed to remove resources: %s in namespace: %s",
+				resource.Resource, builder.Definition.Name)
+
+			return err
+		}
 	}
 
-	return builder.CleanNADsAndWait(cleanTimeout)
+	return nil
 }

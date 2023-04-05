@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v3/pkg/types"
 
 	v1 "k8s.io/api/core/v1"
@@ -560,6 +562,11 @@ func (builder *Builder) PullImage(timeout time.Duration, testCmd []string) error
 	_, err = builder.Delete()
 
 	return err
+}
+
+// GetGVR returns pod's GroupVersionResource which could be used for Clean function.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 }
 
 func getDefinition(name, nsName string) *v1.Pod {

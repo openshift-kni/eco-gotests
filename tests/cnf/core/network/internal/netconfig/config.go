@@ -63,7 +63,7 @@ func (netConfig *NetworkConfig) GetMetalLbVirIP() ([]string, error) {
 
 	if len(envValue) < 2 {
 		return nil, fmt.Errorf(
-			"the number of virtial metalLb ip address is less than 2, check METALLB_ADDR_LIST env var")
+			"the number of virtial metalLb ip address is less than 2, check ECO_CNF_CORE_NET_MLB_ADDR_LIST env var")
 	}
 
 	for _, v := range envValue {
