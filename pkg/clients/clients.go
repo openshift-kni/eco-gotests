@@ -15,8 +15,13 @@ import (
 	ptpV1 "github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1"
 	olm2 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
 
+	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1"
 	// nolint:lll
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
+
+	// nolint:lll
+	pkgmanifestv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/typed/operators/v1"
+
 	fecV2 "github.com/smart-edge-open/sriov-fec-operator/sriov-fec/api/v2"
 	apiExt "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,6 +70,8 @@ type Settings struct {
 	olm.OperatorsV1alpha1Interface
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
+	olmv1.OperatorsV1Interface
+	PackageManifestInterface pkgmanifestv1.OperatorsV1Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -102,6 +109,8 @@ func New(kubeconfig string) *Settings {
 	clientSet.OperatorsV1alpha1Interface = olm.NewForConfigOrDie(config)
 	clientSet.K8sCniCncfIoV1Interface = clientNetAttDefV1.NewForConfigOrDie(config)
 	clientSet.Interface = dynamic.NewForConfigOrDie(config)
+	clientSet.OperatorsV1Interface = olmv1.NewForConfigOrDie(config)
+	clientSet.PackageManifestInterface = pkgmanifestv1.NewForConfigOrDie(config)
 
 	clientSet.Config = config
 
