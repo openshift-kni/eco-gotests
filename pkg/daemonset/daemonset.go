@@ -312,10 +312,6 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 			return false, nil
 		}
 
-		if builder.Object.Status.DesiredNumberScheduled < 1 {
-			return false, fmt.Errorf("daemonset %s is not set to run on any node", builder.Object.Name)
-		}
-
 		if builder.Object.Status.NumberReady == builder.Object.Status.DesiredNumberScheduled {
 			return true, nil
 		}

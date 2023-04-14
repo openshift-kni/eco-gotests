@@ -52,4 +52,6 @@ var (
 	DefaultTimeout = 180 * time.Second
 	// DefaultRetryInterval represents the default retry interval for most of Eventually/PollImmediate functions.
 	DefaultRetryInterval = 10 * time.Second
+	// MetalLbSpeakerLabel represents test node label which allows to run metalLb speakers on specific nodes.
+	MetalLbSpeakerLabel = map[string]string{"metal": "test"}
 )

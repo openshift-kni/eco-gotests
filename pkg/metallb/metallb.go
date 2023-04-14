@@ -102,6 +102,10 @@ func (builder *Builder) Exists() bool {
 	var err error
 	builder.Object, err = builder.Get()
 
+	if err != nil {
+		glog.V(100).Infof("Failed to collect MetalLb object due to %s", err.Error())
+	}
+
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
