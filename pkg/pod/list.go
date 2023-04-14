@@ -42,3 +42,31 @@ func List(apiClient *clients.Settings, nsname string, options v1.ListOptions) ([
 
 	return podObjects, nil
 }
+
+// ListInAllNamespaces returns a cluster-wide pod inventory.
+func ListInAllNamespaces(apiClient *clients.Settings, options v1.ListOptions) ([]*Builder, error) {
+	glog.V(100).Infof("Listing all pods with the options %v", options)
+
+	podList, err := apiClient.Pods("").List(context.Background(), options)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to list all pods due to %s", err.Error())
+
+		return nil, err
+	}
+
+	var podObjects []*Builder
+
+	for _, runningPod := range podList.Items {
+		copiedPod := runningPod
+		podBuilder := &Builder{
+			apiClient:  apiClient,
+			Object:     &copiedPod,
+			Definition: &copiedPod,
+		}
+
+		podObjects = append(podObjects, podBuilder)
+	}
+
+	return podObjects, nil
+}

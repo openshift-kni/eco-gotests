@@ -128,8 +128,8 @@ func (builder *OperatorGroupBuilder) Update() (*OperatorGroupBuilder, error) {
 	return builder, err
 }
 
-// Pull loads existing OperatorGroup from cluster into the OperatorGroupBuilder struct.
-func Pull(apiClient *clients.Settings, groupName, nsName string) (*OperatorGroupBuilder, error) {
+// PullOperatorGroup loads existing OperatorGroup from cluster into the OperatorGroupBuilder struct.
+func PullOperatorGroup(apiClient *clients.Settings, groupName, nsName string) (*OperatorGroupBuilder, error) {
 	glog.V(100).Infof("Pulling existing OperatorGroup %s from cluster in namespace %s",
 		groupName, nsName)
 

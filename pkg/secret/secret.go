@@ -55,6 +55,37 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType v1.
 	return &builder
 }
 
+// Pull loads an existing secret into Builder struct.
+func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing secret name: %s under namespace: %s", name, nsname)
+
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &v1.Secret{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if name == "" {
+		builder.errorMsg = "secret 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		builder.errorMsg = "secret 'namespace' cannot be empty"
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("secret object %s doesn't exist in namespace %s", name, nsname)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
+}
+
 // Create makes a secret in the cluster and stores the created object in struct.
 func (builder *Builder) Create() (*Builder, error) {
 	glog.V(100).Infof("Creating the secret %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
