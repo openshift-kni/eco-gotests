@@ -88,7 +88,10 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration) erro
 	err = wait.PollImmediate(3*time.Second, timeout, func() (bool, error) {
 		metalLbDs, err = daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
 		if err != nil {
-			return false, err
+			glog.V(90).Infof("Error to pull daemonset %s namespace %s, retry",
+				tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
+
+			return false, nil
 		}
 
 		return true, nil
