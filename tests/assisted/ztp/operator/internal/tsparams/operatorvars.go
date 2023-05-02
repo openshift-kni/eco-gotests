@@ -28,4 +28,7 @@ var (
 		{Cr: &bmhv1alpha1.BareMetalHostList{}},
 		{Cr: &agentInstallV1Beta1.AgentList{}},
 	}
+
+	// MCENameSpace is the namespace used by the assisted service.
+	MCENameSpace = "multicluster-engine"
 )
