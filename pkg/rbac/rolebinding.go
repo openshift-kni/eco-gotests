@@ -68,14 +68,14 @@ func NewRoleBindingBuilder(apiClient *clients.Settings,
 
 // WithSubjects adds specified Subject to the RoleBinding.
 func (builder *RoleBindingBuilder) WithSubjects(subjects []v1.Subject) *RoleBindingBuilder {
-	glog.V(100).Infof("Adding to the rolebinding %s these specified subjects: %v",
-		builder.Definition.Name, subjects)
-
 	if builder.Definition == nil {
 		glog.V(100).Infof("The rolebinding is undefined")
 
 		builder.errorMsg = "cannot redefine undefined rolebinding"
 	}
+
+	glog.V(100).Infof("Adding to the rolebinding %s these specified subjects: %v",
+		builder.Definition.Name, subjects)
 
 	if len(subjects) == 0 {
 		glog.V(100).Infof("The list of subjects is empty")
