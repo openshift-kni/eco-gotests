@@ -57,14 +57,16 @@ func ListClusterServiceVersion(
 }
 
 // PullClusterServiceVersion loads an existing clusterserviceversion into Builder struct.
-func PullClusterServiceVersion(apiClient *clients.Settings, name string) (*ClusterServiceVersionBuilder, error) {
-	glog.V(100).Infof("Pulling existing clusterserviceversion name: %s", name)
+func PullClusterServiceVersion(apiClient *clients.Settings, name, namespace string) (*ClusterServiceVersionBuilder,
+	error) {
+	glog.V(100).Infof("Pulling existing clusterserviceversion name %s in namespace %s", name, namespace)
 
 	builder := ClusterServiceVersionBuilder{
 		apiClient: apiClient,
 		Definition: &oplmV1alpha1.ClusterServiceVersion{
 			ObjectMeta: metaV1.ObjectMeta{
-				Name: name,
+				Name:      name,
+				Namespace: namespace,
 			},
 		},
 	}
@@ -73,8 +75,12 @@ func PullClusterServiceVersion(apiClient *clients.Settings, name string) (*Clust
 		builder.errorMsg = "clusterserviceversion 'name' cannot be empty"
 	}
 
+	if namespace == "" {
+		builder.errorMsg = "clusterserviceversion 'namespace' cannot be empty"
+	}
+
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterserviceversion object %s doesn't exist", name)
+		return nil, fmt.Errorf("clusterserviceversion object %s doesn't exist in namespace %s", name, namespace)
 	}
 
 	builder.Definition = builder.Object
@@ -94,4 +100,25 @@ func (builder *ClusterServiceVersionBuilder) Exists() bool {
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// Delete removes a clusterserviceversion.
+func (builder *ClusterServiceVersionBuilder) Delete() error {
+	glog.V(100).Infof("Deleting clusterserviceversion %s in namespace %s", builder.Definition.Name,
+		builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		return nil
+	}
+
+	err := builder.apiClient.ClusterServiceVersions(builder.Definition.Namespace).Delete(context.TODO(),
+		builder.Object.Name, metaV1.DeleteOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	builder.Object = nil
+
+	return err
 }
