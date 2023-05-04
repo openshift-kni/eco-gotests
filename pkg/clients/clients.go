@@ -1,11 +1,13 @@
 package clients
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"k8s.io/client-go/dynamic"
 
+	"github.com/golang/glog"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 
 	performanceV2 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1alpha1"
@@ -205,4 +207,15 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	return nil
+}
+
+// GetAPIClient implements the cluster.APIClientGetter interface.
+func (settings *Settings) GetAPIClient() (*Settings, error) {
+	if settings == nil {
+		glog.V(100).Infof("APIClient is nil")
+
+		return nil, fmt.Errorf("APIClient cannot be nil")
+	}
+
+	return settings, nil
 }
