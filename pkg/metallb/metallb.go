@@ -213,6 +213,28 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	return builder, err
 }
 
+// RemoveLabel removes given label from metallb metadata.
+func (builder *Builder) RemoveLabel(key string) *Builder {
+	glog.V(100).Infof("Removing label %s from metalLbIo %s", key, builder.Definition.Name)
+
+	if builder.Definition == nil {
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("metallb")
+	}
+
+	if key == "" {
+		glog.V(100).Infof("Failed to remove empty label's key from metalLbIo %s", builder.Definition.Name)
+		builder.errorMsg = "error to remove empty key from metalLbIo"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	delete(builder.Definition.Spec.SpeakerNodeSelector, key)
+
+	return builder
+}
+
 // WithSpeakerNodeSelector adds the specified label to the MetalLbIo SpeakerNodeSelector.
 func (builder *Builder) WithSpeakerNodeSelector(label map[string]string) *Builder {
 	glog.V(100).Infof("Adding label selector %v to metallb.io object %s",

@@ -23,6 +23,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
@@ -89,7 +90,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 			By("Verifying that BFD profile is applied to speakers")
 			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
-				LabelSelector: "component=speaker",
+				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
 			for _, speakerPod := range speakerPods {
@@ -221,6 +222,38 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		})
 
+		It("provides Prometheus BFD metrics", polarion.ID("47187"), func() {
+			mlbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(),
+				fmt.Sprintf("Failed to pull %s namespace", NetConfig.MlbOperatorNamespace))
+			_, err = mlbNs.WithLabel(tsparams.PrometheusMonitoringLabel, "true").Update()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to redefine %s namespace with the label %s",
+				NetConfig.MlbOperatorNamespace, tsparams.PrometheusMonitoringLabel))
+
+			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
+				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel})
+			Expect(err).ToNot(HaveOccurred(), "Failed to list metalLb speaker pods")
+
+			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, v1.ListOptions{
+				LabelSelector: tsparams.PrometheusMonitoringPodLabel,
+			})
+			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
+
+			for _, speakerPod := range speakerPods {
+				var metricsFromSpeaker []string
+				Eventually(func() error {
+					metricsFromSpeaker, err = frr.GetMetricsByPrefix(speakerPod, "metallb_bfd_")
+
+					return err
+				}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(),
+					"Failed to collect metrics from speaker pods")
+				Eventually(
+					prometheus.PodMetricsPresentInDB, time.Minute, tsparams.DefaultRetryInterval).WithArguments(
+					prometheusPods[0], speakerPod.Definition.Name, metricsFromSpeaker).Should(
+					BeTrue(), "Failed to match metric in prometheus")
+			}
+		})
+
 		AfterEach(func() {
 			By("Removing label from Workers")
 			Expect(workerNodeList.Discover()).ToNot(HaveOccurred(), "Failed to discover worker nodes")
@@ -228,6 +261,13 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				_, err := worker.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove label from worker")
 			}
+
+			By("Reset metallb speakerNodeSelector to default value")
+			metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to pull metallb object")
+			_, err = metalLbIo.RemoveLabel("metal").
+				WithSpeakerNodeSelector(NetConfig.WorkerLabelMap).Update(false)
+			Expect(err).ToNot(HaveOccurred(), "Failed to reset metallb SpeakerNodeSelector to default value")
 
 			By("Cleaning MetalLb operator namespace")
 			metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
@@ -265,7 +305,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 func verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
-			time.Minute*2, tsparams.DefaultRetryInterval).
+			time.Minute*3, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
 			BeTrue(), "Failed to receive BGP status UP")
 		Eventually(frr.BFDHasStatus,

@@ -40,6 +40,8 @@ var (
 	MetalLbIo = "metallb"
 	// MetalLbDsName default metalLb speaker daemonset names.
 	MetalLbDsName = "speaker"
+	// MetalLbDefaultSpeakerLabel represents the default metalLb speaker label.
+	MetalLbDefaultSpeakerLabel = "component=speaker"
 	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	ExternalMacVlanNADName = "external"
 	// SleepCMD represents shel sleep command.
@@ -54,4 +56,8 @@ var (
 	DefaultRetryInterval = 10 * time.Second
 	// MetalLbSpeakerLabel represents test node label which allows to run metalLb speakers on specific nodes.
 	MetalLbSpeakerLabel = map[string]string{"metal": "test"}
+	// PrometheusMonitoringLabel represents the label which tells prometheus to monitor a given object.
+	PrometheusMonitoringLabel = "openshift.io/cluster-monitoring"
+	// PrometheusMonitoringPodLabel represents monitoring pod label selector.
+	PrometheusMonitoringPodLabel = "app.kubernetes.io/name=prometheus"
 )

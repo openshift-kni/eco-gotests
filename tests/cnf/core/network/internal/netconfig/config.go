@@ -24,8 +24,10 @@ type NetworkConfig struct {
 	*coreconfig.CoreConfig
 	CnfNetTestContainer  string `yaml:"cnf_net_test_container" envconfig:"ECO_CNF_CORE_NET_TEST_CONTAINER"`
 	MlbOperatorNamespace string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
-	MlbAddressPoolIP     string `envconfig:"ECO_CNF_CORE_NET_MLB_ADDR_LIST"`
-	FrrImage             string `yaml:"frr_image" envconfig:"ECO_CNF_CORE_NET_FRR_IMAGE"`
+	//nolint:lll
+	PrometheusOperatorNamespace string `yaml:"prometheus_operator_namespace" envconfig:"ECO_CNF_CORE_NET_PROMETHEUS_OPERATOR_NAMESPACE"`
+	MlbAddressPoolIP            string `envconfig:"ECO_CNF_CORE_NET_MLB_ADDR_LIST"`
+	FrrImage                    string `yaml:"frr_image" envconfig:"ECO_CNF_CORE_NET_FRR_IMAGE"`
 }
 
 // NewNetConfig returns instance of NetworkConfig config type.

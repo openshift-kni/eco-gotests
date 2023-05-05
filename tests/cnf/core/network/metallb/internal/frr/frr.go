@@ -116,6 +116,34 @@ func IsProtocolConfigured(frrPod *pod.Builder, protocol string) (bool, error) {
 	return false, nil
 }
 
+// GetMetricsByPrefix pulls all metrics from frr pods and sort them in the list by given prefix.
+func GetMetricsByPrefix(frrPod *pod.Builder, metricPrefix string) ([]string, error) {
+	stdout, err := frrPod.ExecCommand([]string{"curl", "localhost:29151/metrics"}, "frr")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(strings.Split(stdout.String(), "\n")) == 0 {
+		return nil, fmt.Errorf("failed to collect metrics due to empty response")
+	}
+
+	var collectedMetrics []string
+
+	for _, line := range strings.Split(stdout.String(), "\n") {
+		if strings.HasPrefix(line, metricPrefix) {
+			metricsKey := line[0:strings.Index(line, "{")]
+			collectedMetrics = append(collectedMetrics, metricsKey)
+		}
+	}
+
+	if len(collectedMetrics) < 1 {
+		return nil, fmt.Errorf("failed to collect metrics")
+	}
+
+	return collectedMetrics, nil
+}
+
 func runningConfig(frrPod *pod.Builder) (string, error) {
 	bgpStateOut, err := frrPod.ExecCommand(append(tsparams.VtySh, "sh run"), tsparams.FRRContainerName)
 	if err != nil {
