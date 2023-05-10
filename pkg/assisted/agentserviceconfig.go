@@ -73,13 +73,36 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 			ObjectMeta: metaV1.ObjectMeta{
 				Name: agentServiceConfigName,
 			},
-			Spec: agentInstallV1Beta1.AgentServiceConfigSpec{
-				DatabaseStorage:   GetDefaultDatabaseStorageSpec(),
-				FileSystemStorage: GetDefaultFilesystemStorageSpec(),
-				ImageStorage:      GetDefaultImageStorageSpec(),
-			},
+			Spec: agentInstallV1Beta1.AgentServiceConfigSpec{},
 		},
 	}
+
+	imageStorageSpec, err := GetDefaultStorageSpec(defaultImageStoreStorageSize)
+	if err != nil {
+		glog.V(100).Infof("The ImageStorage size is in wrong format")
+
+		builder.errorMsg = fmt.Sprintf("error retrieving the storage size: %v", err)
+	}
+
+	builder.Definition.Spec.ImageStorage = &imageStorageSpec
+
+	databaseStorageSpec, err := GetDefaultStorageSpec(defaultDatabaseStorageSize)
+	if err != nil {
+		glog.V(100).Infof("The DatabaseStorage size is in wrong format")
+
+		builder.errorMsg = fmt.Sprintf("error retrieving the storage size: %v", err)
+	}
+
+	builder.Definition.Spec.DatabaseStorage = databaseStorageSpec
+
+	fileSystemStorageSpec, err := GetDefaultStorageSpec(defaultFilesystemStorageSize)
+	if err != nil {
+		glog.V(100).Infof("The FileSystemStorage size is in wrong format")
+
+		builder.errorMsg = fmt.Sprintf("error retrieving the storage size: %v", err)
+	}
+
+	builder.Definition.Spec.FileSystemStorage = fileSystemStorageSpec
 
 	return &builder
 }
@@ -382,56 +405,26 @@ func (builder *AgentServiceConfigBuilder) Exists() bool {
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
-// GetDefaultDatabaseStorageSpec returns a default PVC spec for the agentserviceconfig database storage.
-func GetDefaultDatabaseStorageSpec() corev1.PersistentVolumeClaimSpec {
+// GetDefaultStorageSpec returns a default PVC spec for the respective
+// agentserviceconfig component's storage and a possible error.
+func GetDefaultStorageSpec(defaultStorageSize string) (corev1.PersistentVolumeClaimSpec, error) {
+	checkedDefaultStorageSize, err := resource.ParseQuantity(defaultStorageSize)
+	if err != nil {
+		return corev1.PersistentVolumeClaimSpec{}, fmt.Errorf("the storage size is in wrong format")
+	}
+
 	defaultSpec := corev1.PersistentVolumeClaimSpec{
 		AccessModes: []corev1.PersistentVolumeAccessMode{
 			"ReadWriteOnce",
 		},
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse(defaultDatabaseStorageSize),
+				corev1.ResourceStorage: checkedDefaultStorageSize,
 			},
 		},
 	}
 
-	glog.V(100).Infof("Getting default databaseStorage PVC spec: %v", defaultSpec)
+	glog.V(100).Infof("Getting default PVC spec: %v", defaultSpec)
 
-	return defaultSpec
-}
-
-// GetDefaultFilesystemStorageSpec returns a default PVC spec for the agentserviceconfig filesystem storage.
-func GetDefaultFilesystemStorageSpec() corev1.PersistentVolumeClaimSpec {
-	defaultSpec := corev1.PersistentVolumeClaimSpec{
-		AccessModes: []corev1.PersistentVolumeAccessMode{
-			"ReadWriteOnce",
-		},
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse(defaultFilesystemStorageSize),
-			},
-		},
-	}
-
-	glog.V(100).Infof("Getting default filesystemStorage PVC spec: %v", defaultSpec)
-
-	return defaultSpec
-}
-
-// GetDefaultImageStorageSpec returns a default PVC spec for the agentserviceconfig image storage.
-func GetDefaultImageStorageSpec() *corev1.PersistentVolumeClaimSpec {
-	defaultSpec := &corev1.PersistentVolumeClaimSpec{
-		AccessModes: []corev1.PersistentVolumeAccessMode{
-			"ReadWriteOnce",
-		},
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse(defaultImageStoreStorageSize),
-			},
-		},
-	}
-
-	glog.V(100).Infof("Getting default ImageStorage PVC spec: %v", defaultSpec)
-
-	return defaultSpec
+	return defaultSpec, nil
 }
