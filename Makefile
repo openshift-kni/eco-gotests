@@ -24,3 +24,7 @@ build-docker-image:
 
 install: deps-update install-ginkgo
 	@echo "Installing needed dependencies"
+
+run-tests:
+	@echo "Executing eco-gotests test-runner script"
+	scripts/test-runner.sh
