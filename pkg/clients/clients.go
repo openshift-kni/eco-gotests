@@ -54,6 +54,8 @@ import (
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
 	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
+
+	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 )
 
 // Settings provides the struct to talk with relevant API.
@@ -203,6 +205,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := moduleV1Beta1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := nvidiagpuv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

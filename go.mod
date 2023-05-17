@@ -3,6 +3,7 @@ module github.com/openshift-kni/eco-gotests
 go 1.18
 
 require (
+	github.com/NVIDIA/gpu-operator v1.11.1
 	github.com/golang/glog v1.0.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.2-0.20221215110210-ad3f3381681f

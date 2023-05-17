@@ -122,3 +122,21 @@ func (builder *ClusterServiceVersionBuilder) Delete() error {
 
 	return err
 }
+
+// GetAlmExamples extracts and returns the alm-examples block from the CSV.
+func (builder *ClusterServiceVersionBuilder) GetAlmExamples() (string, error) {
+	glog.V(100).Infof("Extracting the 'alm-examples' section from clusterserviceversion %s in "+
+		"namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+	almExamples := "alm-examples"
+
+	if builder.Exists() {
+		annotations := builder.Object.ObjectMeta.GetAnnotations()
+
+		if example, ok := annotations[almExamples]; ok {
+			return example, nil
+		}
+	}
+
+	return "", fmt.Errorf("%s not found in given csv named %v", almExamples, builder.Definition.Name)
+}
