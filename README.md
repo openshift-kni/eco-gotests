@@ -79,6 +79,27 @@ In oder to disable polarion reporter the following needs to be done:
 
 ## How to run
 
+The test-runner [script](scripts/test-runner.sh) is the recommended way for executing tests.
+
+Parameters for the script are controlled by the following environment variables:
+- `ECO_TEST_FEATURES`: list of features to be tested ("all" will include all tests). All subdirectories under tests that match a feature will be included (internal directories are excluded) - _required_
+- `ECO_TEST_LABELS`: ginkgo query passed to the label-filter option for including/excluding tests - _optional_ 
+- `ECO_VERBOSE_SCRIPT`: prints verbose script information when executing the script - _optional_
+- `ECO_TEST_VERBOSE`: executes ginkgo with verbose test output - _optional_
+- `ECO_TEST_TRACE`: includes full stack trace from ginkgo tests when a failure occurs - _optional_
+
+It is recommended to execute the runner script through the `make run-tests` make target.
+
+Example:
+```
+$ export KUBECONFIG=/path/to/kubeconfig
+$ export ECO_TEST_FEATURES="ztp kmm" 
+$ export ECO_TEST_LABELS='platform-selection || image-service-statefulset'
+$ make run-tests                    
+Executing eco-gotests test-runner script
+scripts/test-runner.sh
+ginkgo -timeout=24h --keep-going --require-suite -r --label-filter="platform-selection || image-service-statefulset" ./tests/assisted/ztp ./tests/hw-accel/kmm
+```
 # eco-gotests - How to contribute
 
 The project uses a development method - forking workflow
