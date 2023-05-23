@@ -37,12 +37,11 @@ type AgentServiceConfigBuilder struct {
 func NewAgentServiceConfigBuilder(
 	apiClient *clients.Settings,
 	databaseStorageSpec,
-	filesystemStorageSpec,
-	imageStorageSpec corev1.PersistentVolumeClaimSpec) *AgentServiceConfigBuilder {
+	filesystemStorageSpec corev1.PersistentVolumeClaimSpec) *AgentServiceConfigBuilder {
 	glog.V(100).Infof(
 		"Initializing new agentserviceconfig structure with the following params: "+
-			"databaseStorageSpec: %v, filesystemStorageSpec: %v, imageStorageSpec: %v",
-		databaseStorageSpec, filesystemStorageSpec, imageStorageSpec)
+			"databaseStorageSpec: %v, filesystemStorageSpec: %v",
+		databaseStorageSpec, filesystemStorageSpec)
 
 	builder := AgentServiceConfigBuilder{
 		apiClient: apiClient,
@@ -53,7 +52,6 @@ func NewAgentServiceConfigBuilder(
 			Spec: agentInstallV1Beta1.AgentServiceConfigSpec{
 				DatabaseStorage:   databaseStorageSpec,
 				FileSystemStorage: filesystemStorageSpec,
-				ImageStorage:      &imageStorageSpec,
 			},
 		},
 	}
@@ -105,6 +103,26 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 	builder.Definition.Spec.FileSystemStorage = fileSystemStorageSpec
 
 	return &builder
+}
+
+// WithImageStorage sets the imageStorageSpec used by the agentserviceconfig.
+func (builder *AgentServiceConfigBuilder) WithImageStorage(
+	imageStorageSpec corev1.PersistentVolumeClaimSpec) *AgentServiceConfigBuilder {
+	glog.V(100).Infof("Setting imageStorage %v in agentserviceconfig", imageStorageSpec)
+
+	if builder.Definition == nil {
+		glog.V(100).Infof("The agentserviceconfig is undefined")
+
+		builder.errorMsg = msg.UndefinedCrdObjectErrString("AgentServiceConfig")
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.ImageStorage = &imageStorageSpec
+
+	return builder
 }
 
 // WithMirrorRegistryRef adds a configmap ref to the agentserviceconfig containing mirroring information.
