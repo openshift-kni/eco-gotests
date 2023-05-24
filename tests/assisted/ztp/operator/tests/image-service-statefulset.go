@@ -23,22 +23,22 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(tsparams.LabelImageServiceStatefulsetTestCases), func() {
-		When("on ACM 2.5 and above", func() {
+		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 				By("Check that hub meets operator version requirement")
-				reqMet, msg := meets.HubOperatorVersionRequirement("2.5")
+				reqMet, msg := meets.HubOperatorVersionRequirement("2.0")
 				if !reqMet {
 					Skip(msg)
 				}
 
 				By("Assure AgentServiceConfig exists")
 				var err error
-				agentServiceConfigBuilder, err = assisted.PullAgentServiceConfig(APIClient)
+				agentServiceConfigBuilder, err = assisted.PullAgentServiceConfig(HubAPIClient)
 				Expect(err).ShouldNot(HaveOccurred(), "Failed to get AgentServiceConfig.")
 
 				By("Assure PVC exists")
 				pvcbuilder, err = storage.PullPersistentVolumeClaim(
-					APIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+					HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
 				Expect(err).ShouldNot(
 					HaveOccurred(),
 					fmt.Sprintf(

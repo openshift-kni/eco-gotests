@@ -1,32 +1,17 @@
 package ztpconfig
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
+	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/assistedconfig"
 )
 
 // ZTPConfig type contains ztp configuration.
 type ZTPConfig struct {
 	*assistedconfig.AssistedConfig
-	HubConfig   hubConfig
-	SpokeConfig spokeConfig
-}
-
-// hubConfig contains environment information related to the hub cluster.
-type hubConfig struct {
-	OCPVersion      string `envconfig:"ECO_ASSISTED_ZTP_HUB_OCP_VERSION"`
-	OperatorVersion string `envconfig:"ECO_ASSISTED_ZTP_HUB_ACM_VERSION"`
-	IPStackv4       bool   `envconfig:"ECO_ASSISTED_ZTP_HUB_BAREMETAL_NET_IPV4"`
-	IPStackv6       bool   `envconfig:"ECO_ASSISTED_ZTP_HUB_BAREMETAL_NET_IPV6"`
-	Disconnected    bool   `envconfig:"ECO_ASSISTED_ZTP_HUB_DISCONNECTED_INSTALL"`
-}
-
-// spokeConfig contains environment information related to the spoke cluster.
-type spokeConfig struct {
-	OCPVersion string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_OCP_VERSION"`
-	PullSecret string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_PULL_SECRET"`
 }
 
 // NewZTPConfig returns instance of ZTPConfig type.
@@ -36,19 +21,48 @@ func NewZTPConfig() *ZTPConfig {
 	var ztpconfig ZTPConfig
 	ztpconfig.AssistedConfig = assistedconfig.NewAssistedConfig()
 
-	err := envconfig.Process("eco_assisted_ztp_hub_", &ztpconfig.HubConfig)
-	if err != nil {
-		log.Printf("falied to instantiate HubConfig: %v", err)
+	return &ztpconfig
+}
 
-		return nil
+// SpokeConfig contains environment information related to the spoke cluster.
+type SpokeConfig struct {
+	APIClient       *clients.Settings
+	KubeConfig      string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_KUBECONFIG"`
+	ClusterImageSet string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_CLUSTERIMAGESET"`
+}
+
+// GetAPIClient implements the cluster.APIClientGetter interface by returning it's APIClient member.
+func (config *SpokeConfig) GetAPIClient() (*clients.Settings, error) {
+	if config.APIClient == nil {
+		return nil, fmt.Errorf("APIClient was nil")
 	}
 
-	err = envconfig.Process("eco_assisted_ztp_spoke_", &ztpconfig.SpokeConfig)
+	return config.APIClient, nil
+}
+
+// NewSpokeConfig returns instance of SpokeConfig type.
+func NewSpokeConfig() *SpokeConfig {
+	log.Print("Creating new SpokeConfig struct")
+
+	spokeConfig := new(SpokeConfig)
+
+	err := envconfig.Process("eco_assisted_ztp_spoke_", spokeConfig)
 	if err != nil {
 		log.Printf("falied to instantiate SpokeConfig: %v", err)
 
 		return nil
 	}
 
-	return &ztpconfig
+	if spokeConfig.KubeConfig != "" {
+		log.Printf("Creating spoke api client from %s\n", spokeConfig.KubeConfig)
+
+		if spokeConfig.APIClient = clients.New(
+			spokeConfig.KubeConfig); spokeConfig.APIClient == nil {
+			log.Printf("falied to load provided spoke kubeconfig: %v", err)
+		}
+	} else {
+		spokeConfig.APIClient = nil
+	}
+
+	return spokeConfig
 }

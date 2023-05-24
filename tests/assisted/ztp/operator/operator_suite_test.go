@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/tests"
@@ -25,6 +26,14 @@ func TestOperator(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Operator Suite", Label(tsparams.Labels...), reporterConfig)
 }
+
+var _ = BeforeSuite(func() {
+	By("Check that assisted is running")
+	operandRunning, msg := meets.HubInfrastructureOperandRunningRequirement()
+	if !operandRunning {
+		Skip(msg)
+	}
+})
 
 var _ = ReportAfterSuite("", func(report Report) {
 	polarion.CreateReport(

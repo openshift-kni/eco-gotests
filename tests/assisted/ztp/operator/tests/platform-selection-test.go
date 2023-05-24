@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -28,6 +29,7 @@ var (
 	testSecret              *secret.Builder
 	testClusterDeployment   *hive.ClusterDeploymentBuilder
 	testAgentClusterInstall *assisted.AgentClusterInstallBuilder
+	hubPullSecret           *secret.Builder
 	err                     error
 )
 
@@ -36,44 +38,41 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(tsparams.LabelPlatformSelectionTestCases), func() {
-		When("on ACM 2.6", func() {
+		When("on MCE 2.1", func() {
 			BeforeAll(func() {
 				By("Check that hub meets operator version requirement")
-				reqMet, msg := meets.HubOperatorVersionRequirement("2.6")
+				reqMet, msg := meets.HubOperatorVersionRequirement("2.1")
 				if !reqMet {
 					Skip(msg)
 				}
 
-				By("Check that spoke meets ocp version requirement")
-				reqMet, msg = meets.SpokeOCPVersionRequirement("4.8")
+				By("Check clusterimageset ocp version meets requirement")
+				reqMet, msg = meets.SpokeClusterImageSetVersionRequirement("4.8")
 				if !reqMet {
 					Skip(msg)
 				}
 
-				By("Check that spoke meets pull-secret requirement")
-				reqMet, msg = meets.SpokePullSecretSetRequirement()
-				if !reqMet {
-					Skip(msg)
-				}
+				By("Check that hub pull-secret can be retrieved")
+				hubPullSecret, err = cluster.GetOCPPullSecret(HubAPIClient)
+				Expect(err).ToNot(HaveOccurred(), "error occurred when retrieving hub pull-secret")
 
 				tsparams.ReporterNamespacesToDump[platformtypeSpoke] = "platform-selection namespace"
 
 				By("Create platform-test namespace")
-				testNS, err = namespace.NewBuilder(APIClient, platformtypeSpoke).Create()
+				testNS, err = namespace.NewBuilder(HubAPIClient, platformtypeSpoke).Create()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when creating namespace")
 
 				By("Create platform-test pull-secret")
 				testSecret, err = secret.NewBuilder(
-					APIClient,
+					HubAPIClient,
 					fmt.Sprintf("%s-pull-secret", platformtypeSpoke),
 					platformtypeSpoke,
-					v1.SecretTypeDockerConfigJson).WithData(map[string][]byte{
-					".dockerconfigjson": []byte(ZTPConfig.SpokeConfig.PullSecret)}).Create()
+					v1.SecretTypeDockerConfigJson).WithData(hubPullSecret.Object.Data).Create()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 				By("Create platform-test clusterdeployment")
 				testClusterDeployment, err = hive.NewABMClusterDeploymentBuilder(
-					APIClient,
+					HubAPIClient,
 					platformtypeSpoke,
 					testNS.Definition.Name,
 					platformtypeSpoke,
@@ -97,7 +96,7 @@ var _ = Describe(
 
 					By("Create agentclusterinstall")
 					testAgentClusterInstall, err = assisted.NewAgentClusterInstallBuilder(
-						APIClient,
+						HubAPIClient,
 						platformtypeSpoke,
 						testNS.Definition.Name,
 						testClusterDeployment.Definition.Name,
@@ -112,7 +111,7 @@ var _ = Describe(
 								CIDR: "192.168.254.0/24",
 							}},
 							ServiceNetwork: []string{"172.30.0.0/16"},
-						}).WithImageSet(ZTPConfig.SpokeConfig.OCPVersion).
+						}).WithImageSet(SpokeConfig.ClusterImageSet).
 						WithPlatformType(platformType).
 						WithUserManagedNetworking(userManagedNetworking).Create()
 					Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
