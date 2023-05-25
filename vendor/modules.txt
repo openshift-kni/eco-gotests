@@ -358,6 +358,9 @@ github.com/openshift/client-go/operator/informers/externalversions/operator/v1
 github.com/openshift/client-go/operator/informers/externalversions/operator/v1alpha1
 github.com/openshift/client-go/operator/listers/operator/v1
 github.com/openshift/client-go/operator/listers/operator/v1alpha1
+# github.com/openshift/cluster-nfd-operator v0.0.0-20230116162820-3d08a74f3d2e
+## explicit; go 1.18
+github.com/openshift/cluster-nfd-operator/api/v1
 # github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87
 ## explicit; go 1.12
 github.com/openshift/custom-resource-status/conditions/v1

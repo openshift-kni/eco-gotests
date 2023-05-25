@@ -19,6 +19,7 @@ require (
 	github.com/openshift/assisted-service/api v0.0.0-20230125183155-2b97070428e1
 	github.com/openshift/assisted-service/models v0.0.0
 	github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a
+	github.com/openshift/cluster-nfd-operator v0.0.0-20230116162820-3d08a74f3d2e
 	github.com/openshift/hive/apis v0.0.0-20220222213051-def9088fdb5a
 	github.com/openshift/machine-config-operator v0.0.1-0.20211105081319-76d6155c1dab
 	github.com/openshift/ptp-operator v0.0.0-20220616154021-73c849ad6b4b

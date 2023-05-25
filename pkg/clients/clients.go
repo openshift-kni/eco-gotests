@@ -56,6 +56,7 @@ import (
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
+	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 )
 
 // Settings provides the struct to talk with relevant API.
@@ -209,6 +210,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := nvidiagpuv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := nfdv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
