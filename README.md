@@ -185,3 +185,6 @@ func Function(
 	
 }
 ```
+
+### Common issues:
+* If the automated commit check fails - make sure to pull/rebase the latest change and have a successful execution of 'make lint' locally first.
