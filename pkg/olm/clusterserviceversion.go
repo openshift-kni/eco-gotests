@@ -32,6 +32,12 @@ func ListClusterServiceVersion(
 	options metaV1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
 	glog.V(100).Infof("Listing clusterserviceversions in the namespace %s with the options %v", nsname, options)
 
+	if nsname == "" {
+		glog.V(100).Infof("clusterserviceversion 'nsname' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list clusterserviceversions, 'nsname' parameter is empty")
+	}
+
 	csvList, err := apiClient.OperatorsV1alpha1Interface.ClusterServiceVersions(nsname).List(context.Background(), options)
 
 	if err != nil {

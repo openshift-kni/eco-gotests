@@ -21,8 +21,9 @@ import (
 	// nolint:lll
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 
+	pkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	// nolint:lll
-	pkgmanifestv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/typed/operators/v1"
+	clientPkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/typed/operators/v1"
 
 	fecV2 "github.com/smart-edge-open/sriov-fec-operator/sriov-fec/api/v2"
 	apiExt "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -76,7 +77,7 @@ type Settings struct {
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
 	olmv1.OperatorsV1Interface
-	PackageManifestInterface pkgmanifestv1.OperatorsV1Interface
+	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -115,7 +116,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.K8sCniCncfIoV1Interface = clientNetAttDefV1.NewForConfigOrDie(config)
 	clientSet.Interface = dynamic.NewForConfigOrDie(config)
 	clientSet.OperatorsV1Interface = olmv1.NewForConfigOrDie(config)
-	clientSet.PackageManifestInterface = pkgmanifestv1.NewForConfigOrDie(config)
+	clientSet.PackageManifestInterface = clientPkgManifestV1.NewForConfigOrDie(config)
 
 	clientSet.Config = config
 
@@ -214,6 +215,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := nfdv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := pkgManifestV1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
