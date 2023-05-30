@@ -75,6 +75,15 @@ func HubOperatorVersionRequirement(requiredVersion string) (bool, string) {
 	return true, ""
 }
 
+// SpokeAPIClientReadyRequirement checks that the spoke APIClient has been properly initialized.
+func SpokeAPIClientReadyRequirement() (bool, string) {
+	if SpokeConfig.APIClient == nil {
+		return false, "spoke APIClient has not been initialized"
+	}
+
+	return true, ""
+}
+
 // SpokeClusterImageSetVersionRequirement checks that the provided clusterimageset meets the version provided.
 func SpokeClusterImageSetVersionRequirement(requiredVersion string) (bool, string) {
 	if SpokeConfig.ClusterImageSet == "" {

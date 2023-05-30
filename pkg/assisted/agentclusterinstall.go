@@ -573,6 +573,41 @@ func (builder *AgentClusterInstallBuilder) Get() (*hiveextV1Beta1.AgentClusterIn
 	return agentClusterInstall, err
 }
 
+// PullAgentClusterInstall pulls existing agentclusterinstall from cluster.
+func PullAgentClusterInstall(apiClient *clients.Settings, name, nsname string) (*AgentClusterInstallBuilder, error) {
+	glog.V(100).Infof("Pulling existing agentclusterinstall name %s under namespace %s from cluster", name, nsname)
+
+	builder := AgentClusterInstallBuilder{
+		apiClient: apiClient,
+		Definition: &hiveextV1Beta1.AgentClusterInstall{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("The name of the agentclusterinstall is empty")
+
+		builder.errorMsg = "agentclusterinstall 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		glog.V(100).Infof("The namespace of the agentclusterinstall is empty")
+
+		builder.errorMsg = "agentclusterinstall 'namespace' cannot be empty"
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("agentclusterinstall object %s doesn't exist in namespace %s", name, nsname)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
+}
+
 // Create generates a agentclusterinstall on the cluster.
 func (builder *AgentClusterInstallBuilder) Create() (*AgentClusterInstallBuilder, error) {
 	glog.V(100).Infof("Creating the agentclusterinstall %s in namespace %s",
