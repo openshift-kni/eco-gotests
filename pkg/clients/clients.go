@@ -11,7 +11,6 @@ import (
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 
 	performanceV2 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1alpha1"
-	operatorV1 "github.com/openshift/api/operator/v1"
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	ptpV1 "github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1"
@@ -48,13 +47,13 @@ import (
 	clientMachineConfigV1 "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1"
 	metalLbV1Beta1 "go.universe.tf/metallb/api/v1beta1"
 
-	"k8s.io/client-go/kubernetes/scheme"
-	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
-
+	operatorV1 "github.com/openshift/api/operator/v1"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
 	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
+	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"

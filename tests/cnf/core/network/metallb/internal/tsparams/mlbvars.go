@@ -60,4 +60,8 @@ var (
 	PrometheusMonitoringLabel = "openshift.io/cluster-monitoring"
 	// PrometheusMonitoringPodLabel represents monitoring pod label selector.
 	PrometheusMonitoringPodLabel = "app.kubernetes.io/name=prometheus"
+	// EBGPProtocol represents external bgp protocol name.
+	EBGPProtocol = "eBGP"
+	// IBPGPProtocol represents internal bgp protocol name.
+	IBPGPProtocol = "iBGP"
 )

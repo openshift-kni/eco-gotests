@@ -5,6 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
+	v12 "k8s.io/api/core/v1"
+
 	"github.com/onsi/gomega/types"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,14 +72,6 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			WithMasterPlugin(macVlanPlugin).Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
 		Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
-	})
-
-	Context("multi hops", Label("mutihop"), func() {
-
-		It("should provide fast link failure detection", polarion.ID("47186"), func() {
-
-		})
-
 	})
 
 	Context("single hop", Label("singlehop"), func() {
@@ -288,6 +284,42 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		})
 	})
 
+	Context("multihop", Label("multihop"), func() {
+		speakerRoutesMap := make(map[string]string)
+
+		BeforeEach(func() {
+			By("Collecting information before test")
+			speakerPodList, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
+				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
+			})
+			Expect(err).ToNot(HaveOccurred(), "Failed to list speaker pods")
+
+			speakerRoutesMap, err = buildRoutesMap(speakerPodList, ipv4metalLbIPList)
+			Expect(err).ToNot(HaveOccurred(), "Failed to build speaker route map")
+
+			By("Configuring Local GW mode")
+			setLocalGWMode(true)
+		})
+
+		AfterEach(func() {
+			By("Revert Local GW mode")
+			setLocalGWMode(false)
+		})
+
+		DescribeTable("should provide fast link failure detection", polarion.ID("47186"),
+			func(bgpProtocol string, ipStack string, externalTrafficPolicy v12.ServiceExternalTrafficPolicyType) {
+				Expect(speakerRoutesMap).ToNot(BeNil())
+				Skip("TODO")
+			},
+
+			Entry("", tsparams.IBPGPProtocol, netparam.IPV4Family, v12.ServiceExternalTrafficPolicyTypeCluster,
+				polarion.SetProperty("BGPPeer", tsparams.IBPGPProtocol),
+				polarion.SetProperty("IPStack", netparam.IPV4Family),
+				polarion.SetProperty("TrafficPolicy", "Cluster")),
+		)
+
+	})
+
 	AfterAll(func() {
 		By("Cleaning Metallb namespace")
 		metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
@@ -346,4 +378,42 @@ func mapFirstKeyValue(inputMap map[string]string) (string, string) {
 	}
 
 	return "", ""
+}
+
+func buildRoutesMap(podList []*pod.Builder, nextHopList []string) (map[string]string, error) {
+	if len(podList) == 0 {
+		return nil, fmt.Errorf("pod list is empty")
+	}
+
+	if len(nextHopList) == 0 {
+		return nil, fmt.Errorf("nexthop IP addresses list is empty")
+	}
+
+	if len(nextHopList) < len(podList) {
+		return nil, fmt.Errorf("number of speaker IP addresses[%d] is less then number of pods[%d]",
+			len(nextHopList), len(podList))
+	}
+
+	routesMap := make(map[string]string)
+
+	for num, speakerPod := range podList {
+		routesMap[speakerPod.Definition.Spec.NodeName] = nextHopList[num]
+	}
+
+	return routesMap, nil
+}
+
+func setLocalGWMode(status bool) {
+	By(fmt.Sprintf("Configuring GW mode %v", status))
+
+	clusterNetwork, err := cluster.GetOCPNetworkOperatorConfig(APIClient)
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect network.operator object")
+
+	clusterNetwork, err = clusterNetwork.SetLocalGWMode(status, 10*time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to set local GW mode %v", status))
+
+	network, err := clusterNetwork.Get()
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect network.operator object")
+	Expect(network.Spec.DefaultNetwork.OVNKubernetesConfig.GatewayConfig.RoutingViaHost).To(BeEquivalentTo(status),
+		"Failed network.operator object is not in expected state")
 }

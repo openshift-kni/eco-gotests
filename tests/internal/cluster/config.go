@@ -33,8 +33,8 @@ func GetOCPClusterVersion(clusterObj APIClientGetter) (*clusterversion.Builder, 
 	return clusterVersion, nil
 }
 
-// GetOCPNetwork leverages APIClientGetter to retrieve the OCP cluster network from an arbitrary cluster.
-func GetOCPNetwork(clusterObj APIClientGetter) (*network.Builder, error) {
+// GetOCPNetworkConfig leverages APIClientGetter to retrieve the OCP cluster network from an arbitrary cluster.
+func GetOCPNetworkConfig(clusterObj APIClientGetter) (*network.ConfigBuilder, error) {
 	apiClient, err := checkAPIClient(clusterObj)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,25 @@ func GetOCPNetwork(clusterObj APIClientGetter) (*network.Builder, error) {
 
 	glog.V(90).Infof("Gathering OCP network from cluster at %s", apiClient.KubeconfigPath)
 
-	clusterNetwork, err := network.Pull(apiClient)
+	clusterNetwork, err := network.PullConfig(apiClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return clusterNetwork, nil
+}
+
+// GetOCPNetworkOperatorConfig leverages APIClientGetter to retrieve the OCP cluster network from an arbitrary cluster.
+func GetOCPNetworkOperatorConfig(clusterObj APIClientGetter) (*network.OperatorBuilder, error) {
+	apiClient, err := checkAPIClient(clusterObj)
+	if err != nil {
+		return nil, err
+	}
+
+	glog.V(90).Infof("Gathering OCP network from cluster at %s", apiClient.KubeconfigPath)
+
+	clusterNetwork, err := network.PullOperator(apiClient)
+
 	if err != nil {
 		return nil, err
 	}

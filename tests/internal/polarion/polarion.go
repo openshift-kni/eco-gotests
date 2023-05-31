@@ -102,6 +102,11 @@ func ID(tag string) ginkgo.Labels {
 	return ginkgo.Label(tag, fmt.Sprintf("%s:%s", testIDTag, tag))
 }
 
+// SetProperty sets polarion property for a test case.
+func SetProperty(propertyKey, propertyValue string) ginkgo.Labels {
+	return ginkgo.Label(fmt.Sprintf("polarion-parameter-%s:%s", propertyKey, propertyValue))
+}
+
 func setPolarionID(testReport types.SpecReport, projectTag string) *Property {
 	if len(testReport.Labels()) > 0 {
 		for _, label := range testReport.Labels() {

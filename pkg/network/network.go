@@ -15,8 +15,8 @@ const (
 	clusterNetworkName = "cluster"
 )
 
-// Builder provides a struct for network object from the cluster and a network definition.
-type Builder struct {
+// ConfigBuilder provides a struct for network object from the cluster and a network definition.
+type ConfigBuilder struct {
 	// network definition, used to create the network object.
 	Definition *v1.Network
 	// Created network object.
@@ -25,11 +25,11 @@ type Builder struct {
 	apiClient *clients.Settings
 }
 
-// Pull loads an existing network into Builder struct.
-func Pull(apiClient *clients.Settings) (*Builder, error) {
+// PullConfig loads an existing network into ConfigBuilder struct.
+func PullConfig(apiClient *clients.Settings) (*ConfigBuilder, error) {
 	glog.V(100).Infof("Pulling existing network name: %s", clusterNetworkName)
 
-	builder := Builder{
+	builder := ConfigBuilder{
 		apiClient: apiClient,
 		Definition: &v1.Network{
 			ObjectMeta: metaV1.ObjectMeta{
@@ -48,7 +48,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 }
 
 // Exists checks whether the given network exists.
-func (builder *Builder) Exists() bool {
+func (builder *ConfigBuilder) Exists() bool {
 	glog.V(100).Infof(
 		"Checking if network %s exists",
 		builder.Definition.Name)
