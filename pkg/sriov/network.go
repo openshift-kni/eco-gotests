@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/msg"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -245,6 +246,40 @@ func (builder *NetworkBuilder) Exists() bool {
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// List returns sriov networks in the given namespace.
+func List(apiClient *clients.Settings, nsname string, options metaV1.ListOptions) ([]*NetworkBuilder, error) {
+	glog.V(100).Infof("Listing sriov networks in the namespace %s with the options %v", nsname, options)
+
+	if nsname == "" {
+		glog.V(100).Infof("sriov network 'nsname' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list sriov networks, 'nsname' parameter is empty")
+	}
+
+	networkList, err := apiClient.SriovNetworks(nsname).List(context.Background(), options)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to list sriov networks in the namespace %s due to %s", nsname, err.Error())
+
+		return nil, err
+	}
+
+	var networkObjects []*NetworkBuilder
+
+	for _, runningNetwork := range networkList.Items {
+		copiedNetwork := runningNetwork
+		networkBuilder := &NetworkBuilder{
+			apiClient:  apiClient,
+			Object:     &copiedNetwork,
+			Definition: &copiedNetwork,
+		}
+
+		networkObjects = append(networkObjects, networkBuilder)
+	}
+
+	return networkObjects, nil
 }
 
 func (builder *NetworkBuilder) withCapabilities(capability string) *NetworkBuilder {
