@@ -284,6 +284,41 @@ func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 	return err
 }
 
+// WaitUntilReady waits for the duration of the defined timeout or until the pod reaches the Ready condition.
+func (builder *Builder) WaitUntilReady(timeout time.Duration) error {
+	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s is Ready",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	return builder.WaitUntilCondition(v1.PodReady, timeout)
+}
+
+// WaitUntilCondition waits for the duration of the defined timeout or until the pod gets to a specific condition.
+func (builder *Builder) WaitUntilCondition(condition v1.PodConditionType, timeout time.Duration) error {
+	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s has condition %v",
+		builder.Definition.Name, builder.Definition.Namespace, condition)
+
+	if builder.errorMsg != "" {
+		return fmt.Errorf(builder.errorMsg)
+	}
+
+	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+		updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
+			context.Background(), builder.Object.Name, metaV1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		for _, cond := range updatePod.Status.Conditions {
+			if cond.Type == condition && cond.Status == v1.ConditionTrue {
+				return true, nil
+			}
+		}
+
+		return false, nil
+
+	})
+}
+
 // ExecCommand runs command in the pod and returns the buffer output.
 func (builder *Builder) ExecCommand(command []string, containerName ...string) (bytes.Buffer, error) {
 	glog.V(100).Infof("Execute command %v in the pod",
