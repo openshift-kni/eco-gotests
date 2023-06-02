@@ -40,14 +40,8 @@ var _ = Describe(
 	Label(tsparams.LabelPlatformSelectionTestCases), func() {
 		When("on MCE 2.1", func() {
 			BeforeAll(func() {
-				By("Check that hub meets operator version requirement")
-				reqMet, msg := meets.HubOperatorVersionRequirement("2.1")
-				if !reqMet {
-					Skip(msg)
-				}
-
 				By("Check clusterimageset ocp version meets requirement")
-				reqMet, msg = meets.SpokeClusterImageSetVersionRequirement("4.8")
+				reqMet, msg := meets.SpokeClusterImageSetVersionRequirement("4.8")
 				if !reqMet {
 					Skip(msg)
 				}

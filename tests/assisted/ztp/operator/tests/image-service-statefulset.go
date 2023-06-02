@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-gotests/pkg/assisted"
 	"github.com/openshift-kni/eco-gotests/pkg/storage"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -30,12 +29,6 @@ var _ = Describe(
 	Label(tsparams.LabelImageServiceStatefulsetTestCases), func() {
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
-				By("Check that hub meets operator version requirement")
-				reqMet, msg := meets.HubOperatorVersionRequirement("2.0")
-				if !reqMet {
-					Skip(msg)
-				}
-
 				By("Retrieve the pre-existing AgentServiceConfig")
 				var err error
 				agentServiceConfigBuilder, err = assisted.PullAgentServiceConfig(HubAPIClient)
