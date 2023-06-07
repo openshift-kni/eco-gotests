@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	metalLbV1Beta1 "go.universe.tf/metallb/api/v1beta1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -215,4 +216,11 @@ func (builder *IPAddressPoolBuilder) WithAvoidBuggyIPs(avoid bool) *IPAddressPoo
 	builder.Definition.Spec.AvoidBuggyIPs = avoid
 
 	return builder
+}
+
+// GetIPAddressPoolGVR returns ipaddresspool's GroupVersionResource, which could be used for Clean function.
+func GetIPAddressPoolGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "metallb.io", Version: "v1beta1", Resource: "ipaddresspools",
+	}
 }

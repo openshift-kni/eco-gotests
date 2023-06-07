@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift-kni/eco-gotests/pkg/msg"
-
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/pkg/msg"
 	metalLbV1Beta "go.universe.tf/metallb/api/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -191,7 +191,7 @@ func (builder *BGPAdvertisementBuilder) WithAggregationLength4(aggregationLength
 		builder.errorMsg = msg.UndefinedCrdObjectErrString("BGPAdvertisement")
 	}
 
-	if !(aggregationLength < 0 || aggregationLength > 32) {
+	if aggregationLength < 0 || aggregationLength > 32 {
 		builder.errorMsg = fmt.Sprintf("AggregationLength %d is invalid, the value shoud be in range 0...32",
 			aggregationLength)
 	}
@@ -364,4 +364,11 @@ func (builder *BGPAdvertisementBuilder) WithPeers(peers []string) *BGPAdvertisem
 	builder.Definition.Spec.Peers = peers
 
 	return builder
+}
+
+// GetBGPAdvertisementGVR returns bgpadvertisement's GroupVersionResource, which could be used for Clean function.
+func GetBGPAdvertisementGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "metallb.io", Version: "v1beta1", Resource: "bgpadvertisements",
+	}
 }
