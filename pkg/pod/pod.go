@@ -599,6 +599,25 @@ func (builder *Builder) PullImage(timeout time.Duration, testCmd []string) error
 	return err
 }
 
+// WithLabel applies label to pod's definition.
+func (builder *Builder) WithLabel(labelKey, labelValue string) *Builder {
+	glog.V(100).Infof(fmt.Sprintf("Defining pod's label to %s:%s", labelKey, labelValue))
+
+	builder.isMutationAllowed("Labels")
+
+	if labelKey == "" {
+		builder.errorMsg = "can not apply empty labelKey"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Labels = map[string]string{labelKey: labelValue}
+
+	return builder
+}
+
 // GetGVR returns pod's GroupVersionResource which could be used for Clean function.
 func GetGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
