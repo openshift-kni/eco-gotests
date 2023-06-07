@@ -109,3 +109,61 @@ func (plugin *MasterMacVlanPlugin) GetMasterPluginConfig() (*MasterPlugin, error
 
 	return plugin.masterPlugin, nil
 }
+
+// MasterBridgePlugin provides struct for MasterPlugin set to bridge in NetworkAttachmentDefinition.
+type MasterBridgePlugin struct {
+	masterPlugin *MasterPlugin
+	errorMsg     string
+}
+
+// NewMasterBridgePlugin creates new instance of MasterBridgePlugin.
+func NewMasterBridgePlugin(name, bridgeName string) *MasterBridgePlugin {
+	glog.V(100).Infof(
+		"Initializing new MasterBridgePlugin structure %s, with bridge %s", name, bridgeName)
+
+	builder := MasterBridgePlugin{
+		masterPlugin: &MasterPlugin{
+			CniVersion: "0.3.1",
+			Name:       name,
+			Type:       "bridge",
+			Bridge:     bridgeName,
+		},
+	}
+
+	if builder.masterPlugin.Name == "" {
+		glog.V(100).Infof("error MasterBridgePlugin can not be empty")
+
+		builder.errorMsg = "MasterBridgePlugin name is empty"
+	}
+
+	return &builder
+}
+
+// GetMasterPluginConfig returns master plugin if error does not occur.
+func (plugin *MasterBridgePlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
+	if plugin.errorMsg != "" {
+		return nil, fmt.Errorf("error to build MaterPlugin config due to :%s", plugin.errorMsg)
+	}
+
+	return plugin.masterPlugin, nil
+}
+
+// WithIPAM defines IPAM configuration to MasterBridgePlugin. Default is empty.
+func (plugin *MasterBridgePlugin) WithIPAM(ipam *IPAM) *MasterBridgePlugin {
+	glog.V(100).Infof("Adding ipam configuration %v to MasterBridgePlugin", ipam)
+
+	if plugin.masterPlugin == nil {
+		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterBridgePlugin"))
+		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterBridgePlugin")
+	}
+
+	if ipam == nil {
+		glog.V(100).Infof("error adding empty ipam to MasterBridgePlugin")
+
+		plugin.errorMsg = "invalid ipam parameter"
+	}
+
+	plugin.masterPlugin.Ipam = ipam
+
+	return plugin
+}

@@ -45,6 +45,7 @@ type (
 		Master     string    `json:"master,omitempty"`
 		Mode       string    `json:"mode,omitempty"`
 		Plugins    *[]Plugin `json:"plugins,omitempty"`
+		Bridge     string    `json:"bridge,omitempty"`
 		Ipam       *IPAM     `json:"ipam,omitempty"`
 	}
 
