@@ -328,3 +328,69 @@ func (builder *Builder) Exists() bool {
 func GetGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 }
+
+// List returns deployment inventory in the given namespace.
+func List(apiClient *clients.Settings, nsname string, options metaV1.ListOptions) ([]*Builder, error) {
+	glog.V(100).Infof("Listing deployments in the namespace %s with the options %v", nsname, options)
+
+	if nsname == "" {
+		glog.V(100).Infof("deployment 'nsname' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list deployments, 'nsname' parameter is empty")
+	}
+
+	deploymentList, err := apiClient.Deployments(nsname).List(context.Background(), options)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to list deployments in the namespace %s due to %s", nsname, err.Error())
+
+		return nil, err
+	}
+
+	var deploymentObjects []*Builder
+
+	for _, runningDeployment := range deploymentList.Items {
+		copiedDeployment := runningDeployment
+		deploymentBuilder := &Builder{
+			apiClient:  apiClient,
+			Object:     &copiedDeployment,
+			Definition: &copiedDeployment,
+		}
+
+		deploymentObjects = append(deploymentObjects, deploymentBuilder)
+	}
+
+	return deploymentObjects, nil
+}
+
+// WaitUntilCondition waits for the duration of the defined timeout or until the
+// deployment gets to a specific condition.
+func (builder *Builder) WaitUntilCondition(condition v1.DeploymentConditionType, timeout time.Duration) error {
+	glog.V(100).Infof("Waiting for the defined period until deployment %s in namespace %s has condition %v",
+		builder.Definition.Name, builder.Definition.Namespace, condition)
+
+	if !builder.Exists() {
+		return fmt.Errorf("cannot wait for deployment condition because it does not exist")
+	}
+
+	if builder.errorMsg != "" {
+		return fmt.Errorf(builder.errorMsg)
+	}
+
+	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+		updateDeployment, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
+			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		for _, cond := range updateDeployment.Status.Conditions {
+			if cond.Type == condition && cond.Status == coreV1.ConditionTrue {
+				return true, nil
+			}
+		}
+
+		return false, nil
+
+	})
+}
