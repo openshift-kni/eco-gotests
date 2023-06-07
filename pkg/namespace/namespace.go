@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/strings/slices"
 )
 
 // Builder provides struct for namespace object containing connection to the cluster and the namespace definitions.
@@ -234,6 +235,11 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 				context.Background(), metaV1.ListOptions{})
 
 			if err != nil || len(objList.Items) > 1 {
+				// avoid timeout due to default automatically created openshift
+				// configmaps: kube-root-ca.crt openshift-service-ca.crt
+				if resource.Resource == "configmaps" {
+					return builder.hasOnlyDefaultConfigMaps(objList, err)
+				}
 
 				return false, err
 			}
@@ -250,4 +256,28 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 	}
 
 	return nil
+}
+
+// hasOnlyDefaultConfigMaps returns true if only default configMaps are present in a namespace.
+func (builder *Builder) hasOnlyDefaultConfigMaps(objList *unstructured.UnstructuredList, err error) (bool, error) {
+	if err != nil {
+		return false, err
+	}
+
+	if len(objList.Items) != 2 {
+		return false, err
+	}
+
+	var existingConfigMaps []string
+	for _, configMap := range objList.Items {
+		existingConfigMaps = append(existingConfigMaps, configMap.GetName())
+	}
+
+	// return false if existing configmaps are NOT default pre-deployed openshift configmaps
+	if !(slices.Contains(existingConfigMaps, "kube-root-ca.crt") &&
+		slices.Contains(existingConfigMaps, "openshift-service-ca.crt")) {
+		return false, err
+	}
+
+	return true, nil
 }
