@@ -9,8 +9,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
+
+const emptyDefinitionMsg = "no definition in builder"
 
 // Builder provides struct for service object containing connection to the cluster and the service definitions.
 type Builder struct {
@@ -68,7 +71,7 @@ func NewBuilder(
 // WithNodePort redefines the service with NodePort service type.
 func (builder *Builder) WithNodePort() *Builder {
 	if builder.Definition == nil {
-		builder.errorMsg = "no definition in builder"
+		builder.errorMsg = emptyDefinitionMsg
 
 		return builder
 	}
@@ -136,6 +139,113 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
+// WithExternalTrafficPolicy redefines the service with ServiceExternalTrafficPolicy type.
+func (builder *Builder) WithExternalTrafficPolicy(policyType v1.ServiceExternalTrafficPolicyType) *Builder {
+	glog.V(100).Infof(
+		"Defining service's with ExternalTrafficPolicy: %v", policyType)
+
+	if builder.Definition == nil {
+		glog.V(100).Infof(
+			"Failed to set ExternalTrafficPolicy on service %s in namespace %s. "+
+				"Service Definition can not be empty",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = emptyDefinitionMsg
+
+		return builder
+	}
+
+	if policyType == "" {
+		glog.V(100).Infof(
+			"Failed to set ExternalTrafficPolicy on service %s in namespace %s. "+
+				"policyType can not be empty",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = "ExternalTrafficPolicy can not be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.Type = "LoadBalancer"
+	builder.Definition.Spec.ExternalTrafficPolicy = policyType
+
+	return builder
+}
+
+// WithAnnotation redefines the service with Annotation type.
+func (builder *Builder) WithAnnotation(annotation map[string]string) *Builder {
+	glog.V(100).Infof("Defining service's Annotation to %v", annotation)
+
+	if builder.Definition == nil {
+		glog.V(100).Infof(
+			"Failed to set Annotation on service %s in namespace %s. "+
+				"Service Definition can not be empty",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = emptyDefinitionMsg
+
+		return builder
+	}
+
+	if annotation == nil {
+		glog.V(100).Infof(
+			"Failed to set Annotation on service %s in namespace %s. "+
+				"Service Annotation can not be empty",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = "Annotation can not be empty map"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Annotations = annotation
+
+	return builder
+}
+
+// WithIPFamily redefines the service with IPFamilies type.
+func (builder *Builder) WithIPFamily(ipFamily []v1.IPFamily, ipStackPolicy *v1.IPFamilyPolicyType) *Builder {
+	glog.V(100).Infof("Defining service's IPFamily: %v and IPFamilyPolicy: %v", ipFamily, ipStackPolicy)
+
+	if builder.Definition == nil {
+		glog.V(100).Infof(
+			"Failed to set IPFamily on service %s in namespace %s. "+
+				"Service Definition can not be empty",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = emptyDefinitionMsg
+
+		return builder
+	}
+
+	if ipFamily == nil {
+		glog.V(100).Infof("Failed to set empty ipFamily on service %s in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = "failed to set empty ipFamily"
+	}
+
+	if ipStackPolicy == nil {
+		glog.V(100).Infof("Failed to set empty ipStackPolicy on service %s in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = "failed to set empty ipStackPolicy"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.IPFamilies = ipFamily
+	builder.Definition.Spec.IPFamilyPolicy = ipStackPolicy
+
+	return builder
+}
+
 // DefineServicePort helper for creating a Service with a ServicePort.
 func DefineServicePort(port, targetPort int32, protocol v1.Protocol) (*v1.ServicePort, error) {
 	glog.V(100).Infof(
@@ -157,6 +267,13 @@ func DefineServicePort(port, targetPort int32, protocol v1.Protocol) (*v1.Servic
 			IntVal: targetPort,
 		},
 	}, nil
+}
+
+// GetServiceGVR returns service's GroupVersionResource which could be used for Clean function.
+func GetServiceGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "", Version: "v1", Resource: "services",
+	}
 }
 
 // isValidPort checks if a port is valid.
