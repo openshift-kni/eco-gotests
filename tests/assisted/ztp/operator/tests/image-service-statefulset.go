@@ -111,5 +111,64 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(), "error waiting until agentserviceconfig without imagestorage is deployed")
 					Expect(tempAgentServiceConfigBuilder.Object.Spec.ImageStorage).To(BeNil())
 				})
+			It("Assert imageStorage can be defined after the agentServiceConfig is created",
+				polarion.ID("49675"), func() {
+					arbitraryStorageSize := "14Gi"
+
+					By("Create an AgentServiceConfig without ImageStorage")
+					tempAgentServiceConfigBuilder = assisted.NewAgentServiceConfigBuilder(
+						HubAPIClient, databaseStorage, fileSystemStorage)
+
+					// An attempt to restrict the osImages spec for the new agentserviceconfig
+					// to prevent the download of all os images
+					if len(osImage) > 0 {
+						_ = tempAgentServiceConfigBuilder.WithOSImage(osImage[0])
+					}
+					_, err = tempAgentServiceConfigBuilder.Create()
+
+					Expect(err).ToNot(HaveOccurred(), "error creating agentserviceconfig without imagestorage")
+
+					By("Assure the AgentServiceConfig without ImageStorage was successfully created")
+					_, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
+					Expect(err).ToNot(HaveOccurred(), "error waiting until agentserviceconfig without imagestorage is deployed")
+					Expect(tempAgentServiceConfigBuilder.Object.Spec.ImageStorage).To(BeNil(), "error getting empty imagestorage")
+
+					By("Assure the respective PVC doesn't exist")
+					pvcbuilder, err = storage.PullPersistentVolumeClaim(
+						HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+					Expect(err).Should(HaveOccurred(), fmt.Sprintf(
+						"PersistentVolumeClaim %s in NameSpace %s shouldn't exist.",
+						imageServicePersistentVolumeClaimName,
+						tsparams.MCENameSpace))
+
+					By("Initialize PersistentVolumeClaimSpec to be used by imageStorage")
+					imageStoragePersistentVolumeClaim, err := assisted.GetDefaultStorageSpec(arbitraryStorageSize)
+					Expect(err).ToNot(HaveOccurred(),
+						"error initializing PersistentVolumeClaimSpec to be used by imageStorage")
+
+					By("Pull current agentserviceconfig before updating")
+					tempAgentServiceConfigBuilder, err = assisted.PullAgentServiceConfig(HubAPIClient)
+					Expect(err).ToNot(HaveOccurred(), "error pulling agentserviceconfig from cluster")
+
+					By("Update AgentServiceConfig with ImageStorage spec")
+					_, err = tempAgentServiceConfigBuilder.WithImageStorage(imageStoragePersistentVolumeClaim).Update(false)
+					Expect(err).ToNot(HaveOccurred(), "error updating the agentServiceConfig")
+
+					By("Wait until AgentServiceConfig is updated with ImageStorage")
+					tempAgentServiceConfigBuilder, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
+					Expect(err).ToNot(HaveOccurred(), "error waiting until agentserviceconfig with imagestorage is deployed")
+
+					By("Assure the respective PVC was created")
+					pvcbuilder, err = storage.PullPersistentVolumeClaim(
+						HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
+						"failed to get PersistentVolumeClaim %s in NameSpace %s.",
+						imageServicePersistentVolumeClaimName,
+						tsparams.MCENameSpace))
+
+					By("Assert the PVC was created according to the spec")
+					Expect(pvcbuilder.Object.Spec.Resources.Requests.Storage().String()).To(Equal(arbitraryStorageSize),
+						"error matching pvc storage size with the expected storage size")
+				})
 		})
 	})
