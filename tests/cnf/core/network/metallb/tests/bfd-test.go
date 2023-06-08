@@ -64,53 +64,29 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
 		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-
-		By("Creating external BR-EX NetworkAttachmentDefinition")
-		macVlanPlugin, err := define.MasterNadPlugin(coreparams.OvnExternalBridge, "bridge", nad.IPAMStatic())
-		Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
-		externalNad, err = nad.NewBuilder(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName).
-			WithMasterPlugin(macVlanPlugin).Create()
-		Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
-		Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
+		createExternalNad()
 	})
 
 	Context("single hop", Label("singlehop"), func() {
 		BeforeEach(func() {
-			By("Creating BFD profile")
-			bfdProfile, err := metallb.NewBFDBuilder(APIClient, "bfdprofile", NetConfig.MlbOperatorNamespace).
-				WithRcvInterval(300).WithTransmitInterval(300).WithEchoInterval(100).
-				WithEchoMode(true).WithPassiveMode(false).WithMinimumTTL(5).
-				WithMultiplier(3).Create()
-			Expect(err).ToNot(HaveOccurred(), "Failed to create BFD profile")
-			Expect(bfdProfile.Exists()).To(BeTrue(), "BFD profile doesn't exist")
-
-			By("Verifying that BFD profile is applied to speakers")
+			By("Collect running metallb bgp speakers")
 			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
-			for _, speakerPod := range speakerPods {
-				Eventually(frr.IsProtocolConfigured,
-					time.Minute, tsparams.DefaultRetryInterval).WithArguments(speakerPod, "bfd").
-					Should(BeTrue(), "BFD is not configured on the Speakers")
-			}
+			bfdProfile := createBFDProfileAndVerifyIfItsReady(speakerPods)
 
-			By("Creating BGP Peer")
-			_, err = metallb.NewBPGPeerBuilder(APIClient, "testpeer", NetConfig.MlbOperatorNamespace,
-				ipv4metalLbIPList[0], 64500, 64501).WithBFDProfile(bfdProfile.Definition.Name).
-				WithPassword(tsparams.BGPPassword).Create()
-			Expect(err).ToNot(HaveOccurred(), "Failed tp create BGP peer")
-
-			By("Verifying if BGP protocol configured")
-			for _, speakerPod := range speakerPods {
-				Eventually(frr.IsProtocolConfigured,
-					time.Minute, tsparams.DefaultRetryInterval).WithArguments(speakerPod, "router bgp").
-					Should(BeTrue(), "BGP is not configured on the Speakers")
-			}
+			createBGPPeerAndVerifyIfItsReady(
+				"testpeer",
+				ipv4metalLbIPList[0],
+				bfdProfile.Definition.Name,
+				tsparams.LocalBGPASN,
+				tsparams.RemoteBGPASN,
+				false, speakerPods)
 
 			By("Creating MetalLb configMap")
 			frrBFDConfig := frr.DefineBFDConfig(
-				64501, 64500, removePrefixFromIPList(ipv4NodeAddrList), false)
+				tsparams.RemoteBGPASN, tsparams.LocalBGPASN, removePrefixFromIPList(ipv4NodeAddrList), false)
 			configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
 
 			bfdConfigMap, err := configmap.NewBuilder(
@@ -127,7 +103,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				DefineOnNode(masterNodeList.Objects[0].Object.Name).WithTolerationToMaster().WithPrivilegedFlag()
 
 			By("Creating FRR container")
-			frrContainer := pod.NewContainerBuilder("frr2", NetConfig.FrrImage, tsparams.SleepCMD).
+			frrContainer := pod.NewContainerBuilder(tsparams.FRRSecondContainerName, NetConfig.FrrImage, tsparams.SleepCMD).
 				WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
 
 			frrCtr, err := frrContainer.GetContainerCfg()
@@ -145,77 +121,15 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 			By("Checking that BGP and BFD sessions are established and up")
 			verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
+
+			By("Set Local GW mode")
+			setLocalGWMode(false)
 		})
 
 		It("basic functionality should provide fast link failure detection", polarion.ID("47188"), func() {
-			By("Changing the label selector for MetalLb speakers")
-			metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull metallb.io object")
-			_, err = metalLbIo.WithSpeakerNodeSelector(tsparams.MetalLbSpeakerLabel).Update(false)
-			Expect(err).ToNot(HaveOccurred(), "Failed to update metallb object with the new MetalLb label")
-
-			By("Verifying that the MetalLb speakers are not running on nodes after label update")
-			metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
-			metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-				metalLbDs, BeZero(), "Failed to scale down metalLb speaker pods to zero")
-
-			By("Adding metalLb label to compute nodes")
-			Expect(workerNodeList.Discover()).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-			for _, worker := range workerNodeList.Objects {
-				_, err = worker.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-				Expect(err).ToNot(HaveOccurred(), "Failed to append new metalLb label to nodes objects")
-			}
-			metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-				metalLbDs, Not(BeZero()), "Failed to run metalLb speakers on top of nodes with test label")
-
-			By("Checking that BGP and BFD sessions are established and up")
-			frrPod, err := pod.Pull(APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull frr test pod")
-			verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
-
-			By("Removing Speaker pod from one of the compute nodes")
-			firstWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[0].Object.Name)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
-			_, err = firstWorkerNode.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove metalLb label from worker node")
-
-			By("Verifying that cluster has reduced the number of speakers by 1")
-			metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-				metalLbDs, BeEquivalentTo(len(workerNodeList.Objects)-1), "The number of running speaker pods is not expected")
-
-			By("Verifying that FRR pod still has BFD and BGP session UP with one of the MetalLb speakers")
-			secondWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[1].Object.Name)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull compute node object")
-			secondWorkerIP, err := secondWorkerNode.ExternalIPv4Network()
-			Expect(err).ToNot(HaveOccurred(), "Failed to collect external node ip")
-
-			// Sleep until BFD timeout
-			time.Sleep(1200 * time.Millisecond)
-			bpgUp, err := frr.BGPNeighborshipHasState(frrPod, removePrefixFromIP(secondWorkerIP), "Established")
-			Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp state from FRR router")
-			Expect(bpgUp).Should(BeTrue(), "BGP is not in expected established state")
-			Expect(frr.BFDHasStatus(frrPod, removePrefixFromIP(secondWorkerIP), "up")).Should(BeNil(),
-				"BFD is not in expected up state")
-
-			By("Verifying that FRR pod lost BFD and BGP session with one of the MetalLb speakers")
-			firstWorkerNodeIP, err := firstWorkerNode.ExternalIPv4Network()
-			Expect(err).ToNot(HaveOccurred(), "Failed to collect external node ip")
-			bpgUp, err = frr.BGPNeighborshipHasState(frrPod, removePrefixFromIP(firstWorkerNodeIP), "Established")
-			Expect(err).ToNot(HaveOccurred(), "Failed to collect BGP state")
-			Expect(bpgUp).Should(BeFalse(), "BGP is not in expected down state")
-			Expect(frr.BFDHasStatus(frrPod, removePrefixFromIP(firstWorkerNodeIP), "down")).
-				ShouldNot(HaveOccurred(), "BFD is not in expected down state")
-
-			By("Bringing Speaker pod back by labeling node")
-			_, err = firstWorkerNode.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-			Expect(err).ToNot(HaveOccurred(), "Failed to append metalLb label to worker node")
-
-			By("Check if speakers daemonSet is UP and running")
-			metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-				metalLbDs, BeEquivalentTo(len(workerNodeList.Objects)), "The number of running speak pods is not expected")
-			verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
-
+			scaleDownMetalLbSpeakers()
+			testBFDFailOver()
+			testBFDFailBack()
 		})
 
 		It("provides Prometheus BFD metrics", polarion.ID("47187"), func() {
@@ -273,14 +187,9 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 			By("Cleaning test namespace")
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).
-				CleanObjects(tsparams.DefaultTimeout, pod.GetGVR())
+				CleanObjects(tsparams.DefaultTimeout, pod.GetGVR(), configmap.GetGVR())
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean objects from test namespace")
 
-			By("Deleting configmap")
-			bfdConfigMap, err := configmap.Pull(
-				APIClient, tsparams.FRRDefaultConfigMapName, tsparams.TestNamespaceName)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull frr configmap")
-			Expect(bfdConfigMap.Delete()).ToNot(HaveOccurred(), "Failed to delete frr configmap")
 		})
 	})
 
@@ -333,6 +242,163 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 	})
 })
+
+func scaleDownMetalLbSpeakers() {
+	By("Changing the label selector for MetalLb speakers")
+
+	metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metallb.io object")
+	_, err = metalLbIo.WithSpeakerNodeSelector(tsparams.MetalLbSpeakerLabel).Update(false)
+	Expect(err).ToNot(HaveOccurred(), "Failed to update metallb object with the new MetalLb label")
+
+	By("Verifying that the MetalLb speakers are not running on nodes after label update")
+
+	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
+	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
+		metalLbDs, BeZero(), "Failed to scale down metalLb speaker pods to zero")
+}
+
+func testBFDFailOver() {
+	By("Adding metalLb label to compute nodes")
+
+	for _, worker := range workerNodeList.Objects {
+		_, err := worker.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to append new metalLb label to nodes objects")
+	}
+
+	By("Pulling metalLb speaker daemonset")
+
+	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
+	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
+		metalLbDs, Not(BeZero()), "Failed to run metalLb speakers on top of nodes with test label")
+
+	frrPod, err := pod.Pull(APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull frr test pod")
+
+	By("Checking that BGP and BFD sessions are established and up")
+	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
+	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
+
+	By("Removing Speaker pod from one of the compute nodes")
+
+	firstWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[0].Object.Name)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
+	_, err = firstWorkerNode.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove metalLb label from worker node")
+
+	By("Verifying that cluster has reduced the number of speakers by 1")
+	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
+		metalLbDs, BeEquivalentTo(len(workerNodeList.Objects)-1), "The number of running speaker pods is not expected")
+	By("Verifying that FRR pod still has BFD and BGP session UP with one of the MetalLb speakers")
+
+	secondWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[1].Object.Name)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull compute node object")
+	secondWorkerIP, err := secondWorkerNode.ExternalIPv4Network()
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect external node ip")
+
+	// Sleep until BFD timeout
+	time.Sleep(1200 * time.Millisecond)
+
+	bpgUp, err := frr.BGPNeighborshipHasState(frrPod, removePrefixFromIP(secondWorkerIP), "Established")
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp state from FRR router")
+	Expect(bpgUp).Should(BeTrue(), "BGP is not in expected established state")
+	Expect(frr.BFDHasStatus(frrPod, removePrefixFromIP(secondWorkerIP), "up")).Should(BeNil(),
+		"BFD is not in expected up state")
+
+	By("Verifying that FRR pod lost BFD and BGP session with one of the MetalLb speakers")
+
+	firstWorkerNodeIP, err := firstWorkerNode.ExternalIPv4Network()
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect external node ip")
+	bpgUp, err = frr.BGPNeighborshipHasState(frrPod, removePrefixFromIP(firstWorkerNodeIP), "Established")
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect BGP state")
+	Expect(bpgUp).Should(BeFalse(), "BGP is not in expected down state")
+	Expect(frr.BFDHasStatus(frrPod, removePrefixFromIP(firstWorkerNodeIP), "down")).
+		ShouldNot(HaveOccurred(), "BFD is not in expected down state")
+}
+
+func testBFDFailBack() {
+	By("Bringing Speaker pod back by labeling node")
+
+	firstWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[0].Object.Name)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
+	_, err = firstWorkerNode.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
+	Expect(err).ToNot(HaveOccurred(), "Failed to append metalLb label to worker node")
+
+	By("Check if speakers daemonSet is UP and running")
+
+	frrPod, err := pod.Pull(APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull frr test pod")
+	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
+	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
+		metalLbDs, BeEquivalentTo(len(workerNodeList.Objects)), "The number of running speak pods is not expected")
+	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
+}
+
+func createExternalNad() {
+	By("Creating external BR-EX NetworkAttachmentDefinition")
+
+	macVlanPlugin, err := define.MasterNadPlugin(coreparams.OvnExternalBridge, "bridge", nad.IPAMStatic())
+	Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
+	externalNad, err = nad.NewBuilder(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName).
+		WithMasterPlugin(macVlanPlugin).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
+	Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
+}
+
+func createBGPPeerAndVerifyIfItsReady(
+	name, peerIP, bfdProfileName string, asn, remouteAsn uint32, ebgpMultiHop bool, speakerPods []*pod.Builder) {
+	By("Creating BGP Peer")
+
+	_, err := metallb.NewBPGPeerBuilder(APIClient, name, NetConfig.MlbOperatorNamespace,
+		peerIP, asn, remouteAsn).WithBFDProfile(bfdProfileName).
+		WithPassword(tsparams.BGPPassword).WithEBGPMultiHop(ebgpMultiHop).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed tp create BGP peer")
+
+	By("Verifying if BGP protocol configured")
+
+	for _, speakerPod := range speakerPods {
+		Eventually(frr.IsProtocolConfigured,
+			time.Minute, tsparams.DefaultRetryInterval).WithArguments(speakerPod, "router bgp").
+			Should(BeTrue(), "BGP is not configured on the Speakers")
+	}
+}
+
+func createBFDProfileAndVerifyIfItsReady(mlbSpeakerPods []*pod.Builder) *metallb.BFDBuilder {
+	By("Creating BFD profile")
+
+	bfdProfile, err := metallb.NewBFDBuilder(APIClient, "bfdprofile", NetConfig.MlbOperatorNamespace).
+		WithRcvInterval(300).WithTransmitInterval(300).WithEchoInterval(100).
+		WithEchoMode(true).WithPassiveMode(false).WithMinimumTTL(5).
+		WithMultiplier(3).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BFD profile")
+	Expect(bfdProfile.Exists()).To(BeTrue(), "BFD profile doesn't exist")
+
+	for _, speakerPod := range mlbSpeakerPods {
+		Eventually(frr.IsProtocolConfigured,
+			time.Minute, tsparams.DefaultRetryInterval).WithArguments(speakerPod, "bfd").
+			Should(BeTrue(), "BFD is not configured on the Speakers")
+	}
+
+	return bfdProfile
+}
+
+func setLocalGWMode(status bool) {
+	By(fmt.Sprintf("Configuring GW mode %v", status))
+
+	clusterNetwork, err := cluster.GetOCPNetworkOperatorConfig(APIClient)
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect network.operator object")
+
+	clusterNetwork, err = clusterNetwork.SetLocalGWMode(status, 10*time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to set local GW mode %v", status))
+
+	network, err := clusterNetwork.Get()
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect network.operator object")
+	Expect(network.Spec.DefaultNetwork.OVNKubernetesConfig.GatewayConfig.RoutingViaHost).To(BeEquivalentTo(status),
+		"Failed network.operator object is not in expected state")
+}
 
 func verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
@@ -401,19 +467,4 @@ func buildRoutesMap(podList []*pod.Builder, nextHopList []string) (map[string]st
 	}
 
 	return routesMap, nil
-}
-
-func setLocalGWMode(status bool) {
-	By(fmt.Sprintf("Configuring GW mode %v", status))
-
-	clusterNetwork, err := cluster.GetOCPNetworkOperatorConfig(APIClient)
-	Expect(err).ToNot(HaveOccurred(), "Failed to collect network.operator object")
-
-	clusterNetwork, err = clusterNetwork.SetLocalGWMode(status, 10*time.Minute)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to set local GW mode %v", status))
-
-	network, err := clusterNetwork.Get()
-	Expect(err).ToNot(HaveOccurred(), "Failed to collect network.operator object")
-	Expect(network.Spec.DefaultNetwork.OVNKubernetesConfig.GatewayConfig.RoutingViaHost).To(BeEquivalentTo(status),
-		"Failed network.operator object is not in expected state")
 }

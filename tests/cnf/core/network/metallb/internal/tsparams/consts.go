@@ -112,4 +112,8 @@ bfd
 `
 	// FRRDefaultConfigMapName represents default FRR configMap name.
 	FRRDefaultConfigMapName = "frr-config"
+	// LocalBGPASN represents local BGP AS number.
+	LocalBGPASN = 64500
+	// RemoteBGPASN represents remote BGP AS number.
+	RemoteBGPASN = 64501
 )

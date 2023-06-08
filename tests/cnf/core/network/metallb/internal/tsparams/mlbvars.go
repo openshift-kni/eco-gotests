@@ -50,6 +50,8 @@ var (
 	VtySh = []string{"vtysh", "-c"}
 	// FRRContainerName represents default FRR's container name.
 	FRRContainerName = "frr"
+	// FRRSecondContainerName represents second FRR's container name.
+	FRRSecondContainerName = "frr2"
 	// DefaultTimeout represents the default timeout for most of Eventually/PollImmediate functions.
 	DefaultTimeout = 180 * time.Second
 	// DefaultRetryInterval represents the default retry interval for most of Eventually/PollImmediate functions.
