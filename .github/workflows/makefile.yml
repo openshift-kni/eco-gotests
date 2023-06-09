@@ -16,10 +16,10 @@ jobs:
       SHELL: /bin/bash
 
     steps:
-      - name: Set up Go 1.18
+      - name: Set up Go 1.19
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18.2
+          go-version: 1.19.10
 
       - uses: actions/checkout@v3
 
