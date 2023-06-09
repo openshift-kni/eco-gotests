@@ -34,7 +34,12 @@ type NUMAResourcesSchedulerSpec struct {
 	// Defaults to "Normal".
 	// +optional
 	// +kubebuilder:default=Normal
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Scheduler log verbosity"
 	LogLevel operatorv1.LogLevel `json:"logLevel,omitempty"`
+	// Set the cache resync period. Use explicit 0 to disable.
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Scheduler cache resync period setting",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	CacheResyncPeriod *metav1.Duration `json:"cacheResyncPeriod,omitEmpty"`
 }
 
 // NUMAResourcesSchedulerStatus defines the observed state of NUMAResourcesScheduler
@@ -56,7 +61,7 @@ type NUMAResourcesSchedulerStatus struct {
 //+kubebuilder:resource:shortName=numaressched,path=numaresourcesschedulers,scope=Cluster
 
 // NUMAResourcesScheduler is the Schema for the numaresourcesschedulers API
-//+operator-sdk:csv:customresourcedefinitions:displayName="NUMA Aware Scheduler",resources={{Deployment,v1,secondary-scheduler-deployment}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="NUMA Aware Scheduler",resources={{Deployment,v1,secondary-scheduler-deployment}}
 type NUMAResourcesScheduler struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

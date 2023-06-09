@@ -60,7 +60,8 @@ func (builder *NodeBuilder) Update() (*NodeBuilder, error) {
 	builder.Definition.ResourceVersion = ""
 
 	var err error
-	builder.Object, err = builder.apiClient.Nodes().Update(context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+	builder.Object, err = builder.apiClient.CoreV1Interface.Nodes().Update(
+		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
 
 	return builder, err
 }
@@ -70,7 +71,7 @@ func (builder *NodeBuilder) Exists() bool {
 	glog.V(100).Infof("Checking if node %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.Nodes().Get(
+	builder.Object, err = builder.apiClient.CoreV1Interface.Nodes().Get(
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)

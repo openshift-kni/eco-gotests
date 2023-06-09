@@ -11,7 +11,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v3/pkg/types"
+	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -357,7 +357,7 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 		return buffer, err
 	}
 
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
 		Stdin:  os.Stdin,
 		Stdout: &buffer,
 		Stderr: os.Stderr,

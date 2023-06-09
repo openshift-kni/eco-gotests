@@ -35,16 +35,67 @@ type NUMAResourcesOperatorSpec struct {
 	// Defaults to "Normal".
 	// +optional
 	// +kubebuilder:default=Normal
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="RTE log verbosity"
 	LogLevel operatorv1.LogLevel `json:"logLevel,omitempty"`
+	// Optional Namespace/Name glob patterns of pod to ignore at node level
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Optional ignore pod namespace/name glob patterns"
+	PodExcludes []NamespacedName `json:"podExcludes,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=Enabled;Disabled
+type PodsFingerprintingMode string
+
+var (
+	// PodsFingerprintingDisabled disables the pod fingerprinting reporting.
+	PodsFingerprintingDisabled PodsFingerprintingMode = "Disabled"
+
+	// PodsFingerprintingEnabled enables the pod fingerprint considering all the pods running on nodes. It is the default.
+	PodsFingerprintingEnabled PodsFingerprintingMode = "Enabled"
+)
+
+// +kubebuilder:validation:Enum=Periodic;Events;PeriodicAndEvents
+type InfoRefreshMode string
+
+var (
+	// InfoRefreshPeriodic is the default. Periodically polls the state and reports it.
+	InfoRefreshPeriodic InfoRefreshMode = "Periodic"
+
+	// InfoRefreshEvents reports a new state each time a pod lifecycle event is received.
+	InfoRefreshEvents InfoRefreshMode = "Events"
+
+	// InfoRefreshPeriodicAndEvents enables both periodic and event-based reporting.
+	InfoRefreshPeriodicAndEvents InfoRefreshMode = "PeriodicAndEvents"
+)
+
+// NodeGroupConfig exposes topology info reporting setting per node group
+type NodeGroupConfig struct {
+	// PodsFingerprinting defines if pod fingerprint should be reported for the machines belonging to this group
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Enable or disable the pods fingerprinting setting",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	PodsFingerprinting *PodsFingerprintingMode `json:"podsFingerprinting,omitempty"`
+	// InfoRefreshMode sets the mechanism which will be used to refresh the topology info.
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Topology info mechanism setting",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	InfoRefreshMode *InfoRefreshMode `json:"infoRefreshMode,omitempty"`
+	// InfoRefreshPeriod sets the topology info refresh period. Use explicit 0 to disable.
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Topology info refresh period setting",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	InfoRefreshPeriod *metav1.Duration `json:"infoRefreshPeriod,omitEmpty"`
 }
 
 // NodeGroup defines group of nodes that will run resource topology exporter daemon set
 // You can choose the group of node by MachineConfigPoolSelector or by NodeSelector
 type NodeGroup struct {
 	// MachineConfigPoolSelector defines label selector for the machine config pool
+	// +optional
 	MachineConfigPoolSelector *metav1.LabelSelector `json:"machineConfigPoolSelector,omitempty"`
-	// DisablePodsFingerprinting defines if pod fingerprint should be omitted for the machines belonging to this group
+	// DisablePodsFingerprinting defines if pod fingerprint should be omitted for the machines belonging to this group (DEPRECATED: use Config instead)
+	// +optional
 	DisablePodsFingerprinting *bool `json:"disablePodsFingerprinting,omitempty"`
+	// Config defines the RTE behaviour for this NodeGroup
+	// +optional
+	Config *NodeGroupConfig `json:"config,omitempty"`
 }
 
 // NUMAResourcesOperatorStatus defines the observed state of NUMAResourcesOperator
@@ -56,6 +107,7 @@ type NUMAResourcesOperatorStatus struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="RTE MCPs from node groups"
 	MachineConfigPools []MachineConfigPool `json:"machineconfigpools,omitempty"`
 	// Conditions show the current state of the NUMAResourcesOperator Operator
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Condition reported"
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
@@ -63,10 +115,14 @@ type NUMAResourcesOperatorStatus struct {
 type MachineConfigPool struct {
 	// Name the name of the machine config pool
 	Name string `json:"name"`
-
 	// Conditions represents the latest available observations of MachineConfigPool current state.
 	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Optional conditions reported for this NodeGroup"
 	Conditions []mcov1.MachineConfigPoolCondition `json:"conditions,omitempty"`
+	// NodeGroupConfig represents the latest available configuration applied to this MachineConfigPool
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Optional configuration enforced on this NodeGroup"
+	Config *NodeGroupConfig `json:"config,omitempty"`
 }
 
 //+genclient
@@ -76,7 +132,7 @@ type MachineConfigPool struct {
 //+kubebuilder:resource:shortName=numaresop,path=numaresourcesoperators,scope=Cluster
 
 // NUMAResourcesOperator is the Schema for the numaresourcesoperators API
-//+operator-sdk:csv:customresourcedefinitions:displayName="NUMA Resources Operator",resources={{DaemonSet,v1,rte-daemonset,ConfigMap,v1,rte-configmap}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="NUMA Resources Operator",resources={{DaemonSet,v1,rte-daemonset,ConfigMap,v1,rte-configmap}}
 type NUMAResourcesOperator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

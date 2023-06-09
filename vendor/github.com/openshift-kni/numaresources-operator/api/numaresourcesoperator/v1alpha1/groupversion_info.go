@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the nodetopology v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=nodetopology.openshift.io
+// +kubebuilder:object:generate=true
+// +groupName=nodetopology.openshift.io
 package v1alpha1
 
 import (

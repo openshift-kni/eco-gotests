@@ -108,6 +108,7 @@ type NetworkStatus struct {
 	Default    bool        `json:"default,omitempty"`
 	DNS        DNS         `json:"dns,omitempty"`
 	DeviceInfo *DeviceInfo `json:"device-info,omitempty"`
+	Gateway    []string    `json:"gateway,omitempty"`
 }
 
 // PortMapEntry for CNI PortMapEntry
@@ -158,7 +159,7 @@ type NetworkSelectionElement struct {
 	// the network
 	BandwidthRequest *BandwidthEntry `json:"bandwidth,omitempty"`
 	// CNIArgs contains additional CNI arguments for the network interface
-	CNIArgs *map[string]interface{} `json:"cni-args"`
+	CNIArgs *map[string]interface{} `json:"cni-args,omitempty"`
 	// GatewayRequest contains default route IP address for the pod
 	GatewayRequest []net.IP `json:"default-route,omitempty"`
 }
@@ -168,8 +169,6 @@ const (
 	NetworkAttachmentAnnot = "k8s.v1.cni.cncf.io/networks"
 	// Pod annotation for network status
 	NetworkStatusAnnot = "k8s.v1.cni.cncf.io/network-status"
-	// Old Pod annotation for network status (which is used before but it will be obsolated)
-	OldNetworkStatusAnnot = "k8s.v1.cni.cncf.io/networks-status"
 )
 
 // NoK8sNetworkError indicates error, no network in kubernetes

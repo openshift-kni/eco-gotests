@@ -18,8 +18,9 @@ package v1beta2
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/go-kit/log/level"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -41,7 +42,10 @@ var _ webhook.Validator = &BGPPeer{}
 func (bgpPeer *BGPPeer) ValidateCreate() error {
 	level.Debug(Logger).Log("webhook", "bgppeer", "action", "create", "name", bgpPeer.Name, "namespace", bgpPeer.Namespace)
 
-	existingBGPPeers, err := getExistingBGPPeers()
+	if bgpPeer.Namespace != MetalLBNamespace {
+		return fmt.Errorf("resource must be created in %s namespace", MetalLBNamespace)
+	}
+	existingBGPPeers, err := GetExistingBGPPeers()
 	if err != nil {
 		return err
 	}
@@ -59,7 +63,7 @@ func (bgpPeer *BGPPeer) ValidateCreate() error {
 func (bgpPeer *BGPPeer) ValidateUpdate(old runtime.Object) error {
 	level.Debug(Logger).Log("webhook", "bgppeer", "action", "update", "name", bgpPeer.Name, "namespace", bgpPeer.Namespace)
 
-	existingBGPPeers, err := getExistingBGPPeers()
+	existingBGPPeers, err := GetExistingBGPPeers()
 	if err != nil {
 		return err
 	}
@@ -78,7 +82,7 @@ func (bgpPeer *BGPPeer) ValidateDelete() error {
 	return nil
 }
 
-var getExistingBGPPeers = func() (*BGPPeerList, error) {
+var GetExistingBGPPeers = func() (*BGPPeerList, error) {
 	existingBGPPeerslList := &BGPPeerList{}
 	err := WebhookClient.List(context.Background(), existingBGPPeerslList, &client.ListOptions{Namespace: MetalLBNamespace})
 	if err != nil {

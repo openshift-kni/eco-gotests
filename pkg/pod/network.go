@@ -1,7 +1,7 @@
 package pod
 
 import (
-	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v3/pkg/types"
+	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 )
 
 // StaticIPAnnotation defines static ip address network annotation for pod object.

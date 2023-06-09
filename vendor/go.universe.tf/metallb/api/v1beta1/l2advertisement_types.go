@@ -25,12 +25,20 @@ import (
 
 // L2AdvertisementSpec defines the desired state of L2Advertisement.
 type L2AdvertisementSpec struct {
-	// IPAddressPools is the list of ipaddresspools to advertise via this advertisement.
+	// The list of IPAddressPools to advertise via this advertisement, selected by name.
+	// +optional
 	IPAddressPools []string `json:"ipAddressPools,omitempty"`
-	// IPAddressPoolSelectors is a selector for the ipaddresspools which would get advertised via this advertisement.
-	IPAddressPoolSelectors []metav1.LabelSelector `json:"ipAddressPoolSelectors,omitempty" yaml:"ipaddress-pool-selectors,omitempty"`
-	// NodeSelectors is a selector on the node we should perform this advertisement from.
-	NodeSelectors []metav1.LabelSelector `json:"nodeSelectors,omitempty" yaml:"node-selectors,omitempty"`
+	// A selector for the IPAddressPools which would get advertised via this advertisement.
+	// If no IPAddressPool is selected by this or by the list, the advertisement is applied to all the IPAddressPools.
+	// +optional
+	IPAddressPoolSelectors []metav1.LabelSelector `json:"ipAddressPoolSelectors,omitempty"`
+	// NodeSelectors allows to limit the nodes to announce as next hops for the LoadBalancer IP. When empty, all the nodes having  are announced as next hops.
+	// +optional
+	NodeSelectors []metav1.LabelSelector `json:"nodeSelectors,omitempty"`
+	// A list of interfaces to announce from. The LB IP will be announced only from these interfaces.
+	// If the field is not set, we advertise from all the interfaces on the host.
+	// +optional
+	Interfaces []string `json:"interfaces,omitempty"`
 }
 
 // L2AdvertisementStatus defines the observed state of L2Advertisement.
@@ -41,8 +49,13 @@ type L2AdvertisementStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="IPAddressPools",type=string,JSONPath=`.spec.ipAddressPools`
+//+kubebuilder:printcolumn:name="IPAddressPool Selectors",type=string,JSONPath=`.spec.ipAddressPoolSelectors`
+//+kubebuilder:printcolumn:name="Interfaces",type=string,JSONPath=`.spec.interfaces`
+//+kubebuilder:printcolumn:name="Node Selectors",type=string,JSONPath=`.spec.nodeSelectors`,priority=10
 
-// L2Advertisement is the Schema for the l2advertisements API.
+// L2Advertisement allows to advertise the LoadBalancer IPs provided
+// by the selected pools via L2.
 type L2Advertisement struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

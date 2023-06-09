@@ -51,7 +51,8 @@ func (builder *Builder) Discover() error {
 
 	builder.Objects = nil
 
-	nodes, err := builder.apiClient.Nodes().List(context.TODO(), metaV1.ListOptions{LabelSelector: builder.selector})
+	nodes, err := builder.apiClient.CoreV1Interface.Nodes().List(
+		context.TODO(), metaV1.ListOptions{LabelSelector: builder.selector})
 	if err != nil {
 		glog.V(100).Infof("Failed to discover nodes")
 

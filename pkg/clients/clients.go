@@ -22,7 +22,6 @@ import (
 	pkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	clientPkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/typed/operators/v1"
 
-	fecV2 "github.com/smart-edge-open/sriov-fec-operator/sriov-fec/api/v2"
 	apiExt "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	appsV1Client "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -153,10 +152,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := mcv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := fecV2.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

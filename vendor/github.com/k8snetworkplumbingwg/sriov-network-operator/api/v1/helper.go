@@ -27,18 +27,25 @@ const (
 	LASTNETWORKNAMESPACE    = "operator.sriovnetwork.openshift.io/last-network-namespace"
 	NETATTDEFFINALIZERNAME  = "netattdef.finalizers.sriovnetwork.openshift.io"
 	POOLCONFIGFINALIZERNAME = "poolconfig.finalizers.sriovnetwork.openshift.io"
-	ESWITCHMODE_LEGACY      = "legacy"
-	ESWITCHMODE_SWITCHDEV   = "switchdev"
+	ESwithModeLegacy        = "legacy"
+	ESwithModeSwitchDev     = "switchdev"
+
+	SriovCniStateEnable  = "enable"
+	SriovCniStateDisable = "disable"
+	SriovCniStateAuto    = "auto"
+	SriovCniStateOff     = "off"
+	SriovCniStateOn      = "on"
+	SriovCniIpamEmpty    = "\"ipam\":{}"
 )
 
 const invalidVfIndex = -1
 
-var MANIFESTS_PATH = "./bindata/manifests/cni-config"
+var ManifestsPath = "./bindata/manifests/cni-config"
 var log = logf.Log.WithName("sriovnetwork")
 
-// NicIdMap contains supported mapping of IDs with each in the format of:
+// NicIDMap contains supported mapping of IDs with each in the format of:
 // Vendor ID, Physical Function Device ID, Virtual Function Device ID
-var NicIdMap = []string{}
+var NicIDMap = []string{}
 
 // NetFilterType Represents the NetFilter tags to be used
 type NetFilterType int
@@ -47,7 +54,7 @@ const (
 	// OpenstackNetworkID network UUID
 	OpenstackNetworkID NetFilterType = iota
 
-	SUPPORTED_NIC_ID_CONFIGMAP = "supported-nic-ids"
+	SupportedNicIDConfigmap = "supported-nic-ids"
 )
 
 func (e NetFilterType) String() string {
@@ -59,10 +66,10 @@ func (e NetFilterType) String() string {
 	}
 }
 
-func InitNicIdMap(client *kubernetes.Clientset, namespace string) error {
+func InitNicIDMap(client kubernetes.Interface, namespace string) error {
 	cm, err := client.CoreV1().ConfigMaps(namespace).Get(
 		context.Background(),
-		SUPPORTED_NIC_ID_CONFIGMAP,
+		SupportedNicIDConfigmap,
 		metav1.GetOptions{},
 	)
 	// if the configmap does not exist, return false
@@ -70,58 +77,58 @@ func InitNicIdMap(client *kubernetes.Clientset, namespace string) error {
 		return err
 	}
 	for _, v := range cm.Data {
-		NicIdMap = append(NicIdMap, v)
+		NicIDMap = append(NicIDMap, v)
 	}
 	return nil
 }
 
-func IsSupportedVendor(vendorId string) bool {
-	for _, n := range NicIdMap {
+func IsSupportedVendor(vendorID string) bool {
+	for _, n := range NicIDMap {
 		ids := strings.Split(n, " ")
-		if vendorId == ids[0] {
+		if vendorID == ids[0] {
 			return true
 		}
 	}
 	return false
 }
 
-func IsSupportedDevice(deviceId string) bool {
-	for _, n := range NicIdMap {
+func IsSupportedDevice(deviceID string) bool {
+	for _, n := range NicIDMap {
 		ids := strings.Split(n, " ")
-		if deviceId == ids[1] {
+		if deviceID == ids[1] {
 			return true
 		}
 	}
 	return false
 }
 
-func IsSupportedModel(vendorId, deviceId string) bool {
-	for _, n := range NicIdMap {
+func IsSupportedModel(vendorID, deviceID string) bool {
+	for _, n := range NicIDMap {
 		ids := strings.Split(n, " ")
-		if vendorId == ids[0] && deviceId == ids[1] {
+		if vendorID == ids[0] && deviceID == ids[1] {
 			return true
 		}
 	}
-	log.Info("IsSupportedModel():", "Unsupported model:", "vendorId:", vendorId, "deviceId:", deviceId)
+	log.Info("IsSupportedModel():", "Unsupported model:", "vendorId:", vendorID, "deviceId:", deviceID)
 	return false
 }
 
-func IsVfSupportedModel(vendorId, deviceId string) bool {
-	for _, n := range NicIdMap {
+func IsVfSupportedModel(vendorID, deviceID string) bool {
+	for _, n := range NicIDMap {
 		ids := strings.Split(n, " ")
-		if vendorId == ids[0] && deviceId == ids[2] {
+		if vendorID == ids[0] && deviceID == ids[2] {
 			return true
 		}
 	}
-	log.Info("IsVfSupportedModel():", "Unsupported VF model:", "vendorId:", vendorId, "deviceId:", deviceId)
+	log.Info("IsVfSupportedModel():", "Unsupported VF model:", "vendorId:", vendorID, "deviceId:", deviceID)
 	return false
 }
 
-func IsEnabledUnsupportedVendor(vendorId string, unsupportedNicIdMap map[string]string) bool {
-	for _, n := range unsupportedNicIdMap {
+func IsEnabledUnsupportedVendor(vendorID string, unsupportedNicIDMap map[string]string) bool {
+	for _, n := range unsupportedNicIDMap {
 		if IsValidPciString(n) {
 			ids := strings.Split(n, " ")
-			if vendorId == ids[0] {
+			if vendorID == ids[0] {
 				return true
 			}
 		}
@@ -129,11 +136,11 @@ func IsEnabledUnsupportedVendor(vendorId string, unsupportedNicIdMap map[string]
 	return false
 }
 
-func IsValidPciString(nicIdString string) bool {
-	ids := strings.Split(nicIdString, " ")
+func IsValidPciString(nicIDString string) bool {
+	ids := strings.Split(nicIDString, " ")
 
 	if len(ids) != 3 {
-		log.Info("IsValidPciString(): ", nicIdString)
+		log.Info("IsValidPciString(): ", nicIDString)
 		return false
 	}
 
@@ -166,11 +173,11 @@ func IsValidPciString(nicIdString string) bool {
 
 func GetSupportedVfIds() []string {
 	var vfIds []string
-	for _, n := range NicIdMap {
+	for _, n := range NicIDMap {
 		ids := strings.Split(n, " ")
-		vfId := "0x" + ids[2]
-		if !StringInArray(vfId, vfIds) {
-			vfIds = append(vfIds, vfId)
+		vfID := "0x" + ids[2]
+		if !StringInArray(vfID, vfIds) {
+			vfIds = append(vfIds, vfID)
 		}
 	}
 	// return a sorted slice so that udev rule is stable
@@ -182,10 +189,10 @@ func GetSupportedVfIds() []string {
 	return vfIds
 }
 
-func GetVfDeviceId(deviceId string) string {
-	for _, n := range NicIdMap {
+func GetVfDeviceID(deviceID string) string {
+	for _, n := range NicIDMap {
 		ids := strings.Split(n, " ")
-		if deviceId == ids[1] {
+		if deviceID == ids[1] {
 			return ids[2]
 		}
 	}
@@ -372,6 +379,7 @@ func (p *SriovNetworkNodePolicy) generateVfGroup(iface *InterfaceExt) (*VfGroup,
 		PolicyName:   p.GetName(),
 		Mtu:          p.Spec.Mtu,
 		IsRdma:       p.Spec.IsRdma,
+		VdpaType:     p.Spec.VdpaType,
 	}, nil
 }
 
@@ -436,7 +444,7 @@ func (selector *SriovNetworkNicSelector) Selected(iface *InterfaceExt) bool {
 			return false
 		}
 	}
-	if selector.NetFilter != "" && NetFilterMatch(selector.NetFilter, iface.NetFilter) == false {
+	if selector.NetFilter != "" && !NetFilterMatch(selector.NetFilter, iface.NetFilter) {
 		return false
 	}
 
@@ -465,8 +473,6 @@ func (s *SriovNetworkNodeState) GetDriverByPciAddress(addr string) string {
 func (cr *SriovIBNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	logger := log.WithName("renderNetAttDef")
 	logger.Info("Start to render IB SRIOV CNI NetworkAttachementDefinition")
-	var err error
-	objs := []*uns.Unstructured{}
 
 	// render RawCNIConfig manifests
 	data := render.MakeRenderData()
@@ -481,12 +487,12 @@ func (cr *SriovIBNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 
 	data.Data["StateConfigured"] = true
 	switch cr.Spec.LinkState {
-	case "enable":
-		data.Data["SriovCniState"] = "enable"
-	case "disable":
-		data.Data["SriovCniState"] = "disable"
-	case "auto":
-		data.Data["SriovCniState"] = "auto"
+	case SriovCniStateEnable:
+		data.Data["SriovCniState"] = SriovCniStateEnable
+	case SriovCniStateDisable:
+		data.Data["SriovCniState"] = SriovCniStateDisable
+	case SriovCniStateAuto:
+		data.Data["SriovCniState"] = SriovCniStateAuto
 	default:
 		data.Data["StateConfigured"] = false
 	}
@@ -501,7 +507,7 @@ func (cr *SriovIBNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	if cr.Spec.IPAM != "" {
 		data.Data["SriovCniIpam"] = "\"ipam\":" + strings.Join(strings.Fields(cr.Spec.IPAM), "")
 	} else {
-		data.Data["SriovCniIpam"] = "\"ipam\":{}"
+		data.Data["SriovCniIpam"] = SriovCniIpamEmpty
 	}
 
 	// metaplugins for the infiniband cni
@@ -511,7 +517,7 @@ func (cr *SriovIBNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 		data.Data["MetaPlugins"] = cr.Spec.MetaPluginsConfig
 	}
 
-	objs, err = render.RenderDir(MANIFESTS_PATH, &data)
+	objs, err := render.RenderDir(ManifestsPath, &data)
 	if err != nil {
 		return nil, err
 	}
@@ -548,8 +554,6 @@ func (cr *SriovIBNetwork) DeleteNetAttDef(c client.Client) error {
 func (cr *SriovNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	logger := log.WithName("renderNetAttDef")
 	logger.Info("Start to render SRIOV CNI NetworkAttachementDefinition")
-	var err error
-	objs := []*uns.Unstructured{}
 
 	// render RawCNIConfig manifests
 	data := render.MakeRenderData()
@@ -579,32 +583,32 @@ func (cr *SriovNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 
 	data.Data["SpoofChkConfigured"] = true
 	switch cr.Spec.SpoofChk {
-	case "off":
-		data.Data["SriovCniSpoofChk"] = "off"
-	case "on":
-		data.Data["SriovCniSpoofChk"] = "on"
+	case SriovCniStateOff:
+		data.Data["SriovCniSpoofChk"] = SriovCniStateOff
+	case SriovCniStateOn:
+		data.Data["SriovCniSpoofChk"] = SriovCniStateOn
 	default:
 		data.Data["SpoofChkConfigured"] = false
 	}
 
 	data.Data["TrustConfigured"] = true
 	switch cr.Spec.Trust {
-	case "on":
-		data.Data["SriovCniTrust"] = "on"
-	case "off":
-		data.Data["SriovCniTrust"] = "off"
+	case SriovCniStateOn:
+		data.Data["SriovCniTrust"] = SriovCniStateOn
+	case SriovCniStateOff:
+		data.Data["SriovCniTrust"] = SriovCniStateOff
 	default:
 		data.Data["TrustConfigured"] = false
 	}
 
 	data.Data["StateConfigured"] = true
 	switch cr.Spec.LinkState {
-	case "enable":
-		data.Data["SriovCniState"] = "enable"
-	case "disable":
-		data.Data["SriovCniState"] = "disable"
-	case "auto":
-		data.Data["SriovCniState"] = "auto"
+	case SriovCniStateEnable:
+		data.Data["SriovCniState"] = SriovCniStateEnable
+	case SriovCniStateDisable:
+		data.Data["SriovCniState"] = SriovCniStateDisable
+	case SriovCniStateAuto:
+		data.Data["SriovCniState"] = SriovCniStateAuto
 	default:
 		data.Data["StateConfigured"] = false
 	}
@@ -628,7 +632,7 @@ func (cr *SriovNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	if cr.Spec.IPAM != "" {
 		data.Data["SriovCniIpam"] = "\"ipam\":" + strings.Join(strings.Fields(cr.Spec.IPAM), "")
 	} else {
-		data.Data["SriovCniIpam"] = "\"ipam\":{}"
+		data.Data["SriovCniIpam"] = SriovCniIpamEmpty
 	}
 
 	data.Data["MetaPluginsConfigured"] = false
@@ -637,7 +641,7 @@ func (cr *SriovNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 		data.Data["MetaPlugins"] = cr.Spec.MetaPluginsConfig
 	}
 
-	objs, err = render.RenderDir(MANIFESTS_PATH, &data)
+	objs, err := render.RenderDir(ManifestsPath, &data)
 	if err != nil {
 		return nil, err
 	}
