@@ -14,7 +14,7 @@ The project is based on golang+[ginkgo](https://onsi.github.io/ginkgo) framework
 The  [eco-gotests](https://github.com/openshift-kni/eco-gotests) is designed to test a pre-installed OCP cluster which meets the following requirements:
 
 ### Mandatory setup requirements:
-* OCP cluster installed with version >=4.12
+* OCP cluster installed with version >=4.13
 
 #### Optional:
 * PTP operator
