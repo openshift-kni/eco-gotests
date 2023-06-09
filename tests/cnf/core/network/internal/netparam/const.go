@@ -4,9 +4,15 @@ const (
 	// Label represents net label that can be used for test cases selection.
 	Label = "net"
 	// IPV4Family represents IP version 4 protocol.
-	IPV4Family = "ipv4"
+	IPV4Family = "IPv4"
 	// IPV6Family represents IP version 6 protocol.
-	IPV6Family = "ipv6"
+	IPV6Family = "IPv6"
 	// DualIPFamily represents dual-stack(ipv4 and ipv6) IP protocol.
 	DualIPFamily = "dual"
+	// IPSubnet24 represents prefix 24 ipv4 subnet.
+	IPSubnet24 = "24"
+	// IPSubnet64 represents prefix 64 ipv6 subnet.
+	IPSubnet64 = "64"
+	// IPSubnet32 represents prefix 32 ipv4 subnet.
+	IPSubnet32 = "32"
 )

@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/pkg/namespace"
 	"github.com/openshift-kni/eco-gotests/pkg/nodes"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -169,6 +170,58 @@ func IsEnvVarMetalLbIPinNodeExtNetRange(nodeExtAddresses, metalLbEnvIPv4, metalL
 				return fmt.Errorf("metalLb virtual address %s is not in node subnet %s", metalLbEnvIPv4, subnet)
 			}
 		}
+	}
+
+	return nil
+}
+
+// DefineIterationParams defines ip settings for iteration based on ipFamily parameter.
+func DefineIterationParams(
+	ipv4AddrList,
+	ipv6AddrList,
+	nodeExtIPv4AddrList,
+	nodeExtIPv6AddrList []string,
+	ipFamily string,
+) (
+	masterClientPod,
+	subnetMast string,
+	mlbAddrList,
+	nodeExtAddrList,
+	addressPool,
+	frrPodMasterIPs []string,
+	err error) {
+	switch ipFamily {
+	case netparam.IPV4Family:
+		return "172.16.0.1",
+			netparam.IPSubnet24,
+			ipv4AddrList,
+			nodeExtIPv4AddrList,
+			[]string{"3.3.3.1", "3.3.3.5"},
+			[]string{"172.16.0.253", "172.16.0.254"},
+			doesIPListsHaveEnoughAddresses(ipv4AddrList, nodeExtIPv4AddrList, ipFamily)
+
+	case netparam.IPV6Family:
+		return "2002:1:1::3",
+			netparam.IPSubnet64,
+			ipv6AddrList,
+			nodeExtIPv6AddrList,
+			[]string{"2002:2:2::1", "2002:2:2::5"},
+			[]string{"2002:1:1::1", "2002:2:2::2"},
+			doesIPListsHaveEnoughAddresses(ipv6AddrList, nodeExtIPv6AddrList, ipFamily)
+	}
+
+	return "", "", nil, nil, nil, nil, fmt.Errorf(fmt.Sprintf(
+		"ipStack parameter is invalid allowed values are %s, %s ", netparam.IPV4Family, netparam.IPV6Family))
+}
+
+func doesIPListsHaveEnoughAddresses(mlbAddrList, nodeExtAddrList []string, ipFamily string) error {
+	if len(mlbAddrList) < 2 {
+		return fmt.Errorf(
+			"env var ECO_CNF_CORE_NET_MLB_ADDR_LIST doesn't have enought addresses for %s interation", ipFamily)
+	}
+
+	if len(nodeExtAddrList) < 2 {
+		return fmt.Errorf("cluster nodes don't have enought external addresses for %s interation", ipFamily)
 	}
 
 	return nil

@@ -208,7 +208,7 @@ func (builder *Builder) WithAnnotation(annotation map[string]string) *Builder {
 }
 
 // WithIPFamily redefines the service with IPFamilies type.
-func (builder *Builder) WithIPFamily(ipFamily []v1.IPFamily, ipStackPolicy *v1.IPFamilyPolicyType) *Builder {
+func (builder *Builder) WithIPFamily(ipFamily []v1.IPFamily, ipStackPolicy v1.IPFamilyPolicyType) *Builder {
 	glog.V(100).Infof("Defining service's IPFamily: %v and IPFamilyPolicy: %v", ipFamily, ipStackPolicy)
 
 	if builder.Definition == nil {
@@ -229,7 +229,7 @@ func (builder *Builder) WithIPFamily(ipFamily []v1.IPFamily, ipStackPolicy *v1.I
 		builder.errorMsg = "failed to set empty ipFamily"
 	}
 
-	if ipStackPolicy == nil {
+	if ipStackPolicy == "" {
 		glog.V(100).Infof("Failed to set empty ipStackPolicy on service %s in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 
@@ -241,7 +241,7 @@ func (builder *Builder) WithIPFamily(ipFamily []v1.IPFamily, ipStackPolicy *v1.I
 	}
 
 	builder.Definition.Spec.IPFamilies = ipFamily
-	builder.Definition.Spec.IPFamilyPolicy = ipStackPolicy
+	builder.Definition.Spec.IPFamilyPolicy = &ipStackPolicy
 
 	return builder
 }

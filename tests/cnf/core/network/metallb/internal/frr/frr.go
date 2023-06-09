@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/glog"
+
 	"github.com/openshift-kni/eco-gotests/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 )
@@ -142,6 +144,29 @@ func GetMetricsByPrefix(frrPod *pod.Builder, metricPrefix string) ([]string, err
 	}
 
 	return collectedMetrics, nil
+}
+
+// SetStaticRoute could set or delete static route on all Speaker pods.
+func SetStaticRoute(frrPod *pod.Builder, action, destIP string, nextHopMap map[string]string) (string, error) {
+	buffer, err := frrPod.ExecCommand(
+		[]string{"ip", "route", action, destIP, "via", nextHopMap[frrPod.Definition.Spec.NodeName]}, "frr")
+	if err != nil {
+		if strings.Contains(buffer.String(), "File exists") {
+			glog.V(90).Infof("Warning: Route to %s already exist", destIP)
+
+			return buffer.String(), nil
+		}
+
+		if strings.Contains(buffer.String(), "No such process") {
+			glog.V(90).Infof("Warning: Route to %s already absent", destIP)
+
+			return buffer.String(), nil
+		}
+
+		return buffer.String(), err
+	}
+
+	return buffer.String(), nil
 }
 
 func runningConfig(frrPod *pod.Builder) (string, error) {
