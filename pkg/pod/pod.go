@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -673,4 +674,29 @@ func isMountInUse(containerMounts []v1.VolumeMount, newMount v1.VolumeMount) boo
 	}
 
 	return false
+}
+
+// GetLog connects to a pod and fetches log.
+func (builder *Builder) GetLog(logStartTime time.Duration, containerName string) (string, error) {
+	logStart := int64(logStartTime.Seconds())
+	req := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name, &v1.PodLogOptions{
+		SinceSeconds: &logStart, Container: containerName})
+	log, err := req.Stream(context.Background())
+
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		_ = log.Close()
+	}()
+
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, log)
+
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
