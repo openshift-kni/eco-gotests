@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var (
@@ -170,5 +171,55 @@ var _ = Describe(
 					Expect(pvcbuilder.Object.Spec.Resources.Requests.Storage().String()).To(Equal(arbitraryStorageSize),
 						"error matching pvc storage size with the expected storage size")
 				})
+
+			It("Assert respective PVC is released when imageStorage is removed from AgentServiceConfig",
+				polarion.ID("49676"), func() {
+					By("Create an AgentServiceConfig with default storage specs")
+					tempAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
+
+					// An attempt to restrict the osImages spec for the new agentserviceconfig
+					// to prevent the download of all os images
+					if len(osImage) > 0 {
+						_ = tempAgentServiceConfigBuilder.WithOSImage(osImage[0])
+					}
+					_, err = tempAgentServiceConfigBuilder.Create()
+					Expect(err).ToNot(HaveOccurred(), "error creating agentserviceconfig with default storage specs")
+
+					By("Assure the AgentServiceConfig with default storage specs was successfully created")
+					_, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
+					Expect(err).ToNot(HaveOccurred(), "error waiting until agentserviceconfig with default storage specs is deployed")
+					Expect(tempAgentServiceConfigBuilder.Object.Spec.ImageStorage).NotTo(BeNil(),
+						"error validating that imagestorage spec is not empty")
+
+					By("Assure PVC was created for the ImageStorage")
+					pvcbuilder, err = storage.PullPersistentVolumeClaim(
+						HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
+						"failed to get PersistentVolumeClaim %s in NameSpace %s.",
+						imageServicePersistentVolumeClaimName,
+						tsparams.MCENameSpace))
+
+					By("Pull current AgentServiceConfig before updating")
+					tempAgentServiceConfigBuilder, err = assisted.PullAgentServiceConfig(HubAPIClient)
+					Expect(err).ToNot(HaveOccurred(), "error pulling agentserviceconfig from cluster")
+
+					By("Remove the imageStorage from the AgentServiceConfig")
+					tempAgentServiceConfigBuilder.Object.Spec.ImageStorage = nil
+					_, err = tempAgentServiceConfigBuilder.Update(false)
+					Expect(err).ToNot(HaveOccurred(), "error updating the agentserviceconfig")
+
+					By("Wait up to 1 minute for the imageservice PVC to be removed")
+					err = wait.PollImmediate(5*time.Second, time.Minute*1, func() (bool, error) {
+						pvcbuilder, err = storage.PullPersistentVolumeClaim(
+							HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+						if err != nil {
+							return true, nil
+						}
+
+						return false, nil
+					})
+					Expect(err).ToNot(HaveOccurred(), "error waiting until the imageservice PVC is removed.")
+				})
+
 		})
 	})
