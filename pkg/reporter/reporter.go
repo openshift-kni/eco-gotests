@@ -16,9 +16,9 @@ func Dump(client *clients.Settings, crds []k8sreporter.CRData, namespace, report
 	dumpNamespace := func(ns string) bool {
 		return strings.HasPrefix(ns, namespace)
 	}
-	// nolint:staticcheck
+	//nolint:staticcheck
 	addToScheme := func(scheme *runtime.Scheme) error {
-		// nolint:ineffassign,staticcheck
+		//nolint:ineffassign,staticcheck
 		scheme = client.Client.Scheme()
 
 		return nil

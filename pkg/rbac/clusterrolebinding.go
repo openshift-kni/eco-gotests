@@ -12,9 +12,8 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-/* ClusterRoleBindingBuilder provides struct for clusterrolebinding object
-   containing connection to the cluster and the clusterrolebinding definitions.
-*/
+// ClusterRoleBindingBuilder provides struct for clusterrolebinding object
+// containing connection to the cluster and the clusterrolebinding definitions.
 type ClusterRoleBindingBuilder struct {
 	// Clusterrolebinding definition. Used to create a clusterrolebinding object.
 	Definition *v1.ClusterRoleBinding

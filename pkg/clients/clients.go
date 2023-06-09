@@ -17,11 +17,9 @@ import (
 	olm2 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
 
 	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1"
-	// nolint:lll
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 
 	pkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	// nolint:lll
 	clientPkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/typed/operators/v1"
 
 	fecV2 "github.com/smart-edge-open/sriov-fec-operator/sriov-fec/api/v2"
@@ -35,15 +33,12 @@ import (
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	netAttDefV1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	// nolint:lll
 	clientNetAttDefV1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1"
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 
-	// nolint:lll
 	clientSrIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1"
 	metalLbOperatorV1Beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 
-	// nolint:lll
 	clientMachineConfigV1 "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1"
 	metalLbV1Beta1 "go.universe.tf/metallb/api/v1beta1"
 

@@ -423,7 +423,7 @@ func (builder *AgentClusterInstallBuilder) GetCondition(conditionType string) (*
 		return nil, fmt.Errorf("cannot get conditions from non-existent agentclusterinstall")
 	}
 
-	_, err := builder.waitForConditions(retryInterval * 2)
+	err := builder.waitForConditions(retryInterval * 2)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +454,7 @@ func (builder *AgentClusterInstallBuilder) UpdateCondition(
 
 	glog.V(100).Infof("Updating condition %s in agentclusterinstall %s", condition.Type, builder.Definition.Name)
 
-	_, err := builder.waitForConditions(retryInterval * 2)
+	err := builder.waitForConditions(retryInterval * 2)
 	if err != nil {
 		return nil, err
 	}
@@ -751,11 +751,11 @@ func newagentClusterInstallCondition(
 	}, nil
 }
 
-// waitForConditions waits the speicified timeout for conditions to be available on the agentclusterinstall.
+// waitForConditions waits the specified timeout for conditions to be available on the agentclusterinstall.
 func (builder *AgentClusterInstallBuilder) waitForConditions(
-	timeout time.Duration) (*AgentClusterInstallBuilder, error) {
+	timeout time.Duration) error {
 	if !builder.Exists() {
-		return builder, fmt.Errorf("cannot get conditions from undefined agentclusterinstall")
+		return fmt.Errorf("cannot get conditions from undefined agentclusterinstall")
 	}
 	// Polls every retryInterval to determine if agentclusterinstall conditions are available.
 	var err error
@@ -769,5 +769,5 @@ func (builder *AgentClusterInstallBuilder) waitForConditions(
 		return builder.Object.Status.Conditions != nil, err
 	})
 
-	return builder, err
+	return err
 }
