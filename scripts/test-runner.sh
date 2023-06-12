@@ -52,7 +52,7 @@ fi
 if [[ ! -z "${ECO_TEST_LABELS}" ]]; then
     cmd+=" --label-filter=\"${ECO_TEST_LABELS}\""
 fi
-cmd+=" "$feature_dirs
+cmd+=" "$feature_dirs" $@"   # + user args --xxx=yyy...
 
 # Execute ginkgo command
 echo $cmd
