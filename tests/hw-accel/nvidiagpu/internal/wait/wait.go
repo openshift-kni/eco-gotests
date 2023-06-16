@@ -1,0 +1,66 @@
+package wait
+
+import (
+	"time"
+
+	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/pkg/nvidiagpu"
+	"github.com/openshift-kni/eco-gotests/pkg/olm"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
+	"k8s.io/apimachinery/pkg/util/wait"
+)
+
+// ClusterPolicyReady Waits until clusterPolicy is Ready.
+func ClusterPolicyReady(apiClient *clients.Settings, clusterPolicyName string, pollInterval,
+	timeout time.Duration) error {
+	return wait.PollImmediate(pollInterval, timeout, func() (bool, error) {
+		clusterPolicy, err := nvidiagpu.Pull(apiClient, clusterPolicyName)
+
+		if err != nil {
+			glog.V(gpuparams.GpuLogLevel).Infof("ClusterPolicy pull from cluster error: %s\n", err)
+
+			return false, err
+		}
+
+		if clusterPolicy.Object.Status.State == "ready" {
+			glog.V(gpuparams.GpuLogLevel).Infof("ClusterPolicy %s in now in %s state",
+				clusterPolicy.Object.Name, clusterPolicy.Object.Status.State)
+
+			// this exists out of the wait.PollImmediate()
+			return true, nil
+		}
+
+		glog.V(gpuparams.GpuLogLevel).Infof("ClusterPolicy %s in now in %s state",
+			clusterPolicy.Object.Name, clusterPolicy.Object.Status.State)
+
+		return false, err
+	})
+}
+
+// CSVSucceeded waits for a defined period of time for CSV to be in Succeeded state.
+func CSVSucceeded(apiClient *clients.Settings, csvName, csvNamespace string, pollInterval,
+	timeout time.Duration) error {
+	return wait.PollImmediate(pollInterval, timeout, func() (bool, error) {
+		csvPulled, err := olm.PullClusterServiceVersion(apiClient, csvName, csvNamespace)
+
+		if err != nil {
+			glog.V(gpuparams.GpuLogLevel).Infof("ClusterServiceVersion pull from cluster error: %s\n", err)
+
+			return false, err
+		}
+
+		if csvPulled.Object.Status.Phase == "Succeeded" {
+			glog.V(gpuparams.GpuLogLevel).Infof("ClusterServiceVersion %s in now in %s state",
+				csvPulled.Object.Name, csvPulled.Object.Status.Phase)
+
+			// this exists out of the wait.PollImmediate().
+			return true, nil
+		}
+
+		glog.V(gpuparams.GpuLogLevel).Infof("clusterPolicy %s in now in %s state",
+			csvPulled.Object.Name, csvPulled.Object.Status.Phase)
+
+		return false, err
+	})
+}

@@ -34,9 +34,7 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 
 	clusterPolicy, err := getClusterPolicyFromAlmExample(almExample)
 
-	glog.V(100).Infof(
-		"Initializing new Builder structure from almExample string with clusterPolicy name: %s",
-		clusterPolicy.Name)
+	glog.V(100).Infof("Initializing Builder definition to ClusterPolicy object")
 
 	builder := Builder{
 		apiClient:  apiClient,
