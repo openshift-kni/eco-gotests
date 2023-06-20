@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift-kni/eco-gotests/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 )
 
 type queryOutput struct {

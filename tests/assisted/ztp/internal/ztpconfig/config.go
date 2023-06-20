@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/assistedconfig"
 )
 

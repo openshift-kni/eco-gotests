@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
-	"github.com/openshift-kni/eco-gotests/pkg/hive"
-	"github.com/openshift-kni/eco-gotests/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/hive"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"

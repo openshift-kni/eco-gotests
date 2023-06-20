@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )

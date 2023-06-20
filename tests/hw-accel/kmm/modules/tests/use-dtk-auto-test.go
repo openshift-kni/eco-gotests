@@ -11,10 +11,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-gotests/pkg/configmap"
-	"github.com/openshift-kni/eco-gotests/pkg/kmm"
-	"github.com/openshift-kni/eco-gotests/pkg/namespace"
-	"github.com/openshift-kni/eco-gotests/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )

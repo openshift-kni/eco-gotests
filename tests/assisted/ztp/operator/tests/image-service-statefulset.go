@@ -6,8 +6,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-gotests/pkg/assisted"
-	"github.com/openshift-kni/eco-gotests/pkg/storage"
+	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
+	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"

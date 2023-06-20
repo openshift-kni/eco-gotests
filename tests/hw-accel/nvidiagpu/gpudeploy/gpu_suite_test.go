@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"

@@ -3,9 +3,9 @@ package find
 import (
 	"fmt"
 
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/pkg/hive"
-	"github.com/openshift-kni/eco-gotests/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/hive"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -2,7 +2,7 @@ package define
 
 import (
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-gotests/pkg/nad"
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 )
 
 // MasterNadPlugin sets NetworkAttachmentDefinition master plugin based on given input.

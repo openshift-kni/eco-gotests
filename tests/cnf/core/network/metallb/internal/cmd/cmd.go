@@ -6,7 +6,7 @@ import (
 
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 
-	"github.com/openshift-kni/eco-gotests/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 )
 
 // DefineNGNXAndSleep runs NGNX server.

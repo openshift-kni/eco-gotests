@@ -3,8 +3,8 @@ package define
 import (
 	"fmt"
 
-	"github.com/openshift-kni/eco-gotests/pkg/rbac"
-	"github.com/openshift-kni/eco-gotests/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
+	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	v1 "k8s.io/api/rbac/v1"
 )

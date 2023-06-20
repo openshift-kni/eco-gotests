@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/pkg/deployment"
-	"github.com/openshift-kni/eco-gotests/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
 )
 

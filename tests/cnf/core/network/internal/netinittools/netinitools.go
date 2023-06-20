@@ -1,7 +1,7 @@
 package netinittools
 
 import (
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netconfig"
 	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )

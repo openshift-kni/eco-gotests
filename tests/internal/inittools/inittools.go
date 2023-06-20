@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/config"
 )
 

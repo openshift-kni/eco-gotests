@@ -6,9 +6,9 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/openshift-kni/eco-gotests/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 )
 
 // PullTestImageOnNodes pulls given image on range of relevant nodes based on nodeSelector.
