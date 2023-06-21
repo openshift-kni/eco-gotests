@@ -22,11 +22,13 @@ const (
 // NetworkConfig type keeps network configuration.
 type NetworkConfig struct {
 	*coreconfig.CoreConfig
-	CnfNetTestContainer  string `yaml:"cnf_net_test_container" envconfig:"ECO_CNF_CORE_NET_TEST_CONTAINER"`
-	MlbOperatorNamespace string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
+	CnfNetTestContainer    string `yaml:"cnf_net_test_container" envconfig:"ECO_CNF_CORE_NET_TEST_CONTAINER"`
+	SriovOperatorNamespace string `yaml:"sriov_operator_namespace" envconfig:"ECO_CNF_CORE_NET_SRIOV_OPERATOR_NAMESPACE"`
+	MlbOperatorNamespace   string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
 	//nolint:lll
 	PrometheusOperatorNamespace string `yaml:"prometheus_operator_namespace" envconfig:"ECO_CNF_CORE_NET_PROMETHEUS_OPERATOR_NAMESPACE"`
 	MlbAddressPoolIP            string `envconfig:"ECO_CNF_CORE_NET_MLB_ADDR_LIST"`
+	SriovInterfaces             string `envconfig:"ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST"`
 	FrrImage                    string `yaml:"frr_image" envconfig:"ECO_CNF_CORE_NET_FRR_IMAGE"`
 }
 
@@ -75,6 +77,19 @@ func (netConfig *NetworkConfig) GetMetalLbVirIP() ([]string, error) {
 	}
 
 	return envValue, nil
+}
+
+// GetSriovInterfaces checks the ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST env var
+// and returns required number of SR-IOV interfaces.
+func (netConfig *NetworkConfig) GetSriovInterfaces(requestedNumber int) ([]string, error) {
+	requestedInterfaceList := strings.Split(netConfig.SriovInterfaces, ",")
+	if len(requestedInterfaceList) < requestedNumber {
+		return nil, fmt.Errorf(
+			"the number of SR-IOV interfaces is less than %d,"+
+				" check ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST env var", requestedNumber)
+	}
+
+	return requestedInterfaceList, nil
 }
 
 func readFile(netConfig *NetworkConfig, cfgFile string) error {
