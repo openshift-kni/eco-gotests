@@ -6,4 +6,7 @@ const (
 
 	// LabelPlatformVerificationTestCases represents platform-verification label that can be used for test cases selection.
 	LabelPlatformVerificationTestCases = "platform-verification"
+
+	// LabelInvokerVerificationTestCases represents invoker-verification label that can be used for test cases selection.
+	LabelInvokerVerificationTestCases = "invoker-verification"
 )
