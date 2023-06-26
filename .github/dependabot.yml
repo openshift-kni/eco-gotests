@@ -11,13 +11,3 @@ updates:
       prefix: "[Bump eco-goinfra] "
     labels:
       - "dependencies"
-
-    # Bump all dependencies once a month
-  - package-ecosystem: "gomod"
-    directory: "/"
-    schedule:
-      interval: "monthly"
-    commit-message:
-      prefix: "[Bump dependencies] "
-    labels:
-      - "dependencies"
