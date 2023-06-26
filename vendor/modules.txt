@@ -381,6 +381,7 @@ github.com/openshift-kni/eco-goinfra/pkg/secret
 github.com/openshift-kni/eco-goinfra/pkg/service
 github.com/openshift-kni/eco-goinfra/pkg/serviceaccount
 github.com/openshift-kni/eco-goinfra/pkg/sriov
+github.com/openshift-kni/eco-goinfra/pkg/statefulset
 github.com/openshift-kni/eco-goinfra/pkg/storage
 # github.com/openshift-kni/k8sreporter v1.0.3
 ## explicit; go 1.20
