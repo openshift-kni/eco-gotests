@@ -117,6 +117,9 @@ issues:
     - path: 'tests/assisted/ztp/internal/ztpinittools'
       linters:
         - gochecknoinits
+    - path: 'tests/system-tests/ran-du/internal/randuinittools'
+      linters:
+        - gochecknoinits
     - path: 'tests/internal/polarion'
       linters:
         - exhaustive
