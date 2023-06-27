@@ -101,6 +101,20 @@ func (plugin *MasterMacVlanPlugin) WithIPAM(ipam *IPAM) *MasterMacVlanPlugin {
 	return plugin
 }
 
+// WithLinkInContainer defines MasterMacVlan plugin using linkInContainer feature.
+func (plugin *MasterMacVlanPlugin) WithLinkInContainer() *MasterMacVlanPlugin {
+	glog.V(100).Infof("Adding linkInContainer configuration to MasterMacVlanPlugin")
+
+	if plugin.masterPlugin == nil {
+		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterMacVlanPlugin"))
+		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterMacVlanPlugin")
+	}
+
+	plugin.masterPlugin.LinkInContainer = true
+
+	return plugin
+}
+
 // GetMasterPluginConfig returns master plugin if error is not occur.
 func (plugin *MasterMacVlanPlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
 	if plugin.errorMsg != "" {

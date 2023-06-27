@@ -248,6 +248,31 @@ func (builder *Builder) WithMasterPlugin(masterPlugin *MasterPlugin) *Builder {
 	return builder
 }
 
+// WithPlugins defines nad with group of plugins.
+func (builder *Builder) WithPlugins(name string, plugins *[]Plugin) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding plugins to NAD %s", builder.Definition.Name)
+
+	pluginsConfig := MasterPlugin{
+		CniVersion: "0.4.0",
+		Name:       name,
+		Plugins:    plugins,
+	}
+
+	pluginsConfigString, err := json.Marshal(pluginsConfig)
+
+	if err != nil {
+		builder.errorMsg = err.Error()
+	}
+
+	builder.Definition.Spec.Config = string(pluginsConfigString)
+
+	return builder
+}
+
 // GetGVR returns nad's GroupVersionResource which could be used for Clean function.
 func GetGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{

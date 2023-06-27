@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -107,12 +106,6 @@ func (builder *Builder) validate() (bool, error) {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
 
 		return false, fmt.Errorf("error: received nil %s builder", resourceCRD)
-	}
-
-	if builder.Objects == nil {
-		glog.V(100).Infof("The %s is undefined", resourceCRD)
-
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
 	}
 
 	if builder.apiClient == nil {

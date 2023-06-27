@@ -35,18 +35,23 @@ type (
 		Sysctl           map[string]string `json:"sysctl,omitempty"`
 		Links            []Link            `json:"links,omitempty"`
 		Ipam             *IPAM             `json:"ipam,omitempty"`
+		Owner            int               `json:"owner,omitempty"`
+		Group            int               `json:"group,omitempty"`
+		MultiQueue       bool              `json:"multiQueue,omitempty"`
+		SelinuxContext   string            `json:"selinuxcontext,omitempty"`
 	}
 
 	// MasterPlugin contains the master plugin configuration for a NAD.
 	MasterPlugin struct {
-		CniVersion string    `json:"cniVersion,omitempty"`
-		Name       string    `json:"name,omitempty"`
-		Type       string    `json:"type,omitempty"`
-		Master     string    `json:"master,omitempty"`
-		Mode       string    `json:"mode,omitempty"`
-		Plugins    *[]Plugin `json:"plugins,omitempty"`
-		Bridge     string    `json:"bridge,omitempty"`
-		Ipam       *IPAM     `json:"ipam,omitempty"`
+		CniVersion      string    `json:"cniVersion,omitempty"`
+		Name            string    `json:"name,omitempty"`
+		Type            string    `json:"type,omitempty"`
+		Master          string    `json:"master,omitempty"`
+		Mode            string    `json:"mode,omitempty"`
+		Plugins         *[]Plugin `json:"plugins,omitempty"`
+		Bridge          string    `json:"bridge,omitempty"`
+		Ipam            *IPAM     `json:"ipam,omitempty"`
+		LinkInContainer bool      `json:"linkInContainer,omitempty"`
 	}
 
 	// IPAM container the IPAM configuration for a NAD.

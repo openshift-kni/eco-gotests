@@ -2,8 +2,11 @@ package deployment
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -165,6 +168,34 @@ func (builder *Builder) WithAdditionalContainerSpecs(specs []coreV1.Container) *
 	} else {
 		builder.Definition.Spec.Template.Spec.Containers = append(builder.Definition.Spec.Template.Spec.Containers, specs...)
 	}
+
+	return builder
+}
+
+// WithSecondaryNetwork applies Multus secondary network configuration on deployment definition.
+func (builder *Builder) WithSecondaryNetwork(networks []*multus.NetworkSelectionElement) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Applying secondary networks %v to deployment %s", networks, builder.Definition.Name)
+
+	if len(networks) == 0 {
+		builder.errorMsg = "can not apply empty networks list"
+	}
+
+	netAnnotation, err := json.Marshal(networks)
+
+	if err != nil {
+		builder.errorMsg = fmt.Sprintf("error to unmarshal networks annotation due to: %s", err.Error())
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.Template.ObjectMeta.Annotations = map[string]string{
+		"k8s.v1.cni.cncf.io/networks": string(netAnnotation)}
 
 	return builder
 }
