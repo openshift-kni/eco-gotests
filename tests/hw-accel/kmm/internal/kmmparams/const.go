@@ -22,9 +22,6 @@ FROM registry.redhat.io/ubi8/ubi-minimal
 ARG KERNEL_VERSION
 ARG MY_MODULE
 RUN microdnf -y install kmod
-COPY --from=builder /usr/bin/kmod /usr/bin/
-RUN for link in /usr/bin/modprobe /usr/bin/rmmod; do \
-        ln -s /usr/bin/kmod "$link"; done
 COPY --from=builder /etc/driver-toolkit-release.json /etc/
 COPY --from=builder /build/kmm-kmod/*.ko /opt/lib/modules/${KERNEL_VERSION}/
 RUN depmod -b /opt

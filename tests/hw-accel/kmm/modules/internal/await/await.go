@@ -1,6 +1,7 @@
 package await
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -14,20 +15,34 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+var buildPod string
+
 // BuildPodCompleted awaits kmm build pods to finish build.
 func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.Duration) error {
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		var err error
 
-		pods, err := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: "status.phase=Succeeded"})
+		if buildPod == "" {
+			pods, err := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: "status.phase=Running"})
 
-		if err != nil {
-			glog.V(kmmparams.KmmLogLevel).Infof("build list error: %s", err)
+			if err != nil {
+				glog.V(kmmparams.KmmLogLevel).Infof("build list error: %s", err)
+			}
+
+			for _, podObj := range pods {
+				if strings.Contains(podObj.Object.Name, "-build") {
+					buildPod = podObj.Object.Name
+					glog.V(kmmparams.KmmLogLevel).Infof("\rBuild podObj '%s' is Running\n", podObj.Object.Name)
+
+				}
+			}
 		}
 
-		for _, pod := range pods {
-			if strings.Contains(pod.Object.Name, "-build") {
-				glog.V(kmmparams.KmmLogLevel).Infof("\rBuild pod '%s' completed\n", pod.Object.Name)
+		if buildPod != "" {
+			fieldSelector := fmt.Sprintf("metadata.name=%s", buildPod)
+			pods, _ := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: fieldSelector})
+			if len(pods) == 0 {
+				glog.V(kmmparams.KmmLogLevel).Infof("BuildPod %s no longer in namespace", buildPod)
 
 				return true, nil
 			}
