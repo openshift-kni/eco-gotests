@@ -8,10 +8,12 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"golang.org/x/exp/slices"
+
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -194,6 +196,11 @@ func (builder *NetworkBuilder) WithMacAddressSupport() *NetworkBuilder {
 	return builder.withCapabilities("mac")
 }
 
+// WithStaticIpam sets static IPAM in the SrIovNetwork definition spec.
+func (builder *NetworkBuilder) WithStaticIpam() *NetworkBuilder {
+	return builder.withIpam("static")
+}
+
 // WithOptions creates SriovNetwork with generic mutation options.
 func (builder *NetworkBuilder) WithOptions(options ...NetworkAdditionalOptions) *NetworkBuilder {
 	if valid, _ := builder.validate(); !valid {
@@ -343,12 +350,39 @@ func List(apiClient *clients.Settings, nsname string, options metaV1.ListOptions
 	return networkObjects, nil
 }
 
+// GetSriovNetworksGVR returns SriovNetwork's GroupVersionResource which could be used for Clean function.
+func GetSriovNetworksGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: "sriovnetwork.openshift.io", Version: "v1", Resource: "sriovnetworks",
+	}
+}
+
 func (builder *NetworkBuilder) withCapabilities(capability string) *NetworkBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
 
 	builder.Definition.Spec.Capabilities = fmt.Sprintf(`{ "%s": true }`, capability)
+
+	return builder
+}
+
+func (builder *NetworkBuilder) withIpam(ipamType string) *NetworkBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if ipamType == "" {
+		glog.V(100).Infof("sriov network 'ipamType' parameter can not be empty")
+
+		builder.errorMsg = "failed to configure IPAM, 'ipamType' parameter is empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.IPAM = fmt.Sprintf(`{ "type": "%s" }`, ipamType)
 
 	return builder
 }
@@ -383,4 +417,47 @@ func (builder *NetworkBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+// CleanAllNetworksByTargetNamespace deletes all networks matched by their NetworkNamespace spec.
+func CleanAllNetworksByTargetNamespace(
+	apiClient *clients.Settings,
+	operatornsname string,
+	targetnsname string,
+	options metaV1.ListOptions) error {
+	glog.V(100).Infof("Cleaning up sriov networks in the %s namespace with %s NetworkNamespace spec",
+		operatornsname, targetnsname)
+
+	if operatornsname == "" {
+		glog.V(100).Infof("'operatornsname' parameter can not be empty")
+
+		return fmt.Errorf("failed to clean up sriov networks, 'operatornsname' parameter is empty")
+	}
+
+	if targetnsname == "" {
+		glog.V(100).Infof("'targetnsname' parameter can not be empty")
+
+		return fmt.Errorf("failed to clean up sriov networks, 'targetnsname' parameter is empty")
+	}
+
+	networks, err := List(apiClient, operatornsname, options)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to list sriov networks in namespace: %s", operatornsname)
+
+		return err
+	}
+
+	for _, network := range networks {
+		if network.Object.Spec.NetworkNamespace == targetnsname {
+			err = network.Delete()
+			if err != nil {
+				glog.V(100).Infof("Failed to delete sriov networks: %s", network.Object.Name)
+
+				return err
+			}
+		}
+	}
+
+	return nil
 }

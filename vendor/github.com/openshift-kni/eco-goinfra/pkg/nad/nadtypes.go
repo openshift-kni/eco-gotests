@@ -52,6 +52,7 @@ type (
 		Bridge          string    `json:"bridge,omitempty"`
 		Ipam            *IPAM     `json:"ipam,omitempty"`
 		LinkInContainer bool      `json:"linkInContainer,omitempty"`
+		VlanID          uint16    `json:"vlanId,omitempty"`
 	}
 
 	// IPAM container the IPAM configuration for a NAD.

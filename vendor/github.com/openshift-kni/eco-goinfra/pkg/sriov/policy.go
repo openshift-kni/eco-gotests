@@ -250,7 +250,7 @@ func (builder *PolicyBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.SriovNetworkNodePolicies(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
 
 	if err != nil {
 		return err

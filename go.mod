@@ -6,13 +6,14 @@ require (
 	github.com/NVIDIA/gpu-operator v1.11.1
 	github.com/golang/glog v1.1.1
 	github.com/hashicorp/go-version v1.6.0
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/k8snetworkplumbingwg/sriov-network-operator v0.0.0-20201204053545-49045c36efb9
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/metal3-io/baremetal-operator/apis v0.2.0
 	github.com/metallb/metallb-operator v0.13.9
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20230627014140-827a4baf0f04
+	github.com/openshift-kni/eco-goinfra v0.0.0-20230703194013-110c85db1938
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/assisted-service/api v0.0.0-20230125183155-2b97070428e1
@@ -91,7 +92,6 @@ require (
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.1.2 // indirect
