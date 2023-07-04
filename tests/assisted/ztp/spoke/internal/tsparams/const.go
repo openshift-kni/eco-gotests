@@ -9,4 +9,8 @@ const (
 
 	// LabelInvokerVerificationTestCases represents invoker-verification label that can be used for test cases selection.
 	LabelInvokerVerificationTestCases = "invoker-verification"
+
+	// LabelNetworkTypeVerificationTestCases represents networktype-verification label that can be used for test cases
+	// selection.
+	LabelNetworkTypeVerificationTestCases = "networktype-verification"
 )
