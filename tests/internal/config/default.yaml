@@ -9,4 +9,6 @@ kubernetes_role_prefix: "node-role.kubernetes.io"
 worker_label: "worker"
 control_plane_label: "control-plane"
 polarion_tc_prefix: "OCP-"
+mco_namespace: "openshift-machine-config-operator"
+mco_config_daemon_name: "machine-config-daemon"
 ...

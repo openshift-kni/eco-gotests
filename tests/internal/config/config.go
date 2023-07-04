@@ -28,6 +28,8 @@ type GeneralConfig struct {
 	WorkerLabel          string `yaml:"worker_label" envconfig:"ECO_WORKER_LABEL"`
 	ControlPlaneLabel    string `yaml:"control_plane_label" envconfig:"ECO_CONTROL_PLANE_LABEL"`
 	PolarionTCPrefix     string `yaml:"polarion_tc_prefix" envconfig:"ECO_POLARION_TC_PREFIX"`
+	MCONamespace         string `yaml:"mco_namespace" envconfig:"ECO_MCO_NAMESPACE"`
+	MCOConfigDaemonName  string `yaml:"mco_config_daemon_name" envconfig:"ECO_MCO_CONFIG_DAEMON_NAME"`
 	WorkerLabelMap       map[string]string
 	ControlPlaneLabelMap map[string]string
 }
