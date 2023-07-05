@@ -26,14 +26,18 @@ const (
 	firstTapInterfaceName = "ext0"
 	// secondTapInterfaceName represents the name of the second tap interface.
 	secondTapInterfaceName = "ext1"
-	// macVlanOnBasedOnFirstTap represents the name of the mac-vlan interface which is based on top of first tap ext0.
-	macVlanOnBasedOnFirstTap = "ext0.1"
-	// macVlanOnBasedOnSecondTap represents the name of the mac-vlan interface which is based on top of second tap ext1.
-	macVlanOnBasedOnSecondTap = "ext1.2"
+	// interfaceBasedOnFirstTap represents the name of the interface which is based on top of first tap ext0.
+	interfaceBasedOnFirstTap = "ext0-1"
+	// interfaceBasedOnSecondTap represents the name of the interface which is based on top of second tap ext1.
+	interfaceBasedOnSecondTap = "ext1-2"
 	// firstNetIPv6 represents IPv6Address which is used for the first interface.
 	firstNetIPv6 = "2001:100::1/64"
 	// secondNetIPv6 represents IPv6Address which is used for the second interface.
 	secondNetIPv6 = "2001:101::1/64"
+	// firstNetIPv4 represents IPv4Address which is used for the first interface.
+	firstNetIPv4 = "192.168.100.1/24"
+	// secondNetIPv4 represents IPv4Address which is used for the second interface.
+	secondNetIPv4 = "192.168.200.1/24"
 )
 
 var (
@@ -75,9 +79,9 @@ var _ = Describe("", Ordered,
 
 				By("Setting pod network annotation")
 				macVlanOnePodInterfaceDefinition := pod.StaticIPAnnotationWithInterfaceAndNamespace(
-					macVlanOne.Definition.Name, tsparams.TestNamespaceName, macVlanOnBasedOnFirstTap, []string{firstNetIPv6})
+					macVlanOne.Definition.Name, tsparams.TestNamespaceName, interfaceBasedOnFirstTap, []string{firstNetIPv6})
 				macVlanTwoPodInterfaceDefinition := pod.StaticIPAnnotationWithInterfaceAndNamespace(
-					macVlanTwo.Definition.Name, tsparams.TestNamespaceName, macVlanOnBasedOnSecondTap, []string{secondNetIPv6})
+					macVlanTwo.Definition.Name, tsparams.TestNamespaceName, interfaceBasedOnSecondTap, []string{secondNetIPv6})
 				podNetCfg := pod.StaticIPAnnotationWithInterfaceAndNamespace(
 					tapOne.Definition.Name, tsparams.TestNamespaceName, firstTapInterfaceName, nil)
 				podNetCfg = append(
@@ -104,12 +108,76 @@ var _ = Describe("", Ordered,
 				verifySysctlKernelParametersConfiguredOnPodInterface(runningPod, disabledSysctlFlags, secondTapInterfaceName)
 
 				By("Verifying that devices have correct ip addresses")
-				doesInterfaceHasCorrectIPAddress(runningPod, macVlanOnBasedOnFirstTap, firstNetIPv6)
-				doesInterfaceHasCorrectIPAddress(runningPod, macVlanOnBasedOnSecondTap, secondNetIPv6)
+				doesInterfaceHasCorrectMasterAndIPAddress(runningPod, interfaceBasedOnFirstTap, firstNetIPv6)
+				doesInterfaceHasCorrectMasterAndIPAddress(runningPod, interfaceBasedOnSecondTap, secondNetIPv6)
 
 				By("Verifying that devises have correct interface type")
-				doesMacVlanHasCorrectConfig(runningPod, macVlanOnBasedOnFirstTap, firstTapInterfaceName)
-				doesMacVlanHasCorrectConfig(runningPod, macVlanOnBasedOnSecondTap, secondTapInterfaceName)
+				doesMacVlanHasCorrectConfig(runningPod, interfaceBasedOnFirstTap, firstTapInterfaceName)
+				doesMacVlanHasCorrectConfig(runningPod, interfaceBasedOnSecondTap, secondTapInterfaceName)
+			})
+
+			It("VLANs interfaces and dual-stack static IPAM", polarion.ID("63734"), func() {
+				By("Creating tap-one NetworkAttachmentDefinition")
+				tapOne := defineAndCreateTapNad("tap-one", 0, 0, enabledSysctlFlags)
+
+				By("Creating tap-two NetworkAttachmentDefinition")
+				tapTwo := defineAndCreateTapNad("tap-two", 1001, 1001, disabledSysctlFlags)
+
+				By("Creating vlan one NetworkAttachmentDefinition")
+				vlanOne := defineAndCreateVlanNad("vlan-one", firstTapInterfaceName, 100, nad.IPAMStatic())
+
+				By("Creating vlan two NetworkAttachmentDefinition")
+				vlanTwo := defineAndCreateVlanNad("vlan-two", secondTapInterfaceName, 200, nad.IPAMStatic())
+
+				By("Setting pod network annotation")
+				vlanOnePodInterfaceDefinition := pod.StaticIPAnnotationWithInterfaceAndNamespace(
+					vlanOne.Definition.Name,
+					tsparams.TestNamespaceName,
+					interfaceBasedOnFirstTap,
+					[]string{firstNetIPv4, firstNetIPv6})
+				vlanTwoPodInterfaceDefinition := pod.StaticIPAnnotationWithInterfaceAndNamespace(
+					vlanTwo.Definition.Name,
+					tsparams.TestNamespaceName,
+					interfaceBasedOnSecondTap,
+					[]string{secondNetIPv4, secondNetIPv6})
+				podNetCfg := pod.StaticIPAnnotationWithInterfaceAndNamespace(
+					tapOne.Definition.Name, tsparams.TestNamespaceName, firstTapInterfaceName, nil)
+				podNetCfg = append(podNetCfg, pod.StaticIPAnnotationWithInterfaceAndNamespace(
+					tapTwo.Definition.Name, tsparams.TestNamespaceName, secondTapInterfaceName, nil)...)
+				podNetCfg = append(podNetCfg, vlanOnePodInterfaceDefinition...)
+				podNetCfg = append(podNetCfg, vlanTwoPodInterfaceDefinition...)
+
+				By("Creating test pod and wait util it's running")
+				runningPod, err := pod.NewBuilder(
+					APIClient,
+					"pod-one",
+					tsparams.TestNamespaceName,
+					NetConfig.CnfNetTestContainer).
+					WithSecondaryNetwork(podNetCfg).
+					CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Fail to create test pod")
+
+				By("Verifying that device has correct tun type and user/group")
+				doesTapHasCorrectConfig(runningPod, firstTapInterfaceName, 0, 0)
+				doesTapHasCorrectConfig(runningPod, secondTapInterfaceName, 1001, 1001)
+
+				By("Verifying that devices have correct sysctl flags")
+				verifySysctlKernelParametersConfiguredOnPodInterface(
+					runningPod, enabledSysctlFlags, firstTapInterfaceName)
+				verifySysctlKernelParametersConfiguredOnPodInterface(
+					runningPod, disabledSysctlFlags, secondTapInterfaceName)
+
+				By("Verifying that devices have correct ipv4 address")
+				doesInterfaceHasCorrectMasterAndIPAddress(runningPod, interfaceBasedOnFirstTap, firstNetIPv4)
+				doesInterfaceHasCorrectMasterAndIPAddress(runningPod, interfaceBasedOnSecondTap, secondNetIPv4)
+
+				By("Verifying that devices have correct ipv6 address")
+				doesInterfaceHasCorrectMasterAndIPAddress(runningPod, interfaceBasedOnFirstTap, firstNetIPv6)
+				doesInterfaceHasCorrectMasterAndIPAddress(runningPod, interfaceBasedOnSecondTap, secondNetIPv6)
+
+				By("Verifying that devises have correct interface type")
+				doesVlanHasCorrectConfig(runningPod, interfaceBasedOnFirstTap, firstTapInterfaceName, 100)
+				doesVlanHasCorrectConfig(runningPod, interfaceBasedOnSecondTap, secondTapInterfaceName, 200)
 			})
 
 		})
@@ -128,7 +196,7 @@ var _ = Describe("", Ordered,
 		})
 	})
 
-func doesInterfaceHasCorrectIPAddress(podObject *pod.Builder, intName, ipAddr string) {
+func doesInterfaceHasCorrectMasterAndIPAddress(podObject *pod.Builder, intName, ipAddr string) {
 	buffer, err := podObject.ExecCommand([]string{"ip", "addr", "show", intName})
 	Expect(err).ToNot(HaveOccurred(), "Fail to get interface ip address on pod")
 	Expect(strings.Contains(buffer.String(), ipAddr)).To(BeTrue(), "Fail to detect requested ip")
@@ -160,6 +228,15 @@ func doesMacVlanHasCorrectConfig(podObject *pod.Builder, intName, masterIntName 
 	}
 }
 
+func doesVlanHasCorrectConfig(podObject *pod.Builder, intName, masterIntName string, vlanID uint16) {
+	interfaceConfig := collectLinkConfigFromPod(podObject, intName)
+	for _, expectedPattern := range []string{
+		fmt.Sprintf("vlan protocol 802.1Q id %d", vlanID),
+		fmt.Sprintf("%s@%s", intName, masterIntName)} {
+		Expect(strings.Contains(interfaceConfig, expectedPattern)).To(BeTrue(), "Fail to find required config")
+	}
+}
+
 func defineAndCreateTapNad(name string, user, group int, sysctlConfig map[string]string) *nad.Builder {
 	plugins := []nad.Plugin{
 		*nad.TapPlugin(user, group, true), *nad.TuningSysctlPlugin(true, sysctlConfig)}
@@ -180,6 +257,14 @@ func defineAndCreateMacVlanNad(name, intName string, ipam *nad.IPAM) *nad.Builde
 	masterPlugin, err := nad.NewMasterMacVlanPlugin(name).WithMasterInterface(intName).
 		WithIPAM(ipam).WithLinkInContainer().GetMasterPluginConfig()
 	Expect(err).ToNot(HaveOccurred(), "Fail to set MasterMacVlan plugin")
+
+	return defineAndCreateNad(name, masterPlugin)
+}
+
+func defineAndCreateVlanNad(name, intName string, vlanID uint16, ipam *nad.IPAM) *nad.Builder {
+	masterPlugin, err := nad.NewMasterVlanPlugin(name, vlanID).WithMasterInterface(intName).
+		WithIPAM(ipam).WithLinkInContainer().GetMasterPluginConfig()
+	Expect(err).ToNot(HaveOccurred(), "Fail to set MasterVlan plugin")
 
 	return defineAndCreateNad(name, masterPlugin)
 }
