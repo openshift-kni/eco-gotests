@@ -794,8 +794,8 @@ github.com/opencontainers/image-spec v1.1.0-rc2 h1:2zx/Stx4Wc5pIPDvIxHXvXtQFW/7X
 github.com/opencontainers/runc v0.0.0-20190115041553-12f6a991201f/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runc v0.1.1/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runtime-spec v0.1.2-0.20190507144316-5b71a03e2700/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
-github.com/openshift-kni/eco-goinfra v0.0.0-20230703194013-110c85db1938 h1:JuB2Uw1wrYfLmUwOiJPW1ouh5NNQ69ybUSGYyc1iEl4=
-github.com/openshift-kni/eco-goinfra v0.0.0-20230703194013-110c85db1938/go.mod h1:y8dF7haBuIXXjVM3gSguwoRXc8I2fRiV6yB5MsblfqM=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230705192117-5d3366d4e0a1 h1:AdCY72WMRoz87SZJ1bnskQGaUKPdQtKREVPT9tVgLck=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230705192117-5d3366d4e0a1/go.mod h1:y8dF7haBuIXXjVM3gSguwoRXc8I2fRiV6yB5MsblfqM=
 github.com/openshift-kni/k8sreporter v1.0.3 h1:PR7wf6lEEZeh27dnXxrDuGEtKpBPYuh+WxQJDWohrOU=
 github.com/openshift-kni/k8sreporter v1.0.3/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift-kni/numaresources-operator v0.4.13-0rc0.0.20230605095854-887a7c1cc783 h1:K+ppfTRhKenZlNBDVWsKQxKBl86XRC5VgAZsm/ao6XA=
@@ -816,7 +816,6 @@ github.com/openshift/hive/apis v0.0.0-20220222213051-def9088fdb5a h1:E+XPJs/aVvY
 github.com/openshift/hive/apis v0.0.0-20220222213051-def9088fdb5a/go.mod h1:E1bgquRiwfugdArdecPbpYIrAdve5kTzMaJb0+8jMXI=
 github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55 h1:Zo1oVeHVXkwpDhLRouPExdRcgDdtc5iRVt9AWW0Xozc=
 github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55/go.mod h1:xwAAOZMhwF91Ii8/yfOwp+yH5+GJS7VX90NI39RmSyo=
-github.com/openshift/machine-config-operator v3.11.0+incompatible/go.mod h1:4IzikyGmUVQwlohScKeaAr5n2YzcWXkZvTMGGxDcU2Q=
 github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b h1:R2WYVktXhYHbhS3P7uVxC5vrQqGPl42DmCGXaCaa5qw=
 github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b/go.mod h1:riwmJYhdQ7Wd7rVJw14B3GJRCCL6Yk4wUbKepionXUo=
 github.com/openshift/sriov-network-operator v0.0.0-20230517142142-2b25b439193a h1:ntfKQ/e132I6fCetIBW08rihu6DXuRqeMO56k4BEzp4=

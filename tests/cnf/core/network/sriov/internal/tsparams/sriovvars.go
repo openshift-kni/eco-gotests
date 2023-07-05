@@ -30,10 +30,12 @@ var (
 		NetConfig.SriovOperatorNamespace: NetConfig.SriovOperatorNamespace,
 		TestNamespaceName:                "other",
 	}
-	// DefaultTimeout represents the default timeout for most of Eventually/PollImmediate functions.
-	DefaultTimeout = 180 * time.Second
-	// DefaultRetryInterval represents the default retry interval for most of Eventually/PollImmediate functions.
-	DefaultRetryInterval = 10 * time.Second
+
+	// SriovStableTimeout defines the timeout duration for stabilizing SR-IOV after applying
+	// or deleting SriovNodePolicies.
+	SriovStableTimeout = 35 * time.Minute
+	// DefaultStableDuration represents the default stableDuration for most StableFor functions.
+	DefaultStableDuration = 10 * time.Second
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &sriovV1.SriovOperatorConfigList{}},

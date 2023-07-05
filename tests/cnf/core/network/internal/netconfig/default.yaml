@@ -5,4 +5,5 @@ metal_lb_operator_namespace: metallb-system
 sriov_operator_namespace: openshift-sriov-network-operator
 prometheus_operator_namespace: openshift-monitoring
 frr_image: quay.io/ocp-edge-qe/frr:stable_7.5
+cnf_mcp_label: workercnf
 ...

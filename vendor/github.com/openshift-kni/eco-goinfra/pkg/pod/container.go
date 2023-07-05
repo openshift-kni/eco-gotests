@@ -111,6 +111,31 @@ func (builder *ContainerBuilder) WithSecurityCapabilities(sCapabilities []string
 	return builder
 }
 
+// WithSecurityContext applies security Context on container.
+func (builder *ContainerBuilder) WithSecurityContext(securityContext *v1.SecurityContext) *ContainerBuilder {
+	glog.V(100).Infof("Applying custom securityContext %v", securityContext)
+
+	if securityContext == nil {
+		glog.V(100).Infof("Cannot add empty securityContext to container structure")
+
+		builder.errorMsg = "can not modify container config with empty securityContext"
+	}
+
+	if builder.definition.SecurityContext != nil {
+		glog.V(100).Infof("Cannot modify pre-existing securityContext")
+
+		builder.errorMsg = "can not modify pre-existing securityContext"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.definition.SecurityContext = securityContext
+
+	return builder
+}
+
 // GetContainerCfg returns Container struct.
 func (builder *ContainerBuilder) GetContainerCfg() (*v1.Container, error) {
 	glog.V(100).Infof("Returning configuration for container %s", builder.definition.Name)
