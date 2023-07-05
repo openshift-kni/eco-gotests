@@ -55,13 +55,20 @@ type (
 		VlanID          uint16    `json:"vlanId,omitempty"`
 	}
 
+	// IPRanges contains ip range for WhereAbout IPAM plugin.
+	IPRanges struct {
+		Range   string `json:"range,omitempty"`
+		Gateway string `json:"gateway,omitempty"`
+	}
+
 	// IPAM container the IPAM configuration for a NAD.
 	IPAM struct {
-		Type       string   `json:"type,omitempty"`
-		AddrRange  string   `json:"range,omitempty"`
-		RangeStart string   `json:"range_start,omitempty"`
-		RangeEnd   string   `json:"range_end,omitempty"`
-		Gateway    string   `json:"gateway,omitempty"`
-		Exclude    []string `json:"exclude,omitempty"`
+		Type       string     `json:"type,omitempty"`
+		AddrRange  string     `json:"range,omitempty"`
+		RangeStart string     `json:"range_start,omitempty"`
+		RangeEnd   string     `json:"range_end,omitempty"`
+		Gateway    string     `json:"gateway,omitempty"`
+		Exclude    []string   `json:"exclude,omitempty"`
+		IPRanges   []IPRanges `json:"ipRanges,omitempty"`
 	}
 )

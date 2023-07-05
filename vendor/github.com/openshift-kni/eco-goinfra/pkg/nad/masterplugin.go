@@ -290,3 +290,106 @@ func (plugin *MasterVlanPlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
 
 	return plugin.masterPlugin, nil
 }
+
+// MasterIPVlanPlugin provides struct for MasterPlugin set to IP vlan in NetworkAttachmentDefinition.
+type MasterIPVlanPlugin struct {
+	masterPlugin *MasterPlugin
+	errorMsg     string
+}
+
+// NewMasterIPVlanPlugin creates new instance of MasterIP VlanPlugin.
+func NewMasterIPVlanPlugin(name string) *MasterIPVlanPlugin {
+	glog.V(100).Infof(
+		"Initializing new MasterIPVlanPlugin structure %s", name)
+
+	builder := MasterIPVlanPlugin{
+		masterPlugin: &MasterPlugin{
+			CniVersion: "0.3.1",
+			Name:       name,
+			Type:       "ipvlan",
+		},
+	}
+
+	if builder.masterPlugin.Name == "" {
+		glog.V(100).Infof("error MasterIPVlanPlugin can not be empty")
+
+		builder.errorMsg = "MasterIPVlanPlugin name is empty"
+	}
+
+	return &builder
+}
+
+// WithIPAM defines IPAM configuration to MasterIPVlanPlugin. Default is empty.
+func (plugin *MasterIPVlanPlugin) WithIPAM(ipam *IPAM) *MasterIPVlanPlugin {
+	glog.V(100).Infof("Adding IPAM configuration %v to MasterIPVlanPlugin", ipam)
+
+	if plugin.masterPlugin == nil {
+		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin"))
+		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin")
+	}
+
+	if ipam == nil {
+		glog.V(100).Infof("error adding empty ipam to MasterIPVlanPlugin")
+
+		plugin.errorMsg = invalidIpamParameterMsg
+	}
+
+	if plugin.errorMsg != "" {
+		return plugin
+	}
+
+	plugin.masterPlugin.Ipam = ipam
+
+	return plugin
+}
+
+// WithMasterInterface defines master interface to MasterVlanPlugin. Default is cn0.
+func (plugin *MasterIPVlanPlugin) WithMasterInterface(masterInterfaceName string) *MasterIPVlanPlugin {
+	glog.V(100).Infof("Adding masterInterfaceName %s to MasterIPVlanPlugin", masterInterfaceName)
+
+	if plugin.masterPlugin == nil {
+		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin"))
+		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin")
+	}
+
+	if masterInterfaceName == "" {
+		glog.V(100).Infof("error to add master interface, the name of interface can not be empty")
+
+		plugin.errorMsg = "invalid masterInterfaceName parameter"
+	}
+
+	if plugin.errorMsg != "" {
+		return plugin
+	}
+
+	plugin.masterPlugin.Master = masterInterfaceName
+
+	return plugin
+}
+
+// WithLinkInContainer defines MasterIPVlanPlugin using linkInContainer feature.
+func (plugin *MasterIPVlanPlugin) WithLinkInContainer() *MasterIPVlanPlugin {
+	glog.V(100).Infof("Adding linkInContainer feature to MasterIPVlanPlugin")
+
+	if plugin.masterPlugin == nil {
+		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin"))
+		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin")
+	}
+
+	if plugin.errorMsg != "" {
+		return plugin
+	}
+
+	plugin.masterPlugin.LinkInContainer = true
+
+	return plugin
+}
+
+// GetMasterPluginConfig returns master plugin if error does not occur.
+func (plugin *MasterIPVlanPlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
+	if plugin.errorMsg != "" {
+		return nil, fmt.Errorf("error to build MaterPlugin config due to :%s", plugin.errorMsg)
+	}
+
+	return plugin.masterPlugin, nil
+}
