@@ -371,6 +371,7 @@ github.com/openshift-kni/eco-goinfra/pkg/msg
 github.com/openshift-kni/eco-goinfra/pkg/nad
 github.com/openshift-kni/eco-goinfra/pkg/namespace
 github.com/openshift-kni/eco-goinfra/pkg/network
+github.com/openshift-kni/eco-goinfra/pkg/nfd
 github.com/openshift-kni/eco-goinfra/pkg/nodes
 github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu
 github.com/openshift-kni/eco-goinfra/pkg/olm

@@ -816,6 +816,7 @@ github.com/openshift/hive/apis v0.0.0-20220222213051-def9088fdb5a h1:E+XPJs/aVvY
 github.com/openshift/hive/apis v0.0.0-20220222213051-def9088fdb5a/go.mod h1:E1bgquRiwfugdArdecPbpYIrAdve5kTzMaJb0+8jMXI=
 github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55 h1:Zo1oVeHVXkwpDhLRouPExdRcgDdtc5iRVt9AWW0Xozc=
 github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55/go.mod h1:xwAAOZMhwF91Ii8/yfOwp+yH5+GJS7VX90NI39RmSyo=
+github.com/openshift/machine-config-operator v3.11.0+incompatible/go.mod h1:4IzikyGmUVQwlohScKeaAr5n2YzcWXkZvTMGGxDcU2Q=
 github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b h1:R2WYVktXhYHbhS3P7uVxC5vrQqGPl42DmCGXaCaa5qw=
 github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b/go.mod h1:riwmJYhdQ7Wd7rVJw14B3GJRCCL6Yk4wUbKepionXUo=
 github.com/openshift/sriov-network-operator v0.0.0-20230517142142-2b25b439193a h1:ntfKQ/e132I6fCetIBW08rihu6DXuRqeMO56k4BEzp4=
