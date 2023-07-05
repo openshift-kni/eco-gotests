@@ -1,3 +1,4 @@
 ---
 # System tests default configurations.
+sriov_operator_namespace: openshift-sriov-network-operator
 ...

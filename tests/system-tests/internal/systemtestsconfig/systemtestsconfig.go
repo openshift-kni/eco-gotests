@@ -19,6 +19,7 @@ const (
 // SystemTestsConfig type keeps general configuration.
 type SystemTestsConfig struct {
 	*config.GeneralConfig
+	SriovOperatorNamespace string `yaml:"sriov_operator_namespace" envconfig:"ECO_SYSTEM_TESTS_SRIOV_OPERATOR_NAMESPACE"`
 }
 
 // NewSystemTestsConfig returns instance of SystemTestsConfig type.

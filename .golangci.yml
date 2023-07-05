@@ -35,6 +35,8 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/internal/inittools
       - github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools
       - github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools
     # Select the Go version to target. The default is '1.13'.
     go: "1.19"
     # https://staticcheck.io/docs/options#checks
@@ -118,6 +120,9 @@ issues:
       linters:
         - gochecknoinits
     - path: 'tests/system-tests/ran-du/internal/randuinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/internal/systemtestsinittools'
       linters:
         - gochecknoinits
     - path: 'tests/internal/polarion'

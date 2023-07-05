@@ -4,8 +4,8 @@ import (
 	"os/exec"
 )
 
-// ExecuteShellCmd function executes a shell command.
-func ExecuteShellCmd(command string) ([]byte, error) {
+// ExecuteCmd function executes a shell command.
+func ExecuteCmd(command string) ([]byte, error) {
 	cmd := exec.Command("bash", "-c", command)
 	output, err := cmd.Output()
 
