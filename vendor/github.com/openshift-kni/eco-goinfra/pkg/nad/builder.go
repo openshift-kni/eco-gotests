@@ -155,6 +155,26 @@ func (builder *Builder) Delete() error {
 	return nil
 }
 
+// Update renovates the existing NAD object with nad definition in builder.
+func (builder *Builder) Update() (*Builder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Updating NetworkAttachmentDefinition %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	var err error
+
+	builder.Definition.CreationTimestamp = metaV1.Time{}
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
+
+	builder.Object, err = builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Update(
+		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+
+	return builder, err
+}
+
 // Exists checks if a NAD is exists in the builder.
 // return value:    true    - NAD exists.
 //
