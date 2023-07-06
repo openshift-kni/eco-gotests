@@ -13,7 +13,7 @@ require (
 	github.com/metallb/metallb-operator v0.13.9
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20230705195230-66bb672ef439
+	github.com/openshift-kni/eco-goinfra v0.0.0-20230706133304-25c5f845d9f7
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/assisted-service/api v0.0.0-20230125183155-2b97070428e1

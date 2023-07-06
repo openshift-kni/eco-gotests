@@ -121,12 +121,6 @@ func (builder *ContainerBuilder) WithSecurityContext(securityContext *v1.Securit
 		builder.errorMsg = "can not modify container config with empty securityContext"
 	}
 
-	if builder.definition.SecurityContext != nil {
-		glog.V(100).Infof("Cannot modify pre-existing securityContext")
-
-		builder.errorMsg = "can not modify pre-existing securityContext"
-	}
-
 	if builder.errorMsg != "" {
 		return builder
 	}
