@@ -321,6 +321,12 @@ github.com/modern-go/reflect2
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
+# github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
+## explicit; go 1.17
+github.com/nmstate/kubernetes-nmstate/api/names
+github.com/nmstate/kubernetes-nmstate/api/shared
+github.com/nmstate/kubernetes-nmstate/api/v1
+github.com/nmstate/kubernetes-nmstate/api/v1alpha1
 # github.com/oklog/ulid v1.3.1
 ## explicit
 github.com/oklog/ulid
@@ -376,6 +382,7 @@ github.com/openshift-kni/eco-goinfra/pkg/nad
 github.com/openshift-kni/eco-goinfra/pkg/namespace
 github.com/openshift-kni/eco-goinfra/pkg/network
 github.com/openshift-kni/eco-goinfra/pkg/nfd
+github.com/openshift-kni/eco-goinfra/pkg/nmstate
 github.com/openshift-kni/eco-goinfra/pkg/nodes
 github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu
 github.com/openshift-kni/eco-goinfra/pkg/olm

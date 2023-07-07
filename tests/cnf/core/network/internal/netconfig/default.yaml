@@ -3,6 +3,7 @@
 cnf_net_test_container: quay.io/ocp-edge-qe/eco-gotests-network-client:v4.13
 metal_lb_operator_namespace: metallb-system
 sriov_operator_namespace: openshift-sriov-network-operator
+nmstate_operator_namespace: openshift-nmstate
 prometheus_operator_namespace: openshift-monitoring
 frr_image: quay.io/ocp-edge-qe/frr:stable_7.5
 cnf_mcp_label: workercnf

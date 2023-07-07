@@ -11,6 +11,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/metal3-io/baremetal-operator/apis v0.2.0
 	github.com/metallb/metallb-operator v0.13.9
+	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
 	github.com/openshift-kni/eco-goinfra v0.0.0-20230706191747-5133db5b3918

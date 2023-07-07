@@ -27,6 +27,8 @@ type NetworkConfig struct {
 	MlbOperatorNamespace   string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
 	CnfMcpLabel            string `yaml:"cnf_mcp_label" envconfig:"ECO_CNF_CORE_NET_CNF_MCP_LABEL"`
 	//nolint:lll
+	NMStateOperatorNamespace string `yaml:"nmstate_operator_namespace" envconfig:"ECO_CNF_CORE_NET_NMSTATE_OPERATOR_NAMESPACE"`
+	//nolint:lll
 	PrometheusOperatorNamespace string `yaml:"prometheus_operator_namespace" envconfig:"ECO_CNF_CORE_NET_PROMETHEUS_OPERATOR_NAMESPACE"`
 	MlbAddressPoolIP            string `envconfig:"ECO_CNF_CORE_NET_MLB_ADDR_LIST"`
 	SriovInterfaces             string `envconfig:"ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST"`
