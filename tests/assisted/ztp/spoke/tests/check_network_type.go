@@ -1,6 +1,8 @@
 package spoke_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
@@ -10,6 +12,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift/assisted-service/models"
 )
 
 var _ = Describe(
@@ -41,7 +44,8 @@ var _ = Describe(
 
 				By("Get the networktype from the AgentClusterInstall")
 				networkTypeACI = agentClusterInstall.Object.Spec.Networking.NetworkType
-				Expect(networkTypeACI).To(Or(Equal("OVNKubernetes"), Equal("OpenShiftSDN"), Equal("")))
+				Expect(networkTypeACI).To(Or(Equal(models.ClusterNetworkTypeOVNKubernetes),
+					Equal(models.ClusterNetworkTypeOpenShiftSDN), Equal("")))
 
 				By("Get the AgentClusterInstall conditions with type set to 'Completed'")
 				agentClusterInstallCondition, err := agentClusterInstall.GetCondition("Completed")
@@ -55,37 +59,34 @@ var _ = Describe(
 			It("Assert IPv4 spoke cluster with OVNKubernetes set as NetworkType gets deployed",
 				polarion.ID("44899"), func() {
 
-					expectedNetworkType := "OVNKubernetes"
-
 					By("Check that spoke cluster is IPV4 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
 					if !reqMet {
 						Skip(msg)
 					}
 
-					By("Check that the networktype in AgentClusterInstall is set")
-					if networkTypeACI != expectedNetworkType {
-						Skip("the network type in ACI is not set to OVNKubernetes")
+					By("Check that the networktype in AgentClusterInstall is set properly")
+					if networkTypeACI != models.ClusterNetworkTypeOVNKubernetes {
+						Skip(fmt.Sprintf("the network type in ACI is not set to %s", models.ClusterNetworkTypeOVNKubernetes))
 					}
 
 					By("Check that the deployment of the spoke has completed")
-					Expect(agentClusterInstallConditionMessage).Should(ContainSubstring("The installation has completed"))
+					Expect(agentClusterInstallConditionMessage).Should(ContainSubstring("The installation has completed"),
+						"error verifying that the deployent of the spoke has completed")
 
 				})
 			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OVNKubernetes",
 				polarion.ID("44900"), func() {
 
-					expectedNetworkType := "OVNKubernetes"
-
 					By("Check that spoke cluster is IPV4 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
 					if !reqMet {
 						Skip(msg)
 					}
 
-					By("Check that the networktype in AgentClusterInstall is set")
-					if networkTypeACI != expectedNetworkType {
-						Skip("the network type in ACI is not set to OVNKubernetes")
+					By("Check that the networktype in AgentClusterInstall is set properly")
+					if networkTypeACI != models.ClusterNetworkTypeOVNKubernetes {
+						Skip(fmt.Sprintf("the network type in ACI is not set to %s", models.ClusterNetworkTypeOVNKubernetes))
 					}
 
 					By("Get the network config from the spoke")
@@ -94,7 +95,50 @@ var _ = Describe(
 						"error pulling network configuration from the spoke")
 
 					By("Assure the networktype in AgentClusterInstall matches the networktype in the spoke")
-					Expect(expectedNetworkType).To(Equal(spokeClusterNetwork.Object.Spec.NetworkType))
+					Expect(models.ClusterNetworkTypeOVNKubernetes).To(Equal(spokeClusterNetwork.Object.Spec.NetworkType),
+						"error matching the network type in agentclusterinstall to the network type in the spoke")
+				})
+			It("Assert IPv6 spoke cluster with OVNKubernetes set as NetworkType gets deployed",
+				polarion.ID("44894"), func() {
+
+					By("Check that spoke cluster is IPV6 Single Stack")
+					reqMet, msg := meets.SpokeSingleStackIPv6Requirement()
+					if !reqMet {
+						Skip(msg)
+					}
+
+					By("Check that the networktype in AgentClusterInstall is set properly")
+					if networkTypeACI != models.ClusterNetworkTypeOVNKubernetes {
+						Skip(fmt.Sprintf("the network type in ACI is not set to %s", models.ClusterNetworkTypeOVNKubernetes))
+					}
+
+					By("Check that the deployment of the spoke has completed")
+					Expect(agentClusterInstallConditionMessage).Should(ContainSubstring("The installation has completed"),
+						"error verifying that the deployent of the spoke has completed")
+
+				})
+			It("Assert the NetworkType in the IPV6 spoke matches ACI and is set to OVNKubernetes",
+				polarion.ID("44895"), func() {
+
+					By("Check that spoke cluster is IPV6 Single Stack")
+					reqMet, msg := meets.SpokeSingleStackIPv6Requirement()
+					if !reqMet {
+						Skip(msg)
+					}
+
+					By("Check that the networktype in AgentClusterInstall is set properly")
+					if networkTypeACI != models.ClusterNetworkTypeOVNKubernetes {
+						Skip(fmt.Sprintf("the network type in ACI is not set to %s", models.ClusterNetworkTypeOVNKubernetes))
+					}
+
+					By("Get the network config from the spoke")
+					spokeClusterNetwork, err := network.PullConfig(SpokeConfig.APIClient)
+					Expect(err).ToNot(HaveOccurred(),
+						"error pulling network configuration from the spoke")
+
+					By("Assure the networktype in AgentClusterInstall matches the networktype in the spoke")
+					Expect(models.ClusterNetworkTypeOVNKubernetes).To(Equal(spokeClusterNetwork.Object.Spec.NetworkType),
+						"error matching the network type in agentclusterinstall to the network type in the spoke")
 				})
 
 		})
