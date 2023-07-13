@@ -279,7 +279,7 @@ github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/scheme
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
-# github.com/k8snetworkplumbingwg/sriov-network-operator v0.0.0-20201204053545-49045c36efb9 => github.com/openshift/sriov-network-operator v0.0.0-20230517142142-2b25b439193a
+# github.com/k8snetworkplumbingwg/sriov-network-operator v0.0.0-20201204053545-49045c36efb9 => github.com/SchSeba/sriov-network-operator-1 v0.0.0-20230619100551-13835b642827
 ## explicit; go 1.19
 github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/scheme
@@ -371,7 +371,7 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/openshift-kni/eco-goinfra v0.0.0-20230706191747-5133db5b3918
+# github.com/openshift-kni/eco-goinfra v0.0.0-20230707152953-f1632f44f12e
 ## explicit; go 1.19
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/clients
@@ -1251,7 +1251,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20230517142142-2b25b439193a
+# github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/SchSeba/sriov-network-operator-1 v0.0.0-20230619100551-13835b642827
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7
 # github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20230125183155-2b97070428e1
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20230120202327-72f107311084

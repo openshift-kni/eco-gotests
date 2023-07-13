@@ -74,6 +74,8 @@ github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
+github.com/SchSeba/sriov-network-operator-1 v0.0.0-20230619100551-13835b642827 h1:5lagSNl33ZBNy3KwFcwx7dOX/J2+aQVuzGr2/gO0bnE=
+github.com/SchSeba/sriov-network-operator-1 v0.0.0-20230619100551-13835b642827/go.mod h1:xe0s+RTyPdIlTaBVrWO3Knnw6wcCxlaRgbS0+r+fjVw=
 github.com/Shopify/logrus-bugsnag v0.0.0-20230117174420-439a4b8ba167 h1:4sc2y3LzYFk3Na8xMtfnJ5T1N5kA+MsU8dTJN6IjJqk=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
@@ -800,8 +802,8 @@ github.com/opencontainers/image-spec v1.1.0-rc2 h1:2zx/Stx4Wc5pIPDvIxHXvXtQFW/7X
 github.com/opencontainers/runc v0.0.0-20190115041553-12f6a991201f/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runc v0.1.1/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runtime-spec v0.1.2-0.20190507144316-5b71a03e2700/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
-github.com/openshift-kni/eco-goinfra v0.0.0-20230706191747-5133db5b3918 h1:1nwzE1QvhThWo0KOFMBSEe8fFor5emK6RbOW/OLdLR4=
-github.com/openshift-kni/eco-goinfra v0.0.0-20230706191747-5133db5b3918/go.mod h1:tG/Ul2Lrv5cgv5/4CTesqJ1ODbfeQ1ZADULLStZhIA4=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230707152953-f1632f44f12e h1:7JNc8/pLRrQ+bdhipdvgbmL1JjUspHUlDKw0DRKrF4w=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230707152953-f1632f44f12e/go.mod h1:JG6SGKH4u2dIqua2dJvPXf+GPQMHbzEZh8G/BVQievs=
 github.com/openshift-kni/k8sreporter v1.0.3 h1:PR7wf6lEEZeh27dnXxrDuGEtKpBPYuh+WxQJDWohrOU=
 github.com/openshift-kni/k8sreporter v1.0.3/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7 h1:rncLxJBpFGqBztyxCMwNRnMjhhIDOWHJowi6q8G6koI=
@@ -824,8 +826,6 @@ github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb5
 github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55/go.mod h1:xwAAOZMhwF91Ii8/yfOwp+yH5+GJS7VX90NI39RmSyo=
 github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b h1:R2WYVktXhYHbhS3P7uVxC5vrQqGPl42DmCGXaCaa5qw=
 github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b/go.mod h1:riwmJYhdQ7Wd7rVJw14B3GJRCCL6Yk4wUbKepionXUo=
-github.com/openshift/sriov-network-operator v0.0.0-20230517142142-2b25b439193a h1:ntfKQ/e132I6fCetIBW08rihu6DXuRqeMO56k4BEzp4=
-github.com/openshift/sriov-network-operator v0.0.0-20230517142142-2b25b439193a/go.mod h1:qcsO9FbnUCtdnm8wrsx/EyfWtVhZYWHKFDdjThu6HLs=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
 github.com/operator-framework/api v0.7.1/go.mod h1:L7IvLd/ckxJEJg/t4oTTlnHKAJIP/p51AvEslW3wYdY=

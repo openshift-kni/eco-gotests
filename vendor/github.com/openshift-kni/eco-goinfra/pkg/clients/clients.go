@@ -42,6 +42,9 @@ import (
 	clientMachineConfigV1 "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1"
 	metalLbV1Beta1 "go.universe.tf/metallb/api/v1beta1"
 
+	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
+	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
+
 	operatorV1 "github.com/openshift/api/operator/v1"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
@@ -139,6 +142,8 @@ func New(kubeconfig string) *Settings {
 }
 
 // SetScheme returns mutated apiClient's scheme.
+//
+//nolint:funlen
 func SetScheme(crScheme *runtime.Scheme) error {
 	if err := scheme.AddToScheme(crScheme); err != nil {
 		return err
@@ -209,6 +214,14 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := pkgManifestV1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := nmstatev1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := nmstateV1alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,8 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	render "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/render"
+	"github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/render"
 )
 
 const (
@@ -271,12 +271,13 @@ func (p *SriovNetworkNodePolicy) Apply(state *SriovNetworkNodeState, equalPriori
 		if s.Selected(&iface) {
 			log.Info("Update interface", "name:", iface.Name)
 			result := Interface{
-				PciAddress:  iface.PciAddress,
-				Mtu:         p.Spec.Mtu,
-				Name:        iface.Name,
-				LinkType:    p.Spec.LinkType,
-				EswitchMode: p.Spec.EswitchMode,
-				NumVfs:      p.Spec.NumVfs,
+				PciAddress:        iface.PciAddress,
+				Mtu:               p.Spec.Mtu,
+				Name:              iface.Name,
+				LinkType:          p.Spec.LinkType,
+				EswitchMode:       p.Spec.EswitchMode,
+				NumVfs:            p.Spec.NumVfs,
+				ExternallyCreated: p.Spec.ExternallyCreated,
 			}
 			if p.Spec.NumVfs > 0 {
 				group, err := p.generateVfGroup(&iface)

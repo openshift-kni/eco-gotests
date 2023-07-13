@@ -116,7 +116,7 @@ func WaitForSriovAndMCPStable(waitingTime time.Duration) error {
 // it's successfully applied.
 func CreateSriovPolicyAndWaitUntilItsApplied(sriovPolicy *sriov.PolicyBuilder, timeout time.Duration) error {
 	glog.V(90).Infof("Creating SriovNetworkNodePolicy %s and waiting until it's successfully applied.",
-		sriovPolicy.Object.Name)
+		sriovPolicy.Definition.Name)
 
 	_, err := sriovPolicy.Create()
 	if err != nil {
