@@ -140,6 +140,47 @@ var _ = Describe(
 					Expect(models.ClusterNetworkTypeOVNKubernetes).To(Equal(spokeClusterNetwork.Object.Spec.NetworkType),
 						"error matching the network type in agentclusterinstall to the network type in the spoke")
 				})
+			It("Assert IPv4 spoke cluster with OpenShiftSDN set as NetworkType gets deployed",
+				polarion.ID("44896"), func() {
 
+					By("Check that spoke cluster is IPV4 Single Stack")
+					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
+					if !reqMet {
+						Skip(msg)
+					}
+
+					By("Check that the networktype in AgentClusterInstall is set properly")
+					if networkTypeACI != models.ClusterNetworkTypeOpenShiftSDN {
+						Skip(fmt.Sprintf("the network type in ACI is not set to %s", models.ClusterNetworkTypeOpenShiftSDN))
+					}
+
+					By("Check that the deployment of the spoke has completed")
+					Expect(agentClusterInstallConditionMessage).Should(ContainSubstring("The installation has completed"),
+						"error verifying that the deployent of the spoke has completed")
+
+				})
+			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OpenShiftSDN",
+				polarion.ID("44897"), func() {
+
+					By("Check that spoke cluster is IPV4 Single Stack")
+					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
+					if !reqMet {
+						Skip(msg)
+					}
+
+					By("Check that the networktype in AgentClusterInstall is set properly")
+					if networkTypeACI != models.ClusterNetworkTypeOpenShiftSDN {
+						Skip(fmt.Sprintf("the network type in ACI is not set to %s", models.ClusterNetworkTypeOpenShiftSDN))
+					}
+
+					By("Get the network config from the spoke")
+					spokeClusterNetwork, err := network.PullConfig(SpokeConfig.APIClient)
+					Expect(err).ToNot(HaveOccurred(),
+						"error pulling network configuration from the spoke")
+
+					By("Assure the networktype in AgentClusterInstall matches the networktype in the spoke")
+					Expect(models.ClusterNetworkTypeOpenShiftSDN).To(Equal(spokeClusterNetwork.Object.Spec.NetworkType),
+						"error matching the network type in agentclusterinstall to the network type in the spoke")
+				})
 		})
 	})
