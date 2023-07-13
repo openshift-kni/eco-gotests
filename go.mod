@@ -23,7 +23,9 @@ require (
 	github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55
 	github.com/operator-framework/api v0.17.3
 	github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20230307090347-57c1bdf6d12b
+	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.universe.tf/metallb v0.13.7
+	gopkg.in/k8snetworkplumbingwg/multus-cni.v4 v4.0.2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
@@ -53,9 +55,11 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/ajeddeloh/go-json v0.0.0-20200220154158-5ae607161559 // indirect
 	github.com/aws/aws-sdk-go v1.44.204 // indirect
+	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/bugsnag/bugsnag-go/v2 v2.2.0 // indirect
 	github.com/bugsnag/panicwrap v1.3.4 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -139,7 +143,6 @@ require (
 	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/k8snetworkplumbingwg/multus-cni.v4 v4.0.2 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.2 // indirect

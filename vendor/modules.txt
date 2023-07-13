@@ -19,6 +19,9 @@ github.com/asaskevich/govalidator
 # github.com/aws/aws-sdk-go v1.44.204
 ## explicit; go 1.11
 github.com/aws/aws-sdk-go/aws/arn
+# github.com/bahlo/generic-list-go v0.2.0
+## explicit; go 1.18
+github.com/bahlo/generic-list-go
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -28,6 +31,9 @@ github.com/blang/semver
 # github.com/blang/semver/v4 v4.0.0
 ## explicit; go 1.14
 github.com/blang/semver/v4
+# github.com/buger/jsonparser v1.1.1
+## explicit; go 1.13
+github.com/buger/jsonparser
 # github.com/bugsnag/bugsnag-go/v2 v2.2.0
 ## explicit; go 1.15
 # github.com/bugsnag/panicwrap v1.3.4
@@ -553,6 +559,9 @@ github.com/spf13/pflag
 # github.com/vincent-petithory/dataurl v1.0.0
 ## explicit
 github.com/vincent-petithory/dataurl
+# github.com/wk8/go-ordered-map/v2 v2.1.8
+## explicit; go 1.18
+github.com/wk8/go-ordered-map/v2
 # go.mongodb.org/mongo-driver v1.11.1
 ## explicit; go 1.13
 go.mongodb.org/mongo-driver/bson
