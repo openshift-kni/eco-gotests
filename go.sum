@@ -802,8 +802,8 @@ github.com/opencontainers/image-spec v1.1.0-rc2 h1:2zx/Stx4Wc5pIPDvIxHXvXtQFW/7X
 github.com/opencontainers/runc v0.0.0-20190115041553-12f6a991201f/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runc v0.1.1/go.mod h1:qT5XzbpPznkRYVz/mWwUaVBUv2rmF59PVA73FjuZG0U=
 github.com/opencontainers/runtime-spec v0.1.2-0.20190507144316-5b71a03e2700/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
-github.com/openshift-kni/eco-goinfra v0.0.0-20230707152953-f1632f44f12e h1:7JNc8/pLRrQ+bdhipdvgbmL1JjUspHUlDKw0DRKrF4w=
-github.com/openshift-kni/eco-goinfra v0.0.0-20230707152953-f1632f44f12e/go.mod h1:JG6SGKH4u2dIqua2dJvPXf+GPQMHbzEZh8G/BVQievs=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230713170810-592861390b2c h1:WIeLShcz9A9xjQFe6jBZAv2OUtTDAhGptIUSrceZ9/E=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230713170810-592861390b2c/go.mod h1:JG6SGKH4u2dIqua2dJvPXf+GPQMHbzEZh8G/BVQievs=
 github.com/openshift-kni/k8sreporter v1.0.3 h1:PR7wf6lEEZeh27dnXxrDuGEtKpBPYuh+WxQJDWohrOU=
 github.com/openshift-kni/k8sreporter v1.0.3/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7 h1:rncLxJBpFGqBztyxCMwNRnMjhhIDOWHJowi6q8G6koI=

@@ -24,3 +24,11 @@ func StaticIPAnnotationWithInterfaceAndNamespace(
 
 	return baseAnnotation
 }
+
+// StaticIPAnnotationWithMacAddress defines static ip address and static macaddress network annotation for pod object.
+func StaticIPAnnotationWithMacAddress(name string, ipAddr []string, macAddr string) []*multus.NetworkSelectionElement {
+	baseAnnotation := StaticIPAnnotation(name, ipAddr)
+	baseAnnotation[0].MacRequest = macAddr
+
+	return baseAnnotation
+}

@@ -131,8 +131,9 @@ func CreateSriovPolicyAndWaitUntilItsApplied(sriovPolicy *sriov.PolicyBuilder, t
 	return nil
 }
 
-// WaitWhenVfsCreated waits until all expected SR-IOV VFs are created.
-func WaitWhenVfsCreated(nodes *nodes.Builder, sriovInterfaceName string, numberOfVfs int, timeout time.Duration) error {
+// WaitUntilVfsCreated waits until all expected SR-IOV VFs are created.
+func WaitUntilVfsCreated(
+	nodes *nodes.Builder, sriovInterfaceName string, numberOfVfs int, timeout time.Duration) error {
 	glog.V(90).Infof("Waiting for the creation of all VFs (%d) under"+
 		" the %s interface in the SriovNetworkState.", numberOfVfs, sriovInterfaceName)
 
