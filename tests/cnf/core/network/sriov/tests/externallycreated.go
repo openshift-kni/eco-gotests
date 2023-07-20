@@ -24,9 +24,9 @@ import (
 var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCreatedTestCases),
 	ContinueOnFailure, func() {
 		const (
-			configureNMStatePolicyName = "configurevfs"
-			removeNMStatePolicyName    = "removevfs"
-			sriovAndResourceName       = "extcreated"
+			configureNMStatePolicyName        = "configurevfs"
+			removeNMStatePolicyName           = "removevfs"
+			sriovAndResourceNameExCreatedTrue = "extcreated"
 		)
 		var (
 			sriovInterfacesUnderTest []string
@@ -57,7 +57,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
 
 			By("Configure SR-IOV with flag ExternallyCreated true")
-			createSriovConfiguration(sriovAndResourceName, sriovInterfacesUnderTest[0], true)
+			createSriovConfiguration(sriovAndResourceNameExCreatedTrue, sriovInterfacesUnderTest[0], true)
 		})
 
 		AfterAll(func() {
@@ -102,19 +102,15 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 		})
 
-		DescribeTable("SR-IOV: ExternallyCreated: Verifying connectivity with different IP protocols", polarion.ID("63527"),
+		DescribeTable("Verifying connectivity with different IP protocols", polarion.ID("63527"),
 			func(ipStack string) {
 				By("Defining test parameters")
 				clientIPs, serverIPs, err := defineIterationParams(ipStack)
 				Expect(err).ToNot(HaveOccurred(), "Failed to define test parameters")
 
-				By("Creating test pods")
-				clientPod, _ := createAndWaitTestPods(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[1].Object.Name,
-					sriovAndResourceName, sriovAndResourceName, "", "", clientIPs, serverIPs)
-
-				By("Checking connectivity between test pods")
-				err = cmd.ICMPConnectivityCheck(clientPod, serverIPs)
-				Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
+				By("Creating test pods and checking connectivity")
+				createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[1].Object.Name,
+					sriovAndResourceNameExCreatedTrue, sriovAndResourceNameExCreatedTrue, "", "", clientIPs, serverIPs)
 			},
 
 			Entry("", netparam.IPV4Family, polarion.SetProperty("IPStack", netparam.IPV4Family)),
@@ -122,6 +118,41 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Entry("", netparam.DualIPFamily, polarion.SetProperty("IPStack", netparam.DualIPFamily)),
 		)
 
+		It("Recreate VFs when SR-IOV policy is applied", polarion.ID("63533"), func() {
+			By("Creating test pods and checking connectivity")
+			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
+				sriovAndResourceNameExCreatedTrue, sriovAndResourceNameExCreatedTrue,
+				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+
+			By("Removing created SR-IOV VFs via NMState")
+			err := nmstateenv.ConfigureVFsAndWaitUntilItsConfigured(removeNMStatePolicyName,
+				sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 0, tsparams.DefaultTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove VFs via NMState")
+
+			By("Removing NMState policies")
+			err = nmstate.CleanAllNMStatePolicies(APIClient)
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
+
+			By("Removing all test pods")
+			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+				tsparams.DefaultTimeout, pod.GetGVR())
+			Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
+
+			By("Creating SR-IOV VFs again via NMState")
+			err = nmstateenv.ConfigureVFsAndWaitUntilItsConfigured(configureNMStatePolicyName,
+				sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 5, tsparams.DefaultTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Failed to recreate VFs via NMState")
+
+			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, tsparams.DefaultTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
+
+			By("Re-create test pods and verify connectivity after recreating the VFs")
+			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
+				sriovAndResourceNameExCreatedTrue, sriovAndResourceNameExCreatedTrue,
+				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+		})
 	})
 
 func createSriovConfiguration(sriovAndResName, sriovInterfaceName string, externallyCreated bool) {
@@ -144,11 +175,12 @@ func createSriovConfiguration(sriovAndResName, sriovInterfaceName string, extern
 func defineIterationParams(ipFamily string) (clientIPs, serverIPs []string, err error) {
 	switch ipFamily {
 	case netparam.IPV4Family:
-		return []string{"192.168.0.1/24"}, []string{"192.168.0.2/24"}, nil
+		return []string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress}, nil
 	case netparam.IPV6Family:
-		return []string{"2001::1/64"}, []string{"2001::2/64"}, nil
+		return []string{tsparams.ClientIPv6IPAddress}, []string{tsparams.ServerIPv6IPAddress}, nil
 	case netparam.DualIPFamily:
-		return []string{"192.168.0.1/24", "2001::1/64"}, []string{"192.168.0.2/24", "2001::2/64"}, nil
+		return []string{tsparams.ClientIPv4IPAddress, tsparams.ClientIPv6IPAddress},
+			[]string{tsparams.ServerIPv4IPAddress, tsparams.ServerIPv6IPAddress}, nil
 	}
 
 	return nil, nil, fmt.Errorf(fmt.Sprintf(
@@ -197,4 +229,26 @@ func createAndWaitTestPodWithSecondaryNetwork(
 		WithSecondaryNetwork(secNetwork).CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
 
 	return testPod, err
+}
+
+// createPodsAndRunTraffic creates test pods and verifies connectivity between them.
+func createPodsAndRunTraffic(
+	clientNodeName string,
+	serverNodeName string,
+	sriovResNameClient string,
+	sriovResNameServer string,
+	clientMac string,
+	serverMac string,
+	clientIPs []string,
+	serverIPs []string) {
+	By("Creating test pods")
+
+	clientPod, _ := createAndWaitTestPods(clientNodeName, serverNodeName,
+		sriovResNameClient, sriovResNameServer, clientMac, serverMac,
+		clientIPs, serverIPs)
+
+	By("Checking connectivity between test pods")
+
+	err := cmd.ICMPConnectivityCheck(clientPod, serverIPs)
+	Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
 }
