@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -53,8 +54,12 @@ const (
 	secondNetIPv6 = "2001:101::1/64"
 	// firstNetIPv4 represents IPv4Address which is used for the first interface.
 	firstNetIPv4 = "192.168.100.1/24"
+	// firstNetIPv4GW represents gateway IPv4Address for network 192.168.100.0/24.
+	firstNetIPv4GW = "192.168.100.254"
 	// secondNetIPv4 represents IPv4Address which is used for the second interface.
 	secondNetIPv4 = "192.168.200.1/24"
+	// secondNetIPv4GW represents gateway IPv4Address for network 192.168.200.0/24.
+	secondNetIPv4GW = "192.168.200.254"
 	// tapOneNadName represents the name of the first tap NetworkAttachmentDefinition.
 	tapOneNadName = "tap-one"
 	// tapOneNadName represents the name of the second tap NetworkAttachmentDefinition.
@@ -228,13 +233,13 @@ var _ = Describe("", Ordered,
 
 					By("Creating vlan one NetworkAttachmentDefinition")
 					whereaboutNetOne := nad.WhereAboutsAppendRange(
-						nad.IPAMWhereAbouts(firstNetIPv4, "192.168.100.254"), firstNetIPv6, "2001:100::10")
+						nad.IPAMWhereAbouts(firstNetIPv4, firstNetIPv4GW), firstNetIPv6, "2001:100::10")
 					vlanOne := defineAndCreateVlanNad(vlanOneNadName, firstTapInterfaceName, firstVlanID, whereaboutNetOne)
 					nadNamesInterfaceNamesMap.Set(vlanOne.Definition.Name, interfaceBasedOnFirstTap)
 
 					By("Creating vlan two NetworkAttachmentDefinition")
 					whereaboutNetTwo := nad.WhereAboutsAppendRange(
-						nad.IPAMWhereAbouts(secondNetIPv4, "192.168.200.254"), secondNetIPv6, "2001:101::10")
+						nad.IPAMWhereAbouts(secondNetIPv4, secondNetIPv4GW), secondNetIPv6, "2001:101::10")
 					vlanTwo := defineAndCreateVlanNad(vlanTwoNadName, secondTapInterfaceName, secondVlanID, whereaboutNetTwo)
 					nadNamesInterfaceNamesMap.Set(vlanTwo.Definition.Name, secondInterfaceBasedOnSecondTap)
 
@@ -272,7 +277,7 @@ var _ = Describe("", Ordered,
 					Expect(err).ToNot(HaveOccurred(), "Fail to create deployment")
 
 					By("Collecting deployment pods")
-					deploymentPod := fetchNewDeploymentPod()
+					deploymentPod := fetchNewDeploymentPod(true)
 					testDualStackNetConfigWithTwoTapsTwoIPVLANsTwoVLANsOnTopOfDeploymentWithWhereabouts(deploymentPod)
 
 					By("Removing deployment pod")
@@ -280,10 +285,116 @@ var _ = Describe("", Ordered,
 					Expect(err).ToNot(HaveOccurred(), "Fail to delete deployment pod")
 
 					By("Collecting restated deployment pods")
-					restartedDeploymentPod := fetchNewDeploymentPod()
+					restartedDeploymentPod := fetchNewDeploymentPod(true)
 
 					By("Re-testing after pod restart")
 					testDualStackNetConfigWithTwoTapsTwoIPVLANsTwoVLANsOnTopOfDeploymentWithWhereabouts(restartedDeploymentPod)
+				})
+		})
+		Context("single tap devices plus sysctl with", func() {
+
+			It("MAC-VLAN and VLAN interfaces using ipv4 whereabout IPAM, deployment. "+
+				"Update sysctl, selinux config of Tap NAD",
+				polarion.ID("63765"), func() {
+					nadNamesInterfaceNamesMap := orderedMap.New[string, string]()
+					By("Creating tap-one NetworkAttachmentDefinition")
+					tapOne := defineAndCreateTapNad("tap-one", customUserID, customGroupID, enabledSysctlFlags)
+					nadNamesInterfaceNamesMap.Set(tapOne.Definition.Name, firstTapInterfaceName)
+
+					By("Creating mac vlan one NetworkAttachmentDefinition")
+					whereaboutNetOne := nad.IPAMWhereAbouts(secondNetIPv4, secondNetIPv4GW)
+					macVlanOne := defineAndCreateMacVlanNad("mac-vlan-one", firstTapInterfaceName, whereaboutNetOne)
+					nadNamesInterfaceNamesMap.Set(macVlanOne.Definition.Name, interfaceBasedOnFirstTap)
+
+					By("Creating vlan one NetworkAttachmentDefinition")
+					whereaboutNetTwo := nad.IPAMWhereAbouts(firstNetIPv4, firstNetIPv4GW)
+					vlanOne := defineAndCreateVlanNad("vlan-one", firstTapInterfaceName, firstVlanID, whereaboutNetTwo)
+					nadNamesInterfaceNamesMap.Set(vlanOne.Definition.Name, secondInterfaceBasedOnFirstTap)
+
+					By("Defining test container")
+					deploymentContainer, err := pod.NewContainerBuilder(
+						"test", NetConfig.CnfNetTestContainer, []string{"/bin/bash", "-c", "sleep INF"}).
+						WithSecurityContext(defaultSC).GetContainerCfg()
+					Expect(err).ToNot(HaveOccurred())
+
+					By("Setting deployment network annotation")
+					var deploymentNetCfg []*types.NetworkSelectionElement
+
+					for pair := nadNamesInterfaceNamesMap.Oldest(); pair != nil; pair = pair.Next() {
+						deploymentNetCfg = append(deploymentNetCfg, pod.StaticIPAnnotationWithInterfaceAndNamespace(
+							pair.Key, tsparams.TestNamespaceName, pair.Value, nil)...,
+						)
+					}
+
+					By("Creating Test deployment")
+					_, err = deployment.NewBuilder(
+						APIClient,
+						"deployment-one",
+						tsparams.TestNamespaceName,
+						map[string]string{"test": "tap"},
+						deploymentContainer).WithSecondaryNetwork(deploymentNetCfg).
+						CreateAndWaitUntilReady(tsparams.DefaultTimeout)
+					Expect(err).ToNot(HaveOccurred(), "Fail to create deployment")
+
+					By("Collecting deployment pods")
+					deploymentPod := fetchNewDeploymentPod(true)
+
+					testSingleTapSysctlAdNetworkConfigurationUsingDeployment(deploymentPod, enabledSysctlFlags)
+
+					By("Updating NetworkAttachmentDefinition with the new sysctl flags")
+					pluginsTwo := []nad.Plugin{
+						*nad.TapPlugin(customUserID, customGroupID, true),
+						*nad.TuningSysctlPlugin(true, disabledSysctlFlags),
+					}
+
+					updatedTap := nad.NewBuilder(APIClient, "tap-one", tsparams.TestNamespaceName).
+						WithPlugins("tap", &pluginsTwo)
+					tapOne.Definition.Spec.Config = updatedTap.Definition.Spec.Config
+					tapOne, err = tapOne.Update()
+					Expect(err).ToNot(HaveOccurred(), "Fail to update tap NetworkAttachmentDefinition")
+
+					By("Removing previous deployment pod")
+					_, err = deploymentPod.DeleteAndWait(tsparams.DefaultTimeout)
+					Expect(err).ToNot(HaveOccurred(), "Fail to remove deployment pod")
+
+					By("Collecting restated deployment pods")
+					deploymentPod = fetchNewDeploymentPod(true)
+
+					testSingleTapSysctlAdNetworkConfigurationUsingDeployment(deploymentPod, disabledSysctlFlags)
+
+					By("Updating NetworkAttachmentDefinition with the new invalid Selinux Content")
+					tapPlugin := nad.TapPlugin(customUserID, customGroupID, false)
+					tapPlugin.SelinuxContext = "system_u:system_r:container_t:s1"
+					invalidPlugins := []nad.Plugin{*tapPlugin, *nad.TuningSysctlPlugin(true, disabledSysctlFlags)}
+
+					updatedTap = nad.NewBuilder(APIClient, "tap-one", tsparams.TestNamespaceName).WithPlugins("tap", &invalidPlugins)
+					tapOne.Definition.Spec.Config = updatedTap.Definition.Spec.Config
+					_, err = tapOne.Update()
+					Expect(err).ToNot(HaveOccurred(), "Fail to update NetworkAttachmentDefinition")
+
+					By("Removing previous deployment pod")
+					_, err = deploymentPod.DeleteAndWait(tsparams.DefaultTimeout)
+					Expect(err).ToNot(HaveOccurred(), "Fail to delete previous deployment pod")
+
+					By("Waiting until new deployment pod is created")
+					fetchNewDeploymentPod(false)
+
+					By("Waiting for failed event")
+					expectedFailedMessage := "invalid argument"
+
+					Eventually(func() bool {
+						eventList, err := APIClient.Events(tsparams.TestNamespaceName).List(
+							context.TODO(), v1.ListOptions{FieldSelector: "reason=FailedCreatePodSandBox"})
+						Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
+
+						for _, event := range eventList.Items {
+							if strings.Contains(event.Message, expectedFailedMessage) {
+								return true
+							}
+						}
+
+						return false
+					}, tsparams.DefaultTimeout, 3*time.Second).Should(BeTrue(), "Fail to detect require event")
 				})
 		})
 
@@ -336,7 +447,24 @@ func testDualStackNetConfigWithTwoTapsTwoIPVLANsTwoVLANsOnTopOfDeploymentWithWhe
 	doesInterfaceHasCorrectMasterAndIPAddress(deploymentPod, interfaceBasedOnSecondTap, "2001:210::")
 }
 
-func fetchNewDeploymentPod() *pod.Builder {
+func testSingleTapSysctlAdNetworkConfigurationUsingDeployment(
+	deploymentPod *pod.Builder, sysctlExpectedFlags map[string]string) {
+	By("Verifying that device has correct tun type and user/group")
+	doesTapHasCorrectConfig(deploymentPod, firstTapInterfaceName, customUserID, customGroupID)
+
+	By("Verifying that mac vlan devices have correct configuration")
+	doesMacVlanHasCorrectConfig(deploymentPod, interfaceBasedOnFirstTap, firstTapInterfaceName)
+	doesInterfaceHasCorrectMasterAndIPAddress(deploymentPod, interfaceBasedOnFirstTap, "192.168.200.")
+
+	By("Verifying that vlan device has correct vlanID and ip address")
+	doesVlanHasCorrectConfig(deploymentPod, secondInterfaceBasedOnFirstTap, firstTapInterfaceName, firstVlanID)
+	doesInterfaceHasCorrectMasterAndIPAddress(deploymentPod, secondInterfaceBasedOnFirstTap, "192.168.100.")
+
+	By("Verifying that devices have correct sysctl flags")
+	verifySysctlKernelParametersConfiguredOnPodInterface(deploymentPod, sysctlExpectedFlags, firstTapInterfaceName)
+}
+
+func fetchNewDeploymentPod(waitUntilRunning bool) *pod.Builder {
 	By("Re-Collecting deployment pods")
 
 	var deploymentPodList []*pod.Builder
@@ -348,8 +476,10 @@ func fetchNewDeploymentPod() *pod.Builder {
 
 	}, time.Minute, tsparams.DefaultTimeout).Should(BeTrue(), "Failed to collect deployment pods")
 
-	err := deploymentPodList[0].WaitUntilRunning(tsparams.DefaultTimeout)
-	Expect(err).ToNot(HaveOccurred(), "Fail to get pod running state")
+	if waitUntilRunning {
+		err := deploymentPodList[0].WaitUntilRunning(tsparams.DefaultTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Fail to get pod running state")
+	}
 
 	return deploymentPodList[0]
 }
