@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,12 +22,13 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
+const sriovAndResourceNameExCreatedTrue = "extcreated"
+
 var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCreatedTestCases),
 	ContinueOnFailure, func() {
 		const (
-			configureNMStatePolicyName        = "configurevfs"
-			removeNMStatePolicyName           = "removevfs"
-			sriovAndResourceNameExCreatedTrue = "extcreated"
+			configureNMStatePolicyName = "configurevfs"
+			removeNMStatePolicyName    = "removevfs"
 		)
 		var (
 			sriovInterfacesUnderTest []string
@@ -110,7 +112,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 
 				By("Creating test pods and checking connectivity")
 				createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[1].Object.Name,
-					sriovAndResourceNameExCreatedTrue, sriovAndResourceNameExCreatedTrue, "", "", clientIPs, serverIPs)
+					"", "", clientIPs, serverIPs)
 			},
 
 			Entry("", netparam.IPV4Family, polarion.SetProperty("IPStack", netparam.IPV4Family)),
@@ -121,7 +123,6 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 		It("Recreate VFs when SR-IOV policy is applied", polarion.ID("63533"), func() {
 			By("Creating test pods and checking connectivity")
 			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
-				sriovAndResourceNameExCreatedTrue, sriovAndResourceNameExCreatedTrue,
 				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 
@@ -149,9 +150,72 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 
 			By("Re-create test pods and verify connectivity after recreating the VFs")
 			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
-				sriovAndResourceNameExCreatedTrue, sriovAndResourceNameExCreatedTrue,
 				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+		})
+
+		It("SR-IOV network with options", polarion.ID("63534"), func() {
+			By("Collecting default MaxTxRate and Vlan values")
+			defaultMaxTxRate, defaultVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+				sriovInterfacesUnderTest[0])
+
+			By("Updating Vlan and MaxTxRate configurations in the SriovNetwork")
+			newMaxTxRate := defaultMaxTxRate + 1
+			newVlanID := defaultVlanID + 1
+			sriovNetwork, err := sriov.PullNetwork(APIClient, sriovAndResourceNameExCreatedTrue,
+				NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV network object")
+			_, err = sriovNetwork.WithMaxTxRate(uint16(newMaxTxRate)).WithVLAN(uint16(newVlanID)).Update(false)
+			Expect(err).ToNot(HaveOccurred(), "Failed to update SR-IOV network with new configuration")
+
+			By("Creating test pods and checking connectivity")
+			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
+				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+
+			By("Checking that VF configured with new VLAN and MaxTxRate values")
+			Eventually(func() []int {
+				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+					sriovInterfacesUnderTest[0])
+
+				return []int{currentmaxTxRate, currentVlanID}
+			}, time.Minute, tsparams.DefaultRetryInterval).Should(Equal([]int{newMaxTxRate, newVlanID}),
+				"MaxTxRate and VlanId have been not configured properly")
+
+			By("Removing all test pods")
+			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+				tsparams.DefaultTimeout, pod.GetGVR())
+			Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
+
+			By("Checking that VF has initial configuration")
+
+			Eventually(func() []int {
+				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+					sriovInterfacesUnderTest[0])
+
+				return []int{currentmaxTxRate, currentVlanID}
+			}, tsparams.DefaultTimeout, tsparams.DefaultRetryInterval).
+				Should(Equal([]int{defaultMaxTxRate, defaultVlanID}),
+					"MaxTxRate and VlanId configuration have not been reverted to the initial one")
+
+			By("Remove all SR-IOV networks")
+			sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
+			err = sriovNs.CleanObjects(tsparams.DefaultTimeout, sriov.GetSriovNetworksGVR())
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from SR-IOV operator namespace")
+
+			By("Remove all SR-IOV policies")
+			err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+
+			By("Checking that VF has initial configuration")
+			Eventually(func() []int {
+				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+					sriovInterfacesUnderTest[0])
+
+				return []int{currentmaxTxRate, currentVlanID}
+			}, time.Minute, tsparams.DefaultRetryInterval).Should(And(Equal([]int{defaultMaxTxRate, defaultVlanID})),
+				"MaxTxRate and VlanId configurations have not been reverted to the initial one")
 		})
 	})
 
@@ -192,8 +256,6 @@ func defineIterationParams(ipFamily string) (clientIPs, serverIPs []string, err 
 func createAndWaitTestPods(
 	clientNodeName string,
 	serverNodeName string,
-	sriovResNameClient string,
-	sriovResNameServer string,
 	clientMac string,
 	serverMac string,
 	clientIPs []string,
@@ -201,13 +263,13 @@ func createAndWaitTestPods(
 	By("Creating client test pod")
 
 	clientPod, err := createAndWaitTestPodWithSecondaryNetwork("client", clientNodeName,
-		sriovResNameClient, clientMac, clientIPs)
+		sriovAndResourceNameExCreatedTrue, clientMac, clientIPs)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create client pod")
 
 	By("Creating server test pod")
 
 	serverPod, err := createAndWaitTestPodWithSecondaryNetwork("server", serverNodeName,
-		sriovResNameServer, serverMac, serverIPs)
+		sriovAndResourceNameExCreatedTrue, serverMac, serverIPs)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create server pod")
 
 	return clientPod, serverPod
@@ -235,20 +297,25 @@ func createAndWaitTestPodWithSecondaryNetwork(
 func createPodsAndRunTraffic(
 	clientNodeName string,
 	serverNodeName string,
-	sriovResNameClient string,
-	sriovResNameServer string,
 	clientMac string,
 	serverMac string,
 	clientIPs []string,
 	serverIPs []string) {
 	By("Creating test pods")
 
-	clientPod, _ := createAndWaitTestPods(clientNodeName, serverNodeName,
-		sriovResNameClient, sriovResNameServer, clientMac, serverMac,
-		clientIPs, serverIPs)
+	clientPod, _ := createAndWaitTestPods(clientNodeName, serverNodeName, clientMac, serverMac, clientIPs, serverIPs)
 
 	By("Checking connectivity between test pods")
 
 	err := cmd.ICMPConnectivityCheck(clientPod, serverIPs)
 	Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
+}
+
+func getVlanIDAndMaxTxRateForVf(nodeName, sriovInterfaceName string) (maxTxRate, vlanID int) {
+	nmstateState, err := nmstate.PullNodeNetworkState(APIClient, nodeName)
+	Expect(err).ToNot(HaveOccurred(), "Failed to discover NMState network state")
+	sriovVfs, err := nmstateState.GetSriovVfs(sriovInterfaceName)
+	Expect(err).ToNot(HaveOccurred(), "Failed to get all SR-IOV VFs")
+
+	return sriovVfs[0].MaxTxRate, sriovVfs[0].VlanID
 }

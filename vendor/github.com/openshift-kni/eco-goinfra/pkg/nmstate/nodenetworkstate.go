@@ -100,6 +100,39 @@ func (builder *StateBuilder) GetTotalVFs(sriovInterfaceName string) (int, error)
 	return 0, fmt.Errorf("failed to find interface %s", sriovInterfaceName)
 }
 
+// GetSriovVfs returns all configured VFs  under the given SR-IOV interface.
+func (builder *StateBuilder) GetSriovVfs(sriovInterfaceName string) ([]Vf, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Getting all configured VFs under interface %s from NodeNetworkState %s",
+		sriovInterfaceName, builder.Object.Name)
+
+	if sriovInterfaceName == "" {
+		glog.V(100).Infof("The sriovInterfaceName can not be empty string")
+
+		return nil, fmt.Errorf("the sriovInterfaceName is empty sting")
+	}
+
+	var CurrentState DesiredState
+
+	err := yaml.Unmarshal(builder.Object.Status.CurrentState.Raw, &CurrentState)
+	if err != nil {
+		return nil, fmt.Errorf("failed to Unmarshal NMState state")
+	}
+
+	for _, networkInterface := range CurrentState.Interfaces {
+		if networkInterface.Name == sriovInterfaceName && networkInterface.Ethernet.Sriov.Vfs != nil {
+			return networkInterface.Ethernet.Sriov.Vfs, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find interface %s "+
+		"or SR-IOV VFs are not configured on it", sriovInterfaceName)
+}
+
 // PullNodeNetworkState retrieves an existing NodeNetworkState object from the cluster.
 func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuilder, error) {
 	glog.V(100).Infof("Pulling NodeNetworkState object name:%s", name)

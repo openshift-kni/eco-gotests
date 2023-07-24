@@ -21,5 +21,18 @@ type Ethernet struct {
 // Sriov provides struct for the NMState Interface Ethernet Sriov state object containing
 // interface Ethernet Sriov information.
 type Sriov struct {
-	TotalVfs int `yaml:"total-vfs"`
+	TotalVfs int  `yaml:"total-vfs"`
+	Vfs      []Vf `yaml:"vfs,omitempty"`
+}
+
+// Vf provides struct for the NMState SR-IOV VF state object containing SR-IOV VF information.
+type Vf struct {
+	ID         int    `yaml:"id"`
+	MacAddress string `yaml:"mac-address"`
+	MaxTxRate  int    `yaml:"max-tx-rate"`
+	MinTxRate  int    `yaml:"min-tx-rate"`
+	Qos        int    `yaml:"qos"`
+	SpoofCheck bool   `yaml:"spoof-check"`
+	Trust      bool   `yaml:"trust"`
+	VlanID     int    `yaml:"vlan-id"`
 }

@@ -16,15 +16,12 @@ var (
 	Labels = append(netparam.Labels, LabelSuite)
 	// OperatorConfigDaemon defaults SR-IOV config daemon daemonset.
 	OperatorConfigDaemon = "sriov-network-config-daemon"
-	// OperatorDevicePlugin defaults SR-IOV device plugin daemonset.
-	OperatorDevicePlugin = "sriov-device-plugin"
 	// OperatorWebhook defaults SR-IOV webhook daemonset.
 	OperatorWebhook = "operator-webhook"
 	// OperatorResourceInjector defaults SR-IOV network resource injector daemonset.
 	OperatorResourceInjector = "network-resources-injector"
 	// OperatorSriovDaemonsets represents all default SR-IOV operator daemonset names.
-	OperatorSriovDaemonsets = []string{OperatorConfigDaemon, OperatorDevicePlugin,
-		OperatorWebhook, OperatorResourceInjector}
+	OperatorSriovDaemonsets = []string{OperatorConfigDaemon, OperatorWebhook, OperatorResourceInjector}
 	// ReporterNamespacesToDump tells to the reporter what namespaces to dump.
 	ReporterNamespacesToDump = map[string]string{
 		NetConfig.SriovOperatorNamespace: NetConfig.SriovOperatorNamespace,
@@ -37,6 +34,8 @@ var (
 	SriovStableTimeout = 35 * time.Minute
 	// DefaultStableDuration represents the default stableDuration for most StableFor functions.
 	DefaultStableDuration = 10 * time.Second
+	// DefaultRetryInterval represents the default retry interval for most of Eventually/PollImmediate functions.
+	DefaultRetryInterval = 5 * time.Second
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &sriovV1.SriovOperatorConfigList{}},
