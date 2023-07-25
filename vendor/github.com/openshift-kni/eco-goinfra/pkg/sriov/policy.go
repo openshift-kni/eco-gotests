@@ -159,6 +159,20 @@ func (builder *PolicyBuilder) WithRDMA(rdma bool) *PolicyBuilder {
 	return builder
 }
 
+// WithVhostNet sets Vhost mode in in SriovNetworkNodePolicy object.
+func (builder *PolicyBuilder) WithVhostNet(vhost bool) *PolicyBuilder {
+	glog.V(100).Infof("Redefining SriovNetworkNodePolicy %s with"+
+		" NeedVhostNet: %t", builder.Definition.Name, vhost)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	builder.Definition.Spec.NeedVhostNet = vhost
+
+	return builder
+}
+
 // WithExternallyCreated sets ExternallyCreated option in SriovNetworkNodePolicy object.
 func (builder *PolicyBuilder) WithExternallyCreated(externallyCreated bool) *PolicyBuilder {
 	glog.V(100).Infof("Redefining SriovNetworkNodePolicy %s with"+

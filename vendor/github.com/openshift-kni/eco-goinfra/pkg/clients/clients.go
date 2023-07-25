@@ -2,6 +2,7 @@ package clients
 
 import (
 	"fmt"
+
 	"log"
 	"os"
 
@@ -13,6 +14,7 @@ import (
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
+	v1security "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	ptpV1 "github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1"
 	olm2 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
@@ -70,6 +72,7 @@ type Settings struct {
 	Config *rest.Config
 	runtimeClient.Client
 	ptpV1.PtpV1Interface
+	v1security.SecurityV1Interface
 	olm.OperatorsV1alpha1Interface
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
@@ -114,6 +117,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.Interface = dynamic.NewForConfigOrDie(config)
 	clientSet.OperatorsV1Interface = olmv1.NewForConfigOrDie(config)
 	clientSet.PackageManifestInterface = clientPkgManifestV1.NewForConfigOrDie(config)
+	clientSet.SecurityV1Interface = v1security.NewForConfigOrDie(config)
 
 	clientSet.Config = config
 
