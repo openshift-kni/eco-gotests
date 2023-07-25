@@ -2,6 +2,7 @@ package spoke_test
 
 import (
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -181,6 +182,30 @@ var _ = Describe(
 					By("Assure the networktype in AgentClusterInstall matches the networktype in the spoke")
 					Expect(models.ClusterNetworkTypeOpenShiftSDN).To(Equal(spokeClusterNetwork.Object.Spec.NetworkType),
 						"error matching the network type in agentclusterinstall to the network type in the spoke")
+				})
+			It("Assert the NetworkType if omitted in ACI is set to OVNKubernetes",
+				polarion.ID("49558"), func() {
+
+					By("Check the networktype is not set via install-config-overrides")
+					installConfigOverrides :=
+						agentClusterInstall.Object.ObjectMeta.Annotations["agent-install.openshift.io/install-config-overrides"]
+					if strings.Contains(installConfigOverrides, models.ClusterNetworkTypeOVNKubernetes) {
+						Skip("the network type for spoke is set via install-config-overrides")
+					}
+
+					By("Check that the networktype is not set in AgentClusterInstall")
+					if networkTypeACI != "" {
+						Skip("the network type in ACI is not empty")
+					}
+
+					By("Get the network config from the spoke")
+					spokeClusterNetwork, err := network.PullConfig(SpokeConfig.APIClient)
+					Expect(err).ToNot(HaveOccurred(),
+						"error pulling network configuration from the spoke")
+
+					By("Assure the networktype in the spoke is set to OVNKubernetes")
+					Expect(models.ClusterNetworkTypeOVNKubernetes).To(Equal(spokeClusterNetwork.Object.Spec.NetworkType),
+						"error matching the network type in the spoke to %s", models.ClusterNetworkTypeOVNKubernetes)
 				})
 		})
 	})
