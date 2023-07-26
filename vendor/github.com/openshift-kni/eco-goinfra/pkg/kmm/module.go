@@ -126,7 +126,7 @@ func (builder *ModuleBuilder) WithImageRepoSecret(imageRepoSecret string) *Modul
 		return builder
 	}
 
-	builder.Definition.Spec.ImageRepoSecret.Name = imageRepoSecret
+	builder.Definition.Spec.ImageRepoSecret = &v1.LocalObjectReference{Name: imageRepoSecret}
 
 	return builder
 }

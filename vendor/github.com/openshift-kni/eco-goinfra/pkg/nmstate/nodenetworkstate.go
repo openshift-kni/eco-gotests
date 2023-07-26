@@ -7,6 +7,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/golang/glog"
+	"golang.org/x/exp/slices"
 
 	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
 
@@ -16,6 +17,12 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+var (
+	// allowedInterfaceTypes represents all allowed types for interface.
+	allowedInterfaceTypes = []string{"ethernet", "bond", "ovs-bridge", "unknown",
+		"vlan", "vxlan", "linux-bridge", "team", "veth"}
 )
 
 // StateBuilder provides struct for the NodeNetworkState object containing connection to the cluster.
@@ -98,6 +105,45 @@ func (builder *StateBuilder) GetTotalVFs(sriovInterfaceName string) (int, error)
 	}
 
 	return 0, fmt.Errorf("failed to find interface %s", sriovInterfaceName)
+}
+
+// GetInterfaceType returns Interface with the given interface name and given type.
+func (builder *StateBuilder) GetInterfaceType(interfaceName, interfaceType string) (NetworkInterface, error) {
+	if valid, err := builder.validate(); !valid {
+		return NetworkInterface{}, err
+	}
+
+	glog.V(100).Infof(
+		"Getting interface %s with type %s from NodeNetworkState %s",
+		interfaceName, interfaceType, builder.Object.Name)
+
+	if interfaceName == "" {
+		glog.V(100).Infof("The interfaceName can not be empty string")
+
+		return NetworkInterface{}, fmt.Errorf("the interfaceName is empty sting")
+	}
+
+	if !slices.Contains(allowedInterfaceTypes, interfaceType) {
+		glog.V(100).Infof("error to add type %s, allowed types are %v", interfaceType, allowedInterfaceTypes)
+
+		return NetworkInterface{}, fmt.Errorf("invalid interfaceType parameter")
+	}
+
+	var CurrentState DesiredState
+
+	err := yaml.Unmarshal(builder.Object.Status.CurrentState.Raw, &CurrentState)
+	if err != nil {
+		return NetworkInterface{}, fmt.Errorf("failed to Unmarshal NMState state")
+	}
+
+	for _, interf := range CurrentState.Interfaces {
+		if interf.Name == interfaceName && interf.Type == interfaceType {
+			return interf, nil
+		}
+	}
+
+	return NetworkInterface{}, fmt.Errorf("failed to find interface %s or it is not a %s type",
+		interfaceName, interfaceType)
 }
 
 // GetSriovVfs returns all configured VFs  under the given SR-IOV interface.

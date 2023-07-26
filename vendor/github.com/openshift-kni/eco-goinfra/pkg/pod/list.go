@@ -3,6 +3,7 @@ package pod
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -69,4 +70,38 @@ func ListInAllNamespaces(apiClient *clients.Settings, options v1.ListOptions) ([
 	}
 
 	return podObjects, nil
+}
+
+// WaitForAllPodsInNamespaceRunning check that all pods in namespace that match options are in running state.
+func WaitForAllPodsInNamespaceRunning(
+	apiClient *clients.Settings,
+	nsname string,
+	options v1.ListOptions,
+	timeout time.Duration,
+) (bool, error) {
+	glog.V(100).Infof("Waiting for all pods in %s namespace with %v options are in running state", nsname, options)
+
+	if nsname == "" {
+		glog.V(100).Infof("'nsname' parameter can not be empty")
+
+		return false, fmt.Errorf("failed to list pods, 'nsname' parameter is empty")
+	}
+
+	podList, err := List(apiClient, nsname, options)
+	if err != nil {
+		glog.V(100).Infof("Failed to list all pods due to %s", err.Error())
+
+		return false, err
+	}
+
+	for _, podObj := range podList {
+		err = podObj.WaitUntilRunning(timeout)
+		if err != nil {
+			glog.V(100).Infof("Timout was reached while waiting for all pods in running state: %s", err.Error())
+
+			return false, err
+		}
+	}
+
+	return true, nil
 }

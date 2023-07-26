@@ -14,7 +14,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20230725011017-aa7c80c5edaa
+	github.com/openshift-kni/eco-goinfra v0.0.0-20230726142348-4a949ee65e8e
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -196,6 +196,7 @@ replace (
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.26.1
 	k8s.io/kubectl => k8s.io/kubectl v0.26.1
 	k8s.io/kubelet => k8s.io/kubelet v0.26.1
+	k8s.io/kubernetes => k8s.io/kubernetes v1.25.4
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.26.1
 	k8s.io/metrics => k8s.io/metrics v0.26.1
 	k8s.io/mount-utils => k8s.io/mount-utils v0.26.1

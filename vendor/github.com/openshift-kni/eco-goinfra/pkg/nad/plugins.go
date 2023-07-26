@@ -19,3 +19,11 @@ func TuningSysctlPlugin(macCap bool, sysctlConfig map[string]string) *Plugin {
 		Sysctl:       sysctlConfig,
 	}
 }
+
+// TuningMacPlugin returns mac plugin configuration.
+func TuningMacPlugin(macCap bool) *Plugin {
+	return &Plugin{
+		Type:         "tuning",
+		Capabilities: &Capability{Mac: macCap},
+	}
+}
