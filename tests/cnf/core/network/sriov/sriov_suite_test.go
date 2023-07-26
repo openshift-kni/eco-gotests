@@ -10,8 +10,8 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/sriovenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/tests"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
@@ -48,7 +48,18 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred(), "error to create test namespace")
 
 	By("Verifying if SR-IOV tests can be executed on given cluster")
-	err = sriovenv.DoesClusterSupportSriovTests(requiredCPNodeNumber, requiredWorkerNodeNumber)
+	err = netenv.DoesClusterHasEnoughNodes(APIClient, NetConfig, requiredCPNodeNumber, requiredWorkerNodeNumber)
+
+	if err != nil {
+		Skip(fmt.Sprintf(
+			"given cluster is not suitable for SR-IOV tests because it doesn't have enought nodes: %s", err.Error()))
+	}
+
+	err = netenv.DoesClusterSupportSrIovTests(APIClient, NetConfig)
+
+	if err != nil {
+		Skip(fmt.Sprintf("given cluster is not suitable for SR-IOV tests due to the following error %s", err.Error()))
+	}
 
 	if err != nil {
 		Skip(

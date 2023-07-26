@@ -390,11 +390,13 @@ github.com/openshift-kni/eco-goinfra/pkg/network
 github.com/openshift-kni/eco-goinfra/pkg/nfd
 github.com/openshift-kni/eco-goinfra/pkg/nmstate
 github.com/openshift-kni/eco-goinfra/pkg/nodes
+github.com/openshift-kni/eco-goinfra/pkg/nto
 github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu
 github.com/openshift-kni/eco-goinfra/pkg/olm
 github.com/openshift-kni/eco-goinfra/pkg/pod
 github.com/openshift-kni/eco-goinfra/pkg/proxy
 github.com/openshift-kni/eco-goinfra/pkg/rbac
+github.com/openshift-kni/eco-goinfra/pkg/scc
 github.com/openshift-kni/eco-goinfra/pkg/secret
 github.com/openshift-kni/eco-goinfra/pkg/service
 github.com/openshift-kni/eco-goinfra/pkg/serviceaccount

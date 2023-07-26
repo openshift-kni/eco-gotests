@@ -14,14 +14,6 @@ var (
 	TestNamespaceName = "sriov-tests"
 	// Labels represents the range of labels that can be used for test cases selection.
 	Labels = append(netparam.Labels, LabelSuite)
-	// OperatorConfigDaemon defaults SR-IOV config daemon daemonset.
-	OperatorConfigDaemon = "sriov-network-config-daemon"
-	// OperatorWebhook defaults SR-IOV webhook daemonset.
-	OperatorWebhook = "operator-webhook"
-	// OperatorResourceInjector defaults SR-IOV network resource injector daemonset.
-	OperatorResourceInjector = "network-resources-injector"
-	// OperatorSriovDaemonsets represents all default SR-IOV operator daemonset names.
-	OperatorSriovDaemonsets = []string{OperatorConfigDaemon, OperatorWebhook, OperatorResourceInjector}
 	// ReporterNamespacesToDump tells to the reporter what namespaces to dump.
 	ReporterNamespacesToDump = map[string]string{
 		NetConfig.SriovOperatorNamespace: NetConfig.SriovOperatorNamespace,

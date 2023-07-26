@@ -20,6 +20,7 @@ require (
 	github.com/openshift/assisted-service/api v0.0.0-20230125183155-2b97070428e1
 	github.com/openshift/assisted-service/models v0.0.0
 	github.com/openshift/cluster-nfd-operator v0.0.0-20230116162820-3d08a74f3d2e
+	github.com/openshift/cluster-node-tuning-operator v0.0.0-20230704170229-287fdce04769
 	github.com/openshift/hive/apis v0.0.0-20220222213051-def9088fdb5a
 	github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55
 	github.com/operator-framework/api v0.17.3
@@ -111,7 +112,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084 // indirect
-	github.com/openshift/cluster-node-tuning-operator v0.0.0-20230704170229-287fdce04769 // indirect
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
 	github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b // indirect
 	github.com/operator-framework/operator-lifecycle-manager v0.24.0 // indirect

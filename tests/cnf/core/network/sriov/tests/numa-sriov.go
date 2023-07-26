@@ -2,6 +2,7 @@ package tests
 
 import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/sriovenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
@@ -20,7 +21,7 @@ var _ = Describe("NUMAExcludeTopology", Ordered, Label(tsparams.LabelNUMASriovEx
 
 		BeforeAll(func() {
 			By("Verify cluster supports SRIOV test cases")
-			err := sriovenv.DoesClusterSupportSriovTests(3, 2)
+			err := netenv.DoesClusterHasEnoughNodes(APIClient, NetConfig, 3, 2)
 			Expect(err).ToNot(HaveOccurred(), "Cluster does not support SRIOV test cases")
 
 			By("Validating SR-IOV interfaces")
