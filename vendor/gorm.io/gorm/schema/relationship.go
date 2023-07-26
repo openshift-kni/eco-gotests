@@ -235,7 +235,8 @@ func (schema *Schema) buildMany2ManyRelation(relation *Relationship, field *Fiel
 			Name:    joinFieldName,
 			PkgPath: ownField.StructField.PkgPath,
 			Type:    ownField.StructField.Type,
-			Tag:     removeSettingFromTag(ownField.StructField.Tag, "column", "autoincrement", "index", "unique", "uniqueindex"),
+			Tag: removeSettingFromTag(appendSettingFromTag(ownField.StructField.Tag, "primaryKey"),
+				"column", "autoincrement", "index", "unique", "uniqueindex"),
 		})
 	}
 
@@ -258,7 +259,8 @@ func (schema *Schema) buildMany2ManyRelation(relation *Relationship, field *Fiel
 			Name:    joinFieldName,
 			PkgPath: relField.StructField.PkgPath,
 			Type:    relField.StructField.Type,
-			Tag:     removeSettingFromTag(relField.StructField.Tag, "column", "autoincrement", "index", "unique", "uniqueindex"),
+			Tag: removeSettingFromTag(appendSettingFromTag(relField.StructField.Tag, "primaryKey"),
+				"column", "autoincrement", "index", "unique", "uniqueindex"),
 		})
 	}
 
@@ -416,6 +418,10 @@ func (schema *Schema) guessRelation(relation *Relationship, field *Field, cgl gu
 		}
 	} else {
 		var primaryFields []*Field
+		var primarySchemaName = primarySchema.Name
+		if primarySchemaName == "" {
+			primarySchemaName = relation.FieldSchema.Name
+		}
 
 		if len(relation.primaryKeys) > 0 {
 			for _, primaryKey := range relation.primaryKeys {
@@ -428,7 +434,7 @@ func (schema *Schema) guessRelation(relation *Relationship, field *Field, cgl gu
 		}
 
 		for _, primaryField := range primaryFields {
-			lookUpName := primarySchema.Name + primaryField.Name
+			lookUpName := primarySchemaName + primaryField.Name
 			if gl == guessBelongs {
 				lookUpName = field.Name + primaryField.Name
 			}

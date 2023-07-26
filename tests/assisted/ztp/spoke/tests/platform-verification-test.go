@@ -8,12 +8,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
+	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
-	"gopkg.in/yaml.v2"
+	installerTypes "github.com/openshift/installer/pkg/types"
 )
 
 var _ = Describe(
@@ -25,7 +26,7 @@ var _ = Describe(
 		var (
 			agentClusterInstall  *assisted.AgentClusterInstallBuilder
 			platformType         string
-			spokeClusterPlatform map[interface{}]interface{}
+			spokeClusterPlatform installerTypes.Platform
 		)
 
 		BeforeAll(func() {
@@ -53,13 +54,11 @@ var _ = Describe(
 			)
 
 			By("Read install-config data from configmap")
-			installConfigData := make(map[interface{}]interface{})
-			err = yaml.Unmarshal([]byte(clusterConfigMap.Object.Data["install-config"]), &installConfigData)
+			installConfigData, err := installconfig.NewInstallConfigFromString(clusterConfigMap.Object.Data["install-config"])
 			Expect(err).NotTo(HaveOccurred(), "error reading in install-config as yaml")
 
-			var ok bool
-			spokeClusterPlatform, ok = installConfigData["platform"].(map[interface{}]interface{})
-			Expect(ok).To(BeTrue(), "type assertion was wrong for install-config platform")
+			spokeClusterPlatform = installConfigData.Platform
+
 		})
 
 		DescribeTable("none platform checks", func(masterCount int) {
@@ -69,7 +68,7 @@ var _ = Describe(
 			if masterCount != agentClusterInstall.Object.Spec.ProvisionRequirements.ControlPlaneAgents {
 				Skip("Did not match controlplane agent count")
 			}
-			Expect(spokeClusterPlatform["none"]).NotTo(BeNil(), "spoke does not contain a none platform key")
+			Expect(spokeClusterPlatform.None).NotTo(BeNil(), "spoke does not contain a none platform key")
 		},
 			Entry("SNO install", 1, polarion.ID("56200")),
 			Entry("MNO install", 3, polarion.ID("56202")),
@@ -79,14 +78,14 @@ var _ = Describe(
 			if platformType != string(hiveextV1Beta1.BareMetalPlatformType) {
 				Skip(fmt.Sprintf("Platform type was not %s", string(hiveextV1Beta1.BareMetalPlatformType)))
 			}
-			Expect(spokeClusterPlatform["baremetal"]).NotTo(BeNil(), "spoke does not contain a baremetal platform key")
+			Expect(spokeClusterPlatform.BareMetal).NotTo(BeNil(), "spoke does not contain a baremetal platform key")
 		})
 
 		It("installs on VSphere platform", polarion.ID("56201"), func() {
 			if platformType != string(hiveextV1Beta1.VSpherePlatformType) {
 				Skip(fmt.Sprintf("Platform type was not %s", string(hiveextV1Beta1.VSpherePlatformType)))
 			}
-			Expect(spokeClusterPlatform["vsphere"]).NotTo(BeNil(), "spoke does not contain a vsphere platform key")
+			Expect(spokeClusterPlatform.VSphere).NotTo(BeNil(), "spoke does not contain a vsphere platform key")
 		})
 	},
 )
