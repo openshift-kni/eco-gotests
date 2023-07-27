@@ -39,6 +39,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools
       - github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools
+      - github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools
     # Select the Go version to target. The default is '1.13'.
     go: "1.19"
     # https://staticcheck.io/docs/options#checks
@@ -133,6 +134,9 @@ issues:
     - path: 'tests/hw-accel/kmm/internal/kmminittools'
       linters:
         - gochecknoinits
+    - path: 'tests/rhwa/internal/rhwainittools'
+      linters:
+        - gochecknoinits  
     - path: 'tests/internal/polarion'
       linters:
         - exhaustive
