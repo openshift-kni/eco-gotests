@@ -1,6 +1,9 @@
 package get
 
 import (
+	"fmt"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
@@ -59,4 +62,33 @@ func GetFirstPodNameWithLabel(apiClient *clients.Settings, podNamespace, podLabe
 		podList[0].Definition.Name)
 
 	return podList[0].Definition.Name, err
+}
+
+// GetClusterArchitecture returns first node architecture of the nodes that match nodeSelector (e.g. worker nodes).
+func GetClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string]string) (string, error) {
+	nodeBuilder := nodes.NewBuilder(apiClient, nodeSelector)
+	// Check if at least one node matching the nodeSelector has the specific nodeLabel label set to true
+	// For example, look in all the worker nodes for specific label
+	if err := nodeBuilder.Discover(); err != nil {
+		glog.V(gpuparams.GpuLogLevel).Infof("could not discover %v nodes", nodeSelector)
+
+		return "", err
+	}
+
+	nodeLabel := "kubernetes.io/arch"
+
+	for _, node := range nodeBuilder.Objects {
+		labelValue, ok := node.Object.Labels[nodeLabel]
+
+		if ok {
+			glog.V(gpuparams.GpuLogLevel).Infof("Found label '%v' with label value '%v' on node '%v'",
+				nodeLabel, labelValue, node.Object.Name)
+
+			return labelValue, nil
+		}
+	}
+
+	err := fmt.Errorf("could not find one node with label '%s'", nodeLabel)
+
+	return "", err
 }

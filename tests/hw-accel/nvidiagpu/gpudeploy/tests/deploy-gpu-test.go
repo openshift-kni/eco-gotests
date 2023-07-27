@@ -30,8 +30,19 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-var workerNodeSelector = map[string]string{
-	"node-role.kubernetes.io/worker": ""}
+var (
+	gpuInstallPlanApproval v1alpha1.Approval = "Automatic"
+
+	gpuWorkerNodeSelector = map[string]string{
+		GeneralConfig.WorkerLabel:                     "",
+		"feature.node.kubernetes.io/pci-10de.present": "true",
+	}
+
+	gpuBurnImageName = map[string]string{
+		"amd64": "quay.io/wabouham/gpu_burn_amd64:ubi9",
+		"arm64": "quay.io/wabouham/gpu_burn_arm64:ubi9",
+	}
+)
 
 const (
 	nvidiaGPUNamespace        = "nvidia-gpu-operator"
@@ -48,11 +59,8 @@ const (
 	gpuBurnNamespace          = "test-gpu-burn"
 	gpuBurnPodName            = "gpu-burn-pod"
 	gpuBurnPodLabel           = "app=gpu-burn-app"
-	gpuBurnImageName          = "quay.io/wabouham/gpu_burn_amd64:ubi9"
 	gpuBurnConfigmapName      = "gpu-burn-entrypoint"
 )
-
-var gpuInstallPlanApproval v1alpha1.Approval = "Automatic"
 
 var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
@@ -68,7 +76,9 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 		// "feature.node.kubernetes.io/system-os_release.ID=rhcos"
 		BeforeEach(func() {
 			By("Check if NFD is installed")
-			nfdLabelDetected, err := check.AllNodeLabel(APIClient, nfdRhcosLabel, nfdRhcosLabelValue, workerNodeSelector)
+			nfdLabelDetected, err := check.AllNodeLabel(APIClient, nfdRhcosLabel, nfdRhcosLabelValue,
+				GeneralConfig.WorkerLabelMap)
+
 			Expect(err).ToNot(HaveOccurred(), "error calling check.NodeLabel:  %v ", err)
 			Expect(nfdLabelDetected).NotTo(BeFalse(), "NFD node label check failed to match "+
 				"label %s and label value %s on all nodes", nfdRhcosLabel, nfdRhcosLabelValue)
@@ -81,10 +91,9 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 			glog.V(gpuparams.GpuLogLevel).Infof("The check for NFD label returned: %v", nfdInstalled)
 
 			By("Check if at least one worker node is GPU enabled")
-			gpuNodeFound, err := check.NodeWithLabel(APIClient, nvidiaGPULabel, workerNodeSelector)
+			gpuNodeFound, err := check.NodeWithLabel(APIClient, nvidiaGPULabel, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error checking if one node is GPU enabled:  %v ", err)
 			glog.V(gpuparams.GpuLogLevel).Infof("The check for Nvidia GPU label returned: %v", gpuNodeFound)
-
 		})
 
 		AfterEach(func() {
@@ -93,6 +102,14 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 		It("Deploy NVIDIA GPU Operator with DTK without cluster-wide entitlement",
 			polarion.ID("48452"), func() {
+
+				By("Get Cluster Architecture from first GPU enabled worker node")
+				glog.V(gpuparams.GpuLogLevel).Infof("Getting cluster architecture from nodes with "+
+					"gpuWorkerNodeSelector: %v", gpuWorkerNodeSelector)
+				clusterArch, err := get.GetClusterArchitecture(APIClient, gpuWorkerNodeSelector)
+				Expect(err).ToNot(HaveOccurred(), "error getting cluster architecture:  %v ", err)
+				glog.V(gpuparams.GpuLogLevel).Infof("cluster architecture for GPU enabled worker node is: %s",
+					clusterArch)
 
 				By("Check if 'gpu-operator-certified' packagemanifest exists in 'certified-operators' catalog")
 				gpuPkgManifestBuilderByCatalog, err := olm.PullPackageManifestByCatalog(APIClient,
@@ -369,8 +386,11 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				}()
 
 				By("Deploy gpu-burn pod in test-gpu-burn namespace")
+				glog.V(gpuparams.GpuLogLevel).Infof("gpu-burn pod image name is: '%s', in namespace '%s'",
+					gpuBurnImageName[clusterArch])
+
 				gpuBurnPod, err := gpuburn.CreateGPUBurnPod(APIClient, gpuBurnPodName, gpuBurnNamespace,
-					gpuBurnImageName, 5*time.Minute)
+					gpuBurnImageName[(clusterArch)], 5*time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Error creating gpu burn pod: %v", err)
 
 				glog.V(gpuparams.GpuLogLevel).Infof("Creating gpu-burn pod '%s' in namespace '%s'",

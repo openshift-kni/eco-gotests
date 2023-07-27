@@ -24,7 +24,10 @@ func AllNodeLabel(apiClient *clients.Settings, nodeLabel, nodeLabelValue string,
 	// in all the nodes that match the nodeSelectors, look for specific label
 	// For example, look in all the worker nodes for a specific label with specific value
 	if err := nodeBuilder.Discover(); err != nil {
-		glog.V(gpuparams.GpuLogLevel).Infof("could not discover %v nodes", nodeSelector)
+		glog.V(gpuparams.GpuLogLevel).Infof("could not discover %v nodes, error encountered: '%v'",
+			nodeSelector, err)
+
+		return false, err
 	}
 
 	// Sample label: feature.node.kubernetes.io/system-os_release.ID=rhcos.
