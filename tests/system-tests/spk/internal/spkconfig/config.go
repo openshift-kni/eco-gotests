@@ -19,9 +19,9 @@ const (
 // SPKConfig type keeps SPK configuration.
 type SPKConfig struct {
 	*systemtestsconfig.SystemTestsConfig
-	TestWorkload struct {
-		Namespace string `yaml:"spk_workload_ns" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_NS"`
-	}
+	Namespace         string `yaml:"spk_workload_ns" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_NS"`
+	IngressTCPIPv4URL string `yaml:"spk_ingress_tcp_ipv4_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV4_URL"`
+	IngressTCPIPv6URL string `yaml:"spk_ingress_tcp_ipv6_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV6_URL"`
 }
 
 // NewSPKConfig returns instance of SPKConfig config type.
