@@ -3,6 +3,8 @@ package pod
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/golang/glog"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/utils/strings/slices"
@@ -126,6 +128,109 @@ func (builder *ContainerBuilder) WithSecurityContext(securityContext *v1.Securit
 	}
 
 	builder.definition.SecurityContext = securityContext
+
+	return builder
+}
+
+// WithResourceLimit applies resource limit on container.
+func (builder *ContainerBuilder) WithResourceLimit(hugePages, memory string, cpu int64) *ContainerBuilder {
+	glog.V(100).Infof("Applying custom resource limit to container: hugePages: %s memory: %s cpu: %d",
+		hugePages, memory, cpu)
+
+	if hugePages == "" {
+		glog.V(100).Infof("Container's resource limit hugePages is empty")
+
+		builder.errorMsg = "container's resource limit 'hugePages' is empty"
+	}
+
+	if memory == "" {
+		glog.V(100).Infof("Container's resource limit memory is empty")
+
+		builder.errorMsg = "container's resource limit 'memory' is empty"
+	}
+
+	if cpu <= 0 {
+		glog.V(100).Infof("Container's resource limit cpu can not be zero or negative number.")
+
+		builder.errorMsg = "container's resource limit 'cpu' is invalid"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.definition.Resources.Limits = v1.ResourceList{
+		"hugepages-1Gi": resource.MustParse(hugePages),
+		"memory":        resource.MustParse(memory),
+		"cpu":           *resource.NewQuantity(cpu, resource.DecimalSI),
+	}
+
+	return builder
+}
+
+// WithResourceRequest applies resource request on container.
+func (builder *ContainerBuilder) WithResourceRequest(hugePages, memory string, cpu int64) *ContainerBuilder {
+	glog.V(100).Infof("Applying custom resource request to container: hugePages: %s memory: %s cpu: %d",
+		hugePages, memory, cpu)
+
+	if hugePages == "" {
+		glog.V(100).Infof("Container's resource request hugePages is empty")
+
+		builder.errorMsg = "container's resource request 'hugePages' is empty"
+	}
+
+	if memory == "" {
+		glog.V(100).Infof("Container's resource request memory is empty")
+
+		builder.errorMsg = "container's resource request 'memory' is empty"
+	}
+
+	if cpu <= 0 {
+		glog.V(100).Infof("Container's resource request cpu can not be zero or negative number.")
+
+		builder.errorMsg = "container's resource request 'cpu' is invalid"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.definition.Resources.Requests = v1.ResourceList{
+		"hugepages-1Gi": resource.MustParse(hugePages),
+		"memory":        resource.MustParse(memory),
+		"cpu":           *resource.NewQuantity(int64(2), resource.DecimalSI),
+	}
+
+	return builder
+}
+
+// WithEnvVar adds environment variables to container.
+func (builder *ContainerBuilder) WithEnvVar(name, value string) *ContainerBuilder {
+	glog.V(100).Infof("Applying custom environment variables to container: name %s, value: %s", name, value)
+
+	if name == "" {
+		glog.V(100).Infof("Container's environment var 'name' is empty")
+
+		builder.errorMsg = "container's environment var 'name' is empty"
+	}
+
+	if value == "" {
+		glog.V(100).Infof("Container's environment var 'value' is empty")
+
+		builder.errorMsg = "container's environment var 'value' is empty"
+	}
+
+	if builder.errorMsg != name {
+		return builder
+	}
+
+	if builder.definition.Env != nil {
+		builder.definition.Env = append(builder.definition.Env, v1.EnvVar{Name: name, Value: value})
+
+		return builder
+	}
+
+	builder.definition.Env = []v1.EnvVar{{Name: name, Value: value}}
 
 	return builder
 }

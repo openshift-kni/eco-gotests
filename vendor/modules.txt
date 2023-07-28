@@ -391,7 +391,7 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/openshift-kni/eco-goinfra v0.0.0-20230726142348-4a949ee65e8e
+# github.com/openshift-kni/eco-goinfra v0.0.0-20230727180442-000ba39f024f
 ## explicit; go 1.19
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/clients

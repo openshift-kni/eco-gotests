@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"time"
 
@@ -16,8 +17,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/httpstream/spdy"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/utils/pointer"
 
@@ -401,6 +404,92 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 	return buffer, nil
 }
 
+// Copy returns the contents of a file or path from a specified container into a buffer.
+// Setting the tar option returns a tar archive of the specified path.
+func (builder *Builder) Copy(path, containerName string, tar bool) (bytes.Buffer, error) {
+	if valid, err := builder.validate(); !valid {
+		return bytes.Buffer{}, err
+	}
+
+	glog.V(100).Infof("Copying %s from %s in the pod",
+		path, containerName)
+
+	var command []string
+	if tar {
+		command = []string{
+			"tar",
+			"cf",
+			"-",
+			path,
+		}
+	} else {
+		command = []string{
+			"cat",
+			path,
+		}
+	}
+
+	var buffer bytes.Buffer
+
+	req := builder.apiClient.CoreV1Interface.RESTClient().
+		Post().
+		Namespace(builder.Object.Namespace).
+		Resource("pods").
+		Name(builder.Object.Name).
+		SubResource("exec").
+		VersionedParams(&v1.PodExecOptions{
+			Container: containerName,
+			Command:   command,
+			Stdin:     true,
+			Stdout:    true,
+			Stderr:    true,
+			TTY:       false,
+		}, scheme.ParameterCodec)
+
+	tlsConfig, err := rest.TLSConfigFor(builder.apiClient.Config)
+	if err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	proxy := http.ProxyFromEnvironment
+	if builder.apiClient.Config.Proxy != nil {
+		proxy = builder.apiClient.Config.Proxy
+	}
+
+	// More verbose setup of remotecommand executor required in order to tweak PingPeriod.
+	// By default many large files are not copied in their entirety without disabling PingPeriod during the copy.
+	// https://github.com/kubernetes/kubernetes/issues/60140#issuecomment-1411477275
+	upgradeRoundTripper := spdy.NewRoundTripperWithConfig(spdy.RoundTripperConfig{
+		TLS:        tlsConfig,
+		Proxier:    proxy,
+		PingPeriod: 0,
+	})
+
+	wrapper, err := rest.HTTPWrappersForConfig(builder.apiClient.Config, upgradeRoundTripper)
+	if err != nil {
+		return bytes.Buffer{}, err
+	}
+
+	exec, err := remotecommand.NewSPDYExecutorForTransports(wrapper, upgradeRoundTripper, "POST", req.URL())
+
+	if err != nil {
+		return buffer, err
+	}
+
+	err = exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
+		Stdin:  os.Stdin,
+		Stdout: &buffer,
+		Stderr: os.Stderr,
+		Tty:    false,
+	})
+
+	if err != nil {
+		return buffer, err
+	}
+
+	return buffer, nil
+}
+
 // Exists checks whether the given namespace exists.
 func (builder *Builder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -612,6 +701,87 @@ func (builder *Builder) WithSecondaryNetwork(network []*multus.NetworkSelectionE
 	}
 
 	builder.Definition.Annotations = map[string]string{"k8s.v1.cni.cncf.io/networks": string(netAnnotation)}
+
+	return builder
+}
+
+// RedefineDefaultContainer redefines default container with the new one.
+func (builder *Builder) RedefineDefaultContainer(container v1.Container) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining default pod %s container in namespace %s using new container %v",
+		builder.Definition.Name, builder.Definition.Namespace, container)
+
+	builder.isMutationAllowed("default container")
+
+	builder.Definition.Spec.Containers[0] = container
+
+	return builder
+}
+
+// WithHugePages sets hugePages on all containers inside the pod.
+func (builder *Builder) WithHugePages() *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Applying hugePages configuration to all containers in pod: %s", builder.Definition.Name)
+
+	builder.isMutationAllowed("hugepages")
+
+	if builder.Definition.Spec.Volumes != nil {
+		builder.Definition.Spec.Volumes = append(builder.Definition.Spec.Volumes, v1.Volume{
+			Name: "hugepages", VolumeSource: v1.VolumeSource{
+				EmptyDir: &v1.EmptyDirVolumeSource{Medium: "HugePages"}}})
+	} else {
+		builder.Definition.Spec.Volumes = []v1.Volume{
+			{Name: "hugepages", VolumeSource: v1.VolumeSource{
+				EmptyDir: &v1.EmptyDirVolumeSource{Medium: "HugePages"}},
+			},
+		}
+	}
+
+	for idx := range builder.Definition.Spec.Containers {
+		if builder.Definition.Spec.Containers[idx].VolumeMounts != nil {
+			builder.Definition.Spec.Containers[idx].VolumeMounts = append(
+				builder.Definition.Spec.Containers[idx].VolumeMounts,
+				v1.VolumeMount{Name: "hugepages", MountPath: "/mnt/huge"})
+		} else {
+			builder.Definition.Spec.Containers[idx].VolumeMounts = []v1.VolumeMount{{
+				Name:      "hugepages",
+				MountPath: "/mnt/huge",
+			},
+			}
+		}
+	}
+
+	return builder
+}
+
+// WithSecurityContext sets SecurityContext on pod definition.
+func (builder *Builder) WithSecurityContext(securityContext *v1.PodSecurityContext) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Applying SecurityContext configuration on pod %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if securityContext == nil {
+		glog.V(100).Infof("The 'securityContext' of the pod is empty")
+
+		builder.errorMsg = "'securityContext' parameter is empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.isMutationAllowed("SecurityContext")
+
+	builder.Definition.Spec.SecurityContext = securityContext
 
 	return builder
 }

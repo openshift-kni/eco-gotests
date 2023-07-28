@@ -820,6 +820,8 @@ github.com/openshift-kni/eco-goinfra v0.0.0-20230725011017-aa7c80c5edaa h1:eoGgq
 github.com/openshift-kni/eco-goinfra v0.0.0-20230725011017-aa7c80c5edaa/go.mod h1:JG6SGKH4u2dIqua2dJvPXf+GPQMHbzEZh8G/BVQievs=
 github.com/openshift-kni/eco-goinfra v0.0.0-20230726142348-4a949ee65e8e h1:79K8ng06vfe9Ex8UWAWfpR53MVMMdB1vnkIQT1C3Xro=
 github.com/openshift-kni/eco-goinfra v0.0.0-20230726142348-4a949ee65e8e/go.mod h1:JG6SGKH4u2dIqua2dJvPXf+GPQMHbzEZh8G/BVQievs=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230727180442-000ba39f024f h1:VOZ8kGxm/p/y3TQuotOXCHR6yS1AT8Du8ZYKj0jV/is=
+github.com/openshift-kni/eco-goinfra v0.0.0-20230727180442-000ba39f024f/go.mod h1:JG6SGKH4u2dIqua2dJvPXf+GPQMHbzEZh8G/BVQievs=
 github.com/openshift-kni/k8sreporter v1.0.3 h1:PR7wf6lEEZeh27dnXxrDuGEtKpBPYuh+WxQJDWohrOU=
 github.com/openshift-kni/k8sreporter v1.0.3/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7 h1:rncLxJBpFGqBztyxCMwNRnMjhhIDOWHJowi6q8G6koI=
