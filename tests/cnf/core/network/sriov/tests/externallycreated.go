@@ -6,17 +6,17 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/nmstateenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/sriovenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -35,7 +35,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 		)
 		BeforeAll(func() {
 			By("Creating a new instance of NMstate instance")
-			err := nmstateenv.CreateNewNMStateAndWaitUntilItsRunning(tsparams.DefaultTimeout)
+			err := netnmstate.CreateNewNMStateAndWaitUntilItsRunning(netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
 			By("Validating SR-IOV interfaces")
@@ -47,15 +47,15 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
 			By("Creating SR-IOV VFs via NMState")
-			err = nmstateenv.ConfigureVFsAndWaitUntilItsConfigured(
+			err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(
 				configureNMStatePolicyName,
 				sriovInterfacesUnderTest[0],
 				NetConfig.WorkerLabelMap,
 				5,
-				tsparams.DefaultTimeout)
+				netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to create VFs via NMState")
 
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, tsparams.DefaultTimeout)
+			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
 
 			By("Configure SR-IOV with flag ExternallyCreated true")
@@ -67,7 +67,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
 			err = sriovNs.CleanObjects(
-				tsparams.DefaultTimeout,
+				netparam.DefaultTimeout,
 				sriov.GetSriovNetworksGVR())
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV networks from SR-IOV operator namespace")
 
@@ -76,19 +76,19 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
 
 			By("Verifying that VFs still exist")
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, tsparams.DefaultTimeout)
+			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
 
-			err = nmstateenv.AreVFsCreated(workerNodeList.Objects[0].Object.Name, sriovInterfacesUnderTest[0], 5)
+			err = netnmstate.AreVFsCreated(workerNodeList.Objects[0].Object.Name, sriovInterfacesUnderTest[0], 5)
 			Expect(err).ToNot(HaveOccurred(), "VFs were removed during the test")
 
 			By("Removing SR-IOV VFs via NMState")
-			err = nmstateenv.ConfigureVFsAndWaitUntilItsConfigured(
+			err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(
 				removeNMStatePolicyName,
 				sriovInterfacesUnderTest[0],
 				NetConfig.WorkerLabelMap,
 				0,
-				tsparams.DefaultTimeout)
+				netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove VFs via NMState")
 
 			By("Removing NMState policies")
@@ -99,7 +99,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 		AfterEach(func() {
 			By("Cleaning test namespace")
 			err := namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-				tsparams.DefaultTimeout, pod.GetGVR())
+				netparam.DefaultTimeout, pod.GetGVR())
 
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 		})
@@ -127,8 +127,8 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 
 			By("Removing created SR-IOV VFs via NMState")
-			err := nmstateenv.ConfigureVFsAndWaitUntilItsConfigured(removeNMStatePolicyName,
-				sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 0, tsparams.DefaultTimeout)
+			err := netnmstate.ConfigureVFsAndWaitUntilItsConfigured(removeNMStatePolicyName,
+				sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 0, netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove VFs via NMState")
 
 			By("Removing NMState policies")
@@ -137,15 +137,15 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 
 			By("Removing all test pods")
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-				tsparams.DefaultTimeout, pod.GetGVR())
+				netparam.DefaultTimeout, pod.GetGVR())
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
 
 			By("Creating SR-IOV VFs again via NMState")
-			err = nmstateenv.ConfigureVFsAndWaitUntilItsConfigured(configureNMStatePolicyName,
-				sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 5, tsparams.DefaultTimeout)
+			err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(configureNMStatePolicyName,
+				sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 5, netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to recreate VFs via NMState")
 
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, tsparams.DefaultTimeout)
+			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
 
 			By("Re-create test pods and verify connectivity after recreating the VFs")
@@ -184,7 +184,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 
 			By("Removing all test pods")
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-				tsparams.DefaultTimeout, pod.GetGVR())
+				netparam.DefaultTimeout, pod.GetGVR())
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
 
 			By("Checking that VF has initial configuration")
@@ -194,14 +194,14 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 					sriovInterfacesUnderTest[0])
 
 				return []int{currentmaxTxRate, currentVlanID}
-			}, tsparams.DefaultTimeout, tsparams.DefaultRetryInterval).
+			}, netparam.DefaultTimeout, tsparams.DefaultRetryInterval).
 				Should(Equal([]int{defaultMaxTxRate, defaultVlanID}),
 					"MaxTxRate and VlanId configuration have not been reverted to the initial one")
 
 			By("Remove all SR-IOV networks")
 			sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
-			err = sriovNs.CleanObjects(tsparams.DefaultTimeout, sriov.GetSriovNetworksGVR())
+			err = sriovNs.CleanObjects(netparam.DefaultTimeout, sriov.GetSriovNetworksGVR())
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from SR-IOV operator namespace")
 
 			By("Remove all SR-IOV policies")
@@ -288,7 +288,7 @@ func createAndWaitTestPodWithSecondaryNetwork(
 	secNetwork := pod.StaticIPAnnotationWithMacAddress(sriovResNameTest, testIPs, testMac)
 	testPod, err := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 		DefineOnNode(testNodeName).WithPrivilegedFlag().
-		WithSecondaryNetwork(secNetwork).CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
+		WithSecondaryNetwork(secNetwork).CreateAndWaitUntilRunning(netparam.DefaultTimeout)
 
 	return testPod, err
 }

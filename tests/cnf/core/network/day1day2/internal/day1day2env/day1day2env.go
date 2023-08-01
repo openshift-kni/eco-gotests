@@ -10,6 +10,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 )
 
@@ -48,6 +50,19 @@ func DoesClusterSupportDay1Day2Tests(requiredCPNodeNumber, requiredWorkerNodeNum
 	}
 
 	return nil
+}
+
+// GetSrIovPf returns SR-IOV PF name for given SR-IOV VF.
+func GetSrIovPf(vfInterfaceName, nodeName string) (string, error) {
+	glog.V(90).Infof("Getting PF interface name for VF %s on node %s", vfInterfaceName, nodeName)
+
+	pfName, err := cmd.RunCommandOnHostNetworkPod(nodeName, tsparams.TestNamespaceName,
+		fmt.Sprintf("ls /sys/class/net/%s/device/physfn/net/", vfInterfaceName))
+	if err != nil {
+		return "", err
+	}
+
+	return pfName, nil
 }
 
 func isNMStateOperatorDeployed() error {

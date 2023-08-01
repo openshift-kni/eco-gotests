@@ -19,8 +19,6 @@ var (
 		NetConfig.SriovOperatorNamespace: NetConfig.SriovOperatorNamespace,
 		TestNamespaceName:                "other",
 	}
-	// DefaultTimeout represents the default timeout for most of Eventually/PollImmediate functions.
-	DefaultTimeout = 300 * time.Second
 	// SriovStableTimeout defines the timeout duration for stabilizing SR-IOV after applying
 	// or deleting SriovNodePolicies.
 	SriovStableTimeout = 35 * time.Minute

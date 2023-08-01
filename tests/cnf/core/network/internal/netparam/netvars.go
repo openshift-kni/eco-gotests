@@ -1,6 +1,10 @@
 package netparam
 
-import "github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
+import (
+	"time"
+
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
+)
 
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
@@ -15,4 +19,6 @@ var (
 	OperatorResourceInjector = "network-resources-injector"
 	// OperatorSriovDaemonsets represents all default SR-IOV operator daemonset names.
 	OperatorSriovDaemonsets = []string{OperatorConfigDaemon, OperatorWebhook, OperatorResourceInjector}
+	// DefaultTimeout represents the default timeout for most of Eventually/PollImmediate functions.
+	DefaultTimeout = 300 * time.Second
 )

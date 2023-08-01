@@ -1,20 +1,19 @@
-package nmstateenv
+package netnmstate
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
-
 	nmstateShared "github.com/nmstate/kubernetes-nmstate/api/shared"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -24,7 +23,7 @@ import (
 func CreateNewNMStateAndWaitUntilItsRunning(timeout time.Duration) error {
 	glog.V(90).Infof("Verifying if NMState instance is installed")
 
-	nmstateInstance, err := nmstate.PullNMstate(APIClient, tsparams.NMState)
+	nmstateInstance, err := nmstate.PullNMstate(APIClient, netparam.NMState)
 
 	if err == nil {
 		glog.V(90).Infof("NMState exists. Removing NMState.")
@@ -38,7 +37,7 @@ func CreateNewNMStateAndWaitUntilItsRunning(timeout time.Duration) error {
 
 	glog.V(90).Infof("Creating a new NMState instance.")
 
-	_, err = nmstate.NewBuilder(APIClient, tsparams.NMState).Create()
+	_, err = nmstate.NewBuilder(APIClient, netparam.NMState).Create()
 	if err != nil {
 		return err
 	}
@@ -138,6 +137,66 @@ func AreVFsCreated(nmstateName, sriovInterfaceName string, numberVFs int) error 
 	return nil
 }
 
+// IsPrimaryInterfaceBond verifies that master ovs system interface is a bond interface.
+func IsPrimaryInterfaceBond(nodeName string) (bool, string, error) {
+	glog.V(90).Infof("Verifying that bond interface is a master ovs system interface on the node %s.", nodeName)
+
+	nodeNetworkState, err := nmstate.PullNodeNetworkState(APIClient, nodeName)
+	if err != nil {
+		return false, "", err
+	}
+
+	ovsBridgeInterface, err := nodeNetworkState.GetInterfaceType("br-ex", "ovs-bridge")
+	if err != nil {
+		return false, "", err
+	}
+
+	for _, bridgePort := range ovsBridgeInterface.Bridge.Port {
+		if strings.Contains(bridgePort["name"], "bond") {
+			return true, bridgePort["name"], nil
+		}
+	}
+
+	glog.V(90).Infof("There is no a bond interface in the br-ex bridge ports %v",
+		ovsBridgeInterface.Bridge.Port)
+
+	return false, "", nil
+}
+
+// GetBondSlaves returns slave ports under given Bond interface name.
+func GetBondSlaves(bondName, nodeNetworkStateName string) ([]string, error) {
+	glog.V(90).Infof("Getting slave ports under Bond interface %s", bondName)
+
+	nodeNetworkState, err := nmstate.PullNodeNetworkState(APIClient, nodeNetworkStateName)
+	if err != nil {
+		return nil, err
+	}
+
+	bondInterface, err := nodeNetworkState.GetInterfaceType(bondName, "bond")
+	if err != nil {
+		return nil, err
+	}
+
+	return bondInterface.LinkAggregation.Port, nil
+}
+
+// GetBaseVlanInterface returns base interface under given Vlan interface name.
+func GetBaseVlanInterface(vlanInterfaceName, nodeNetworkStateName string) (string, error) {
+	glog.V(90).Infof("Getting base interface for Vlan interface %s", vlanInterfaceName)
+
+	nodeNetworkState, err := nmstate.PullNodeNetworkState(APIClient, nodeNetworkStateName)
+	if err != nil {
+		return "", err
+	}
+
+	vlanInterface, err := nodeNetworkState.GetInterfaceType(vlanInterfaceName, "vlan")
+	if err != nil {
+		return "", err
+	}
+
+	return vlanInterface.Vlan.BaseIface, nil
+}
+
 func isNMStateDeployedAndReady(timeout time.Duration) error {
 	glog.V(90).Infof("Checking that NMState deployments and daemonsets are ready.")
 
@@ -152,28 +211,28 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 
 	err = wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		nmstateHandlerDs, err = daemonset.Pull(
-			APIClient, tsparams.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
+			APIClient, netparam.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
 		if err != nil {
 			glog.V(90).Infof("Error to pull daemonset %s from namespace %s, retry",
-				tsparams.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
+				netparam.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
 
 			return false, nil
 		}
 
 		nmstateWebhookDeployment, err = deployment.Pull(
-			APIClient, tsparams.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
+			APIClient, netparam.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
 		if err != nil {
 			glog.V(90).Infof("Error to pull deployment %s namespace %s, retry",
-				tsparams.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
+				netparam.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
 
 			return false, nil
 		}
 
 		nmstateCertDeployment, err = deployment.Pull(
-			APIClient, tsparams.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
+			APIClient, netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
 		if err != nil {
 			glog.V(90).Infof("Error to pull deployment %s namespace %s, retry",
-				tsparams.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
+				netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
 
 			return false, nil
 		}

@@ -1,4 +1,4 @@
-package tsparams
+package netparam
 
 // NMState default NMState resource name.
 var NMState = "nmstate"

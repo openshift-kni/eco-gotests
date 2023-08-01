@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net"
 
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 )
@@ -31,4 +34,29 @@ func ICMPConnectivityCheck(clientPod *pod.Builder, destIPAddresses []string) err
 	}
 
 	return nil
+}
+
+// RunCommandOnHostNetworkPod creates hostNetwork pod  and executes given command on it.
+// The Pod will be removed at the end.
+func RunCommandOnHostNetworkPod(nodeName, namespace, command string) (string, error) {
+	glog.V(90).Infof("Running command %s on the host network pod on node %s",
+		command, nodeName)
+
+	testPod, err := pod.NewBuilder(APIClient, "hostnetworkpod", namespace, NetConfig.CnfNetTestContainer).
+		DefineOnNode(nodeName).WithPrivilegedFlag().WithHostNetwork().CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+	if err != nil {
+		return "", err
+	}
+
+	output, err := testPod.ExecCommand([]string{"bash", "-c", command})
+	if err != nil {
+		return "", err
+	}
+
+	_, err = testPod.DeleteAndWait(netparam.DefaultTimeout)
+	if err != nil {
+		return output.String(), err
+	}
+
+	return output.String(), nil
 }

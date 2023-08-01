@@ -705,6 +705,25 @@ func (builder *Builder) WithSecondaryNetwork(network []*multus.NetworkSelectionE
 	return builder
 }
 
+// WithHostNetwork applies HostNetwork to pod's definition.
+func (builder *Builder) WithHostNetwork() *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Applying HostNetwork flag to pod's %s configuration", builder.Definition.Name)
+
+	builder.isMutationAllowed("HostNetwork")
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.HostNetwork = true
+
+	return builder
+}
+
 // RedefineDefaultContainer redefines default container with the new one.
 func (builder *Builder) RedefineDefaultContainer(container v1.Container) *Builder {
 	if valid, _ := builder.validate(); !valid {
