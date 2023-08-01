@@ -78,8 +78,8 @@ func (cfg *GeneralConfig) GetJunitReportPath(file string) string {
 }
 
 // GetPolarionReportPath returns full path to the polarion report file.
-func (cfg *GeneralConfig) GetPolarionReportPath(file string) string {
-	reportFileName := strings.TrimSuffix(filepath.Base(file), filepath.Ext(filepath.Base(file)))
+func (cfg *GeneralConfig) GetPolarionReportPath() string {
+	reportFileName := strings.TrimSuffix(filepath.Base("report"), filepath.Ext(filepath.Base("report")))
 
 	if !cfg.PolarionReport {
 		return ""

@@ -32,5 +32,5 @@ var _ = JustAfterEach(func() {
 
 var _ = ReportAfterSuite("", func(report Report) {
 	polarion.CreateReport(
-		report, GeneralConfig.GetPolarionReportPath(currentFile), GeneralConfig.PolarionTCPrefix)
+		report, GeneralConfig.GetPolarionReportPath(), GeneralConfig.PolarionTCPrefix)
 })

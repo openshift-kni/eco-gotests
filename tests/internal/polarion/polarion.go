@@ -2,6 +2,7 @@ package polarion
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -11,8 +12,9 @@ import (
 )
 
 const (
-	polarionTag = "polarion-testcase-id"
-	testIDTag   = "test_id"
+	polarionTag      = "polarion-testcase-id"
+	testIDTag        = "test_id"
+	testParameterTag = "polarion-parameter"
 )
 
 type (
@@ -82,6 +84,12 @@ func CreateReport(report ginkgo.Report, destFile, projectTag string) {
 			testCase.Properties.Property = append(testCase.Properties.Property, *polarionID)
 		}
 
+		if polarionTCProperties := setProperty(testCaseSpecReport); polarionTCProperties != nil {
+			for _, property := range polarionTCProperties {
+				testCase.Properties.Property = append(testCase.Properties.Property, *property)
+			}
+		}
+
 		if failedMessage := setFailureMessage(testCaseSpecReport); failedMessage != nil {
 			testCase.FailureMessage = failedMessage
 		}
@@ -102,7 +110,7 @@ func ID(tag string) ginkgo.Labels {
 	return ginkgo.Label(tag, fmt.Sprintf("%s:%s", testIDTag, tag))
 }
 
-// SetProperty sets polarion property for a test case.
+// SetProperty sets polarion id for a test case.
 func SetProperty(propertyKey, propertyValue string) ginkgo.Labels {
 	return ginkgo.Label(fmt.Sprintf("polarion-parameter-%s:%s", propertyKey, propertyValue))
 }
@@ -116,6 +124,27 @@ func setPolarionID(testReport types.SpecReport, projectTag string) *Property {
 					Value: fmt.Sprintf("%s%s", projectTag, strings.Split(label, ":")[1]),
 				}
 			}
+		}
+	}
+
+	return nil
+}
+
+func setProperty(testReport types.SpecReport) []*Property {
+	if len(testReport.Labels()) > 0 {
+		var tcProperties []*Property
+
+		for _, label := range testReport.Labels() {
+			if strings.Contains(label, testParameterTag) {
+				tcProperties = append(tcProperties, &Property{
+					Name:  strings.Split(label, ":")[0],
+					Value: strings.Split(label, ":")[1],
+				})
+			}
+		}
+
+		if len(tcProperties) > 0 {
+			return tcProperties
 		}
 	}
 
@@ -155,7 +184,7 @@ func setTestSuite(report ginkgo.Report) *TestSuite {
 	}
 }
 
-func generatePolarionXMLFile(outputFile string, testCases interface{}) {
+func createNewReportFile(outputFile string, testCases *TestSuite) {
 	file, err := os.Create(outputFile)
 	if err != nil {
 		panic(fmt.Errorf("failed to create Polarion report file: %s\n\t%w", outputFile, err))
@@ -165,13 +194,71 @@ func generatePolarionXMLFile(outputFile string, testCases interface{}) {
 		_ = file.Close()
 	}()
 
-	_, _ = file.WriteString(xml.Header)
 	encoder := xml.NewEncoder(file)
 	encoder.Indent("  ", "    ")
+
 	err = encoder.Encode(testCases)
 
 	if err != nil {
-		panic(fmt.Errorf("failed to generate Polarion report\n\t%w", err))
+		panic("failed to dump report to file")
+	}
+}
+
+func appendToExistingReportFile(outputFile string, newReport *TestSuite) {
+	file, err := os.OpenFile(outputFile, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		panic(fmt.Errorf("failed to open Polarion report file: %s\n\t%w", outputFile, err))
+	}
+
+	defer func() {
+		_ = file.Close()
+	}()
+
+	existingTestSuiteByteFormat, err := os.ReadFile(outputFile)
+
+	if err != nil {
+		panic(fmt.Errorf("failed to read existing Polarion report file: %s\n\t%w", outputFile, err))
+	}
+
+	var reportTestSuite *TestSuite
+	err = xml.Unmarshal(existingTestSuiteByteFormat, &reportTestSuite)
+
+	if err != nil {
+		panic(fmt.Errorf("failed to unmarshal existing Polarion report file: %s\n\t%w", outputFile, err))
+	}
+
+	file, err = os.OpenFile(outputFile, os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		panic(fmt.Errorf("failed to open Polarion report file: %s\n\t%w", outputFile, err))
+	}
+
+	defer func() {
+		_ = file.Close()
+	}()
+
+	reportTestSuite.Name = "Polarion Aggregated Report"
+	reportTestSuite.TestCases = append(reportTestSuite.TestCases, newReport.TestCases...)
+	reportTestSuite.Tests += newReport.Tests
+	reportTestSuite.Skipped += newReport.Skipped
+	reportTestSuite.Failures += newReport.Failures
+	reportTestSuite.Time += newReport.Time
+
+	encoder := xml.NewEncoder(file)
+	encoder.Indent("  ", "    ")
+
+	err = encoder.Encode(reportTestSuite)
+
+	if err != nil {
+		panic(fmt.Errorf("failed to generate aggregated Polarion report\n\t%w", err))
+	}
+}
+
+func generatePolarionXMLFile(outputFile string, testCases *TestSuite) {
+	_, err := os.Stat(outputFile)
+	if errors.Is(err, os.ErrNotExist) {
+		createNewReportFile(outputFile, testCases)
+	} else {
+		appendToExistingReportFile(outputFile, testCases)
 	}
 }
 

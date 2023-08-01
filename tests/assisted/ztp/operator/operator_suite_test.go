@@ -37,7 +37,7 @@ var _ = BeforeSuite(func() {
 
 var _ = ReportAfterSuite("", func(report Report) {
 	polarion.CreateReport(
-		report, ZTPConfig.GetPolarionReportPath(currentFile), ZTPConfig.PolarionTCPrefix)
+		report, ZTPConfig.GetPolarionReportPath(), ZTPConfig.PolarionTCPrefix)
 })
 
 var _ = JustAfterEach(func() {
