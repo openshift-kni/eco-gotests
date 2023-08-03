@@ -26,3 +26,10 @@ func MultiStageConfigMapContent(module string) map[string]string {
 
 	return configmapContents
 }
+
+// SimpleKmodConfigMapContents returns the configmap for simple-kmod example.
+func SimpleKmodConfigMapContents() map[string]string {
+	configmapContents := map[string]string{"dockerfile": kmmparams.SimpleKmodContents}
+
+	return configmapContents
+}

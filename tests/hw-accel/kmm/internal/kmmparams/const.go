@@ -27,4 +27,28 @@ COPY --from=builder /etc/driver-toolkit-release.json /etc/
 COPY --from=builder /build/kmm-kmod/*.ko /opt/lib/modules/${KERNEL_VERSION}/
 RUN depmod -b /opt
 `
+	// SimpleKmodContents represents the Dockerfile contents for simple-kmod build.
+	SimpleKmodContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit
+ARG KERNEL_VERSION
+ARG KMODVER
+WORKDIR /build/
+
+RUN git clone https://github.com/cdvultur/simple-kmod.git && \
+	cd simple-kmod && \
+    make all       KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
+    make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
+    mkdir -p /opt/lib/modules/$KERNEL_VERSION && \
+    cp /lib/modules/$KERNEL_VERSION/simple-*.ko /lib/modules/$KERNEL_VERSION/modules.* /opt/lib/modules/$KERNEL_VERSION`
+
+	// SecretContents template.
+	SecretContents = `
+{
+  "auths": {
+    "{{.Registry}}": {
+      "auth": "{{.PullSecret}}",
+      "email": ""
+    }
+  }
+}
+`
 )

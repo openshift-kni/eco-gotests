@@ -3,6 +3,8 @@ package tsparams
 const (
 	// LabelSuite represents kmm label that can be used for test cases selection.
 	LabelSuite = "module"
-	// ModuleTestNamespace represents test case namespace name.
-	ModuleTestNamespace = "ocp-54283-use-dtk"
+	// UseDtkModuleTestNamespace represents test case namespace name.
+	UseDtkModuleTestNamespace = "ocp-54283-use-dtk"
+	// SimpleKmodModuleTestNamespace represents test case namespace name.
+	SimpleKmodModuleTestNamespace = "simple-kmod"
 )

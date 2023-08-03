@@ -15,9 +15,10 @@ var (
 
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		"openshift-kmm":     "kmm",
-		"openshift-kmm-hub": "kmm-hub",
-		ModuleTestNamespace: "other",
+		"openshift-kmm":               "kmm",
+		"openshift-kmm-hub":           "kmm-hub",
+		UseDtkModuleTestNamespace:     "module",
+		SimpleKmodModuleTestNamespace: "module",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

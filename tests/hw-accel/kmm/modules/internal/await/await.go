@@ -15,14 +15,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-var buildPod string
+var buildPod = make(map[string]string)
 
 // BuildPodCompleted awaits kmm build pods to finish build.
 func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.Duration) error {
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		var err error
 
-		if buildPod == "" {
+		if buildPod[nsname] == "" {
 			pods, err := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: "status.phase=Running"})
 
 			if err != nil {
@@ -31,18 +31,19 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 
 			for _, podObj := range pods {
 				if strings.Contains(podObj.Object.Name, "-build") {
-					buildPod = podObj.Object.Name
+					buildPod[nsname] = podObj.Object.Name
 					glog.V(kmmparams.KmmLogLevel).Infof("\rBuild podObj '%s' is Running\n", podObj.Object.Name)
 
 				}
 			}
 		}
 
-		if buildPod != "" {
-			fieldSelector := fmt.Sprintf("metadata.name=%s", buildPod)
+		if buildPod[nsname] != "" {
+			fieldSelector := fmt.Sprintf("metadata.name=%s", buildPod[nsname])
 			pods, _ := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: fieldSelector})
 			if len(pods) == 0 {
 				glog.V(kmmparams.KmmLogLevel).Infof("BuildPod %s no longer in namespace", buildPod)
+				buildPod[nsname] = ""
 
 				return true, nil
 			}
@@ -78,5 +79,22 @@ func ModuleDeployment(apiClient *clients.Settings,
 		}
 
 		return true, err
+	})
+}
+
+// ModuleUndeployed awaits module pods to be undeployed.
+func ModuleUndeployed(apiClient *clients.Settings, nsName string, timeout time.Duration) error {
+	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+		pods, err := pod.List(apiClient, nsName, v1.ListOptions{})
+
+		if err != nil {
+			glog.V(kmmparams.KmmLogLevel).Infof("pod list error: %s\n", err)
+
+			return false, err
+		}
+
+		glog.V(kmmparams.KmmLogLevel).Infof("current number of pods: %v\n", len(pods))
+
+		return len(pods) == 0, nil
 	})
 }
