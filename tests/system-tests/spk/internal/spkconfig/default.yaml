@@ -1,2 +1,11 @@
 ---
 spk_workload_ns: 'spk-test'
+spk_dci_workload_deployment_name: 'mttool'
+spk_workload_deployment_name: 'qe-demo-deploy'
+spk_workload_deployment_image: 'registry.kni-qe-4.lab.eng.rdu2.redhat.com:5000/rhscl/httpd-24-rhel7'
+spk_workload_test_url: 'testhttp.spk64.kni-qe-4.lab.eng.rdu2.redhat.com'
+spk_workload_test_port: '8080'
+spk_data_ns: 'spk-data'
+spk_dns_ns: 'spk-dns46'
+spk_utilities_ns: 'spk-utilities'
+spk_coredns_ns: 'spk-coredns'

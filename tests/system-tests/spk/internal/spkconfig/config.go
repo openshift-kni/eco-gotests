@@ -22,6 +22,17 @@ type SPKConfig struct {
 	Namespace         string `yaml:"spk_workload_ns" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_NS"`
 	IngressTCPIPv4URL string `yaml:"spk_ingress_tcp_ipv4_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV4_URL"`
 	IngressTCPIPv6URL string `yaml:"spk_ingress_tcp_ipv6_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV6_URL"`
+	//nolint:lll
+	WorkloadDCIDeploymentName string `yaml:"spk_dci_workload_deployment_name" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DCI_DEPLOYEMNT_NAME"`
+	//nolint:lll
+	WorkloadContainerImage string `yaml:"spk_workload_deployment_image" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DEPLOYMENT_IMAGE"`
+	WorkloadDeploymentName string `yaml:"spk_workload_deployment_name" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DEPLOYMENT_NAME"`
+	WorkloadTestURL        string `yaml:"spk_workload_test_url" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_TEST_URL"`
+	WorkloadTestPort       string `yaml:"spk_workload_test_port" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_TEST_PORT"`
+	SPKDataNS              string `yaml:"spk_data_ns" envconfig:"ECO_SYSTEM_SPK_DATA_NS"`
+	SPKDnsNS               string `yaml:"spk_dns_ns" envconfig:"ECO_SYSTEM_SPK_DNS_NS"`
+	SPKUtilitiesNS         string `yaml:"spk_utilities_ns" envconfig:"ECO_SYSTEM_SPK_UTILITIES_NS"`
+	SPKCoreDNSNS           string `yaml:"spk_coredns_ns" envconfig:"ECO_SYSTEM_COREDNS_NS"`
 }
 
 // NewSPKConfig returns instance of SPKConfig config type.
