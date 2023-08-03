@@ -1,6 +1,7 @@
 ---
 # CNF Network default configurations.
 cnf_net_test_container: quay.io/ocp-edge-qe/eco-gotests-network-client:v4.13
+dpdk_test_container: quay.io/ocp-edge-qe/eco-gotests-rootless-dpdk:v4.14
 metal_lb_operator_namespace: metallb-system
 sriov_operator_namespace: openshift-sriov-network-operator
 nmstate_operator_namespace: openshift-nmstate

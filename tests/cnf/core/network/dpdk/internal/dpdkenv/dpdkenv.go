@@ -89,7 +89,7 @@ func DeployPerformanceProfile(
 			return fmt.Errorf("fail to clean pre-existing performance profiles due to %w", err)
 		}
 
-		err = mcp.WaitToBeStableFor(time.Minute, tsparams.WaitTimeout)
+		err = mcp.WaitToBeStableFor(time.Minute, tsparams.MCOWaitTimeout)
 
 		if err != nil {
 			return err

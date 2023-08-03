@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/cni/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -533,43 +534,31 @@ func doesIPVlanHasCorrectConfig(podObject *pod.Builder, intName, masterIntName s
 }
 
 func defineAndCreateTapNad(name string, user, group int, sysctlConfig map[string]string) *nad.Builder {
-	plugins := []nad.Plugin{
-		*nad.TapPlugin(user, group, true), *nad.TuningSysctlPlugin(true, sysctlConfig)}
-	tap, err := nad.NewBuilder(APIClient, name, tsparams.TestNamespaceName).WithPlugins(name, &plugins).Create()
+	tap, err := define.TapNad(APIClient, name, tsparams.TestNamespaceName, user, group, sysctlConfig)
 	Expect(err).ToNot(HaveOccurred(), "Fail to create tap NetworkAttachmentDefinition")
 
 	return tap
 }
 
-func defineAndCreateNad(name string, masterPlugin *nad.MasterPlugin) *nad.Builder {
-	createdNad, err := nad.NewBuilder(APIClient, name, tsparams.TestNamespaceName).WithMasterPlugin(masterPlugin).Create()
-	Expect(err).ToNot(HaveOccurred(), "Fail to create NetworkAttachmentDefinition")
-
-	return createdNad
-}
-
 func defineAndCreateMacVlanNad(name, intName string, ipam *nad.IPAM) *nad.Builder {
-	masterPlugin, err := nad.NewMasterMacVlanPlugin(name).WithMasterInterface(intName).
-		WithIPAM(ipam).WithLinkInContainer().GetMasterPluginConfig()
-	Expect(err).ToNot(HaveOccurred(), "Fail to set MasterMacVlan plugin")
+	macVlanNad, err := define.MacVlanNad(APIClient, name, tsparams.TestNamespaceName, intName, ipam)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create mac-vlan NetworkAttachmentDefinition")
 
-	return defineAndCreateNad(name, masterPlugin)
+	return macVlanNad
 }
 
 func defineAndCreateVlanNad(name, intName string, vlanID uint16, ipam *nad.IPAM) *nad.Builder {
-	masterPlugin, err := nad.NewMasterVlanPlugin(name, vlanID).WithMasterInterface(intName).
-		WithIPAM(ipam).WithLinkInContainer().GetMasterPluginConfig()
-	Expect(err).ToNot(HaveOccurred(), "Fail to set MasterVlan plugin")
+	vlanNad, err := define.VlanNad(APIClient, name, tsparams.TestNamespaceName, intName, vlanID, ipam)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create vlan NetworkAttachmentDefinition")
 
-	return defineAndCreateNad(name, masterPlugin)
+	return vlanNad
 }
 
 func defineAndCreateIPVlanNad(name, intName string, ipam *nad.IPAM) *nad.Builder {
-	masterPlugin, err := nad.NewMasterIPVlanPlugin(name).WithMasterInterface(intName).WithIPAM(ipam).
-		WithLinkInContainer().GetMasterPluginConfig()
-	Expect(err).ToNot(HaveOccurred(), "Fail to set IPVlan plugin")
+	ipVlanNad, err := define.IPVlanNad(APIClient, name, tsparams.TestNamespaceName, intName, ipam)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create ip-vlan NetworkAttachmentDefinition")
 
-	return defineAndCreateNad(name, masterPlugin)
+	return ipVlanNad
 }
 
 func verifySysctlKernelParametersConfiguredOnPodInterface(

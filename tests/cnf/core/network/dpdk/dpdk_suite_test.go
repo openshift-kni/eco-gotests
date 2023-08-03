@@ -12,8 +12,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/dpdkenv"
-	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/tests"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/tsparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/tests"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/params"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
