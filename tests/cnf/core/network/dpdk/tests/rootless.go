@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -34,6 +35,8 @@ const (
 	srIovNetworkTwoName          = "sriov-net-two"
 	tapNetworkOne                = "tap-one"
 	tapNetworkTwo                = "tap-two"
+	vlanNetworkOne               = "vlan-one"
+	vlanNetworkTwo               = "vlan-two"
 	macVlanNetworkOne            = "mac-vlan-one"
 	macVlanNetworkTwo            = "mac-vlan-two"
 	tapOneInterfaceName          = "ext0"
@@ -42,6 +45,8 @@ const (
 	defaultWhereAboutGW          = "1.1.1.254"
 	dpdkServerMac                = "60:00:00:00:00:02"
 	dpdkClientMac                = "60:00:00:00:00:01"
+	dpdkServerMacTwo             = "60:00:00:00:00:04"
+	dpdkClientMacTwo             = "60:00:00:00:00:03"
 	firstInterfaceBasedOnTapOne  = "ext0.1"
 	secondInterfaceBasedOnTapOne = "ext0.2"
 	firstInterfaceBasedOnTapTwo  = "ext1.1"
@@ -50,6 +55,7 @@ const (
 	minimumExpectedDPDKRate      = 1000000
 	customUserID                 = 2005
 	customGroupID                = 2005
+	dummyVlanID                  = 200
 )
 
 var (
@@ -90,7 +96,25 @@ var (
 	}
 
 	defaultWhereaboutIPAM = nad.IPAMWhereAbouts(defaultWhereAboutNetwork, defaultWhereAboutGW)
+	vlanID                uint16
 )
+
+type podNetworkAnnotation struct {
+	Name      string   `json:"name"`
+	Interface string   `json:"interface"`
+	Ips       []string `json:"ips,omitempty"`
+	Mac       string   `json:"mac"`
+	Default   bool     `json:"default,omitempty"`
+	DNS       struct {
+	} `json:"dns"`
+	DeviceInfo struct {
+		Type    string `json:"type"`
+		Version string `json:"version"`
+		Pci     struct {
+			PciAddress string `json:"pci-address"`
+		} `json:"pci"`
+	} `json:"device-info,omitempty"`
+}
 
 var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFailure, func() {
 
@@ -138,25 +162,20 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			By("Setting selinux flag container_use_devices to 1 on all compute nodes")
 			err = cluster.ExecCmd(APIClient, NetConfig.WorkerLabel, setSEBool+"1")
 			Expect(err).ToNot(HaveOccurred(), "Fail to enable selinux flag")
+
+			By("Setting vlan ID")
+			vlanID, err = NetConfig.GetVLAN()
+			Expect(err).ToNot(HaveOccurred(), "Fail to set vlanID")
+			Expect(dummyVlanID).ToNot(BeEquivalentTo(vlanID),
+				"Both vlans have the same ID. Please select different ID using ECO_CNF_CORE_NET_VLAN env variable")
 		})
 
 		It("single VF, multiple tap devices, multiple mac-vlans", polarion.ID("63806"), func() {
-			By("Creating srIovNetwork sriov-net-one")
-			defaultAndCreateSrIovNetwork(srIovNetworkOneName, srIovPolicyOneResName)
-
-			By("Creating srIovNetwork sriov-net-two")
-			defaultAndCreateSrIovNetwork(srIovNetworkTwoName, srIovNetworkTwoResName)
-
-			By("Creating first tap NetworkAttachmentDefinition")
-			_, err := define.TapNad(APIClient, tapNetworkOne, tsparams.TestNamespaceName, 0, 0, nil)
-			Expect(err).ToNot(HaveOccurred(), "Fail to create first tap NetworkAttachmentDefinition")
-
-			By("Creating second tap NetworkAttachmentDefinition")
-			_, err = define.TapNad(APIClient, tapNetworkTwo, tsparams.TestNamespaceName, customUserID, customGroupID, nil)
-			Expect(err).ToNot(HaveOccurred(), "Fail to create second tap NetworkAttachmentDefinition")
+			defineAndCreateSrIovNetworks(0, vlanID)
+			defineAndCreateTapNADs()
 
 			By("Creating first mac-vlan NetworkAttachmentDefinition")
-			_, err = define.MacVlanNad(
+			_, err := define.MacVlanNad(
 				APIClient, macVlanNetworkOne, tsparams.TestNamespaceName, tapOneInterfaceName, defaultWhereaboutIPAM)
 			Expect(err).ToNot(HaveOccurred(), "Fail to create first mac-vlan NetworkAttachmentDefinition")
 
@@ -171,7 +190,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMac)
 			defineAndCreateDPDKPod(
 				"serverpod",
-				workerNodes.Objects[0].Definition.Name,
+				workerNodes.Objects[1].Definition.Name,
 				serverSC,
 				nil,
 				serverPodNetConfig,
@@ -208,6 +227,100 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				clientPod,
 				map[string]int{tapTwoInterfaceName: minimumExpectedDPDKRate, firstInterfaceBasedOnTapTwo: maxMulticastNoiseRate})
 		})
+
+		It("multiple VFs, one tap plus MAC-VLAN, second tap plus 2 VLANs, filter untagged and tagged traffic",
+			polarion.ID("63818"), func() {
+				defineAndCreateSrIovNetworks(0, vlanID)
+				defineAndCreateTapNADs()
+
+				By("Creating mac-vlan one")
+				_, err := define.MacVlanNad(
+					APIClient, macVlanNetworkOne, tsparams.TestNamespaceName, tapOneInterfaceName, defaultWhereaboutIPAM)
+				Expect(err).ToNot(HaveOccurred(), "Fail to create first mac-vlan NetworkAttachmentDefinition")
+
+				By("Creating vlan one NetworkAttachmentDefinition")
+				_, err = define.VlanNad(
+					APIClient, vlanNetworkOne, tsparams.TestNamespaceName, tapTwoInterfaceName, vlanID, nad.IPAMStatic())
+				Expect(err).ToNot(HaveOccurred(), "Fail to create first vlan NetworkAttachmentDefinition")
+
+				By("Creating vlan two NetworkAttachmentDefinition")
+				_, err = define.VlanNad(
+					APIClient, vlanNetworkTwo, tsparams.TestNamespaceName, tapTwoInterfaceName, dummyVlanID, nad.IPAMStatic())
+				Expect(err).ToNot(HaveOccurred(), "Fail to create second vlan NetworkAttachmentDefinition")
+
+				serverPodOneNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
+					srIovNetworkOneName, tsparams.TestNamespaceName, dpdkServerMac)
+
+				By("Creating first server pod")
+				srvNetOne := defineTestServerPmdCmd(dpdkClientMac, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}", "")
+				defineAndCreateDPDKPod(
+					"serverpod-one",
+					workerNodes.Objects[0].Definition.Name,
+					serverSC,
+					nil,
+					serverPodOneNetConfig,
+					srvNetOne)
+
+				By("Creating second server pod")
+				serverPodTwoNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
+					srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMacTwo)
+
+				srvNetTwo := defineTestServerPmdCmd(dpdkClientMacTwo, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYTWO}", "")
+				defineAndCreateDPDKPod(
+					"serverpod-two",
+					workerNodes.Objects[1].Definition.Name,
+					serverSC,
+					nil,
+					serverPodTwoNetConfig,
+					srvNetTwo)
+
+				By("Creating client pod")
+				firstVlanInterfaceBasedOnTapTwo := fmt.Sprintf("%s.%d", tapTwoInterfaceName, vlanID)
+				secondVlanInterfaceBasedOnTapTwo := fmt.Sprintf("%s.%d", tapTwoInterfaceName, dummyVlanID)
+				clientPodNetConfig := definePodNetwork([]map[string]string{
+					{"netName": srIovNetworkOneName, "macAddr": dpdkClientMac},
+					{"netName": srIovNetworkOneName, "macAddr": dpdkClientMacTwo},
+					{"netName": tapNetworkOne, "intName": tapOneInterfaceName},
+					{"netName": tapNetworkTwo, "intName": tapTwoInterfaceName},
+					{"netName": macVlanNetworkOne, "intName": firstInterfaceBasedOnTapOne, "macAddr": dpdkClientMac},
+					{"netName": vlanNetworkOne, "intName": firstVlanInterfaceBasedOnTapTwo, "ipAddr": "1.1.1.1/24"},
+					{"netName": vlanNetworkTwo, "intName": secondVlanInterfaceBasedOnTapTwo, "ipAddr": "2.2.2.2/24"}})
+				clientPod := defineAndCreateDPDKPod(
+					"clientpod", workerNodes.Objects[1].Definition.Name, clientSC, &clientPodSC, clientPodNetConfig, sleepCMD)
+
+				By("Collecting PCI Address")
+				Eventually(isPciAddressAvailable, 120*time.Second, 3*time.Second).WithArguments(clientPod).Should(BeTrue())
+				pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
+					clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"], srIovNetworkOneName)
+				Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
+
+				By("Running client dpdk-testpmd")
+				rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+
+				By("Checking the rx output of tap ext0 device")
+				checkRxOutputRateForInterfaces(
+					clientPod, map[string]int{
+						tapOneInterfaceName:         minimumExpectedDPDKRate,
+						firstInterfaceBasedOnTapOne: minimumExpectedDPDKRate})
+				rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+				checkRxOutputRateForInterfaces(clientPod, map[string]int{
+					tapTwoInterfaceName:              minimumExpectedDPDKRate,
+					firstVlanInterfaceBasedOnTapTwo:  minimumExpectedDPDKRate,
+					secondVlanInterfaceBasedOnTapTwo: maxMulticastNoiseRate})
+			})
+	})
+
+	AfterEach(func() {
+		By("Removing all srIovNetworks")
+		err := sriov.CleanAllNetworksByTargetNamespace(
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metaV1.ListOptions{})
+		Expect(err).ToNot(HaveOccurred(), "Fail to clean srIovNetworks")
+
+		By("Removing all pods from test namespace")
+		runningNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to pull namespace")
+		Expect(runningNamespace.CleanObjects(300*time.Second, pod.GetGVR(), nad.GetGVR())).ToNot(HaveOccurred())
+
 	})
 
 	AfterAll(func() {
@@ -224,7 +337,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		By("Removing all srIovNetworks")
 		err = sriov.CleanAllNetworksByTargetNamespace(
 			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metaV1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred(), "Fail to clean srIovNetworks")
+		Expect(err).ToNot(HaveOccurred(), "Fail to clean sriov networks")
 
 		By("Removing SecurityContextConstraints")
 		testScc, err := scc.Pull(APIClient, "scc-test-admin")
@@ -239,10 +352,32 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 })
 
-func defaultAndCreateSrIovNetwork(srIovNetwork, resName string) {
+func defineAndCreateTapNADs() {
+	By("Creating first tap interface")
+
+	_, err := define.TapNad(APIClient, tapNetworkOne, tsparams.TestNamespaceName, 0, 0, nil)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create first tap NetworkAttachmentDefinition")
+
+	_, err = define.TapNad(APIClient, tapNetworkTwo, tsparams.TestNamespaceName, customUserID, customGroupID, nil)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create second tap NetworkAttachmentDefinition")
+}
+
+func defineAndCreateSrIovNetworks(firstSrIovNetworkVlanID, secondSrIovNetworkVlanID uint16) {
+	By("Creating srIovNetwork sriov-net-one")
+	defaultAndCreateSrIovNetwork(srIovNetworkOneName, srIovPolicyOneResName, firstSrIovNetworkVlanID)
+
+	By("Creating srIovNetwork sriov-net-two")
+	defaultAndCreateSrIovNetwork(srIovNetworkTwoName, srIovNetworkTwoResName, secondSrIovNetworkVlanID)
+}
+
+func defaultAndCreateSrIovNetwork(srIovNetwork, resName string, vlanID uint16) {
 	srIovNetworkObject := sriov.NewNetworkBuilder(
 		APIClient, srIovNetwork, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, resName).
 		WithMacAddressSupport()
+
+	if vlanID != 0 {
+		srIovNetworkObject.WithVLAN(vlanID)
+	}
 
 	srIovNetworkObject, err := srIovNetworkObject.Create()
 	Expect(err).ToNot(HaveOccurred(), "Fail to create sriov network")
@@ -276,7 +411,7 @@ func defineAndCreateDPDKPod(
 		dpdkPod = dpdkPod.WithSecurityContext(podSC)
 	}
 
-	_, err = dpdkPod.CreateAndWaitUntilRunning(tsparams.WaitTimeout)
+	dpdkPod, err = dpdkPod.CreateAndWaitUntilRunning(tsparams.WaitTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Fail to create server pod")
 
 	return dpdkPod
@@ -393,4 +528,48 @@ func getLinkRx(runningPod *pod.Builder, linkName string) int {
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect link info")
 
 	return linkInfo.GetRxByte()
+}
+
+func isPciAddressAvailable(clientPod *pod.Builder) bool {
+	if !clientPod.Exists() {
+		return false
+	}
+
+	podNetAnnotation := clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"]
+	if podNetAnnotation == "" {
+		return false
+	}
+
+	var err error
+
+	pciAddressList, err := getPCIAddressListFromSrIovNetworkName(podNetAnnotation, srIovNetworkOneName)
+
+	if err != nil {
+		return false
+	}
+
+	if len(pciAddressList) < 2 {
+		return false
+	}
+
+	return true
+}
+
+func getPCIAddressListFromSrIovNetworkName(podNetworkStatus, srIovNetworkName string) ([]string, error) {
+	var podNetworkStatusType []podNetworkAnnotation
+	err := json.Unmarshal([]byte(podNetworkStatus), &podNetworkStatusType)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var pciAddressList []string
+
+	for _, networkAnnotation := range podNetworkStatusType {
+		if strings.Contains(networkAnnotation.Name, srIovNetworkName) {
+			pciAddressList = append(pciAddressList, networkAnnotation.DeviceInfo.Pci.PciAddress)
+		}
+	}
+
+	return pciAddressList, nil
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/kelseyhightower/envconfig"
@@ -34,6 +35,7 @@ type NetworkConfig struct {
 	MlbAddressPoolIP            string `envconfig:"ECO_CNF_CORE_NET_MLB_ADDR_LIST"`
 	SriovInterfaces             string `envconfig:"ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST"`
 	FrrImage                    string `yaml:"frr_image" envconfig:"ECO_CNF_CORE_NET_FRR_IMAGE"`
+	VLAN                        string `envconfig:"ECO_CNF_CORE_NET_VLAN"`
 }
 
 // NewNetConfig returns instance of NetworkConfig config type.
@@ -94,6 +96,21 @@ func (netConfig *NetworkConfig) GetSriovInterfaces(requestedNumber int) ([]strin
 	}
 
 	return requestedInterfaceList, nil
+}
+
+// GetVLAN reads environment variable ECO_CNF_CORE_NET_VLAN and returns preconfigured vlanID.
+func (netConfig *NetworkConfig) GetVLAN() (uint16, error) {
+	if netConfig.VLAN == "" {
+		return 0, fmt.Errorf("VLAN is empty. Please check ECO_CNF_CORE_NET_VLAN env var")
+	}
+
+	vlanInt, err := strconv.Atoi(netConfig.VLAN)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return uint16(vlanInt), nil
 }
 
 func readFile(netConfig *NetworkConfig, cfgFile string) error {
