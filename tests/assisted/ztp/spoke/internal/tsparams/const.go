@@ -14,7 +14,7 @@ const (
 	// selection.
 	LabelNetworkTypeVerificationTestCases = "networktype-verification"
 
-	// LabelDebugInfoLogsURLVerificationTestCases represents debug-info-verification label that can be used for test cases
+	// LabelDebugInfoVerificationTestCases represents debug-info-verification label that can be used for test cases
 	// selection.
-	LabelDebugInfoLogsURLVerificationTestCases = "debug-info-verification"
+	LabelDebugInfoVerificationTestCases = "debug-info-verification"
 )
