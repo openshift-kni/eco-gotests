@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/golang/glog"
 	nmstateShared "github.com/nmstate/kubernetes-nmstate/api/shared"
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
@@ -137,30 +139,30 @@ func AreVFsCreated(nmstateName, sriovInterfaceName string, numberVFs int) error 
 	return nil
 }
 
-// IsPrimaryInterfaceBond verifies that master ovs system interface is a bond interface.
-func IsPrimaryInterfaceBond(nodeName string) (bool, string, error) {
+// GetPrimaryInterfaceBond returns master ovs system bond interface.
+func GetPrimaryInterfaceBond(nodeName string) (string, error) {
 	glog.V(90).Infof("Verifying that bond interface is a master ovs system interface on the node %s.", nodeName)
 
 	nodeNetworkState, err := nmstate.PullNodeNetworkState(APIClient, nodeName)
 	if err != nil {
-		return false, "", err
+		return "", err
 	}
 
 	ovsBridgeInterface, err := nodeNetworkState.GetInterfaceType("br-ex", "ovs-bridge")
 	if err != nil {
-		return false, "", err
+		return "", err
 	}
 
 	for _, bridgePort := range ovsBridgeInterface.Bridge.Port {
 		if strings.Contains(bridgePort["name"], "bond") {
-			return true, bridgePort["name"], nil
+			return bridgePort["name"], nil
 		}
 	}
 
 	glog.V(90).Infof("There is no a bond interface in the br-ex bridge ports %v",
 		ovsBridgeInterface.Bridge.Port)
 
-	return false, "", nil
+	return "", nil
 }
 
 // GetBondSlaves returns slave ports under given Bond interface name.
@@ -259,4 +261,53 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 	}
 
 	return nil
+}
+
+// WithOptionMiimon returns a func that mutate miimon value.
+func WithOptionMiimon(
+	miimon uint64, bondInterfaceName string) func(*nmstate.PolicyBuilder) (*nmstate.PolicyBuilder, error) {
+	return func(builder *nmstate.PolicyBuilder) (*nmstate.PolicyBuilder, error) {
+		glog.V(90).Infof("Changing miimon value for the bondInterface to %d", miimon)
+
+		if bondInterfaceName == "" {
+			glog.V(90).Infof("The bondInterfaceName can not be empty string")
+
+			return builder, fmt.Errorf("the bondInterfaceName is empty string")
+		}
+
+		var CurrentState nmstate.DesiredState
+
+		err := yaml.Unmarshal(builder.Definition.Spec.DesiredState.Raw, &CurrentState)
+		if err != nil {
+			glog.V(90).Infof("Failed Unmarshal DesiredState")
+
+			return builder, fmt.Errorf("failed Unmarshal DesiredState: %w", err)
+		}
+
+		var foundInterface bool
+
+		for i, networkInterface := range CurrentState.Interfaces {
+			if networkInterface.Name == bondInterfaceName && networkInterface.Type == "bond" {
+				CurrentState.Interfaces[i].LinkAggregation.Options.Miimon = int(miimon)
+				foundInterface = true
+			}
+		}
+
+		if !foundInterface {
+			glog.V(90).Infof("Failed to find given Bond interface")
+
+			return builder, fmt.Errorf("failed to find Bond interface %s", bondInterfaceName)
+		}
+
+		desiredStateYaml, err := yaml.Marshal(CurrentState)
+		if err != nil {
+			glog.V(90).Infof("Failed Marshal DesiredState")
+
+			return builder, fmt.Errorf("failed to Marshal a new Desired state: %w", err)
+		}
+
+		builder.Definition.Spec.DesiredState = nmstateShared.NewState(string(desiredStateYaml))
+
+		return builder, nil
+	}
 }

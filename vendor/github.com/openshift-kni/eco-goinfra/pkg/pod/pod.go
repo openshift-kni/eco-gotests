@@ -490,7 +490,7 @@ func (builder *Builder) Copy(path, containerName string, tar bool) (bytes.Buffer
 	return buffer, nil
 }
 
-// Exists checks whether the given namespace exists.
+// Exists checks whether the given pod exists.
 func (builder *Builder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false

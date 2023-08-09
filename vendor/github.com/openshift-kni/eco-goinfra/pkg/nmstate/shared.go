@@ -58,6 +58,7 @@ type LinkAggregation struct {
 // containing interface LinkAggregation Options information.
 type OptionsLinkAggregation struct {
 	Primary string `yaml:"primary,omitempty"`
+	Miimon  int    `yaml:"miimon,omitempty"`
 }
 
 // Vlan provides struct for the NMState Interface Ethernet Vlan Options state object

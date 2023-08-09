@@ -19,8 +19,17 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/strings/slices"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var (
+	// allowedBondModes represents all allowed modes for Bond interface.
+	allowedBondModes = []string{"balance-rr", "active-backup", "balance-xor", "broadcast", "802.3ad"}
+)
+
+// AdditionalOptions additional options for pod object.
+type AdditionalOptions func(builder *PolicyBuilder) (*PolicyBuilder, error)
 
 // PolicyBuilder provides struct for the NodeNetworkConfigurationPolicy object containing connection to
 // the cluster and the NodeNetworkConfigurationPolicy definition.
@@ -208,27 +217,79 @@ func (builder *PolicyBuilder) WithInterfaceAndVFs(sriovInterface string, numberO
 		return builder
 	}
 
-	nmStateDesiredStateInterfacesWithVfs := &DesiredState{
-		Interfaces: []NetworkInterface{
-			{
-				Name:  sriovInterface,
-				Type:  "ethernet",
-				State: "up",
-				Ethernet: Ethernet{
-					Sriov: Sriov{TotalVfs: int(numberOfVF)},
-				},
-			},
+	newInterface := NetworkInterface{
+		Name:  sriovInterface,
+		Type:  "ethernet",
+		State: "up",
+		Ethernet: Ethernet{
+			Sriov: Sriov{TotalVfs: int(numberOfVF)},
 		},
 	}
 
-	nmStateInterfaceWithVfYaml, err := yaml.Marshal(nmStateDesiredStateInterfacesWithVfs)
-	if err != nil {
-		builder.errorMsg = "failed to Marshal NMState interface with VF"
+	return builder.withInterface(newInterface)
+}
+
+// WithBondInterface adds Bond interface configuration to the NodeNetworkConfigurationPolicy.
+func (builder *PolicyBuilder) WithBondInterface(slavePorts []string, bondName, mode string) *PolicyBuilder {
+	if valid, err := builder.validate(); !valid {
+		builder.errorMsg = err.Error()
 
 		return builder
 	}
 
-	builder.Definition.Spec.DesiredState = nmstateShared.NewState(string(nmStateInterfaceWithVfYaml))
+	glog.V(100).Infof("Creating NodeNetworkConfigurationPolicy %s with Bond interface configuration:"+
+		" BondName %s, Mode %s, SlavePorts %v", builder.Definition.Name, bondName, mode, slavePorts)
+
+	if !slices.Contains(allowedBondModes, mode) {
+		glog.V(100).Infof("error to add Bond mode %s, allowed modes are %v", mode, allowedBondModes)
+
+		builder.errorMsg = "invalid Bond mode parameter"
+	}
+
+	if bondName == "" {
+		glog.V(100).Infof("The bondName can not be empty string")
+
+		builder.errorMsg = "The bondName is empty sting"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	newInterface := NetworkInterface{
+		Name:  bondName,
+		Type:  "bond",
+		State: "up",
+		LinkAggregation: LinkAggregation{
+			Mode: mode,
+			Port: slavePorts,
+		},
+	}
+
+	return builder.withInterface(newInterface)
+}
+
+// WithOptions creates pod with generic mutation options.
+func (builder *PolicyBuilder) WithOptions(options ...AdditionalOptions) *PolicyBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting pod additional options")
+
+	for _, option := range options {
+		if option != nil {
+			builder, err := option(builder)
+
+			if err != nil {
+				glog.V(100).Infof("Error occurred in mutation function")
+
+				builder.errorMsg = err.Error()
+
+				return builder
+			}
+		}
+	}
 
 	return builder
 }
@@ -320,4 +381,44 @@ func (builder *PolicyBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+// withInterface adds given network interface to the NodeNetworkConfigurationPolicy.
+func (builder *PolicyBuilder) withInterface(networkInterface NetworkInterface) *PolicyBuilder {
+	if valid, err := builder.validate(); !valid {
+		builder.errorMsg = err.Error()
+
+		return builder
+	}
+
+	glog.V(100).Infof("Creating NodeNetworkConfigurationPolicy %s with network interface %s",
+		builder.Definition.Name, networkInterface.Name)
+
+	var CurrentState DesiredState
+
+	err := yaml.Unmarshal(builder.Definition.Spec.DesiredState.Raw, &CurrentState)
+
+	if err != nil {
+		glog.V(100).Infof("Failed Unmarshal DesiredState")
+
+		builder.errorMsg = "Failed Unmarshal DesiredState"
+
+		return builder
+	}
+
+	CurrentState.Interfaces = append(CurrentState.Interfaces, networkInterface)
+
+	desiredStateYaml, err := yaml.Marshal(CurrentState)
+
+	if err != nil {
+		glog.V(100).Infof("Failed Marshal DesiredState")
+
+		builder.errorMsg = "failed to Marshal a new Desired state"
+
+		return builder
+	}
+
+	builder.Definition.Spec.DesiredState = nmstateShared.NewState(string(desiredStateYaml))
+
+	return builder
 }

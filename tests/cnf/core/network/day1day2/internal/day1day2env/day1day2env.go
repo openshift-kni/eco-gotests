@@ -10,9 +10,12 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 )
 
 // DoesClusterSupportDay1Day2Tests verifies if given environment supports Day1Day2 tests.
@@ -63,6 +66,66 @@ func GetSrIovPf(vfInterfaceName, nodeName string) (string, error) {
 	}
 
 	return pfName, nil
+}
+
+// GetBondInterfaceMiimon returns miimon value for given bond interface and node.
+func GetBondInterfaceMiimon(nodeName, bondInterfaceName string) (int, error) {
+	glog.V(90).Infof("Getting miimon value for bond interface %s on node %s", bondInterfaceName, nodeName)
+
+	nodeNetworkState, err := nmstate.PullNodeNetworkState(APIClient, nodeName)
+	if err != nil {
+		return 0, err
+	}
+
+	bondInterface, err := nodeNetworkState.GetInterfaceType(bondInterfaceName, "bond")
+	if err != nil {
+		return 0, err
+	}
+
+	return bondInterface.LinkAggregation.Options.Miimon, nil
+}
+
+// CheckConnectivityBetweenMasterAndWorkers creates a hostnetwork pod on the master node and ping all workers nodes.
+// The Pod will be removed at the end.
+func CheckConnectivityBetweenMasterAndWorkers() error {
+	glog.V(90).Infof("Checking connectivity between master node and worker nodes")
+
+	masterNodes := nodes.NewBuilder(APIClient, NetConfig.ControlPlaneLabelMap)
+
+	err := masterNodes.Discover()
+	if err != nil {
+		return err
+	}
+
+	workerNodeList := nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
+
+	err = workerNodeList.Discover()
+	if err != nil {
+		return err
+	}
+
+	podMaster, err := pod.NewBuilder(
+		APIClient, "mastertestpod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		DefineOnNode(masterNodes.Objects[0].Definition.Name).WithHostNetwork().
+		WithPrivilegedFlag().WithTolerationToMaster().CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+	if err != nil {
+		return err
+	}
+
+	for _, workerNode := range workerNodeList.Objects {
+		err = cmd.ICMPConnectivityCheck(podMaster, []string{workerNode.Object.Status.Addresses[0].Address + "/24"})
+		if err != nil {
+			return fmt.Errorf("connectivity check between %s and %s failed: %w",
+				masterNodes.Objects[0].Definition.Name, workerNode.Object.Name, err)
+		}
+	}
+
+	_, err = podMaster.DeleteAndWait(netparam.DefaultTimeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func isNMStateOperatorDeployed() error {
