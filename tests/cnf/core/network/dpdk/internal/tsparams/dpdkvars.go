@@ -15,6 +15,8 @@ var (
 	Labels = append(netparam.Labels, LabelSuite)
 	// WaitTimeout represents timeout for the most ginkgo Eventually functions.
 	WaitTimeout = 3 * time.Minute
+	// RetryInterval represents retry interval for the most ginkgo Eventually functions.
+	RetryInterval = 3 * time.Second
 	// MCOWaitTimeout represent timeout for mco operations.
 	MCOWaitTimeout = 60 * time.Minute
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

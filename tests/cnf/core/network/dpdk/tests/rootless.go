@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -39,10 +40,12 @@ const (
 	vlanNetworkTwo               = "vlan-two"
 	macVlanNetworkOne            = "mac-vlan-one"
 	macVlanNetworkTwo            = "mac-vlan-two"
+	ipVlanNetworkOne             = "ip-vlan-one"
 	tapOneInterfaceName          = "ext0"
 	tapTwoInterfaceName          = "ext1"
 	defaultWhereAboutNetwork     = "1.1.1.0/24"
 	defaultWhereAboutGW          = "1.1.1.254"
+	networkForRouteTest          = "10.10.10.0/24"
 	dpdkServerMac                = "60:00:00:00:00:02"
 	dpdkClientMac                = "60:00:00:00:00:01"
 	dpdkServerMacTwo             = "60:00:00:00:00:04"
@@ -93,6 +96,17 @@ var (
 		Privileged:               &falseFlag,
 		RunAsNonRoot:             &trueFlag,
 		AllowPrivilegeEscalation: &trueFlag,
+	}
+
+	// enabledSysctlFlags represents sysctl configuration with few enable flags for sysctl plugin.
+	enabledSysctlFlags = map[string]string{
+		"net.ipv6.conf.IFNAME.accept_ra":  "1",
+		"net.ipv4.conf.IFNAME.arp_accept": "1",
+	}
+	// disabledSysctlFlags represents sysctl configuration with few disabled flags for sysctl plugin.
+	disabledSysctlFlags = map[string]string{
+		"net.ipv6.conf.IFNAME.accept_ra":  "0",
+		"net.ipv4.conf.IFNAME.arp_accept": "0",
 	}
 
 	defaultWhereaboutIPAM = nad.IPAMWhereAbouts(defaultWhereAboutNetwork, defaultWhereAboutGW)
@@ -172,7 +186,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		It("single VF, multiple tap devices, multiple mac-vlans", polarion.ID("63806"), func() {
 			defineAndCreateSrIovNetworks(0, vlanID)
-			defineAndCreateTapNADs()
+			defineAndCreateTapNADs(nil, nil)
 
 			By("Creating first mac-vlan NetworkAttachmentDefinition")
 			_, err := define.MacVlanNad(
@@ -231,7 +245,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		It("multiple VFs, one tap plus MAC-VLAN, second tap plus 2 VLANs, filter untagged and tagged traffic",
 			polarion.ID("63818"), func() {
 				defineAndCreateSrIovNetworks(0, vlanID)
-				defineAndCreateTapNADs()
+				defineAndCreateTapNADs(nil, nil)
 
 				By("Creating mac-vlan one")
 				_, err := define.MacVlanNad(
@@ -239,14 +253,10 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				Expect(err).ToNot(HaveOccurred(), "Fail to create first mac-vlan NetworkAttachmentDefinition")
 
 				By("Creating vlan one NetworkAttachmentDefinition")
-				_, err = define.VlanNad(
-					APIClient, vlanNetworkOne, tsparams.TestNamespaceName, tapTwoInterfaceName, vlanID, nad.IPAMStatic())
-				Expect(err).ToNot(HaveOccurred(), "Fail to create first vlan NetworkAttachmentDefinition")
+				defineAndCreateVlanNad(vlanNetworkOne, tapTwoInterfaceName, vlanID, nad.IPAMStatic())
 
 				By("Creating vlan two NetworkAttachmentDefinition")
-				_, err = define.VlanNad(
-					APIClient, vlanNetworkTwo, tsparams.TestNamespaceName, tapTwoInterfaceName, dummyVlanID, nad.IPAMStatic())
-				Expect(err).ToNot(HaveOccurred(), "Fail to create second vlan NetworkAttachmentDefinition")
+				defineAndCreateVlanNad(vlanNetworkTwo, tapTwoInterfaceName, dummyVlanID, nad.IPAMStatic())
 
 				serverPodOneNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
 					srIovNetworkOneName, tsparams.TestNamespaceName, dpdkServerMac)
@@ -289,7 +299,8 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 					"clientpod", workerNodes.Objects[1].Definition.Name, clientSC, &clientPodSC, clientPodNetConfig, sleepCMD)
 
 				By("Collecting PCI Address")
-				Eventually(isPciAddressAvailable, 120*time.Second, 3*time.Second).WithArguments(clientPod).Should(BeTrue())
+				Eventually(
+					isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
 				pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
 					clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"], srIovNetworkOneName)
 				Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
@@ -308,6 +319,89 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 					firstVlanInterfaceBasedOnTapTwo:  minimumExpectedDPDKRate,
 					secondVlanInterfaceBasedOnTapTwo: maxMulticastNoiseRate})
 			})
+
+		It("multiple VFs, one tap plus IP-VLANs, second tap plus plus VLAN and sysctl, filter untagged and tagged"+
+			" traffic, add and remove routes", polarion.ID("63878"), func() {
+			defineAndCreateSrIovNetworks(0, vlanID)
+			defineAndCreateTapNADs(enabledSysctlFlags, disabledSysctlFlags)
+
+			serverPodOneNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
+				srIovNetworkOneName, tsparams.TestNamespaceName, dpdkServerMac)
+
+			By("Creating ip-vlan interface")
+			defineAndCreateIPVlanNad(ipVlanNetworkOne, tapOneInterfaceName, nad.IPAMStatic())
+
+			By("Creating vlan-one interface")
+			defineAndCreateVlanNad(vlanNetworkOne, tapTwoInterfaceName, vlanID, nad.IPAMWhereAbouts("2.2.2.0/24", "2.2.2.254"))
+
+			By("Creating first server pod")
+			srvNetOne := defineTestServerPmdCmd(
+				dpdkClientMac, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}", "1.1.1.50,1.1.1.100")
+			defineAndCreateDPDKPod(
+				"serverpod-one", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodOneNetConfig, srvNetOne)
+			serverPodTwoNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
+				srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMacTwo)
+
+			By("Creating second server pod")
+			srvNetTwo := defineTestServerPmdCmd(dpdkClientMacTwo, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYTWO}", "")
+			defineAndCreateDPDKPod(
+				"serverpod-two", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodTwoNetConfig, srvNetTwo)
+
+			By("Creating client pod")
+			vlanInterfaceName := fmt.Sprintf("%s.%d", tapTwoInterfaceName, vlanID)
+			clientPodNetConfig := definePodNetwork([]map[string]string{
+				{"netName": srIovNetworkOneName, "macAddr": dpdkClientMac},
+				{"netName": srIovNetworkOneName, "macAddr": dpdkClientMacTwo},
+				{"netName": tapNetworkOne, "intName": tapOneInterfaceName},
+				{"netName": tapNetworkTwo, "intName": tapTwoInterfaceName},
+				{"netName": ipVlanNetworkOne, "intName": firstInterfaceBasedOnTapOne, "ipAddr": "1.1.1.100/24"},
+				{"netName": ipVlanNetworkOne, "intName": secondInterfaceBasedOnTapOne, "ipAddr": "1.1.1.200/24"},
+				{"netName": vlanNetworkOne, "intName": vlanInterfaceName}})
+			clientPod := defineAndCreateDPDKPod(
+				"clientpod", workerNodes.Objects[1].Definition.Name, clientSC, &clientPodSC, clientPodNetConfig, sleepCMD)
+
+			By("Collecting PCI Address")
+			Eventually(
+				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
+			pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
+				clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"], srIovNetworkOneName)
+			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
+
+			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			checkRxOutputRateForInterfaces(
+				clientPod, map[string]int{
+					tapOneInterfaceName:          minimumExpectedDPDKRate,
+					firstInterfaceBasedOnTapOne:  minimumExpectedDPDKRate,
+					secondInterfaceBasedOnTapOne: maxMulticastNoiseRate,
+				})
+			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			checkRxOutputRateForInterfaces(
+				clientPod, map[string]int{
+					tapTwoInterfaceName:          minimumExpectedDPDKRate,
+					vlanInterfaceName:            minimumExpectedDPDKRate,
+					secondInterfaceBasedOnTapOne: maxMulticastNoiseRate,
+				})
+
+			By("Verifying sysctl plugin configuration")
+
+			nextHopIPAddr := "1.1.1.10"
+			verifySysctlKernelParametersConfiguredOnPodInterface(clientPod, enabledSysctlFlags, tapOneInterfaceName)
+			verifySysctlKernelParametersConfiguredOnPodInterface(clientPod, disabledSysctlFlags, tapTwoInterfaceName)
+
+			By("Adding route to rootless pod")
+			_, err = setRouteOnPod(clientPod, networkForRouteTest, nextHopIPAddr, firstInterfaceBasedOnTapOne)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Verifying if route exist in rootless pod")
+			verifyIfRouteExist(clientPod, "10.10.10.0", nextHopIPAddr, firstInterfaceBasedOnTapOne, true)
+
+			By("Removing route from rootless pod")
+			_, err = delRouteOnPod(clientPod, networkForRouteTest, nextHopIPAddr, firstInterfaceBasedOnTapOne)
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Verifying if route was removed from rootless pod")
+			verifyIfRouteExist(clientPod, "10.10.10.0", nextHopIPAddr, firstInterfaceBasedOnTapOne, false)
+		})
 	})
 
 	AfterEach(func() {
@@ -352,25 +446,40 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 })
 
-func defineAndCreateTapNADs() {
+func defineAndCreateTapNADs(firstTapSysctlConfig, secondTapSysctlConfig map[string]string) {
 	By("Creating first tap interface")
 
-	_, err := define.TapNad(APIClient, tapNetworkOne, tsparams.TestNamespaceName, 0, 0, nil)
+	_, err := define.TapNad(APIClient, tapNetworkOne, tsparams.TestNamespaceName, 0, 0, firstTapSysctlConfig)
 	Expect(err).ToNot(HaveOccurred(), "Fail to create first tap NetworkAttachmentDefinition")
 
-	_, err = define.TapNad(APIClient, tapNetworkTwo, tsparams.TestNamespaceName, customUserID, customGroupID, nil)
+	_, err = define.TapNad(
+		APIClient, tapNetworkTwo, tsparams.TestNamespaceName, customUserID, customGroupID, secondTapSysctlConfig)
 	Expect(err).ToNot(HaveOccurred(), "Fail to create second tap NetworkAttachmentDefinition")
 }
 
 func defineAndCreateSrIovNetworks(firstSrIovNetworkVlanID, secondSrIovNetworkVlanID uint16) {
 	By("Creating srIovNetwork sriov-net-one")
-	defaultAndCreateSrIovNetwork(srIovNetworkOneName, srIovPolicyOneResName, firstSrIovNetworkVlanID)
+	defineAndCreateSrIovNetwork(srIovNetworkOneName, srIovPolicyOneResName, firstSrIovNetworkVlanID)
 
 	By("Creating srIovNetwork sriov-net-two")
-	defaultAndCreateSrIovNetwork(srIovNetworkTwoName, srIovNetworkTwoResName, secondSrIovNetworkVlanID)
+	defineAndCreateSrIovNetwork(srIovNetworkTwoName, srIovNetworkTwoResName, secondSrIovNetworkVlanID)
 }
 
-func defaultAndCreateSrIovNetwork(srIovNetwork, resName string, vlanID uint16) {
+func defineAndCreateIPVlanNad(name, intName string, ipam *nad.IPAM) *nad.Builder {
+	ipVlanNad, err := define.IPVlanNad(APIClient, name, tsparams.TestNamespaceName, intName, ipam)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create ipVlan NetworkAttachmentDefinition")
+
+	return ipVlanNad
+}
+
+func defineAndCreateVlanNad(name, intName string, vlanID uint16, ipam *nad.IPAM) *nad.Builder {
+	vlanNad, err := define.VlanNad(APIClient, name, tsparams.TestNamespaceName, intName, vlanID, ipam)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create vlan NetworkAttachmentDefinition")
+
+	return vlanNad
+}
+
+func defineAndCreateSrIovNetwork(srIovNetwork, resName string, vlanID uint16) {
 	srIovNetworkObject := sriov.NewNetworkBuilder(
 		APIClient, srIovNetwork, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, resName).
 		WithMacAddressSupport()
@@ -386,7 +495,7 @@ func defaultAndCreateSrIovNetwork(srIovNetwork, resName string, vlanID uint16) {
 		_, err := nad.Pull(APIClient, srIovNetworkObject.Object.Name, tsparams.TestNamespaceName)
 
 		return err == nil
-	}, tsparams.WaitTimeout, 3*time.Second).Should(BeTrue(), "Fail to pull NetworkAttachmentDefinition")
+	}, tsparams.WaitTimeout, tsparams.RetryInterval).Should(BeTrue(), "Fail to pull NetworkAttachmentDefinition")
 }
 
 func defineAndCreateDPDKPod(
@@ -572,4 +681,52 @@ func getPCIAddressListFromSrIovNetworkName(podNetworkStatus, srIovNetworkName st
 	}
 
 	return pciAddressList, nil
+}
+
+func verifySysctlKernelParametersConfiguredOnPodInterface(
+	podUnderTest *pod.Builder, sysctlPluginConfig map[string]string, interfaceName string) {
+	for key, value := range sysctlPluginConfig {
+		sysctlKernelParam := strings.Replace(key, "IFNAME", interfaceName, 1)
+
+		By(fmt.Sprintf("Validate sysctl flag: %s has the right value in pod's interface: %s",
+			sysctlKernelParam, interfaceName))
+
+		cmdBuffer, err := podUnderTest.ExecCommand([]string{"sysctl", "-n", sysctlKernelParam})
+		Expect(err).ToNot(HaveOccurred(), "Fail to execute cmd command on the pod")
+		Expect(strings.TrimSpace(cmdBuffer.String())).To(BeIdenticalTo(value),
+			"sysctl kernel param is not in expected state")
+	}
+}
+
+func defineRoute(dstNet, nextHop, devName, mode string) []string {
+	return []string{"/bin/bash", "-c", fmt.Sprintf("route %s -net %s gw %s dev %s", mode, dstNet, nextHop, devName)}
+}
+
+func setRouteOnPod(client *pod.Builder, dstNet, nextHop, devName string) (bytes.Buffer, error) {
+	cmd := defineRoute(dstNet, nextHop, devName, "add")
+
+	return client.ExecCommand(cmd)
+}
+
+func delRouteOnPod(client *pod.Builder, dstNet, nextHop, devName string) (bytes.Buffer, error) {
+	cmd := defineRoute(dstNet, nextHop, devName, "del")
+
+	return client.ExecCommand(cmd)
+}
+
+func verifyIfRouteExist(clientPod *pod.Builder, dstNetwork, gateway, nextHostInterface string, expectedState bool) {
+	buff, err := clientPod.ExecCommand([]string{"route", "-n"})
+	Expect(err).ToNot(HaveOccurred())
+
+	var doesRoutePresent bool
+
+	for _, line := range strings.Split(buff.String(), "\n") {
+		if strings.Contains(line, dstNetwork) &&
+			strings.Contains(line, gateway) &&
+			strings.Contains(line, nextHostInterface) {
+			doesRoutePresent = true
+		}
+	}
+
+	Expect(doesRoutePresent).To(BeIdenticalTo(expectedState), "Fail to find required route")
 }
