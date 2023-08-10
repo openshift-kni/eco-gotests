@@ -200,6 +200,97 @@ func (builder *Builder) WithSecondaryNetwork(networks []*multus.NetworkSelection
 	return builder
 }
 
+// WithHugePages sets hugePages on all containers inside the deployment.
+func (builder *Builder) WithHugePages() *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Applying hugePages configuration to all containers in deployment: %s",
+		builder.Definition.Name)
+
+	if builder.Definition.Spec.Template.Spec.Volumes != nil {
+		builder.Definition.Spec.Template.Spec.Volumes = append(builder.Definition.Spec.Template.Spec.Volumes, coreV1.Volume{
+			Name: "hugepages", VolumeSource: coreV1.VolumeSource{
+				EmptyDir: &coreV1.EmptyDirVolumeSource{Medium: "HugePages"}}})
+	} else {
+		builder.Definition.Spec.Template.Spec.Volumes = []coreV1.Volume{
+			{Name: "hugepages", VolumeSource: coreV1.VolumeSource{
+				EmptyDir: &coreV1.EmptyDirVolumeSource{Medium: "HugePages"}},
+			},
+		}
+	}
+
+	for idx := range builder.Definition.Spec.Template.Spec.Containers {
+		if builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts != nil {
+			builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts = append(
+				builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts,
+				coreV1.VolumeMount{Name: "hugepages", MountPath: "/mnt/huge"})
+		} else {
+			builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts = []coreV1.VolumeMount{{
+				Name:      "hugepages",
+				MountPath: "/mnt/huge",
+			},
+			}
+		}
+	}
+
+	return builder
+}
+
+// WithSecurityContext sets SecurityContext on deployment definition.
+func (builder *Builder) WithSecurityContext(securityContext *coreV1.PodSecurityContext) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Applying SecurityContext configuration on deployment %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if securityContext == nil {
+		glog.V(100).Infof("The 'securityContext' of the deployment is empty")
+
+		builder.errorMsg = "'securityContext' parameter is empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.Template.Spec.SecurityContext = securityContext
+
+	return builder
+}
+
+// WithLabel applies label to deployment's definition.
+func (builder *Builder) WithLabel(labelKey, labelValue string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(fmt.Sprintf("Defining deployment's label to %s:%s", labelKey, labelValue))
+
+	if labelKey == "" {
+		glog.V(100).Infof("The 'labelKey' of the deployment is empty")
+
+		builder.errorMsg = "can not apply empty labelKey"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	if builder.Definition.Spec.Template.Labels == nil {
+		builder.Definition.Spec.Template.Labels = map[string]string{labelKey: labelValue}
+
+		return builder
+	}
+
+	builder.Definition.Spec.Template.Labels[labelKey] = labelValue
+
+	return builder
+}
+
 // WithOptions creates deployment with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {

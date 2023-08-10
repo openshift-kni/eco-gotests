@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -38,9 +39,9 @@ const (
 	tapNetworkTwo                = "tap-two"
 	vlanNetworkOne               = "vlan-one"
 	vlanNetworkTwo               = "vlan-two"
+	ipVlanNetworkOne             = "ip-vlan-one"
 	macVlanNetworkOne            = "mac-vlan-one"
 	macVlanNetworkTwo            = "mac-vlan-two"
-	ipVlanNetworkOne             = "ip-vlan-one"
 	tapOneInterfaceName          = "ext0"
 	tapTwoInterfaceName          = "ext1"
 	defaultWhereAboutNetwork     = "1.1.1.0/24"
@@ -185,7 +186,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		})
 
 		It("single VF, multiple tap devices, multiple mac-vlans", polarion.ID("63806"), func() {
-			defineAndCreateSrIovNetworks(0, vlanID)
+			defineAndCreateSrIovNetworks(vlanID)
 			defineAndCreateTapNADs(nil, nil)
 
 			By("Creating first mac-vlan NetworkAttachmentDefinition")
@@ -244,7 +245,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		It("multiple VFs, one tap plus MAC-VLAN, second tap plus 2 VLANs, filter untagged and tagged traffic",
 			polarion.ID("63818"), func() {
-				defineAndCreateSrIovNetworks(0, vlanID)
+				defineAndCreateSrIovNetworks(vlanID)
 				defineAndCreateTapNADs(nil, nil)
 
 				By("Creating mac-vlan one")
@@ -302,7 +303,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				Eventually(
 					isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
 				pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-					clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"], srIovNetworkOneName)
+					clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 				Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 				By("Running client dpdk-testpmd")
@@ -322,7 +323,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		It("multiple VFs, one tap plus IP-VLANs, second tap plus plus VLAN and sysctl, filter untagged and tagged"+
 			" traffic, add and remove routes", polarion.ID("63878"), func() {
-			defineAndCreateSrIovNetworks(0, vlanID)
+			defineAndCreateSrIovNetworks(vlanID)
 			defineAndCreateTapNADs(enabledSysctlFlags, disabledSysctlFlags)
 
 			serverPodOneNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
@@ -364,7 +365,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Eventually(
 				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
 			pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-				clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"], srIovNetworkOneName)
+				clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
@@ -382,25 +383,139 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 					secondInterfaceBasedOnTapOne: maxMulticastNoiseRate,
 				})
 
-			By("Verifying sysctl plugin configuration")
+			testRouteInjection(clientPod, firstInterfaceBasedOnTapOne)
+		})
 
-			nextHopIPAddr := "1.1.1.10"
-			verifySysctlKernelParametersConfiguredOnPodInterface(clientPod, enabledSysctlFlags, tapOneInterfaceName)
-			verifySysctlKernelParametersConfiguredOnPodInterface(clientPod, disabledSysctlFlags, tapTwoInterfaceName)
+		It("multiple VFs, one tap with VLAN plus sysctl, second tap with two mac-vlans plus sysctl, filter untagged "+
+			"and tagged traffic, add and remove routes, deployment restart", polarion.ID("63846"), func() {
 
-			By("Adding route to rootless pod")
-			_, err = setRouteOnPod(clientPod, networkForRouteTest, nextHopIPAddr, firstInterfaceBasedOnTapOne)
-			Expect(err).ToNot(HaveOccurred())
+			defineAndCreateSrIovNetworks(vlanID)
+			defineAndCreateTapNADs(enabledSysctlFlags, disabledSysctlFlags)
 
-			By("Verifying if route exist in rootless pod")
-			verifyIfRouteExist(clientPod, "10.10.10.0", nextHopIPAddr, firstInterfaceBasedOnTapOne, true)
+			By("Creating vlan-one NetworkAttachmentDefinition")
+			defineAndCreateVlanNad(vlanNetworkOne, tapOneInterfaceName, vlanID, defaultWhereaboutIPAM)
 
-			By("Removing route from rootless pod")
-			_, err = delRouteOnPod(clientPod, networkForRouteTest, nextHopIPAddr, firstInterfaceBasedOnTapOne)
-			Expect(err).ToNot(HaveOccurred())
+			By("Creating mac-vlan one NetworkAttachmentDefinition")
+			_, err := define.MacVlanNad(
+				APIClient, macVlanNetworkOne, tsparams.TestNamespaceName, tapTwoInterfaceName, defaultWhereaboutIPAM)
+			Expect(err).ToNot(HaveOccurred(), "Fail to create first mac-vlan NetworkAttachmentDefinition")
 
-			By("Verifying if route was removed from rootless pod")
-			verifyIfRouteExist(clientPod, "10.10.10.0", nextHopIPAddr, firstInterfaceBasedOnTapOne, false)
+			By("Creating mac-vlan two NetworkAttachmentDefinition")
+			_, err = define.MacVlanNad(
+				APIClient, macVlanNetworkOne, tsparams.TestNamespaceName, tapTwoInterfaceName, defaultWhereaboutIPAM)
+			Expect(err).ToNot(HaveOccurred(), "Fail to create second mac-vlan NetworkAttachmentDefinition")
+
+			By("Creating first server pod")
+			serverPodOneNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
+				srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMac)
+			srvCmdOne := defineTestServerPmdCmd(dpdkClientMac, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYTWO}", "")
+			defineAndCreateDPDKPod(
+				"serverpod-one", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodOneNetConfig, srvCmdOne)
+
+			By("Creating second server pod")
+			serverPodTwoNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
+				srIovNetworkOneName, tsparams.TestNamespaceName, dpdkServerMacTwo)
+			srvCmdTwo := defineTestServerPmdCmd(dpdkClientMacTwo, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}", "")
+			defineAndCreateDPDKPod(
+				"serverpod-two", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodTwoNetConfig, srvCmdTwo)
+
+			By("Creating SCC")
+			_, err = scc.NewBuilder(APIClient, "scc-test-admin", "MustRunAsNonRoot", "RunAsAny").
+				WithPrivilegedContainer(false).WithPrivilegedEscalation(true).
+				WithDropCapabilities([]v1.Capability{"ALL"}).
+				WithAllowCapabilities([]v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_ADMIN"}).
+				WithFSGroup("RunAsAny").
+				WithSeccompProfiles([]string{"*"}).
+				WithSupplementalGroups("RunAsAny").
+				WithUsers([]string{"system:serviceaccount:dpdk-tests:default"}).Create()
+			Expect(err).ToNot(HaveOccurred(), "Fail to create SCC")
+
+			By("Creating client deployment")
+			secondInterfaceBasedOnTapTwo := "ext1.2"
+			firstVlanInterfaceBasedOnTapOne := fmt.Sprintf("%s.%d", tapOneInterfaceName, vlanID)
+			clientPodNetConfig := definePodNetwork([]map[string]string{
+				{"netName": srIovNetworkOneName, "macAddr": dpdkClientMac},
+				{"netName": srIovNetworkOneName, "macAddr": dpdkClientMacTwo},
+				{"netName": tapNetworkOne, "intName": tapOneInterfaceName},
+				{"netName": tapNetworkTwo, "intName": tapTwoInterfaceName},
+				{"netName": vlanNetworkOne, "intName": firstVlanInterfaceBasedOnTapOne},
+				{"netName": macVlanNetworkOne, "intName": firstInterfaceBasedOnTapTwo, "macAddr": dpdkClientMacTwo},
+				{"netName": macVlanNetworkOne, "intName": secondInterfaceBasedOnTapTwo}})
+
+			deploymentContainer := pod.NewContainerBuilder("dpdk", NetConfig.DpdkTestContainer, sleepCMD)
+			deploymentContainerCfg, err := deploymentContainer.WithSecurityContext(&clientSC).
+				WithResourceLimit("2Gi", "1Gi", 4).
+				WithResourceRequest("2Gi", "1Gi", 4).
+				WithEnvVar("RUN_TYPE", "testcmd").
+				GetContainerCfg()
+			Expect(err).ToNot(HaveOccurred(), "Fail to get deployment container config")
+
+			_, err = deployment.NewBuilder(
+				APIClient, "deployment-one", tsparams.TestNamespaceName, map[string]string{"test": "dpdk"}, deploymentContainerCfg).
+				WithNodeSelector(map[string]string{"kubernetes.io/hostname": workerNodes.Objects[1].Definition.Name}).
+				WithSecurityContext(&clientPodSC).
+				WithLabel("test", "dpdk").
+				WithSecondaryNetwork(clientPodNetConfig).
+				WithHugePages().
+				CreateAndWaitUntilReady(tsparams.WaitTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Fail to create deployment")
+			deploymentPod := fetchNewDeploymentPod("deployment-one")
+
+			By("Collecting PCI Address")
+			Eventually(
+				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(deploymentPod).Should(BeTrue())
+			pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
+				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
+			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
+
+			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+
+			checkRxOutputRateForInterfaces(
+				deploymentPod, map[string]int{
+					tapOneInterfaceName:             minimumExpectedDPDKRate,
+					firstVlanInterfaceBasedOnTapOne: minimumExpectedDPDKRate,
+				})
+
+			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+
+			checkRxOutputRateForInterfaces(
+				deploymentPod, map[string]int{
+					tapTwoInterfaceName:          minimumExpectedDPDKRate,
+					firstInterfaceBasedOnTapTwo:  minimumExpectedDPDKRate,
+					secondInterfaceBasedOnTapTwo: maxMulticastNoiseRate,
+				})
+
+			testRouteInjection(deploymentPod, firstVlanInterfaceBasedOnTapOne)
+
+			By("Removing previous deployment pod")
+			_, err = deploymentPod.DeleteAndWait(tsparams.WaitTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Fail to remove deployment pod")
+
+			By("Collecting re-started deployment pods")
+			deploymentPod = fetchNewDeploymentPod("deployment-one")
+
+			By("Collecting PCI Address")
+			Eventually(
+				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(deploymentPod).Should(BeTrue())
+			pciAddressList, err = getPCIAddressListFromSrIovNetworkName(
+				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
+			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
+
+			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			checkRxOutputRateForInterfaces(
+				deploymentPod, map[string]int{
+					tapOneInterfaceName:             minimumExpectedDPDKRate,
+					firstVlanInterfaceBasedOnTapOne: minimumExpectedDPDKRate,
+				})
+			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			checkRxOutputRateForInterfaces(
+				deploymentPod, map[string]int{
+					tapTwoInterfaceName:          minimumExpectedDPDKRate,
+					firstInterfaceBasedOnTapTwo:  minimumExpectedDPDKRate,
+					secondInterfaceBasedOnTapTwo: maxMulticastNoiseRate,
+				})
+
+			testRouteInjection(deploymentPod, firstVlanInterfaceBasedOnTapOne)
 		})
 	})
 
@@ -413,8 +528,8 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		By("Removing all pods from test namespace")
 		runningNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull namespace")
-		Expect(runningNamespace.CleanObjects(300*time.Second, pod.GetGVR(), nad.GetGVR())).ToNot(HaveOccurred())
-
+		Expect(runningNamespace.CleanObjects(
+			tsparams.WaitTimeout, pod.GetGVR(), deployment.GetGVR(), nad.GetGVR())).ToNot(HaveOccurred())
 	})
 
 	AfterAll(func() {
@@ -423,6 +538,10 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull namespace")
 		Expect(runningNamespace.CleanObjects(tsparams.WaitTimeout, pod.GetGVR())).ToNot(HaveOccurred(),
 			"Fail to clean namespace")
+
+		By("Re-setting selinux flag container_use_devices to 0 on all compute nodes")
+		err = cluster.ExecCmd(APIClient, NetConfig.WorkerLabel, setSEBool+"0")
+		Expect(err).ToNot(HaveOccurred(), "Fail to disable selinux flag")
 
 		By("Removing all SR-IOV Policy")
 		err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metaV1.ListOptions{})
@@ -457,9 +576,9 @@ func defineAndCreateTapNADs(firstTapSysctlConfig, secondTapSysctlConfig map[stri
 	Expect(err).ToNot(HaveOccurred(), "Fail to create second tap NetworkAttachmentDefinition")
 }
 
-func defineAndCreateSrIovNetworks(firstSrIovNetworkVlanID, secondSrIovNetworkVlanID uint16) {
+func defineAndCreateSrIovNetworks(secondSrIovNetworkVlanID uint16) {
 	By("Creating srIovNetwork sriov-net-one")
-	defineAndCreateSrIovNetwork(srIovNetworkOneName, srIovPolicyOneResName, firstSrIovNetworkVlanID)
+	defineAndCreateSrIovNetwork(srIovNetworkOneName, srIovPolicyOneResName, 0)
 
 	By("Creating srIovNetwork sriov-net-two")
 	defineAndCreateSrIovNetwork(srIovNetworkTwoName, srIovNetworkTwoResName, secondSrIovNetworkVlanID)
@@ -651,7 +770,7 @@ func isPciAddressAvailable(clientPod *pod.Builder) bool {
 
 	var err error
 
-	pciAddressList, err := getPCIAddressListFromSrIovNetworkName(podNetAnnotation, srIovNetworkOneName)
+	pciAddressList, err := getPCIAddressListFromSrIovNetworkName(podNetAnnotation)
 
 	if err != nil {
 		return false
@@ -664,7 +783,7 @@ func isPciAddressAvailable(clientPod *pod.Builder) bool {
 	return true
 }
 
-func getPCIAddressListFromSrIovNetworkName(podNetworkStatus, srIovNetworkName string) ([]string, error) {
+func getPCIAddressListFromSrIovNetworkName(podNetworkStatus string) ([]string, error) {
 	var podNetworkStatusType []podNetworkAnnotation
 	err := json.Unmarshal([]byte(podNetworkStatus), &podNetworkStatusType)
 
@@ -675,7 +794,7 @@ func getPCIAddressListFromSrIovNetworkName(podNetworkStatus, srIovNetworkName st
 	var pciAddressList []string
 
 	for _, networkAnnotation := range podNetworkStatusType {
-		if strings.Contains(networkAnnotation.Name, srIovNetworkName) {
+		if strings.Contains(networkAnnotation.Name, srIovNetworkOneName) {
 			pciAddressList = append(pciAddressList, networkAnnotation.DeviceInfo.Pci.PciAddress)
 		}
 	}
@@ -729,4 +848,52 @@ func verifyIfRouteExist(clientPod *pod.Builder, dstNetwork, gateway, nextHostInt
 	}
 
 	Expect(doesRoutePresent).To(BeIdenticalTo(expectedState), "Fail to find required route")
+}
+
+func fetchNewDeploymentPod(deploymentPodPrefix string) *pod.Builder {
+	By("Re-Collecting deployment pods")
+
+	var deploymentPod *pod.Builder
+
+	Eventually(func() bool {
+		namespacePodList, _ := pod.List(APIClient, tsparams.TestNamespaceName, metaV1.ListOptions{})
+		for _, namespacePod := range namespacePodList {
+			if strings.Contains(namespacePod.Definition.Name, deploymentPodPrefix) {
+				deploymentPod = namespacePod
+
+				return true
+			}
+		}
+
+		return false
+
+	}, time.Minute, 300*time.Second).Should(BeTrue(), "Failed to collect deployment pods")
+
+	err := deploymentPod.WaitUntilRunning(300 * time.Second)
+	Expect(err).ToNot(HaveOccurred(), "Fail to wait until deployment pod is running")
+
+	return deploymentPod
+}
+
+func testRouteInjection(clientPod *pod.Builder, nextHopInterface string) {
+	By("Verifying sysctl plugin configuration")
+	verifySysctlKernelParametersConfiguredOnPodInterface(clientPod, enabledSysctlFlags, tapOneInterfaceName)
+	verifySysctlKernelParametersConfiguredOnPodInterface(clientPod, disabledSysctlFlags, tapTwoInterfaceName)
+
+	By("Adding route to rootless pod")
+
+	nextHopIPAddr := "1.1.1.10"
+	_, err := setRouteOnPod(clientPod, networkForRouteTest, nextHopIPAddr, nextHopInterface)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Verifying if route exist in rootless pod")
+	verifyIfRouteExist(clientPod, "10.10.10.0", nextHopIPAddr, nextHopInterface, true)
+
+	By("Removing route from rootless pod")
+
+	_, err = delRouteOnPod(clientPod, networkForRouteTest, nextHopIPAddr, nextHopInterface)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("Verifying if route was removed from rootless pod")
+	verifyIfRouteExist(clientPod, "10.10.10.0", nextHopIPAddr, nextHopInterface, false)
 }
