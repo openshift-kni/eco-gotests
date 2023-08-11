@@ -149,6 +149,10 @@ func (builder *ModuleBuilder) WithDevicePluginVolume(name string, configMapName 
 		return builder
 	}
 
+	if builder.Definition.Spec.DevicePlugin == nil {
+		builder.Definition.Spec.DevicePlugin = &moduleV1Beta1.DevicePluginSpec{}
+	}
+
 	builder.Definition.Spec.DevicePlugin.Volumes = append(builder.Definition.Spec.DevicePlugin.Volumes, v1.Volume{
 		Name: name,
 		VolumeSource: v1.VolumeSource{
@@ -195,6 +199,10 @@ func (builder *ModuleBuilder) WithDevicePluginContainer(
 
 	if builder.errorMsg != "" {
 		return builder
+	}
+
+	if builder.Definition.Spec.DevicePlugin == nil {
+		builder.Definition.Spec.DevicePlugin = &moduleV1Beta1.DevicePluginSpec{}
 	}
 
 	builder.Definition.Spec.DevicePlugin.Container = *container
@@ -359,6 +367,10 @@ func (builder *ModuleBuilder) withServiceAccount(srvAccountName string, accountT
 	case "module":
 		builder.Definition.Spec.ModuleLoader.ServiceAccountName = srvAccountName
 	case "device":
+		if builder.Definition.Spec.DevicePlugin == nil {
+			builder.Definition.Spec.DevicePlugin = &moduleV1Beta1.DevicePluginSpec{}
+		}
+
 		builder.Definition.Spec.DevicePlugin.ServiceAccountName = srvAccountName
 	default:
 		builder.errorMsg = "invalid account type parameter. Supported parameters are: 'module', 'device'"
