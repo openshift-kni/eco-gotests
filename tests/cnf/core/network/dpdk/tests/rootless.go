@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -55,6 +56,8 @@ const (
 	secondInterfaceBasedOnTapOne = "ext0.2"
 	firstInterfaceBasedOnTapTwo  = "ext1.1"
 	timeoutError                 = "command terminated with exit code 124"
+	mlxVendorID                  = "15b3"
+	intelVendorID                = "8086"
 	maxMulticastNoiseRate        = 5000
 	minimumExpectedDPDKRate      = 1000000
 	customUserID                 = 2005
@@ -91,7 +94,7 @@ var (
 	clientSC = v1.SecurityContext{
 		Capabilities: &v1.Capabilities{
 			Drop: []v1.Capability{"ALL"},
-			Add:  []v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_ADMIN"},
+			Add:  []v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_ADMIN", "NET_RAW"},
 		},
 		RunAsUser:                &customSCCUserID,
 		Privileged:               &falseFlag,
@@ -112,6 +115,7 @@ var (
 
 	defaultWhereaboutIPAM = nad.IPAMWhereAbouts(defaultWhereAboutNetwork, defaultWhereAboutGW)
 	vlanID                uint16
+	nicVendor             string
 )
 
 type podNetworkAnnotation struct {
@@ -148,27 +152,45 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			srIovInterfacesUnderTest, err := NetConfig.GetSriovInterfaces(1)
 			Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
-			By("Creating first dpdk-policy")
-			_, err = sriov.NewPolicyBuilder(
-				APIClient,
-				"dpdk-policy-one",
-				NetConfig.SriovOperatorNamespace,
-				srIovPolicyOneResName,
-				5,
-				[]string{fmt.Sprintf("%s#0-1", srIovInterfacesUnderTest[0])},
-				NetConfig.WorkerLabelMap).WithMTU(1500).WithDevType("vfio-pci").WithVhostNet(true).Create()
-			Expect(err).ToNot(HaveOccurred(), "Fail to create dpdk policy")
+			By("Collection SR-IOV interfaces from Nodes")
+			nicVendor, err = discoverNICVendor(srIovInterfacesUnderTest[0], workerNodes.Objects[0].Definition.Name)
+			Expect(err).ToNot(HaveOccurred(), "failed to discover NIC vendor %s", srIovInterfacesUnderTest[0])
 
-			By("Creating second dpdk-policy")
-			_, err = sriov.NewPolicyBuilder(
-				APIClient,
-				"dpdk-policy-two",
-				NetConfig.SriovOperatorNamespace,
-				srIovNetworkTwoResName,
-				5,
-				[]string{fmt.Sprintf("%s#2-4", srIovInterfacesUnderTest[0])},
-				NetConfig.WorkerLabelMap).WithMTU(1500).WithDevType("vfio-pci").WithVhostNet(false).Create()
-			Expect(err).ToNot(HaveOccurred(), "Fail to create dpdk policy")
+			By("Defining dpdk-policies")
+			srIovPolicies := []*sriov.PolicyBuilder{
+				sriov.NewPolicyBuilder(
+					APIClient,
+					"dpdk-policy-one",
+					NetConfig.SriovOperatorNamespace,
+					srIovPolicyOneResName,
+					5,
+					[]string{fmt.Sprintf("%s#0-1", srIovInterfacesUnderTest[0])},
+					NetConfig.WorkerLabelMap).WithMTU(1500).WithVhostNet(true),
+				sriov.NewPolicyBuilder(
+					APIClient,
+					"dpdk-policy-two",
+					NetConfig.SriovOperatorNamespace,
+					srIovNetworkTwoResName,
+					5,
+					[]string{fmt.Sprintf("%s#2-4", srIovInterfacesUnderTest[0])},
+					NetConfig.WorkerLabelMap).WithMTU(1500).WithVhostNet(false),
+			}
+
+			for index := range srIovPolicies {
+				srIovPolicyName := srIovPolicies[index].Definition.Name
+				switch nicVendor {
+				case mlxVendorID:
+					By(fmt.Sprintf("Adding Mlx specific configuration to dpdk-policy %s", srIovPolicyName))
+					srIovPolicies[index].WithDevType("netdevice").WithRDMA(true)
+				case intelVendorID:
+					By(fmt.Sprintf("Adding Intel specific configuration to dpdk-policy %s", srIovPolicyName))
+					srIovPolicies[index].WithDevType("vfio-pci")
+				}
+				By(fmt.Sprintf("Creating dpdk-policy %s", srIovPolicyName))
+				_, err = srIovPolicies[index].Create()
+				Expect(err).ToNot(HaveOccurred(),
+					fmt.Sprintf("Fail to create %s dpdk policy", srIovPolicies[index].Definition.Name))
+			}
 
 			By("Waiting until cluster is stable")
 			err = mcp.WaitToBeStableFor(time.Minute, tsparams.MCOWaitTimeout)
@@ -205,7 +227,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMac)
 			defineAndCreateDPDKPod(
 				"serverpod",
-				workerNodes.Objects[1].Definition.Name,
+				workerNodes.Objects[0].Definition.Name,
 				serverSC,
 				nil,
 				serverPodNetConfig,
@@ -423,7 +445,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			_, err = scc.NewBuilder(APIClient, "scc-test-admin", "MustRunAsNonRoot", "RunAsAny").
 				WithPrivilegedContainer(false).WithPrivilegedEscalation(true).
 				WithDropCapabilities([]v1.Capability{"ALL"}).
-				WithAllowCapabilities([]v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_ADMIN"}).
+				WithAllowCapabilities([]v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_ADMIN", "NET_RAW"}).
 				WithFSGroup("RunAsAny").
 				WithSeccompProfiles([]string{"*"}).
 				WithSupplementalGroups("RunAsAny").
@@ -896,4 +918,32 @@ func testRouteInjection(clientPod *pod.Builder, nextHopInterface string) {
 
 	By("Verifying if route was removed from rootless pod")
 	verifyIfRouteExist(clientPod, "10.10.10.0", nextHopIPAddr, nextHopInterface, false)
+}
+
+func discoverNICVendor(srIovInterfaceUnderTest, workerNodeName string) (string, error) {
+	upSrIovInterfaces, err := sriov.NewNetworkNodeStateBuilder(
+		APIClient, workerNodeName, NetConfig.SriovOperatorNamespace).GetUpNICs()
+
+	if err != nil {
+		return "", err
+	}
+
+	for _, srIovInterface := range upSrIovInterfaces {
+		if srIovInterface.Name == srIovInterfaceUnderTest {
+			switch srIovInterface.Vendor {
+			case mlxVendorID:
+				glog.V(90).Infof("Mellanox NIC detected")
+
+				return mlxVendorID, nil
+			case intelVendorID:
+				glog.V(90).Infof("Intel NIC detected")
+
+				return intelVendorID, nil
+			default:
+				return "", fmt.Errorf("fail to discover vendor ID for network interface %s", srIovInterfaceUnderTest)
+			}
+		}
+	}
+
+	return "", fmt.Errorf("fail to discover interface: %s on worker node %s", srIovInterfaceUnderTest, workerNodeName)
 }
