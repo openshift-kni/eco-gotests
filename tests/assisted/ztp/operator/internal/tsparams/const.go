@@ -11,6 +11,9 @@ const (
 	// for test cases selection.
 	LabelImageServiceStatefulsetTestCases = "image-service-statefulset"
 
+	// LabelConvergedFlowEnabled represents converged-flow-enabled label that can be used for test cases selection.
+	LabelConvergedFlowEnabled = "converged-flow-enabled"
+
 	// LabelAssistedPodsNoRestartsTestCases represents assisted-pods-no-restarts label that can be used
 	// for test cases selection.
 	LabelAssistedPodsNoRestartsTestCases = "assisted-pods-no-restarts"
