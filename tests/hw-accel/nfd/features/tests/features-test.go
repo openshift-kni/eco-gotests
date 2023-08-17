@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	nfdManager "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams/deploy"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
 	getLabels "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
@@ -35,6 +35,11 @@ var _ = Describe("NFD", Ordered, func() {
 		})
 		BeforeAll(func() {
 			By("Creating nfd")
+
+			if labelExist, labelsError := wait.WaitForLabel(APIClient, "feature"); !labelExist || labelsError != nil {
+				glog.Fatalf("feature labels was not found in the given time error=%v", labelsError)
+			}
+
 			err := nfdManager.DeployNfd(180)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 		})

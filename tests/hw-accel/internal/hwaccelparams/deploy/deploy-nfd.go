@@ -9,7 +9,7 @@ import (
 	deploymentbuilder "github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	ns "github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	nodefeature "github.com/openshift-kni/eco-goinfra/pkg/nfd"
-	olm "github.com/openshift-kni/eco-goinfra/pkg/olm"
+	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,7 +24,7 @@ const (
 
 const (
 	// OperatorGroup enum value type.
-	OperatorGroup builderType = iota
+	OperatorGroup nfdBridgeBuilderType = iota
 	// NodeFeatureDiscovery enum value type.
 	NodeFeatureDiscovery
 	// Subscription enum value type.
@@ -35,14 +35,31 @@ const (
 	NameSpace
 )
 
-type builderType int
+type nfdBridgeBuilderType int
 
-type builder interface {
+type nfdBridgeBuilder interface {
 	Delete() error
+	Exists() bool
 }
 
 type nfdAdapter struct {
 	nodeFeatureBuilder *nodefeature.Builder
+}
+
+func deleteAndWait(builder nfdBridgeBuilder, timeout time.Duration) error {
+	if err := builder.Delete(); err != nil {
+		return err
+	}
+
+	return wait.PollImmediate(time.Second, timeout*5, func() (bool, error) {
+		isFound := builder.Exists()
+		if isFound {
+
+			return false, nil
+		}
+
+		return true, nil
+	})
 }
 
 // NfdAPIResource object that represents NodeFeatureDiscoery resource with API client.
@@ -174,6 +191,10 @@ func (n nfdAdapter) Delete() error {
 	return err
 }
 
+func (n nfdAdapter) Exists() bool {
+	return n.nodeFeatureBuilder.Exists()
+}
+
 // IsDeploymentReady check and wait for nfd deployment status.
 func (n *NfdAPIResource) IsDeploymentReady(waitTime time.Duration,
 	deployment string) (bool, error) {
@@ -281,10 +302,10 @@ func findCSV(namespace string) (string, error) {
 }
 
 func (n *NfdAPIResource) removeResource(resourceName string,
-	builderType builderType) error {
+	builderType nfdBridgeBuilderType) error {
 	var err error
 
-	var builder builder
+	var builder nfdBridgeBuilder
 
 	var nfdbuilder *nodefeature.Builder
 
@@ -325,11 +346,11 @@ func (n *NfdAPIResource) removeResource(resourceName string,
 			resourceName, n.Namespace)
 	}
 
-	err = builder.Delete()
+	err = deleteAndWait(builder, 60*time.Second)
 
 	if err != nil {
 		return err
 	}
 
-	return err
+	return nil
 }
