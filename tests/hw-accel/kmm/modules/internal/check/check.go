@@ -47,7 +47,10 @@ func NodeLabel(apiClient *clients.Settings, moduleName string, nodeSelector map[
 // ModuleLoaded verifies the module is loaded on the node.
 func ModuleLoaded(apiClient *clients.Settings, modName, nsname string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		pods, err := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: "status.phase=Running"})
+		pods, err := pod.List(apiClient, nsname, v1.ListOptions{
+			FieldSelector: "status.phase=Running",
+			LabelSelector: "kmm.node.kubernetes.io/kernel-version.full",
+		})
 
 		if err != nil {
 			glog.V(kmmparams.KmmLogLevel).Infof("deployment list error: %s\n", err)

@@ -5,6 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
@@ -32,7 +36,7 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 			for _, podObj := range pods {
 				if strings.Contains(podObj.Object.Name, "-build") {
 					buildPod[nsname] = podObj.Object.Name
-					glog.V(kmmparams.KmmLogLevel).Infof("\rBuild podObj '%s' is Running\n", podObj.Object.Name)
+					glog.V(kmmparams.KmmLogLevel).Infof("Build podObj '%s' is Running\n", podObj.Object.Name)
 
 				}
 			}
@@ -54,32 +58,19 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 }
 
 // ModuleDeployment awaits module to de deployed.
-func ModuleDeployment(apiClient *clients.Settings,
-	nsname string, timeout time.Duration, selector map[string]string) error {
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		pods, err := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: "status.phase=Running"})
+func ModuleDeployment(apiClient *clients.Settings, moduleName, nsname string,
+	timeout time.Duration, selector map[string]string) error {
+	label := fmt.Sprintf(tsparams.ModuleNodeLabelTemplate, moduleName, nsname)
 
-		if err != nil {
-			glog.V(kmmparams.KmmLogLevel).Infof("deployment list error: %s", err)
+	return deploymentPerLabel(apiClient, moduleName, label, timeout, selector)
+}
 
-			return false, err
-		}
+// DeviceDriverDeployment awaits device driver pods to de deployed.
+func DeviceDriverDeployment(apiClient *clients.Settings, moduleName, nsname string,
+	timeout time.Duration, selector map[string]string) error {
+	label := fmt.Sprintf(tsparams.DevicePluginNodeLabelTemplate, moduleName, nsname)
 
-		nodes, err := get.NumberOfNodesForSelector(apiClient, selector)
-
-		if err != nil {
-			glog.V(kmmparams.KmmLogLevel).Infof("nodes list error: %s", err)
-
-			return false, err
-		}
-
-		glog.V(kmmparams.KmmLogLevel).Infof("Number of nodes: %v, Number of 'Running' pods: %v\n", nodes, len(pods))
-		if nodes == len(pods) {
-			return true, nil
-		}
-
-		return true, err
-	})
+	return deploymentPerLabel(apiClient, moduleName, label, timeout, selector)
 }
 
 // ModuleUndeployed awaits module pods to be undeployed.
@@ -96,5 +87,44 @@ func ModuleUndeployed(apiClient *clients.Settings, nsName string, timeout time.D
 		glog.V(kmmparams.KmmLogLevel).Infof("current number of pods: %v\n", len(pods))
 
 		return len(pods) == 0, nil
+	})
+}
+
+func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
+	timeout time.Duration, selector map[string]string) error {
+	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
+		var err error
+		nodeBuilder := nodes.NewBuilder(apiClient, selector)
+
+		if err := nodeBuilder.Discover(); err != nil {
+			glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", selector)
+		}
+
+		nodesForSelector, err := get.NumberOfNodesForSelector(apiClient, selector)
+
+		if err != nil {
+			glog.V(kmmparams.KmmLogLevel).Infof("nodes list error: %s", err)
+
+			return false, err
+		}
+
+		foundLabels := 0
+
+		for _, node := range nodeBuilder.Objects {
+			_, ok := node.Object.Labels[label]
+			if ok {
+				glog.V(kmmparams.KmmLogLevel).Infof("Found label %v that contains %v on node %v",
+					label, moduleName, node.Object.Name)
+
+				foundLabels++
+				glog.V(kmmparams.KmmLogLevel).Infof("Number of nodes: %v, Number of nodes with '%v' label pods: %v\n",
+					nodesForSelector, label, foundLabels)
+				if foundLabels == len(nodeBuilder.Objects) {
+					return true, nil
+				}
+			}
+		}
+
+		return false, err
 	})
 }

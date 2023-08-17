@@ -19,6 +19,7 @@ var (
 		"openshift-kmm-hub":           "kmm-hub",
 		UseDtkModuleTestNamespace:     "module",
 		SimpleKmodModuleTestNamespace: "module",
+		DevicePluginTestNamespace:     "module",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

@@ -4,38 +4,39 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
-	Context("Module", Label("use-dtk"), func() {
+	Context("Module", Label("devplug"), func() {
 
-		moduleName := tsparams.UseDtkModuleTestNamespace
-		kmodName := "use-dtk"
-		serviceAccountName := "dtk-manager"
+		moduleName := tsparams.DevicePluginTestNamespace
+		kmodName := "devplug"
+		serviceAccountName := "devplug-manager"
 		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-			tsparams.LocalImageRegistry, tsparams.UseDtkModuleTestNamespace, kmodName)
+			tsparams.LocalImageRegistry, tsparams.DevicePluginTestNamespace, kmodName)
+
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 
 		AfterEach(func() {
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.DevicePluginTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
-			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.UseDtkModuleTestNamespace)
+			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.DevicePluginTestNamespace)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
@@ -44,14 +45,12 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, tsparams.UseDtkModuleTestNamespace).Delete()
+			err = namespace.NewBuilder(APIClient, tsparams.DevicePluginTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
-
-		It("should use DTK_AUTO parameter", polarion.ID("54283"), func() {
-
+		It("should deploy module with a device plugin", polarion.ID("53678"), func() {
 			By("Create Namespace")
-			testNamespace, err := namespace.NewBuilder(APIClient, tsparams.UseDtkModuleTestNamespace).Create()
+			testNamespace, err := namespace.NewBuilder(APIClient, tsparams.DevicePluginTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			configmapContents := define.MultiStageConfigMapContent(kmodName)
@@ -64,7 +63,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ServiceAccount")
 			svcAccount, err := serviceaccount.
-				NewBuilder(APIClient, serviceAccountName, tsparams.UseDtkModuleTestNamespace).Create()
+				NewBuilder(APIClient, serviceAccountName, tsparams.DevicePluginTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create ClusterRoleBinding")
@@ -88,25 +87,43 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			moduleLoaderContainerCfg, err := moduleLoaderContainer.BuildModuleLoaderContainerCfg()
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
+			By("Create DevicePlugin")
+
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+			devicePluginImage := fmt.Sprintf(tsparams.DevicePluginImageTemplate, arch)
+
+			devicePlugin := kmm.NewDevicePluginContainerBuilder(devicePluginImage)
+			devicePluginContainerCfd, err := devicePlugin.GetDevicePluginContainerConfig()
+			Expect(err).ToNot(HaveOccurred(), "error creating deviceplugincontainer")
+
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.DevicePluginTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
+			module = module.WithDevicePluginContainer(devicePluginContainerCfd).
+				WithDevicePluginServiceAccount(svcAccount.Object.Name)
 			_, err = module.Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, tsparams.DevicePluginTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, tsparams.DevicePluginTestNamespace, time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
+			By("Await device driver deployment")
+			err = await.DeviceDriverDeployment(APIClient, moduleName, tsparams.DevicePluginTestNamespace, time.Minute,
+				GeneralConfig.WorkerLabelMap)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting on device plugin deployment")
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, kmodName, tsparams.UseDtkModuleTestNamespace, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, tsparams.DevicePluginTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
@@ -114,4 +131,5 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 	})
+
 })

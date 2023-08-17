@@ -22,21 +22,18 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-const (
-	localModuleName         = "simple-kmod"
-	localKmodName           = "simple-kmod"
-	localNsName             = tsparams.SimpleKmodModuleTestNamespace
-	localServiceAccountName = "simple-kmod-manager"
-	localSecretName         = "ocp-edge-qe-build-secret"
-)
-
 var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
-	Context("Module", Label(localKmodName), func() {
+	Context("Module", Label("simple-kmod"), func() {
 
+		moduleName := "simple-kmod"
+		kmodName := "simple-kmod"
+		localNsName := tsparams.SimpleKmodModuleTestNamespace
+		serviceAccountName := "simple-kmod-manager"
+		secretName := "ocp-edge-qe-build-secret"
 		image := fmt.Sprintf("%s/%s:$KERNEL_FULL_VERSION-%v",
-			ModulesConfig.Registry, localModuleName, time.Now().Unix())
-		buildArgValue := fmt.Sprintf("%s.o", localKmodName)
+			ModulesConfig.Registry, moduleName, time.Now().Unix())
+		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 
 		var module *kmm.ModuleBuilder
 
@@ -55,7 +52,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
 			secretContent := define.SecretContent(ModulesConfig.Registry, ModulesConfig.PullSecret)
 
-			_, err = secret.NewBuilder(APIClient, localSecretName,
+			_, err = secret.NewBuilder(APIClient, secretName,
 				localNsName, v1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
 
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
@@ -66,18 +63,18 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			By("Create configmap")
 			configmapContent := define.SimpleKmodConfigMapContents()
 
-			dockerfileConfigMap, err := configmap.NewBuilder(APIClient, localKmodName, localNsName).
+			dockerfileConfigMap, err := configmap.NewBuilder(APIClient, kmodName, localNsName).
 				WithData(configmapContent).Create()
 
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 
 			By("Create service account")
-			svcAccount, err = serviceaccount.NewBuilder(APIClient, localServiceAccountName, localNsName).Create()
+			svcAccount, err = serviceaccount.NewBuilder(APIClient, serviceAccountName, localNsName).Create()
 
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create clusterrolebinding")
-			crb := define.ModuleCRB(*svcAccount, localModuleName)
+			crb := define.ModuleCRB(*svcAccount, moduleName)
 
 			_, err = crb.Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating clusterrolebinding")
@@ -86,23 +83,23 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
 
 			kernelMapping.WithContainerImage(image).
-				WithBuildArg(buildArgName, buildArgValue).
+				WithBuildArg(tsparams.BuildArgName, buildArgValue).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
 
 			By("Create Module LoaderContainer")
-			moduleLoaderContainer := kmm.NewModLoaderContainerBuilder(localModuleName)
+			moduleLoaderContainer := kmm.NewModLoaderContainerBuilder(moduleName)
 			moduleLoaderContainer.WithKernelMapping(kerMapOne)
 			moduleLoaderContainer.WithImagePullPolicy("Always")
 			moduleLoaderContainerCfg, err := moduleLoaderContainer.BuildModuleLoaderContainerCfg()
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create module")
-			module = kmm.NewModuleBuilder(APIClient, localModuleName, localNsName).
+			module = kmm.NewModuleBuilder(APIClient, moduleName, localNsName).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 
-			module = module.WithImageRepoSecret(localSecretName)
+			module = module.WithImageRepoSecret(secretName)
 
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -114,15 +111,15 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, localNsName, time.Minute, GeneralConfig.WorkerLabelMap)
+			err = await.ModuleDeployment(APIClient, moduleName, localNsName, time.Minute, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, localKmodName, localNsName, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, localNsName, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, localKmodName, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, kmodName, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 		})
@@ -137,7 +134,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while waiting pods to be deleted")
 
 			By("Check labels are removed on all nodes")
-			_, err = check.NodeLabel(APIClient, localKmodName, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, kmodName, GeneralConfig.WorkerLabelMap)
 			log.Printf("error is: %v", err)
 			Expect(err).To(HaveOccurred(), "error while checking the module is loaded")
 
@@ -154,17 +151,17 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
 
 			By("Create Module LoaderContainer")
-			moduleLoaderContainer := kmm.NewModLoaderContainerBuilder(localModuleName)
+			moduleLoaderContainer := kmm.NewModLoaderContainerBuilder(moduleName)
 			moduleLoaderContainer.WithKernelMapping(kerMapOne)
 			moduleLoaderContainer.WithImagePullPolicy("Always")
 			moduleLoaderContainerCfg, err := moduleLoaderContainer.BuildModuleLoaderContainerCfg()
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create module")
-			module = kmm.NewModuleBuilder(APIClient, localModuleName, localNsName).
+			module = kmm.NewModuleBuilder(APIClient, moduleName, localNsName).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 
-			module = module.WithImageRepoSecret(localSecretName)
+			module = module.WithImageRepoSecret(secretName)
 
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -172,33 +169,33 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, localNsName, time.Minute, GeneralConfig.WorkerLabelMap)
+			err = await.ModuleDeployment(APIClient, moduleName, localNsName, time.Minute, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, localKmodName, localNsName, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, localNsName, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, localKmodName, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, kmodName, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 
 		AfterAll(func() {
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, localKmodName, localModuleName).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, kmodName, moduleName).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
-			svcAccount := serviceaccount.NewBuilder(APIClient, localServiceAccountName, localModuleName)
+			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, moduleName)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
-			crb := define.ModuleCRB(*svcAccount, localModuleName)
+			crb := define.ModuleCRB(*svcAccount, moduleName)
 			err = crb.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, localModuleName).Delete()
+			err = namespace.NewBuilder(APIClient, moduleName).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
 
