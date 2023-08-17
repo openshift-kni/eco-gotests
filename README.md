@@ -156,6 +156,27 @@ The project uses a development method - forking workflow
 #### Lint
 Push requested are tested in a pipeline with golangci-lint. It is advised to add [Golangci-lint integration](https://golangci-lint.run/usage/integrations/) to your development editor. It's recommended to run `make lint` before uploading a PR.
 
+#### Commit Message Guidelines
+There are two main components of a Git commit message: the title or summary, and the description. The commit message title is limited to 72 characters, and the description has no character limit.
+
+Commit title format has two parts: 
+1. Team name: Example - "cnf network" or "hw-accel" 
+2. Short summary of code changes: Example - "added deployment test".
+
+If a PR changes multiple team's directories or common infrastructure code, then instead of the team name, simply add "infra". Follow similar naming rules when adding changes to README (readme:) or github ci (ci:) files.
+
+Commit message examples:
+```text
+infra: func defineNetwork moved to global net package"
+readme: added commit message convention"
+ci: added new deployment job
+cnf network: added set func to cluster pkg
+```
+
+Please notice: Don't use internal test IDs and capital letters in commit message.
+
+Commit description explains a changes in details if it's needed.
+
 #### Functions format
 If the function's arguments fit in a single line - use the following format:
 ```go
