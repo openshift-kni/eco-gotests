@@ -59,7 +59,17 @@ func (builder *ModuleLoaderContainerBuilder) WithModprobeSpec(
 	builder.definition.Modprobe.DirName = dirName
 	builder.definition.Modprobe.FirmwarePath = fwPath
 	builder.definition.Modprobe.Parameters = parameters
+
+	if builder.definition.Modprobe.Args == nil {
+		builder.definition.Modprobe.Args = &moduleV1Beta1.ModprobeArgs{}
+	}
+
 	builder.definition.Modprobe.Args.Load = args
+
+	if builder.definition.Modprobe.RawArgs == nil {
+		builder.definition.Modprobe.RawArgs = &moduleV1Beta1.ModprobeArgs{}
+	}
+
 	builder.definition.Modprobe.RawArgs.Load = rawargs
 
 	return builder
