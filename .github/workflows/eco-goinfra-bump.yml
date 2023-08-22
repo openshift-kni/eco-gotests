@@ -48,7 +48,7 @@ jobs:
           export MODULE=$(go list -m -f '{{.Version}}' github.com/openshift-kni/eco-goinfra)
           git checkout -b eco-goinfra-dep-bump-$MODULE
           git add go.mod go.sum vendor
-          git commit -m "deps: Bumping eco-goinfra module to ${MODULE}"
+          git commit -m "deps: bumping eco-goinfra module to ${MODULE}"
           git push origin eco-goinfra-dep-bump-$MODULE
 
       - name: Cleanup ssh-agent
