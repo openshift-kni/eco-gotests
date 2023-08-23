@@ -54,3 +54,24 @@ func ClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string]st
 
 	return "", err
 }
+
+// MachineConfigPoolName returns machineconfigpool's name for a specified label.
+func MachineConfigPoolName(apiClient *clients.Settings) string {
+	nodeBuilder := nodes.NewBuilder(apiClient, map[string]string{"kubernetes.io/os": "linux"})
+
+	if err := nodeBuilder.Discover(); err != nil {
+		glog.V(kmmparams.KmmLogLevel).Infof("could not discover nodes")
+
+		return ("")
+	}
+
+	if len(nodeBuilder.Objects) == 1 {
+		glog.V(kmmparams.KmmLogLevel).Infof("Using 'master' as mcp")
+
+		return "master"
+	}
+
+	glog.V(kmmparams.KmmLogLevel).Infof("Using 'worker' as mcp")
+
+	return "worker"
+}

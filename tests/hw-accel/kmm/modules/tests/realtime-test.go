@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 
@@ -35,39 +36,37 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 		performanceProfileName := "rt-profile"
 		rtCPUIsolated := "1,3,5,7"
 		rtCPUReserved := "0,2,4,6"
+		mcpName := get.MachineConfigPoolName(APIClient)
 
 		AfterEach(func() {
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.RealtimeKernelNamespace).Delete()
-			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+			_, _ = kmm.NewModuleBuilder(APIClient, moduleName, tsparams.RealtimeKernelNamespace).Delete()
 
 			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.RealtimeKernelNamespace)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
 			crb := define.ModuleCRB(*svcAccount, kmodName)
-			err = crb.Delete()
-			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+			_ = crb.Delete()
+
+			By("Delete Namespace")
+			_ = namespace.NewBuilder(APIClient, tsparams.RealtimeKernelNamespace).Delete()
 
 			By("Delete performance profile that sets Realtime Kernel on workers")
 			realtimeProfile := nto.NewBuilder(APIClient, performanceProfileName,
 				rtCPUIsolated, rtCPUReserved, GeneralConfig.WorkerLabelMap)
-			_, err = realtimeProfile.Delete()
-			Expect(err).ToNot(HaveOccurred(), "error deleting realtime performance profile")
+			_, _ = realtimeProfile.Delete()
 
 			By("Waiting machine config pool to update")
-			mcp, err := mco.Pull(APIClient, GeneralConfig.WorkerLabel)
+			mcp, err := mco.Pull(APIClient, mcpName)
 			Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
 
 			err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
-			Expect(err).To(HaveOccurred(), "the performance profile did not triggered a mcp update")
+			Expect(err).To(HaveOccurred(), "the performance profile delete did not triggered a mcp update")
 
 			err = mcp.WaitForUpdate(30 * time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
 
-			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, tsparams.RealtimeKernelNamespace).Delete()
-			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
 
 		It("should properly build a module on Realtime Kernel", polarion.ID("53656"), func() {
@@ -101,7 +100,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating realtime performance profile")
 
 			By("Waiting machine config pool to update")
-			mcp, err := mco.Pull(APIClient, GeneralConfig.WorkerLabel)
+			mcp, err := mco.Pull(APIClient, mcpName)
 			Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
 
 			err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)

@@ -9,7 +9,7 @@ const (
 	ModuleNodeLabelTemplate = "kmm.node.kubernetes.io/%s.%s.ready"
 	// DevicePluginNodeLabelTemplate represents template label set by KMM on a node for a Device Plugin.
 	DevicePluginNodeLabelTemplate = "kmm.node.kubernetes.io/%s.%s.device-plugin-ready"
-	// DevicePluginImageTemplate represets test image location in remote registry.
+	// DevicePluginImageTemplate represents test image location in remote registry.
 	// Will be moved in quay.io/organization/ocp-edge-qe once repository is set up.
 	DevicePluginImageTemplate = "quay.io/cvultur/device-plugin:latest-%s"
 	// UseDtkModuleTestNamespace represents test case namespace name.
