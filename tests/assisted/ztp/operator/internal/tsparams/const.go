@@ -17,4 +17,8 @@ const (
 	// LabelAssistedPodsNoRestartsTestCases represents assisted-pods-no-restarts label that can be used
 	// for test cases selection.
 	LabelAssistedPodsNoRestartsTestCases = "assisted-pods-no-restarts"
+
+	// LabelOSImageVersionTestCases represents os-image-version-match label that can be used
+	// for test case selection.
+	LabelOSImageVersionTestCases = "os-image-version-match"
 )
