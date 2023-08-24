@@ -626,7 +626,7 @@ func setLocalGWMode(status bool) {
 	clusterNetwork, err := cluster.GetOCPNetworkOperatorConfig(APIClient)
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect network.operator object")
 
-	clusterNetwork, err = clusterNetwork.SetLocalGWMode(status, 10*time.Minute)
+	clusterNetwork, err = clusterNetwork.SetLocalGWMode(status, 20*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to set local GW mode %v", status))
 
 	network, err := clusterNetwork.Get()

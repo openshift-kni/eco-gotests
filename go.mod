@@ -14,7 +14,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20230821125312-f9e8023e62d7
+	github.com/openshift-kni/eco-goinfra v0.0.0-20230824214252-6256b3621aff
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -28,6 +28,7 @@ require (
 	github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20230307090347-57c1bdf6d12b
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.universe.tf/metallb v0.13.7
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	gopkg.in/k8snetworkplumbingwg/multus-cni.v4 v4.0.2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.2
@@ -138,7 +139,6 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	go4.org v0.0.0-20201209231011-d4a079459e60 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
