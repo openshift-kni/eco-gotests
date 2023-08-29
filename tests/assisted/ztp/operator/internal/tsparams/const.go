@@ -21,4 +21,8 @@ const (
 	// LabelOSImageVersionTestCases represents os-image-version-match label that can be used
 	// for test case selection.
 	LabelOSImageVersionTestCases = "os-image-version-match"
+
+	// LabelUnauthenticatedRegistriesTestCases represents unauthenticated-registries label that can be used
+	// for test cases selection.
+	LabelUnauthenticatedRegistriesTestCases = "unauthenticated-registries"
 )
