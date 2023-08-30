@@ -16,7 +16,7 @@ var (
 	minTimeInSeconds int64 = 600
 )
 var _ = Describe(
-	"ImageServiceStatefulset",
+	"AssistedPodsNoRestarts",
 	Ordered,
 	ContinueOnFailure,
 	Label(tsparams.LabelAssistedPodsNoRestartsTestCases), func() {
