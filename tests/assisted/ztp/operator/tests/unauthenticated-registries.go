@@ -95,5 +95,43 @@ var _ = Describe(
 						"error verifying that \"registry.svc.ci.openshift.org\" is listed among unauthenticated registries by default")
 				})
 
+			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing a default entry",
+				polarion.ID("56553"), func() {
+					By("Create AgentServiceConfig with unauthenticatedRegistries containing a default entry")
+					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient).
+						WithUnauthenticatedRegistry("quay.io")
+
+					// An attempt to restrict the osImage spec for the new agentserviceconfig
+					// to prevent the download of all os images
+					if len(osImageUR) > 0 {
+						_, err = tempAgentServiceConfigBuilderUR.WithOSImage(osImageUR[0]).Create()
+					} else {
+						_, err = tempAgentServiceConfigBuilderUR.Create()
+					}
+					Expect(err).ToNot(HaveOccurred(),
+						"error creating agentserviceconfig with unauthenticatedRegistries containing a default entry")
+
+					By("Assure the AgentServiceConfig with unauthenticatedRegistries containing a default entry was created")
+					_, err = tempAgentServiceConfigBuilderUR.WaitUntilDeployed(time.Minute * 10)
+					Expect(err).ToNot(HaveOccurred(),
+						"error waiting until agentserviceconfig with unauthenticatedRegistries containing a default entry is deployed")
+
+					By("Retrieve the " + assistedConfigMapName + " configmap")
+					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
+					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
+						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
+
+					By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"quay.io\" in the " +
+						assistedConfigMapName + " configmap by default")
+					Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
+						ContainSubstring("quay.io"),
+						"error verifying that \"quay.io\" is listed among unauthenticated registries by default")
+
+					By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"registry.svc.ci.openshift.org\" in the " +
+						assistedConfigMapName + " configmap by default")
+					Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
+						ContainSubstring("registry.svc.ci.openshift.org"),
+						"error verifying that \"registry.svc.ci.openshift.org\" is listed among unauthenticated registries by default")
+				})
 		})
 	})
