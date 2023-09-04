@@ -1,0 +1,37 @@
+name: Build Docker Image - Manual (arm)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag ("-unstable" postfix wil be add to every tag)'
+        required: true
+
+jobs:
+  build:
+    name: Build and push docker image
+    runs-on: [self-hosted, linux, ARM64]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build docker image
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: eco-gotests
+        tags: ${{ github.event.inputs.tag }}-arm-unstable
+        containerfiles: |
+          ./Dockerfile-arm
+
+    - name: Push To quay.io
+      id: push-to-quay
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: eco-gotests
+        tags: ${{ github.event.inputs.tag }}-unstable
+        registry: quay.io/ocp-edge-qe
+        username: ocp-edge-qe+ocp_edge_qe_robot
+        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
+
+    - name: Print image url
+      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
