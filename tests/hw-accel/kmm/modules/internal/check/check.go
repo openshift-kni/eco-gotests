@@ -46,6 +46,18 @@ func NodeLabel(apiClient *clients.Settings, moduleName string, nodeSelector map[
 
 // ModuleLoaded verifies the module is loaded on the node.
 func ModuleLoaded(apiClient *clients.Settings, modName, nsname string, timeout time.Duration) error {
+	modName = strings.Replace(modName, "-", "_", 10)
+
+	return runCommandOnModuleLoader(apiClient, "lsmod", modName, nsname, timeout)
+}
+
+// Dmesg verifies that dmesg contains message.
+func Dmesg(apiClient *clients.Settings, message, nsname string, timeout time.Duration) error {
+	return runCommandOnModuleLoader(apiClient, "dmesg", message, nsname, timeout)
+}
+
+func runCommandOnModuleLoader(apiClient *clients.Settings,
+	command, message, nsname string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
 		pods, err := pod.List(apiClient, nsname, v1.ListOptions{
 			FieldSelector: "status.phase=Running",
@@ -58,26 +70,24 @@ func ModuleLoaded(apiClient *clients.Settings, modName, nsname string, timeout t
 			return false, err
 		}
 
-		// injected kmod are always with underline ( _ )
-		kmodName := strings.Replace(modName, "-", "_", 10)
-
+		// using a map so that both ModuleLoaded and Dmesg calls don't interfere with the counter
 		iter := 0
 		for _, pod := range pods {
 			glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\n\n", pod.Object.Name)
 
-			buff, err := pod.ExecCommand([]string{"lsmod"}, "module-loader")
+			buff, err := pod.ExecCommand([]string{command}, "module-loader")
 
 			if err != nil {
 				return false, err
 			}
 
 			contents := buff.String()
-			glog.V(kmmparams.KmmLogLevel).Infof("lsmod contents: \n \t%v\n", contents)
-			if strings.Contains(contents, kmodName) {
-				glog.V(kmmparams.KmmLogLevel).Infof("found module name loaded on pod : %v\n", pod.Object.Name)
+			glog.V(kmmparams.KmmLogLevel).Infof("%s contents: \n \t%v\n", command, contents)
+			if strings.Contains(contents, message) {
+				glog.V(kmmparams.KmmLogLevel).Infof("command '%s' contains '%s' in pod %s\n", command, message, pod.Object.Name)
 				iter++
 
-				if iter == len(pods)-1 {
+				if iter == len(pods) {
 					return true, nil
 				}
 			}

@@ -33,3 +33,10 @@ func SimpleKmodConfigMapContents() map[string]string {
 
 	return configmapContents
 }
+
+// SimpleKmodFirmwareConfigMapContents returns the configmap for simple-kmod-firmware example.
+func SimpleKmodFirmwareConfigMapContents() map[string]string {
+	configmapContents := map[string]string{"dockerfile": kmmparams.SimpleKmodFirmwareContents}
+
+	return configmapContents
+}

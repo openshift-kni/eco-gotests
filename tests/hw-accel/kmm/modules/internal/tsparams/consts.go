@@ -20,4 +20,6 @@ const (
 	DevicePluginTestNamespace = "ocp-53678-devplug"
 	// RealtimeKernelNamespace represents test case namespace name.
 	RealtimeKernelNamespace = "ocp-53656-rtkernel"
+	// FirmwareTestNamespace represents test case namespace name.
+	FirmwareTestNamespace = "simple-kmod-firmware"
 )

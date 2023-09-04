@@ -51,4 +51,21 @@ RUN git clone https://github.com/cdvultur/simple-kmod.git && \
   }
 }
 `
+	// SimpleKmodFirmwareContents represents the Dockerfile contents for simple-kmod-firmware build.
+	SimpleKmodFirmwareContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit
+ARG KVER
+ARG KERNEL_VERSION
+ARG KMODVER
+
+WORKDIR /build/ 
+RUN GIT_SSL_NO_VERIFY=1 git clone https://gitlab.cee.redhat.com/cvultur/simple-kmod.git && \
+   cd simple-kmod && \
+   make all       KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
+   make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
+   mkdir -p /opt/lib/modules/$KERNEL_VERSION && \
+   cp /lib/modules/$KERNEL_VERSION/simple-*.ko /lib/modules/$KERNEL_VERSION/modules.* /opt/lib/modules/$KERNEL_VERSION
+
+RUN mkdir /firmware
+RUN echo -n "simple_kmod_firmware validation string" >> /firmware/simple_kmod_firmware.bin
+`
 )
