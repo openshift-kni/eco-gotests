@@ -14,6 +14,8 @@ const (
 	DevicePluginImageTemplate = "quay.io/cvultur/device-plugin:latest-%s"
 	// UseDtkModuleTestNamespace represents test case namespace name.
 	UseDtkModuleTestNamespace = "ocp-54283-use-dtk"
+	// WebhookModuleTestNamespace represents test case namespace name.
+	WebhookModuleTestNamespace = "webhook"
 	// SimpleKmodModuleTestNamespace represents test case namespace name.
 	SimpleKmodModuleTestNamespace = "simple-kmod"
 	// DevicePluginTestNamespace represents test case namespace name.
