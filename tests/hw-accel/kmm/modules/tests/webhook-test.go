@@ -52,5 +52,26 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err.Error()).To(ContainSubstring("missing spec.moduleLoader.container.kernelMappings"))
 			Expect(err.Error()).To(ContainSubstring(".containerImage"))
 		})
+
+		It("should fail if the regexp isn't valid in the module", polarion.ID("62602"), func() {
+
+			By("Create KernelMapping")
+			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("*-invalid-regexp").BuildKernelMappingConfig()
+			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+			By("Create ModuleLoaderContainer")
+			moduleLoaderContainerCfg, err := kmm.NewModLoaderContainerBuilder("webhook").
+				WithKernelMapping(kernelMapping).
+				BuildModuleLoaderContainerCfg()
+			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+			By("Create Module")
+			_, err = kmm.NewModuleBuilder(APIClient, "webhook-invalid-regexp", nSpace).
+				WithNodeSelector(GeneralConfig.WorkerLabelMap).
+				WithModuleLoaderContainer(moduleLoaderContainerCfg).
+				Create()
+			Expect(err).To(HaveOccurred(), "error creating module")
+			Expect(err.Error()).To(ContainSubstring("invalid regexp"))
+		})
 	})
 })
