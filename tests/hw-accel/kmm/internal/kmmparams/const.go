@@ -68,4 +68,23 @@ RUN GIT_SSL_NO_VERIFY=1 git clone https://gitlab.cee.redhat.com/cvultur/simple-k
 RUN mkdir /firmware
 RUN echo -n "simple_kmod_firmware validation string" >> /firmware/simple_kmod_firmware.bin
 `
+	// LocalMultiStageContents represents the Dockerfile contents for multi stage build using local registry.
+	LocalMultiStageContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit as builder
+ARG KERNEL_VERSION
+ARG MY_MODULE
+WORKDIR /build
+RUN git clone https://github.com/cdvultur/kmm-kmod.git
+WORKDIR /build/kmm-kmod
+RUN cp kmm_ci_a.c {{.Module}}.c
+RUN make
+
+FROM registry.redhat.io/ubi8/ubi-minimal
+ARG KERNEL_VERSION
+ARG MY_MODULE
+RUN microdnf -y install kmod
+
+COPY --from=builder /etc/driver-toolkit-release.json /etc/
+COPY --from=builder /build/kmm-kmod/*.ko /opt/lib/modules/${KERNEL_VERSION}/
+RUN depmod -b /opt
+`
 )
