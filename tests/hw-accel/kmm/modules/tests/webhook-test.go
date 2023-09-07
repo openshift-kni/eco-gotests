@@ -73,5 +73,27 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).To(HaveOccurred(), "error creating module")
 			Expect(err.Error()).To(ContainSubstring("invalid regexp"))
 		})
+
+		It("should fail if both regexp and literal are set in a kernel mapping", polarion.ID("62604"), func() {
+
+			By("Create KernelMapping")
+			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()
+			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+			kernelMapping.Literal = "5.14.0-284.28.1.el9_2.x86_64"
+
+			By("Create ModuleLoaderContainer")
+			moduleLoaderContainerCfg, err := kmm.NewModLoaderContainerBuilder("webhook").
+				WithKernelMapping(kernelMapping).
+				BuildModuleLoaderContainerCfg()
+			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+			By("Create Module")
+			_, err = kmm.NewModuleBuilder(APIClient, "webhook-regexp-and-literal", nSpace).
+				WithNodeSelector(GeneralConfig.WorkerLabelMap).
+				WithModuleLoaderContainer(moduleLoaderContainerCfg).
+				Create()
+			Expect(err).To(HaveOccurred(), "error creating module")
+			Expect(err.Error()).To(ContainSubstring("regexp and literal are mutually exclusive properties"))
+		})
 	})
 })
