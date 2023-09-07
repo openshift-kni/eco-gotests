@@ -48,16 +48,25 @@ func NodeLabel(apiClient *clients.Settings, moduleName string, nodeSelector map[
 func ModuleLoaded(apiClient *clients.Settings, modName, nsname string, timeout time.Duration) error {
 	modName = strings.Replace(modName, "-", "_", 10)
 
-	return runCommandOnModuleLoader(apiClient, "lsmod", modName, nsname, timeout)
+	return runCommandOnModuleLoader(apiClient, []string{"lsmod"}, modName, nsname, timeout)
 }
 
 // Dmesg verifies that dmesg contains message.
 func Dmesg(apiClient *clients.Settings, message, nsname string, timeout time.Duration) error {
-	return runCommandOnModuleLoader(apiClient, "dmesg", message, nsname, timeout)
+	return runCommandOnModuleLoader(apiClient, []string{"dmesg"}, message, nsname, timeout)
+}
+
+// ModuleSigned verifies the module is signed.
+func ModuleSigned(apiClient *clients.Settings, modName, message, nsname string, timeout time.Duration) error {
+	modulePath := fmt.Sprintf("modinfo /opt/lib/modules/*/%s.ko", modName)
+
+	command := []string{"bash", "-c", modulePath}
+
+	return runCommandOnModuleLoader(apiClient, command, message, nsname, timeout)
 }
 
 func runCommandOnModuleLoader(apiClient *clients.Settings,
-	command, message, nsname string, timeout time.Duration) error {
+	command []string, message, nsname string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
 		pods, err := pod.List(apiClient, nsname, v1.ListOptions{
 			FieldSelector: "status.phase=Running",
@@ -75,7 +84,7 @@ func runCommandOnModuleLoader(apiClient *clients.Settings,
 		for _, pod := range pods {
 			glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\n\n", pod.Object.Name)
 
-			buff, err := pod.ExecCommand([]string{command}, "module-loader")
+			buff, err := pod.ExecCommand(command, "module-loader")
 
 			if err != nil {
 				return false, err

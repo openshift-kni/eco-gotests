@@ -20,6 +20,9 @@ var (
 		UseDtkModuleTestNamespace:     "module",
 		SimpleKmodModuleTestNamespace: "module",
 		DevicePluginTestNamespace:     "module",
+		RealtimeKernelNamespace:       "module",
+		FirmwareTestNamespace:         "module",
+		ModuleBuildAndSignNamespace:   "module",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

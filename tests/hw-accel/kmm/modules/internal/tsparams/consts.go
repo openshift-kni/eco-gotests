@@ -26,4 +26,6 @@ const (
 	RealtimeKernelNamespace = "ocp-53656-rtkernel"
 	// FirmwareTestNamespace represents test case namespace name.
 	FirmwareTestNamespace = "simple-kmod-firmware"
+	// ModuleBuildAndSignNamespace represents test case namespace name.
+	ModuleBuildAndSignNamespace = "ocp-56252-module-signing"
 )

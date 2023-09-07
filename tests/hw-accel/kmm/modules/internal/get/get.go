@@ -1,6 +1,7 @@
 package get
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
@@ -74,4 +75,17 @@ func MachineConfigPoolName(apiClient *clients.Settings) string {
 	glog.V(kmmparams.KmmLogLevel).Infof("Using 'worker' as mcp")
 
 	return "worker"
+}
+
+// SigningData returns struct used for creating secrets for module signing.
+func SigningData(key string, value string) map[string][]byte {
+	val, err := base64.StdEncoding.DecodeString(value)
+
+	if err != nil {
+		glog.V(kmmparams.KmmLogLevel).Infof("Error decoding signing key")
+	}
+
+	secretContents := map[string][]byte{key: val}
+
+	return secretContents
 }
