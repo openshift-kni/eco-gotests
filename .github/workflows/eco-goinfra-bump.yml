@@ -32,6 +32,7 @@ jobs:
             git config user.name 'GitHub Actions'
             git config user.email 'noreply@example.com'
             go get github.com/openshift-kni/eco-goinfra
+            go mod tidy
             go mod vendor
           fi
 
