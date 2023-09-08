@@ -103,6 +103,20 @@ type InfraEnvSpec struct {
 	// Applicable for both iPXE, and ISO streaming from Image Service.
 	// +optional
 	KernelArguments []KernelArgument `json:"kernelArguments,omitempty"`
+
+	// PEM-encoded X.509 certificate bundle. Hosts discovered by this
+	// infra-env will trust the certificates in this bundle. Clusters formed
+	// from the hosts discovered by this infra-env will also trust the
+	// certificates in this bundle.
+	// +optional
+	AdditionalTrustBundle string `json:"additionalTrustBundle,omitempty"`
+
+	// OSImageVersion is the version of OS image to use when generating the InfraEnv.
+	// The version should refer to an OSImage specified in the AgentServiceConfig
+	// (i.e. OSImageVersion should equal to an OpenshiftVersion in OSImages list).
+	// Note: OSImageVersion can't be specified along with ClusterRef. 
+	// +optional
+	OSImageVersion string `json:"osImageVersion,omitempty"`
 }
 
 type KernelArgument struct {

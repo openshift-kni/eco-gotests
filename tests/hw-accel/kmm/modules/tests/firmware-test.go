@@ -121,7 +121,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ModuleLoaderContainer")
 			moduleLoaderContainer := kmm.NewModLoaderContainerBuilder(kmodName)
-			moduleLoaderContainer.WithModprobeSpec("/opt", "/firmware", []string{}, []string{}, []string{})
+			moduleLoaderContainer.WithModprobeSpec("/opt", "/firmware", []string{}, []string{}, []string{}, []string{})
 			moduleLoaderContainer.WithKernelMapping(kerMapOne)
 			moduleLoaderContainer.WithImagePullPolicy("Always")
 

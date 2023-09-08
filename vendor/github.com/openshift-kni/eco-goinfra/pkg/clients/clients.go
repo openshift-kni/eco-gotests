@@ -2,15 +2,16 @@ package clients
 
 import (
 	"fmt"
-
 	"log"
 	"os"
 
+	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/golang/glog"
+	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
+	argocdScheme "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	argocdClient "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned/typed/application/v1alpha1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
-
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
@@ -76,6 +77,7 @@ type Settings struct {
 	olm.OperatorsV1alpha1Interface
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
+	argocdClient.ArgoprojV1alpha1Interface
 	olmv1.OperatorsV1Interface
 	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
 }
@@ -118,6 +120,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.OperatorsV1Interface = olmv1.NewForConfigOrDie(config)
 	clientSet.PackageManifestInterface = clientPkgManifestV1.NewForConfigOrDie(config)
 	clientSet.SecurityV1Interface = v1security.NewForConfigOrDie(config)
+	clientSet.ArgoprojV1alpha1Interface = argocdClient.NewForConfigOrDie(config)
 
 	clientSet.Config = config
 
@@ -226,6 +229,14 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := nmstateV1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := argocdOperatorv1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := argocdScheme.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

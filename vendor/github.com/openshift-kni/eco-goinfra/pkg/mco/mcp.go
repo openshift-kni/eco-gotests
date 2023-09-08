@@ -348,7 +348,7 @@ func (builder *MCPBuilder) IsInCondition(mcpConditionType mcov1.MachineConfigPoo
 
 	if builder.Exists() {
 		for _, condition := range builder.Object.Status.Conditions {
-			if condition.Type == mcpConditionType && condition.Status == "isTrue" {
+			if condition.Type == mcpConditionType && condition.Status == isTrue {
 				return true
 			}
 		}

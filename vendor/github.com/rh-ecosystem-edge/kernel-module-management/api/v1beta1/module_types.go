@@ -65,6 +65,10 @@ type Build struct {
 	// +optional
 	// KanikoParams is used to customize the building process of the image.
 	KanikoParams *KanikoParams `json:"kanikoParams,omitempty"`
+
+	// +optional
+	// Selector describes on which nodes will run the building process.
+	Selector map[string]string `json:"selector,omitempty"`
 }
 
 type Sign struct {
@@ -113,6 +117,11 @@ type KernelMapping struct {
 	// +optional
 	// Regexp is a regular expression to be match against node kernels.
 	Regexp string `json:"regexp"`
+
+	// +optional
+	// InTreeModuleToRemove specifies the in-tree kernel module that should be removed (if present)
+	// before loading the kernel module from the ContainerImage
+	InTreeModuleToRemove string `json:"inTreeModuleToRemove"`
 }
 
 type ModprobeArgs struct {
@@ -154,6 +163,19 @@ type ModprobeSpec struct {
 	// The firmware(s) will be copied to the host for the kernel to find them.
 	// +optional
 	FirmwarePath string `json:"firmwarePath,omitempty"`
+
+	// ModulesLoadingOrder defines the dependency between kernel modules loading, in case
+	// it was not created by depmod (independent kernel modules).
+	// The list order should be: upmost module, then the module it depends on and so on.
+	// Example: if moduleA depends on first loading moduleB, and moduleB depends on first loading moduleC
+	// the entry should look:
+	// ModulesLoadingOrder:
+	//    - moduleA
+	//    - moduleB
+	//    - moduleC
+	// In order to load all 3 modules, moduleA shoud be defined in the ModuleName parameter of this struct
+	// +optional
+	ModulesLoadingOrder []string `json:"modulesLoadingOrder,omitempty"`
 }
 
 type ModuleLoaderContainerSpec struct {
@@ -164,6 +186,11 @@ type ModuleLoaderContainerSpec struct {
 	// +optional
 	// Sign provides default kmod signing settings
 	Sign *Sign `json:"sign,omitempty"`
+
+	// Version defines the current version of the kernel module being used
+	// Used for upgrading the currently loaded kernel module to a new version
+	// +optional
+	Version string `json:"version,omitempty"`
 
 	// ContainerImage is a top-level field
 	// +optional
@@ -189,6 +216,11 @@ type ModuleLoaderContainerSpec struct {
 	// +optional
 	// RegistryTLS set the TLS configs for accessing the registry of the module-loader's image.
 	RegistryTLS TLSOptions `json:"registryTLS"`
+
+	// +optional
+	// InTreeModuleToRemove specifies the in-tree kernel module that should be removed (if present)
+	// before loading the kernel module from the ContainerImage
+	InTreeModuleToRemove string `json:"inTreeModuleToRemove"`
 }
 
 type ModuleLoaderSpec struct {

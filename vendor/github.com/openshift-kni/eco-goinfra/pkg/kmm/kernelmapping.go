@@ -255,6 +255,27 @@ func (builder *KernelMappingBuilder) RegistryTLS(insecure, skipTLSVerify bool) *
 	return builder
 }
 
+// WithInTreeModuleToRemove adds the module to be removed to KernelMapper.
+func (builder *KernelMappingBuilder) WithInTreeModuleToRemove(existingModule string) *KernelMappingBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Creating new Module KernelMapping with inTreeModuleToRemove: %v", existingModule)
+
+	if existingModule == "" {
+		glog.V(100).Infof("The 'existingModule' is empty")
+
+		builder.errorMsg = "'existingModule' parameter can not be empty for KernelMapping inTreeModuleToRemove"
+
+		return builder
+	}
+
+	builder.definition.InTreeModuleToRemove = existingModule
+
+	return builder
+}
+
 // WithOptions creates KernelMapping with generic mutation options.
 func (builder *KernelMappingBuilder) WithOptions(options ...KernelMappingAdditionalOptions) *KernelMappingBuilder {
 	if valid, _ := builder.validate(); !valid {
