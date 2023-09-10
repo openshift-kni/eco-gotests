@@ -150,6 +150,32 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 				Expect(err).To(HaveOccurred(), "error creating module")
 				Expect(err.Error()).To(ContainSubstring("duplicate value in the loading order list"))
 			})
+
+			It("should fail if the 'main' kmod isn't the first one in modulesLoadingOrder", polarion.ID("64227"), func() {
+
+				By("Create KernelMapping")
+				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
+					tsparams.LocalImageRegistry, tsparams.WebhookModuleTestNamespace, "my-kmod")
+				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
+					WithContainerImage(image).
+					BuildKernelMappingConfig()
+				Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+				By("Create moduleLoader container")
+				moduleLoader, err := kmm.NewModLoaderContainerBuilder("kmod-a").
+					WithModprobeSpec("", "", nil, nil, nil, []string{"kmod-b", "kmod-a", "kmod-c"}).
+					WithKernelMapping(kernelMapping).
+					BuildModuleLoaderContainerCfg()
+				Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+				By("Create Module")
+				_, err = kmm.NewModuleBuilder(APIClient, "webhook-main-module-not-first-in-list", nSpace).
+					WithNodeSelector(GeneralConfig.WorkerLabelMap).
+					WithModuleLoaderContainer(moduleLoader).
+					Create()
+				Expect(err).To(HaveOccurred(), "error creating module")
+				Expect(err.Error()).To(ContainSubstring("if a loading order is defined, the first element must be moduleName"))
+			})
 		})
 	})
 })
