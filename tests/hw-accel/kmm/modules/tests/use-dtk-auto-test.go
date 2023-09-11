@@ -23,6 +23,8 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
 	Context("Module", Label("use-dtk"), func() {
 
+		var testNamespace *namespace.Builder
+
 		moduleName := tsparams.UseDtkModuleTestNamespace
 		kmodName := "use-dtk"
 		serviceAccountName := "dtk-manager"
@@ -30,7 +32,16 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			tsparams.LocalImageRegistry, tsparams.UseDtkModuleTestNamespace, kmodName)
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 
-		AfterEach(func() {
+		BeforeAll(func() {
+
+			By("Create Namespace")
+			var err error
+			testNamespace, err = namespace.NewBuilder(APIClient, tsparams.UseDtkModuleTestNamespace).Create()
+			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+
+		})
+
+		AfterAll(func() {
 			By("Delete Module")
 			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
@@ -49,10 +60,6 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 		})
 
 		It("should use DTK_AUTO parameter", polarion.ID("54283"), func() {
-
-			By("Create Namespace")
-			testNamespace, err := namespace.NewBuilder(APIClient, tsparams.UseDtkModuleTestNamespace).Create()
-			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			configmapContents := define.MultiStageConfigMapContent(kmodName)
 
@@ -112,6 +119,33 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			By("Check label is set on all nodes")
 			_, err = check.NodeLabel(APIClient, moduleName, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+		})
+
+		It("should be able to modify a kmod in a module", polarion.ID("53466"), func() {
+
+			const newKmod = "kmm_ci_a"
+
+			By("Getting the module")
+			moduleBuilder, err := kmm.Pull(APIClient, moduleName, moduleName)
+			Expect(err).ToNot(HaveOccurred(), "error getting the module")
+
+			By("Modifying the kmod in the module and re-applying the module")
+			moduleBuilder.Object.Spec.ModuleLoader.Container.Modprobe.ModuleName = newKmod
+			_, err = moduleBuilder.Update()
+			Expect(err).ToNot(HaveOccurred(), "error updating the module")
+
+			By("Wait for old pods to terminate")
+			time.Sleep(time.Minute)
+
+			By("Await new driver container deployment")
+			err = await.ModuleDeployment(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace, time.Minute,
+				GeneralConfig.WorkerLabelMap)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
+
+			By("Check new kmod was loaded to node")
+			err = check.ModuleLoaded(APIClient, newKmod, tsparams.UseDtkModuleTestNamespace, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+
 		})
 	})
 })

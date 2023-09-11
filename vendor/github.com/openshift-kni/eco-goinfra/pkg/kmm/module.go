@@ -288,6 +288,20 @@ func (builder *ModuleBuilder) Create() (*ModuleBuilder, error) {
 	return builder, err
 }
 
+func (builder *ModuleBuilder) Update() (*ModuleBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Updating module %s in namespace %s",
+		builder.Definition.Name,
+		builder.Definition.Namespace)
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	return builder, err
+}
+
 // Exists checks whether the given module exists.
 func (builder *ModuleBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
