@@ -159,9 +159,16 @@ var _ = Describe(
 					tempAgentServiceConfigBuilder, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
 					Expect(err).ToNot(HaveOccurred(), "error waiting until agentserviceconfig with imagestorage is deployed")
 
-					By("Assure the respective PVC was created")
-					pvcbuilder, err = storage.PullPersistentVolumeClaim(
-						HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+					err = wait.PollImmediate(time.Second, time.Second*5, func() (bool, error) {
+						By("Assure the respective PVC was created")
+						pvcbuilder, err = storage.PullPersistentVolumeClaim(
+							HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+						if err != nil {
+							return false, nil
+						}
+
+						return true, nil
+					})
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get PersistentVolumeClaim %s in NameSpace %s.",
 						imageServicePersistentVolumeClaimName,
