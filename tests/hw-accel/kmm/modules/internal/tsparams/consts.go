@@ -3,6 +3,10 @@ package tsparams
 const (
 	// LabelSuite represents kmm label that can be used for test cases selection.
 	LabelSuite = "module"
+	// KmmNamespace represents the namespace where KMM is installed.
+	KmmNamespace = "openshift-kmm"
+	// DeploymentName represents the name of the KMM operator deployment.
+	DeploymentName = "kmm-operator-controller-manager"
 	// BuildArgName represents kmod key passed to kmm-ci example.
 	BuildArgName = "MY_MODULE"
 	// ModuleNodeLabelTemplate represents template of the label set on a node for a Module.
