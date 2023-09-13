@@ -2,6 +2,7 @@ package operator_test
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -108,21 +109,25 @@ var _ = Describe(
 						}).WithImageSet(SpokeConfig.ClusterImageSet).
 						WithPlatformType(platformType).
 						WithUserManagedNetworking(userManagedNetworking).Create()
-					Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
+					if masterCount == 3 {
+						Expect(err).To(HaveOccurred(), "error: created agentclusterinstall with invalid data")
+						Expect(strings.Contains(err.Error(), message)).To(BeTrue(), "error: received incorrect error message")
+					} else {
+						Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
+						By("Getting SpecSynced condition")
+						specSyncedCondition, err := testAgentClusterInstall.GetCondition(v1beta1.ClusterSpecSyncedCondition)
+						Expect(err).ToNot(HaveOccurred(), "error getting SpecSynced condition from agentclusterinstall")
 
-					By("getting SpecSynced condition")
-					specSyncedCondition, err := testAgentClusterInstall.GetCondition(v1beta1.ClusterSpecSyncedCondition)
-					Expect(err).ToNot(HaveOccurred(), "error getting SpecSynced condition from agentclusterinstall")
-
-					By("waiting for condition to report expected failure message")
-					_, err = testAgentClusterInstall.WaitForConditionMessage(
-						specSyncedCondition,
-						"The Spec could not be synced due to an input error: "+message,
-						time.Second*10)
-					Expect(specSyncedCondition.Message).To(
-						Equal("The Spec could not be synced due to an input error: "+message),
-						"got unexpected message from SpecSynced condition")
-					Expect(err).ToNot(HaveOccurred(), "error waiting for condition message")
+						By("Waiting for condition to report expected failure message")
+						_, err = testAgentClusterInstall.WaitForConditionMessage(
+							specSyncedCondition,
+							"The Spec could not be synced due to an input error: "+message,
+							time.Second*10)
+						Expect(specSyncedCondition.Message).To(
+							Equal("The Spec could not be synced due to an input error: "+message),
+							"got unexpected message from SpecSynced condition")
+						Expect(err).ToNot(HaveOccurred(), "error waiting for condition message")
+					}
 				},
 				Entry("that is SNO with VSphere platform", v1beta1.VSpherePlatformType, true, 1, 0,
 					"Single node cluster is not supported alongside vsphere platform", polarion.ID("56198")),
@@ -133,9 +138,11 @@ var _ = Describe(
 			)
 
 			AfterEach(func() {
-				By("Delete agentclusterinstall")
-				err := testAgentClusterInstall.DeleteAndWait(time.Second * 10)
-				Expect(err).ToNot(HaveOccurred(), "error deleting agentclusterinstall")
+				if testAgentClusterInstall.Exists() {
+					By("Delete agentclusterinstall")
+					err := testAgentClusterInstall.DeleteAndWait(time.Second * 10)
+					Expect(err).ToNot(HaveOccurred(), "error deleting agentclusterinstall")
+				}
 			})
 
 			AfterAll(func() {
