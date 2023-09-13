@@ -17,4 +17,8 @@ const (
 	// LabelDebugInfoVerificationTestCases represents debug-info-verification label that can be used for test cases
 	// selection.
 	LabelDebugInfoVerificationTestCases = "debug-info-verification"
+
+	// LabelAssistedPodsNoRestartsTestCases represents assisted-pods-no-restarts label that can be used for test cases
+	// selection.
+	LabelAssistedPodsNoRestartsTestCases = "assisted-pods-no-restarts"
 )
