@@ -24,7 +24,7 @@ const (
 
 const (
 	// OperatorGroup enum value type.
-	OperatorGroup nfdBridgeBuilderType = iota
+	OperatorGroup builderType = iota
 	// NodeFeatureDiscovery enum value type.
 	NodeFeatureDiscovery
 	// Subscription enum value type.
@@ -35,9 +35,9 @@ const (
 	NameSpace
 )
 
-type nfdBridgeBuilderType int
+type builderType int
 
-type nfdBridgeBuilder interface {
+type builder interface {
 	Delete() error
 	Exists() bool
 }
@@ -46,7 +46,7 @@ type nfdAdapter struct {
 	nodeFeatureBuilder *nodefeature.Builder
 }
 
-func deleteAndWait(builder nfdBridgeBuilder, timeout time.Duration) error {
+func deleteAndWait(builder builder, timeout time.Duration) error {
 	if err := builder.Delete(); err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func NewNfdAPIResource(
 }
 
 // DeployNfd deploy NodeFeatureDiscovery operator and cr return error if it failed.
-func (n *NfdAPIResource) DeployNfd(waitTime int) error {
+func (n *NfdAPIResource) DeployNfd(waitTime int, addToplogy bool) error {
 	glog.V(100).Infof(
 		"Deploying node feature discovery")
 
@@ -122,7 +122,7 @@ func (n *NfdAPIResource) DeployNfd(waitTime int) error {
 		return fmt.Errorf("nfd deployment didn't become ready within the specified timeout")
 	}
 
-	err = deployNfdCR(n.Namespace, true)
+	err = deployNfdCR(n.Namespace, addToplogy)
 	if err != nil {
 		glog.V(100).Infof(
 			"Error in deploying NodeFeatureDiscovery CR cause: %s", err.Error())
@@ -302,10 +302,10 @@ func findCSV(namespace string) (string, error) {
 }
 
 func (n *NfdAPIResource) removeResource(resourceName string,
-	builderType nfdBridgeBuilderType) error {
+	builderType builderType) error {
 	var err error
 
-	var builder nfdBridgeBuilder
+	var builder builder
 
 	var nfdbuilder *nodefeature.Builder
 

@@ -23,12 +23,47 @@ var (
 	// Labels represents the range of labels that can be used for test cases selection.
 	Labels = []string{hwaccelparams.Label, "nfd"}
 
-	// FeatureLabel contains all labels that suppose to be in worker node.
-	FeatureLabel = []string{"ADX", "AESNI", "AVX", "AVX2", "AVX512BW", "AVX512CD", "AVX512DQ",
-		"AVX512F", "AVX512VL", "AVX512VNNI", "FMA3",
-		"HYPERVISOR", "IBPB", "MPX", "STIBP", "VMX"}
+	// KernelConfig contains all kernel config labels that suppose to be in worker node.
+	KernelConfig = []string{"NO_HZ"}
+
+	// Topology label.
+	Topology = []string{"cpu.topology"}
+
+	// NUMA labels.
+	NUMA = []string{"memory-numa"}
+
 	// Namespace represents operator namespace value.
 	Namespace = "openshift-nfd"
+
 	// Name represents operand name.
 	Name = "nfd-instance-test"
+
+	// DefaultBlackList list of default value which nfd ignore when detecting features.
+	DefaultBlackList = []string{
+		"BMI1",
+		"BMI2",
+		"CLMUL",
+		"CMOV",
+		"CX16",
+		"ERMS",
+		"F16C",
+		"HTT",
+		"LZCNT",
+		"MMX",
+		"MMXEXT",
+		"NX",
+		"POPCNT",
+		"RDRAND",
+		"RDSEED",
+		"RDTSCP",
+		"SGX",
+		"SGXLC",
+		"SSE",
+		"SSE2",
+		"SSE3",
+		"SSE4",
+		"SSE42",
+		"SSSE3",
+		"TDX_GUEST",
+	}
 )
