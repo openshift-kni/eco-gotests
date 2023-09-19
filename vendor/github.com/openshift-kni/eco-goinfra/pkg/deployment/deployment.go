@@ -291,6 +291,30 @@ func (builder *Builder) WithLabel(labelKey, labelValue string) *Builder {
 	return builder
 }
 
+// WithServiceAccountName sets the ServiceAccountName on deployment definition.
+func (builder *Builder) WithServiceAccountName(serviceAccountName string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting ServiceAccount %s on deployment %s in namespace %s",
+		serviceAccountName, builder.Definition.Name, builder.Definition.Namespace)
+
+	if serviceAccountName == "" {
+		glog.V(100).Infof("The 'serviceAccount' of the deployment is empty")
+
+		builder.errorMsg = "can not apply empty serviceAccount"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.Template.Spec.ServiceAccountName = serviceAccountName
+
+	return builder
+}
+
 // WithOptions creates deployment with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {

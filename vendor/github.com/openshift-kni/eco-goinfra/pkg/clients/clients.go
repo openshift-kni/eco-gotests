@@ -57,6 +57,7 @@ import (
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
+	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 )
 
@@ -80,6 +81,7 @@ type Settings struct {
 	argocdClient.ArgoprojV1alpha1Interface
 	olmv1.OperatorsV1Interface
 	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
+	operatorv1alpha1.OperatorV1alpha1Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -121,7 +123,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.PackageManifestInterface = clientPkgManifestV1.NewForConfigOrDie(config)
 	clientSet.SecurityV1Interface = v1security.NewForConfigOrDie(config)
 	clientSet.ArgoprojV1alpha1Interface = argocdClient.NewForConfigOrDie(config)
-
+	clientSet.OperatorV1alpha1Interface = operatorv1alpha1.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	crScheme := runtime.NewScheme()
