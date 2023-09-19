@@ -21,7 +21,6 @@ const (
 var (
 	osImageUR                                                    []v1beta1.OSImage
 	agentServiceConfigBuilderUR, tempAgentServiceConfigBuilderUR *assisted.AgentServiceConfigBuilder
-	specificUnAuthenticatedRegistry                              string = "registry.redhat.io"
 )
 
 var _ = Describe(
@@ -119,7 +118,7 @@ var _ = Describe(
 				polarion.ID("56554"), func() {
 					By("Create AgentServiceConfig with unauthenticatedRegistries containing a specific entry")
 					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient).
-						WithUnauthenticatedRegistry(specificUnAuthenticatedRegistry)
+						WithUnauthenticatedRegistry(unAuthenticatedNonDefaultRegistriesList()[0])
 
 					// An attempt to restrict the osImage spec for the new agentserviceconfig
 					// to prevent the download of all os images
@@ -141,24 +140,75 @@ var _ = Describe(
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
 
-					By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + specificUnAuthenticatedRegistry +
+					By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + unAuthenticatedNonDefaultRegistriesList()[0] +
 						"\" in the " + assistedConfigMapName + " configmap")
 					Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
-						ContainSubstring(specificUnAuthenticatedRegistry),
-						"error verifying that \""+specificUnAuthenticatedRegistry+
+						ContainSubstring(unAuthenticatedNonDefaultRegistriesList()[0]),
+						"error verifying that \""+unAuthenticatedNonDefaultRegistriesList()[0]+
 							"\" is listed among unauthenticated registries by default")
 
+					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
+				})
+			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing multiple entries",
+				polarion.ID("56555"), func() {
+					By("Create AgentServiceConfig with unauthenticatedRegistries containing multiples entries")
+					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
+					for _, registry := range unAuthenticatedNonDefaultRegistriesList() {
+						tempAgentServiceConfigBuilderUR.WithUnauthenticatedRegistry(registry)
+					}
+
+					// An attempt to restrict the osImage spec for the new agentserviceconfig
+					// to prevent the download of all os images
+					if len(osImageUR) > 0 {
+						_, err = tempAgentServiceConfigBuilderUR.WithOSImage(osImageUR[0]).Create()
+					} else {
+						_, err = tempAgentServiceConfigBuilderUR.Create()
+					}
+					Expect(err).ToNot(HaveOccurred(),
+						"error creating agentserviceconfig with unauthenticatedRegistries containing a specific entry")
+
+					By("Assure the AgentServiceConfig with unauthenticatedRegistries containing multiple entries was created")
+					_, err = tempAgentServiceConfigBuilderUR.WaitUntilDeployed(time.Minute * 10)
+					Expect(err).ToNot(HaveOccurred(),
+						"error waiting until agentserviceconfig with unauthenticatedRegistries containing multiple entries is deployed")
+
+					By("Retrieve the " + assistedConfigMapName + " configmap")
+					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
+					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
+						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
+
+					for _, registry := range unAuthenticatedNonDefaultRegistriesList() {
+						By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + registry +
+							"\" in the " + assistedConfigMapName + " configmap")
+						Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
+							ContainSubstring(registry),
+							"error verifying that \""+registry+
+								"\" is listed among unauthenticated registries")
+					}
 					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
 				})
 		})
 	})
 
+// unAuthenticatedDefaultRegistriesList return the list of default registries.
 func unAuthenticatedDefaultRegistriesList() []string {
 	return []string{
 		"registry.svc.ci.openshift.org",
 		"quay.io",
 	}
 }
+
+// unAuthenticatedNonDefaultRegistriesList return the list of non default registries.
+func unAuthenticatedNonDefaultRegistriesList() []string {
+	return []string{
+		"registry.redhat.io",
+		"registry.ci.openshift.org",
+		"docker.io",
+	}
+}
+
+// unAuthentcatedRegistriesDefaultEntries verifies the existence of default registries
+// in the assisted-service configmap.
 func unAuthentcatedRegistriesDefaultEntries(configMapBuilder *configmap.Builder) {
 	for _, registry := range unAuthenticatedDefaultRegistriesList() {
 		By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + registry +
