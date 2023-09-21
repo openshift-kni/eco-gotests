@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -22,6 +21,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/link"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -55,7 +55,7 @@ const (
 	firstInterfaceBasedOnTapOne  = "ext0.1"
 	secondInterfaceBasedOnTapOne = "ext0.2"
 	firstInterfaceBasedOnTapTwo  = "ext1.1"
-	timeoutError                 = "command terminated with exit code 124"
+	timeoutError                 = "command terminated with exit code 137"
 	mlxVendorID                  = "15b3"
 	intelVendorID                = "8086"
 	maxMulticastNoiseRate        = 5000
@@ -70,11 +70,10 @@ var (
 	rootUser         = int64(0)
 	customSCCGroupID = int64(customGroupID)
 	customSCCUserID  = int64(customUserID)
-	hugePagesGroup   = int64(801)
+	hugePagesGroup   = int64(1001)
 	falseFlag        = false
 	trueFlag         = true
 	workerNodes      *nodes.Builder
-	mcp              *mco.MCPBuilder
 
 	serverSC = v1.SecurityContext{
 		RunAsUser: &rootUser,
@@ -94,7 +93,7 @@ var (
 	clientSC = v1.SecurityContext{
 		Capabilities: &v1.Capabilities{
 			Drop: []v1.Capability{"ALL"},
-			Add:  []v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_ADMIN", "NET_RAW"},
+			Add:  []v1.Capability{"IPC_LOCK", "NET_ADMIN", "NET_RAW"},
 		},
 		RunAsUser:                &customSCCUserID,
 		Privileged:               &falseFlag,
@@ -144,10 +143,6 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			err := workerNodes.Discover()
 			Expect(err).ToNot(HaveOccurred(), "Fail to discover nodes")
 
-			By(fmt.Sprintf("Pulling MCP based on label %s", NetConfig.CnfMcpLabel))
-			mcp, err = mco.Pull(APIClient, NetConfig.CnfMcpLabel)
-			Expect(err).ToNot(HaveOccurred(), "Fail to pull MCP ")
-
 			By("Collecting SR-IOV interface for rootless dpdk tests")
 			srIovInterfacesUnderTest, err := NetConfig.GetSriovInterfaces(1)
 			Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
@@ -192,9 +187,14 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 					fmt.Sprintf("Fail to create %s dpdk policy", srIovPolicies[index].Definition.Name))
 			}
 
-			By("Waiting until cluster is stable")
-			err = mcp.WaitToBeStableFor(time.Minute, tsparams.MCOWaitTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to wait until cluster is stable")
+			By("Waiting until cluster MCP and SR-IOV are stable")
+			// This used to be to check for sriov not to be stable first,
+			// then stable. The issue is that if no configuration is applied, then
+			// the status will never go to not stable and the test will fail.
+			time.Sleep(5 * time.Second)
+			err = netenv.WaitForSriovAndMCPStable(
+				APIClient, tsparams.MCOWaitTimeout, time.Minute, NetConfig.CnfMcpLabel, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "fail cluster is not stable")
 
 			By("Setting selinux flag container_use_devices to 1 on all compute nodes")
 			err = cluster.ExecCmd(APIClient, NetConfig.WorkerLabel, setSEBool+"1")
@@ -445,7 +445,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			_, err = scc.NewBuilder(APIClient, "scc-test-admin", "MustRunAsNonRoot", "RunAsAny").
 				WithPrivilegedContainer(false).WithPrivilegedEscalation(true).
 				WithDropCapabilities([]v1.Capability{"ALL"}).
-				WithAllowCapabilities([]v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_ADMIN", "NET_RAW"}).
+				WithAllowCapabilities([]v1.Capability{"IPC_LOCK", "NET_ADMIN", "NET_RAW"}).
 				WithFSGroup("RunAsAny").
 				WithSeccompProfiles([]string{"*"}).
 				WithSupplementalGroups("RunAsAny").
@@ -581,8 +581,13 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Expect(err).ToNot(HaveOccurred(), "Fail to remove scc")
 		}
 
-		By("Waiting until cluster is stable")
-		err = mcp.WaitToBeStableFor(time.Minute, tsparams.MCOWaitTimeout)
+		By("Waiting until cluster MCP and SR-IOV are stable")
+		// This used to be to check for sriov not to be stable first,
+		// then stable. The issue is that if no configuration is applied, then
+		// the status will never go to not stable and the test will fail.
+		time.Sleep(5 * time.Second)
+		err = netenv.WaitForSriovAndMCPStable(
+			APIClient, tsparams.MCOWaitTimeout, time.Minute, NetConfig.CnfMcpLabel, NetConfig.SriovOperatorNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Fail to wait until cluster is stable")
 	})
 })
@@ -716,18 +721,21 @@ func definePodNetwork(podNetMapList []map[string]string) []*types.NetworkSelecti
 }
 
 func defineTestPmdCmd(interfaceName string, pciAddress string) string {
-	return fmt.Sprintf("timeout 20 dpdk-testpmd "+
+	return fmt.Sprintf("timeout -s SIGKILL 20 dpdk-testpmd "+
 		"--vdev=virtio_user0,path=/dev/vhost-net,queues=2,queue_size=1024,iface=%s "+
 		"-a %s -- --stats-period 5", interfaceName, pciAddress)
 }
 
 func rxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) {
+	Expect(clientPod.WaitUntilRunning(time.Minute)).ToNot(HaveOccurred(), "Fail to wait until pod is running")
 	clientOut, err := clientPod.ExecCommand([]string{"/bin/bash", "-c", clientRxCmd})
+
 	if err.Error() != timeoutError {
 		Expect(err).ToNot(HaveOccurred(), "Fail to exec cmd")
 	}
 
 	By("Parsing output from the DPDK application")
+	glog.V(90).Infof("Processing testpdm output from client pod \n%s", clientOut.String())
 	Expect(checkRxOnly(clientOut.String())).Should(BeTrue(), "Fail to process output from dpdk application")
 }
 
