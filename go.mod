@@ -14,7 +14,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20230919152630-0692c1b2c119
+	github.com/openshift-kni/eco-goinfra v0.0.0-20230920232543-fd8b2f012730
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -33,6 +33,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
+	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
@@ -227,7 +228,6 @@ require (
 	k8s.io/kubectl v0.26.4 // indirect
 	k8s.io/kubelet v0.26.2 // indirect
 	k8s.io/kubernetes v1.25.4 // indirect
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect

@@ -243,40 +243,6 @@ func GetGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
 }
 
-// List returns statefulset inventory in the given namespace.
-func List(apiClient *clients.Settings, nsname string, options metaV1.ListOptions) ([]*Builder, error) {
-	glog.V(100).Infof("Listing statefulsets in the namespace %s with the options %v", nsname, options)
-
-	if nsname == "" {
-		glog.V(100).Infof("statefulset 'nsname' parameter can not be empty")
-
-		return nil, fmt.Errorf("failed to list statefulsets, 'nsname' parameter is empty")
-	}
-
-	statefulsetList, err := apiClient.StatefulSets(nsname).List(context.Background(), options)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to list statefulsets in the namespace %s due to %s", nsname, err.Error())
-
-		return nil, err
-	}
-
-	var statefulsetObjects []*Builder
-
-	for _, runningStatefulSet := range statefulsetList.Items {
-		copiedStatefulSet := runningStatefulSet
-		statefulsetBuilder := &Builder{
-			apiClient:  apiClient,
-			Object:     &copiedStatefulSet,
-			Definition: &copiedStatefulSet,
-		}
-
-		statefulsetObjects = append(statefulsetObjects, statefulsetBuilder)
-	}
-
-	return statefulsetObjects, nil
-}
-
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {
