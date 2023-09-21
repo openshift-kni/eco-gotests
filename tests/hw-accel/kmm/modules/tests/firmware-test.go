@@ -146,11 +146,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, kmodName, tsparams.FirmwareTestNamespace, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check dmesg contains module message")
-			err = check.Dmesg(APIClient, "ALL GOOD WITH FIRMWARE", tsparams.FirmwareTestNamespace, time.Minute)
+			err = check.Dmesg(APIClient, "ALL GOOD WITH FIRMWARE", time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking dmesg contents")
 
 			By("Check label is set on all nodes")

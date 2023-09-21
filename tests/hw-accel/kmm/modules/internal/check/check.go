@@ -5,8 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
+
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -45,32 +50,67 @@ func NodeLabel(apiClient *clients.Settings, moduleName string, nodeSelector map[
 }
 
 // ModuleLoaded verifies the module is loaded on the node.
-func ModuleLoaded(apiClient *clients.Settings, modName, nsname string, timeout time.Duration) error {
+func ModuleLoaded(apiClient *clients.Settings, modName string, timeout time.Duration) error {
 	modName = strings.Replace(modName, "-", "_", 10)
 
-	return runCommandOnModuleLoader(apiClient, []string{"lsmod"}, modName, nsname, timeout)
+	return runCommandOnTestPods(apiClient, []string{"lsmod"}, modName, timeout)
 }
 
 // Dmesg verifies that dmesg contains message.
-func Dmesg(apiClient *clients.Settings, message, nsname string, timeout time.Duration) error {
-	return runCommandOnModuleLoader(apiClient, []string{"dmesg"}, message, nsname, timeout)
+func Dmesg(apiClient *clients.Settings, message string, timeout time.Duration) error {
+	return runCommandOnTestPods(apiClient, []string{"dmesg"}, message, timeout)
 }
 
 // ModuleSigned verifies the module is signed.
-func ModuleSigned(apiClient *clients.Settings, modName, message, nsname string, timeout time.Duration) error {
+func ModuleSigned(apiClient *clients.Settings, modName, message, nsname, image string) error {
 	modulePath := fmt.Sprintf("modinfo /opt/lib/modules/*/%s.ko", modName)
-
 	command := []string{"bash", "-c", modulePath}
 
-	return runCommandOnModuleLoader(apiClient, command, message, nsname, timeout)
+	kernelVersion, err := get.KernelFullVersion(apiClient, GeneralConfig.WorkerLabelMap)
+	if err != nil {
+		return err
+	}
+
+	processedImage := strings.ReplaceAll(image, "$KERNEL_FULL_VERSION", kernelVersion)
+	testPod := pod.NewBuilder(apiClient, "image-checker", nsname, processedImage)
+	_, err = testPod.CreateAndWaitUntilRunning(2 * time.Minute)
+
+	if err != nil {
+		glog.V(kmmparams.KmmLogLevel).Infof("Could not create signing verification pod. Got error : %v", err)
+
+		return err
+	}
+
+	glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\n\n", testPod.Object.Name)
+
+	buff, err := testPod.ExecCommand(command, "test")
+
+	if err != nil {
+		return err
+	}
+
+	_, _ = testPod.Delete()
+
+	contents := buff.String()
+	glog.V(kmmparams.KmmLogLevel).Infof("%s contents: \n \t%v\n", command, contents)
+
+	if strings.Contains(contents, message) {
+		glog.V(kmmparams.KmmLogLevel).Infof("command '%s' output contains '%s'\n", command, message)
+
+		return nil
+	}
+
+	err = fmt.Errorf("could not find signature in module")
+
+	return err
 }
 
-func runCommandOnModuleLoader(apiClient *clients.Settings,
-	command []string, message, nsname string, timeout time.Duration) error {
+func runCommandOnTestPods(apiClient *clients.Settings,
+	command []string, message string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		pods, err := pod.List(apiClient, nsname, v1.ListOptions{
+		pods, err := pod.List(apiClient, tsparams.KmmOperatorNamespace, v1.ListOptions{
 			FieldSelector: "status.phase=Running",
-			LabelSelector: "kmm.node.kubernetes.io/kernel-version.full",
+			LabelSelector: tsparams.KmmTestHelperLabelName,
 		})
 
 		if err != nil {
@@ -81,10 +121,10 @@ func runCommandOnModuleLoader(apiClient *clients.Settings,
 
 		// using a map so that both ModuleLoaded and Dmesg calls don't interfere with the counter
 		iter := 0
-		for _, pod := range pods {
-			glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\n\n", pod.Object.Name)
+		for _, iterPod := range pods {
+			glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\n\n", iterPod.Object.Name)
 
-			buff, err := pod.ExecCommand(command, "module-loader")
+			buff, err := iterPod.ExecCommand(command, "test")
 
 			if err != nil {
 				return false, err
@@ -93,7 +133,7 @@ func runCommandOnModuleLoader(apiClient *clients.Settings,
 			contents := buff.String()
 			glog.V(kmmparams.KmmLogLevel).Infof("%s contents: \n \t%v\n", command, contents)
 			if strings.Contains(contents, message) {
-				glog.V(kmmparams.KmmLogLevel).Infof("command '%s' contains '%s' in pod %s\n", command, message, pod.Object.Name)
+				glog.V(kmmparams.KmmLogLevel).Infof("command '%s' contains '%s' in pod %s\n", command, message, iterPod.Object.Name)
 				iter++
 
 				if iter == len(pods) {

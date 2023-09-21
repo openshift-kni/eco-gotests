@@ -127,12 +127,12 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, kmodName, tsparams.ModuleBuildAndSignNamespace, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check module is signed")
 			err = check.ModuleSigned(APIClient, kmodName, "cdvtest signing key",
-				tsparams.ModuleBuildAndSignNamespace, time.Minute)
+				tsparams.ModuleBuildAndSignNamespace, image)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is signed")
 
 			By("Check label is set on all nodes")

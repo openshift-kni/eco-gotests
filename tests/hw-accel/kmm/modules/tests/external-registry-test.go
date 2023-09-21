@@ -115,7 +115,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, kmodName, localNsName, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
@@ -173,7 +173,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check module is loaded on node")
-			err = check.ModuleLoaded(APIClient, kmodName, localNsName, time.Minute)
+			err = check.ModuleLoaded(APIClient, kmodName, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")

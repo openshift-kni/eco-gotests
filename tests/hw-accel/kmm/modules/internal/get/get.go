@@ -29,6 +29,20 @@ func NumberOfNodesForSelector(apiClient *clients.Settings, selector map[string]s
 
 // ClusterArchitecture returns first node architecture of the nodes that match nodeSelector (e.g. worker nodes).
 func ClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string]string) (string, error) {
+	nodeLabel := "kubernetes.io/arch"
+
+	return getLabelFromNodeSelector(apiClient, nodeLabel, nodeSelector)
+}
+
+// KernelFullVersion returns first node architecture of the nodes that match nodeSelector (e.g. worker nodes).
+func KernelFullVersion(apiClient *clients.Settings, nodeSelector map[string]string) (string, error) {
+	nodeLabel := "kmm.node.kubernetes.io/kernel-version.full"
+
+	return getLabelFromNodeSelector(apiClient, nodeLabel, nodeSelector)
+}
+
+func getLabelFromNodeSelector(apiClient *clients.Settings, nodeLabel string,
+	nodeSelector map[string]string) (string, error) {
 	nodeBuilder := nodes.NewBuilder(apiClient, nodeSelector)
 	// Check if at least one node matching the nodeSelector has the specific nodeLabel label set to true
 	// For example, look in all the worker nodes for specific label
@@ -37,8 +51,6 @@ func ClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string]st
 
 		return "", err
 	}
-
-	nodeLabel := "kubernetes.io/arch"
 
 	for _, node := range nodeBuilder.Objects {
 		labelValue, ok := node.Object.Labels[nodeLabel]

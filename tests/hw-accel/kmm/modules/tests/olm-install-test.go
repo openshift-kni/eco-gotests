@@ -21,16 +21,16 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			}
 
 			By("Checking subscription exists")
-			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, tsparams.KmmNamespace)
+			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, tsparams.KmmOperatorNamespace)
 			Expect(err).NotTo(HaveOccurred(), "error getting subscription")
 			Expect(string(sub.Object.Status.State)).To(Equal("AtLatestKnown"))
 
 			By("Checking operator namespace exists")
-			exists := namespace.NewBuilder(APIClient, tsparams.KmmNamespace).Exists()
+			exists := namespace.NewBuilder(APIClient, tsparams.KmmOperatorNamespace).Exists()
 			Expect(exists).To(Equal(true))
 
 			By("Checking operator deployment")
-			ds, err := deployment.Pull(APIClient, tsparams.DeploymentName, tsparams.KmmNamespace)
+			ds, err := deployment.Pull(APIClient, tsparams.DeploymentName, tsparams.KmmOperatorNamespace)
 			Expect(err).NotTo(HaveOccurred(), "error getting deployment")
 			Expect(ds.Object.Status.ReadyReplicas).To(Equal(int32(1)))
 		})
