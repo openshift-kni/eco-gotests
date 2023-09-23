@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -66,10 +67,11 @@ func GetFirstPodNameWithLabel(apiClient *clients.Settings, podNamespace, podLabe
 
 // GetClusterArchitecture returns first node architecture of the nodes that match nodeSelector (e.g. worker nodes).
 func GetClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string]string) (string, error) {
-	nodeBuilder := nodes.NewBuilder(apiClient, nodeSelector)
+	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+
 	// Check if at least one node matching the nodeSelector has the specific nodeLabel label set to true
 	// For example, look in all the worker nodes for specific label
-	if err := nodeBuilder.Discover(); err != nil {
+	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("could not discover %v nodes", nodeSelector)
 
 		return "", err
@@ -77,7 +79,7 @@ func GetClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string
 
 	nodeLabel := "kubernetes.io/arch"
 
-	for _, node := range nodeBuilder.Objects {
+	for _, node := range nodeBuilder {
 		labelValue, ok := node.Object.Labels[nodeLabel]
 
 		if ok {
@@ -88,7 +90,7 @@ func GetClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string
 		}
 	}
 
-	err := fmt.Errorf("could not find one node with label '%s'", nodeLabel)
+	err = fmt.Errorf("could not find one node with label '%s'", nodeLabel)
 
 	return "", err
 }

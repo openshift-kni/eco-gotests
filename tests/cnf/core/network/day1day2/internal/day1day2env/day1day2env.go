@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/golang/glog"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -26,29 +29,33 @@ func DoesClusterSupportDay1Day2Tests(requiredCPNodeNumber, requiredWorkerNodeNum
 		return err
 	}
 
-	workerNodeList := nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
+	workerNodeList, err := nodes.List(
+		APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()},
+	)
+
+	if err != nil {
+		return err
+	}
 
 	glog.V(90).Infof("Verifying if cluster has enough workers to run Day1Day2 tests")
 
-	err := workerNodeList.Discover()
-	if err != nil {
-		return err
-	}
-
-	if len(workerNodeList.Objects) < requiredWorkerNodeNumber {
+	if len(workerNodeList) < requiredWorkerNodeNumber {
 		return fmt.Errorf("cluster has less than %d worker nodes", requiredWorkerNodeNumber)
 	}
 
-	controlPlaneNodeList := nodes.NewBuilder(APIClient, NetConfig.ControlPlaneLabelMap)
+	controlPlaneNodeList, err := nodes.List(
+		APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()},
+	)
 
-	glog.V(90).Infof("Verifying if cluster has enough control-plane nodes to run Day1Day2 tests")
-
-	err = controlPlaneNodeList.Discover()
 	if err != nil {
 		return err
 	}
 
-	if len(controlPlaneNodeList.Objects) < requiredCPNodeNumber {
+	glog.V(90).Infof("Verifying if cluster has enough control-plane nodes to run Day1Day2 tests")
+
+	if len(controlPlaneNodeList) < requiredCPNodeNumber {
 		return fmt.Errorf("cluster has less than %d control-plane nodes", requiredCPNodeNumber)
 	}
 
@@ -90,33 +97,37 @@ func GetBondInterfaceMiimon(nodeName, bondInterfaceName string) (int, error) {
 func CheckConnectivityBetweenMasterAndWorkers() error {
 	glog.V(90).Infof("Checking connectivity between master node and worker nodes")
 
-	masterNodes := nodes.NewBuilder(APIClient, NetConfig.ControlPlaneLabelMap)
+	masterNodes, err := nodes.List(
+		APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()},
+	)
 
-	err := masterNodes.Discover()
 	if err != nil {
 		return err
 	}
 
-	workerNodeList := nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
+	workerNodeList, err := nodes.List(
+		APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()},
+	)
 
-	err = workerNodeList.Discover()
 	if err != nil {
 		return err
 	}
 
 	podMaster, err := pod.NewBuilder(
 		APIClient, "mastertestpod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-		DefineOnNode(masterNodes.Objects[0].Definition.Name).WithHostNetwork().
+		DefineOnNode(masterNodes[0].Definition.Name).WithHostNetwork().
 		WithPrivilegedFlag().WithTolerationToMaster().CreateAndWaitUntilRunning(netparam.DefaultTimeout)
 	if err != nil {
 		return err
 	}
 
-	for _, workerNode := range workerNodeList.Objects {
+	for _, workerNode := range workerNodeList {
 		err = cmd.ICMPConnectivityCheck(podMaster, []string{workerNode.Object.Status.Addresses[0].Address + "/24"})
 		if err != nil {
 			return fmt.Errorf("connectivity check between %s and %s failed: %w",
-				masterNodes.Objects[0].Definition.Name, workerNode.Object.Name, err)
+				masterNodes[0].Definition.Name, workerNode.Object.Name, err)
 		}
 	}
 

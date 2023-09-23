@@ -17,20 +17,25 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFailure, func() {
 	var (
-		workerNodeList *nodes.Builder
+		workerNodeList []*nodes.Builder
 	)
 
 	BeforeAll(func() {
+		var err error
 		By("Discovering worker nodes")
-		workerNodeList = nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
-		Expect(workerNodeList.Discover()).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+		workerNodeList, err = nodes.List(APIClient,
+			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()},
+		)
+		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
 		By("Creating a new instance of NMState instance")
-		err := netnmstate.CreateNewNMStateAndWaitUntilItsRunning(netparam.DefaultTimeout)
+		err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(netparam.DefaultTimeout)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
 		By("Verifying that the cluster deployed via bond interface" +
@@ -52,13 +57,13 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	It("Day2 Bond: change miimon configuration", polarion.ID("63881"), func() {
 		By("Collecting information about test interfaces")
-		bondName, err := netnmstate.GetPrimaryInterfaceBond(workerNodeList.Objects[0].Definition.Name)
+		bondName, err := netnmstate.GetPrimaryInterfaceBond(workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get Bond primary interface name")
-		bondInterfaceVlanSlaves, err := netnmstate.GetBondSlaves(bondName, workerNodeList.Objects[0].Definition.Name)
+		bondInterfaceVlanSlaves, err := netnmstate.GetBondSlaves(bondName, workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get bond slave interfaces")
 
 		By("Saving miimon value on the bond interface before the test")
-		defaultMiimonValue, err := day1day2env.GetBondInterfaceMiimon(workerNodeList.Objects[0].Definition.Name, bondName)
+		defaultMiimonValue, err := day1day2env.GetBondInterfaceMiimon(workerNodeList[0].Definition.Name, bondName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get miimon configuration")
 		newExpectedMiimonValue := defaultMiimonValue + 10
 
@@ -72,7 +77,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		By("Verifying that expected miimon value is configured")
 
-		for _, workerNode := range workerNodeList.Objects {
+		for _, workerNode := range workerNodeList {
 			currentMiimonValue, err := day1day2env.GetBondInterfaceMiimon(workerNode.Object.Name, bondName)
 			Expect(err).ToNot(HaveOccurred(), "Failed to get miimon configuration")
 			Expect(currentMiimonValue).To(Equal(newExpectedMiimonValue), "Miimon has unexpected value")
@@ -91,7 +96,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		By("Verifying that miimon is restored")
 
-		for _, workerNode := range workerNodeList.Objects {
+		for _, workerNode := range workerNodeList {
 			currentMiimon, err := day1day2env.GetBondInterfaceMiimon(workerNode.Object.Name, bondName)
 			Expect(err).ToNot(HaveOccurred(), "Failed to get miimon configuration")
 			Expect(currentMiimon).To(Equal(defaultMiimonValue), "miimon has unexpected value")
@@ -103,7 +108,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 })
 
-func checkThatWorkersDeployedWithBondVlanVfs(workerNodes *nodes.Builder) {
+func checkThatWorkersDeployedWithBondVlanVfs(workerNodes []*nodes.Builder) {
 	By("Verifying that the cluster deployed via bond interface")
 
 	var (
@@ -111,7 +116,7 @@ func checkThatWorkersDeployedWithBondVlanVfs(workerNodes *nodes.Builder) {
 		err      error
 	)
 
-	for _, worker := range workerNodes.Objects {
+	for _, worker := range workerNodes {
 		bondName, err = netnmstate.GetPrimaryInterfaceBond(worker.Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to check primary interface")
 
@@ -122,13 +127,13 @@ func checkThatWorkersDeployedWithBondVlanVfs(workerNodes *nodes.Builder) {
 
 	By("Gathering enslave interfaces for the bond interface")
 
-	bondInterfaceVlanSlaves, err := netnmstate.GetBondSlaves(bondName, workerNodes.Objects[0].Definition.Name)
+	bondInterfaceVlanSlaves, err := netnmstate.GetBondSlaves(bondName, workerNodes[0].Definition.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to get bond slave interfaces")
 
 	By("Verifying that enslave interfaces are vlan interfaces and base-interface for Vlan interface is a VF interface")
 
 	for _, bondSlave := range bondInterfaceVlanSlaves {
-		baseInterface, err := netnmstate.GetBaseVlanInterface(bondSlave, workerNodes.Objects[0].Definition.Name)
+		baseInterface, err := netnmstate.GetBaseVlanInterface(bondSlave, workerNodes[0].Definition.Name)
 		if err != nil && strings.Contains(err.Error(), "it is not a vlan type") {
 			Skip("The test skipped because of bond slave interfaces are not vlan interfaces")
 		}
@@ -136,7 +141,7 @@ func checkThatWorkersDeployedWithBondVlanVfs(workerNodes *nodes.Builder) {
 		Expect(err).ToNot(HaveOccurred(), "Failed to get Vlan base interface")
 
 		// If a Vlan baseInterface has SR-IOV PF, it means that the baseInterface is VF.
-		_, err = day1day2env.GetSrIovPf(baseInterface, workerNodes.Objects[0].Definition.Name)
+		_, err = day1day2env.GetSrIovPf(baseInterface, workerNodes[0].Definition.Name)
 		if err != nil && strings.Contains(err.Error(), "No such file or directory") {
 			Skip("The test skipped because of bond slave interfaces are not vlan interfaces")
 		}

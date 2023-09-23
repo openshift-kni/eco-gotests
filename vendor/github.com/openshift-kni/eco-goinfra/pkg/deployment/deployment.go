@@ -494,45 +494,6 @@ func (builder *Builder) Exists() bool {
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
-// GetGVR returns deployment's GroupVersionResource which could be used for Clean function.
-func GetGVR() schema.GroupVersionResource {
-	return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
-}
-
-// List returns deployment inventory in the given namespace.
-func List(apiClient *clients.Settings, nsname string, options metaV1.ListOptions) ([]*Builder, error) {
-	glog.V(100).Infof("Listing deployments in the namespace %s with the options %v", nsname, options)
-
-	if nsname == "" {
-		glog.V(100).Infof("deployment 'nsname' parameter can not be empty")
-
-		return nil, fmt.Errorf("failed to list deployments, 'nsname' parameter is empty")
-	}
-
-	deploymentList, err := apiClient.Deployments(nsname).List(context.Background(), options)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to list deployments in the namespace %s due to %s", nsname, err.Error())
-
-		return nil, err
-	}
-
-	var deploymentObjects []*Builder
-
-	for _, runningDeployment := range deploymentList.Items {
-		copiedDeployment := runningDeployment
-		deploymentBuilder := &Builder{
-			apiClient:  apiClient,
-			Object:     &copiedDeployment,
-			Definition: &copiedDeployment,
-		}
-
-		deploymentObjects = append(deploymentObjects, deploymentBuilder)
-	}
-
-	return deploymentObjects, nil
-}
-
 // WaitUntilCondition waits for the duration of the defined timeout or until the
 // deployment gets to a specific condition.
 func (builder *Builder) WaitUntilCondition(condition v1.DeploymentConditionType, timeout time.Duration) error {
@@ -563,6 +524,11 @@ func (builder *Builder) WaitUntilCondition(condition v1.DeploymentConditionType,
 		return false, nil
 
 	})
+}
+
+// GetGVR returns deployment's GroupVersionResource which could be used for Clean function.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
 }
 
 // validate will check that the builder and builder definition are properly initialized before

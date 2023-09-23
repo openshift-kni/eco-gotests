@@ -16,6 +16,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -94,9 +95,10 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 	timeout time.Duration, selector map[string]string) error {
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		var err error
-		nodeBuilder := nodes.NewBuilder(apiClient, selector)
 
-		if err := nodeBuilder.Discover(); err != nil {
+		nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(selector).String()})
+
+		if err != nil {
 			glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", selector)
 		}
 
@@ -110,7 +112,7 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 
 		foundLabels := 0
 
-		for _, node := range nodeBuilder.Objects {
+		for _, node := range nodeBuilder {
 			_, ok := node.Object.Labels[label]
 			if ok {
 				glog.V(kmmparams.KmmLogLevel).Infof("Found label %v that contains %v on node %v",
@@ -119,7 +121,7 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 				foundLabels++
 				glog.V(kmmparams.KmmLogLevel).Infof("Number of nodes: %v, Number of nodes with '%v' label pods: %v\n",
 					nodesForSelector, label, foundLabels)
-				if foundLabels == len(nodeBuilder.Objects) {
+				if foundLabels == len(nodeBuilder) {
 					return true, nil
 				}
 			}

@@ -4,28 +4,28 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
+	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-
-	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 )
 
 var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
 	Context("Module", Label("firmware"), func() {
+
+		var mcpName string
 
 		moduleName := tsparams.FirmwareTestNamespace
 		kmodName := "simple-kmod-firmware"
@@ -35,9 +35,14 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 		machineConfigName := "99-worker-kernel-args-firmware-path"
 		machineConfigRole := "machineconfiguration.openshift.io/role"
 		workerKernelArgs := []string{"firmware_class.path=/var/lib/firmware"}
-		mcpName := get.MachineConfigPoolName(APIClient)
+
+		BeforeAll(func() {
+			By("Collect MachineConfigPoolName")
+			mcpName = get.MachineConfigPoolName(APIClient)
+		})
 
 		AfterEach(func() {
+			mcpName := get.MachineConfigPoolName(APIClient)
 			By("Delete Module")
 			_, _ = kmm.NewModuleBuilder(APIClient, moduleName, tsparams.FirmwareTestNamespace).Delete()
 

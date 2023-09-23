@@ -20,14 +20,16 @@ import (
 func PullTestImageOnNodes(apiClient *clients.Settings, nodeSelector, image string, pullTimeout int) error {
 	glog.V(90).Infof("Pulling image %s to nodes with the following label %v", image, nodeSelector)
 
-	nodesList := nodes.NewBuilder(apiClient, map[string]string{nodeSelector: ""})
-	err := nodesList.Discover()
+	nodesList, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(map[string]string{nodeSelector: ""}).String()},
+	)
 
 	if err != nil {
 		return err
 	}
 
-	for _, node := range nodesList.Objects {
+	for _, node := range nodesList {
 		glog.V(90).Infof("Pulling image %s to node %s", image, node.Object.Name)
 		podBuilder := pod.NewBuilder(
 			apiClient, fmt.Sprintf("pullpod-%s", node.Object.Name), "default", image)
@@ -45,13 +47,16 @@ func PullTestImageOnNodes(apiClient *clients.Settings, nodeSelector, image strin
 // ExecCmd runc cmd on all nodes that match nodeSelector.
 func ExecCmd(apiClient *clients.Settings, nodeSelector string, shellCmd string) error {
 	glog.V(90).Infof("Executing cmd: %v on nodes based on label: %v using mcp pods", shellCmd, nodeSelector)
-	nodeList := nodes.NewBuilder(apiClient, map[string]string{nodeSelector: ""})
 
-	if err := nodeList.Discover(); err != nil {
+	nodeList, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(map[string]string{nodeSelector: ""}).String()},
+	)
+	if err != nil {
 		return err
 	}
 
-	for _, node := range nodeList.Objects {
+	for _, node := range nodeList {
 		listOptions := metav1.ListOptions{
 			FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": node.Definition.Name}).String(),
 			LabelSelector: labels.SelectorFromSet(labels.Set{"k8s-app": GeneralConfig.MCOConfigDaemonName}).String(),

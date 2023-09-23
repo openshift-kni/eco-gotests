@@ -14,6 +14,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -30,29 +32,31 @@ func DoesClusterHasEnoughNodes(
 	requiredWorkerNodeNumber int) error {
 	glog.V(90).Infof("Verifying if cluster has enough workers to run tests")
 
-	workerNodeList := nodes.NewBuilder(apiClient, netConfig.WorkerLabelMap)
-
-	err := workerNodeList.Discover()
+	workerNodeList, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(netConfig.WorkerLabelMap).String()},
+	)
 
 	if err != nil {
 		return err
 	}
 
-	if len(workerNodeList.Objects) < requiredWorkerNodeNumber {
+	if len(workerNodeList) < requiredWorkerNodeNumber {
 		return fmt.Errorf("cluster has less than %d worker nodes", requiredWorkerNodeNumber)
 	}
 
-	controlPlaneNodeList := nodes.NewBuilder(apiClient, netConfig.ControlPlaneLabelMap)
-
-	glog.V(90).Infof("Verifying if cluster has enough control-plane nodes to run tests")
-
-	err = controlPlaneNodeList.Discover()
+	controlPlaneNodeList, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(netConfig.ControlPlaneLabelMap).String()},
+	)
 
 	if err != nil {
 		return err
 	}
 
-	if len(controlPlaneNodeList.Objects) < requiredCPNodeNumber {
+	glog.V(90).Infof("Verifying if cluster has enough control-plane nodes to run tests")
+
+	if len(controlPlaneNodeList) < requiredCPNodeNumber {
 		return fmt.Errorf("cluster has less than %d control-plane nodes", requiredCPNodeNumber)
 	}
 
@@ -68,8 +72,10 @@ func DoesClusterSupportSrIovTests(
 		return err
 	}
 
-	workerNodeList := nodes.NewBuilder(apiClient, netConfig.WorkerLabelMap)
-	err := workerNodeList.Discover()
+	workerNodeList, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(netConfig.WorkerLabelMap).String()},
+	)
 
 	if err != nil {
 		return err
@@ -108,20 +114,20 @@ func isSriovDeployed(apiClient *clients.Settings, netConfig *netconfig.NetworkCo
 
 // compareNodeSriovInterfaces validates if all nodes have the same interface spec.
 func compareNodeSriovInterfaces(
-	apiClient *clients.Settings, netConfig *netconfig.NetworkConfig, workerNodeList *nodes.Builder) error {
-	baseInterfacesFirstNode, err := sriov.NewNetworkNodeStateBuilder(apiClient, workerNodeList.Objects[0].Definition.Name,
+	apiClient *clients.Settings, netConfig *netconfig.NetworkConfig, workerNodeList []*nodes.Builder) error {
+	baseInterfacesFirstNode, err := sriov.NewNetworkNodeStateBuilder(apiClient, workerNodeList[0].Definition.Name,
 		netConfig.SriovOperatorNamespace).GetNICs()
 	if err != nil {
-		return fmt.Errorf("failed get SR-IOV devices from the node %s", workerNodeList.Objects[0].Definition.Name)
+		return fmt.Errorf("failed get SR-IOV devices from the node %s", workerNodeList[0].Definition.Name)
 	}
 
 	supportedSrIovInterfacesOnFirstComputeNode := filterSupportedSrIovDevices(baseInterfacesFirstNode)
 
 	if len(supportedSrIovDevices) < 1 {
-		return fmt.Errorf("failed to get supported SR-IOV devices from node %s", workerNodeList.Objects[0].Definition.Name)
+		return fmt.Errorf("failed to get supported SR-IOV devices from node %s", workerNodeList[0].Definition.Name)
 	}
 
-	for _, node := range workerNodeList.Objects {
+	for _, node := range workerNodeList {
 		sriovInterfaces, err := sriov.NewNetworkNodeStateBuilder(apiClient, node.Definition.Name,
 			netConfig.SriovOperatorNamespace).GetNICs()
 		if err != nil {

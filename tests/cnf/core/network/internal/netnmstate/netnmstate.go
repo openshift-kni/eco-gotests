@@ -13,6 +13,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
@@ -99,14 +101,13 @@ func ConfigureVFsAndWaitUntilItsConfigured(
 	}
 
 	// NodeNetworkStates exist for each node and share the same name.
-	nodeList := nodes.NewBuilder(APIClient, nodeLabel)
+	nodeList, err := nodes.List(APIClient, metav1.ListOptions{LabelSelector: labels.Set(nodeLabel).String()})
 
-	err = nodeList.Discover()
 	if err != nil {
 		return err
 	}
 
-	for _, node := range nodeList.Objects {
+	for _, node := range nodeList {
 		err = AreVFsCreated(node.Definition.Name, sriovInterfaceName, int(numberOfVFs))
 		if err != nil {
 			return err

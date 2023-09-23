@@ -14,8 +14,8 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NodeBuilder provides struct for Node object containing connection to the cluster and the list of Node definitions.
-type NodeBuilder struct {
+// Builder provides struct for Node object containing connection to the cluster and the list of Node definitions.
+type Builder struct {
 	Definition *v1.Node
 	Object     *v1.Node
 	apiClient  *clients.Settings
@@ -23,13 +23,13 @@ type NodeBuilder struct {
 }
 
 // AdditionalOptions additional options for node object.
-type AdditionalOptions func(builder *NodeBuilder) (*NodeBuilder, error)
+type AdditionalOptions func(builder *Builder) (*Builder, error)
 
-// PullNode pulls existing node from cluster.
-func PullNode(apiClient *clients.Settings, nodeName string) (*NodeBuilder, error) {
+// Pull gathers existing node from cluster.
+func Pull(apiClient *clients.Settings, nodeName string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing node object: %s", nodeName)
 
-	builder := NodeBuilder{
+	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.Node{
 			ObjectMeta: metaV1.ObjectMeta{
@@ -48,7 +48,7 @@ func PullNode(apiClient *clients.Settings, nodeName string) (*NodeBuilder, error
 }
 
 // Update renovates the existing node object with the node definition in builder.
-func (builder *NodeBuilder) Update() (*NodeBuilder, error) {
+func (builder *Builder) Update() (*Builder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
@@ -70,7 +70,7 @@ func (builder *NodeBuilder) Update() (*NodeBuilder, error) {
 }
 
 // Exists checks whether the given node exists.
-func (builder *NodeBuilder) Exists() bool {
+func (builder *Builder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
 	}
@@ -85,7 +85,7 @@ func (builder *NodeBuilder) Exists() bool {
 }
 
 // WithNewLabel defines the new label placed in the Node metadata.
-func (builder *NodeBuilder) WithNewLabel(key, value string) *NodeBuilder {
+func (builder *Builder) WithNewLabel(key, value string) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -116,7 +116,7 @@ func (builder *NodeBuilder) WithNewLabel(key, value string) *NodeBuilder {
 }
 
 // WithOptions creates node with generic mutation options.
-func (builder *NodeBuilder) WithOptions(options ...AdditionalOptions) *NodeBuilder {
+func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -141,7 +141,7 @@ func (builder *NodeBuilder) WithOptions(options ...AdditionalOptions) *NodeBuild
 }
 
 // RemoveLabel removes given label from Node metadata.
-func (builder *NodeBuilder) RemoveLabel(key, value string) *NodeBuilder {
+func (builder *Builder) RemoveLabel(key, value string) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -163,7 +163,7 @@ func (builder *NodeBuilder) RemoveLabel(key, value string) *NodeBuilder {
 }
 
 // ExternalIPv4Network returns nodes external ip address.
-func (builder *NodeBuilder) ExternalIPv4Network() (string, error) {
+func (builder *Builder) ExternalIPv4Network() (string, error) {
 	if valid, err := builder.validate(); !valid {
 		return "", err
 	}
@@ -191,7 +191,7 @@ func (builder *NodeBuilder) ExternalIPv4Network() (string, error) {
 
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
-func (builder *NodeBuilder) validate() (bool, error) {
+func (builder *Builder) validate() (bool, error) {
 	resourceCRD := "Node"
 
 	if builder == nil {

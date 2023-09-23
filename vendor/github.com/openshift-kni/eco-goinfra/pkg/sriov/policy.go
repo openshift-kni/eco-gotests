@@ -333,37 +333,3 @@ func (builder *PolicyBuilder) validate() (bool, error) {
 
 	return true, nil
 }
-
-// CleanAllNetworkNodePolicies removes all SriovNetworkNodePolicies that are not set as default.
-func CleanAllNetworkNodePolicies(apiClient *clients.Settings, operatornsname string, options metaV1.ListOptions) error {
-	glog.V(100).Infof("Cleaning up SriovNetworkNodePolicies in the %s namespace", operatornsname)
-
-	if operatornsname == "" {
-		glog.V(100).Infof("'operatornsname' parameter can not be empty")
-
-		return fmt.Errorf("failed to clean up SriovNetworkNodePolicies, 'operatornsname' parameter is empty")
-	}
-
-	policies, err := ListPolicy(apiClient, operatornsname, options)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to list SriovNetworkNodePolicies in namespace: %s", operatornsname)
-
-		return err
-	}
-
-	for _, policy := range policies {
-		// The "default" SriovNetworkNodePolicy is both mandatory and the default option.
-		if policy.Object.Name != "default" {
-			err = policy.Delete()
-
-			if err != nil {
-				glog.V(100).Infof("Failed to delete SriovNetworkNodePolicy: %s", policy.Object.Name)
-
-				return err
-			}
-		}
-	}
-
-	return nil
-}

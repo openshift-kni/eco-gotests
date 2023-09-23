@@ -9,22 +9,23 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // NumberOfNodesForSelector returns the number or worker nodes.
 func NumberOfNodesForSelector(apiClient *clients.Settings, selector map[string]string) (int, error) {
-	nodeBuilder := nodes.NewBuilder(apiClient, selector)
+	nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(selector).String()})
 
-	if err := nodeBuilder.Discover(); err != nil {
+	if err != nil {
 		fmt.Println("could not discover number of nodes")
 
 		return 0, err
 	}
 
-	glog.V(kmmparams.KmmLogLevel).Infof(
-		"NumberOfNodesForSelector return %v nodes", len(nodeBuilder.Objects))
+	glog.V(kmmparams.KmmLogLevel).Infof("NumberOfNodesForSelector return %v nodes", len(nodeBuilder))
 
-	return len(nodeBuilder.Objects), nil
+	return len(nodeBuilder), nil
 }
 
 // ClusterArchitecture returns first node architecture of the nodes that match nodeSelector (e.g. worker nodes).
@@ -41,18 +42,21 @@ func KernelFullVersion(apiClient *clients.Settings, nodeSelector map[string]stri
 	return getLabelFromNodeSelector(apiClient, nodeLabel, nodeSelector)
 }
 
-func getLabelFromNodeSelector(apiClient *clients.Settings, nodeLabel string,
+func getLabelFromNodeSelector(
+	apiClient *clients.Settings,
+	nodeLabel string,
 	nodeSelector map[string]string) (string, error) {
-	nodeBuilder := nodes.NewBuilder(apiClient, nodeSelector)
+	nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+
 	// Check if at least one node matching the nodeSelector has the specific nodeLabel label set to true
 	// For example, look in all the worker nodes for specific label
-	if err := nodeBuilder.Discover(); err != nil {
+	if err != nil {
 		glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", nodeSelector)
 
 		return "", err
 	}
 
-	for _, node := range nodeBuilder.Objects {
+	for _, node := range nodeBuilder {
 		labelValue, ok := node.Object.Labels[nodeLabel]
 
 		if ok {
@@ -63,22 +67,25 @@ func getLabelFromNodeSelector(apiClient *clients.Settings, nodeLabel string,
 		}
 	}
 
-	err := fmt.Errorf("could not find one node with label '%s'", nodeLabel)
+	err = fmt.Errorf("could not find one node with label '%s'", nodeLabel)
 
 	return "", err
 }
 
 // MachineConfigPoolName returns machineconfigpool's name for a specified label.
 func MachineConfigPoolName(apiClient *clients.Settings) string {
-	nodeBuilder := nodes.NewBuilder(apiClient, map[string]string{"kubernetes.io/os": "linux"})
+	nodeBuilder, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(map[string]string{"kubernetes.io": ""}).String()},
+	)
 
-	if err := nodeBuilder.Discover(); err != nil {
+	if err != nil {
 		glog.V(kmmparams.KmmLogLevel).Infof("could not discover nodes")
 
-		return ("")
+		return ""
 	}
 
-	if len(nodeBuilder.Objects) == 1 {
+	if len(nodeBuilder) == 1 {
 		glog.V(kmmparams.KmmLogLevel).Infof("Using 'master' as mcp")
 
 		return "master"

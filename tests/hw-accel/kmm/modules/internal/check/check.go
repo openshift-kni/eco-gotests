@@ -17,34 +17,35 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // NodeLabel checks if label is present on the node.
 func NodeLabel(apiClient *clients.Settings, moduleName string, nodeSelector map[string]string) (bool, error) {
-	nodeBuilder := nodes.NewBuilder(apiClient, nodeSelector)
+	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
 
-	if err := nodeBuilder.Discover(); err != nil {
+	if err != nil {
 		glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", nodeSelector)
 	}
 
 	foundLabels := 0
 	label := fmt.Sprintf("kmm.node.kubernetes.io/%s.ready", moduleName)
 
-	for _, node := range nodeBuilder.Objects {
+	for _, node := range nodeBuilder {
 		_, ok := node.Object.Labels[label]
 		if ok {
 			glog.V(kmmparams.KmmLogLevel).Infof("Found label %v that contains %v on node %v",
 				label, moduleName, node.Object.Name)
 
 			foundLabels++
-			if foundLabels == len(nodeBuilder.Objects) {
+			if foundLabels == len(nodeBuilder) {
 				return true, nil
 			}
 		}
 	}
 
-	err := fmt.Errorf("not all nodes (%v) have the label '%s' ", len(nodeBuilder.Objects), label)
+	err = fmt.Errorf("not all nodes (%v) have the label '%s' ", len(nodeBuilder), label)
 
 	return false, err
 }

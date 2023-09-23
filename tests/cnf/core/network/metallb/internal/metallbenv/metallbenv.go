@@ -15,6 +15,8 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -26,31 +28,33 @@ func DoesClusterSupportMetalLbTests(requiredCPNodeNumber, requiredWorkerNodeNumb
 		return err
 	}
 
-	workerNodeList := nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
+	workerNodeList, err := nodes.List(
+		APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()},
+	)
+
+	if err != nil {
+		return err
+	}
 
 	glog.V(90).Infof("Verifying if cluster has enough workers to run MetalLb tests")
 
-	err := workerNodeList.Discover()
-
-	if err != nil {
-		return err
-	}
-
-	if len(workerNodeList.Objects) < requiredWorkerNodeNumber {
+	if len(workerNodeList) < requiredWorkerNodeNumber {
 		return fmt.Errorf("cluster has less than %d worker nodes", requiredWorkerNodeNumber)
 	}
 
-	controlPlaneNodeList := nodes.NewBuilder(APIClient, NetConfig.ControlPlaneLabelMap)
-
-	glog.V(90).Infof("Verifying if cluster has enough control-plane nodes to run MetalLb tests")
-
-	err = controlPlaneNodeList.Discover()
+	controlPlaneNodeList, err := nodes.List(
+		APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()},
+	)
 
 	if err != nil {
 		return err
 	}
 
-	if len(controlPlaneNodeList.Objects) < requiredCPNodeNumber {
+	glog.V(90).Infof("Verifying if cluster has enough control-plane nodes to run MetalLb tests")
+
+	if len(controlPlaneNodeList) < requiredCPNodeNumber {
 		return fmt.Errorf("cluster has less than %d control-plane nodes", requiredCPNodeNumber)
 	}
 

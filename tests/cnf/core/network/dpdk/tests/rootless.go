@@ -28,6 +28,7 @@ import (
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
@@ -73,7 +74,7 @@ var (
 	hugePagesGroup   = int64(1001)
 	falseFlag        = false
 	trueFlag         = true
-	workerNodes      *nodes.Builder
+	workerNodes      []*nodes.Builder
 
 	serverSC = v1.SecurityContext{
 		RunAsUser: &rootUser,
@@ -139,8 +140,9 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	Context("server-tx, client-rx connectivity test on different nodes", Label("rootless"), func() {
 		BeforeAll(func() {
 			By("Discover worker nodes")
-			workerNodes = nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
-			err := workerNodes.Discover()
+			var err error
+			workerNodes, err = nodes.List(APIClient,
+				metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "Fail to discover nodes")
 
 			By("Collecting SR-IOV interface for rootless dpdk tests")
@@ -148,7 +150,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
 			By("Collection SR-IOV interfaces from Nodes")
-			nicVendor, err = discoverNICVendor(srIovInterfacesUnderTest[0], workerNodes.Objects[0].Definition.Name)
+			nicVendor, err = discoverNICVendor(srIovInterfacesUnderTest[0], workerNodes[0].Definition.Name)
 			Expect(err).ToNot(HaveOccurred(), "failed to discover NIC vendor %s", srIovInterfacesUnderTest[0])
 
 			By("Defining dpdk-policies")
@@ -227,7 +229,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMac)
 			defineAndCreateDPDKPod(
 				"serverpod",
-				workerNodes.Objects[0].Definition.Name,
+				workerNodes[0].Definition.Name,
 				serverSC,
 				nil,
 				serverPodNetConfig,
@@ -244,7 +246,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 			clientPod := defineAndCreateDPDKPod(
 				"clientpod",
-				workerNodes.Objects[1].Definition.Name,
+				workerNodes[1].Definition.Name,
 				clientSC,
 				&clientPodSC,
 				clientPodNetConfig,
@@ -288,7 +290,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				srvNetOne := defineTestServerPmdCmd(dpdkClientMac, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}", "")
 				defineAndCreateDPDKPod(
 					"serverpod-one",
-					workerNodes.Objects[0].Definition.Name,
+					workerNodes[0].Definition.Name,
 					serverSC,
 					nil,
 					serverPodOneNetConfig,
@@ -301,7 +303,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				srvNetTwo := defineTestServerPmdCmd(dpdkClientMacTwo, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYTWO}", "")
 				defineAndCreateDPDKPod(
 					"serverpod-two",
-					workerNodes.Objects[1].Definition.Name,
+					workerNodes[1].Definition.Name,
 					serverSC,
 					nil,
 					serverPodTwoNetConfig,
@@ -319,7 +321,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 					{"netName": vlanNetworkOne, "intName": firstVlanInterfaceBasedOnTapTwo, "ipAddr": "1.1.1.1/24"},
 					{"netName": vlanNetworkTwo, "intName": secondVlanInterfaceBasedOnTapTwo, "ipAddr": "2.2.2.2/24"}})
 				clientPod := defineAndCreateDPDKPod(
-					"clientpod", workerNodes.Objects[1].Definition.Name, clientSC, &clientPodSC, clientPodNetConfig, sleepCMD)
+					"clientpod", workerNodes[1].Definition.Name, clientSC, &clientPodSC, clientPodNetConfig, sleepCMD)
 
 				By("Collecting PCI Address")
 				Eventually(
@@ -361,14 +363,14 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			srvNetOne := defineTestServerPmdCmd(
 				dpdkClientMac, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}", "1.1.1.50,1.1.1.100")
 			defineAndCreateDPDKPod(
-				"serverpod-one", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodOneNetConfig, srvNetOne)
+				"serverpod-one", workerNodes[0].Definition.Name, serverSC, nil, serverPodOneNetConfig, srvNetOne)
 			serverPodTwoNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
 				srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMacTwo)
 
 			By("Creating second server pod")
 			srvNetTwo := defineTestServerPmdCmd(dpdkClientMacTwo, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYTWO}", "")
 			defineAndCreateDPDKPod(
-				"serverpod-two", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodTwoNetConfig, srvNetTwo)
+				"serverpod-two", workerNodes[0].Definition.Name, serverSC, nil, serverPodTwoNetConfig, srvNetTwo)
 
 			By("Creating client pod")
 			vlanInterfaceName := fmt.Sprintf("%s.%d", tapTwoInterfaceName, vlanID)
@@ -381,7 +383,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				{"netName": ipVlanNetworkOne, "intName": secondInterfaceBasedOnTapOne, "ipAddr": "1.1.1.200/24"},
 				{"netName": vlanNetworkOne, "intName": vlanInterfaceName}})
 			clientPod := defineAndCreateDPDKPod(
-				"clientpod", workerNodes.Objects[1].Definition.Name, clientSC, &clientPodSC, clientPodNetConfig, sleepCMD)
+				"clientpod", workerNodes[1].Definition.Name, clientSC, &clientPodSC, clientPodNetConfig, sleepCMD)
 
 			By("Collecting PCI Address")
 			Eventually(
@@ -432,14 +434,14 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				srIovNetworkTwoName, tsparams.TestNamespaceName, dpdkServerMac)
 			srvCmdOne := defineTestServerPmdCmd(dpdkClientMac, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYTWO}", "")
 			defineAndCreateDPDKPod(
-				"serverpod-one", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodOneNetConfig, srvCmdOne)
+				"serverpod-one", workerNodes[0].Definition.Name, serverSC, nil, serverPodOneNetConfig, srvCmdOne)
 
 			By("Creating second server pod")
 			serverPodTwoNetConfig := pod.StaticIPAnnotationWithMacAndNamespace(
 				srIovNetworkOneName, tsparams.TestNamespaceName, dpdkServerMacTwo)
 			srvCmdTwo := defineTestServerPmdCmd(dpdkClientMacTwo, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}", "")
 			defineAndCreateDPDKPod(
-				"serverpod-two", workerNodes.Objects[0].Definition.Name, serverSC, nil, serverPodTwoNetConfig, srvCmdTwo)
+				"serverpod-two", workerNodes[0].Definition.Name, serverSC, nil, serverPodTwoNetConfig, srvCmdTwo)
 
 			By("Creating SCC")
 			_, err = scc.NewBuilder(APIClient, "scc-test-admin", "MustRunAsNonRoot", "RunAsAny").
@@ -474,7 +476,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 			_, err = deployment.NewBuilder(
 				APIClient, "deployment-one", tsparams.TestNamespaceName, map[string]string{"test": "dpdk"}, deploymentContainerCfg).
-				WithNodeSelector(map[string]string{"kubernetes.io/hostname": workerNodes.Objects[1].Definition.Name}).
+				WithNodeSelector(map[string]string{"kubernetes.io/hostname": workerNodes[1].Definition.Name}).
 				WithSecurityContext(&clientPodSC).
 				WithLabel("test", "dpdk").
 				WithSecondaryNetwork(clientPodNetConfig).

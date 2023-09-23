@@ -6,6 +6,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
@@ -39,8 +41,10 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
 			By("Validating SR-IOV interfaces")
-			workerNodeList = nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
-			Expect(workerNodeList.Discover()).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+			workerNodeList, err = nodes.List(APIClient,
+				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+
 			Expect(sriovenv.ValidateSriovInterfaces(workerNodeList, 2)).ToNot(HaveOccurred(),
 				"Failed to get required SR-IOV interfaces")
 			sriovInterfacesUnderTest, err = NetConfig.GetSriovInterfaces(2)
@@ -79,7 +83,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
 
-			err = netnmstate.AreVFsCreated(workerNodeList.Objects[0].Object.Name, sriovInterfacesUnderTest[0], 5)
+			err = netnmstate.AreVFsCreated(workerNodeList[0].Object.Name, sriovInterfacesUnderTest[0], 5)
 			Expect(err).ToNot(HaveOccurred(), "VFs were removed during the test")
 
 			By("Removing SR-IOV VFs via NMState")
@@ -111,7 +115,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 				Expect(err).ToNot(HaveOccurred(), "Failed to define test parameters")
 
 				By("Creating test pods and checking connectivity")
-				createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[1].Object.Name,
+				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
 					"", "", clientIPs, serverIPs)
 			},
 
@@ -122,7 +126,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 
 		It("Recreate VFs when SR-IOV policy is applied", polarion.ID("63533"), func() {
 			By("Creating test pods and checking connectivity")
-			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
+			createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
 				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 
@@ -149,14 +153,14 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
 
 			By("Re-create test pods and verify connectivity after recreating the VFs")
-			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
+			createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
 				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 		})
 
 		It("SR-IOV network with options", polarion.ID("63534"), func() {
 			By("Collecting default MaxTxRate and Vlan values")
-			defaultMaxTxRate, defaultVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+			defaultMaxTxRate, defaultVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
 				sriovInterfacesUnderTest[0])
 
 			By("Updating Vlan and MaxTxRate configurations in the SriovNetwork")
@@ -169,13 +173,13 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			Expect(err).ToNot(HaveOccurred(), "Failed to update SR-IOV network with new configuration")
 
 			By("Creating test pods and checking connectivity")
-			createPodsAndRunTraffic(workerNodeList.Objects[0].Object.Name, workerNodeList.Objects[0].Object.Name,
+			createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
 				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 
 			By("Checking that VF configured with new VLAN and MaxTxRate values")
 			Eventually(func() []int {
-				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
 					sriovInterfacesUnderTest[0])
 
 				return []int{currentmaxTxRate, currentVlanID}
@@ -190,7 +194,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 			By("Checking that VF has initial configuration")
 
 			Eventually(func() []int {
-				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
 					sriovInterfacesUnderTest[0])
 
 				return []int{currentmaxTxRate, currentVlanID}
@@ -210,7 +214,7 @@ var _ = Describe("ExternallyCreated", Ordered, Label(tsparams.LabelExternallyCre
 
 			By("Checking that VF has initial configuration")
 			Eventually(func() []int {
-				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList.Objects[0].Object.Name,
+				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
 					sriovInterfacesUnderTest[0])
 
 				return []int{currentmaxTxRate, currentVlanID}

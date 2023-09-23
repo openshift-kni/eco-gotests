@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/tests"
@@ -55,13 +56,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred(), "error creating clusterrolebinding")
 
 	By("Create helper Deployments")
-	nodeList := nodes.NewBuilder(APIClient, GeneralConfig.WorkerLabelMap)
-	err = nodeList.Discover()
+	nodeList, err := nodes.List(
+		APIClient, metaV1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
 
 	if err != nil {
 		Skip(fmt.Sprintf("Error listing worker nodes. Got error: '%v'", err))
 	}
-	for _, node := range nodeList.Objects {
+	for _, node := range nodeList {
 		glog.V(kmmparams.KmmLogLevel).Infof("Creating privileged deployment on node '%v'", node.Object.Name)
 
 		deploymentName := fmt.Sprintf("kmm-test-%s", node.Object.Name)

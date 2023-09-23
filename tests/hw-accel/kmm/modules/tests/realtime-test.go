@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -19,13 +20,12 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-
-	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 )
 
 var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 
 	Context("Module", Label("use-rt-kernel"), func() {
+		var mcpName string
 
 		moduleName := tsparams.RealtimeKernelNamespace
 		kmodName := "module-rt"
@@ -36,7 +36,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 		performanceProfileName := "rt-profile"
 		rtCPUIsolated := "1,3,5,7"
 		rtCPUReserved := "0,2,4,6"
-		mcpName := get.MachineConfigPoolName(APIClient)
+
+		BeforeAll(func() {
+			By("Collect MachineConfigPoolName")
+			mcpName = get.MachineConfigPoolName(APIClient)
+		})
 
 		AfterEach(func() {
 			By("Delete Module")

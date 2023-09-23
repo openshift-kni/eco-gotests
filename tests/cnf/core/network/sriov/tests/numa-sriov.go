@@ -7,13 +7,15 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/sriovenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var (
-	workerNodeList *nodes.Builder
+	workerNodeList []*nodes.Builder
 )
 
 var _ = Describe("NUMAExcludeTopology", Ordered, Label(tsparams.LabelNUMASriovExcludeTopologyTestCases),
@@ -25,8 +27,9 @@ var _ = Describe("NUMAExcludeTopology", Ordered, Label(tsparams.LabelNUMASriovEx
 			Expect(err).ToNot(HaveOccurred(), "Cluster does not support SRIOV test cases")
 
 			By("Validating SR-IOV interfaces")
-			workerNodeList = nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
-			Expect(workerNodeList.Discover()).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+			workerNodeList, err = nodes.List(APIClient,
+				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 			Expect(sriovenv.ValidateSriovInterfaces(workerNodeList, 2)).ToNot(HaveOccurred(),
 				"Failed to get required SR-IOV interfaces")
 		})

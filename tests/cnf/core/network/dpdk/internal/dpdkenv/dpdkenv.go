@@ -13,6 +13,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	v2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // DoesClusterSupportDpdkTests verifies if given cluster supports dpdk workload and test cases.
@@ -26,14 +28,16 @@ func DoesClusterSupportDpdkTests(
 		return err
 	}
 
-	workerNodeList := nodes.NewBuilder(apiClient, netConfig.WorkerLabelMap)
-	err = workerNodeList.Discover()
+	workerNodeList, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(netConfig.WorkerLabelMap).String()},
+	)
 
 	if err != nil {
 		return err
 	}
 
-	for _, worker := range workerNodeList.Objects {
+	for _, worker := range workerNodeList {
 		if int(worker.Object.Status.Capacity.Memory().Value()/1024/1024/1024) < requestedRAMGb {
 			return fmt.Errorf("worker %s has less than required ram number: %d", worker.Object.Name, requestedRAMGb)
 		}

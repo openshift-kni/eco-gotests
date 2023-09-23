@@ -17,14 +17,14 @@ import (
 )
 
 // ValidateSriovInterfaces checks that provided interfaces by env var exist on the nodes.
-func ValidateSriovInterfaces(workerNodeList *nodes.Builder, requestedNumber int) error {
+func ValidateSriovInterfaces(workerNodeList []*nodes.Builder, requestedNumber int) error {
 	var validSriovIntefaceList []sriovV1.InterfaceExt
 
 	availableUpSriovInterfaces, err := sriov.NewNetworkNodeStateBuilder(APIClient,
-		workerNodeList.Objects[0].Definition.Name, NetConfig.SriovOperatorNamespace).GetUpNICs()
+		workerNodeList[0].Definition.Name, NetConfig.SriovOperatorNamespace).GetUpNICs()
 
 	if err != nil {
-		return fmt.Errorf("failed get SR-IOV devices from the node %s", workerNodeList.Objects[0].Definition.Name)
+		return fmt.Errorf("failed get SR-IOV devices from the node %s", workerNodeList[0].Definition.Name)
 	}
 
 	requestedSriovInterfaceList, err := NetConfig.GetSriovInterfaces(requestedNumber)
@@ -69,11 +69,11 @@ func CreateSriovPolicyAndWaitUntilItsApplied(sriovPolicy *sriov.PolicyBuilder, t
 
 // WaitUntilVfsCreated waits until all expected SR-IOV VFs are created.
 func WaitUntilVfsCreated(
-	nodes *nodes.Builder, sriovInterfaceName string, numberOfVfs int, timeout time.Duration) error {
+	nodeList []*nodes.Builder, sriovInterfaceName string, numberOfVfs int, timeout time.Duration) error {
 	glog.V(90).Infof("Waiting for the creation of all VFs (%d) under"+
 		" the %s interface in the SriovNetworkState.", numberOfVfs, sriovInterfaceName)
 
-	for _, node := range nodes.Objects {
+	for _, node := range nodeList {
 		err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
 			sriovNetworkState := sriov.NewNetworkNodeStateBuilder(APIClient, node.Object.Name, NetConfig.SriovOperatorNamespace)
 			err := sriovNetworkState.Discover()

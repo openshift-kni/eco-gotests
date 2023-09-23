@@ -9,6 +9,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
@@ -20,10 +22,11 @@ const (
 // AllNodeLabel checks if label is present on all nodes matching nodeSelector.
 func AllNodeLabel(apiClient *clients.Settings, nodeLabel, nodeLabelValue string,
 	nodeSelector map[string]string) (bool, error) {
-	nodeBuilder := nodes.NewBuilder(apiClient, nodeSelector)
+	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+
 	// in all the nodes that match the nodeSelectors, look for specific label
 	// For example, look in all the worker nodes for a specific label with specific value
-	if err := nodeBuilder.Discover(); err != nil {
+	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("could not discover %v nodes, error encountered: '%v'",
 			nodeSelector, err)
 
@@ -33,7 +36,7 @@ func AllNodeLabel(apiClient *clients.Settings, nodeLabel, nodeLabelValue string,
 	// Sample label: feature.node.kubernetes.io/system-os_release.ID=rhcos.
 	foundLabels := 0
 
-	for _, node := range nodeBuilder.Objects {
+	for _, node := range nodeBuilder {
 		labelValue := node.Object.Labels[nodeLabel]
 
 		if labelValue == nodeLabelValue {
@@ -42,13 +45,13 @@ func AllNodeLabel(apiClient *clients.Settings, nodeLabel, nodeLabelValue string,
 
 			foundLabels++
 			// if all nodes matching nodeSelector have this label with label value.
-			if foundLabels == len(nodeBuilder.Objects) {
+			if foundLabels == len(nodeBuilder) {
 				return true, nil
 			}
 		}
 	}
 
-	err := fmt.Errorf("not all (%v) nodes have the label '%s' with value '%s'", len(nodeBuilder.Objects),
+	err = fmt.Errorf("not all (%v) nodes have the label '%s' with value '%s'", len(nodeBuilder),
 		nodeLabel, nodeLabelValue)
 
 	return false, err
@@ -56,16 +59,17 @@ func AllNodeLabel(apiClient *clients.Settings, nodeLabel, nodeLabelValue string,
 
 // NodeWithLabel checks if label is present on at least one node matching nodeSelector.
 func NodeWithLabel(apiClient *clients.Settings, nodeLabel string, nodeSelector map[string]string) (bool, error) {
-	nodeBuilder := nodes.NewBuilder(apiClient, nodeSelector)
+	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+
 	// Check if at least one node matching the nodeSelector has the specific nodeLabel label set to true
 	// For example, look in all the worker nodes for specific label
-	if err := nodeBuilder.Discover(); err != nil {
+	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("could not discover %v nodes", nodeSelector)
 
 		return false, err
 	}
 
-	for _, node := range nodeBuilder.Objects {
+	for _, node := range nodeBuilder {
 		labelValue, ok := node.Object.Labels[nodeLabel]
 
 		if ok {
@@ -76,7 +80,7 @@ func NodeWithLabel(apiClient *clients.Settings, nodeLabel string, nodeSelector m
 		}
 	}
 
-	err := fmt.Errorf("could not find one node with label '%s' set to true", nodeLabel)
+	err = fmt.Errorf("could not find one node with label '%s' set to true", nodeLabel)
 
 	return false, err
 }

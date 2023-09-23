@@ -328,29 +328,6 @@ func (builder *PolicyBuilder) WaitUntilCondition(condition nmstateShared.Conditi
 	})
 }
 
-// CleanAllNMStatePolicies removes all NodeNetworkConfigurationPolicies.
-func CleanAllNMStatePolicies(apiClient *clients.Settings) error {
-	glog.V(100).Infof("Cleaning up NodeNetworkConfigurationPolicies")
-
-	nncpList, err := ListPolicy(apiClient)
-	if err != nil {
-		glog.V(100).Infof("Failed to list NodeNetworkConfigurationPolicies")
-
-		return err
-	}
-
-	for _, nncpPolicy := range nncpList {
-		_, err = nncpPolicy.Delete()
-		if err != nil {
-			glog.V(100).Infof("Failed to delete NodeNetworkConfigurationPolicy: %s", nncpPolicy.Object.Name)
-
-			return err
-		}
-	}
-
-	return nil
-}
-
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *PolicyBuilder) validate() (bool, error) {

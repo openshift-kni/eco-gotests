@@ -5,10 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	coreV1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,12 +22,15 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // test cases variables that are accessible across entire file.
@@ -39,7 +40,7 @@ var (
 	ipv6metalLbIPList []string
 	ipv6NodeAddrList  []string
 	externalNad       *nad.Builder
-	workerNodeList    *nodes.Builder
+	workerNodeList    []*nodes.Builder
 )
 
 var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFailure, func() {
@@ -59,9 +60,12 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		}
 
 		By("Getting external nodes ip addresses")
-		workerNodeList = nodes.NewBuilder(APIClient, NetConfig.WorkerLabelMap)
-		Expect(workerNodeList.Discover()).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-		ipv4NodeAddrList, err = workerNodeList.ExternalIPv4Networks()
+		workerNodeList, err = nodes.List(APIClient,
+			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+
+		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
+			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
 
 		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
@@ -72,7 +76,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 	Context("single hop", Label("singlehop"), func() {
 		BeforeEach(func() {
 			By("Collect running metallb bgp speakers")
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
+			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
@@ -96,13 +100,13 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to create configmap")
 
 			By("Creating FRR Pod With network and IP")
-			masterNodeList := nodes.NewBuilder(APIClient, map[string]string{"node-role.kubernetes.io/master": ""})
-			err = masterNodeList.Discover()
+			masterNodeList, err := nodes.List(APIClient,
+				metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
 
 			frrPod := pod.NewBuilder(
 				APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName, NetConfig.FrrImage).
-				DefineOnNode(masterNodeList.Objects[0].Object.Name).WithTolerationToMaster().WithPrivilegedFlag()
+				DefineOnNode(masterNodeList[0].Object.Name).WithTolerationToMaster().WithPrivilegedFlag()
 
 			By("Creating FRR container")
 			frrContainer := pod.NewContainerBuilder(tsparams.FRRSecondContainerName, NetConfig.FrrImage, tsparams.SleepCMD).
@@ -142,11 +146,11 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to redefine %s namespace with the label %s",
 				NetConfig.MlbOperatorNamespace, tsparams.PrometheusMonitoringLabel))
 
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
+			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list MetalLB speaker pods")
 
-			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, v1.ListOptions{
+			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, metaV1.ListOptions{
 				LabelSelector: tsparams.PrometheusMonitoringPodLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
@@ -168,9 +172,11 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		AfterEach(func() {
 			By("Removing label from Workers")
-			Expect(workerNodeList.Discover()).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-			for _, worker := range workerNodeList.Objects {
-				_, err := worker.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
+			for _, worker := range workerNodeList {
+				worker, err := nodes.Pull(APIClient, worker.Definition.Name)
+				Expect(err).ToNot(HaveOccurred(), "Fail to pull latest worker %s object", worker.Definition.Name)
+
+				_, err = worker.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove label from worker")
 			}
 
@@ -200,7 +206,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		BeforeEach(func() {
 			By("Collecting information before test")
-			speakerPodList, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
+			speakerPodList, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list speaker pods")
@@ -227,7 +233,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
 			By("Removing static routes from the speakers")
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
+			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
@@ -237,7 +243,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			}
 
 			By("Removing label from Workers")
-			for _, worker := range workerNodeList.Objects {
+			for _, worker := range workerNodeList {
 				_, err := worker.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove label from worker")
 			}
@@ -276,7 +282,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				}
 
 				By("Collecting running MetalLB speakers")
-				speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, v1.ListOptions{
+				speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
 					LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 				})
 				Expect(err).ToNot(HaveOccurred(), "Failed to list metalLb speaker pods")
@@ -331,7 +337,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				By("Creating nginx test pod on worker node")
 				mlbClientPod, err := pod.NewBuilder(
 					APIClient, "mlbnginxtpod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-					DefineOnNode(workerNodeList.Objects[0].Definition.Name).WithLabel("app", "nginx1").
+					DefineOnNode(workerNodeList[0].Definition.Name).WithLabel("app", "nginx1").
 					RedefineDefaultCMD(cmd.DefineNGNXAndSleep()).WithPrivilegedFlag().Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
 				err = mlbClientPod.WaitUntilRunning(tsparams.DefaultTimeout)
@@ -346,18 +352,19 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				Expect(err).ToNot(HaveOccurred(), "Failed to create internal NAD")
 
 				By("Discovering Master nodes")
-				masterNodes := nodes.NewBuilder(APIClient, NetConfig.ControlPlaneLabelMap)
-				Expect(masterNodes.Discover()).ToNot(HaveOccurred(), "Failed to discover master nodes")
+				masterNodes, err := nodes.List(APIClient,
+					metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+				Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
 
 				By("Creating FRR pod one on master node")
 				createFrrPodOnMasterNodeAndWaitUntilRunning("frronmaster1",
 					mlbAddressList[0], subMast, frrMasterIPs[0], bridgeNad.Definition.Name,
-					masterNodes.Objects[0].Object.Name, addressPool[0], nodeAddrList[0])
+					masterNodes[0].Object.Name, addressPool[0], nodeAddrList[0])
 
 				By("Creating FRR pod two on master node")
 				createFrrPodOnMasterNodeAndWaitUntilRunning("frronmaster2",
 					mlbAddressList[1], subMast, frrMasterIPs[1], bridgeNad.Definition.Name,
-					masterNodes.Objects[0].Object.Name, addressPool[0], nodeAddrList[1])
+					masterNodes[0].Object.Name, addressPool[0], nodeAddrList[1])
 
 				By("Creating client pod config map")
 				frrBFDConfig := frr.DefineBFDConfig(
@@ -379,7 +386,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				By("Creating FRR pod in the test namespace")
 				frrPod := pod.NewBuilder(
 					APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName, NetConfig.FrrImage).
-					DefineOnNode(masterNodes.Objects[0].Object.Name).WithTolerationToMaster().WithPrivilegedFlag()
+					DefineOnNode(masterNodes[0].Object.Name).WithTolerationToMaster().WithPrivilegedFlag()
 
 				frrPod.WithAdditionalContainer(frrCtr).WithSecondaryNetwork(
 					pod.StaticIPAnnotation(
@@ -497,7 +504,7 @@ func scaleDownMetalLbSpeakers() {
 func testBFDFailOver() {
 	By("Adding metalLb label to compute nodes")
 
-	for _, worker := range workerNodeList.Objects {
+	for _, worker := range workerNodeList {
 		_, err := worker.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 		Expect(err).ToNot(HaveOccurred(), "Failed to append new metalLb label to nodes objects")
 	}
@@ -518,17 +525,17 @@ func testBFDFailOver() {
 
 	By("Removing Speaker pod from one of the compute nodes")
 
-	firstWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[0].Object.Name)
+	firstWorkerNode, err := nodes.Pull(APIClient, workerNodeList[0].Object.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
 	_, err = firstWorkerNode.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 	Expect(err).ToNot(HaveOccurred(), "Failed to remove metalLb label from worker node")
 
 	By("Verifying that cluster has reduced the number of speakers by 1")
 	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		metalLbDs, BeEquivalentTo(len(workerNodeList.Objects)-1), "The number of running speaker pods is not expected")
+		metalLbDs, BeEquivalentTo(len(workerNodeList)-1), "The number of running speaker pods is not expected")
 	By("Verifying that FRR pod still has BFD and BGP session UP with one of the MetalLb speakers")
 
-	secondWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[1].Object.Name)
+	secondWorkerNode, err := nodes.Pull(APIClient, workerNodeList[1].Object.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull compute node object")
 	secondWorkerIP, err := secondWorkerNode.ExternalIPv4Network()
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect external node ip")
@@ -556,7 +563,7 @@ func testBFDFailOver() {
 func testBFDFailBack() {
 	By("Bringing Speaker pod back by labeling node")
 
-	firstWorkerNode, err := nodes.PullNode(APIClient, workerNodeList.Objects[0].Object.Name)
+	firstWorkerNode, err := nodes.Pull(APIClient, workerNodeList[0].Object.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
 	_, err = firstWorkerNode.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 	Expect(err).ToNot(HaveOccurred(), "Failed to append metalLb label to worker node")
@@ -568,7 +575,7 @@ func testBFDFailBack() {
 	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
 	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		metalLbDs, BeEquivalentTo(len(workerNodeList.Objects)), "The number of running speak pods is not expected")
+		metalLbDs, BeEquivalentTo(len(workerNodeList)), "The number of running speak pods is not expected")
 	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
 }
 
