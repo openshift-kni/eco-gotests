@@ -23,6 +23,7 @@ var (
 		RealtimeKernelNamespace:       "module",
 		FirmwareTestNamespace:         "module",
 		ModuleBuildAndSignNamespace:   "module",
+		InTreeReplacementNamespace:    "module",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

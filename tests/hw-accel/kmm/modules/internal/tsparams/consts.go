@@ -32,4 +32,6 @@ const (
 	FirmwareTestNamespace = "simple-kmod-firmware"
 	// ModuleBuildAndSignNamespace represents test case namespace name.
 	ModuleBuildAndSignNamespace = "ocp-56252-module-signing"
+	// InTreeReplacementNamespace represents test case namespace name.
+	InTreeReplacementNamespace = "ocp-62745-intree-replace"
 )

@@ -106,6 +106,11 @@ func ModuleSigned(apiClient *clients.Settings, modName, message, nsname, image s
 	return err
 }
 
+// IntreeICEModuleLoaded makes sure the needed in-tree module is present on the nodes.
+func IntreeICEModuleLoaded(apiClient *clients.Settings, timeout time.Duration) error {
+	return runCommandOnTestPods(apiClient, []string{"modprobe", "ice"}, "", timeout)
+}
+
 func runCommandOnTestPods(apiClient *clients.Settings,
 	command []string, message string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
@@ -123,7 +128,8 @@ func runCommandOnTestPods(apiClient *clients.Settings,
 		// using a map so that both ModuleLoaded and Dmesg calls don't interfere with the counter
 		iter := 0
 		for _, iterPod := range pods {
-			glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\n\n", iterPod.Object.Name)
+			glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\nCommand: %v\nExpect: %v\n\n",
+				iterPod.Object.Name, command, message)
 
 			buff, err := iterPod.ExecCommand(command, "test")
 
