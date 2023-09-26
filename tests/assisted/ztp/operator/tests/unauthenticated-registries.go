@@ -187,6 +187,42 @@ var _ = Describe(
 					}
 					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
 				})
+			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing an incorrect entry",
+				polarion.ID("56556"), func() {
+					By("Create AgentServiceConfig with unauthenticatedRegistries containing an incorrect entry")
+					incorrectRegistry := "register.redhat.io"
+					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient).
+						WithUnauthenticatedRegistry(incorrectRegistry)
+
+					// An attempt to restrict the osImage spec for the new agentserviceconfig
+					// to prevent the download of all os images
+					if len(osImageUR) > 0 {
+						_, err = tempAgentServiceConfigBuilderUR.WithOSImage(osImageUR[0]).Create()
+					} else {
+						_, err = tempAgentServiceConfigBuilderUR.Create()
+					}
+					Expect(err).ToNot(HaveOccurred(),
+						"error creating agentserviceconfig with unauthenticatedRegistries containing an incorrect entry")
+
+					By("Assure the AgentServiceConfig with unauthenticatedRegistries containing an incorrect entry was created")
+					_, err = tempAgentServiceConfigBuilderUR.WaitUntilDeployed(time.Minute * 10)
+					Expect(err).ToNot(HaveOccurred(),
+						"error waiting until agentserviceconfig with unauthenticatedRegistries containing an incorrect entry is deployed")
+
+					By("Retrieve the " + assistedConfigMapName + " configmap")
+					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
+					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
+						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
+
+					By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + incorrectRegistry +
+						"\" in the " + assistedConfigMapName + " configmap")
+					Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
+						ContainSubstring(incorrectRegistry),
+						"error verifying that \""+incorrectRegistry+
+							"\" is listed among unauthenticated registries by default")
+
+					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
+				})
 		})
 	})
 
