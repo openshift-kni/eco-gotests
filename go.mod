@@ -14,7 +14,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20230922193945-396a182e83ab
+	github.com/openshift-kni/eco-goinfra v0.0.0-20230926202720-ab9159cc5182
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -238,7 +238,7 @@ require (
 replace (
 	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/SchSeba/sriov-network-operator-1 v0.0.0-20230619100551-13835b642827
 	//github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20230517142142-2b25b439193a // release-4.13
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7 // release-4.13
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20230918105526-6488b1202507 // release-4.14
 	github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20230906121258-6d85fb16f8dd
 	github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20230906121258-6d85fb16f8dd
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20230120202327-72f107311084 // release-4.13

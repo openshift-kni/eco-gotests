@@ -127,6 +127,90 @@ func (builder *Builder) WithPrivilegedEscalation(allowPrivilegedEscalation bool)
 	return builder
 }
 
+// WithHostDirVolumePlugin adds bool flag to the allowHostDirVolumePlugin of SecurityContextConstraints.
+func (builder *Builder) WithHostDirVolumePlugin(allowPlugin bool) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		" allowHostDirVolumePlugin: %t flag", builder.Definition.Name, allowPlugin)
+
+	builder.Definition.AllowHostDirVolumePlugin = allowPlugin
+
+	return builder
+}
+
+// WithHostIPC adds bool flag to the allowHostIPC of SecurityContextConstraints.
+func (builder *Builder) WithHostIPC(allowHostIPC bool) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		" allowHostIPC: %t flag", builder.Definition.Name, allowHostIPC)
+
+	builder.Definition.AllowHostIPC = allowHostIPC
+
+	return builder
+}
+
+// WithHostNetwork adds bool flag to the allowHostNetwork of SecurityContextConstraints.
+func (builder *Builder) WithHostNetwork(allowHostNetwork bool) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		" allowHostNetwork: %t flag", builder.Definition.Name, allowHostNetwork)
+
+	builder.Definition.AllowHostNetwork = allowHostNetwork
+
+	return builder
+}
+
+// WithHostPID adds bool flag to the allowHostPID of SecurityContextConstraints.
+func (builder *Builder) WithHostPID(allowHostPID bool) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		" allowHostPID: %t flag", builder.Definition.Name, allowHostPID)
+
+	builder.Definition.AllowHostPID = allowHostPID
+
+	return builder
+}
+
+// WithHostPorts adds bool flag to the allowHostPorts of SecurityContextConstraints.
+func (builder *Builder) WithHostPorts(allowHostPorts bool) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		" allowHostPorts: %t flag", builder.Definition.Name, allowHostPorts)
+
+	builder.Definition.AllowHostPorts = allowHostPorts
+
+	return builder
+}
+
+// WithReadOnlyRootFilesystem adds bool flag to the readOnlyRootFilesystem of SecurityContextConstraints.
+func (builder *Builder) WithReadOnlyRootFilesystem(readOnlyRootFilesystem bool) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		" readOnlyRootFilesystem: %t flag", builder.Definition.Name, readOnlyRootFilesystem)
+
+	builder.Definition.ReadOnlyRootFilesystem = readOnlyRootFilesystem
+
+	return builder
+}
+
 // WithDropCapabilities adds list of drop capabilities to SecurityContextConstraints.
 func (builder *Builder) WithDropCapabilities(requiredDropCapabilities []coreV1.Capability) *Builder {
 	if valid, _ := builder.validate(); !valid {
@@ -184,6 +268,49 @@ func (builder *Builder) WithAllowCapabilities(allowCapabilities []coreV1.Capabil
 	return builder
 }
 
+// WithDefaultAddCapabilities adds list of defaultAddCapabilities to SecurityContextConstraints.
+func (builder *Builder) WithDefaultAddCapabilities(defaultAddCapabilities []coreV1.Capability) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		"defaultAddCapabilities: %v", builder.Definition.Name, defaultAddCapabilities)
+
+	if len(defaultAddCapabilities) == 0 {
+		glog.V(100).Infof("SecurityContextConstraints 'defaultAddCapabilities' argument cannot be empty")
+
+		builder.errorMsg = "SecurityContextConstraints 'defaultAddCapabilities' cannot be empty list"
+
+		return builder
+	}
+
+	if builder.Definition.DefaultAddCapabilities == nil {
+		builder.Definition.DefaultAddCapabilities = defaultAddCapabilities
+
+		return builder
+	}
+
+	builder.Definition.DefaultAddCapabilities = append(builder.Definition.DefaultAddCapabilities,
+		defaultAddCapabilities...)
+
+	return builder
+}
+
+// WithPriority adds priority to SecurityContextConstraints.
+func (builder *Builder) WithPriority(priority *int32) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		"priority: %v", builder.Definition.Name, priority)
+
+	builder.Definition.Priority = priority
+
+	return builder
+}
+
 // WithFSGroup adds fsGroup to SecurityContextConstraints.
 func (builder *Builder) WithFSGroup(fsGroup string) *Builder {
 	if valid, _ := builder.validate(); !valid {
@@ -202,6 +329,63 @@ func (builder *Builder) WithFSGroup(fsGroup string) *Builder {
 	}
 
 	builder.Definition.FSGroup.Type = securityV1.FSGroupStrategyType(fsGroup)
+
+	return builder
+}
+
+// WithFSGroupRange adds fsGroupRange to SecurityContextConstraints.
+func (builder *Builder) WithFSGroupRange(fsGroupMin, fsGroupMax int64) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		"fsGroupRange: fsGroupMin: %d, fsGroupMax: %d", builder.Definition.Name, fsGroupMin, fsGroupMax)
+
+	if fsGroupMin > fsGroupMax {
+		glog.V(100).Infof("SecurityContextConstraints 'fsGroupMin' argument can not be greater than fsGroupMax")
+
+		builder.errorMsg = "SecurityContextConstraints 'fsGroupMin' argument can not be greater than fsGroupMax"
+
+		return builder
+	}
+
+	if builder.Definition.FSGroup.Ranges == nil {
+		builder.Definition.FSGroup.Ranges = []securityV1.IDRange{{Min: fsGroupMin, Max: fsGroupMax}}
+
+		return builder
+	}
+
+	builder.Definition.FSGroup.Ranges = append(
+		builder.Definition.FSGroup.Ranges, securityV1.IDRange{Max: fsGroupMax, Min: fsGroupMin})
+
+	return builder
+}
+
+// WithGroups adds groups to SecurityContextConstraints.
+func (builder *Builder) WithGroups(groups []string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		"groups: %v", builder.Definition.Name, groups)
+
+	if len(groups) == 0 {
+		glog.V(100).Infof("SecurityContextConstraints 'groups' argument cannot be empty")
+
+		builder.errorMsg = "SecurityContextConstraints 'fsGroupType' cannot be empty string"
+
+		return builder
+	}
+
+	if builder.Definition.Groups == nil {
+		builder.Definition.Groups = groups
+
+		return builder
+	}
+
+	builder.Definition.Groups = append(builder.Definition.Groups, groups...)
 
 	return builder
 }
@@ -280,6 +464,34 @@ func (builder *Builder) WithUsers(users []string) *Builder {
 	}
 
 	builder.Definition.Users = append(builder.Definition.Users, users...)
+
+	return builder
+}
+
+// WithVolumes adds list of volumes to SecurityContextConstraints.
+func (builder *Builder) WithVolumes(volumes []securityV1.FSType) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining SecurityContextConstraints %s with"+
+		"volumes: %v", builder.Definition.Name, volumes)
+
+	if len(volumes) == 0 {
+		glog.V(100).Infof("SecurityContextConstraints 'volumes' argument cannot be empty")
+
+		builder.errorMsg = "SecurityContextConstraints 'volumes' cannot be empty list"
+
+		return builder
+	}
+
+	if builder.Definition.Volumes == nil {
+		builder.Definition.Volumes = volumes
+
+		return builder
+	}
+
+	builder.Definition.Volumes = append(builder.Definition.Volumes, volumes...)
 
 	return builder
 }

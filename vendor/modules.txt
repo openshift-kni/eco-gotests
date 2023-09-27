@@ -657,7 +657,7 @@ github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
-# github.com/openshift-kni/eco-goinfra v0.0.0-20230922193945-396a182e83ab
+# github.com/openshift-kni/eco-goinfra v0.0.0-20230926202720-ab9159cc5182
 ## explicit; go 1.19
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/clients
@@ -692,8 +692,8 @@ github.com/openshift-kni/eco-goinfra/pkg/storage
 # github.com/openshift-kni/k8sreporter v1.0.3
 ## explicit; go 1.20
 github.com/openshift-kni/k8sreporter
-# github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7
-## explicit; go 1.19
+# github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible => github.com/openshift/api v0.0.0-20230918105526-6488b1202507
+## explicit; go 1.20
 github.com/openshift/api/config/v1
 github.com/openshift/api/config/v1alpha1
 github.com/openshift/api/machine/v1
@@ -1939,7 +1939,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 # github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/SchSeba/sriov-network-operator-1 v0.0.0-20230619100551-13835b642827
-# github.com/openshift/api => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7
+# github.com/openshift/api => github.com/openshift/api v0.0.0-20230918105526-6488b1202507
 # github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20230906121258-6d85fb16f8dd
 # github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20230906121258-6d85fb16f8dd
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20230120202327-72f107311084
