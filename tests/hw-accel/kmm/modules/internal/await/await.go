@@ -61,7 +61,7 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 // ModuleDeployment awaits module to de deployed.
 func ModuleDeployment(apiClient *clients.Settings, moduleName, nsname string,
 	timeout time.Duration, selector map[string]string) error {
-	label := fmt.Sprintf(tsparams.ModuleNodeLabelTemplate, moduleName, nsname)
+	label := fmt.Sprintf(tsparams.ModuleNodeLabelTemplate, nsname, moduleName)
 
 	return deploymentPerLabel(apiClient, moduleName, label, timeout, selector)
 }
@@ -69,7 +69,7 @@ func ModuleDeployment(apiClient *clients.Settings, moduleName, nsname string,
 // DeviceDriverDeployment awaits device driver pods to de deployed.
 func DeviceDriverDeployment(apiClient *clients.Settings, moduleName, nsname string,
 	timeout time.Duration, selector map[string]string) error {
-	label := fmt.Sprintf(tsparams.DevicePluginNodeLabelTemplate, moduleName, nsname)
+	label := fmt.Sprintf(tsparams.DevicePluginNodeLabelTemplate, nsname, moduleName)
 
 	return deploymentPerLabel(apiClient, moduleName, label, timeout, selector)
 }

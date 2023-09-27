@@ -136,7 +136,8 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is signed")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, moduleName, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace,
+				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 	})

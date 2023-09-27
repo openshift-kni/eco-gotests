@@ -119,7 +119,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, kmodName, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 		})
@@ -134,7 +134,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while waiting pods to be deleted")
 
 			By("Check labels are removed on all nodes")
-			_, err = check.NodeLabel(APIClient, kmodName, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
 			log.Printf("error is: %v", err)
 			Expect(err).To(HaveOccurred(), "error while checking the module is loaded")
 
@@ -177,7 +177,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, kmodName, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 

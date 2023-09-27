@@ -22,7 +22,7 @@ import (
 )
 
 // NodeLabel checks if label is present on the node.
-func NodeLabel(apiClient *clients.Settings, moduleName string, nodeSelector map[string]string) (bool, error) {
+func NodeLabel(apiClient *clients.Settings, moduleName, nsname string, nodeSelector map[string]string) (bool, error) {
 	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
 
 	if err != nil {
@@ -30,7 +30,7 @@ func NodeLabel(apiClient *clients.Settings, moduleName string, nodeSelector map[
 	}
 
 	foundLabels := 0
-	label := fmt.Sprintf("kmm.node.kubernetes.io/%s.ready", moduleName)
+	label := fmt.Sprintf(tsparams.ModuleNodeLabelTemplate, nsname, moduleName)
 
 	for _, node := range nodeBuilder {
 		_, ok := node.Object.Labels[label]
