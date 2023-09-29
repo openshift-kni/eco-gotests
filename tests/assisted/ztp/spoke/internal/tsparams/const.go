@@ -21,4 +21,8 @@ const (
 	// LabelAssistedPodsNoRestartsTestCases represents assisted-pods-no-restarts label that can be used for test cases
 	// selection.
 	LabelAssistedPodsNoRestartsTestCases = "assisted-pods-no-restarts"
+
+	// LabelFipsVerificationTestCases represents fips-verification label that can be used for test cases
+	// selection.
+	LabelFipsVerificationTestCases = "fips-verification"
 )

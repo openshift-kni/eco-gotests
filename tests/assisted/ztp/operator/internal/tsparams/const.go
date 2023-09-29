@@ -25,4 +25,8 @@ const (
 	// LabelUnauthenticatedRegistriesTestCases represents unauthenticated-registries label that can be used
 	// for test cases selection.
 	LabelUnauthenticatedRegistriesTestCases = "unauthenticated-registries"
+
+	// LabelFipsVerificationTestCases represents fips-verification label that can be used for test cases
+	// selection.
+	LabelFipsVerificationTestCases = "fips-verification"
 )
