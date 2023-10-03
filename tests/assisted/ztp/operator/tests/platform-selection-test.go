@@ -114,19 +114,10 @@ var _ = Describe(
 						Expect(strings.Contains(err.Error(), message)).To(BeTrue(), "error: received incorrect error message")
 					} else {
 						Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
-						By("Getting SpecSynced condition")
-						specSyncedCondition, err := testAgentClusterInstall.GetCondition(v1beta1.ClusterSpecSyncedCondition)
-						Expect(err).ToNot(HaveOccurred(), "error getting SpecSynced condition from agentclusterinstall")
-
 						By("Waiting for condition to report expected failure message")
-						_, err = testAgentClusterInstall.WaitForConditionMessage(
-							specSyncedCondition,
-							"The Spec could not be synced due to an input error: "+message,
-							time.Second*10)
-						Expect(specSyncedCondition.Message).To(
-							Equal("The Spec could not be synced due to an input error: "+message),
-							"got unexpected message from SpecSynced condition")
-						Expect(err).ToNot(HaveOccurred(), "error waiting for condition message")
+						err = testAgentClusterInstall.WaitForConditionMessage(v1beta1.ClusterSpecSyncedCondition,
+							"The Spec could not be synced due to an input error: "+message, time.Second*10)
+						Expect(err).NotTo(HaveOccurred(), "got unexpected message from SpecSynced condition")
 					}
 				},
 				Entry("that is SNO with VSphere platform", v1beta1.VSpherePlatformType, true, 1, 0,

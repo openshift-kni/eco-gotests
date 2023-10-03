@@ -3,6 +3,7 @@ package spoke_test
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,7 +14,9 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	"github.com/openshift/assisted-service/models"
+	v1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe(
@@ -26,7 +29,6 @@ var _ = Describe(
 			agentClusterInstall                     *assisted.AgentClusterInstallBuilder
 			err                                     error
 			networkTypeACI                          string
-			agentClusterInstallConditionMessage     string
 		)
 
 		When("on MCE 2.0 and above", func() {
@@ -48,14 +50,6 @@ var _ = Describe(
 				Expect(networkTypeACI).To(Or(Equal(models.ClusterNetworkTypeOVNKubernetes),
 					Equal(models.ClusterNetworkTypeOpenShiftSDN), Equal("")))
 
-				By("Get the AgentClusterInstall conditions with type set to 'Completed'")
-				agentClusterInstallCondition, err := agentClusterInstall.GetCondition("Completed")
-				Expect(err).ToNot(HaveOccurred(),
-					"error getting spoke cluster installation conditions")
-
-				By("Initialize the agentClusterInstallConditionMessage")
-				agentClusterInstallConditionMessage = agentClusterInstallCondition.Message
-
 			})
 			It("Assert IPv4 spoke cluster with OVNKubernetes set as NetworkType gets deployed",
 				polarion.ID("44899"), func() {
@@ -72,8 +66,7 @@ var _ = Describe(
 					}
 
 					By("Check that the deployment of the spoke has completed")
-					Expect(agentClusterInstallConditionMessage).Should(ContainSubstring("The installation has completed"),
-						"error verifying that the deployent of the spoke has completed")
+					agentClusterInstallCompleted(agentClusterInstall)
 
 				})
 			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OVNKubernetes",
@@ -114,8 +107,7 @@ var _ = Describe(
 					}
 
 					By("Check that the deployment of the spoke has completed")
-					Expect(agentClusterInstallConditionMessage).Should(ContainSubstring("The installation has completed"),
-						"error verifying that the deployent of the spoke has completed")
+					agentClusterInstallCompleted(agentClusterInstall)
 
 				})
 			It("Assert the NetworkType in the IPV6 spoke matches ACI and is set to OVNKubernetes",
@@ -156,8 +148,7 @@ var _ = Describe(
 					}
 
 					By("Check that the deployment of the spoke has completed")
-					Expect(agentClusterInstallConditionMessage).Should(ContainSubstring("The installation has completed"),
-						"error verifying that the deployent of the spoke has completed")
+					agentClusterInstallCompleted(agentClusterInstall)
 
 				})
 			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OpenShiftSDN",
@@ -209,3 +200,12 @@ var _ = Describe(
 				})
 		})
 	})
+
+func agentClusterInstallCompleted(agentClusterInstallBuilder *assisted.AgentClusterInstallBuilder) {
+	err := agentClusterInstallBuilder.WaitForConditionStatus(
+		v1beta1.ClusterCompletedCondition, v1.ConditionTrue, time.Second*5)
+	Expect(err).ToNot(HaveOccurred(), "error verifying that the completed condition status is True")
+	err = agentClusterInstallBuilder.WaitForConditionReason(
+		v1beta1.ClusterCompletedCondition, v1beta1.ClusterInstalledReason, time.Second*5)
+	Expect(err).ToNot(HaveOccurred(), "error verifying that the complete condition reason is InstallationCompleted")
+}

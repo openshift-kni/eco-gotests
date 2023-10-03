@@ -212,6 +212,10 @@ func (builder *ClusterImageSetBuilder) Update(force bool) (*ClusterImageSetBuild
 		}
 	}
 
+	if err == nil {
+		builder.Object = builder.Definition
+	}
+
 	return builder, err
 }
 

@@ -293,6 +293,10 @@ func (builder *ClusterDeploymentBuilder) Update(force bool) (*ClusterDeploymentB
 		}
 	}
 
+	if err == nil {
+		builder.Object = builder.Definition
+	}
+
 	return builder, err
 }
 
