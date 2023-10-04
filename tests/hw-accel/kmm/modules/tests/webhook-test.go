@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
+var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
 
 	Context("Module", Label("webhook"), func() {
 

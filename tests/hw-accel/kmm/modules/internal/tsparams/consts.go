@@ -3,6 +3,10 @@ package tsparams
 const (
 	// LabelSuite represents kmm label that can be used for test cases selection.
 	LabelSuite = "module"
+	// LabelSanity represents kmm label for short-running tests used for test case selection.
+	LabelSanity = "kmm-sanity"
+	// LabelLongRun represent kmm label for long-running tests used for test case selection.
+	LabelLongRun = "kmm-longrun"
 	// KmmOperatorNamespace represents the namespace where KMM is installed.
 	KmmOperatorNamespace = "openshift-kmm"
 	// DeploymentName represents the name of the KMM operator deployment.
@@ -31,7 +35,7 @@ const (
 	// FirmwareTestNamespace represents test case namespace name.
 	FirmwareTestNamespace = "simple-kmod-firmware"
 	// ModuleBuildAndSignNamespace represents test case namespace name.
-	ModuleBuildAndSignNamespace = "ocp-56252-module-signing"
+	ModuleBuildAndSignNamespace = "ocp-56252"
 	// InTreeReplacementNamespace represents test case namespace name.
-	InTreeReplacementNamespace = "ocp-62745-intree-replace"
+	InTreeReplacementNamespace = "ocp-62745"
 )

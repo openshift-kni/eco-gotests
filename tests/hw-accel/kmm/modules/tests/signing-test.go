@@ -23,13 +23,13 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
+var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
 
 	Context("Module", Label("build-sign"), func() {
 
 		moduleName := tsparams.ModuleBuildAndSignNamespace
 		kmodName := "module-signing"
-		serviceAccountName := "build-and-sign-module-manager-rolebinding"
+		serviceAccountName := "build-and-sign-sa"
 		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
 			tsparams.LocalImageRegistry, tsparams.ModuleBuildAndSignNamespace, kmodName)
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)

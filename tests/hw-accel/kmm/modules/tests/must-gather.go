@@ -15,7 +15,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
+var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
 
 	Context("Module", Label("must-gather"), func() {
 		It("Check must-gather functionality", polarion.ID("53653"), func() {

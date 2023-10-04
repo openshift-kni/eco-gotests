@@ -22,7 +22,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
+var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRun), func() {
 
 	Context("Module", Label("use-rt-kernel"), func() {
 		var mcpName string

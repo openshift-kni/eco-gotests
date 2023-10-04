@@ -37,9 +37,25 @@ func ClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string]st
 
 // KernelFullVersion returns first node architecture of the nodes that match nodeSelector (e.g. worker nodes).
 func KernelFullVersion(apiClient *clients.Settings, nodeSelector map[string]string) (string, error) {
-	nodeLabel := "kmm.node.kubernetes.io/kernel-version.full"
+	nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+	if err != nil {
+		glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", nodeSelector)
 
-	return getLabelFromNodeSelector(apiClient, nodeLabel, nodeSelector)
+		return "", err
+	}
+
+	for _, node := range nodeBuilder {
+		kernelVersion := node.Object.Status.NodeInfo.KernelVersion
+
+		glog.V(kmmparams.KmmLogLevel).Infof("Found kernelVersion '%v'  on node '%v'",
+			kernelVersion, node.Object.Name)
+
+		return kernelVersion, nil
+	}
+
+	err = fmt.Errorf("could not find kernelVersion on node")
+
+	return "", err
 }
 
 func getLabelFromNodeSelector(
