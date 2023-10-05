@@ -2,6 +2,7 @@ package find
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
@@ -11,6 +12,50 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+// HubClusterVersionXY returns the Major.Minor part of the HUB cluster's OCP version.
+func HubClusterVersionXY() (string, error) {
+	clusterVersion, err := cluster.GetOCPClusterVersion(HubAPIClient)
+	if err != nil {
+		return "", err
+	}
+
+	splittedVersion := strings.Split(clusterVersion.Object.Status.Desired.Version, ".")
+
+	return fmt.Sprintf("%s.%s", splittedVersion[0], splittedVersion[1]), nil
+}
+
+// SpokeClusterVersionXY returns the Major.Minor part of the Spoke cluster's OCP version.
+func SpokeClusterVersionXY() (string, error) {
+	clusterVersion, err := cluster.GetOCPClusterVersion(SpokeConfig)
+	if err != nil {
+		return "", err
+	}
+
+	splittedVersion := strings.Split(clusterVersion.Object.Status.Desired.Version, ".")
+
+	return fmt.Sprintf("%s.%s", splittedVersion[0], splittedVersion[1]), nil
+}
+
+// HubClusterVersion returns the OCP version of the HUB cluster.
+func HubClusterVersion() (string, error) {
+	clusterVersion, err := cluster.GetOCPClusterVersion(HubAPIClient)
+	if err != nil {
+		return "", err
+	}
+
+	return clusterVersion.Object.Status.Desired.Version, nil
+}
+
+// SpokeClusterVersion returns the OCP version of the Spoke cluster.
+func SpokeClusterVersion() (string, error) {
+	clusterVersion, err := cluster.GetOCPClusterVersion(SpokeConfig)
+	if err != nil {
+		return "", err
+	}
+
+	return clusterVersion.Object.Status.Desired.Version, nil
+}
 
 // SpokeClusterName returns the spoke cluster name based on hub and spoke cluster apiclients.
 func SpokeClusterName() (string, error) {
