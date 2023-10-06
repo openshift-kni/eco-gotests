@@ -63,7 +63,7 @@ func DoesClusterSupportMetalLbTests(requiredCPNodeNumber, requiredWorkerNodeNumb
 
 // CreateNewMetalLbDaemonSetAndWaitUntilItsRunning creates or recreates the new metalLb daemonset and waits until
 // daemonset is in Ready state.
-func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration) error {
+func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, nodeLabel map[string]string) error {
 	glog.V(90).Infof("Verifying if metalLb daemonset is running")
 
 	metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
@@ -81,7 +81,7 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration) erro
 	glog.V(90).Infof("Create new metalLb speaker's daemonSet.")
 
 	metalLbIo = metallb.NewBuilder(
-		APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace, NetConfig.WorkerLabelMap)
+		APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace, nodeLabel)
 	_, err = metalLbIo.Create()
 
 	if err != nil {

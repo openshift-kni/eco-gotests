@@ -40,16 +40,16 @@ var (
 	ipv6metalLbIPList []string
 	ipv6NodeAddrList  []string
 	externalNad       *nad.Builder
+	cnfWorkerNodeList []*nodes.Builder
 	workerNodeList    []*nodes.Builder
+	workerLabelMap    map[string]string
+	bfdTestsLabel     = map[string]string{"metallb": "bfdtest"}
 )
 
 var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFailure, func() {
 
 	BeforeAll(func() {
-		By("Creating a new instance of MetalLB Speakers on workers")
-		err := metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout)
-		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
-
+		var err error
 		By("Getting MetalLb load balancer ip addresses")
 		ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
 		Expect(err).ToNot(HaveOccurred(), "An unexpected error occurred while "+
@@ -60,13 +60,20 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		}
 
 		By("Getting external nodes ip addresses")
-		workerNodeList, err = nodes.List(APIClient,
+		cnfWorkerNodeList, err = nodes.List(APIClient,
 			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
+		By("Selecting worker node for BFD tests")
+		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, bfdTestsLabel)
+
 		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
+
+		By("Creating a new instance of MetalLB Speakers on workers")
+		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
+		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
 		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
 		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
@@ -172,19 +179,13 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		AfterEach(func() {
 			By("Removing label from Workers")
-			for _, worker := range workerNodeList {
-				worker, err := nodes.Pull(APIClient, worker.Definition.Name)
-				Expect(err).ToNot(HaveOccurred(), "Fail to pull latest worker %s object", worker.Definition.Name)
-
-				_, err = worker.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove label from worker")
-			}
+			removeNodeLabel(workerNodeList, tsparams.MetalLbSpeakerLabel)
 
 			By("Resetting MetalLB speakerNodeSelector to default value")
 			metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to pull MetalLB object")
 			_, err = metalLbIo.RemoveLabel("metal").
-				WithSpeakerNodeSelector(NetConfig.WorkerLabelMap).Update(false)
+				WithSpeakerNodeSelector(workerLabelMap).Update(false)
 			Expect(err).ToNot(HaveOccurred(), "Failed to reset MetalLB SpeakerNodeSelector to default value")
 
 			By("Cleaning MetalLb operator namespace")
@@ -243,16 +244,13 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			}
 
 			By("Removing label from Workers")
-			for _, worker := range workerNodeList {
-				_, err := worker.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove label from worker")
-			}
+			removeNodeLabel(workerNodeList, tsparams.MetalLbSpeakerLabel)
 
 			By("Resetting MetalLB speakerNodeSelector to default value")
 			metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to pull metallb object")
 			_, err = metalLbIo.RemoveLabel("metal").
-				WithSpeakerNodeSelector(NetConfig.WorkerLabelMap).Update(false)
+				WithSpeakerNodeSelector(workerLabelMap).Update(false)
 			Expect(err).ToNot(HaveOccurred(), "Failed to reset metallb SpeakerNodeSelector to default value")
 
 			By("Cleaning test namespace")
@@ -449,6 +447,9 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 	})
 
 	AfterAll(func() {
+		if len(cnfWorkerNodeList) > 2 {
+			removeNodeLabel(workerNodeList, bfdTestsLabel)
+		}
 		By("Cleaning Metallb namespace")
 		metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb namespace")
@@ -503,11 +504,7 @@ func scaleDownMetalLbSpeakers() {
 
 func testBFDFailOver() {
 	By("Adding metalLb label to compute nodes")
-
-	for _, worker := range workerNodeList {
-		_, err := worker.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-		Expect(err).ToNot(HaveOccurred(), "Failed to append new metalLb label to nodes objects")
-	}
+	addNodeLabel(workerNodeList, tsparams.MetalLbSpeakerLabel)
 
 	By("Pulling metalLb speaker daemonset")
 
@@ -665,6 +662,43 @@ func metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
 		return 0
 	}, tsparams.DefaultTimeout, tsparams.DefaultRetryInterval).Should(expectedCondition, errorMessage)
 	Expect(metalLbDs.IsReady(120*time.Second)).To(BeTrue(), "MetalLb daemonSet is not Ready")
+}
+
+func setWorkerNodeListAndLabelForBfdTests(
+	workerNodeList []*nodes.Builder, nodeSelector map[string]string) (map[string]string, []*nodes.Builder) {
+	if len(workerNodeList) > 2 {
+		By(fmt.Sprintf(
+			"Worker node number is greater than 2. Limit worker nodes for bfd test using label %v", nodeSelector))
+		addNodeLabel(workerNodeList[:2], nodeSelector)
+
+		return bfdTestsLabel, workerNodeList[:2]
+	}
+
+	return NetConfig.WorkerLabelMap, workerNodeList
+}
+
+func removeNodeLabel(workerNodeList []*nodes.Builder, nodeSelector map[string]string) {
+	updateNodeLabel(workerNodeList, nodeSelector, true)
+}
+
+func addNodeLabel(workerNodeList []*nodes.Builder, nodeSelector map[string]string) {
+	updateNodeLabel(workerNodeList, nodeSelector, false)
+}
+
+func updateNodeLabel(workerNodeList []*nodes.Builder, nodeLabel map[string]string, removeLabel bool) {
+	for _, worker := range workerNodeList {
+		worker, err := nodes.Pull(APIClient, worker.Definition.Name)
+		Expect(err).ToNot(HaveOccurred(), "Fail to pull latest worker %s object", worker.Definition.Name)
+
+		if removeLabel {
+			worker.RemoveLabel(mapFirstKeyValue(nodeLabel))
+		} else {
+			worker.WithNewLabel(mapFirstKeyValue(nodeLabel))
+		}
+
+		_, err = worker.Update()
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to update node's labels %s", worker.Definition.Name))
+	}
 }
 
 func removePrefixFromIPList(ipAddrs []string) []string {
