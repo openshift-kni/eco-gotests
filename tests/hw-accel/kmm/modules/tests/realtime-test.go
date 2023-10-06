@@ -46,6 +46,10 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 			By("Delete Module")
 			_, _ = kmm.NewModuleBuilder(APIClient, moduleName, tsparams.RealtimeKernelNamespace).Delete()
 
+			By("Await module to be deleted")
+			err := await.ModuleObjectDeleted(APIClient, moduleName, tsparams.RealtimeKernelNamespace, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
+
 			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.RealtimeKernelNamespace)
 			svcAccount.Exists()
 
@@ -99,7 +103,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 
 			By("Creating performance profile that sets Realtime Kernel on workers")
 			realtimeProfile := nto.NewBuilder(APIClient, performanceProfileName,
-				rtCPUIsolated, rtCPUReserved, GeneralConfig.WorkerLabelMap)
+				rtCPUIsolated, rtCPUReserved, GeneralConfig.WorkerLabelMap).WithRTKernel()
 			_, err = realtimeProfile.Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating realtime performance profile")
 

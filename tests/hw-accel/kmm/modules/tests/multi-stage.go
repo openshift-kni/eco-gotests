@@ -52,6 +52,10 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			By("Await pods deletion")
 			err = await.ModuleUndeployed(APIClient, tsparams.UseLocalMultiStageTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting pods to be deleted")
+
+			By("Await module to be deleted")
+			err = await.ModuleObjectDeleted(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 		})
 
 		AfterAll(func() {

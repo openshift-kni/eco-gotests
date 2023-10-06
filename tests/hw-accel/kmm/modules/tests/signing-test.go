@@ -39,7 +39,12 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 			By("Delete Module")
 			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace).Delete()
-			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+			Expect(err).ToNot(HaveOccurred(), "error deleting module")
+
+			By("Await module to be deleted")
+			err = await.ModuleObjectDeleted(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
+
 			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.ModuleBuildAndSignNamespace)
 			svcAccount.Exists()
 

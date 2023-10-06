@@ -129,6 +129,10 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			_, err := module.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting the module")
 
+			By("Await module to be deleted")
+			err = await.ModuleObjectDeleted(APIClient, kmodName, localNsName, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
+
 			By("Await pods deletion")
 			err = await.ModuleUndeployed(APIClient, localNsName, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting pods to be deleted")
@@ -183,8 +187,12 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 		AfterAll(func() {
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, kmodName, moduleName).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, kmodName, localNsName).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+
+			By("Await module to be deleted")
+			err = await.ModuleObjectDeleted(APIClient, kmodName, localNsName, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 
 			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, moduleName)
 			svcAccount.Exists()

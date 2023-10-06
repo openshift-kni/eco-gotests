@@ -7,8 +7,8 @@ import (
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
@@ -88,6 +88,20 @@ func ModuleUndeployed(apiClient *clients.Settings, nsName string, timeout time.D
 		glog.V(kmmparams.KmmLogLevel).Infof("current number of pods: %v\n", len(pods))
 
 		return len(pods) == 0, nil
+	})
+}
+
+// ModuleObjectDeleted awaits module object to be deleted.
+// required from KMM 2.0 so that NMC has time to unload the modules.
+func ModuleObjectDeleted(apiClient *clients.Settings, moduleName, nsName string, timeout time.Duration) error {
+	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+		_, err := kmm.Pull(apiClient, moduleName, nsName)
+
+		if err != nil {
+			glog.V(kmmparams.KmmLogLevel).Infof("error while pulling the module; most likely it is deleted")
+		}
+
+		return err != nil, nil
 	})
 }
 
