@@ -198,7 +198,7 @@ func (builder *ContainerBuilder) WithResourceRequest(hugePages, memory string, c
 	builder.definition.Resources.Requests = v1.ResourceList{
 		"hugepages-1Gi": resource.MustParse(hugePages),
 		"memory":        resource.MustParse(memory),
-		"cpu":           *resource.NewQuantity(int64(2), resource.DecimalSI),
+		"cpu":           *resource.NewQuantity(cpu, resource.DecimalSI),
 	}
 
 	return builder

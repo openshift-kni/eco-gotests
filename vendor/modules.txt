@@ -657,7 +657,7 @@ github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
-# github.com/openshift-kni/eco-goinfra v0.0.0-20231002210450-730a0299b590
+# github.com/openshift-kni/eco-goinfra v0.0.0-20231011164229-bdc9c7b921cb
 ## explicit; go 1.19
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/clients
