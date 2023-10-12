@@ -38,6 +38,17 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 		rtCPUReserved := "0,2,4,6"
 
 		BeforeAll(func() {
+			By("Detect if we can run test on architecture")
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+
+			if arch == "arm64" {
+				Skip("ARM platform does not support realtime kernel.")
+			}
+
 			By("Collect MachineConfigPoolName")
 			mcpName = get.MachineConfigPoolName(APIClient)
 		})
