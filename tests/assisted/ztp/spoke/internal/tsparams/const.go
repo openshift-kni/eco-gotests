@@ -25,4 +25,8 @@ const (
 	// LabelFipsVerificationTestCases represents fips-verification label that can be used for test cases
 	// selection.
 	LabelFipsVerificationTestCases = "fips-verification"
+
+	// LabelTangDiskEncryptionInstallTestCases represents tang-disk-encryption-install label that
+	// can be used for test cases selection.
+	LabelTangDiskEncryptionInstallTestCases = "tang-disk-encryption-install"
 )
