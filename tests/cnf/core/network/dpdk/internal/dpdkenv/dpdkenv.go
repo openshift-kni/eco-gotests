@@ -103,8 +103,7 @@ func DeployPerformanceProfile(
 	glog.V(90).Infof("Required PerformanceProfile doesn't exist. Installing new profile PerformanceProfile")
 
 	_, err = nto.NewBuilder(apiClient, profileName, isolatedCPU, reservedCPU, netConfig.WorkerLabelMap).
-		WithHugePages("1G", []v2.HugePage{{Size: "1G", Count: hugePages1GCount}}).
-		WithMachineConfigPoolSelector(netConfig.WorkerLabelMap).Create()
+		WithHugePages("1G", []v2.HugePage{{Size: "1G", Count: hugePages1GCount}}).Create()
 
 	if err != nil {
 		return fmt.Errorf("fail to deploy PerformanceProfile due to: %w", err)
