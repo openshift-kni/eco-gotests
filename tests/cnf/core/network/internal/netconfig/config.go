@@ -28,6 +28,10 @@ type NetworkConfig struct {
 	SriovOperatorNamespace string `yaml:"sriov_operator_namespace" envconfig:"ECO_CNF_CORE_NET_SRIOV_OPERATOR_NAMESPACE"`
 	MlbOperatorNamespace   string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
 	CnfMcpLabel            string `yaml:"cnf_mcp_label" envconfig:"ECO_CNF_CORE_NET_CNF_MCP_LABEL"`
+	SwitchUser             string `envconfig:"ECO_CNF_CORE_NET_SWITCH_USER"`
+	SwitchPass             string `envconfig:"ECO_CNF_CORE_NET_SWITCH_PASS"`
+	SwitchIP               string `envconfig:"ECO_CNF_CORE_NET_SWITCH_IP"`
+	SwitchInterfaces       string `envconfig:"ECO_CNF_CORE_NET_SWITCH_INTERFACES"`
 	//nolint:lll
 	NMStateOperatorNamespace string `yaml:"nmstate_operator_namespace" envconfig:"ECO_CNF_CORE_NET_NMSTATE_OPERATOR_NAMESPACE"`
 	//nolint:lll
@@ -111,6 +115,34 @@ func (netConfig *NetworkConfig) GetVLAN() (uint16, error) {
 	}
 
 	return uint16(vlanInt), nil
+}
+
+// GetSwitchUser checks the environmental variable ECO_CNF_CORE_NET_SWITCH_USER and returns the value in string.
+func (netConfig *NetworkConfig) GetSwitchUser() (string, error) {
+	if netConfig.SwitchUser == "" {
+		return "", fmt.Errorf("the username for a switch is empty, check ECO_CNF_CORE_NET_SWITCH_USER env var")
+	}
+
+	return netConfig.SwitchUser, nil
+}
+
+// GetSwitchPass checks the environmental variable ECO_CNF_CORE_NET_SWITCH_PASS and returns the value in string.
+func (netConfig *NetworkConfig) GetSwitchPass() (string, error) {
+	if netConfig.SwitchPass == "" {
+		return "", fmt.Errorf("the password for a switch is empty, check ECO_CNF_CORE_NET_SWITCH_PASS env var")
+	}
+
+	return netConfig.SwitchPass, nil
+}
+
+// GetSwitchIP checks the environmental variable ECO_CNF_CORE_NET_SWITCH_IP and returns the value in string.
+func (netConfig *NetworkConfig) GetSwitchIP() (string, error) {
+	if net.ParseIP(netConfig.SwitchIP) == nil {
+		return "", fmt.Errorf("the environment switch IP variable is not a valid IP," +
+			" check ECO_CNF_CORE_NET_SWITCH_IP env var")
+	}
+
+	return netConfig.SwitchIP, nil
 }
 
 func readFile(netConfig *NetworkConfig, cfgFile string) error {

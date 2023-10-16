@@ -3,6 +3,7 @@ module github.com/openshift-kni/eco-gotests
 go 1.19
 
 require (
+	github.com/Juniper/go-netconf v0.3.0
 	github.com/NVIDIA/gpu-operator v1.11.1
 	github.com/golang/glog v1.1.1
 	github.com/hashicorp/go-version v1.6.0
