@@ -2,14 +2,19 @@ package assisted
 
 import (
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
+	"github.com/openshift/assisted-service/models"
 	v1 "github.com/openshift/hive/apis/hive/v1"
 	coreV1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -407,6 +412,49 @@ func (builder *AgentClusterInstallBuilder) WaitForConditionReason(
 
 		return condition.Reason == reason, nil
 	})
+}
+
+// GetEvents returns events from the events URL of the AgentClusterInstall.
+func (builder *AgentClusterInstallBuilder) GetEvents(skipCertVerify bool) (models.EventList, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting cluster events from agentclusterinstall %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("cannot get events from non-existent agentclusterinstall")
+	}
+
+	client := http.Client{Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: skipCertVerify}}}
+
+	glog.V(100).Infof("Getting events from url: %s", builder.Object.Status.DebugInfo.EventsURL)
+
+	res, err := client.Get(builder.Object.Status.DebugInfo.EventsURL)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Creating EventList from returned events")
+
+	var events models.EventList
+
+	err = json.Unmarshal(body, &events)
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
 }
 
 // Get fetches the defined agentclusterinstall from the cluster.

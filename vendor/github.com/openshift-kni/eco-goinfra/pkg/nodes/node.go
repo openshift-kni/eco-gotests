@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
@@ -12,6 +15,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	isTrue = "True"
 )
 
 // Builder provides struct for Node object containing connection to the cluster and the list of Node definitions.
@@ -56,7 +63,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	glog.V(100).Infof("Updating configuration of node %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("node object doesn't exist")
+		return nil, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
 	}
 
 	builder.Definition.CreationTimestamp = metaV1.Time{}
@@ -82,6 +89,32 @@ func (builder *Builder) Exists() bool {
 		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// Delete removes node from the cluster.
+func (builder *Builder) Delete() error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Deleting the node %s", builder.Definition.Name)
+
+	if !builder.Exists() {
+		return fmt.Errorf("node cannot be deleted because it does not exist")
+	}
+
+	err := builder.apiClient.CoreV1Interface.Nodes().Delete(
+		context.Background(),
+		builder.Definition.Name,
+		metaV1.DeleteOptions{})
+
+	if err != nil {
+		return fmt.Errorf("can not delete node %s due to %w", builder.Definition.Name, err)
+	}
+
+	builder.Object = nil
+
+	return nil
 }
 
 // WithNewLabel defines the new label placed in the Node metadata.
@@ -187,6 +220,97 @@ func (builder *Builder) ExternalIPv4Network() (string, error) {
 	}
 
 	return extNetwork.IPv4, nil
+}
+
+// IsReady check if the Node is Ready.
+func (builder *Builder) IsReady() (bool, error) {
+	if valid, err := builder.validate(); !valid {
+		return false, err
+	}
+
+	glog.V(100).Infof("Verify %s node availability", builder.Definition.Name)
+
+	if !builder.Exists() {
+		return false, fmt.Errorf("%s node object doesn't exist", builder.Definition.Name)
+	}
+
+	for _, condition := range builder.Object.Status.Conditions {
+		if condition.Type == v1.NodeReady {
+			return condition.Status == isTrue, nil
+		}
+	}
+
+	return false, fmt.Errorf("the Ready condition could not be found for node %s", builder.Definition.Name)
+}
+
+// WaitUntilConditionTrue waits for timeout duration or until node gets to a specific status.
+func (builder *Builder) WaitUntilConditionTrue(
+	conditionType v1.NodeConditionType, timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+		if !builder.Exists() {
+			return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
+		}
+
+		for _, condition := range builder.Object.Status.Conditions {
+			if condition.Type == conditionType {
+				return condition.Status == isTrue, nil
+			}
+		}
+
+		return false, fmt.Errorf("the %s condition could not be found for node %s",
+			builder.Definition.Name, conditionType)
+	})
+
+	if err == nil {
+		return nil
+	}
+
+	return fmt.Errorf("%s node condition %s never became True due to %w",
+		builder.Definition.Name, conditionType, err)
+}
+
+// WaitUntilConditionUnknown waits for timeout duration or until node change specific status.
+func (builder *Builder) WaitUntilConditionUnknown(
+	conditionType v1.NodeConditionType, timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+		if !builder.Exists() {
+			return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
+		}
+
+		for _, condition := range builder.Object.Status.Conditions {
+			if condition.Type == conditionType {
+				return condition.Status != "Unknown", nil
+			}
+		}
+
+		return false, fmt.Errorf("the %s condition could not be found for node %s",
+			builder.Definition.Name, conditionType)
+	})
+
+	if err == nil {
+		return nil
+	}
+
+	return fmt.Errorf("%s node condition %s never became Unknown due to %w",
+		builder.Definition.Name, conditionType, err)
+}
+
+// WaitUntilReady waits for timeout duration or until node is Ready.
+func (builder *Builder) WaitUntilReady(timeout time.Duration) error {
+	return builder.WaitUntilConditionTrue(v1.NodeReady, timeout)
+}
+
+// WaitUntilNotReady waits for timeout duration or until node is NotReady.
+func (builder *Builder) WaitUntilNotReady(timeout time.Duration) error {
+	return builder.WaitUntilConditionUnknown(v1.NodeReady, timeout)
 }
 
 // validate will check that the builder and builder definition are properly initialized before
