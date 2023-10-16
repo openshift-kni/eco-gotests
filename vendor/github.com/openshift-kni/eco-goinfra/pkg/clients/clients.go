@@ -57,6 +57,7 @@ import (
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
+	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 )
@@ -82,6 +83,7 @@ type Settings struct {
 	olmv1.OperatorsV1Interface
 	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
 	operatorv1alpha1.OperatorV1alpha1Interface
+	grafanaV4V1Alpha1.Grafana
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -219,6 +221,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := nfdv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := grafanaV4V1Alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

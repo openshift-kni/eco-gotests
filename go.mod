@@ -15,7 +15,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20231016131055-fdedecc423a4
+	github.com/openshift-kni/eco-goinfra v0.0.0-20231016151904-7105d3ee30cd
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -135,6 +135,7 @@ require (
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/grafana-operator/grafana-operator/v4 v4.10.1 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/h2non/filetype v1.1.1 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
