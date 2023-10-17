@@ -475,7 +475,7 @@ func fetchNewDeploymentPod(waitUntilRunning bool) *pod.Builder {
 
 		return len(deploymentPodList) == 1
 
-	}, time.Minute, tsparams.DefaultTimeout).Should(BeTrue(), "Failed to collect deployment pods")
+	}, tsparams.DefaultTimeout, 3*time.Second).Should(BeTrue(), "Failed to collect deployment pods")
 
 	if waitUntilRunning {
 		err := deploymentPodList[0].WaitUntilRunning(tsparams.DefaultTimeout)
