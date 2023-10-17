@@ -1,10 +1,13 @@
 package search
 
-import "github.com/golang/glog"
+import (
+	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
+)
 
 // StringInSlice check if match string is exist in string slice/array.
 func StringInSlice(match string, listOfString []string) bool {
-	glog.V(100).Infof("verify that %s exist %v", match, listOfString)
+	glog.V(nfdparams.LogLevel).Infof("verify that %s exist %v", match, listOfString)
 
 	for _, str := range listOfString {
 		if str == match {

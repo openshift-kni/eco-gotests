@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/nfdhelpersparams"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -22,7 +23,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 
 	if err != nil {
 		fmt.Println(err)
-		glog.V(100).Infof("Failed to define the default container settings %v", err)
+		glog.V(nfdparams.LogLevel).Infof("Failed to define the default container settings %v", err)
 	}
 
 	podWorker.Definition.Spec.Containers = make([]v1.Container, 0)
@@ -30,7 +31,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 
 	_, err = podWorker.CreateAndWaitUntilRunning(5 * time.Minute)
 	if err != nil {
-		glog.V(100).Infof(
+		glog.V(nfdparams.LogLevel).Infof(
 			"Error creating pod: %s", err.Error())
 
 		return ""
@@ -44,7 +45,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 
 	err = podLogs.Error()
 	if err != nil {
-		glog.V(100).Infof(
+		glog.V(nfdparams.LogLevel).Infof(
 			"Failed to retrieve logs: %s", err.Error())
 
 		return ""
@@ -52,7 +53,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 
 	body, err := podLogs.Raw()
 	if err != nil {
-		glog.V(100).Infof("Failed to retrieve logs %v", err)
+		glog.V(nfdparams.LogLevel).Infof("Failed to retrieve logs %v", err)
 	}
 
 	return fmt.Sprint(string(body))
