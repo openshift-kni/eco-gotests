@@ -28,7 +28,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 	Context("Module", Label("multi-stage"), func() {
 
-		moduleName := tsparams.UseLocalMultiStageTestNamespace
+		moduleName := "multi-stage"
 		kmodName := "multi-stage"
 		serviceAccountName := "multi-stage-manager"
 		plainImage := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION-plain",

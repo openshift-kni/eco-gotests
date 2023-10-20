@@ -169,7 +169,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 				Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 				By("Create Module")
-				_, err = kmm.NewModuleBuilder(APIClient, "webhook-main-module-not-first-in-list", nSpace).
+				_, err = kmm.NewModuleBuilder(APIClient, "main-module-not-first-in-list", nSpace).
 					WithNodeSelector(GeneralConfig.WorkerLabelMap).
 					WithModuleLoaderContainer(moduleLoader).
 					Create()
