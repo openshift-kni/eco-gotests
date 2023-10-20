@@ -663,7 +663,7 @@ github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
-# github.com/openshift-kni/eco-goinfra v0.0.0-20231016151904-7105d3ee30cd
+# github.com/openshift-kni/eco-goinfra v0.0.0-20231020181212-6a4d1c4f19d5
 ## explicit; go 1.19
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/clients
@@ -732,6 +732,10 @@ github.com/openshift/client-go/config/informers/externalversions/config/v1alpha1
 github.com/openshift/client-go/config/informers/externalversions/internalinterfaces
 github.com/openshift/client-go/config/listers/config/v1
 github.com/openshift/client-go/config/listers/config/v1alpha1
+github.com/openshift/client-go/machine/applyconfigurations/internal
+github.com/openshift/client-go/machine/applyconfigurations/machine/v1beta1
+github.com/openshift/client-go/machine/clientset/versioned/scheme
+github.com/openshift/client-go/machine/clientset/versioned/typed/machine/v1beta1
 github.com/openshift/client-go/operator/applyconfigurations/internal
 github.com/openshift/client-go/operator/applyconfigurations/operator/v1
 github.com/openshift/client-go/operator/applyconfigurations/operator/v1alpha1
@@ -792,6 +796,10 @@ github.com/openshift/installer/pkg/types/openstack
 github.com/openshift/installer/pkg/types/ovirt
 github.com/openshift/installer/pkg/types/powervs
 github.com/openshift/installer/pkg/types/vsphere
+# github.com/openshift/local-storage-operator v0.0.0-20230904072424-14e8d821fe80
+## explicit; go 1.19
+github.com/openshift/local-storage-operator/api/v1
+github.com/openshift/local-storage-operator/api/v1alpha1
 # github.com/openshift/machine-config-operator v0.0.1-0.20230525143338-5c5a902aeb55
 ## explicit; go 1.18
 github.com/openshift/machine-config-operator/internal/clients

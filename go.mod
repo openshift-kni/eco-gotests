@@ -15,7 +15,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20230620093014-45a940d6f70d
 	github.com/onsi/ginkgo/v2 v2.10.0
 	github.com/onsi/gomega v1.27.8
-	github.com/openshift-kni/eco-goinfra v0.0.0-20231016151904-7105d3ee30cd
+	github.com/openshift-kni/eco-goinfra v0.0.0-20231020181212-6a4d1c4f19d5
 	github.com/openshift-kni/k8sreporter v1.0.3
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -34,6 +34,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
+	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 	sigs.k8s.io/controller-runtime v0.14.6
 )
@@ -167,6 +168,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/openshift/client-go v0.0.0-20230120202327-72f107311084 // indirect
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
+	github.com/openshift/local-storage-operator v0.0.0-20230904072424-14e8d821fe80 // indirect
 	github.com/openshift/ptp-operator v0.0.0-20230608145834-0f37b622bc3b // indirect
 	github.com/operator-framework/operator-lifecycle-manager v0.24.0 // indirect
 	github.com/operator-framework/operator-registry v1.17.5 // indirect
@@ -220,7 +222,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.27.1 // indirect
 	k8s.io/apiserver v0.26.2 // indirect
 	k8s.io/cli-runtime v0.26.1 // indirect
-	k8s.io/client-go v12.0.0+incompatible // indirect
 	k8s.io/component-base v0.27.1 // indirect
 	k8s.io/component-helpers v0.26.2 // indirect
 	k8s.io/klog v1.0.0 // indirect

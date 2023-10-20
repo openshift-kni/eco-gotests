@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -101,7 +102,7 @@ func (builder *ClusterServiceVersionBuilder) Delete() error {
 	return err
 }
 
-// GetAlmExamples extracts and returns the alm-examples block from the CSV.
+// GetAlmExamples extracts and returns the alm-examples block from the clusterserviceversion.
 func (builder *ClusterServiceVersionBuilder) GetAlmExamples() (string, error) {
 	if valid, err := builder.validate(); !valid {
 		return "", err
@@ -120,7 +121,44 @@ func (builder *ClusterServiceVersionBuilder) GetAlmExamples() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("%s not found in given csv named %v", almExamples, builder.Definition.Name)
+	return "", fmt.Errorf("%s not found in given clusterserviceversion named %v",
+		almExamples, builder.Definition.Name)
+}
+
+// IsSuccessful checks if the clusterserviceversion is Successful.
+func (builder *ClusterServiceVersionBuilder) IsSuccessful() (bool, error) {
+	if valid, err := builder.validate(); !valid {
+		return false, err
+	}
+
+	glog.V(100).Infof("Verify clusterserviceversion %s in namespace %s is Successful",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	phase, err := builder.GetPhase()
+
+	if err != nil {
+		return false, fmt.Errorf("failed to get phase value for %s clusterserviceversion in %s namespace due to %w",
+			builder.Definition.Name, builder.Definition.Namespace, err)
+	}
+
+	return phase == "Succeeded", nil
+}
+
+// GetPhase gets current clusterserviceversion phase.
+func (builder *ClusterServiceVersionBuilder) GetPhase() (oplmV1alpha1.ClusterServiceVersionPhase, error) {
+	if valid, err := builder.validate(); !valid {
+		return "", err
+	}
+
+	glog.V(100).Infof("Get clusterserviceversion %s phase in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		return "", fmt.Errorf("%s clusterserviceversion not found in %s namespace",
+			builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	return builder.Object.Status.Phase, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before
