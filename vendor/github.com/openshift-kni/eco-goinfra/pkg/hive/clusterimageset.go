@@ -238,6 +238,8 @@ func (builder *ClusterImageSetBuilder) Delete() (*ClusterImageSetBuilder, error)
 	}
 
 	builder.Object = nil
+	builder.Definition.ResourceVersion = ""
+	builder.Definition.CreationTimestamp = metaV1.Time{}
 
 	return builder, nil
 }

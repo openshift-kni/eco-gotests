@@ -898,6 +898,31 @@ func (builder *Builder) WithLabel(labelKey, labelValue string) *Builder {
 	return builder
 }
 
+// WithLabels applies a set of labels to a Pod's definition.
+func (builder *Builder) WithLabels(labels map[string]string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if len(labels) == 0 {
+		builder.errorMsg = "can not apply empty set of labels to pod's definition"
+
+		return builder
+	}
+
+	builder.isMutationAllowed("Labels")
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	glog.V(100).Infof(fmt.Sprintf("Defining pod labels: %q", labels))
+
+	builder.Definition.Labels = labels
+
+	return builder
+}
+
 // WithOptions creates pod with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {
