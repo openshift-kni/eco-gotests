@@ -29,4 +29,8 @@ const (
 	// LabelFipsVerificationTestCases represents fips-verification label that can be used for test cases
 	// selection.
 	LabelFipsVerificationTestCases = "fips-verification"
+
+	// LabelAdditionalTrustBundle represents additional-trust-bundle label that can be used
+	// for test cases selection.
+	LabelAdditionalTrustBundle = "additional-trust-bundle"
 )
