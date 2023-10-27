@@ -29,4 +29,8 @@ const (
 	// LabelTangDiskEncryptionInstallTestCases represents tang-disk-encryption-install label that
 	// can be used for test cases selection.
 	LabelTangDiskEncryptionInstallTestCases = "tang-disk-encryption-install"
+
+	// LabelTPMDiskEncryptionInstallTestCases represents tpm-disk-encryption-install label that
+	// can be used for test cases selection.
+	LabelTPMDiskEncryptionInstallTestCases = "tpm-disk-encryption-install"
 )

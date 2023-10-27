@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
+	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/diskencryption"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/models"
@@ -17,35 +17,16 @@ import (
 )
 
 var (
-	spokeClusterName               string
+	tangSpokeClusterName           string
 	tangEncryptionEnabledOn        string
 	tangServers                    map[string]TangServer
 	tangAgentClusterInstallBuilder *assisted.AgentClusterInstallBuilder
 )
 
 const (
-	tangeMasterMachineConfig = "master-tang"
-	tangeWorkerMachineConfig = "worker-tang"
+	tangMasterMachineConfig = "master-tang"
+	tangWorkerMachineConfig = "worker-tang"
 )
-
-// TangIgnitionConfig represents the ignitionconfig present in the config section of
-// a tang machineconfig.
-type TangIgnitionConfig struct {
-	Storage struct {
-		LUKS []struct {
-			Clevis struct {
-				Tang []struct {
-					Thumbprint string `yaml:"thumbprint"`
-					URL        string `yaml:"url"`
-				}
-			} `yaml:"clevis"`
-			Device     string   `yaml:"device"`
-			Name       string   `yaml:"name"`
-			Options    []string `yaml:"options"`
-			WipeVolume bool     `yaml:"wipeVolume"`
-		} `yaml:"luks"`
-	} `yaml:"storage"`
-}
 
 // TangServer represents an entry from the agentclusterinstall tangServers field.
 type TangServer struct {
@@ -63,12 +44,12 @@ var _ = Describe(
 
 				By("Get spoke cluster name")
 				var err error
-				spokeClusterName, err = find.SpokeClusterName()
+				tangSpokeClusterName, err = find.SpokeClusterName()
 				Expect(err).NotTo(HaveOccurred(), "error getting spoke cluster name")
 
 				By("Get spoke cluster AgentClusterInstall")
 				tangAgentClusterInstallBuilder, err = assisted.PullAgentClusterInstall(
-					HubAPIClient, spokeClusterName, spokeClusterName)
+					HubAPIClient, tangSpokeClusterName, tangSpokeClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling spoke agentclusterinstall")
 
 				if tangAgentClusterInstallBuilder.Object.Spec.DiskEncryption == nil {
@@ -116,7 +97,7 @@ var _ = Describe(
 				}
 
 				By("Fetch spoke cluster infraenv")
-				tangInfraEnvBuilder, err := assisted.PullInfraEnvInstall(HubAPIClient, spokeClusterName, spokeClusterName)
+				tangInfraEnvBuilder, err := assisted.PullInfraEnvInstall(HubAPIClient, tangSpokeClusterName, tangSpokeClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling spoke cluster infraenv")
 
 				agentBuilders, err := tangInfraEnvBuilder.GetAllAgents()
@@ -148,16 +129,20 @@ var _ = Describe(
 					Skip("Only a single tang server used for installation")
 				}
 
-				var ignitionConfigs []TangIgnitionConfig
+				var ignitionConfigs []*diskencryption.IgnitionConfig
 				if tangEncryptionEnabledOn == models.DiskEncryptionEnableOnAll ||
 					tangEncryptionEnabledOn == models.DiskEncryptionEnableOnMasters {
-					masterTangIgnition := getIgnitionConfigFromMachineConfig(tangeMasterMachineConfig)
+					masterTangIgnition, err := diskencryption.GetIgnitionConfigFromMachineConfig(
+						SpokeConfig.APIClient, tangMasterMachineConfig)
+					Expect(err).NotTo(HaveOccurred(), "error getting ignition config from machineconfig")
 					ignitionConfigs = append(ignitionConfigs, masterTangIgnition)
 				}
 
 				if tangEncryptionEnabledOn == models.DiskEncryptionEnableOnAll ||
 					tangEncryptionEnabledOn == models.DiskEncryptionEnableOnWorkers {
-					workerTangIgnition := getIgnitionConfigFromMachineConfig(tangeWorkerMachineConfig)
+					workerTangIgnition, err := diskencryption.GetIgnitionConfigFromMachineConfig(
+						SpokeConfig.APIClient, tangWorkerMachineConfig)
+					Expect(err).NotTo(HaveOccurred(), "error getting ignition config from machineconfig")
 					ignitionConfigs = append(ignitionConfigs, workerTangIgnition)
 				}
 
@@ -186,40 +171,21 @@ func createTangServersFromAgentClusterInstall(
 	return tangServerMap, nil
 }
 
-func createTangIgnitionFromMachineConfig(builder *mco.MCBuilder) (TangIgnitionConfig, error) {
-	var ignitionConfig TangIgnitionConfig
-
-	err := json.Unmarshal(builder.Object.Spec.Config.Raw, &ignitionConfig)
-	if err != nil {
-		return TangIgnitionConfig{}, err
-	}
-
-	return ignitionConfig, nil
-}
-
 func verifyMasterMachineConfig() {
-	verifyLuksIgnitionConfig(getIgnitionConfigFromMachineConfig(tangeMasterMachineConfig))
+	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(
+		SpokeConfig.APIClient, tangMasterMachineConfig)
+	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tangMasterMachineConfig+" machineconfig")
+	verifyLuksTangIgnitionConfig(ignitionConfig)
 }
 
 func verifyWorkerMachineConfig() {
-	verifyLuksIgnitionConfig(getIgnitionConfigFromMachineConfig(tangeWorkerMachineConfig))
+	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(
+		SpokeConfig.APIClient, tangWorkerMachineConfig)
+	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tangWorkerMachineConfig+" machineconfig")
+	verifyLuksTangIgnitionConfig(ignitionConfig)
 }
 
-func getIgnitionConfigFromMachineConfig(machineConfigName string) TangIgnitionConfig {
-	By("Check that " + machineConfigName + " machine config is created")
-	tangMachineConfigBuilder, err := mco.PullMachineConfig(SpokeConfig.APIClient, machineConfigName)
-	Expect(err).NotTo(HaveOccurred(), "error pulling "+machineConfigName+" machineconfig")
-
-	By("Construct TangIgnitionConfig from " + machineConfigName + " machineconfig")
-
-	ignitionConfig, err := createTangIgnitionFromMachineConfig(tangMachineConfigBuilder)
-	Expect(err).NotTo(HaveOccurred(), "error extracting ignition config from "+machineConfigName+" machineconfig")
-	Expect(len(ignitionConfig.Storage.LUKS)).To(Equal(1), "error received multiple luks devices and expected 1")
-
-	return ignitionConfig
-}
-
-func verifyLuksIgnitionConfig(ignitionConfig TangIgnitionConfig) {
+func verifyLuksTangIgnitionConfig(ignitionConfig *diskencryption.IgnitionConfig) {
 	verifyTangServerConsistency(ignitionConfig)
 	luksEntry := ignitionConfig.Storage.LUKS[0]
 
@@ -231,7 +197,7 @@ func verifyLuksIgnitionConfig(ignitionConfig TangIgnitionConfig) {
 	Expect(luksEntry.WipeVolume).To(BeTrue(), "luks device has wipevolume set to false")
 }
 
-func verifyTangServerConsistency(ignitionConfig TangIgnitionConfig) {
+func verifyTangServerConsistency(ignitionConfig *diskencryption.IgnitionConfig) {
 	luksEntry := ignitionConfig.Storage.LUKS[0]
 
 	Expect(len(luksEntry.Clevis.Tang)).To(Equal(len(tangServers)),
