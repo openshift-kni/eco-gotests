@@ -112,6 +112,9 @@ var _ = Describe(
 					if masterCount == 3 {
 						Expect(err).To(HaveOccurred(), "error: created agentclusterinstall with invalid data")
 						Expect(strings.Contains(err.Error(), message)).To(BeTrue(), "error: received incorrect error message")
+					} else if masterCount == 1 && !userManagedNetworking {
+						Expect(err).To(HaveOccurred(), "error: created agentclusterinstall with invalid data")
+						Expect(strings.Contains(err.Error(), message)).To(BeTrue(), "error: received incorrect error message")
 					} else {
 						Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
 						By("Waiting for condition to report expected failure message")
@@ -122,8 +125,10 @@ var _ = Describe(
 				},
 				Entry("that is SNO with VSphere platform", v1beta1.VSpherePlatformType, true, 1, 0,
 					"Single node cluster is not supported alongside vsphere platform", polarion.ID("56198")),
+				Entry("that is SNO with BareMetal platform", v1beta1.BareMetalPlatformType, false, 1, 0,
+					"UserManagedNetworking must be set to true with SNO", polarion.ID("56418")),
 				Entry("that is BareMetal platform with user-managed-networking", v1beta1.BareMetalPlatformType, true, 3, 2,
-					"Can't set baremetal platform with user-managed-networking enabled", polarion.ID("56418")),
+					"Can't set baremetal platform with user-managed-networking enabled", polarion.ID("56419")),
 				Entry("that is None platform without user-managed-networking", v1beta1.NonePlatformType, false, 3, 2,
 					"Can't set none platform with user-managed-networking disabled", polarion.ID("56420")),
 			)
