@@ -20,6 +20,35 @@ type (
 		BFDStatus string `json:"status"`
 		BFDPeer   string `json:"peer"`
 	}
+
+	bgpStatus struct {
+		VrfID         int    `json:"vrfId"`
+		VrfName       string `json:"vrfName"`
+		TableVersion  int    `json:"tableVersion"`
+		RouterID      string `json:"routerId"`
+		DefaultLocPrf int    `json:"defaultLocPrf"`
+		LocalAS       int    `json:"localAS"`
+		Routes        map[string][]struct {
+			Valid     bool   `json:"valid"`
+			Multipath bool   `json:"multipath,omitempty"`
+			PathFrom  string `json:"pathFrom"`
+			Prefix    string `json:"prefix"`
+			PrefixLen int    `json:"prefixLen"`
+			Network   string `json:"network"`
+			Metric    int    `json:"metric"`
+			Weight    int    `json:"weight"`
+			PeerID    string `json:"peerId"`
+			Path      string `json:"path"`
+			Origin    string `json:"origin"`
+			Nexthops  []struct {
+				IP       string `json:"ip"`
+				Hostname string `json:"hostname"`
+				Afi      string `json:"afi"`
+				Used     bool   `json:"used"`
+			} `json:"nexthops"`
+			Bestpath bool `json:"bestpath,omitempty"`
+		} `json:"routes"`
+	}
 )
 
 // DefineBaseConfig defines minimal required FRR configuration.
@@ -167,6 +196,51 @@ func SetStaticRoute(frrPod *pod.Builder, action, destIP string, nextHopMap map[s
 	}
 
 	return buffer.String(), nil
+}
+
+// GetBGPStatus returns bgp status output from frr pod.
+func GetBGPStatus(frrPod *pod.Builder, protocolVersion string, containerName ...string) (*bgpStatus, error) {
+	glog.V(90).Infof("Getting bgp status from pod: %s", frrPod.Definition.Name)
+
+	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s json", protocolVersion), containerName...)
+}
+
+// GetBGPCommunityStatus returns bgp community status from frr pod.
+func GetBGPCommunityStatus(frrPod *pod.Builder, ipProtocolVersion string) (*bgpStatus, error) {
+	glog.V(90).Infof("Getting bgp community status from container on pod: %s", frrPod.Definition.Name)
+
+	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, "65535:65282"))
+}
+
+func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bgpStatus, error) {
+	cName := "frr"
+
+	if len(containerName) > 0 {
+		cName = containerName[0]
+	}
+
+	glog.V(90).Infof("Getting bgp status from container: %s of pod: %s", cName, frrPod.Definition.Name)
+
+	bgpStateOut, err := frrPod.ExecCommand(append(tsparams.VtySh, cmd))
+
+	if err != nil {
+		return nil, err
+	}
+
+	bgpStatus := bgpStatus{}
+
+	err = json.Unmarshal(bgpStateOut.Bytes(), &bgpStatus)
+	if err != nil {
+		glog.V(90).Infof("Failed to Unmarshal bgpStatus string: %s in to bgpStatus struct", bgpStateOut.String())
+
+		return nil, err
+	}
+
+	if len(bgpStatus.Routes) == 0 {
+		return nil, fmt.Errorf("no bgp routes present BGP status is empty")
+	}
+
+	return &bgpStatus, nil
 }
 
 func runningConfig(frrPod *pod.Builder) (string, error) {
