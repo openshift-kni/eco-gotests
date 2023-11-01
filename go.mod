@@ -7,6 +7,7 @@ require (
 	github.com/NVIDIA/gpu-operator v1.11.1
 	github.com/golang/glog v1.1.1
 	github.com/hashicorp/go-version v1.6.0
+	github.com/k8snetworkplumbingwg/multi-networkpolicy v0.0.0-20230301165931-f1873dc329c6
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 	github.com/k8snetworkplumbingwg/sriov-network-operator v0.0.0-20201204053545-49045c36efb9
 	github.com/kelseyhightower/envconfig v1.4.0
