@@ -116,6 +116,11 @@ The project uses a development method - forking workflow
 8) The pull request gets approved from at least 2 reviewers for merge and is merged into
    the [eco-gotests](https://github.com/openshift-kni/eco-gotests) .
 
+# Team Documentation
+| Name          | README                                |
+|-------------- | ------------------------------------- |
+| Assisted ZTP  | [README](tests/assisted/ztp/README.md)|
+
 # eco-tests - Project structure
     .
     ├── config                             # config files
