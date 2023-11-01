@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	coreV1 "k8s.io/api/core/v1"
@@ -19,8 +18,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
@@ -31,19 +28,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"k8s.io/apimachinery/pkg/labels"
-)
-
-// test cases variables that are accessible across entire file.
-var (
-	ipv4metalLbIPList []string
-	ipv4NodeAddrList  []string
-	ipv6metalLbIPList []string
-	ipv6NodeAddrList  []string
-	externalNad       *nad.Builder
-	cnfWorkerNodeList []*nodes.Builder
-	workerNodeList    []*nodes.Builder
-	workerLabelMap    map[string]string
-	bfdTestsLabel     = map[string]string{"metallb": "bfdtest"}
 )
 
 var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFailure, func() {
@@ -65,7 +49,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
 		By("Selecting worker node for BFD tests")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, bfdTestsLabel)
+		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
 
 		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
 			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
@@ -90,47 +74,24 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			bfdProfile := createBFDProfileAndVerifyIfItsReady(speakerPods)
 
 			createBGPPeerAndVerifyIfItsReady(
-				"testpeer",
-				ipv4metalLbIPList[0],
-				bfdProfile.Definition.Name,
-				tsparams.LocalBGPASN,
-				tsparams.RemoteBGPASN,
-				false, speakerPods)
+				ipv4metalLbIPList[0], bfdProfile.Definition.Name, tsparams.RemoteBGPASN, false, speakerPods)
 
 			By("Creating MetalLb configMap")
-			frrBFDConfig := frr.DefineBFDConfig(
-				tsparams.RemoteBGPASN, tsparams.LocalBGPASN, removePrefixFromIPList(ipv4NodeAddrList), false)
-			configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
-
-			bfdConfigMap, err := configmap.NewBuilder(
-				APIClient, tsparams.FRRDefaultConfigMapName, tsparams.TestNamespaceName).WithData(configMapData).Create()
-			Expect(err).ToNot(HaveOccurred(), "Failed to create configmap")
-
-			By("Creating FRR Pod With network and IP")
-			masterNodeList, err := nodes.List(APIClient,
-				metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-			Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
-
-			frrPod := pod.NewBuilder(
-				APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName, NetConfig.FrrImage).
-				DefineOnNode(masterNodeList[0].Object.Name).WithTolerationToMaster().WithPrivilegedFlag()
-
-			By("Creating FRR container")
-			frrContainer := pod.NewContainerBuilder(tsparams.FRRSecondContainerName, NetConfig.FrrImage, tsparams.SleepCMD).
-				WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
-
-			frrCtr, err := frrContainer.GetContainerCfg()
-			Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
+			bfdConfigMap := createConfigMap(
+				tsparams.RemoteBGPASN, tsparams.LocalBGPASN, ipv4NodeAddrList, false, true)
 
 			By("Creating static ip annotation")
 			staticIPAnnotation := pod.StaticIPAnnotation(
 				externalNad.Definition.Name, []string{fmt.Sprintf("%s/24", ipv4metalLbIPList[0])})
 
-			By("Creating FRR pod in the test namespace")
-			frrPod.WithAdditionalContainer(frrCtr).WithSecondaryNetwork(staticIPAnnotation)
-			frrPod.WithLocalVolume(bfdConfigMap.Definition.Name, "/etc/frr").RedefineDefaultCMD([]string{})
-			_, err = frrPod.CreateAndWaitUntilRunning(time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "Failed to create FRR test pod")
+			By("Listing control-plane nodes")
+			masterNodeList, err := nodes.List(APIClient,
+				metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+			Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
+
+			By("Creating FRR Pod with network and IP address")
+			frrPod := createFrrPod(
+				masterNodeList[0].Object.Name, bfdConfigMap.Object.Name, []string{}, staticIPAnnotation)
 
 			By("Checking that BGP and BFD sessions are established and up")
 			verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
@@ -286,60 +247,28 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				Expect(err).ToNot(HaveOccurred(), "Failed to list metalLb speaker pods")
 				bfdProfile := createBFDProfileAndVerifyIfItsReady(speakerPods)
 
-				var ebgpMultiHop bool
 				neighbourASN := uint32(tsparams.LocalBGPASN)
+				var eBgpMultiHop bool
 				if bgpProtocol == tsparams.EBGPProtocol {
 					neighbourASN = tsparams.RemoteBGPASN
-					ebgpMultiHop = true
+					eBgpMultiHop = true
 				}
 				createBGPPeerAndVerifyIfItsReady(
-					"testpeer",
-					masterClientPodIP,
-					bfdProfile.Definition.Name,
-					tsparams.LocalBGPASN,
-					neighbourASN,
-					ebgpMultiHop,
-					speakerPods)
+					masterClientPodIP, bfdProfile.Definition.Name, neighbourASN, eBgpMultiHop, speakerPods)
 
-				By("Creating an IPAddressPool and BGPAdvertisement")
-				ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
-					APIClient, "address-pool", NetConfig.MlbOperatorNamespace,
-					[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
-				Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
-
-				bgpAdvertisement := metallb.NewBGPAdvertisementBuilder(
-					APIClient, "bgpadvertisement", NetConfig.MlbOperatorNamespace)
-				bgpAdvertisement.WithIPAddressPools([]string{ipAddressPool.Definition.Name}).
-					WithCommunities([]string{"65535:65282"}).WithLocalPref(100)
-				switch ipStack {
-				case netparam.IPV4Family:
-					bgpAdvertisement.WithAggregationLength4(32)
-				case netparam.IPV6Family:
-					bgpAdvertisement.WithAggregationLength6(128)
+				prefixLen := int32(32)
+				if ipStack == netparam.IPV6Family {
+					prefixLen = 128
 				}
 
-				_, err = bgpAdvertisement.Create()
-				Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
+				By("Creating an IPAddressPool and BGPAdvertisement for bfd tests")
+				ipAddressPool := setupBgpAdvertisement(addressPool, prefixLen)
 
 				By("Creating a MetalLB service")
-				servicePort, err := service.DefineServicePort(80, 80, "TCP")
-				Expect(err).ToNot(HaveOccurred(), "Failed to define service port")
-				mlbService := service.NewBuilder(APIClient, "service-mlb", tsparams.TestNamespaceName,
-					map[string]string{"app": "nginx1"}, *servicePort).
-					WithExternalTrafficPolicy(externalTrafficPolicy).
-					WithIPFamily([]coreV1.IPFamily{coreV1.IPFamily(ipStack)}, coreV1.IPFamilyPolicySingleStack).
-					WithAnnotation(map[string]string{"metallb.universe.tf/address-pool": ipAddressPool.Definition.Name})
-				_, err = mlbService.Create()
-				Expect(err).ToNot(HaveOccurred(), "Failed to create MetalLB Service")
+				setupMetalLbService(ipStack, ipAddressPool, externalTrafficPolicy)
 
 				By("Creating nginx test pod on worker node")
-				mlbClientPod, err := pod.NewBuilder(
-					APIClient, "mlbnginxtpod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-					DefineOnNode(workerNodeList[0].Definition.Name).WithLabel("app", "nginx1").
-					RedefineDefaultCMD(cmd.DefineNGNXAndSleep()).WithPrivilegedFlag().Create()
-				Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
-				err = mlbClientPod.WaitUntilRunning(tsparams.DefaultTimeout)
-				Expect(err).ToNot(HaveOccurred(), "Failed timeout nginx test pod is not in running state")
+				setupNGNXPod()
 
 				By("Creating internal NAD")
 				masterBridgePlugin, err := nad.NewMasterBridgePlugin("internalnad", "br0").
@@ -365,33 +294,15 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					masterNodes[0].Object.Name, addressPool[0], nodeAddrList[1])
 
 				By("Creating client pod config map")
-				frrBFDConfig := frr.DefineBFDConfig(
-					int(neighbourASN), 64500, removePrefixFromIPList(nodeAddrList), ebgpMultiHop)
-				configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
-				masterConfigMap, err := configmap.NewBuilder(
-					APIClient, "frr-master-node-config", tsparams.TestNamespaceName).
-					WithData(configMapData).Create()
-				Expect(err).ToNot(HaveOccurred(), "Failed to create config map")
-
-				By("Creating FRR container")
-				frrContainer := pod.NewContainerBuilder(
-					tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
-					WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
-
-				frrCtr, err := frrContainer.GetContainerCfg()
-				Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
+				masterConfigMap := createConfigMap(
+					int(neighbourASN), tsparams.LocalBGPASN, nodeAddrList, eBgpMultiHop, true)
 
 				By("Creating FRR pod in the test namespace")
-				frrPod := pod.NewBuilder(
-					APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName, NetConfig.FrrImage).
-					DefineOnNode(masterNodes[0].Object.Name).WithTolerationToMaster().WithPrivilegedFlag()
-
-				frrPod.WithAdditionalContainer(frrCtr).WithSecondaryNetwork(
-					pod.StaticIPAnnotation(
-						bridgeNad.Definition.Name, []string{fmt.Sprintf("%s/%s", masterClientPodIP, subMast)}))
-				frrPod.WithLocalVolume(masterConfigMap.Definition.Name, "/etc/frr").RedefineDefaultCMD([]string{})
-				_, err = frrPod.CreateAndWaitUntilRunning(time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "Failed to create FRR test pod")
+				frrPod := createFrrPod(
+					masterNodes[0].Object.Name,
+					masterConfigMap.Object.Name,
+					[]string{},
+					pod.StaticIPAnnotation(bridgeNad.Definition.Name, []string{fmt.Sprintf("%s/%s", masterClientPodIP, subMast)}))
 
 				// Add static routes from client towards Speaker via router internal IPs
 				for index, workerAddress := range removePrefixFromIPList(nodeAddrList) {
@@ -448,7 +359,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 	AfterAll(func() {
 		if len(cnfWorkerNodeList) > 2 {
-			removeNodeLabel(workerNodeList, bfdTestsLabel)
+			removeNodeLabel(workerNodeList, metalLbTestsLabel)
 		}
 		By("Cleaning Metallb namespace")
 		metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
@@ -466,8 +377,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 	})
 })
 
-func createFrrPodOnMasterNodeAndWaitUntilRunning(name,
-	metalLbAddr, subMask, internalFrrIP, bridgeNadName, masterNodeName, mlbPoolIP, nodeAddr string) {
+func createFrrPodOnMasterNodeAndWaitUntilRunning(
+	name, metalLbAddr, subMask, internalFrrIP, bridgeNadName, masterNodeName, mlbPoolIP, nodeAddr string) {
 	By("Creating static ip annotation for FRR pod two on master node")
 
 	podMasterOneNetCfg := pod.StaticIPAnnotation(
@@ -476,14 +387,13 @@ func createFrrPodOnMasterNodeAndWaitUntilRunning(name,
 		bridgeNadName, []string{fmt.Sprintf("%s/%s", internalFrrIP, subMask)})...)
 
 	By("Creating FRR pod on master node")
-
-	frrPodMasterOne, err := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName, NetConfig.FrrImage).
-		DefineOnNode(masterNodeName).
-		RedefineDefaultCMD(cmd.DefineRouteAndSleep(mlbPoolIP, removePrefixFromIP(nodeAddr))).
-		WithPrivilegedFlag().WithTolerationToMaster().WithSecondaryNetwork(podMasterOneNetCfg).Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create FRR pod on master node")
-	Expect(frrPodMasterOne.WaitUntilRunning(3*time.Minute)).ToNot(
-		HaveOccurred(), "Failed timeout frr pod on master node is not in running state")
+	createFrrPod(
+		masterNodeName,
+		"",
+		cmd.DefineRouteAndSleep(mlbPoolIP, removePrefixFromIP(nodeAddr)),
+		podMasterOneNetCfg,
+		name,
+	)
 }
 
 func scaleDownMetalLbSpeakers() {
@@ -576,35 +486,6 @@ func testBFDFailBack() {
 	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
 }
 
-func createExternalNad() {
-	By("Creating external BR-EX NetworkAttachmentDefinition")
-
-	macVlanPlugin, err := define.MasterNadPlugin(coreparams.OvnExternalBridge, "bridge", nad.IPAMStatic())
-	Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
-	externalNad, err = nad.NewBuilder(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName).
-		WithMasterPlugin(macVlanPlugin).Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
-	Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
-}
-
-func createBGPPeerAndVerifyIfItsReady(
-	name, peerIP, bfdProfileName string, asn, remouteAsn uint32, ebgpMultiHop bool, speakerPods []*pod.Builder) {
-	By("Creating BGP Peer")
-
-	_, err := metallb.NewBPGPeerBuilder(APIClient, name, NetConfig.MlbOperatorNamespace,
-		peerIP, asn, remouteAsn).WithBFDProfile(bfdProfileName).
-		WithPassword(tsparams.BGPPassword).WithEBGPMultiHop(ebgpMultiHop).Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed tp create BGP peer")
-
-	By("Verifying if BGP protocol configured")
-
-	for _, speakerPod := range speakerPods {
-		Eventually(frr.IsProtocolConfigured,
-			time.Minute, tsparams.DefaultRetryInterval).WithArguments(speakerPod, "router bgp").
-			Should(BeTrue(), "BGP is not configured on the Speakers")
-	}
-}
-
 func createBFDProfileAndVerifyIfItsReady(mlbSpeakerPods []*pod.Builder) *metallb.BFDBuilder {
 	By("Creating BFD profile")
 
@@ -662,56 +543,6 @@ func metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
 		return 0
 	}, tsparams.DefaultTimeout, tsparams.DefaultRetryInterval).Should(expectedCondition, errorMessage)
 	Expect(metalLbDs.IsReady(120*time.Second)).To(BeTrue(), "MetalLb daemonSet is not Ready")
-}
-
-func setWorkerNodeListAndLabelForBfdTests(
-	workerNodeList []*nodes.Builder, nodeSelector map[string]string) (map[string]string, []*nodes.Builder) {
-	if len(workerNodeList) > 2 {
-		By(fmt.Sprintf(
-			"Worker node number is greater than 2. Limit worker nodes for bfd test using label %v", nodeSelector))
-		addNodeLabel(workerNodeList[:2], nodeSelector)
-
-		return bfdTestsLabel, workerNodeList[:2]
-	}
-
-	return NetConfig.WorkerLabelMap, workerNodeList
-}
-
-func removeNodeLabel(workerNodeList []*nodes.Builder, nodeSelector map[string]string) {
-	updateNodeLabel(workerNodeList, nodeSelector, true)
-}
-
-func addNodeLabel(workerNodeList []*nodes.Builder, nodeSelector map[string]string) {
-	updateNodeLabel(workerNodeList, nodeSelector, false)
-}
-
-func updateNodeLabel(workerNodeList []*nodes.Builder, nodeLabel map[string]string, removeLabel bool) {
-	for _, worker := range workerNodeList {
-		worker, err := nodes.Pull(APIClient, worker.Definition.Name)
-		Expect(err).ToNot(HaveOccurred(), "Fail to pull latest worker %s object", worker.Definition.Name)
-
-		if removeLabel {
-			worker.RemoveLabel(mapFirstKeyValue(nodeLabel))
-		} else {
-			worker.WithNewLabel(mapFirstKeyValue(nodeLabel))
-		}
-
-		_, err = worker.Update()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to update node's labels %s", worker.Definition.Name))
-	}
-}
-
-func removePrefixFromIPList(ipAddrs []string) []string {
-	var ipAddrsWithoutPrefix []string
-	for _, ipaddr := range ipAddrs {
-		ipAddrsWithoutPrefix = append(ipAddrsWithoutPrefix, removePrefixFromIP(ipaddr))
-	}
-
-	return ipAddrsWithoutPrefix
-}
-
-func removePrefixFromIP(ipAddr string) string {
-	return strings.Split(ipAddr, "/")[0]
 }
 
 func mapFirstKeyValue(inputMap map[string]string) (string, string) {

@@ -61,33 +61,38 @@ func DefineBaseConfig(daemonsConfig, frrConfig, vtyShConfig string) map[string]s
 	return configMapData
 }
 
-// DefineBFDConfig returns string which represents BFD config file peering to all given IP addresses.
-func DefineBFDConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []string, multiHop bool) string {
-	bfdConfig := tsparams.FRRBaseConfig +
+// DefineBGPConfig returns string which represents BGP config file peering to all given IP addresses.
+func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []string, multiHop, bfd bool) string {
+	bgpConfig := tsparams.FRRBaseConfig +
 		fmt.Sprintf("router bgp %d\n", localBGPASN) +
 		tsparams.FRRDefaultBGPPreConfig
 
 	for _, ipAddress := range neighborsIPAddresses {
-		bfdConfig += fmt.Sprintf("  neighbor %s remote-as %d\n  neighbor %s bfd\n  neighbor %s password %s\n",
-			ipAddress, remoteBGPASN, ipAddress, ipAddress, tsparams.BGPPassword)
+		bgpConfig += fmt.Sprintf("  neighbor %s remote-as %d\n  neighbor %s password %s\n",
+			ipAddress, remoteBGPASN, ipAddress, tsparams.BGPPassword)
+
+		if bfd {
+			bgpConfig += fmt.Sprintf("  neighbor %s bfd\n", ipAddress)
+		}
+
 		if multiHop {
-			bfdConfig += fmt.Sprintf("  neighbor %s ebgp-multihop 2\n", ipAddress)
+			bgpConfig += fmt.Sprintf("  neighbor %s ebgp-multihop 2\n", ipAddress)
 		}
 	}
 
-	bfdConfig += "!\naddress-family ipv4 unicast\n"
+	bgpConfig += "!\naddress-family ipv4 unicast\n"
 	for _, ipAddress := range neighborsIPAddresses {
-		bfdConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
 	}
 
-	bfdConfig += "exit-address-family\n!\naddress-family ipv6 unicast\n"
+	bgpConfig += "exit-address-family\n!\naddress-family ipv6 unicast\n"
 	for _, ipAddress := range neighborsIPAddresses {
-		bfdConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
 	}
 
-	bfdConfig += "exit-address-family\n!\nline vty\n!\nend\n"
+	bgpConfig += "exit-address-family\n!\nline vty\n!\nend\n"
 
-	return bfdConfig
+	return bgpConfig
 }
 
 // BGPNeighborshipHasState verifies that BGP session on a pod has given state.
