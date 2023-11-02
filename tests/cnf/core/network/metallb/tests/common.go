@@ -138,6 +138,15 @@ func setupBgpAdvertisement(addressPool []string, prefixLen int32) *metallb.IPAdd
 	return ipAddressPool
 }
 
+func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
+	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+		Eventually(frr.BGPNeighborshipHasState,
+			time.Minute*3, tsparams.DefaultRetryInterval).
+			WithArguments(frrPod, peerAddress, "Established").Should(
+			BeTrue(), "Failed to receive BGP status UP")
+	}
+}
+
 func createFrrPod(
 	nodeName string,
 	configmapName string,

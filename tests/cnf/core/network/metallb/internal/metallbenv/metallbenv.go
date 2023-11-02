@@ -200,7 +200,7 @@ func DefineIterationParams(
 			netparam.IPSubnet24,
 			ipv4AddrList,
 			nodeExtIPv4AddrList,
-			[]string{"3.3.3.1", "3.3.3.5"},
+			[]string{"3.3.3.1", "3.3.3.240"},
 			[]string{"172.16.0.253", "172.16.0.254"},
 			doesIPListsHaveEnoughAddresses(ipv4AddrList, nodeExtIPv4AddrList, ipFamily)
 

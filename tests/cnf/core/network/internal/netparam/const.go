@@ -11,6 +11,10 @@ const (
 	DualIPFamily = "dual"
 	// IPSubnet24 represents prefix 24 ipv4 subnet.
 	IPSubnet24 = "24"
+	// IPSubnet28 represents prefix 28 ipv4 subnet.
+	IPSubnet28 = "28"
+	// IPSubnet128 represents prefix 128 ipv6 subnet.
+	IPSubnet128 = "128"
 	// IPSubnet64 represents prefix 64 ipv6 subnet.
 	IPSubnet64 = "64"
 	// IPSubnet32 represents prefix 32 ipv4 subnet.

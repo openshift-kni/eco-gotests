@@ -5,6 +5,8 @@ const (
 	LabelSuite = "metallb"
 	// LabelBFDTestCases represents bfd label that can be used for test cases selection.
 	LabelBFDTestCases = "bfd"
+	// LabelBGPTestCases represents bgp label that can be used for test cases selection.
+	LabelBGPTestCases = "bgp"
 	// BGPPassword var is used to set password for BGP session between FRR speakers.
 	BGPPassword = "bgp-test"
 	// DaemonsFile represents FRR default daemon configuration template.

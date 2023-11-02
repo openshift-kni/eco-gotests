@@ -188,7 +188,6 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				tsparams.DefaultTimeout,
 				metallb.GetBGPPeerGVR(),
 				metallb.GetBFDProfileGVR(),
-				metallb.GetBFDProfileGVR(),
 				metallb.GetBGPPeerGVR(),
 				metallb.GetBGPAdvertisementGVR(),
 				metallb.GetIPAddressPoolGVR())
