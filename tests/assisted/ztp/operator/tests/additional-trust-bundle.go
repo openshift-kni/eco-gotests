@@ -179,7 +179,7 @@ var _ = Describe(
 				infraenv, err := assisted.PullInfraEnvInstall(HubAPIClient, "testinfraenv", trustBundleTestNS)
 				Expect(err).ToNot(HaveOccurred(), "error retrieving infraenv")
 				By("Deleting infraenv")
-				_, err = infraenv.Delete()
+				err = infraenv.DeleteAndWait(time.Second * 20)
 				Expect(err).ToNot(HaveOccurred(), "error deleting infraenv")
 			})
 
