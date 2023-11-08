@@ -1,0 +1,9 @@
+---
+ecore_nad_workload_ns_pcc: 'pcc'
+ecore_nad_workload_ns_pcg: 'pcg'
+ecore_nad_nad_list_pcg:
+- eric-pc-routing-engine
+ecore_nad_nad_list_pcc:
+- eric-pc-routing-engine-net0
+- eric-pc-vpn-gateway-forwarder-common
+- pc-mm-ext
