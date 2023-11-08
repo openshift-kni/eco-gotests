@@ -23,7 +23,7 @@ func GetOCPClusterVersion(clusterObj APIClientGetter) (*clusterversion.Builder, 
 		return nil, err
 	}
 
-	glog.V(90).Infof("Gathering OCP version from cluster at %s", apiClient.KubeconfigPath)
+	glog.V(90).Infof("Gathering OCP clusterversion from cluster at %s", apiClient.KubeconfigPath)
 
 	clusterVersion, err := clusterversion.Pull(apiClient)
 	if err != nil {

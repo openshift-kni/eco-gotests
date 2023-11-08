@@ -682,6 +682,8 @@ github.com/openshift-kni/eco-goinfra/pkg/configmap
 github.com/openshift-kni/eco-goinfra/pkg/daemonset
 github.com/openshift-kni/eco-goinfra/pkg/deployment
 github.com/openshift-kni/eco-goinfra/pkg/hive
+github.com/openshift-kni/eco-goinfra/pkg/infrastructure
+github.com/openshift-kni/eco-goinfra/pkg/ingress
 github.com/openshift-kni/eco-goinfra/pkg/kmm
 github.com/openshift-kni/eco-goinfra/pkg/mco
 github.com/openshift-kni/eco-goinfra/pkg/metallb
