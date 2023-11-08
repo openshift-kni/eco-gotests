@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/cavaliergopher/grab/v3"
 	"github.com/golang/glog"
 )
 
@@ -60,4 +61,25 @@ func Fetch(url, method string, skipCertVerify bool) (string, int, error) {
 	}
 
 	return string(body), res.StatusCode, nil
+}
+
+// DownloadToDir saves content from the specified URL under the specified folder.
+func DownloadToDir(url string, dirName string) error {
+	grabClient := grab.NewClient()
+
+	glog.V(50).Infof("Attempting to save content from %s into directory %s", url, dirName)
+
+	grabRequest, err := grab.NewRequest(dirName, url)
+	if err != nil {
+		return err
+	}
+
+	grabResponse := grabClient.Do(grabRequest)
+	glog.V(50).Infof("HTTP response status: %v", grabResponse.HTTPResponse.Status)
+
+	if err := grabResponse.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }

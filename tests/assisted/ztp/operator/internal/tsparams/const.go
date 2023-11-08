@@ -33,4 +33,8 @@ const (
 	// LabelAdditionalTrustBundle represents additional-trust-bundle label that can be used
 	// for test cases selection.
 	LabelAdditionalTrustBundle = "additional-trust-bundle"
+
+	// LabelMultiArchitectureImageTestCases represents infraenv-multiarch-image label that can be used
+	// for test cases selection.
+	LabelMultiArchitectureImageTestCases = "infraenv-multiarch-image"
 )

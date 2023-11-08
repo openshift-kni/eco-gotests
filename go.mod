@@ -85,6 +85,8 @@ require (
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/bugsnag/bugsnag-go/v2 v2.2.0 // indirect
 	github.com/bugsnag/panicwrap v1.3.4 // indirect
+	github.com/cavaliercoder/grab v3.0.1+incompatible // indirect
+	github.com/cavaliergopher/grab/v3 v3.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/clarketm/json v1.17.1 // indirect

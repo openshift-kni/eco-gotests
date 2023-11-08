@@ -143,6 +143,12 @@ github.com/buger/jsonparser
 ## explicit; go 1.15
 # github.com/bugsnag/panicwrap v1.3.4
 ## explicit
+# github.com/cavaliercoder/grab v3.0.1+incompatible
+## explicit
+# github.com/cavaliergopher/grab/v3 v3.0.1
+## explicit; go 1.14
+github.com/cavaliergopher/grab/v3
+github.com/cavaliergopher/grab/v3/pkg/bps
 # github.com/cespare/xxhash/v2 v2.2.0
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
