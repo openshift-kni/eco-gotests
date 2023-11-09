@@ -22,7 +22,7 @@ var _ = Describe(
 					invokerKeyName := "invoker"
 
 					By("Assure the configmap can be pulled")
-					configMapBuilder, err := configmap.Pull(SpokeConfig.APIClient, configMapName, nameSpaceName)
+					configMapBuilder, err := configmap.Pull(SpokeAPIClient, configMapName, nameSpaceName)
 					Expect(err).ToNot(HaveOccurred(),
 						"error pulling configmap %s in ns %s", configMapName, nameSpaceName)
 

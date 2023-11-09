@@ -9,14 +9,14 @@ import (
 var (
 	// HubAPIClient provides API access to hub cluster.
 	HubAPIClient *clients.Settings
-	// SpokeConfig provides a SpokeConfig for accessing spoke cluster.
-	SpokeConfig *ztpconfig.SpokeConfig
+	// SpokeAPIClient provides API access to spoke cluster.
+	SpokeAPIClient *clients.Settings
 	// ZTPConfig provides access to general configuration parameters.
 	ZTPConfig *ztpconfig.ZTPConfig
 )
 
 func init() {
 	HubAPIClient = inittools.APIClient
-	SpokeConfig = ztpconfig.NewSpokeConfig()
 	ZTPConfig = ztpconfig.NewZTPConfig()
+	SpokeAPIClient = ZTPConfig.SpokeAPIClient
 }

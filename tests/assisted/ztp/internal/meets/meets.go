@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	configV1 "github.com/openshift/api/config/v1"
@@ -30,27 +29,21 @@ func AllRequirements(f ...func() (bool, string)) (bool, string) {
 // HubInfrastructureOperandRunningRequirement ensures that both
 // the assisted-service and assisted-image-service pods are running on the hub cluster.
 func HubInfrastructureOperandRunningRequirement() (bool, string) {
-	servicePodBuilder, err := find.AssistedServicePod()
-	if err != nil {
-		return false, err.Error()
-	}
+	servicePodBuilder := ZTPConfig.HubAssistedServicePod()
 
 	running, msg := checkPodRunning(servicePodBuilder)
 	if !running {
 		return running, msg
 	}
 
-	imageBuilder, err := find.AssistedImageServicePod()
-	if err != nil {
-		return false, err.Error()
-	}
+	imageBuilder := ZTPConfig.HubAssistedImageServicePod()
 
 	return checkPodRunning(imageBuilder)
 }
 
 // SpokeAPIClientReadyRequirement checks that the spoke APIClient has been properly initialized.
 func SpokeAPIClientReadyRequirement() (bool, string) {
-	if SpokeConfig.APIClient == nil {
+	if SpokeAPIClient == nil {
 		return false, "spoke APIClient has not been initialized"
 	}
 
@@ -59,16 +52,16 @@ func SpokeAPIClientReadyRequirement() (bool, string) {
 
 // SpokeClusterImageSetVersionRequirement checks that the provided clusterimageset meets the version provided.
 func SpokeClusterImageSetVersionRequirement(requiredVersion string) (bool, string) {
-	if SpokeConfig.ClusterImageSet == "" {
+	if ZTPConfig.SpokeClusterImageSet == "" {
 		return false, "Spoke clusterimageset version was not provided through environment"
 	}
 
-	_, err := hive.PullClusterImageSet(HubAPIClient, SpokeConfig.ClusterImageSet)
+	_, err := hive.PullClusterImageSet(HubAPIClient, ZTPConfig.SpokeClusterImageSet)
 	if err != nil {
 		return false, fmt.Sprintf("ClusterImageSet could not be found: %v", err)
 	}
 
-	imgSetVersion, _ := version.NewVersion(SpokeConfig.ClusterImageSet)
+	imgSetVersion, _ := version.NewVersion(ZTPConfig.SpokeClusterImageSet)
 	currentVersion, _ := version.NewVersion(requiredVersion)
 
 	if imgSetVersion.LessThan(currentVersion) {
@@ -86,7 +79,7 @@ func HubOCPVersionRequirement(requiredVersion string) (bool, string) {
 
 // SpokeOCPVersionRequirement checks that spoke ocp version meets the version provided.
 func SpokeOCPVersionRequirement(requiredVersion string) (bool, string) {
-	return ocpVersionRequirement(SpokeConfig, requiredVersion)
+	return ocpVersionRequirement(SpokeAPIClient, requiredVersion)
 }
 
 // HubProxyConfiguredRequirement checks that the cluster proxy is configured on the hub.
@@ -96,7 +89,7 @@ func HubProxyConfiguredRequirement() (bool, string) {
 
 // SpokeProxyConfiguredRequirement checks that the cluster proxy is configured on the spoke.
 func SpokeProxyConfiguredRequirement() (bool, string) {
-	return proxyConfiguredRequirement(SpokeConfig)
+	return proxyConfiguredRequirement(SpokeAPIClient)
 }
 
 // HubDisconnectedRequirement checks that the hub is disconnected.
@@ -106,7 +99,7 @@ func HubDisconnectedRequirement() (bool, string) {
 
 // SpokeDisconnectedRequirement checks that the spoke is disconnected.
 func SpokeDisconnectedRequirement() (bool, string) {
-	return disconnectedRequirement(SpokeConfig)
+	return disconnectedRequirement(SpokeAPIClient)
 }
 
 // HubConnectedRequirement checks that the hub is connected.
@@ -116,7 +109,7 @@ func HubConnectedRequirement() (bool, string) {
 
 // SpokeConnectedRequirement checks that the spoke is connected.
 func SpokeConnectedRequirement() (bool, string) {
-	return connectedRequirement(SpokeConfig)
+	return connectedRequirement(SpokeAPIClient)
 }
 
 // HubSingleStackIPv4Requirement checks that the hub has IPv4 single-stack networking.
@@ -126,7 +119,7 @@ func HubSingleStackIPv4Requirement() (bool, string) {
 
 // SpokeSingleStackIPv4Requirement checks that the spoke has IPv4 single-stack networking.
 func SpokeSingleStackIPv4Requirement() (bool, string) {
-	return singleStackIPv4Requirement(SpokeConfig)
+	return singleStackIPv4Requirement(SpokeAPIClient)
 }
 
 // HubSingleStackIPv6Requirement checks that the hub has IPv6 single-stack networking.
@@ -136,7 +129,7 @@ func HubSingleStackIPv6Requirement() (bool, string) {
 
 // SpokeSingleStackIPv6Requirement checks that the spoke has IPv6 single-stack networking.
 func SpokeSingleStackIPv6Requirement() (bool, string) {
-	return singleStackIPv6Requirement(SpokeConfig)
+	return singleStackIPv6Requirement(SpokeAPIClient)
 }
 
 // HubDualStackRequirement checks that the hub has dual-stack networking.
@@ -146,7 +139,7 @@ func HubDualStackRequirement() (bool, string) {
 
 // SpokeDualStackRequirement checks that the spoke has dual-stack networking.
 func SpokeDualStackRequirement() (bool, string) {
-	return dualStackRequirement(SpokeConfig)
+	return dualStackRequirement(SpokeAPIClient)
 }
 
 // checkPodRunning waits for the specified pod to be running.

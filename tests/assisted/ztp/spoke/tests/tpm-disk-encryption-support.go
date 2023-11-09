@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/diskencryption"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
@@ -16,7 +15,6 @@ import (
 )
 
 var (
-	tpmSpokeClusterName           string
 	tpmEncryptionEnabledOn        string
 	tpmAgentClusterInstallBuilder *assisted.AgentClusterInstallBuilder
 )
@@ -34,14 +32,10 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 
-				By("Get spoke cluster name")
 				var err error
-				tpmSpokeClusterName, err = find.SpokeClusterName()
-				Expect(err).NotTo(HaveOccurred(), "error getting spoke cluster name")
-
 				By("Get spoke cluster AgentClusterInstall")
 				tpmAgentClusterInstallBuilder, err = assisted.PullAgentClusterInstall(
-					HubAPIClient, tpmSpokeClusterName, tpmSpokeClusterName)
+					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling agentclusterinstall")
 
 				if tpmAgentClusterInstallBuilder.Object.Spec.DiskEncryption == nil {
@@ -88,7 +82,8 @@ var _ = Describe(
 				}
 
 				By("Pull cluster infraenv")
-				tpmInfraEnvBuilder, err := assisted.PullInfraEnvInstall(HubAPIClient, tpmSpokeClusterName, tpmSpokeClusterName)
+				tpmInfraEnvBuilder, err := assisted.PullInfraEnvInstall(
+					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling cluster infraenv")
 
 				agentBuilders, err := tpmInfraEnvBuilder.GetAllAgents()
@@ -119,14 +114,14 @@ var _ = Describe(
 	})
 
 func verifyTpmMasterMachineConfig() {
-	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(SpokeConfig.APIClient, tpmMasterMachineConfig)
+	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(SpokeAPIClient, tpmMasterMachineConfig)
 	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tpmMasterMachineConfig+" machineconfig")
 
 	verifyLuksTpmIgnitionConfig(ignitionConfig)
 }
 
 func verifyTpmWorkerMachineConfig() {
-	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(SpokeConfig.APIClient, tpmWorkerMachineConfig)
+	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(SpokeAPIClient, tpmWorkerMachineConfig)
 	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tpmWorkerMachineConfig+" machineconfig")
 
 	verifyLuksTpmIgnitionConfig(ignitionConfig)

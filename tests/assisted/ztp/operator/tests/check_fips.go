@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
@@ -39,10 +38,7 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label(tsparams.LabelFipsVerificationTestCases), func() {
 		var (
-			fipsEnabledOnHub        bool
-			err                     error
-			assistedServicePod      *pod.Builder
-			assistedImageServicePod *pod.Builder
+			fipsEnabledOnHub bool
 		)
 		When("on MCE 2.0 and above", func() {
 
@@ -60,14 +56,9 @@ var _ = Describe(
 			})
 
 			It("Testing assisted-service is FIPS ready", polarion.ID("65866"), func() {
-				By("Getting assisted-service pod image")
-				assistedServicePod, err = find.AssistedServicePod()
-				Expect(err).ToNot(HaveOccurred(),
-					"error getting assisted-service pod")
-
 				By("Extracting the assisted-service binary")
 				Expect(extractBinaryFromPod(
-					assistedServicePod,
+					ZTPConfig.HubAssistedServicePod(),
 					assistedServiceBinary,
 					assistedImageContainer,
 					false, tmpDir)).ToNot(HaveOccurred(), "error extracting binary")
@@ -78,14 +69,9 @@ var _ = Describe(
 				Expect(result).To(BeTrue(), "assisted service binary is compiled with CGO_ENABLED=1")
 			})
 			It("Testing assisted-image-service is FIPS ready", polarion.ID("65867"), func() {
-				By("Getting assisted-image-service pod")
-				assistedImageServicePod, err = find.AssistedImageServicePod()
-				Expect(err).ToNot(HaveOccurred(),
-					"error getting assisted-image-service pod")
-
 				By("Extracting the assisted-image-service binary")
 				Expect(extractBinaryFromPod(
-					assistedImageServicePod,
+					ZTPConfig.HubAssistedImageServicePod(),
 					assistedImageServiceBinary,
 					assistedImageServiceContainer,
 					false, tmpDir)).ToNot(

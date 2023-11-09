@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/url"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
@@ -19,11 +18,10 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label(tsparams.LabelDebugInfoVerificationTestCases), func() {
 		var (
-			spokeClusterName, spokeClusterNameSpace string
-			agentClusterInstall                     *assisted.AgentClusterInstallBuilder
-			err                                     error
-			debugInfoStateACI                       string
-			debugInfoStateInfoACI                   string
+			agentClusterInstall   *assisted.AgentClusterInstallBuilder
+			err                   error
+			debugInfoStateACI     string
+			debugInfoStateInfoACI string
 		)
 
 		BeforeAll(func() {
@@ -33,17 +31,11 @@ var _ = Describe(
 				Skip(msg)
 			}
 
-			By("Get the spoke cluster name")
-			spokeClusterName, err = find.SpokeClusterName()
-			spokeClusterNameSpace = spokeClusterName
-			Expect(err).ToNot(HaveOccurred(),
-				"error getting the spoke cluster name")
-
 			By("Pull the AgentClusterInstall from the HUB")
 			agentClusterInstall, err = assisted.PullAgentClusterInstall(
-				HubAPIClient, spokeClusterName, spokeClusterNameSpace)
+				HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 			Expect(err).ToNot(HaveOccurred(),
-				"error pulling agentclusterinstall %s in namespace %s", spokeClusterName, spokeClusterNameSpace)
+				"error pulling agentclusterinstall %s in namespace %s", ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 
 			By("Get the debug info state from the AgentClusterInstall")
 			debugInfoStateACI = agentClusterInstall.Object.Status.DebugInfo.State

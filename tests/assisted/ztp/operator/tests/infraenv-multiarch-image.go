@@ -17,7 +17,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/url"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
@@ -36,7 +35,6 @@ const (
 )
 
 var (
-	hubClusterVersion                                          string
 	testClusterImageSetName                                    string
 	nsBuilder                                                  *namespace.Builder
 	archURL                                                    string
@@ -76,13 +74,8 @@ var _ = Describe(
 				err = agentServiceConfigBuilder.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
 
-				By("Get the OCP cluster version")
-				hubClusterVersion, err = find.HubClusterVersionXY()
-				Expect(err).ToNot(HaveOccurred(), "error retrieving the cluster version")
-				glog.V(ztpparams.ZTPLogLevel).Infof("The cluster version is %s", hubClusterVersion)
-
 				By("Retrieve ClusterImageSet before all tests if exists")
-				testClusterImageSetName = hubClusterVersion + "-test"
+				testClusterImageSetName = ZTPConfig.HubOCPXYVersion + "-test"
 				originalClusterImagesetBuilder, err = hive.PullClusterImageSet(HubAPIClient, testClusterImageSetName)
 
 				By("Delete ClusterImageSet if exists before all tests ")
@@ -137,12 +130,12 @@ var _ = Describe(
 
 					By("Download the rhcos-live ISO")
 					archURL = "https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/" +
-						hubClusterVersion + "/latest/rhcos-live.x86_64.iso"
+						ZTPConfig.HubOCPXYVersion + "/latest/rhcos-live.x86_64.iso"
 
 					err = url.DownloadToDir(archURL, "/tmp")
 					if err != nil {
 						archURL = "https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/pre-release/latest-" +
-							hubClusterVersion + "/rhcos-live.x86_64.iso"
+							ZTPConfig.HubOCPXYVersion + "/rhcos-live.x86_64.iso"
 						err = url.DownloadToDir(archURL, "/tmp")
 					}
 
@@ -158,8 +151,8 @@ var _ = Describe(
 						tempAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
 					}
 					_, err = tempAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
-						OpenshiftVersion: hubClusterVersion,
-						Version:          hubClusterVersion,
+						OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
+						Version:          ZTPConfig.HubOCPXYVersion,
 						Url:              archURL,
 						CPUArchitecture:  models.ClusterCPUArchitectureX8664}).Create()
 					Expect(err).ToNot(HaveOccurred(),
@@ -284,7 +277,7 @@ func getLatestReleasePayload(url string) (string, string, error) {
 	}
 
 	for _, i := range images.Nodes {
-		if strings.Contains(i.Version, hubClusterVersion) &&
+		if strings.Contains(i.Version, ZTPConfig.HubOCPXYVersion) &&
 			!strings.Contains(i.Version, "nightly") &&
 			!strings.Contains(i.Payload, "dev-preview") {
 			releaseImages[i.Version] = i.Payload

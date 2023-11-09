@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
@@ -37,17 +36,15 @@ var _ = Describe(
 				Skip(msg)
 			}
 
-			By("Get spoke cluster name")
-			spokeCluster, err := find.SpokeClusterName()
-			Expect(err).NotTo(HaveOccurred(), "error getting spoke cluster name from APIClients")
-
+			var err error
 			By("Get spoke cluster platformType from agentclusterinstall")
-			agentClusterInstall, err = assisted.PullAgentClusterInstall(HubAPIClient, spokeCluster, spokeCluster)
+			agentClusterInstall, err = assisted.PullAgentClusterInstall(
+				HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 			Expect(err).NotTo(HaveOccurred(), "error pulling agentclusterinstall from hub cluster")
 			platformType = string(agentClusterInstall.Object.Status.PlatformType)
 
 			By("Get spoke cluster-config configmap")
-			clusterConfigMap, err := configmap.Pull(SpokeConfig.APIClient, "cluster-config-v1", "kube-system")
+			clusterConfigMap, err := configmap.Pull(SpokeAPIClient, "cluster-config-v1", "kube-system")
 			Expect(err).NotTo(HaveOccurred(), "error pulling cluster config configmap from spoke cluster")
 			Expect(clusterConfigMap.Object.Data["install-config"]).ToNot(
 				BeEmpty(), "error pulling install-config from spoke cluster",

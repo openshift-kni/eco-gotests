@@ -7,7 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
+	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
+
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
@@ -22,11 +23,10 @@ var _ = Describe(
 	Label(tsparams.LabelAssistedPodsNoRestartsTestCases), func() {
 		When("on MCE 2.0 and above", func() {
 			DescribeTable("no restarts for assisted pods",
-				func(podName string, getPodName func() (*pod.Builder, error)) {
+				func(podName string, getPodName func() *pod.Builder) {
 					By("Get the " + podName + " pod")
 
-					podBuilder, err := getPodName()
-					Expect(err).ShouldNot(HaveOccurred(), "Failed to search for "+podName+" pod.")
+					podBuilder := getPodName()
 
 					By("Assure at least 10 minutes passed since the " + podName + " pod is UP")
 
@@ -41,9 +41,9 @@ var _ = Describe(
 						"Failed asserting 0 restarts for "+podName+" pod")
 				},
 				Entry("Assert the assisted-service pod wasn't restarted shortly after creation",
-					"assisted-service", find.AssistedServicePod, polarion.ID("56581")),
+					"assisted-service", ZTPConfig.HubAssistedServicePod, polarion.ID("56581")),
 				Entry("Assert the assisted-image-service pod wasn't restarted shortly after creation",
-					"assisted-image-service", find.AssistedImageServicePod, polarion.ID("56582")),
+					"assisted-image-service", ZTPConfig.HubAssistedImageServicePod, polarion.ID("56582")),
 			)
 
 		})

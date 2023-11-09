@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
@@ -35,17 +34,12 @@ var _ = Describe(
 				if !installConfigData.FIPS {
 					Skip("Hub cluster is not FIPS enabled")
 				}
-				By("Get the spoke cluster name")
-				spokeClusterName, err := find.SpokeClusterName()
-				spokeClusterNameSpace := spokeClusterName
-				Expect(err).ToNot(HaveOccurred(),
-					"error getting the spoke cluster name")
 
 				By("Pull the AgentClusterInstall from the HUB")
 				agentClusterInstall, err := assisted.PullAgentClusterInstall(
-					HubAPIClient, spokeClusterName, spokeClusterNameSpace)
+					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 				Expect(err).ToNot(HaveOccurred(),
-					"error pulling agentclusterinstall %s in namespace %s", spokeClusterName, spokeClusterNameSpace)
+					"error pulling agentclusterinstall %s in namespace %s", ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 				By("Checking agentclusterinstall has fips:true annotation")
 				fipsEnabledOnSpoke = false
 				if override,
@@ -64,7 +58,7 @@ var _ = Describe(
 
 			It("Assert Spoke cluster was deployed with FIPS", polarion.ID("65865"), func() {
 				By("Getting configmap")
-				fipsConfMap, err := configmap.Pull(SpokeConfig.APIClient, installConfigConfMap, installConfigConfMapNS)
+				fipsConfMap, err := configmap.Pull(SpokeAPIClient, installConfigConfMap, installConfigConfMapNS)
 				Expect(err).ToNot(HaveOccurred(), "error extracting configmap "+installConfigConfMap)
 				Expect(fipsConfMap.Object.Data["install-config"]).ToNot(BeEmpty(),
 					"error pulling install-config from spoke cluster")

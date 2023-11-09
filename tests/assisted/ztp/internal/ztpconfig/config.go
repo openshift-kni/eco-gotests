@@ -2,67 +2,113 @@ package ztpconfig
 
 import (
 	"fmt"
-	"log"
+	"strings"
 
+	"github.com/golang/glog"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/assistedconfig"
+	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
+	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
+	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
 // ZTPConfig type contains ztp configuration.
 type ZTPConfig struct {
 	*assistedconfig.AssistedConfig
+	*HubConfig
+	*SpokeConfig
 }
 
-// NewZTPConfig returns instance of ZTPConfig type.
-func NewZTPConfig() *ZTPConfig {
-	log.Print("Creating new ZTPConfig struct")
-
-	var ztpconfig ZTPConfig
-	ztpconfig.AssistedConfig = assistedconfig.NewAssistedConfig()
-
-	return &ztpconfig
+// HubConfig contains environment information related to the hub cluster.
+type HubConfig struct {
+	HubOCPVersion              string
+	HubOCPXYVersion            string
+	hubAssistedServicePod      *pod.Builder
+	hubAssistedImageServicePod *pod.Builder
 }
 
 // SpokeConfig contains environment information related to the spoke cluster.
 type SpokeConfig struct {
-	APIClient       *clients.Settings
-	KubeConfig      string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_KUBECONFIG"`
-	ClusterImageSet string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_CLUSTERIMAGESET"`
+	SpokeAPIClient       *clients.Settings
+	SpokeClusterName     string
+	SpokeKubeConfig      string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_KUBECONFIG"`
+	SpokeClusterImageSet string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_CLUSTERIMAGESET"`
 }
 
-// GetAPIClient implements the cluster.APIClientGetter interface by returning it's APIClient member.
-func (config *SpokeConfig) GetAPIClient() (*clients.Settings, error) {
-	if config.APIClient == nil {
-		return nil, fmt.Errorf("APIClient was nil")
+// NewZTPConfig returns instance of ZTPConfig type.
+func NewZTPConfig() *ZTPConfig {
+	glog.V(ztpparams.ZTPLogLevel).Info("Creating new ZTPConfig struct")
+
+	var ztpconfig ZTPConfig
+	ztpconfig.AssistedConfig = assistedconfig.NewAssistedConfig()
+	ztpconfig.newHubConfig()
+	ztpconfig.newSpokeConfig()
+
+	return &ztpconfig
+}
+
+// newHubConfig creates a new HubConfig member for a ZTPConfig.
+func (ztpconfig *ZTPConfig) newHubConfig() {
+	glog.V(ztpparams.ZTPLogLevel).Info("Creating new HubConfig struct")
+
+	ztpconfig.HubConfig = new(HubConfig)
+
+	ztpconfig.HubConfig.HubOCPVersion, _ = find.ClusterVersion(APIClient)
+
+	splitVersion := strings.Split(ztpconfig.HubConfig.HubOCPVersion, ".")
+	if len(splitVersion) >= 2 {
+		ztpconfig.HubConfig.HubOCPXYVersion = fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1])
 	}
-
-	return config.APIClient, nil
 }
 
-// NewSpokeConfig returns instance of SpokeConfig type.
-func NewSpokeConfig() *SpokeConfig {
-	log.Print("Creating new SpokeConfig struct")
+// newSpokeConfig creates a new SpokeConfig member for a ZTPConfig.
+func (ztpconfig *ZTPConfig) newSpokeConfig() {
+	glog.V(ztpparams.ZTPLogLevel).Info("Creating new SpokeConfig struct")
 
-	spokeConfig := new(SpokeConfig)
+	ztpconfig.SpokeConfig = new(SpokeConfig)
 
-	err := envconfig.Process("eco_assisted_ztp_spoke_", spokeConfig)
+	err := envconfig.Process("eco_assisted_ztp_spoke_", ztpconfig.SpokeConfig)
 	if err != nil {
-		log.Printf("falied to instantiate SpokeConfig: %v", err)
-
-		return nil
+		glog.V(ztpparams.ZTPLogLevel).Infof("falied to instantiate SpokeConfig: %v", err)
 	}
 
-	if spokeConfig.KubeConfig != "" {
-		log.Printf("Creating spoke api client from %s\n", spokeConfig.KubeConfig)
+	if ztpconfig.SpokeConfig.SpokeKubeConfig != "" {
+		glog.V(ztpparams.ZTPLogLevel).Infof("Creating spoke api client from %s", ztpconfig.SpokeConfig.SpokeKubeConfig)
 
-		if spokeConfig.APIClient = clients.New(
-			spokeConfig.KubeConfig); spokeConfig.APIClient == nil {
-			log.Printf("falied to load provided spoke kubeconfig: %v", err)
+		if ztpconfig.SpokeConfig.SpokeAPIClient = clients.New(
+			ztpconfig.SpokeConfig.SpokeKubeConfig); ztpconfig.SpokeConfig.SpokeAPIClient == nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("falied to load provided spoke kubeconfig: %v", err)
 		}
+
+		ztpconfig.SpokeConfig.SpokeClusterName, _ =
+			find.SpokeClusterName(APIClient, ztpconfig.SpokeConfig.SpokeAPIClient)
 	} else {
-		spokeConfig.APIClient = nil
+		ztpconfig.SpokeConfig.SpokeAPIClient = nil
 	}
 
-	return spokeConfig
+	if ztpconfig.SpokeConfig.SpokeClusterImageSet == "" {
+		ztpconfig.SpokeConfig.SpokeClusterImageSet = ztpconfig.HubOCPXYVersion
+	}
+}
+
+// HubAssistedServicePod retrieves the assisted service pod from the hub
+// and populates hubAssistedServicePod.
+func (ztpconfig *ZTPConfig) HubAssistedServicePod() *pod.Builder {
+	if ztpconfig.hubAssistedServicePod == nil || !ztpconfig.hubAssistedServicePod.Exists() {
+		ztpconfig.hubAssistedServicePod, _ = find.AssistedServicePod(APIClient)
+	}
+
+	return ztpconfig.hubAssistedServicePod
+}
+
+// HubAssistedImageServicePod retrieves the assisted image service pod from the hub
+// and populates hubAssistedImageServicePod.
+func (ztpconfig *ZTPConfig) HubAssistedImageServicePod() *pod.Builder {
+	if ztpconfig.hubAssistedImageServicePod == nil || !ztpconfig.hubAssistedImageServicePod.Exists() {
+		ztpconfig.hubAssistedImageServicePod, _ = find.AssistedImageServicePod(APIClient)
+	}
+
+	return ztpconfig.hubAssistedImageServicePod
 }

@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -48,10 +47,8 @@ var _ = Describe(
 	func() {
 		BeforeAll(func() {
 
-			By("Getting osImages environment variable from the assisted-service pod")
-			assistedServicePod, err := find.AssistedServicePod()
-			Expect(err).ToNot(HaveOccurred(), "error in retrieving pod")
-			osImagesBuffer, err := assistedServicePod.ExecCommand([]string{"printenv", "OS_IMAGES"}, "assisted-service")
+			osImagesBuffer, err := ZTPConfig.HubAssistedServicePod().ExecCommand(
+				[]string{"printenv", "OS_IMAGES"}, "assisted-service")
 			Expect(err).ToNot(HaveOccurred(), "error occurred when executing command in the pod")
 			Expect(osImagesBuffer).ToNot(BeNil(), "error in executing command, osimagesbuffer is nil")
 			err = json.Unmarshal(osImagesBuffer.Bytes(), &envOSImages)

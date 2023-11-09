@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/diskencryption"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
@@ -17,7 +16,6 @@ import (
 )
 
 var (
-	tangSpokeClusterName           string
 	tangEncryptionEnabledOn        string
 	tangServers                    map[string]TangServer
 	tangAgentClusterInstallBuilder *assisted.AgentClusterInstallBuilder
@@ -42,14 +40,10 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 
-				By("Get spoke cluster name")
 				var err error
-				tangSpokeClusterName, err = find.SpokeClusterName()
-				Expect(err).NotTo(HaveOccurred(), "error getting spoke cluster name")
-
 				By("Get spoke cluster AgentClusterInstall")
 				tangAgentClusterInstallBuilder, err = assisted.PullAgentClusterInstall(
-					HubAPIClient, tangSpokeClusterName, tangSpokeClusterName)
+					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling spoke agentclusterinstall")
 
 				if tangAgentClusterInstallBuilder.Object.Spec.DiskEncryption == nil {
@@ -97,7 +91,8 @@ var _ = Describe(
 				}
 
 				By("Fetch spoke cluster infraenv")
-				tangInfraEnvBuilder, err := assisted.PullInfraEnvInstall(HubAPIClient, tangSpokeClusterName, tangSpokeClusterName)
+				tangInfraEnvBuilder, err := assisted.PullInfraEnvInstall(
+					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling spoke cluster infraenv")
 
 				agentBuilders, err := tangInfraEnvBuilder.GetAllAgents()
@@ -133,7 +128,7 @@ var _ = Describe(
 				if tangEncryptionEnabledOn == models.DiskEncryptionEnableOnAll ||
 					tangEncryptionEnabledOn == models.DiskEncryptionEnableOnMasters {
 					masterTangIgnition, err := diskencryption.GetIgnitionConfigFromMachineConfig(
-						SpokeConfig.APIClient, tangMasterMachineConfig)
+						SpokeAPIClient, tangMasterMachineConfig)
 					Expect(err).NotTo(HaveOccurred(), "error getting ignition config from machineconfig")
 					ignitionConfigs = append(ignitionConfigs, masterTangIgnition)
 				}
@@ -141,7 +136,7 @@ var _ = Describe(
 				if tangEncryptionEnabledOn == models.DiskEncryptionEnableOnAll ||
 					tangEncryptionEnabledOn == models.DiskEncryptionEnableOnWorkers {
 					workerTangIgnition, err := diskencryption.GetIgnitionConfigFromMachineConfig(
-						SpokeConfig.APIClient, tangWorkerMachineConfig)
+						SpokeAPIClient, tangWorkerMachineConfig)
 					Expect(err).NotTo(HaveOccurred(), "error getting ignition config from machineconfig")
 					ignitionConfigs = append(ignitionConfigs, workerTangIgnition)
 				}
@@ -173,14 +168,14 @@ func createTangServersFromAgentClusterInstall(
 
 func verifyMasterMachineConfig() {
 	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(
-		SpokeConfig.APIClient, tangMasterMachineConfig)
+		SpokeAPIClient, tangMasterMachineConfig)
 	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tangMasterMachineConfig+" machineconfig")
 	verifyLuksTangIgnitionConfig(ignitionConfig)
 }
 
 func verifyWorkerMachineConfig() {
 	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(
-		SpokeConfig.APIClient, tangWorkerMachineConfig)
+		SpokeAPIClient, tangWorkerMachineConfig)
 	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tangWorkerMachineConfig+" machineconfig")
 	verifyLuksTangIgnitionConfig(ignitionConfig)
 }

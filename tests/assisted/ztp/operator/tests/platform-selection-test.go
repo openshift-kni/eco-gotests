@@ -106,7 +106,7 @@ var _ = Describe(
 								CIDR: "192.168.254.0/24",
 							}},
 							ServiceNetwork: []string{"172.30.0.0/16"},
-						}).WithImageSet(SpokeConfig.ClusterImageSet).
+						}).WithImageSet(ZTPConfig.SpokeClusterImageSet).
 						WithPlatformType(platformType).
 						WithUserManagedNetworking(userManagedNetworking).Create()
 					if masterCount == 3 {

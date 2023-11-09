@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/network"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
@@ -25,25 +24,18 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label(tsparams.LabelNetworkTypeVerificationTestCases), func() {
 		var (
-			spokeClusterName, spokeClusterNameSpace string
-			agentClusterInstall                     *assisted.AgentClusterInstallBuilder
-			err                                     error
-			networkTypeACI                          string
+			agentClusterInstall *assisted.AgentClusterInstallBuilder
+			err                 error
+			networkTypeACI      string
 		)
 
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
-				By("Get the spoke cluster name")
-				spokeClusterName, err = find.SpokeClusterName()
-				spokeClusterNameSpace = spokeClusterName
-				Expect(err).ToNot(HaveOccurred(),
-					"error getting the spoke cluster name")
-
 				By("Pull the AgentClusterInstall from the HUB")
 				agentClusterInstall, err = assisted.PullAgentClusterInstall(
-					HubAPIClient, spokeClusterName, spokeClusterNameSpace)
+					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 				Expect(err).ToNot(HaveOccurred(),
-					"error pulling agentclusterinstall %s in namespace %s", spokeClusterName, spokeClusterNameSpace)
+					"error pulling agentclusterinstall %s in namespace %s", ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
 
 				By("Get the networktype from the AgentClusterInstall")
 				networkTypeACI = agentClusterInstall.Object.Spec.Networking.NetworkType
@@ -84,7 +76,7 @@ var _ = Describe(
 					}
 
 					By("Get the network config from the spoke")
-					spokeClusterNetwork, err := network.PullConfig(SpokeConfig.APIClient)
+					spokeClusterNetwork, err := network.PullConfig(SpokeAPIClient)
 					Expect(err).ToNot(HaveOccurred(),
 						"error pulling network configuration from the spoke")
 
@@ -125,7 +117,7 @@ var _ = Describe(
 					}
 
 					By("Get the network config from the spoke")
-					spokeClusterNetwork, err := network.PullConfig(SpokeConfig.APIClient)
+					spokeClusterNetwork, err := network.PullConfig(SpokeAPIClient)
 					Expect(err).ToNot(HaveOccurred(),
 						"error pulling network configuration from the spoke")
 
@@ -166,7 +158,7 @@ var _ = Describe(
 					}
 
 					By("Get the network config from the spoke")
-					spokeClusterNetwork, err := network.PullConfig(SpokeConfig.APIClient)
+					spokeClusterNetwork, err := network.PullConfig(SpokeAPIClient)
 					Expect(err).ToNot(HaveOccurred(),
 						"error pulling network configuration from the spoke")
 
@@ -190,7 +182,7 @@ var _ = Describe(
 					}
 
 					By("Get the network config from the spoke")
-					spokeClusterNetwork, err := network.PullConfig(SpokeConfig.APIClient)
+					spokeClusterNetwork, err := network.PullConfig(SpokeAPIClient)
 					Expect(err).ToNot(HaveOccurred(),
 						"error pulling network configuration from the spoke")
 
