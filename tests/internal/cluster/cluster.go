@@ -86,3 +86,68 @@ func ExecCmd(apiClient *clients.Settings, nodeSelector string, shellCmd string) 
 
 	return nil
 }
+
+// ExecCmdWithStdout runs cmd on all nodes that match nodeSelector and returns stdout from each node.
+func ExecCmdWithStdout(apiClient *clients.Settings, nodeSelector string, shellCmd string) (map[string]string, error) {
+	glog.V(90).Infof("Executing cmd: %v on nodes based on label: %v using mcp pods", shellCmd, nodeSelector)
+
+	if GeneralConfig.MCOConfigDaemonName == "" {
+		return nil, fmt.Errorf("error: mco config daemon pod name cannot be empty")
+	}
+
+	if GeneralConfig.MCONamespace == "" {
+		return nil, fmt.Errorf("error: mco namespace cannot be empty")
+	}
+
+	nodeList, err := nodes.List(
+		apiClient,
+		metav1.ListOptions{LabelSelector: labels.Set(map[string]string{nodeSelector: ""}).String()},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	glog.V(90).Infof("Found %d nodes matching selector", len(nodeList))
+
+	outputMap := make(map[string]string)
+
+	for _, node := range nodeList {
+		listOptions := metav1.ListOptions{
+			FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": node.Definition.Name}).String(),
+			LabelSelector: labels.SelectorFromSet(labels.Set{"k8s-app": GeneralConfig.MCOConfigDaemonName}).String(),
+		}
+
+		mcPodList, err := pod.List(apiClient, GeneralConfig.MCONamespace, listOptions)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, mcPod := range mcPodList {
+			err = mcPod.WaitUntilRunning(300 * time.Second)
+			if err != nil {
+				return nil, err
+			}
+
+			hostnameCmd := []string{"sh", "-c", "nsenter --mount=/proc/1/ns/mnt -- sh -c 'hostname'"}
+			hostnameBuf, err := mcPod.ExecCommand(hostnameCmd)
+
+			if err != nil {
+				return nil, fmt.Errorf("failed gathering node hostname: %w", err)
+			}
+
+			cmdToExec := []string{"sh", "-c", fmt.Sprintf("nsenter --mount=/proc/1/ns/mnt -- sh -c '%s'", shellCmd)}
+
+			glog.V(90).Infof("Exec cmd %v on pod %s", cmdToExec, mcPod.Definition.Name)
+			commandBuf, err := mcPod.ExecCommand(cmdToExec)
+
+			if err != nil {
+				return nil, fmt.Errorf("failed executing command '%s' on node %s: %w", shellCmd, hostnameBuf.String(), err)
+			}
+
+			outputMap[hostnameBuf.String()] = commandBuf.String()
+		}
+	}
+
+	return outputMap, nil
+}
