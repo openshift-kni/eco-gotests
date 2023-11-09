@@ -92,7 +92,7 @@ var _ = Describe(
 			AfterEach(func() {
 				By("Delete the temporary namespace after test")
 				if nsBuilder.Exists() {
-					err := nsBuilder.Delete()
+					err := nsBuilder.DeleteAndWait(time.Second * 300)
 					Expect(err).ToNot(HaveOccurred(), "error deleting the temporary namespace after test")
 				}
 
@@ -128,20 +128,20 @@ var _ = Describe(
 			It("Assert valid ISO is created by InfraEnv with cpuArchitecture set to x86_64",
 				polarion.ID("56183"), func() {
 
-					By("Download the rhcos-live ISO")
+					By("Check the rhcos-live ISO exists")
 					archURL = "https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/" +
 						ZTPConfig.HubOCPXYVersion + "/latest/rhcos-live.x86_64.iso"
 
-					err = url.DownloadToDir(archURL, "/tmp")
+					_, _, err = url.Fetch(archURL, "Head", true)
 					if err != nil {
 						archURL = "https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/pre-release/latest-" +
 							ZTPConfig.HubOCPXYVersion + "/rhcos-live.x86_64.iso"
-						err = url.DownloadToDir(archURL, "/tmp")
+						_, _, err = url.Fetch(archURL, "Head", true)
 					}
 
-					Expect(err).ToNot(HaveOccurred(), "error downloading %s", archURL)
+					Expect(err).ToNot(HaveOccurred(), "error reaching %s", archURL)
 
-					glog.V(ztpparams.ZTPLogLevel).Infof("Downloaded ISO from this URL: %s", archURL)
+					glog.V(ztpparams.ZTPLogLevel).Infof("Verified ISO from URL %s exists", archURL)
 
 					By("Create AgentServiceConfig with the specific OSImage")
 
@@ -158,7 +158,7 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(),
 						"error creating agentserviceconfig with the specific osimage")
 
-					By("Wait until AgentServiceConfig with the specic OSImage is deployed")
+					By("Wait until AgentServiceConfig with the specific OSImage is deployed")
 					_, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
 					Expect(err).ToNot(HaveOccurred(),
 						"error waiting until agentserviceconfig without imagestorage is deployed")
@@ -174,16 +174,66 @@ var _ = Describe(
 						HubAPIClient, testClusterImageSetName, payloadImage).Create()
 					Expect(err).ToNot(HaveOccurred(), "error creating clusterimageset %s", testClusterImageSetName)
 
-					createSpokeClusterResources()
-
-					time.Sleep(time.Second * 20)
+					createSpokeClusterResources(models.ClusterCPUArchitectureX8664)
 				})
+			It("Assert valid ISO is created by InfraEnv with cpuArchitecture set to arm64",
+				polarion.ID("56186"), func() {
+
+					By("Check the rhcos-live ISO exists")
+					archURL = "https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/" +
+						ZTPConfig.HubOCPXYVersion + "/latest/rhcos-live.aarch64.iso"
+
+					_, _, err = url.Fetch(archURL, "Head", true)
+					if err != nil {
+						archURL = "https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/pre-release/latest-" +
+							ZTPConfig.HubOCPXYVersion + "/rhcos-live.aarch64.iso"
+						_, _, err = url.Fetch(archURL, "Head", true)
+					}
+
+					Expect(err).ToNot(HaveOccurred(), "error reaching  %s", archURL)
+
+					glog.V(ztpparams.ZTPLogLevel).Infof("Verified ISO from URL %s exists", archURL)
+
+					By("Create AgentServiceConfig with the specific OSImage")
+
+					tempAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
+
+					if mirrorRegistryRef != nil {
+						tempAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
+					}
+					_, err = tempAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
+						OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
+						Version:          ZTPConfig.HubOCPXYVersion,
+						Url:              archURL,
+						CPUArchitecture:  models.ClusterCPUArchitectureArm64}).Create()
+					Expect(err).ToNot(HaveOccurred(),
+						"error creating agentserviceconfig with the specific osimage")
+
+					By("Wait until AgentServiceConfig with the specific OSImage is deployed")
+					_, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
+					Expect(err).ToNot(HaveOccurred(),
+						"error waiting until agentserviceconfig without imagestorage is deployed")
+
+					By("Create ClusterImageSet")
+					payloadURL := "https://arm64.ocp.releases.ci.openshift.org/graph"
+					payloadVersion, payloadImage, err := getLatestReleasePayload(payloadURL)
+					Expect(err).ToNot(HaveOccurred(), "error getting latest release payload image")
+
+					glog.V(ztpparams.ZTPLogLevel).Infof("ClusterImageSet %s will use version %s with image %s",
+						testClusterImageSetName, payloadVersion, payloadImage)
+					tempClusterImagesetBuilder, err = hive.NewClusterImageSetBuilder(
+						HubAPIClient, testClusterImageSetName, payloadImage).Create()
+					Expect(err).ToNot(HaveOccurred(), "error creating clusterimageset %s", testClusterImageSetName)
+
+					createSpokeClusterResources(models.ClusterCPUArchitectureArm64)
+				})
+
 		})
 	})
 
 // createSpokeClusterResources is a helper function that creates
 // spoke cluster resources required for the test.
-func createSpokeClusterResources() {
+func createSpokeClusterResources(cpuArch string) {
 	By("Create namespace for the test")
 
 	if nsBuilder.Exists() {
@@ -247,12 +297,15 @@ func createSpokeClusterResources() {
 
 	By("Create infraenv in the new namespace")
 
-	_, err = assisted.NewInfraEnvBuilder(
+	infraEnvBuilder, err := assisted.NewInfraEnvBuilder(
 		HubAPIClient,
 		infraenvTestSpoke,
 		infraenvTestSpoke,
-		testSecret.Definition.Name).Create()
-	Expect(err).ToNot(HaveOccurred(), "error creating infraenv")
+		testSecret.Definition.Name).WithCPUType(cpuArch).Create()
+	Expect(err).ToNot(HaveOccurred(), "error creating infraenv with cpu architecture %s", cpuArch)
+
+	_, err = infraEnvBuilder.WaitForDiscoveryISOCreation(300 * time.Second)
+	Expect(err).ToNot(HaveOccurred(), "error waiting for the discovery iso creation")
 }
 
 // getLatestReleasePayload is a helper function that returns
