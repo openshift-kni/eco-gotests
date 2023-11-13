@@ -5,10 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
-	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -23,35 +20,22 @@ var _ = Describe(
 	Label(tsparams.LabelPlatformVerificationTestCases), func() {
 
 		var (
-			agentClusterInstall  *assisted.AgentClusterInstallBuilder
 			platformType         string
 			spokeClusterPlatform installerTypes.Platform
 		)
 
 		BeforeAll(func() {
-
-			By("Check that spoke API client is ready")
-			reqMet, msg := meets.SpokeAPIClientReadyRequirement()
-			if !reqMet {
-				Skip(msg)
-			}
-
-			var err error
 			By("Get spoke cluster platformType from agentclusterinstall")
-			agentClusterInstall, err = assisted.PullAgentClusterInstall(
-				HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-			Expect(err).NotTo(HaveOccurred(), "error pulling agentclusterinstall from hub cluster")
-			platformType = string(agentClusterInstall.Object.Status.PlatformType)
+			platformType = string(ZTPConfig.SpokeAgentClusterInstall.Object.Status.PlatformType)
 
 			By("Get spoke cluster-config configmap")
-			clusterConfigMap, err := configmap.Pull(SpokeAPIClient, "cluster-config-v1", "kube-system")
-			Expect(err).NotTo(HaveOccurred(), "error pulling cluster config configmap from spoke cluster")
-			Expect(clusterConfigMap.Object.Data["install-config"]).ToNot(
+			Expect(ZTPConfig.SpokeInstallConfig.Object.Data["install-config"]).ToNot(
 				BeEmpty(), "error pulling install-config from spoke cluster",
 			)
 
 			By("Read install-config data from configmap")
-			installConfigData, err := installconfig.NewInstallConfigFromString(clusterConfigMap.Object.Data["install-config"])
+			installConfigData, err := installconfig.NewInstallConfigFromString(
+				ZTPConfig.SpokeInstallConfig.Object.Data["install-config"])
 			Expect(err).NotTo(HaveOccurred(), "error reading in install-config as yaml")
 
 			spokeClusterPlatform = installConfigData.Platform
@@ -62,7 +46,7 @@ var _ = Describe(
 			if platformType != string(hiveextV1Beta1.NonePlatformType) {
 				Skip(fmt.Sprintf("Platform type was not %s", string(hiveextV1Beta1.NonePlatformType)))
 			}
-			if masterCount != agentClusterInstall.Object.Spec.ProvisionRequirements.ControlPlaneAgents {
+			if masterCount != ZTPConfig.SpokeAgentClusterInstall.Object.Spec.ProvisionRequirements.ControlPlaneAgents {
 				Skip("Did not match controlplane agent count")
 			}
 			Expect(spokeClusterPlatform.None).NotTo(BeNil(), "spoke does not contain a none platform key")

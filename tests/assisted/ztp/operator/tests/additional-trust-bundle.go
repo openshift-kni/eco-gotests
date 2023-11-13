@@ -11,7 +11,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentinstallv1beta1 "github.com/openshift/assisted-service/api/v1beta1"
@@ -66,9 +65,6 @@ var _ = Describe(
 	Label(tsparams.LabelAdditionalTrustBundle), func() {
 		When("on MCE 2.4 and above", func() {
 			BeforeAll(func() {
-				By("Check that hub pull-secret can be retrieved")
-				hubPullSecret, err = cluster.GetOCPPullSecret(HubAPIClient)
-				Expect(err).ToNot(HaveOccurred(), "error occurred when retrieving hub pull-secret")
 
 				tsparams.ReporterNamespacesToDump[trustBundleTestNS] = "trustbundle-test namespace"
 
@@ -81,7 +77,7 @@ var _ = Describe(
 					HubAPIClient,
 					trustBundleTestNS+"-pull-secret",
 					trustBundleTestNS,
-					v1.SecretTypeDockerConfigJson).WithData(hubPullSecret.Object.Data).Create()
+					v1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 				By("Create trustbundle-test clusterdeployment")

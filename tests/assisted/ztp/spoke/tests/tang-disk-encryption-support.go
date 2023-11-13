@@ -16,9 +16,8 @@ import (
 )
 
 var (
-	tangEncryptionEnabledOn        string
-	tangServers                    map[string]TangServer
-	tangAgentClusterInstallBuilder *assisted.AgentClusterInstallBuilder
+	tangEncryptionEnabledOn string
+	tangServers             map[string]TangServer
 )
 
 const (
@@ -40,23 +39,18 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 
-				var err error
-				By("Get spoke cluster AgentClusterInstall")
-				tangAgentClusterInstallBuilder, err = assisted.PullAgentClusterInstall(
-					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-				Expect(err).NotTo(HaveOccurred(), "error pulling spoke agentclusterinstall")
-
-				if tangAgentClusterInstallBuilder.Object.Spec.DiskEncryption == nil {
+				if ZTPConfig.SpokeAgentClusterInstall.Object.Spec.DiskEncryption == nil {
 					Skip("Spoke cluster was not installed with disk encryption")
 				}
 
-				if *tangAgentClusterInstallBuilder.Object.Spec.DiskEncryption.Mode != models.DiskEncryptionModeTang {
+				if *ZTPConfig.SpokeAgentClusterInstall.Object.Spec.DiskEncryption.Mode != models.DiskEncryptionModeTang {
 					Skip("Spoke cluster was installed with disk encryption mode other than tang")
 				}
 
-				tangEncryptionEnabledOn = *tangAgentClusterInstallBuilder.Object.Spec.DiskEncryption.EnableOn
+				tangEncryptionEnabledOn = *ZTPConfig.SpokeAgentClusterInstall.Object.Spec.DiskEncryption.EnableOn
 
-				tangServers, err = createTangServersFromAgentClusterInstall(tangAgentClusterInstallBuilder)
+				var err error
+				tangServers, err = createTangServersFromAgentClusterInstall(ZTPConfig.SpokeAgentClusterInstall)
 				Expect(err).NotTo(HaveOccurred(), "error getting tang servers from spoke agentclusterinstall")
 			})
 
@@ -90,12 +84,7 @@ var _ = Describe(
 					Skip("Tang disk encryption enabledOn set to none")
 				}
 
-				By("Fetch spoke cluster infraenv")
-				tangInfraEnvBuilder, err := assisted.PullInfraEnvInstall(
-					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-				Expect(err).NotTo(HaveOccurred(), "error pulling spoke cluster infraenv")
-
-				agentBuilders, err := tangInfraEnvBuilder.GetAllAgents()
+				agentBuilders, err := ZTPConfig.SpokeInfraEnv.GetAllAgents()
 				Expect(err).NotTo(HaveOccurred(), "error pulling agents from cluster")
 
 				if len(agentBuilders) == 0 {

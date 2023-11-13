@@ -17,11 +17,11 @@ import (
 )
 
 var (
-	agentServiceConfigBuilder, tempAgentServiceConfigBuilder *assisted.AgentServiceConfigBuilder
-	pvcbuilder                                               *storage.PVCBuilder
-	imageServicePersistentVolumeClaimName                    string = "image-service-data-assisted-image-service-0"
-	databaseStorage, fileSystemStorage                       v1.PersistentVolumeClaimSpec
-	osImage                                                  []v1beta1.OSImage
+	tempAgentServiceConfigBuilder         *assisted.AgentServiceConfigBuilder
+	pvcbuilder                            *storage.PVCBuilder
+	imageServicePersistentVolumeClaimName string = "image-service-data-assisted-image-service-0"
+	databaseStorage, fileSystemStorage    v1.PersistentVolumeClaimSpec
+	osImage                               []v1beta1.OSImage
 )
 var _ = Describe(
 	"ImageServiceStatefulset",
@@ -30,18 +30,13 @@ var _ = Describe(
 	Label(tsparams.LabelImageServiceStatefulsetTestCases), func() {
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
-				By("Retrieve the pre-existing AgentServiceConfig")
-				var err error
-				agentServiceConfigBuilder, err = assisted.PullAgentServiceConfig(HubAPIClient)
-				Expect(err).ShouldNot(HaveOccurred(), "Failed to get AgentServiceConfig.")
-
 				By("Initialize variables for the test from the original AgentServiceConfig")
-				databaseStorage = agentServiceConfigBuilder.Definition.Spec.DatabaseStorage
-				fileSystemStorage = agentServiceConfigBuilder.Definition.Spec.FileSystemStorage
-				osImage = agentServiceConfigBuilder.Object.Spec.OSImages
+				databaseStorage = ZTPConfig.HubAgentServiceConfg.Definition.Spec.DatabaseStorage
+				fileSystemStorage = ZTPConfig.HubAgentServiceConfg.Definition.Spec.FileSystemStorage
+				osImage = ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages
 
 				By("Delete the pre-existing AgentServiceConfig")
-				err = agentServiceConfigBuilder.DeleteAndWait(time.Second * 10)
+				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
 
 			})
@@ -52,10 +47,10 @@ var _ = Describe(
 			})
 			AfterAll(func() {
 				By("Re-create the original AgentServiceConfig after all tests")
-				_, err = agentServiceConfigBuilder.Create()
+				_, err = ZTPConfig.HubAgentServiceConfg.Create()
 				Expect(err).ToNot(HaveOccurred(), "error re-creating the original agentserviceconfig after all tests")
 
-				_, err = agentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
+				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until agentserviceconfig without imagestorage is deployed")
 			})

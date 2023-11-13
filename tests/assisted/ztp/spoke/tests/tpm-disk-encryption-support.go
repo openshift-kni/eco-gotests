@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/diskencryption"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
@@ -15,8 +14,7 @@ import (
 )
 
 var (
-	tpmEncryptionEnabledOn        string
-	tpmAgentClusterInstallBuilder *assisted.AgentClusterInstallBuilder
+	tpmEncryptionEnabledOn string
 )
 
 const (
@@ -32,23 +30,15 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 
-				var err error
-				By("Get spoke cluster AgentClusterInstall")
-				tpmAgentClusterInstallBuilder, err = assisted.PullAgentClusterInstall(
-					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-				Expect(err).NotTo(HaveOccurred(), "error pulling agentclusterinstall")
-
-				if tpmAgentClusterInstallBuilder.Object.Spec.DiskEncryption == nil {
+				if ZTPConfig.SpokeAgentClusterInstall.Object.Spec.DiskEncryption == nil {
 					Skip("Spoke cluster was not installed with disk encryption")
 				}
 
-				if *tpmAgentClusterInstallBuilder.Object.Spec.DiskEncryption.Mode != models.DiskEncryptionModeTpmv2 {
+				if *ZTPConfig.SpokeAgentClusterInstall.Object.Spec.DiskEncryption.Mode != models.DiskEncryptionModeTpmv2 {
 					Skip("Spoke cluster was installed with disk encryption mode other than tpm")
 				}
 
-				tpmEncryptionEnabledOn = *tpmAgentClusterInstallBuilder.Object.Spec.DiskEncryption.EnableOn
-
-				Expect(err).NotTo(HaveOccurred(), "error getting tpm servers from agentclusterinstall")
+				tpmEncryptionEnabledOn = *ZTPConfig.SpokeAgentClusterInstall.Object.Spec.DiskEncryption.EnableOn
 			})
 
 			It("installs on all nodes", polarion.ID("47135"), func() {
@@ -81,12 +71,7 @@ var _ = Describe(
 					Skip("tpm disk encryption enabledOn set to none")
 				}
 
-				By("Pull cluster infraenv")
-				tpmInfraEnvBuilder, err := assisted.PullInfraEnvInstall(
-					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-				Expect(err).NotTo(HaveOccurred(), "error pulling cluster infraenv")
-
-				agentBuilders, err := tpmInfraEnvBuilder.GetAllAgents()
+				agentBuilders, err := ZTPConfig.SpokeInfraEnv.GetAllAgents()
 				Expect(err).NotTo(HaveOccurred(), "error pulling agents from cluster")
 
 				if len(agentBuilders) == 0 {

@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -54,11 +53,8 @@ var _ = Describe(
 			err = json.Unmarshal(osImagesBuffer.Bytes(), &envOSImages)
 			Expect(err).ToNot(HaveOccurred(), "error occurred while unmarshaling")
 
-			By("Identifying OsVersions from AgentServiceConfig")
-			assistedAgentServiceConfig, err := assisted.PullAgentServiceConfig(HubAPIClient)
-			Expect(err).ToNot(HaveOccurred(), "error occurred when pulling agentserviceconfig")
-			Expect(assistedAgentServiceConfig.Object.Spec.OSImages).ToNot(BeNil(), "osimages field is nil")
-			envOSVersions = osImagesToEnvOsImages(assistedAgentServiceConfig.Object.Spec.OSImages)
+			Expect(ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages).ToNot(BeNil(), "osimages field is nil")
+			envOSVersions = osImagesToEnvOsImages(ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages)
 		})
 
 		When("Test for os-version matches between the pod and the AgentServiceConfig", func() {

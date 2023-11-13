@@ -24,21 +24,13 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label(tsparams.LabelNetworkTypeVerificationTestCases), func() {
 		var (
-			agentClusterInstall *assisted.AgentClusterInstallBuilder
-			err                 error
-			networkTypeACI      string
+			networkTypeACI string
 		)
 
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
-				By("Pull the AgentClusterInstall from the HUB")
-				agentClusterInstall, err = assisted.PullAgentClusterInstall(
-					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-				Expect(err).ToNot(HaveOccurred(),
-					"error pulling agentclusterinstall %s in namespace %s", ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-
 				By("Get the networktype from the AgentClusterInstall")
-				networkTypeACI = agentClusterInstall.Object.Spec.Networking.NetworkType
+				networkTypeACI = ZTPConfig.SpokeAgentClusterInstall.Object.Spec.Networking.NetworkType
 				Expect(networkTypeACI).To(Or(Equal(models.ClusterNetworkTypeOVNKubernetes),
 					Equal(models.ClusterNetworkTypeOpenShiftSDN), Equal("")))
 
@@ -58,7 +50,7 @@ var _ = Describe(
 					}
 
 					By("Check that the deployment of the spoke has completed")
-					agentClusterInstallCompleted(agentClusterInstall)
+					agentClusterInstallCompleted(ZTPConfig.SpokeAgentClusterInstall)
 
 				})
 			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OVNKubernetes",
@@ -99,7 +91,7 @@ var _ = Describe(
 					}
 
 					By("Check that the deployment of the spoke has completed")
-					agentClusterInstallCompleted(agentClusterInstall)
+					agentClusterInstallCompleted(ZTPConfig.SpokeAgentClusterInstall)
 
 				})
 			It("Assert the NetworkType in the IPV6 spoke matches ACI and is set to OVNKubernetes",
@@ -140,7 +132,7 @@ var _ = Describe(
 					}
 
 					By("Check that the deployment of the spoke has completed")
-					agentClusterInstallCompleted(agentClusterInstall)
+					agentClusterInstallCompleted(ZTPConfig.SpokeAgentClusterInstall)
 
 				})
 			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OpenShiftSDN",
@@ -170,8 +162,8 @@ var _ = Describe(
 				polarion.ID("49558"), func() {
 
 					By("Check the networktype is not set via install-config-overrides")
-					installConfigOverrides :=
-						agentClusterInstall.Object.ObjectMeta.Annotations["agent-install.openshift.io/install-config-overrides"]
+					installConfigOverrides := ZTPConfig.SpokeAgentClusterInstall.
+						Object.ObjectMeta.Annotations["agent-install.openshift.io/install-config-overrides"]
 					if strings.Contains(installConfigOverrides, models.ClusterNetworkTypeOVNKubernetes) {
 						Skip("the network type for spoke is set via install-config-overrides")
 					}

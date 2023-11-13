@@ -3,7 +3,6 @@ package spoke_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
@@ -19,11 +18,7 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 
 			BeforeAll(func() {
-				By("Check that the DebugInfo state in AgentClusterInstall shows cluster is installed")
-				agentClusterInstall, err := assisted.PullAgentClusterInstall(
-					HubAPIClient, ZTPConfig.SpokeClusterName, ZTPConfig.SpokeClusterName)
-				Expect(err).NotTo(HaveOccurred(), "error pulling spoke's agentclusterinstall from hub cluster")
-				if agentClusterInstall.Object.Status.DebugInfo.State != models.ClusterStatusAddingHosts {
+				if ZTPConfig.SpokeAgentClusterInstall.Object.Status.DebugInfo.State != models.ClusterStatusAddingHosts {
 					Skip("spoke cluster has not been installed")
 				}
 

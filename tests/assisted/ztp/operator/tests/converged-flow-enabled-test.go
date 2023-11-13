@@ -2,12 +2,10 @@ package operator_test
 
 import (
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
-
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
@@ -36,7 +34,7 @@ var _ = Describe(
 			}
 
 			By("Registering converged flow status")
-			convergedFlowLog, err = ZTPConfig.HubAssistedServicePod().GetLog(90000*time.Hour, assistedContainer)
+			convergedFlowLog, err = ZTPConfig.HubAssistedServicePod().GetFullLog(assistedContainer)
 			Expect(err).ToNot(HaveOccurred(), "error occurred when getting log")
 		})
 

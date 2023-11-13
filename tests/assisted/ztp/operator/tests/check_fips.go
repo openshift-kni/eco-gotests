@@ -12,7 +12,6 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
@@ -46,11 +45,10 @@ var _ = Describe(
 				By("Creating temp directory")
 				Expect(createTmpDir(tmpDir)).NotTo(HaveOccurred(), "could not create temp directory "+tmpDir)
 				By("Getting configmap")
-				fipsConfMap, err := configmap.Pull(HubAPIClient, installConfigConfMap, installConfigConfMapNS)
-				Expect(err).ToNot(HaveOccurred(), "error extracting configmap "+installConfigConfMap)
-				Expect(fipsConfMap.Object.Data["install-config"]).ToNot(BeEmpty(),
+				Expect(ZTPConfig.HubInstallConfig.Object.Data["install-config"]).ToNot(BeEmpty(),
 					"error pulling install-config from HUB cluster")
-				installConfigData, err := installconfig.NewInstallConfigFromString(fipsConfMap.Object.Data["install-config"])
+				installConfigData, err := installconfig.NewInstallConfigFromString(
+					ZTPConfig.HubInstallConfig.Object.Data["install-config"])
 				Expect(err).NotTo(HaveOccurred(), "error reading in install-config as yaml")
 				fipsEnabledOnHub = installConfigData.FIPS
 			})

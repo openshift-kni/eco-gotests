@@ -21,7 +21,6 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
@@ -56,22 +55,13 @@ var _ = Describe(
 					Skip("The hub cluster must be connected")
 				}
 
-				By("Check that hub pull-secret can be retrieved")
-				hubPullSecret, err = cluster.GetOCPPullSecret(HubAPIClient)
-				Expect(err).ToNot(HaveOccurred(), "error occurred when retrieving hub pull-secret")
-
 				nsBuilder = namespace.NewBuilder(HubAPIClient, infraenvTestSpoke)
 
-				By("Retrieve the pre-existing AgentServiceConfig")
-				var err error
-				agentServiceConfigBuilder, err = assisted.PullAgentServiceConfig(HubAPIClient)
-				Expect(err).ShouldNot(HaveOccurred(), "failed to pull AgentServiceConfig.")
-
 				By("Grab the MirrorRegistryRef value from the spec")
-				mirrorRegistryRef = agentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef
+				mirrorRegistryRef = ZTPConfig.HubAgentServiceConfg.Definition.Spec.MirrorRegistryRef
 
 				By("Delete the pre-existing AgentServiceConfig")
-				err = agentServiceConfigBuilder.DeleteAndWait(time.Second * 10)
+				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
 
 				By("Retrieve ClusterImageSet before all tests if exists")
@@ -117,10 +107,10 @@ var _ = Describe(
 				}
 
 				By("Re-create the original AgentServiceConfig after all tests")
-				_, err = agentServiceConfigBuilder.Create()
+				_, err = ZTPConfig.HubAgentServiceConfg.Create()
 				Expect(err).ToNot(HaveOccurred(), "error re-creating the original agentserviceconfig after all tests")
 
-				_, err = agentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
+				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until the original agentserviceconfig is deployed")
 
@@ -249,16 +239,16 @@ func createSpokeClusterResources(cpuArch string) {
 
 	By("Create pull-secret in the new namespace")
 
-	testSecret, err = secret.NewBuilder(
+	testSecret, err := secret.NewBuilder(
 		HubAPIClient,
 		fmt.Sprintf("%s-pull-secret", infraenvTestSpoke),
 		infraenvTestSpoke,
-		v1.SecretTypeDockerConfigJson).WithData(hubPullSecret.Object.Data).Create()
+		v1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
 	Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 	By("Create clusterdeployment in the new namespace")
 
-	testClusterDeployment, err = hive.NewABMClusterDeploymentBuilder(
+	testClusterDeployment, err := hive.NewABMClusterDeploymentBuilder(
 		HubAPIClient,
 		infraenvTestSpoke,
 		infraenvTestSpoke,
@@ -274,11 +264,11 @@ func createSpokeClusterResources(cpuArch string) {
 
 	By("Create agentclusterinstall in the new namespace")
 
-	testAgentClusterInstall, err = assisted.NewAgentClusterInstallBuilder(
+	_, err = assisted.NewAgentClusterInstallBuilder(
 		HubAPIClient,
 		infraenvTestSpoke,
 		infraenvTestSpoke,
-		infraenvTestSpoke,
+		testClusterDeployment.Object.Name,
 		3,
 		2,
 		v1beta1.Networking{

@@ -19,8 +19,8 @@ const (
 )
 
 var (
-	osImageUR                                                    []v1beta1.OSImage
-	agentServiceConfigBuilderUR, tempAgentServiceConfigBuilderUR *assisted.AgentServiceConfigBuilder
+	osImageUR                       []v1beta1.OSImage
+	tempAgentServiceConfigBuilderUR *assisted.AgentServiceConfigBuilder
 )
 
 var _ = Describe(
@@ -30,16 +30,11 @@ var _ = Describe(
 	Label(tsparams.LabelUnauthenticatedRegistriesTestCases), func() {
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
-				By("Retrieve the pre-existing AgentServiceConfig")
-				var err error
-				agentServiceConfigBuilderUR, err = assisted.PullAgentServiceConfig(HubAPIClient)
-				Expect(err).ShouldNot(HaveOccurred(), "failed to get agentServiceConfig")
-
 				By("Initialize osImage variable for the test from the original AgentServiceConfig")
-				osImageUR = agentServiceConfigBuilderUR.Object.Spec.OSImages
+				osImageUR = ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages
 
 				By("Delete the pre-existing AgentServiceConfig")
-				err = agentServiceConfigBuilderUR.DeleteAndWait(time.Second * 10)
+				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
 
 			})
@@ -50,10 +45,10 @@ var _ = Describe(
 			})
 			AfterAll(func() {
 				By("Re-create the original AgentServiceConfig after all tests")
-				_, err = agentServiceConfigBuilderUR.Create()
+				_, err = ZTPConfig.HubAgentServiceConfg.Create()
 				Expect(err).ToNot(HaveOccurred(), "error re-creating the original agentserviceconfig after all tests")
 
-				_, err = agentServiceConfigBuilderUR.WaitUntilDeployed(time.Minute * 10)
+				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until the original agentserviceconfig is deployed")
 			})

@@ -14,7 +14,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -30,7 +29,6 @@ var (
 	testSecret              *secret.Builder
 	testClusterDeployment   *hive.ClusterDeploymentBuilder
 	testAgentClusterInstall *assisted.AgentClusterInstallBuilder
-	hubPullSecret           *secret.Builder
 	err                     error
 )
 
@@ -47,10 +45,6 @@ var _ = Describe(
 					Skip(msg)
 				}
 
-				By("Check that hub pull-secret can be retrieved")
-				hubPullSecret, err = cluster.GetOCPPullSecret(HubAPIClient)
-				Expect(err).ToNot(HaveOccurred(), "error occurred when retrieving hub pull-secret")
-
 				tsparams.ReporterNamespacesToDump[platformtypeSpoke] = "platform-selection namespace"
 
 				By("Create platform-test namespace")
@@ -62,7 +56,7 @@ var _ = Describe(
 					HubAPIClient,
 					fmt.Sprintf("%s-pull-secret", platformtypeSpoke),
 					platformtypeSpoke,
-					v1.SecretTypeDockerConfigJson).WithData(hubPullSecret.Object.Data).Create()
+					v1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 				By("Create platform-test clusterdeployment")

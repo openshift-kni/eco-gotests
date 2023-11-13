@@ -6,11 +6,16 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/assistedconfig"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/find"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
@@ -25,16 +30,25 @@ type ZTPConfig struct {
 type HubConfig struct {
 	HubOCPVersion              string
 	HubOCPXYVersion            string
+	HubAgentServiceConfg       *assisted.AgentServiceConfigBuilder
 	hubAssistedServicePod      *pod.Builder
 	hubAssistedImageServicePod *pod.Builder
+	HubPullSecret              *secret.Builder
+	HubInstallConfig           *configmap.Builder
 }
 
 // SpokeConfig contains environment information related to the spoke cluster.
 type SpokeConfig struct {
-	SpokeAPIClient       *clients.Settings
-	SpokeClusterName     string
-	SpokeKubeConfig      string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_KUBECONFIG"`
-	SpokeClusterImageSet string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_CLUSTERIMAGESET"`
+	SpokeAPIClient           *clients.Settings
+	SpokeOCPVersion          string
+	SpokeOCPXYVersion        string
+	SpokeClusterName         string
+	SpokeKubeConfig          string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_KUBECONFIG"`
+	SpokeClusterImageSet     string `envconfig:"ECO_ASSISTED_ZTP_SPOKE_CLUSTERIMAGESET"`
+	SpokeClusterDeployment   *hive.ClusterDeploymentBuilder
+	SpokeAgentClusterInstall *assisted.AgentClusterInstallBuilder
+	SpokeInfraEnv            *assisted.InfraEnvBuilder
+	SpokeInstallConfig       *configmap.Builder
 }
 
 // NewZTPConfig returns instance of ZTPConfig type.
@@ -61,6 +75,15 @@ func (ztpconfig *ZTPConfig) newHubConfig() {
 	if len(splitVersion) >= 2 {
 		ztpconfig.HubConfig.HubOCPXYVersion = fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1])
 	}
+
+	ztpconfig.HubConfig.HubAgentServiceConfg, _ = assisted.PullAgentServiceConfig(APIClient)
+	if ztpconfig.HubConfig.HubAgentServiceConfg != nil {
+		_ = ztpconfig.HubAssistedServicePod()
+		_ = ztpconfig.HubAssistedImageServicePod()
+	}
+
+	ztpconfig.HubConfig.HubPullSecret, _ = cluster.GetOCPPullSecret(APIClient)
+	ztpconfig.HubConfig.HubInstallConfig, _ = configmap.Pull(APIClient, "cluster-config-v1", "kube-system")
 }
 
 // newSpokeConfig creates a new SpokeConfig member for a ZTPConfig.
@@ -84,6 +107,24 @@ func (ztpconfig *ZTPConfig) newSpokeConfig() {
 
 		ztpconfig.SpokeConfig.SpokeClusterName, _ =
 			find.SpokeClusterName(APIClient, ztpconfig.SpokeConfig.SpokeAPIClient)
+		ztpconfig.SpokeConfig.SpokeOCPVersion, _ = find.ClusterVersion(ztpconfig.SpokeConfig.SpokeAPIClient)
+
+		splitVersion := strings.Split(ztpconfig.SpokeConfig.SpokeOCPVersion, ".")
+		if len(splitVersion) >= 2 {
+			ztpconfig.SpokeConfig.SpokeOCPXYVersion = fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1])
+		}
+
+		ztpconfig.SpokeConfig.SpokeClusterDeployment, _ = hive.PullClusterDeployment(APIClient,
+			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
+
+		ztpconfig.SpokeConfig.SpokeAgentClusterInstall, _ = assisted.PullAgentClusterInstall(APIClient,
+			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
+
+		ztpconfig.SpokeConfig.SpokeInfraEnv, _ = assisted.PullInfraEnvInstall(APIClient,
+			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
+
+		ztpconfig.SpokeConfig.SpokeInstallConfig, _ =
+			configmap.Pull(ztpconfig.SpokeConfig.SpokeAPIClient, "cluster-config-v1", "kube-system")
 	} else {
 		ztpconfig.SpokeConfig.SpokeAPIClient = nil
 	}
