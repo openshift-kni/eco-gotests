@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -87,10 +88,9 @@ func ExecCmd(apiClient *clients.Settings, nodeSelector string, shellCmd string) 
 	return nil
 }
 
-// ExecCmdWithStdout runs cmd on all nodes that match nodeSelector and returns stdout from each node.
-func ExecCmdWithStdout(apiClient *clients.Settings, nodeSelector string, shellCmd string) (map[string]string, error) {
-	glog.V(90).Infof("Executing cmd: %v on nodes based on label: %v using mcp pods", shellCmd, nodeSelector)
-
+// ExecCmdWithStdout runs cmd on all selected nodes and returns their stdout.
+func ExecCmdWithStdout(
+	apiClient *clients.Settings, shellCmd string, options ...metav1.ListOptions) (map[string]string, error) {
 	if GeneralConfig.MCOConfigDaemonName == "" {
 		return nil, fmt.Errorf("error: mco config daemon pod name cannot be empty")
 	}
@@ -99,9 +99,26 @@ func ExecCmdWithStdout(apiClient *clients.Settings, nodeSelector string, shellCm
 		return nil, fmt.Errorf("error: mco namespace cannot be empty")
 	}
 
+	logMessage := fmt.Sprintf("Executing cmd: %v on nodes", shellCmd)
+
+	passedOptions := metav1.ListOptions{}
+
+	if len(options) > 1 {
+		glog.V(90).Infof("'options' parameter must be empty or single-valued")
+
+		return nil, fmt.Errorf("error: more than one ListOptions was passed")
+	}
+
+	if len(options) == 1 {
+		passedOptions = options[0]
+		logMessage += fmt.Sprintf(" with the options %v", passedOptions)
+	}
+
+	glog.V(90).Infof(logMessage)
+
 	nodeList, err := nodes.List(
 		apiClient,
-		metav1.ListOptions{LabelSelector: labels.Set(map[string]string{nodeSelector: ""}).String()},
+		passedOptions,
 	)
 
 	if err != nil {
@@ -145,7 +162,10 @@ func ExecCmdWithStdout(apiClient *clients.Settings, nodeSelector string, shellCm
 				return nil, fmt.Errorf("failed executing command '%s' on node %s: %w", shellCmd, hostnameBuf.String(), err)
 			}
 
-			outputMap[hostnameBuf.String()] = commandBuf.String()
+			hostname := regexp.MustCompile(`\r`).ReplaceAllString(hostnameBuf.String(), "")
+			output := regexp.MustCompile(`\r`).ReplaceAllString(commandBuf.String(), "")
+
+			outputMap[hostname] = output
 		}
 	}
 
