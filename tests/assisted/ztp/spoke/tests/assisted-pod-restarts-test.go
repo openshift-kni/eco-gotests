@@ -35,9 +35,9 @@ var _ = Describe(
 						"failed asserting 0 restarts for "+podName+" pod")
 				},
 				Entry("Assert the assisted-service pod wasn't restarted after creation",
-					"assisted-service", ZTPConfig.HubAssistedServicePod, polarion.ID("56581")),
+					"assisted-service", ZTPConfig.HubAssistedServicePod, polarion.ID("56584")),
 				Entry("Assert the assisted-image-service pod wasn't restarted after creation",
-					"assisted-image-service", ZTPConfig.HubAssistedImageServicePod, polarion.ID("56582")),
+					"assisted-image-service", ZTPConfig.HubAssistedImageServicePod, polarion.ID("56583")),
 			)
 
 		})
