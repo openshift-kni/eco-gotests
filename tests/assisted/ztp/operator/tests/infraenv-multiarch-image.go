@@ -115,17 +115,15 @@ var _ = Describe(
 					"error waiting until the original agentserviceconfig is deployed")
 
 			})
-			It("Assert valid ISO is created by InfraEnv with cpuArchitecture set to x86_64",
-				polarion.ID("56183"), func() {
+			DescribeTable("Assert valid ISO is created by InfraEnv with different cpuArchitecture",
+				func(archUrlReleased string, archUrlPrereleased string, cpuArchitecture string, payloadURL string) {
 
 					By("Check the rhcos-live ISO exists")
-					archURL = "https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/" +
-						ZTPConfig.HubOCPXYVersion + "/latest/rhcos-live.x86_64.iso"
+					archURL = archUrlReleased
 
 					_, _, err = url.Fetch(archURL, "Head", true)
 					if err != nil {
-						archURL = "https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/pre-release/latest-" +
-							ZTPConfig.HubOCPXYVersion + "/rhcos-live.x86_64.iso"
+						archURL = archUrlPrereleased
 						_, _, err = url.Fetch(archURL, "Head", true)
 					}
 
@@ -144,7 +142,7 @@ var _ = Describe(
 						OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
 						Version:          ZTPConfig.HubOCPXYVersion,
 						Url:              archURL,
-						CPUArchitecture:  models.ClusterCPUArchitectureX8664}).Create()
+						CPUArchitecture:  cpuArchitecture}).Create()
 					Expect(err).ToNot(HaveOccurred(),
 						"error creating agentserviceconfig with the specific osimage")
 
@@ -154,7 +152,6 @@ var _ = Describe(
 						"error waiting until agentserviceconfig without imagestorage is deployed")
 
 					By("Create ClusterImageSet")
-					payloadURL := "https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph"
 					payloadVersion, payloadImage, err := getLatestReleasePayload(payloadURL)
 					Expect(err).ToNot(HaveOccurred(), "error getting latest release payload image")
 
@@ -164,61 +161,29 @@ var _ = Describe(
 						HubAPIClient, testClusterImageSetName, payloadImage).Create()
 					Expect(err).ToNot(HaveOccurred(), "error creating clusterimageset %s", testClusterImageSetName)
 
-					createSpokeClusterResources(models.ClusterCPUArchitectureX8664)
-				})
-			It("Assert valid ISO is created by InfraEnv with cpuArchitecture set to arm64",
-				polarion.ID("56186"), func() {
+					createSpokeClusterResources(cpuArchitecture)
+				},
 
-					By("Check the rhcos-live ISO exists")
-					archURL = "https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/" +
-						ZTPConfig.HubOCPXYVersion + "/latest/rhcos-live.aarch64.iso"
+				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to x86_64",
+					"https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/"+
+						ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.x86_64.iso",
+					"https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/pre-release/latest-"+
+						ZTPConfig.HubOCPXYVersion+"/rhcos-live.x86_64.iso",
+					models.ClusterCPUArchitectureX8664,
+					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
+					polarion.ID("56183")),
 
-					_, _, err = url.Fetch(archURL, "Head", true)
-					if err != nil {
-						archURL = "https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/pre-release/latest-" +
-							ZTPConfig.HubOCPXYVersion + "/rhcos-live.aarch64.iso"
-						_, _, err = url.Fetch(archURL, "Head", true)
-					}
-
-					Expect(err).ToNot(HaveOccurred(), "error reaching  %s", archURL)
-
-					glog.V(ztpparams.ZTPLogLevel).Infof("Verified ISO from URL %s exists", archURL)
-
-					By("Create AgentServiceConfig with the specific OSImage")
-
-					tempAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
-
-					if mirrorRegistryRef != nil {
-						tempAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
-					}
-					_, err = tempAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
-						OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
-						Version:          ZTPConfig.HubOCPXYVersion,
-						Url:              archURL,
-						CPUArchitecture:  models.ClusterCPUArchitectureArm64}).Create()
-					Expect(err).ToNot(HaveOccurred(),
-						"error creating agentserviceconfig with the specific osimage")
-
-					By("Wait until AgentServiceConfig with the specific OSImage is deployed")
-					_, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
-					Expect(err).ToNot(HaveOccurred(),
-						"error waiting until agentserviceconfig without imagestorage is deployed")
-
-					By("Create ClusterImageSet")
-					payloadURL := "https://arm64.ocp.releases.ci.openshift.org/graph"
-					payloadVersion, payloadImage, err := getLatestReleasePayload(payloadURL)
-					Expect(err).ToNot(HaveOccurred(), "error getting latest release payload image")
-
-					glog.V(ztpparams.ZTPLogLevel).Infof("ClusterImageSet %s will use version %s with image %s",
-						testClusterImageSetName, payloadVersion, payloadImage)
-					tempClusterImagesetBuilder, err = hive.NewClusterImageSetBuilder(
-						HubAPIClient, testClusterImageSetName, payloadImage).Create()
-					Expect(err).ToNot(HaveOccurred(), "error creating clusterimageset %s", testClusterImageSetName)
-
-					createSpokeClusterResources(models.ClusterCPUArchitectureArm64)
-				})
-
+				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to arm64",
+					"https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/"+
+						ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.aarch64.iso",
+					"https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/pre-release/latest-"+
+						ZTPConfig.HubOCPXYVersion+"/rhcos-live.aarch64.iso",
+					models.ClusterCPUArchitectureArm64,
+					"https://arm64.ocp.releases.ci.openshift.org/graph",
+					polarion.ID("56186")),
+			)
 		})
+
 	})
 
 // createSpokeClusterResources is a helper function that creates
@@ -293,6 +258,8 @@ func createSpokeClusterResources(cpuArch string) {
 		infraenvTestSpoke,
 		testSecret.Definition.Name).WithCPUType(cpuArch).Create()
 	Expect(err).ToNot(HaveOccurred(), "error creating infraenv with cpu architecture %s", cpuArch)
+
+	By("Wait until the discovery iso is created for the infraenv")
 
 	_, err = infraEnvBuilder.WaitForDiscoveryISOCreation(300 * time.Second)
 	Expect(err).ToNot(HaveOccurred(), "error waiting for the discovery iso creation")
