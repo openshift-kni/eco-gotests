@@ -12,8 +12,6 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwaparams"
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/mdr-operator/internal/mdrparams"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe(
@@ -34,7 +32,6 @@ var _ = Describe(
 			_, err := pod.WaitForAllPodsInNamespaceRunning(
 				APIClient,
 				rhwaparams.RhwaOperatorNs,
-				v1.ListOptions{},
 				rhwaparams.DefaultTimeout,
 			)
 			Expect(err).ToNot(HaveOccurred(), "Pod is not ready")

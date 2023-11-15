@@ -79,22 +79,10 @@ func (builder *ClusterRoleBuilder) WithRules(rules []v1.PolicyRule) *ClusterRole
 	}
 
 	for _, rule := range rules {
-		if len(rule.APIGroups) == 0 {
-			glog.V(100).Infof("The clusterrole rule must contain at least one APIGroup entry")
-
-			builder.errorMsg = "clusterrole rule must contain at least one APIGroup entry"
-		}
-
 		if len(rule.Verbs) == 0 {
 			glog.V(100).Infof("The clusterrole rule must contain at least one Verb entry")
 
 			builder.errorMsg = "clusterrole rule must contain at least one Verb entry"
-		}
-
-		if len(rule.Resources) == 0 {
-			glog.V(100).Infof("The clusterrole rule must contain at least one Resource entry")
-
-			builder.errorMsg = "clusterrole rule must contain at least one Resource entry"
 		}
 
 		if builder.errorMsg != "" {

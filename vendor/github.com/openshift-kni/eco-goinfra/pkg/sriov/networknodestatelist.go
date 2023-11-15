@@ -11,16 +11,30 @@ import (
 
 // ListNetworkNodeState returns SriovNetworkNodeStates inventory in the given namespace.
 func ListNetworkNodeState(
-	apiClient *clients.Settings, nsname string, options metaV1.ListOptions) ([]*NetworkNodeStateBuilder, error) {
-	glog.V(100).Infof("Listing SriovNetworkNodeStates in the namespace %s with the options %v", nsname, options)
-
+	apiClient *clients.Settings, nsname string, options ...metaV1.ListOptions) ([]*NetworkNodeStateBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("SriovNetworkNodeStates 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list SriovNetworkNodeStates, 'nsname' parameter is empty")
 	}
 
-	networkNodeStateList, err := apiClient.SriovNetworkNodeStates(nsname).List(context.Background(), options)
+	logMessage := fmt.Sprintf("Listing SriovNetworkNodeStates in the namespace %s", nsname)
+	passedOptions := metaV1.ListOptions{}
+
+	if len(options) > 1 {
+		glog.V(100).Infof("'options' parameter must be empty or single-valued")
+
+		return nil, fmt.Errorf("error: more than one ListOptions was passed")
+	}
+
+	if len(options) == 1 {
+		passedOptions = options[0]
+		logMessage += fmt.Sprintf(" with the options %v", passedOptions)
+	}
+
+	glog.V(100).Infof(logMessage)
+
+	networkNodeStateList, err := apiClient.SriovNetworkNodeStates(nsname).List(context.Background(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list SriovNetworkNodeStates in the namespace %s due to %s", nsname, err.Error())

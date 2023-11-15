@@ -12,7 +12,7 @@ import (
 
 var (
 	// AllowedSCList list of allowed SecurityCapabilities.
-	AllowedSCList          = []string{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "ALL"}
+	AllowedSCList          = []string{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK", "ALL"}
 	falseVar               = false
 	trueVar                = true
 	capabilityAll          = []v1.Capability{"ALL"}

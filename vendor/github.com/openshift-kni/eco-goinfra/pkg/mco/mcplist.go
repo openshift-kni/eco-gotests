@@ -12,10 +12,24 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func ListMCP(apiClient *clients.Settings, listOptions metav1.ListOptions) ([]*MCPBuilder, error) {
-	glog.V(100).Infof("Listing all MCP resources with the options %v", listOptions)
+func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCPBuilder, error) {
+	passedOptions := metav1.ListOptions{}
+	logMessage := "Listing all MCP resources"
 
-	mcpList, err := apiClient.MachineConfigPools().List(context.Background(), listOptions)
+	if len(options) > 1 {
+		glog.V(100).Infof("'options' parameter must be empty or single-valued")
+
+		return nil, fmt.Errorf("error: more than one ListOptions was passed")
+	}
+
+	if len(options) == 1 {
+		passedOptions = options[0]
+		logMessage += fmt.Sprintf(" with the options %v", passedOptions)
+	}
+
+	glog.V(100).Infof(logMessage)
+
+	mcpList, err := apiClient.MachineConfigPools().List(context.Background(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list MCP objects due to %s", err.Error())
@@ -39,10 +53,11 @@ func ListMCP(apiClient *clients.Settings, listOptions metav1.ListOptions) ([]*MC
 	return mcpObjects, nil
 }
 
-func ListMCPByMachineConfigSelector(apiClient *clients.Settings, mcpLabel string) (*MCPBuilder, error) {
+func ListMCPByMachineConfigSelector(
+	apiClient *clients.Settings, mcpLabel string, options ...metav1.ListOptions) (*MCPBuilder, error) {
 	glog.V(100).Infof("GetByLabel returns MachineConfigPool with the specified label: %v", mcpLabel)
 
-	mcpList, err := ListMCP(apiClient, metav1.ListOptions{})
+	mcpList, err := ListMCP(apiClient, options...)
 
 	if err != nil {
 		return nil, err
@@ -67,7 +82,8 @@ func ListMCPByMachineConfigSelector(apiClient *clients.Settings, mcpLabel string
 	return nil, fmt.Errorf("cannot find MachineConfigPool that targets machineConfig with label: %s", mcpLabel)
 }
 
-func ListMCPWaitToBeStableFor(apiClient *clients.Settings, stableDuration, timeout time.Duration) error {
+func ListMCPWaitToBeStableFor(
+	apiClient *clients.Settings, stableDuration, timeout time.Duration, options ...metav1.ListOptions) error {
 	glog.V(100).Infof("WaitForMcpListToBeStableFor waits up to duration of %v for "+
 		"MachineConfigPoolList to be stable for %v", timeout, stableDuration)
 
@@ -83,7 +99,7 @@ func ListMCPWaitToBeStableFor(apiClient *clients.Settings, stableDuration, timeo
 		// Here we need to run through the entire stableDuration till it times out.
 		_ = wait.PollImmediate(fiveScds, stableDuration, func() (done bool, err error) {
 
-			mcpList, err := ListMCP(apiClient, metav1.ListOptions{})
+			mcpList, err := ListMCP(apiClient, options...)
 
 			if err != nil {
 				return false, err

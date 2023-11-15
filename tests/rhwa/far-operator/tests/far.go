@@ -40,8 +40,8 @@ var _ = Describe(
 			_, err := pod.WaitForAllPodsInNamespaceRunning(
 				APIClient,
 				rhwaparams.RhwaOperatorNs,
-				listOptions,
 				rhwaparams.DefaultTimeout,
+				listOptions,
 			)
 			Expect(err).ToNot(HaveOccurred(), "Pod is not ready")
 		})

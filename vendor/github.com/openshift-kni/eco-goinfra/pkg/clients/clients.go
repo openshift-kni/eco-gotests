@@ -55,9 +55,11 @@ import (
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
+	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
+	cguapiv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/api/v1alpha1"
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 	lsoV1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
@@ -255,6 +257,14 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := argocdScheme.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := policiesv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := cguapiv1alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

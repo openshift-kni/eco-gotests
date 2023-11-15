@@ -9,7 +9,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ClusterVersion returns the Major.Minor part of a cluster's OCP version.
@@ -33,7 +32,7 @@ func SpokeClusterName(hubAPIClient, spokeAPIClient *clients.Settings) (string, e
 
 	spokeClusterID := spokeClusterVersion.Object.Spec.ClusterID
 
-	clusterDeployments, err := hive.ListClusterDeploymentsInAllNamespaces(hubAPIClient, &client.ListOptions{})
+	clusterDeployments, err := hive.ListClusterDeploymentsInAllNamespaces(hubAPIClient)
 	if err != nil {
 		return "", err
 	}

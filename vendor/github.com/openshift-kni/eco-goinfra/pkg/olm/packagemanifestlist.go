@@ -13,17 +13,31 @@ import (
 func ListPackageManifest(
 	apiClient *clients.Settings,
 	nsname string,
-	options metaV1.ListOptions) ([]*PackageManifestBuilder, error) {
-	glog.V(100).Infof("Listing PackageManifests in the namespace %s with the options %v", nsname, options)
-
+	options ...metaV1.ListOptions) ([]*PackageManifestBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("packagemanifest 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list packagemanifests, 'nsname' parameter is empty")
 	}
 
+	passedOptions := metaV1.ListOptions{}
+	logMessage := fmt.Sprintf("Listing PackageManifests in the namespace %s", nsname)
+
+	if len(options) > 1 {
+		glog.V(100).Infof("'options' parameter must be empty or single-valued")
+
+		return nil, fmt.Errorf("error: more than one ListOptions was passed")
+	}
+
+	if len(options) == 1 {
+		passedOptions = options[0]
+		logMessage += fmt.Sprintf(" with the options %v", passedOptions)
+	}
+
+	glog.V(100).Infof(logMessage)
+
 	pkgManifestList, err := apiClient.PackageManifestInterface.PackageManifests(nsname).List(context.Background(),
-		options)
+		passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list PackageManifests in the namespace %s due to %s",
