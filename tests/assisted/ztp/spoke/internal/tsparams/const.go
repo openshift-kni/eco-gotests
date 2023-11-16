@@ -37,4 +37,8 @@ const (
 	// LabelNodeLabellingAtInstallTestCases represents node-labelling-at-install label that can be used for test cases
 	// selection.
 	LabelNodeLabellingAtInstallTestCases = "node-labelling-at-install"
+
+	// LabelAdditionalTrustBundle represents additional-trust-bundle label that can be used
+	// for test cases selection.
+	LabelAdditionalTrustBundle = "additional-trust-bundle"
 )
