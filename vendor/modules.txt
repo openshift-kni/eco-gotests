@@ -677,6 +677,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/api/v1alpha1
 # github.com/openshift-kni/eco-goinfra v0.0.0-20231116135728-94ee6d71d81b
 ## explicit; go 1.19
 github.com/openshift-kni/eco-goinfra/pkg/assisted
+github.com/openshift-kni/eco-goinfra/pkg/bmh
 github.com/openshift-kni/eco-goinfra/pkg/clients
 github.com/openshift-kni/eco-goinfra/pkg/clusterversion
 github.com/openshift-kni/eco-goinfra/pkg/configmap

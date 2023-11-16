@@ -33,4 +33,8 @@ const (
 	// LabelTPMDiskEncryptionInstallTestCases represents tpm-disk-encryption-install label that
 	// can be used for test cases selection.
 	LabelTPMDiskEncryptionInstallTestCases = "tpm-disk-encryption-install"
+
+	// LabelNodeLabellingAtInstallTestCases represents node-labelling-at-install label that can be used for test cases
+	// selection.
+	LabelNodeLabellingAtInstallTestCases = "node-labelling-at-install"
 )
