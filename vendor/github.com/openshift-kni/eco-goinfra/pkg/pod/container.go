@@ -113,6 +113,82 @@ func (builder *ContainerBuilder) WithSecurityCapabilities(sCapabilities []string
 	return builder
 }
 
+// WithDropSecurityCapabilities drops SecurityCapabilities from the container definition.
+func (builder *ContainerBuilder) WithDropSecurityCapabilities(sCapabilities []string, redefine bool) *ContainerBuilder {
+	glog.V(100).Infof("Dropping a list of SecurityCapabilities %v from container %s",
+		sCapabilities, builder.definition.Name)
+
+	if !areCapabilitiesValid(sCapabilities) {
+		glog.V(100).Infof("Given SecurityCapabilities %v are not valid. Valid list %s",
+			sCapabilities, AllowedSCList)
+
+		builder.errorMsg = "one of the provided securityCapabilities is invalid. " +
+			"Please extend the allowed list or fix parameter"
+
+		return builder
+	}
+
+	var sCapabilitiesList []v1.Capability
+	for _, capability := range sCapabilities {
+		sCapabilitiesList = append(sCapabilitiesList, v1.Capability(capability))
+	}
+
+	// filter possible duplicated capabilities from user's input
+	sCapabilitiesList = uniqueCapabilities(sCapabilitiesList)
+	glog.V(100).Infof("Filtered user input: %v", sCapabilitiesList)
+
+	// filter conflicting capabilities between ADD and DROP
+	if builder.definition.SecurityContext != nil &&
+		builder.definition.SecurityContext.Capabilities != nil &&
+		builder.definition.SecurityContext.Capabilities.Add != nil {
+		glog.V(100).Infof("Filtering conflicting options between ADD and DROP capabilities")
+
+		confCapabilitiesList := capabilitiesIntersection(
+			builder.definition.SecurityContext.Capabilities.Add,
+			sCapabilitiesList)
+
+		if len(confCapabilitiesList) > 0 {
+			glog.V(100).Infof("Conflicting ADD and DROP capabilities")
+
+			for _, mcap := range confCapabilitiesList {
+				glog.V(100).Infof("SecurityCapability %q already present in the Capabilities.Add list", mcap)
+			}
+
+			builder.errorMsg = "Conflicting ADD and DROP SecurityCapabilities"
+
+			return builder
+		}
+	}
+
+	if builder.definition.SecurityContext == nil {
+		glog.V(100).Infof("SecurityContext is nil. Initializing one")
+
+		builder.definition.SecurityContext = new(v1.SecurityContext)
+	}
+
+	if builder.definition.SecurityContext.Capabilities == nil {
+		glog.V(100).Infof("Capabilities are nil. Initializing one")
+
+		builder.definition.SecurityContext.Capabilities = new(v1.Capabilities)
+	}
+
+	if !redefine {
+		glog.V(100).Infof("SecurityContext.Capabilities will not be redefined")
+		glog.V(100).Infof("Filtering duplicated DROP capabilities - %v", sCapabilitiesList)
+		sCapabilitiesList = capabilitiesDifference(builder.definition.SecurityContext.Capabilities.Drop,
+			sCapabilitiesList)
+
+		glog.V(100).Infof("Updating existing SecurityContext.Capabilities.Drop list with %v", sCapabilitiesList)
+		builder.definition.SecurityContext.Capabilities.Drop = append(builder.definition.SecurityContext.Capabilities.Drop,
+			sCapabilitiesList...)
+	} else {
+		glog.V(100).Infof("Redefining existing SecurityContext.Capabilities.Drop list with %v", sCapabilitiesList)
+		builder.definition.SecurityContext.Capabilities.Drop = sCapabilitiesList
+	}
+
+	return builder
+}
+
 // WithSecurityContext applies security Context on container.
 func (builder *ContainerBuilder) WithSecurityContext(securityContext *v1.SecurityContext) *ContainerBuilder {
 	glog.V(100).Infof("Applying custom securityContext %v", securityContext)
@@ -235,6 +311,32 @@ func (builder *ContainerBuilder) WithEnvVar(name, value string) *ContainerBuilde
 	return builder
 }
 
+// WithVolumeMount adds a pod volume mount inside the container.
+func (builder *ContainerBuilder) WithVolumeMount(volMount v1.VolumeMount) *ContainerBuilder {
+	glog.V(100).Infof("Adding VolumeMount to the %s container's definition", builder.definition.Name)
+
+	if volMount.Name == "" {
+		glog.V(100).Infof("Container's VolumeMount name cannot be empty")
+
+		builder.errorMsg = "container's volume mount name is empty"
+	}
+
+	if volMount.MountPath == "" {
+		glog.V(100).Infof("Container's VolumeMount mount path cannot be empty")
+
+		builder.errorMsg = "container's volume mount path is empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	glog.V(100).Infof("VolumeMount %s will be mounted at %s", volMount.Name, volMount.MountPath)
+	builder.definition.VolumeMounts = append(builder.definition.VolumeMounts, volMount)
+
+	return builder
+}
+
 // GetContainerCfg returns Container struct.
 func (builder *ContainerBuilder) GetContainerCfg() (*v1.Container, error) {
 	glog.V(100).Infof("Returning configuration for container %s", builder.definition.Name)
@@ -258,4 +360,66 @@ func areCapabilitiesValid(capabilities []string) bool {
 	}
 
 	return valid
+}
+
+// uniqueCapabilities filters duplicated Security Capabilities from the provided list.
+func uniqueCapabilities(sCap []v1.Capability) []v1.Capability {
+	uniqMap := make(map[v1.Capability]bool)
+	uniqSlice := []v1.Capability{}
+
+	for _, val := range sCap {
+		uniqMap[val] = true
+	}
+
+	for key := range uniqMap {
+		uniqSlice = append(uniqSlice, key)
+	}
+
+	return uniqSlice
+}
+
+// capabilitiesIntersection returns an intersection of 2 Security Capabilities lists.
+func capabilitiesIntersection(aCaps, bCaps []v1.Capability) []v1.Capability {
+	var resultCaps []v1.Capability
+
+	for _, bVal := range bCaps {
+		found := false
+
+		for _, aVal := range aCaps {
+			if bVal == aVal {
+				found = true
+
+				break
+			}
+		}
+
+		if found {
+			resultCaps = append(resultCaps, bVal)
+		}
+	}
+
+	return resultCaps
+}
+
+// capabilitiesDifference returns a difference of 2 Security Capabilities lists.
+func capabilitiesDifference(aCaps, bCaps []v1.Capability) []v1.Capability {
+	var resultCaps []v1.Capability
+
+	for _, bVal := range bCaps {
+		found := false
+
+		for _, aVal := range aCaps {
+			if bVal == aVal {
+				found = true
+
+				break
+			}
+		}
+
+		if !found {
+			resultCaps = append(resultCaps, bVal)
+		}
+	}
+
+	return resultCaps
 }

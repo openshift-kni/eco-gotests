@@ -599,6 +599,30 @@ func (builder *Builder) WithPrivilegedFlag() *Builder {
 	return builder
 }
 
+// WithVolume attaches given volume to a pod.
+func (builder *Builder) WithVolume(volume v1.Volume) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if volume.Name == "" {
+		glog.V(100).Infof("The volume's Name cannot be empty")
+
+		builder.errorMsg = "The volume's Name cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding volume %s to pod %s in namespace %s",
+		volume.Name, builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Volumes = append(builder.Definition.Spec.Volumes, volume)
+
+	return builder
+}
+
 // WithLocalVolume attaches given volume to all pod's containers.
 func (builder *Builder) WithLocalVolume(volumeName, mountPath string) *Builder {
 	if valid, _ := builder.validate(); !valid {

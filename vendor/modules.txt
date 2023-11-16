@@ -674,7 +674,7 @@ github.com/opencontainers/go-digest
 # github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20230810161322-3ef5efb0de85
 ## explicit; go 1.19
 github.com/openshift-kni/cluster-group-upgrades-operator/api/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20231109170421-ae153f384637
+# github.com/openshift-kni/eco-goinfra v0.0.0-20231116135728-94ee6d71d81b
 ## explicit; go 1.19
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/clients
@@ -1827,6 +1827,7 @@ k8s.io/utils/trace
 # open-cluster-management.io/governance-policy-propagator v0.11.0
 ## explicit; go 1.20
 open-cluster-management.io/governance-policy-propagator/api/v1
+open-cluster-management.io/governance-policy-propagator/api/v1beta1
 # open-cluster-management.io/multicloud-operators-subscription v0.10.0
 ## explicit; go 1.19
 open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1

@@ -315,6 +315,32 @@ func (builder *Builder) WithServiceAccountName(serviceAccountName string) *Build
 	return builder
 }
 
+// WithVolume attaches given volume to the deployment.
+func (builder *Builder) WithVolume(deployVolume coreV1.Volume) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if deployVolume.Name == "" {
+		glog.V(100).Infof("The volume's name cannot be empty")
+
+		builder.errorMsg = "The volume's name cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding volume %s to deployment %s in namespace %s",
+		deployVolume.Name, builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.Volumes = append(
+		builder.Definition.Spec.Template.Spec.Volumes,
+		deployVolume)
+
+	return builder
+}
+
 // WithOptions creates deployment with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {

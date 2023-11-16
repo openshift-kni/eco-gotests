@@ -31,13 +31,13 @@ type Sriov struct {
 // Vf provides struct for the NMState SR-IOV VF state object containing SR-IOV VF information.
 type Vf struct {
 	ID         int    `yaml:"id"`
-	MacAddress string `yaml:"mac-address"`
-	MaxTxRate  int    `yaml:"max-tx-rate"`
-	MinTxRate  int    `yaml:"min-tx-rate"`
-	Qos        int    `yaml:"qos"`
-	SpoofCheck bool   `yaml:"spoof-check"`
-	Trust      bool   `yaml:"trust"`
-	VlanID     int    `yaml:"vlan-id"`
+	MacAddress string `yaml:"mac-address,omitempty"`
+	MaxTxRate  *int   `yaml:"max-tx-rate,omitempty"`
+	MinTxRate  *int   `yaml:"min-tx-rate,omitempty"`
+	Qos        *int   `yaml:"qos,omitempty"`
+	SpoofCheck *bool  `yaml:"spoof-check,omitempty"`
+	Trust      *bool  `yaml:"trust,omitempty"`
+	VlanID     *int   `yaml:"vlan-id,omitempty"`
 }
 
 // Bridge provides struct for the NMState Interface Ethernet Bridge state object
