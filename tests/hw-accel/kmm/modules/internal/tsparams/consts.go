@@ -10,7 +10,7 @@ const (
 	// KmmOperatorNamespace represents the namespace where KMM is installed.
 	KmmOperatorNamespace = "openshift-kmm"
 	// DeploymentName represents the name of the KMM operator deployment.
-	DeploymentName = "kmm-operator-controller-manager"
+	DeploymentName = "kmm-operator-controller"
 	// BuildArgName represents kmod key passed to kmm-ci example.
 	BuildArgName = "MY_MODULE"
 	// ModuleNodeLabelTemplate represents template of the label set on a node for a Module.

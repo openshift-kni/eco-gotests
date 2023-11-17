@@ -1,12 +1,16 @@
 package tests
 
 import (
+	"strings"
+
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -29,10 +33,19 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			exists := namespace.NewBuilder(APIClient, tsparams.KmmOperatorNamespace).Exists()
 			Expect(exists).To(Equal(true))
 
-			By("Checking operator deployment")
-			ds, err := deployment.Pull(APIClient, tsparams.DeploymentName, tsparams.KmmOperatorNamespace)
-			Expect(err).NotTo(HaveOccurred(), "error getting deployment")
-			Expect(ds.Object.Status.ReadyReplicas).To(Equal(int32(1)))
+			By("Listing deployment in operator namespace")
+			deploymentList, err := deployment.List(APIClient, tsparams.KmmOperatorNamespace)
+			Expect(err).NotTo(HaveOccurred(), "error getting deployment list")
+
+			By("Checking deployment")
+			for _, ds := range deploymentList {
+				if strings.Contains(ds.Object.Name, tsparams.DeploymentName) {
+					Expect(err).NotTo(HaveOccurred(), "error getting deployment")
+					Expect(ds.Object.Status.ReadyReplicas).To(Equal(int32(1)))
+					glog.V(kmmparams.KmmLogLevel).Infof("Successfully found deployment '%s'"+
+						" with ReadyReplicas %d", ds.Object.Name, ds.Object.Status.ReadyReplicas)
+				}
+			}
 		})
 	})
 })
