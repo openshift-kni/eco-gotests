@@ -41,4 +41,7 @@ const (
 	// LabelBuildArtifcatRootFSTestCases represents build-artifact-rootfs label that can be used
 	// for test cases selection.
 	LabelBuildArtifcatRootFSTestCases = "build-artifact-rootfs"
+
+	// LabelHTTPWebserverSetup represents label-http-web-server-setup label that can be used for test cases selection.
+	LabelHTTPWebserverSetup = "label-http-web-server-setup"
 )
