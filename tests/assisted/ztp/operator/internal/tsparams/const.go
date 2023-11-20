@@ -37,4 +37,8 @@ const (
 	// LabelMultiArchitectureImageTestCases represents infraenv-multiarch-image label that can be used
 	// for test cases selection.
 	LabelMultiArchitectureImageTestCases = "infraenv-multiarch-image"
+
+	// LabelBuildArtifcatRootFSTestCases represents build-artifact-rootfs label that can be used
+	// for test cases selection.
+	LabelBuildArtifcatRootFSTestCases = "build-artifact-rootfs"
 )

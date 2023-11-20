@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/Juniper/go-netconf v0.3.0
 	github.com/NVIDIA/gpu-operator v1.11.1
+	github.com/cavaliergopher/cpio v1.0.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/golang/glog v1.1.1
 	github.com/hashicorp/go-version v1.6.0

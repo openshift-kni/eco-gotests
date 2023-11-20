@@ -64,8 +64,17 @@ func Fetch(url, method string, skipCertVerify bool) (string, int, error) {
 }
 
 // DownloadToDir saves content from the specified URL under the specified folder.
-func DownloadToDir(url string, dirName string) error {
+func DownloadToDir(url, dirName string, skipCertVerify bool) error {
 	grabClient := grab.NewClient()
+
+	if skipCertVerify {
+		transport, ok := grabClient.HTTPClient.(*http.Client).Transport.(*http.Transport)
+		if !ok {
+			return fmt.Errorf("error: receieved unexpected http client")
+		}
+
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
 
 	glog.V(50).Infof("Attempting to save content from %s into directory %s", url, dirName)
 

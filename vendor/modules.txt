@@ -143,6 +143,9 @@ github.com/buger/jsonparser
 ## explicit; go 1.15
 # github.com/bugsnag/panicwrap v1.3.4
 ## explicit
+# github.com/cavaliergopher/cpio v1.0.1
+## explicit; go 1.17
+github.com/cavaliergopher/cpio
 # github.com/cavaliergopher/grab/v3 v3.0.1
 ## explicit; go 1.14
 github.com/cavaliergopher/grab/v3
