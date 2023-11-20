@@ -182,6 +182,15 @@ var _ = Describe(
 					"https://s390x.ocp.releases.ci.openshift.org/graph",
 					polarion.ID("56184")),
 
+				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to ppc64le",
+					"https://mirror.openshift.com/pub/openshift-v4/ppc64le/dependencies/rhcos/"+
+						ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.ppc64le.iso",
+					"https://mirror.openshift.com/pub/openshift-v4/ppc64le/dependencies/rhcos/pre-release/latest-"+
+						ZTPConfig.HubOCPXYVersion+"/rhcos-live.ppc64le.iso",
+					models.ClusterCPUArchitecturePpc64le,
+					"https://ppc64le.ocp.releases.ci.openshift.org/graph",
+					polarion.ID("56185")),
+
 				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to arm64",
 					"https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/"+
 						ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.aarch64.iso",
