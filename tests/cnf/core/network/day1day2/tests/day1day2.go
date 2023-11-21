@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,7 +24,8 @@ import (
 
 var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFailure, func() {
 	var (
-		workerNodeList []*nodes.Builder
+		workerNodeList      []*nodes.Builder
+		slaveVlanInterfaces []string
 	)
 
 	BeforeAll(func() {
@@ -40,11 +42,10 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		By("Verifying that the cluster deployed via bond interface" +
 			" with enslaved Vlan interfaces which based on SR-IOV VFs")
-		checkThatWorkersDeployedWithBondVlanVfs(workerNodeList)
-
+		slaveVlanInterfaces = verifyBondedVlanVfsDeployment(workerNodeList)
 	})
 
-	AfterAll(func() {
+	AfterEach(func() {
 		By("Cleaning test namespace")
 		err := namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
 			netparam.DefaultTimeout, pod.GetGVR())
@@ -53,6 +54,55 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		By("Removing NMState policies")
 		err = nmstate.CleanAllNMStatePolicies(APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
+	})
+
+	It("VF: change QOS configuration", polarion.ID("63926"), func() {
+		By("Collecting information about test interfaces")
+		vfInterface, err := netnmstate.GetBaseVlanInterface(slaveVlanInterfaces[0], workerNodeList[0].Definition.Name)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get VF base interface")
+		pfUnderTest, err := day1day2env.GetSrIovPf(vfInterface, workerNodeList[0].Definition.Name)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get SR-IOV PF for VF %s", vfInterface))
+
+		By(fmt.Sprintf("Saving MaxTxRate value on the first VF of interface %s before the test", pfUnderTest))
+		defaultMaxTxRate, err := day1day2env.GetFirstVfInterfaceMaxTxRate(workerNodeList[0].Definition.Name, pfUnderTest)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get default MaxTxRate value")
+
+		By("Configuring MaxTxRate on the first VF")
+		newExpectedMaxTxRateValue := 200
+		nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, "qos", NetConfig.WorkerLabelMap).
+			WithInterfaceAndVFs(pfUnderTest, 3).
+			WithOptions(netnmstate.WithOptionMaxTxRateOnFirstVf(uint64(newExpectedMaxTxRateValue), pfUnderTest))
+		err = netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
+
+		By("Verifying that expected MaxTxRate value is configured")
+		for _, workerNode := range workerNodeList {
+			currentMaxTxRateValue, err := day1day2env.GetFirstVfInterfaceMaxTxRate(workerNode.Object.Name, pfUnderTest)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get MaxTxRate configuration")
+			Expect(currentMaxTxRateValue).To(Equal(newExpectedMaxTxRateValue), "MaxTxRate has unexpected value")
+		}
+
+		By("Verifying workers are available over the bond interface after MaxTxRate re-config")
+		err = day1day2env.CheckConnectivityBetweenMasterAndWorkers()
+		Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
+
+		By("Restoring MaxTxRate configuration")
+		nmstatePolicy = nmstate.NewPolicyBuilder(APIClient, "restoreqos", NetConfig.WorkerLabelMap).
+			WithInterfaceAndVFs(pfUnderTest, 3).
+			WithOptions(netnmstate.WithOptionMaxTxRateOnFirstVf(uint64(defaultMaxTxRate), pfUnderTest))
+		err = netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
+
+		By("Verifying that MaxTxRate is restored")
+		for _, workerNode := range workerNodeList {
+			currentMaxTxRateValue, err := day1day2env.GetFirstVfInterfaceMaxTxRate(workerNode.Object.Name, pfUnderTest)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get MaxTxRate configuration")
+			Expect(currentMaxTxRateValue).To(Equal(defaultMaxTxRate), "MaxTxRate has unexpected value")
+		}
+
+		By("Verifying workers are available over the bond interface after MaxTxRate reverted to default")
+		err = day1day2env.CheckConnectivityBetweenMasterAndWorkers()
+		Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
 	})
 
 	It("Day2 Bond: change miimon configuration", polarion.ID("63881"), func() {
@@ -108,7 +158,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 })
 
-func checkThatWorkersDeployedWithBondVlanVfs(workerNodes []*nodes.Builder) {
+func verifyBondedVlanVfsDeployment(workerNodes []*nodes.Builder) []string {
 	By("Verifying that the cluster deployed via bond interface")
 
 	var (
@@ -148,4 +198,6 @@ func checkThatWorkersDeployedWithBondVlanVfs(workerNodes []*nodes.Builder) {
 
 		Expect(err).ToNot(HaveOccurred(), "Failed to get SR-IOV PF interface")
 	}
+
+	return bondInterfaceVlanSlaves
 }

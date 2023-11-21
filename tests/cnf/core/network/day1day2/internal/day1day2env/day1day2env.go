@@ -2,6 +2,7 @@ package day1day2env
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,7 +73,7 @@ func GetSrIovPf(vfInterfaceName, nodeName string) (string, error) {
 		return "", err
 	}
 
-	return pfName, nil
+	return strings.TrimRight(pfName, "\r\n"), nil
 }
 
 // GetBondInterfaceMiimon returns miimon value for given bond interface and node.
@@ -90,6 +91,23 @@ func GetBondInterfaceMiimon(nodeName, bondInterfaceName string) (int, error) {
 	}
 
 	return bondInterface.LinkAggregation.Options.Miimon, nil
+}
+
+// GetFirstVfInterfaceMaxTxRate returns MaxTxRate value for given interface (VF0) and node.
+func GetFirstVfInterfaceMaxTxRate(nodeName, interfaceName string) (int, error) {
+	glog.V(90).Infof("Getting MaxTxRate value for first VF of interface %s on node %s", interfaceName, nodeName)
+
+	nodeNetworkState, err := nmstate.PullNodeNetworkState(APIClient, nodeName)
+	if err != nil {
+		return 0, err
+	}
+
+	sriovInterface, err := nodeNetworkState.GetInterfaceType(interfaceName, "ethernet")
+	if err != nil {
+		return 0, err
+	}
+
+	return *sriovInterface.Ethernet.Sriov.Vfs[0].MaxTxRate, nil
 }
 
 // CheckConnectivityBetweenMasterAndWorkers creates a hostnetwork pod on the master node and ping all workers nodes.

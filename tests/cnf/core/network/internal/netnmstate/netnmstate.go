@@ -276,9 +276,9 @@ func WithOptionMiimon(
 			return builder, fmt.Errorf("the bondInterfaceName is empty string")
 		}
 
-		var CurrentState nmstate.DesiredState
+		var currentState nmstate.DesiredState
 
-		err := yaml.Unmarshal(builder.Definition.Spec.DesiredState.Raw, &CurrentState)
+		err := yaml.Unmarshal(builder.Definition.Spec.DesiredState.Raw, &currentState)
 		if err != nil {
 			glog.V(90).Infof("Failed Unmarshal DesiredState")
 
@@ -287,9 +287,9 @@ func WithOptionMiimon(
 
 		var foundInterface bool
 
-		for i, networkInterface := range CurrentState.Interfaces {
+		for i, networkInterface := range currentState.Interfaces {
 			if networkInterface.Name == bondInterfaceName && networkInterface.Type == "bond" {
-				CurrentState.Interfaces[i].LinkAggregation.Options.Miimon = int(miimon)
+				currentState.Interfaces[i].LinkAggregation.Options.Miimon = int(miimon)
 				foundInterface = true
 			}
 		}
@@ -300,7 +300,60 @@ func WithOptionMiimon(
 			return builder, fmt.Errorf("failed to find Bond interface %s", bondInterfaceName)
 		}
 
-		desiredStateYaml, err := yaml.Marshal(CurrentState)
+		desiredStateYaml, err := yaml.Marshal(currentState)
+		if err != nil {
+			glog.V(90).Infof("Failed Marshal DesiredState")
+
+			return builder, fmt.Errorf("failed to Marshal a new Desired state: %w", err)
+		}
+
+		builder.Definition.Spec.DesiredState = nmstateShared.NewState(string(desiredStateYaml))
+
+		return builder, nil
+	}
+}
+
+// WithOptionMaxTxRateOnFirstVf returns a func that mutate MaxTxRate value on the first VF.
+func WithOptionMaxTxRateOnFirstVf(
+	maxTxRate uint64, sriovInterfaceName string) func(*nmstate.PolicyBuilder) (*nmstate.PolicyBuilder, error) {
+	return func(builder *nmstate.PolicyBuilder) (*nmstate.PolicyBuilder, error) {
+		glog.V(90).Infof("Changing MaxTxRate value for the first VF on given SR-IOV interface to %d",
+			maxTxRate)
+
+		if sriovInterfaceName == "" {
+			glog.V(90).Infof("The sriovInterfaceName can not be empty string")
+
+			return builder, fmt.Errorf("the sriovInterfaceName is empty string")
+		}
+
+		var currentState nmstate.DesiredState
+
+		err := yaml.Unmarshal(builder.Definition.Spec.DesiredState.Raw, &currentState)
+		if err != nil {
+			glog.V(90).Infof("Failed Unmarshal DesiredState")
+
+			return builder, fmt.Errorf("failed Unmarshal DesiredState: %w", err)
+		}
+
+		var foundInterface bool
+
+		for i, networkInterface := range currentState.Interfaces {
+			if networkInterface.Name == sriovInterfaceName && networkInterface.Type == "ethernet" {
+				value := int(maxTxRate)
+				currentState.Interfaces[i].Ethernet.Sriov.Vfs = []nmstate.Vf{{ID: 0, MaxTxRate: &value}}
+				foundInterface = true
+
+				break
+			}
+		}
+
+		if !foundInterface {
+			glog.V(90).Infof("Failed to find given SR-IOV interface")
+
+			return builder, fmt.Errorf("failed to find SR-IOV interface %s", sriovInterfaceName)
+		}
+
+		desiredStateYaml, err := yaml.Marshal(currentState)
 		if err != nil {
 			glog.V(90).Infof("Failed Marshal DesiredState")
 
