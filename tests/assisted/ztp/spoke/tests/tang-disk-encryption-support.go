@@ -118,7 +118,7 @@ var _ = Describe(
 					tangEncryptionEnabledOn == models.DiskEncryptionEnableOnMasters {
 					masterTangIgnition, err := diskencryption.GetIgnitionConfigFromMachineConfig(
 						SpokeAPIClient, tangMasterMachineConfig)
-					Expect(err).NotTo(HaveOccurred(), "error getting ignition config from machineconfig")
+					Expect(err).NotTo(HaveOccurred(), errorGettingIgnitionConfigMsg())
 					ignitionConfigs = append(ignitionConfigs, masterTangIgnition)
 				}
 
@@ -126,7 +126,7 @@ var _ = Describe(
 					tangEncryptionEnabledOn == models.DiskEncryptionEnableOnWorkers {
 					workerTangIgnition, err := diskencryption.GetIgnitionConfigFromMachineConfig(
 						SpokeAPIClient, tangWorkerMachineConfig)
-					Expect(err).NotTo(HaveOccurred(), "error getting ignition config from machineconfig")
+					Expect(err).NotTo(HaveOccurred(), errorGettingIgnitionConfigMsg())
 					ignitionConfigs = append(ignitionConfigs, workerTangIgnition)
 				}
 
@@ -158,14 +158,14 @@ func createTangServersFromAgentClusterInstall(
 func verifyMasterMachineConfig() {
 	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(
 		SpokeAPIClient, tangMasterMachineConfig)
-	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tangMasterMachineConfig+" machineconfig")
+	Expect(err).NotTo(HaveOccurred(), errorGettingIgnitionConfigMsg(tangMasterMachineConfig))
 	verifyLuksTangIgnitionConfig(ignitionConfig)
 }
 
 func verifyWorkerMachineConfig() {
 	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(
 		SpokeAPIClient, tangWorkerMachineConfig)
-	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tangWorkerMachineConfig+" machineconfig")
+	Expect(err).NotTo(HaveOccurred(), errorGettingIgnitionConfigMsg(tangWorkerMachineConfig))
 	verifyLuksTangIgnitionConfig(ignitionConfig)
 }
 
@@ -193,4 +193,13 @@ func verifyTangServerConsistency(ignitionConfig *diskencryption.IgnitionConfig) 
 		Expect(ignitionConfigServer.Thumbprint).To(Equal(aciServer.Thumbprint),
 			"machineconfig and agentclusterinstall tang thumbprints do not match")
 	}
+}
+
+func errorGettingIgnitionConfigMsg(masterMachineConfigName ...string) string {
+	errorMsg := "error getting ignition config from "
+	if len(masterMachineConfigName) > 0 {
+		errorMsg += masterMachineConfigName[0]
+	}
+
+	return errorMsg + " machineconfig"
 }

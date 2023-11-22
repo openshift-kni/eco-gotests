@@ -14,10 +14,40 @@ linters-settings:
         arguments:
           - disableStutteringCheck
   depguard:
-    list-type: blacklist
-    include-go-root: false
-    packages:
-      - "github.com/onsi**"
+#    list-type: blacklist
+#    include-go-root: false
+#    packages:
+#      - "github.com/onsi**"
+    rules:
+      main:
+        deny:
+        - pkg: "github.com/onsi**"
+        allow:
+        - "k8s.io/apimachinery"
+        - "k8s.io/api"
+        - "k8s.io/kubelet"
+        - "k8s.io/utils"
+        - "k8s.io/client-go"
+        - "github.com/kelseyhightower"
+        - "github.com/Juniper/go-netconf"
+        - "github.com/openshift"
+        - "github.com/nmstate/kubernetes-nmstate"
+        - "github.com/hashicorp/go-version"
+        - "github.com/cavaliergopher/grab/v3"
+        - "github.com/k8snetworkplumbingwg"
+        - "github.com/metallb/metallb-operator"
+        - "github.com/metal3-io/baremetal-operator"
+        - "github.com/operator-framework/operator-lifecycle-manager"
+        - "github.com/grafana-operator/grafana-operator"
+        - "github.com/NVIDIA/gpu-operator"
+        - "github.com/operator-framework/api"
+        - "github.com/argoproj-labs/argocd-operator/api"
+        - "github.com/golang/glog"
+        - "github.com/rh-ecosystem-edge/kernel-module-management"
+        - "maistra.io/api"
+        - "open-cluster-management.io/governance-policy-propagator/api"
+        - "sigs.k8s.io/controller-runtime"
+        - $gostd
   wsl:
     strict-append: false
   gofmt:
@@ -148,7 +178,7 @@ issues:
     - path: "tests/internal/inittools"
       linters:
         - depguard
-        -
+
     - path: 'tests/internal/polarion'
       linters:
         - depguard

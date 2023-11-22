@@ -100,14 +100,14 @@ var _ = Describe(
 
 func verifyTpmMasterMachineConfig() {
 	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(SpokeAPIClient, tpmMasterMachineConfig)
-	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tpmMasterMachineConfig+" machineconfig")
+	Expect(err).NotTo(HaveOccurred(), errorGettingIgnitionConfigMsg(tpmMasterMachineConfig))
 
 	verifyLuksTpmIgnitionConfig(ignitionConfig)
 }
 
 func verifyTpmWorkerMachineConfig() {
 	ignitionConfig, err := diskencryption.GetIgnitionConfigFromMachineConfig(SpokeAPIClient, tpmWorkerMachineConfig)
-	Expect(err).NotTo(HaveOccurred(), "error getting ignition config from "+tpmWorkerMachineConfig+" machineconfig")
+	Expect(err).NotTo(HaveOccurred(), errorGettingIgnitionConfigMsg(tpmWorkerMachineConfig))
 
 	verifyLuksTpmIgnitionConfig(ignitionConfig)
 }

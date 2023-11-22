@@ -19,8 +19,11 @@ const (
 )
 
 var (
-	osImageUR                       []v1beta1.OSImage
-	tempAgentServiceConfigBuilderUR *assisted.AgentServiceConfigBuilder
+	osImageUR                          []v1beta1.OSImage
+	tempAgentServiceConfigBuilderUR    *assisted.AgentServiceConfigBuilder
+	errorVerifyingMsg                  = "error verifying that \""
+	verifyPublicContainerRegistriesMsg = "Verify the PUBLIC_CONTAINER_REGISTRIES key contains\""
+	retrieveAssistedConfigMapMsg       = fmt.Sprintf("Retrieve the  %s configmap", assistedConfigMapName)
 )
 
 var _ = Describe(
@@ -72,7 +75,7 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(),
 						"error waiting until agentserviceconfig with default storage specs is deployed")
 
-					By("Retrieve the " + assistedConfigMapName + " configmap")
+					By(retrieveAssistedConfigMapMsg)
 					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
@@ -101,7 +104,7 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(),
 						"error waiting until agentserviceconfig with unauthenticatedRegistries containing a default entry is deployed")
 
-					By("Retrieve the " + assistedConfigMapName + " configmap")
+					By(retrieveAssistedConfigMapMsg)
 					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
@@ -130,16 +133,19 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(),
 						"error waiting until agentserviceconfig with unauthenticatedRegistries containing a specific entry is deployed")
 
-					By("Retrieve the " + assistedConfigMapName + " configmap")
+					By(retrieveAssistedConfigMapMsg)
 					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
 
-					By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + unAuthenticatedNonDefaultRegistriesList()[0] +
-						"\" in the " + assistedConfigMapName + " configmap")
+					By(fmt.Sprintf("%s %s \" in the %s configmap",
+						verifyPublicContainerRegistriesMsg,
+						unAuthenticatedNonDefaultRegistriesList()[0],
+						assistedConfigMapName))
+
 					Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
 						ContainSubstring(unAuthenticatedNonDefaultRegistriesList()[0]),
-						"error verifying that \""+unAuthenticatedNonDefaultRegistriesList()[0]+
+						errorVerifyingMsg+unAuthenticatedNonDefaultRegistriesList()[0]+
 							"\" is listed among unauthenticated registries by default")
 
 					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
@@ -167,17 +173,20 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(),
 						"error waiting until agentserviceconfig with unauthenticatedRegistries containing multiple entries is deployed")
 
-					By("Retrieve the " + assistedConfigMapName + " configmap")
+					By(retrieveAssistedConfigMapMsg)
 					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
 
 					for _, registry := range unAuthenticatedNonDefaultRegistriesList() {
-						By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + registry +
-							"\" in the " + assistedConfigMapName + " configmap")
+						By(fmt.Sprintf("%s %s \" in the %s configmap",
+							verifyPublicContainerRegistriesMsg,
+							registry,
+							assistedConfigMapName))
+
 						Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
 							ContainSubstring(registry),
-							"error verifying that \""+registry+
+							errorVerifyingMsg+registry+
 								"\" is listed among unauthenticated registries")
 					}
 					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
@@ -204,16 +213,16 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(),
 						"error waiting until agentserviceconfig with unauthenticatedRegistries containing an incorrect entry is deployed")
 
-					By("Retrieve the " + assistedConfigMapName + " configmap")
+					By(retrieveAssistedConfigMapMsg)
 					configMapBuilder, err := configmap.Pull(HubAPIClient, assistedConfigMapName, tsparams.MCENameSpace)
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
 
-					By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + incorrectRegistry +
+					By(verifyPublicContainerRegistriesMsg + incorrectRegistry +
 						"\" in the " + assistedConfigMapName + " configmap")
 					Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
 						ContainSubstring(incorrectRegistry),
-						"error verifying that \""+incorrectRegistry+
+						errorVerifyingMsg+incorrectRegistry+
 							"\" is listed among unauthenticated registries by default")
 
 					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
@@ -242,10 +251,10 @@ func unAuthenticatedNonDefaultRegistriesList() []string {
 // in the assisted-service configmap.
 func unAuthentcatedRegistriesDefaultEntries(configMapBuilder *configmap.Builder) {
 	for _, registry := range unAuthenticatedDefaultRegistriesList() {
-		By("Verify the PUBLIC_CONTAINER_REGISTRIES key contains \"" + registry +
+		By(verifyPublicContainerRegistriesMsg + registry +
 			"\" in the " + assistedConfigMapName + " configmap by default")
 		Expect(configMapBuilder.Definition.Data["PUBLIC_CONTAINER_REGISTRIES"]).To(
-			ContainSubstring(registry), "error verifying that "+registry+
+			ContainSubstring(registry), errorVerifyingMsg+registry+
 				" is listed among unauthenticated registries by default")
 	}
 }
