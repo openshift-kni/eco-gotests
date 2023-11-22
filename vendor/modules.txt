@@ -431,7 +431,7 @@ github.com/onsi/gomega/types
 # github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20230810161322-3ef5efb0de85
 ## explicit; go 1.19
 github.com/openshift-kni/cluster-group-upgrades-operator/api/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20231121192808-8d657006d190
+# github.com/openshift-kni/eco-goinfra v0.0.0-20231122173503-d8e4791d65c0
 ## explicit; go 1.20
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmh
