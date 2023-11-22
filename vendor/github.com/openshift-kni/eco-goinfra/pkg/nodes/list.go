@@ -96,24 +96,25 @@ func WaitForAllNodesAreReady(apiClient *clients.Settings,
 		return false, err
 	}
 
-	err = wait.PollImmediate(backoff, timeout, func() (done bool, err error) {
-		for _, node := range nodesList {
-			ready, err := node.IsReady()
-			if err != nil {
-				glog.V(100).Infof("Node %v has error %w", node.Object.Name, err)
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), backoff, timeout, true, func(ctx context.Context) (done bool, err error) {
+			for _, node := range nodesList {
+				ready, err := node.IsReady()
+				if err != nil {
+					glog.V(100).Infof("Node %v has error %w", node.Object.Name, err)
 
-				return false, err
+					return false, err
+				}
+
+				if !ready {
+					glog.V(100).Infof("Node %s not Ready", node.Object.Name)
+
+					return false, nil
+				}
 			}
 
-			if !ready {
-				glog.V(100).Infof("Node %s not Ready", node.Object.Name)
-
-				return false, nil
-			}
-		}
-
-		return true, nil
-	})
+			return true, nil
+		})
 
 	if err == nil {
 		glog.V(100).Infof("All nodes were found in the Ready State during availableDuration: %v",
@@ -145,32 +146,33 @@ func WaitForAllNodesToReboot(apiClient *clients.Settings,
 	globalStartTime := time.Now().Unix()
 	readyNodes := []string{}
 	rebootedNodes := []string{}
-	err = wait.PollImmediate(backoff, globalRebootTimeout, func() (done bool, err error) {
-		for _, node := range nodesList {
-			if !slices.Contains(readyNodes, node.Object.Name) {
-				ready, err := node.IsReady()
-				if err != nil {
-					return false, err
-				}
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), backoff, globalRebootTimeout, true, func(ctx context.Context) (done bool, err error) {
+			for _, node := range nodesList {
+				if !slices.Contains(readyNodes, node.Object.Name) {
+					ready, err := node.IsReady()
+					if err != nil {
+						return false, err
+					}
 
-				rebooted := slices.Contains(rebootedNodes, node.Object.Name)
-				if !ready && !rebooted {
-					glog.V(100).Infof("Node %s was rebooted and is starting to recover", node.Object.Name)
+					rebooted := slices.Contains(rebootedNodes, node.Object.Name)
+					if !ready && !rebooted {
+						glog.V(100).Infof("Node %s was rebooted and is starting to recover", node.Object.Name)
 
-					rebootedNodes = append(rebootedNodes, node.Object.Name)
-				}
+						rebootedNodes = append(rebootedNodes, node.Object.Name)
+					}
 
-				if ready && rebooted {
-					glog.V(100).Infof("Node %s was successfully rebooted after: %v",
-						time.Now().Unix()-globalStartTime)
+					if ready && rebooted {
+						glog.V(100).Infof("Node %s was successfully rebooted after: %v",
+							time.Now().Unix()-globalStartTime)
 
-					readyNodes = append(readyNodes, node.Object.Name)
+						readyNodes = append(readyNodes, node.Object.Name)
+					}
 				}
 			}
-		}
 
-		return len(readyNodes) == len(nodesList), nil
-	})
+			return len(readyNodes) == len(nodesList), nil
+		})
 
 	if err == nil {
 		globalRebootDuration := time.Now().Unix() - globalStartTime

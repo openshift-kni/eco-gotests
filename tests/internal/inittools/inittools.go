@@ -4,8 +4,11 @@ import (
 	"flag"
 
 	"github.com/golang/glog"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/config"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var (
@@ -18,6 +21,9 @@ var (
 // init loads all variables automatically when this package is imported. Once package is imported a user has full
 // access to all vars within init function. It is recommended to import this package using dot import.
 func init() {
+	// Work around bug in glog lib
+	logf.SetLogger(zap.New(zap.WriteTo(ginkgo.GinkgoWriter), zap.UseDevMode(true)))
+
 	if GeneralConfig = config.NewConfig(); GeneralConfig == nil {
 		glog.Fatalf("error to load general config")
 	}

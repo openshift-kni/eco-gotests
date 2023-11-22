@@ -269,16 +269,17 @@ func (builder *InfraEnvBuilder) WaitForDiscoveryISOCreation(timeout time.Duratio
 
 	// Polls every retryInterval to determine if infraenv in desired state.
 	var err error
-	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		builder.Object, err = builder.Get()
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
 
-		if err != nil {
-			return false, nil
-		}
+			if err != nil {
+				return false, nil
+			}
 
-		return builder.Object.Status.CreatedTime != nil, nil
+			return builder.Object.Status.CreatedTime != nil, nil
 
-	})
+		})
 
 	if err == nil {
 		return builder, nil
@@ -441,16 +442,17 @@ func (builder *InfraEnvBuilder) WaitForAgentsToRegister(timeout time.Duration) (
 		agentclusterinstall.Spec.ProvisionRequirements.WorkerAgents
 
 	// Polls every retryInterval to determine if agent has registered.
-	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 
-		agentList, err = builder.GetAllAgents()
+			agentList, err = builder.GetAllAgents()
 
-		if err != nil {
-			return false, err
-		}
+			if err != nil {
+				return false, err
+			}
 
-		return len(agentList) == agentCount, nil
-	})
+			return len(agentList) == agentCount, nil
+		})
 
 	return agentList, err
 }
@@ -473,15 +475,16 @@ func (builder *InfraEnvBuilder) WaitForMasterAgents(timeout time.Duration) ([]*a
 	agentCount := agentclusterinstall.Spec.ProvisionRequirements.ControlPlaneAgents
 
 	// Polls every retryInterval to determine if agent has registered.
-	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		agentList, err = builder.GetAgentsByRole("master")
-		if err != nil {
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			agentList, err = builder.GetAgentsByRole("master")
+			if err != nil {
 
-			return false, err
-		}
+				return false, err
+			}
 
-		return len(agentList) == agentCount, nil
-	})
+			return len(agentList) == agentCount, nil
+		})
 
 	return agentList, err
 }
@@ -496,16 +499,17 @@ func (builder *InfraEnvBuilder) WaitForMasterAgentCount(count int, timeout time.
 	var agentList []*agentBuilder
 
 	// Polls every retryInterval to determine if agent has registered.
-	err := wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 
-		agentList, err := builder.GetAgentsByRole("master")
-		if err != nil {
+			agentList, err := builder.GetAgentsByRole("master")
+			if err != nil {
 
-			return false, err
-		}
+				return false, err
+			}
 
-		return len(agentList) == count, nil
-	})
+			return len(agentList) == count, nil
+		})
 
 	return agentList, err
 }
@@ -516,7 +520,7 @@ func (builder *InfraEnvBuilder) GetRandomMasterAgent() (*agentBuilder, error) {
 		return nil, err
 	}
 
-	rand.Seed(time.Now().UnixNano())
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	agentList, err := builder.GetAgentsByRole("master")
 	if err != nil {
@@ -527,7 +531,7 @@ func (builder *InfraEnvBuilder) GetRandomMasterAgent() (*agentBuilder, error) {
 		return nil, fmt.Errorf("could not find any master agents")
 	}
 
-	randInt := rand.Intn(len(agentList))
+	randInt := random.Intn(len(agentList))
 
 	return agentList[randInt], nil
 }
@@ -550,16 +554,17 @@ func (builder *InfraEnvBuilder) WaitForWorkerAgents(timeout time.Duration) ([]*a
 	agentCount := agentclusterinstall.Spec.ProvisionRequirements.WorkerAgents
 
 	// Polls every retryInterval to determine if agent has registered.
-	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 
-		agentList, err = builder.GetAgentsByRole("worker")
-		if err != nil {
+			agentList, err = builder.GetAgentsByRole("worker")
+			if err != nil {
 
-			return false, err
-		}
+				return false, err
+			}
 
-		return len(agentList) == agentCount, nil
-	})
+			return len(agentList) == agentCount, nil
+		})
 
 	return agentList, err
 }
@@ -574,16 +579,17 @@ func (builder *InfraEnvBuilder) WaitForWorkerAgentCount(count int, timeout time.
 	var agentList []*agentBuilder
 
 	// Polls every retryInterval to determine if agent has registered.
-	err := wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 
-		agentList, err := builder.GetAgentsByRole("worker")
-		if err != nil {
+			agentList, err := builder.GetAgentsByRole("worker")
+			if err != nil {
 
-			return false, err
-		}
+				return false, err
+			}
 
-		return len(agentList) == count, nil
-	})
+			return len(agentList) == count, nil
+		})
 
 	return agentList, err
 }
@@ -594,7 +600,7 @@ func (builder *InfraEnvBuilder) GetRandomWorkerAgent() (*agentBuilder, error) {
 		return nil, err
 	}
 
-	rand.Seed(time.Now().UnixNano())
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	agentList, err := builder.GetAgentsByRole("worker")
 	if err != nil {
@@ -605,7 +611,7 @@ func (builder *InfraEnvBuilder) GetRandomWorkerAgent() (*agentBuilder, error) {
 		return nil, fmt.Errorf("could not find any worker agents")
 	}
 
-	randInt := rand.Intn(len(agentList))
+	randInt := random.Intn(len(agentList))
 
 	return agentList[randInt], nil
 }
@@ -778,10 +784,7 @@ func (builder *InfraEnvBuilder) Update(force bool) (*InfraEnvBuilder, error) {
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				"Failed to update the infraenv object %s in namespace %s. "+
-					"Note: Force flag set, executed delete/create methods instead",
-				builder.Definition.Name, builder.Definition.Namespace,
-			)
+				msg.FailToUpdateNotification("infraenv", builder.Definition.Name, builder.Definition.Namespace))
 
 			err = builder.DeleteAndWait(time.Second * 5)
 			builder.Definition.ResourceVersion = ""
@@ -846,15 +849,16 @@ func (builder *InfraEnvBuilder) DeleteAndWait(timeout time.Duration) error {
 	}
 
 	// Polls the InfraEnv every second until it's removed.
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		_, err := builder.Get()
-		if err != nil {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.Get()
+			if err != nil {
 
-			return true, nil
-		}
+				return true, nil
+			}
 
-		return false, err
-	})
+			return false, err
+		})
 }
 
 // Exists checks if the defined infraenv has already been created.

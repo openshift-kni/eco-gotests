@@ -1,6 +1,7 @@
 package operator_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -154,16 +155,17 @@ var _ = Describe(
 					tempAgentServiceConfigBuilder, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
 					Expect(err).ToNot(HaveOccurred(), "error waiting until agentserviceconfig with imagestorage is deployed")
 
-					err = wait.PollImmediate(time.Second, time.Second*5, func() (bool, error) {
-						By("Assure the respective PVC was created")
-						pvcbuilder, err = storage.PullPersistentVolumeClaim(
-							HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
-						if err != nil {
-							return false, nil
-						}
+					err = wait.PollUntilContextTimeout(
+						context.TODO(), time.Second, time.Second*5, true, func(ctx context.Context) (bool, error) {
+							By("Assure the respective PVC was created")
+							pvcbuilder, err = storage.PullPersistentVolumeClaim(
+								HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+							if err != nil {
+								return false, nil
+							}
 
-						return true, nil
-					})
+							return true, nil
+						})
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get PersistentVolumeClaim %s in NameSpace %s.",
 						imageServicePersistentVolumeClaimName,
@@ -211,15 +213,16 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(), "error updating the agentserviceconfig")
 
 					By("Wait up to 1 minute for the imageservice PVC to be removed")
-					err = wait.PollImmediate(5*time.Second, time.Minute*1, func() (bool, error) {
-						pvcbuilder, err = storage.PullPersistentVolumeClaim(
-							HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
-						if err != nil {
-							return true, nil
-						}
+					err = wait.PollUntilContextTimeout(
+						context.TODO(), 5*time.Second, time.Minute*1, true, func(ctx context.Context) (bool, error) {
+							pvcbuilder, err = storage.PullPersistentVolumeClaim(
+								HubAPIClient, imageServicePersistentVolumeClaimName, tsparams.MCENameSpace)
+							if err != nil {
+								return true, nil
+							}
 
-						return false, nil
-					})
+							return false, nil
+						})
 					Expect(err).ToNot(HaveOccurred(), "error waiting until the imageservice PVC is removed.")
 				})
 

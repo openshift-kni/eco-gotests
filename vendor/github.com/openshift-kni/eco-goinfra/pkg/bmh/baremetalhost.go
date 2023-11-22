@@ -557,20 +557,21 @@ func (builder *BmhBuilder) WaitUntilInStatus(status bmhv1alpha1.ProvisioningStat
 		return err
 	}
 
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		var err error
-		builder.Object, err = builder.Get()
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			builder.Object, err = builder.Get()
 
-		if err != nil {
-			return false, nil
-		}
+			if err != nil {
+				return false, nil
+			}
 
-		if builder.Object.Status.Provisioning.State == status {
-			return true, nil
-		}
+			if builder.Object.Status.Provisioning.State == status {
+				return true, nil
+			}
 
-		return false, err
-	})
+			return false, err
+		})
 }
 
 // DeleteAndWaitUntilDeleted delete bmh object and waits until deleted.
@@ -599,28 +600,29 @@ func (builder *BmhBuilder) WaitUntilDeleted(timeout time.Duration) error {
 		return err
 	}
 
-	err := wait.Poll(time.Second, timeout, func() (bool, error) {
-		_, err := builder.Get()
-		if err == nil {
-			glog.V(100).Infof("bmh %s/%s still present",
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, false, func(ctx context.Context) (bool, error) {
+			_, err := builder.Get()
+			if err == nil {
+				glog.V(100).Infof("bmh %s/%s still present",
+					builder.Definition.Namespace,
+					builder.Definition.Name)
+
+				return false, nil
+			}
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("bmh %s/%s is gone",
+					builder.Definition.Namespace,
+					builder.Definition.Name)
+
+				return true, nil
+			}
+			glog.V(100).Infof("failed to get bmh %s/%s: %v",
 				builder.Definition.Namespace,
-				builder.Definition.Name)
+				builder.Definition.Name, err)
 
-			return false, nil
-		}
-		if k8serrors.IsNotFound(err) {
-			glog.V(100).Infof("bmh %s/%s is gone",
-				builder.Definition.Namespace,
-				builder.Definition.Name)
-
-			return true, nil
-		}
-		glog.V(100).Infof("failed to get bmh %s/%s: %v",
-			builder.Definition.Namespace,
-			builder.Definition.Name, err)
-
-		return false, err
-	})
+			return false, err
+		})
 
 	return err
 }

@@ -145,20 +145,21 @@ func (builder *OperatorBuilder) WaitUntilInCondition(
 	glog.V(100).Infof("Wait until network.operator object %s is in condition %v",
 		builder.Definition.Name, condition)
 
-	err := wait.PollImmediate(3*time.Second, timeout, func() (bool, error) {
-		if !builder.Exists() {
-			return false, fmt.Errorf("network.operator object doesn't exist")
-		}
-
-		for _, c := range builder.Object.Status.OperatorStatus.Conditions {
-			if c.Type == condition && c.Status == status {
-				return true, nil
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			if !builder.Exists() {
+				return false, fmt.Errorf("network.operator object doesn't exist")
 			}
-		}
 
-		return false, nil
+			for _, c := range builder.Object.Status.OperatorStatus.Conditions {
+				if c.Type == condition && c.Status == status {
+					return true, nil
+				}
+			}
 
-	})
+			return false, nil
+
+		})
 
 	return err
 }

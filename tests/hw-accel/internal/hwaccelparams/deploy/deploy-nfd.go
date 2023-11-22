@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -54,15 +55,16 @@ func deleteAndWait(builder builder, timeout time.Duration) error {
 		return err
 	}
 
-	return wait.PollImmediate(time.Second, timeout*5, func() (bool, error) {
-		isFound := builder.Exists()
-		if isFound {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout*5, true, func(ctx context.Context) (bool, error) {
+			isFound := builder.Exists()
+			if isFound {
 
-			return false, nil
-		}
+				return false, nil
+			}
 
-		return true, nil
-	})
+			return true, nil
+		})
 }
 
 // NfdAPIResource object that represents NodeFeatureDiscoery resource with API client.
@@ -207,20 +209,21 @@ func (n *NfdAPIResource) IsDeploymentReady(waitTime time.Duration,
 		return true, nil
 	}
 
-	timeOutError := wait.PollImmediate(time.Second, waitTime, func() (bool, error) {
-		deploymentBuilder, err = deploymentbuilder.Pull(n.APIClients, deployment, n.Namespace)
-		if deploymentBuilder == nil {
-			return false, nil
-		}
+	timeOutError := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, waitTime, true, func(ctx context.Context) (bool, error) {
+			deploymentBuilder, err = deploymentbuilder.Pull(n.APIClients, deployment, n.Namespace)
+			if deploymentBuilder == nil {
+				return false, nil
+			}
 
-		if !deploymentBuilder.IsReady(waitTime) {
-			err = fmt.Errorf("deployment %s isn't ready", deployment)
+			if !deploymentBuilder.IsReady(waitTime) {
+				err = fmt.Errorf("deployment %s isn't ready", deployment)
 
-			return false, err
-		}
+				return false, err
+			}
 
-		return true, nil
-	})
+			return true, nil
+		})
 
 	if timeOutError != nil {
 		return false, err

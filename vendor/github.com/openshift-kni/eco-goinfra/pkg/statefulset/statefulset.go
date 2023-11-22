@@ -218,22 +218,23 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 		return false
 	}
 
-	err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 
-		var err error
-		builder.Object, err = builder.apiClient.StatefulSets(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			var err error
+			builder.Object, err = builder.apiClient.StatefulSets(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
-		if err != nil {
-			return false, err
-		}
+			if err != nil {
+				return false, err
+			}
 
-		if builder.Object.Status.ReadyReplicas > 0 && builder.Object.Status.Replicas == builder.Object.Status.ReadyReplicas {
-			return true, nil
-		}
+			if builder.Object.Status.ReadyReplicas > 0 && builder.Object.Status.Replicas == builder.Object.Status.ReadyReplicas {
+				return true, nil
+			}
 
-		return false, nil
-	})
+			return false, nil
+		})
 
 	return err == nil
 }

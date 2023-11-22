@@ -1,6 +1,7 @@
 package check
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -113,42 +114,44 @@ func IntreeICEModuleLoaded(apiClient *clients.Settings, timeout time.Duration) e
 
 func runCommandOnTestPods(apiClient *clients.Settings,
 	command []string, message string, timeout time.Duration) error {
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		pods, err := pod.List(apiClient, tsparams.KmmOperatorNamespace, v1.ListOptions{
-			FieldSelector: "status.phase=Running",
-			LabelSelector: tsparams.KmmTestHelperLabelName,
-		})
-
-		if err != nil {
-			glog.V(kmmparams.KmmLogLevel).Infof("deployment list error: %s\n", err)
-
-			return false, err
-		}
-
-		// using a map so that both ModuleLoaded and Dmesg calls don't interfere with the counter
-		iter := 0
-		for _, iterPod := range pods {
-			glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\nCommand: %v\nExpect: %v\n\n",
-				iterPod.Object.Name, command, message)
-
-			buff, err := iterPod.ExecCommand(command, "test")
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pods, err := pod.List(apiClient, tsparams.KmmOperatorNamespace, v1.ListOptions{
+				FieldSelector: "status.phase=Running",
+				LabelSelector: tsparams.KmmTestHelperLabelName,
+			})
 
 			if err != nil {
+				glog.V(kmmparams.KmmLogLevel).Infof("deployment list error: %s\n", err)
+
 				return false, err
 			}
 
-			contents := buff.String()
-			glog.V(kmmparams.KmmLogLevel).Infof("%s contents: \n \t%v\n", command, contents)
-			if strings.Contains(contents, message) {
-				glog.V(kmmparams.KmmLogLevel).Infof("command '%s' contains '%s' in pod %s\n", command, message, iterPod.Object.Name)
-				iter++
+			// using a map so that both ModuleLoaded and Dmesg calls don't interfere with the counter
+			iter := 0
+			for _, iterPod := range pods {
+				glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\nCommand: %v\nExpect: %v\n\n",
+					iterPod.Object.Name, command, message)
 
-				if iter == len(pods) {
-					return true, nil
+				buff, err := iterPod.ExecCommand(command, "test")
+
+				if err != nil {
+					return false, err
+				}
+
+				contents := buff.String()
+				glog.V(kmmparams.KmmLogLevel).Infof("%s contents: \n \t%v\n", command, contents)
+				if strings.Contains(contents, message) {
+					glog.V(kmmparams.KmmLogLevel).Infof(
+						"command '%s' contains '%s' in pod %s\n", command, message, iterPod.Object.Name)
+					iter++
+
+					if iter == len(pods) {
+						return true, nil
+					}
 				}
 			}
-		}
 
-		return false, err
-	})
+			return false, err
+		})
 }

@@ -1,6 +1,7 @@
 package juniper
 
 import (
+	"context"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -82,16 +83,17 @@ func NewSession(host, user, password string) (*JunosSession, error) {
 
 	var session *netconf.Session
 
-	err := wait.PollImmediate(30*time.Second, 120*time.Second, func() (done bool, err error) {
-		session, err = netconf.DialSSH(host, netconf.SSHConfigPassword(user, password))
-		if err != nil {
-			glog.V(90).Infof("Failed to open SSH: %s", err)
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 30*time.Second, 120*time.Second, true, func(ctx context.Context) (done bool, err error) {
+			session, err = netconf.DialSSH(host, netconf.SSHConfigPassword(user, password))
+			if err != nil {
+				glog.V(90).Infof("Failed to open SSH: %s", err)
 
-			return false, nil
-		}
+				return false, nil
+			}
 
-		return true, nil
-	})
+			return true, nil
+		})
 
 	if err != nil {
 		return nil, err

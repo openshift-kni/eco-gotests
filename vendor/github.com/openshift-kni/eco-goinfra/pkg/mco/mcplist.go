@@ -91,57 +91,59 @@ func ListMCPWaitToBeStableFor(
 
 	// Wait 5 secs in each iteration before condition function () returns true or errors or times out
 	// after stableDuration
-	err := wait.PollImmediate(fiveScds, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
 
-		isMcpListStable = true
+			isMcpListStable = true
 
-		// check if cluster is stable every 5 seconds during entire stableDuration time period
-		// Here we need to run through the entire stableDuration till it times out.
-		_ = wait.PollImmediate(fiveScds, stableDuration, func() (done bool, err error) {
+			// check if cluster is stable every 5 seconds during entire stableDuration time period
+			// Here we need to run through the entire stableDuration till it times out.
+			_ = wait.PollUntilContextTimeout(
+				context.TODO(), fiveScds, stableDuration, true, func(ctx2 context.Context) (done bool, err error) {
 
-			mcpList, err := ListMCP(apiClient, options...)
+					mcpList, err := ListMCP(apiClient, options...)
 
-			if err != nil {
-				return false, err
+					if err != nil {
+						return false, err
+					}
+
+					// iterate through the MachineConfigPools in the list.
+					for _, mcp := range mcpList {
+						if mcp.Object.Status.ReadyMachineCount != mcp.Object.Status.MachineCount ||
+							mcp.Object.Status.MachineCount != mcp.Object.Status.UpdatedMachineCount ||
+							mcp.Object.Status.DegradedMachineCount != 0 {
+							isMcpListStable = false
+
+							glog.V(100).Infof("MachineConfigPool: %v degraded and has a mismatch in "+
+								"machineCount: %v "+"vs machineCountUpdated: "+"%v vs readyMachineCount: %v and "+
+								"degradedMachineCount is : %v \n", mcp.Object.ObjectMeta.Name,
+								mcp.Object.Status.MachineCount, mcp.Object.Status.UpdatedMachineCount,
+								mcp.Object.Status.ReadyMachineCount, mcp.Object.Status.DegradedMachineCount)
+
+							return true, err
+						}
+					}
+
+					// Here we are always returning "false, nil" so we keep iterating throughout the stableInterval
+					// of the inner wait.PollUntilContextTimeout loop, until we time out.
+					return false, nil
+				})
+
+			if isMcpListStable {
+				glog.V(100).Infof("MachineConfigPools were stable during during stableDuration: %v",
+					stableDuration)
+
+				// exit the outer wait.PollUntilContextTimeout block since the mcps were stable during stableDuration.
+				return true, nil
 			}
 
-			// iterate through the MachineConfigPools in the list.
-			for _, mcp := range mcpList {
-				if mcp.Object.Status.ReadyMachineCount != mcp.Object.Status.MachineCount ||
-					mcp.Object.Status.MachineCount != mcp.Object.Status.UpdatedMachineCount ||
-					mcp.Object.Status.DegradedMachineCount != 0 {
-					isMcpListStable = false
-
-					glog.V(100).Infof("MachineConfigPool: %v degraded and has a mismatch in "+
-						"machineCount: %v "+"vs machineCountUpdated: "+"%v vs readyMachineCount: %v and "+
-						"degradedMachineCount is : %v \n", mcp.Object.ObjectMeta.Name,
-						mcp.Object.Status.MachineCount, mcp.Object.Status.UpdatedMachineCount,
-						mcp.Object.Status.ReadyMachineCount, mcp.Object.Status.DegradedMachineCount)
-
-					return true, err
-				}
-			}
-
-			// Here we are always returning "false, nil" so we keep iterating throughout the stableInterval
-			// of the inner wait.pollImmediate loop, until we time out.
-			return false, nil
-		})
-
-		if isMcpListStable {
-			glog.V(100).Infof("MachineConfigPools were stable during during stableDuration: %v",
+			glog.V(100).Infof("MachineConfigPools were not stable during stableDuration: %v, retrying ...",
 				stableDuration)
 
-			// exit the outer wait.PollImmediate block since the mcps were stable during stableDuration.
-			return true, nil
-		}
+			// keep iterating in the outer wait.PollUntilContextTimeout waiting for cluster to be stable.
+			return false, nil
 
-		glog.V(100).Infof("MachineConfigPools were not stable during stableDuration: %v, retrying ...",
-			stableDuration)
-
-		// keep iterating in the outer wait.PollImmediate waiting for cluster to be stable.
-		return false, nil
-
-	})
+		})
 
 	if err == nil {
 		glog.V(100).Infof("Cluster was stable during stableDuration: %v", stableDuration)

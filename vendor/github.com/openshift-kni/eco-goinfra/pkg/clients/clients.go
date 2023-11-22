@@ -9,8 +9,6 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
-	argocdScheme "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	argocdClient "github.com/argoproj/argo-cd/v2/pkg/client/clientset/versioned/typed/application/v1alpha1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 
@@ -43,7 +41,6 @@ import (
 	metalLbOperatorV1Beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 
 	clientMachineConfigV1 "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1"
-	metalLbV1Beta1 "go.universe.tf/metallb/api/v1beta1"
 
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
 	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
@@ -84,7 +81,6 @@ type Settings struct {
 	olm.OperatorsV1alpha1Interface
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
-	argocdClient.ArgoprojV1alpha1Interface
 	olmv1.OperatorsV1Interface
 	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
 	operatorv1alpha1.OperatorV1alpha1Interface
@@ -131,7 +127,6 @@ func New(kubeconfig string) *Settings {
 	clientSet.OperatorsV1Interface = olmv1.NewForConfigOrDie(config)
 	clientSet.PackageManifestInterface = clientPkgManifestV1.NewForConfigOrDie(config)
 	clientSet.SecurityV1Interface = v1security.NewForConfigOrDie(config)
-	clientSet.ArgoprojV1alpha1Interface = argocdClient.NewForConfigOrDie(config)
 	clientSet.OperatorV1alpha1Interface = operatorv1alpha1.NewForConfigOrDie(config)
 	clientSet.MachineV1beta1Interface = machinev1beta1client.NewForConfigOrDie(config)
 	clientSet.Config = config
@@ -185,10 +180,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := metalLbOperatorV1Beta1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := metalLbV1Beta1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -253,10 +244,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := argocdOperatorv1alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := argocdScheme.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

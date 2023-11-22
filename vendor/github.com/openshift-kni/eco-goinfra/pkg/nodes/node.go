@@ -250,20 +250,21 @@ func (builder *Builder) WaitUntilConditionTrue(
 		return err
 	}
 
-	err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		if !builder.Exists() {
-			return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
-		}
-
-		for _, condition := range builder.Object.Status.Conditions {
-			if condition.Type == conditionType {
-				return condition.Status == isTrue, nil
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			if !builder.Exists() {
+				return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
 			}
-		}
 
-		return false, fmt.Errorf("the %s condition could not be found for node %s",
-			builder.Definition.Name, conditionType)
-	})
+			for _, condition := range builder.Object.Status.Conditions {
+				if condition.Type == conditionType {
+					return condition.Status == isTrue, nil
+				}
+			}
+
+			return false, fmt.Errorf("the %s condition could not be found for node %s",
+				builder.Definition.Name, conditionType)
+		})
 
 	if err == nil {
 		return nil
@@ -280,20 +281,21 @@ func (builder *Builder) WaitUntilConditionUnknown(
 		return err
 	}
 
-	err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		if !builder.Exists() {
-			return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
-		}
-
-		for _, condition := range builder.Object.Status.Conditions {
-			if condition.Type == conditionType {
-				return condition.Status != "Unknown", nil
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			if !builder.Exists() {
+				return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
 			}
-		}
 
-		return false, fmt.Errorf("the %s condition could not be found for node %s",
-			builder.Definition.Name, conditionType)
-	})
+			for _, condition := range builder.Object.Status.Conditions {
+				if condition.Type == conditionType {
+					return condition.Status != "Unknown", nil
+				}
+			}
+
+			return false, fmt.Errorf("the %s condition could not be found for node %s",
+				builder.Definition.Name, conditionType)
+		})
 
 	if err == nil {
 		return nil

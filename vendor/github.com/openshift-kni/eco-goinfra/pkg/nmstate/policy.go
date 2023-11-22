@@ -173,19 +173,13 @@ func (builder *PolicyBuilder) Update(force bool) (*PolicyBuilder, error) {
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				"Failed to update the NodeNetworkConfigurationPolicy object %s. "+
-					"Note: Force flag set, executed delete/create methods instead",
-				builder.Definition.Name,
-			)
+				msg.FailToUpdateNotification("NodeNetworkConfigurationPolicy", builder.Definition.Name))
 
 			builder, err := builder.Delete()
 
 			if err != nil {
 				glog.V(100).Infof(
-					"Failed to update the NodeNetworkConfigurationPolicy object %s, "+
-						"due to error in delete function",
-					builder.Definition.Name,
-				)
+					msg.FailToUpdateError("NodeNetworkConfigurationPolicy", builder.Definition.Name))
 
 				return nil, err
 			}
@@ -311,21 +305,22 @@ func (builder *PolicyBuilder) WaitUntilCondition(condition nmstateShared.Conditi
 	// Polls every retryInterval to determine if NodeNetworkConfigurationPolicy is in desired condition.
 	var err error
 
-	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		builder.Object, err = builder.Get()
+	return wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
 
-		if err != nil {
-			return false, nil
-		}
-
-		for _, cond := range builder.Object.Status.Conditions {
-			if cond.Type == condition && cond.Status == coreV1.ConditionTrue {
-				return true, nil
+			if err != nil {
+				return false, nil
 			}
-		}
 
-		return false, nil
-	})
+			for _, cond := range builder.Object.Status.Conditions {
+				if cond.Type == condition && cond.Status == coreV1.ConditionTrue {
+					return true, nil
+				}
+			}
+
+			return false, nil
+		})
 }
 
 // validate will check that the builder and builder definition are properly initialized before

@@ -7,7 +7,7 @@ The [eco-gotests](https://github.com/openshift-kni/eco-gotests) is the downstrea
 The project is based on golang+[ginkgo](https://onsi.github.io/ginkgo) framework.
 
 ### Project requirements
-* golang v1.19.x
+* golang v1.20.x
 * ginkgo v2.x
 
 ## eco-gotests

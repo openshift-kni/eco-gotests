@@ -9,10 +9,8 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-
-	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-
 	"github.com/onsi/ginkgo/v2/types"
+	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/k8sreporter"
 	"k8s.io/apimachinery/pkg/runtime"
 )

@@ -57,6 +57,13 @@ const (
 	SupportedNicIDConfigmap = "supported-nic-ids"
 )
 
+type ConfigurationModeType string
+
+const (
+	DaemonConfigurationMode  ConfigurationModeType = "daemon"
+	SystemdConfigurationMode ConfigurationModeType = "systemd"
+)
+
 func (e NetFilterType) String() string {
 	switch e {
 	case OpenstackNetworkID:
@@ -66,7 +73,7 @@ func (e NetFilterType) String() string {
 	}
 }
 
-func InitNicIDMap(client kubernetes.Interface, namespace string) error {
+func InitNicIDMapFromConfigMap(client kubernetes.Interface, namespace string) error {
 	cm, err := client.CoreV1().ConfigMaps(namespace).Get(
 		context.Background(),
 		SupportedNicIDConfigmap,
@@ -79,7 +86,12 @@ func InitNicIDMap(client kubernetes.Interface, namespace string) error {
 	for _, v := range cm.Data {
 		NicIDMap = append(NicIDMap, v)
 	}
+
 	return nil
+}
+
+func InitNicIDMapFromList(idList []string) {
+	NicIDMap = append(NicIDMap, idList...)
 }
 
 func IsSupportedVendor(vendorID string) bool {
@@ -224,7 +236,6 @@ func (p *SriovNetworkNodePolicy) Selected(node *corev1.Node) bool {
 		}
 		return false
 	}
-	log.Info("Selected():", "node", node.Name)
 	return true
 }
 
@@ -271,13 +282,12 @@ func (p *SriovNetworkNodePolicy) Apply(state *SriovNetworkNodeState, equalPriori
 		if s.Selected(&iface) {
 			log.Info("Update interface", "name:", iface.Name)
 			result := Interface{
-				PciAddress:        iface.PciAddress,
-				Mtu:               p.Spec.Mtu,
-				Name:              iface.Name,
-				LinkType:          p.Spec.LinkType,
-				EswitchMode:       p.Spec.EswitchMode,
-				NumVfs:            p.Spec.NumVfs,
-				ExternallyCreated: p.Spec.ExternallyCreated,
+				PciAddress:  iface.PciAddress,
+				Mtu:         p.Spec.Mtu,
+				Name:        iface.Name,
+				LinkType:    p.Spec.LinkType,
+				EswitchMode: p.Spec.EswitchMode,
+				NumVfs:      p.Spec.NumVfs,
 			}
 			if p.Spec.NumVfs > 0 {
 				group, err := p.generateVfGroup(&iface)

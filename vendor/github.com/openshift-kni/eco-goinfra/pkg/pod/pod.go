@@ -12,8 +12,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/golang/glog"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
-
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,9 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/utils/pointer"
-
-	"github.com/golang/glog"
+	"k8s.io/utils/ptr"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
@@ -269,15 +267,16 @@ func (builder *Builder) WaitUntilInStatus(status v1.PodPhase, timeout time.Durat
 	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s has status %v",
 		builder.Definition.Name, builder.Definition.Namespace, status)
 
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-			context.Background(), builder.Object.Name, metaV1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
+				context.Background(), builder.Object.Name, metaV1.GetOptions{})
+			if err != nil {
+				return false, nil
+			}
 
-		return updatePod.Status.Phase == status, nil
-	})
+			return updatePod.Status.Phase == status, nil
+		})
 }
 
 // WaitUntilDeleted waits for the duration of the defined timeout or until the pod is deleted.
@@ -289,23 +288,24 @@ func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s is deleted",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	err := wait.Poll(time.Second, timeout, func() (bool, error) {
-		_, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
-		if err == nil {
-			glog.V(100).Infof("pod %s/%s still present", builder.Definition.Namespace, builder.Definition.Name)
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, false, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			if err == nil {
+				glog.V(100).Infof("pod %s/%s still present", builder.Definition.Namespace, builder.Definition.Name)
 
-			return false, nil
-		}
-		if k8serrors.IsNotFound(err) {
-			glog.V(100).Infof("pod %s/%s is gone", builder.Definition.Namespace, builder.Definition.Name)
+				return false, nil
+			}
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("pod %s/%s is gone", builder.Definition.Namespace, builder.Definition.Name)
 
-			return true, nil
-		}
-		glog.V(100).Infof("failed to get pod %s/%s: %v", builder.Definition.Namespace, builder.Definition.Name, err)
+				return true, nil
+			}
+			glog.V(100).Infof("failed to get pod %s/%s: %v", builder.Definition.Namespace, builder.Definition.Name, err)
 
-		return false, err
-	})
+			return false, err
+		})
 
 	return err
 }
@@ -331,22 +331,23 @@ func (builder *Builder) WaitUntilCondition(condition v1.PodConditionType, timeou
 	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s has condition %v",
 		builder.Definition.Name, builder.Definition.Namespace, condition)
 
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-			context.Background(), builder.Object.Name, metaV1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
-
-		for _, cond := range updatePod.Status.Conditions {
-			if cond.Type == condition && cond.Status == v1.ConditionTrue {
-				return true, nil
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
+				context.Background(), builder.Object.Name, metaV1.GetOptions{})
+			if err != nil {
+				return false, nil
 			}
-		}
 
-		return false, nil
+			for _, cond := range updatePod.Status.Conditions {
+				if cond.Type == condition && cond.Status == v1.ConditionTrue {
+					return true, nil
+				}
+			}
 
-	})
+			return false, nil
+
+		})
 }
 
 // ExecCommand runs command in the pod and returns the buffer output.
@@ -1039,7 +1040,7 @@ func getDefinition(name, nsName string) *v1.Pod {
 			Name:      name,
 			Namespace: nsName},
 		Spec: v1.PodSpec{
-			TerminationGracePeriodSeconds: pointer.Int64(0),
+			TerminationGracePeriodSeconds: ptr.To(int64(0)),
 		},
 	}
 }

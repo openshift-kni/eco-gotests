@@ -263,23 +263,24 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 	}
 
 	// Polls every retryInterval to determine if daemonset is available.
-	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
-		if err != nil {
-			return false, nil
-		}
-
-		for _, condition := range builder.Object.Status.Conditions {
-			if condition.Type == "Available" {
-				return condition.Status == "True", nil
+			if err != nil {
+				return false, nil
 			}
-		}
 
-		return false, err
+			for _, condition := range builder.Object.Status.Conditions {
+				if condition.Type == "Available" {
+					return condition.Status == "True", nil
+				}
+			}
 
-	})
+			return false, err
+
+		})
 
 	if err == nil {
 		return builder, nil
@@ -302,16 +303,17 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	}
 
 	// Polls the daemonset every retryInterval until it's removed.
-	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
-		if k8serrors.IsNotFound(err) {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			if k8serrors.IsNotFound(err) {
 
-			return true, nil
-		}
+				return true, nil
+			}
 
-		return false, nil
-	})
+			return false, nil
+		})
 }
 
 // Exists checks whether the given daemonset exists.
@@ -340,30 +342,31 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 		"timeout %s exceeded", builder.Definition.Name, builder.Definition.Namespace, timeout.String())
 
 	// Polls every retryInterval to determine if daemonset is available.
-	err := wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		if !builder.Exists() {
-			return false, fmt.Errorf("daemonset %s is not present on cluster", builder.Object.Name)
-		}
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			if !builder.Exists() {
+				return false, fmt.Errorf("daemonset %s is not present on cluster", builder.Object.Name)
+			}
 
-		var err error
-		builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			var err error
+			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
-		if err != nil {
-			return false, nil
-		}
+			if err != nil {
+				return false, nil
+			}
 
-		if builder.Object.Status.NumberReady == builder.Object.Status.DesiredNumberScheduled {
-			return true, nil
-		}
+			if builder.Object.Status.NumberReady == builder.Object.Status.DesiredNumberScheduled {
+				return true, nil
+			}
 
-		if builder.Object.Status.NumberReady == builder.Object.Status.UpdatedNumberScheduled {
-			return true, nil
-		}
+			if builder.Object.Status.NumberReady == builder.Object.Status.UpdatedNumberScheduled {
+				return true, nil
+			}
 
-		return false, err
+			return false, err
 
-	})
+		})
 
 	return err == nil
 }

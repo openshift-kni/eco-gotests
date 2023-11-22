@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/operator-framework/operator-registry/internal/model"
-	"github.com/operator-framework/operator-registry/internal/property"
+	"github.com/operator-framework/api/pkg/operators/v1alpha1"
+
+	"github.com/operator-framework/operator-registry/alpha/model"
+	"github.com/operator-framework/operator-registry/alpha/property"
 )
 
 func ConvertAPIBundleToModelBundle(b *Bundle) (*model.Bundle, error) {
@@ -25,6 +27,7 @@ func ConvertAPIBundleToModelBundle(b *Bundle) (*model.Bundle, error) {
 		Image:         b.BundlePath,
 		Replaces:      b.Replaces,
 		Skips:         b.Skips,
+		SkipRange:     b.SkipRange,
 		CsvJSON:       b.CsvJson,
 		Objects:       b.Object,
 		Properties:    bundleProps,
@@ -34,16 +37,6 @@ func ConvertAPIBundleToModelBundle(b *Bundle) (*model.Bundle, error) {
 
 func convertAPIBundleToModelProperties(b *Bundle) ([]property.Property, error) {
 	var out []property.Property
-
-	for _, skip := range b.Skips {
-		out = append(out, property.MustBuildSkips(skip))
-	}
-
-	if b.SkipRange != "" {
-		out = append(out, property.MustBuildSkipRange(b.SkipRange))
-	}
-
-	out = append(out, property.MustBuildChannel(b.ChannelName, b.Replaces))
 
 	providedGVKs := map[property.GVK]struct{}{}
 	requiredGVKs := map[property.GVKRequired]struct{}{}
@@ -115,8 +108,17 @@ func convertAPIBundleToModelProperties(b *Bundle) ([]property.Property, error) {
 		out = append(out, property.MustBuildGVKRequired(p.Group, p.Version, p.Kind))
 	}
 
-	for _, obj := range b.Object {
-		out = append(out, property.MustBuildBundleObjectData([]byte(obj)))
+	// If there is a bundle image reference and a valid CSV, create an
+	// olm.csv.metadata property. Otherwise, create a bundle object property for
+	// each object in the bundle.
+	var csv v1alpha1.ClusterServiceVersion
+	csvErr := json.Unmarshal([]byte(b.CsvJson), &csv)
+	if csvErr == nil && b.BundlePath != "" {
+		out = append(out, property.MustBuildCSVMetadata(csv))
+	} else {
+		for _, obj := range b.Object {
+			out = append(out, property.MustBuildBundleObject([]byte(obj)))
+		}
 	}
 
 	sort.Slice(out, func(i, j int) bool {

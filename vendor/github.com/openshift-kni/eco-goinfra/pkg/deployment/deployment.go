@@ -458,22 +458,23 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 		return false
 	}
 
-	err := wait.PollImmediate(time.Second, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 
-		var err error
-		builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			var err error
+			builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 
-		if err != nil {
-			return false, err
-		}
+			if err != nil {
+				return false, err
+			}
 
-		if builder.Object.Status.ReadyReplicas > 0 && builder.Object.Status.Replicas == builder.Object.Status.ReadyReplicas {
-			return true, nil
-		}
+			if builder.Object.Status.ReadyReplicas > 0 && builder.Object.Status.Replicas == builder.Object.Status.ReadyReplicas {
+				return true, nil
+			}
 
-		return false, nil
-	})
+			return false, nil
+		})
 
 	return err == nil
 }
@@ -492,16 +493,17 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	}
 
 	// Polls the deployment every second until it's removed.
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		_, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
-		if k8serrors.IsNotFound(err) {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			if k8serrors.IsNotFound(err) {
 
-			return true, nil
-		}
+				return true, nil
+			}
 
-		return false, nil
-	})
+			return false, nil
+		})
 }
 
 // Exists checks whether the given deployment exists.
@@ -534,22 +536,23 @@ func (builder *Builder) WaitUntilCondition(condition v1.DeploymentConditionType,
 		return fmt.Errorf("cannot wait for deployment condition because it does not exist")
 	}
 
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		updateDeployment, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
-			context.Background(), builder.Definition.Name, metaV1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
-
-		for _, cond := range updateDeployment.Status.Conditions {
-			if cond.Type == condition && cond.Status == coreV1.ConditionTrue {
-				return true, nil
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			updateDeployment, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			if err != nil {
+				return false, nil
 			}
-		}
 
-		return false, nil
+			for _, cond := range updateDeployment.Status.Conditions {
+				if cond.Type == condition && cond.Status == coreV1.ConditionTrue {
+					return true, nil
+				}
+			}
 
-	})
+			return false, nil
+
+		})
 }
 
 // GetGVR returns deployment's GroupVersionResource which could be used for Clean function.

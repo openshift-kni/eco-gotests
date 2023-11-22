@@ -186,15 +186,13 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 
 	if err != nil {
 		if force {
-			glog.V(100).Infof("Failed to update the clusterpolicy object %s. "+
-				"Note: Force flag set, executed delete/create methods instead", builder.Definition.Name)
+			glog.V(100).Infof(msg.FailToUpdateNotification("clusterpolicy", builder.Definition.Name))
 
 			builder, err := builder.Delete()
 
 			if err != nil {
 				glog.V(100).Infof(
-					"Failed to update the clusterpolicy object %s."+
-						"due to error in delete function", builder.Definition.Name)
+					msg.FailToUpdateError("clusterpolicy", builder.Definition.Name))
 
 				return nil, err
 			}

@@ -208,19 +208,13 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				"Failed to update the metallb object %s in namespace %s. "+
-					"Note: Force flag set, executed delete/create methods instead",
-				builder.Definition.Name, builder.Definition.Namespace,
-			)
+				msg.FailToUpdateNotification("metallb", builder.Definition.Name, builder.Definition.Namespace))
 
 			builder, err := builder.Delete()
 
 			if err != nil {
 				glog.V(100).Infof(
-					"Failed to update the metallb object %s in namespace %s, "+
-						"due to error in delete function",
-					builder.Definition.Name, builder.Definition.Namespace,
-				)
+					msg.FailToUpdateError("metallb", builder.Definition.Name, builder.Definition.Namespace))
 
 				return nil, err
 			}

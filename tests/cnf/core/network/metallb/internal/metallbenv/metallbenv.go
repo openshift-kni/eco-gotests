@@ -1,6 +1,7 @@
 package metallbenv
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strings"
@@ -90,17 +91,18 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, node
 
 	var metalLbDs *daemonset.Builder
 
-	err = wait.PollImmediate(3*time.Second, timeout, func() (bool, error) {
-		metalLbDs, err = daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
-		if err != nil {
-			glog.V(90).Infof("Error to pull daemonset %s namespace %s, retry",
-				tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			metalLbDs, err = daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
+			if err != nil {
+				glog.V(90).Infof("Error to pull daemonset %s namespace %s, retry",
+					tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
 
-			return false, nil
-		}
+				return false, nil
+			}
 
-		return true, nil
-	})
+			return true, nil
+		})
 
 	if err != nil {
 		return err

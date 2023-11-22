@@ -16,10 +16,10 @@ jobs:
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add ~/eco-gotests.id_rsa 
       
-      - name: Set up Go 1.19
+      - name: Set up Go 1.20
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.1
+          go-version: 1.20.11
 
       - name: Check for eco-goinfra module updates
         id: new_mods

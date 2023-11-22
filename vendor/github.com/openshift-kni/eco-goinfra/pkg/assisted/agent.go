@@ -189,15 +189,16 @@ func (builder *agentBuilder) WaitForState(state string, timeout time.Duration) (
 
 	// Polls every retryInterval to determine if agent is in desired state.
 	var err error
-	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		builder.Object, err = builder.Get()
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
 
-		if err != nil {
-			return false, nil
-		}
+			if err != nil {
+				return false, nil
+			}
 
-		return builder.Object.Status.DebugInfo.State == state, nil
-	})
+			return builder.Object.Status.DebugInfo.State == state, nil
+		})
 
 	if err == nil {
 		return builder, nil
@@ -217,15 +218,16 @@ func (builder *agentBuilder) WaitForStateInfo(stateInfo string, timeout time.Dur
 
 	// Polls every retryInterval to determine if agent is in desired state.
 	var err error
-	err = wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		builder.Object, err = builder.Get()
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
 
-		if err != nil {
-			return false, nil
-		}
+			if err != nil {
+				return false, nil
+			}
 
-		return builder.Object.Status.DebugInfo.StateInfo == stateInfo, nil
-	})
+			return builder.Object.Status.DebugInfo.StateInfo == stateInfo, nil
+		})
 
 	if err == nil {
 		return builder, nil

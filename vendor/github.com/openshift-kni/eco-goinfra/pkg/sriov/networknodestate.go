@@ -137,15 +137,16 @@ func (builder *NetworkNodeStateBuilder) WaitUntilSyncStatus(syncStatus string, t
 	}
 
 	// Polls every retryInterval to determine if SriovNetworkNodeState is in desired syncStatus.
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		err := builder.Discover()
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			err := builder.Discover()
 
-		if err != nil {
-			return false, nil
-		}
+			if err != nil {
+				return false, nil
+			}
 
-		return builder.Objects.Status.SyncStatus == syncStatus, nil
-	})
+			return builder.Objects.Status.SyncStatus == syncStatus, nil
+		})
 }
 
 // GetNumVFs returns num-vfs under the given interface.

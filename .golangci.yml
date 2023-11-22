@@ -27,7 +27,7 @@ linters-settings:
     statements: 40
   unused:
     check-exported: true
-    go: "1.19"
+    go: "1.20"
   stylecheck:
     dot-import-whitelist:
       - github.com/onsi/gomega
@@ -42,7 +42,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools
       - github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools
     # Select the Go version to target. The default is '1.13'.
-    go: "1.19"
+    go: "1.20"
     # https://staticcheck.io/docs/options#checks
     checks:
       - all
@@ -145,6 +145,10 @@ issues:
       linters:
         - exhaustive
 
+    - path: "tests/internal/inittools"
+      linters:
+        - depguard
+        -
     - path: 'tests/internal/polarion'
       linters:
         - depguard

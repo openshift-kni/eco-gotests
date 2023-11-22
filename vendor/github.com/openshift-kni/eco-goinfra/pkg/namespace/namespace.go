@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -182,15 +182,16 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 		return err
 	}
 
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		_, err := builder.apiClient.Namespaces().Get(context.Background(), builder.Definition.Name, metaV1.GetOptions{})
-		if k8serrors.IsNotFound(err) {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.Namespaces().Get(context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			if k8serrors.IsNotFound(err) {
 
-			return true, nil
-		}
+				return true, nil
+			}
 
-		return false, nil
-	})
+			return false, nil
+		})
 }
 
 // Exists checks whether the given namespace exists.
@@ -258,7 +259,7 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 
 		err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).DeleteCollection(
 			context.Background(), metaV1.DeleteOptions{
-				GracePeriodSeconds: pointer.Int64(0),
+				GracePeriodSeconds: ptr.To(int64(0)),
 			}, metaV1.ListOptions{})
 
 		if err != nil {
@@ -268,22 +269,23 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 			return err
 		}
 
-		err = wait.PollImmediate(3*time.Second, cleanTimeout, func() (bool, error) {
-			objList, err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).List(
-				context.Background(), metaV1.ListOptions{})
+		err = wait.PollUntilContextTimeout(
+			context.TODO(), 3*time.Second, cleanTimeout, true, func(ctx context.Context) (bool, error) {
+				objList, err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).List(
+					context.Background(), metaV1.ListOptions{})
 
-			if err != nil || len(objList.Items) > 1 {
-				// avoid timeout due to default automatically created openshift
-				// configmaps: kube-root-ca.crt openshift-service-ca.crt
-				if resource.Resource == "configmaps" {
-					return builder.hasOnlyDefaultConfigMaps(objList, err)
+				if err != nil || len(objList.Items) > 1 {
+					// avoid timeout due to default automatically created openshift
+					// configmaps: kube-root-ca.crt openshift-service-ca.crt
+					if resource.Resource == "configmaps" {
+						return builder.hasOnlyDefaultConfigMaps(objList, err)
+					}
+
+					return false, err
 				}
 
-				return false, err
-			}
-
-			return true, err
-		})
+				return true, err
+			})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to remove resources: %s in namespace: %s",

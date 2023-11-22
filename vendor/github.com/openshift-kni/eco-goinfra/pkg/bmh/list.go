@@ -88,21 +88,22 @@ func WaitForAllBareMetalHostsInGoodOperationalState(apiClient *clients.Settings,
 
 	// Wait 5 secs in each iteration before condition function () returns true or errors or times out
 	// after availableDuration
-	err = wait.PollImmediate(fiveScds, timeout, func() (bool, error) {
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
 
-		for _, baremetalhost := range bmhList {
-			status := baremetalhost.GetBmhOperationalState()
+			for _, baremetalhost := range bmhList {
+				status := baremetalhost.GetBmhOperationalState()
 
-			if status != bmhv1alpha1.OperationalStatusOK {
-				glog.V(100).Infof("The %s bareMetalHost in namespace %s has an unexpected operational status: %s",
-					baremetalhost.Object.Name, baremetalhost.Object.Namespace, status)
+				if status != bmhv1alpha1.OperationalStatusOK {
+					glog.V(100).Infof("The %s bareMetalHost in namespace %s has an unexpected operational status: %s",
+						baremetalhost.Object.Name, baremetalhost.Object.Namespace, status)
 
-				return false, nil
+					return false, nil
+				}
 			}
-		}
 
-		return true, nil
-	})
+			return true, nil
+		})
 
 	if err == nil {
 		glog.V(100).Infof("All baremetalhosts were found in the good Operational State "+

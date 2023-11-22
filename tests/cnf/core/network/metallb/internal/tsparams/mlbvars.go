@@ -4,9 +4,11 @@ import (
 	"time"
 
 	metalLbOperatorV1Beta1 "github.com/metallb/metallb-operator/api/v1beta1"
+	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/k8sreporter"
-	metalLbV1Beta1 "go.universe.tf/metallb/api/v1beta1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var (
@@ -22,12 +24,11 @@ var (
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
-		{Cr: &metalLbV1Beta1.IPAddressPoolList{}},
-		{Cr: &metalLbV1Beta1.BGPAdvertisementList{}},
-		{Cr: &metalLbV1Beta1.L2AdvertisementList{}},
-		{Cr: &metalLbV1Beta1.AddressPoolList{}},
-		{Cr: &metalLbV1Beta1.BFDProfileList{}},
-		{Cr: &metalLbV1Beta1.BGPPeerList{}},
+		{Cr: setUnstructured(metallb.IPAddressPoolList)},
+		{Cr: setUnstructured(metallb.BGPAdvertisementListKind)},
+		{Cr: setUnstructured(metallb.IPAddressPoolList)},
+		{Cr: setUnstructured(metallb.BFDProfileList)},
+		{Cr: setUnstructured(metallb.BGPPeerListKind)},
 		{Cr: &metalLbOperatorV1Beta1.MetalLBList{}},
 	}
 	// TestNamespaceName metalLb namespace where all test cases are performed.
@@ -67,3 +68,17 @@ var (
 	// IBPGPProtocol represents internal bgp protocol name.
 	IBPGPProtocol = "iBGP"
 )
+
+func setUnstructured(kind string) *unstructured.UnstructuredList {
+	resource := &unstructured.UnstructuredList{}
+
+	gvk := schema.GroupVersionKind{
+		Group:   metallb.APIGroup,
+		Version: metallb.APIVersion,
+		Kind:    kind,
+	}
+
+	resource.SetGroupVersionKind(gvk)
+
+	return resource
+}

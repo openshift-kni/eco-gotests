@@ -182,22 +182,23 @@ func (builder *MCPBuilder) WaitToBeInCondition(
 	glog.V(100).Infof("WaitToBeInCondition waits up to specified time duration %v until "+
 		"MachineConfigPool condition %v is met", timeout, conditionType)
 
-	return wait.PollImmediate(fiveScds, timeout, func() (bool, error) {
-		mcp, err := builder.apiClient.MachineConfigPools().Get(context.Background(),
-			builder.Object.Name, metav1.GetOptions{})
+	return wait.PollUntilContextTimeout(
+		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
+			mcp, err := builder.apiClient.MachineConfigPools().Get(context.Background(),
+				builder.Object.Name, metav1.GetOptions{})
 
-		if err != nil {
-			return false, nil
-		}
-
-		for _, condition := range mcp.Status.Conditions {
-			if condition.Type == conditionType && condition.Status == conditionStatus {
-				return true, nil
+			if err != nil {
+				return false, nil
 			}
-		}
 
-		return false, nil
-	})
+			for _, condition := range mcp.Status.Conditions {
+				if condition.Type == conditionType && condition.Status == conditionStatus {
+					return true, nil
+				}
+			}
+
+			return false, nil
+		})
 }
 
 // WaitForUpdate waits for a MachineConfigPool to be updating and then updated.
@@ -218,22 +219,23 @@ func (builder *MCPBuilder) WaitForUpdate(timeout time.Duration) error {
 
 	for _, condition := range mcpUpdating.Status.Conditions {
 		if condition.Type == "Updating" && condition.Status == isTrue {
-			err := wait.PollImmediate(fiveScds, timeout, func() (bool, error) {
-				mcpUpdated, err := builder.apiClient.MachineConfigPools().Get(context.Background(),
-					builder.Object.Name, metav1.GetOptions{})
+			err := wait.PollUntilContextTimeout(
+				context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
+					mcpUpdated, err := builder.apiClient.MachineConfigPools().Get(context.Background(),
+						builder.Object.Name, metav1.GetOptions{})
 
-				if err != nil {
-					return false, nil
-				}
-
-				for _, condition := range mcpUpdated.Status.Conditions {
-					if condition.Type == "Updated" && condition.Status == isTrue {
-						return true, nil
+					if err != nil {
+						return false, nil
 					}
-				}
 
-				return false, nil
-			})
+					for _, condition := range mcpUpdated.Status.Conditions {
+						if condition.Type == "Updated" && condition.Status == isTrue {
+							return true, nil
+						}
+					}
+
+					return false, nil
+				})
 
 			if err != nil {
 				return err
@@ -257,50 +259,52 @@ func (builder *MCPBuilder) WaitToBeStableFor(stableDuration time.Duration, timeo
 
 	// Wait 5 secs in each iteration before condition function () returns true or errors
 	// or times out after stableDuration
-	err := wait.PollImmediate(fiveScds, timeout, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
 
-		isMcpStable = true
+			isMcpStable = true
 
-		_ = wait.PollImmediate(fiveScds, stableDuration, func() (done bool, err error) {
+			_ = wait.PollUntilContextTimeout(
+				context.TODO(), fiveScds, stableDuration, true, func(ctx2 context.Context) (done bool, err error) {
 
-			if !builder.Exists() {
-				return false, nil
-			}
+					if !builder.Exists() {
+						return false, nil
+					}
 
-			if builder.Object.Status.ReadyMachineCount != builder.Object.Status.MachineCount ||
-				builder.Object.Status.MachineCount != builder.Object.Status.UpdatedMachineCount ||
-				builder.Object.Status.DegradedMachineCount != 0 {
+					if builder.Object.Status.ReadyMachineCount != builder.Object.Status.MachineCount ||
+						builder.Object.Status.MachineCount != builder.Object.Status.UpdatedMachineCount ||
+						builder.Object.Status.DegradedMachineCount != 0 {
 
-				glog.V(100).Infof("MachineConfigPool: %v degraded and has a mismatch in "+
-					"machineCount: %v "+"vs machineCountUpdated: "+"%v vs readyMachineCount: %v and "+
-					"degradedMachineCount is : %v \n", builder.Object.ObjectMeta.Name,
-					builder.Object.Status.MachineCount, builder.Object.Status.UpdatedMachineCount,
-					builder.Object.Status.ReadyMachineCount, builder.Object.Status.DegradedMachineCount)
+						glog.V(100).Infof("MachineConfigPool: %v degraded and has a mismatch in "+
+							"machineCount: %v "+"vs machineCountUpdated: "+"%v vs readyMachineCount: %v and "+
+							"degradedMachineCount is : %v \n", builder.Object.ObjectMeta.Name,
+							builder.Object.Status.MachineCount, builder.Object.Status.UpdatedMachineCount,
+							builder.Object.Status.ReadyMachineCount, builder.Object.Status.DegradedMachineCount)
 
-				isMcpStable = false
+						isMcpStable = false
 
+						return true, nil
+					}
+
+					return false, nil
+				})
+
+			if isMcpStable {
+				glog.V(100).Infof("MachineConfigPool was stable during during stableDuration: %v",
+					stableDuration)
+
+				// this will exit the outer wait.PollUntilContextTimeout block since the mcp was stable during stableDuration
 				return true, nil
 			}
 
+			glog.V(100).Infof("MachineConfigPool was not stable during stableDuration: %v, retrying ...",
+				stableDuration)
+
+			// keep iterating in the outer wait.PollUntilContextTimeout waiting for cluster to be stable
 			return false, nil
 		})
 
-		if isMcpStable {
-			glog.V(100).Infof("MachineConfigPool was stable during during stableDuration: %v",
-				stableDuration)
-
-			// this will exit the outer wait.PollImmediate block since the mcp was stable during stableDuration
-			return true, nil
-		}
-
-		glog.V(100).Infof("MachineConfigPool was not stable during stableDuration: %v, retrying ...",
-			stableDuration)
-
-		// keep iterating in the outer wait.PollImmediate waiting for cluster to be stable
-		return false, nil
-	})
-
-	// After the timout in outer wait.PollImmediate.
+	// After the timout in outer wait.PollUntilContextTimeout.
 	if err == nil {
 		glog.V(100).Infof("Cluster was stable during stableDuration: %v", stableDuration)
 	} else {

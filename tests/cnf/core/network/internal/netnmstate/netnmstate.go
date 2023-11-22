@@ -1,6 +1,7 @@
 package netnmstate
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -212,36 +213,37 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 
 	glog.V(90).Infof("Pulling all NMState default daemonsets and deployments.")
 
-	err = wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
-		nmstateHandlerDs, err = daemonset.Pull(
-			APIClient, netparam.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
-		if err != nil {
-			glog.V(90).Infof("Error to pull daemonset %s from namespace %s, retry",
-				netparam.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			nmstateHandlerDs, err = daemonset.Pull(
+				APIClient, netparam.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
+			if err != nil {
+				glog.V(90).Infof("Error to pull daemonset %s from namespace %s, retry",
+					netparam.NMStateHandlerDsName, NetConfig.NMStateOperatorNamespace)
 
-			return false, nil
-		}
+				return false, nil
+			}
 
-		nmstateWebhookDeployment, err = deployment.Pull(
-			APIClient, netparam.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
-		if err != nil {
-			glog.V(90).Infof("Error to pull deployment %s namespace %s, retry",
-				netparam.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
+			nmstateWebhookDeployment, err = deployment.Pull(
+				APIClient, netparam.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
+			if err != nil {
+				glog.V(90).Infof("Error to pull deployment %s namespace %s, retry",
+					netparam.NMStateWebhookDeploymentName, NetConfig.NMStateOperatorNamespace)
 
-			return false, nil
-		}
+				return false, nil
+			}
 
-		nmstateCertDeployment, err = deployment.Pull(
-			APIClient, netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
-		if err != nil {
-			glog.V(90).Infof("Error to pull deployment %s namespace %s, retry",
-				netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
+			nmstateCertDeployment, err = deployment.Pull(
+				APIClient, netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
+			if err != nil {
+				glog.V(90).Infof("Error to pull deployment %s namespace %s, retry",
+					netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
 
-			return false, nil
-		}
+				return false, nil
+			}
 
-		return true, nil
-	})
+			return true, nil
+		})
 
 	if err != nil {
 		return err

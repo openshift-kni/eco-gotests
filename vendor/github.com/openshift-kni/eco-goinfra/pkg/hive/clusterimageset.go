@@ -192,18 +192,13 @@ func (builder *ClusterImageSetBuilder) Update(force bool) (*ClusterImageSetBuild
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				"Failed to update the clusterimageset object %s. "+
-					"Note: Force flag set, executed delete/create methods instead",
-				builder.Definition.Name,
-			)
+				msg.FailToUpdateNotification("clusterimageset", builder.Definition.Name, builder.Definition.Namespace))
 
 			builder, err := builder.Delete()
 
 			if err != nil {
 				glog.V(100).Infof(
-					"Failed to update the clusterimageset object %s, "+
-						"due to error in delete function", builder.Definition.Name,
-				)
+					msg.FailToUpdateError("clusterimageset", builder.Definition.Name, builder.Definition.Namespace))
 
 				return nil, err
 			}

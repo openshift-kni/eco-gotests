@@ -26,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // maxCombinedLength is the maximum combined length of Module name and namespace when the version field is set.
@@ -47,25 +48,25 @@ func (m *Module) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &Module{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (m *Module) ValidateCreate() error {
+func (m *Module) ValidateCreate() (admission.Warnings, error) {
 	modulelog.Info("Validating Module creation", "name", m.Name, "namespace", m.Namespace)
 
 	return m.validate()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (m *Module) ValidateUpdate(old runtime.Object) error {
+func (m *Module) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	modulelog.Info("Validating Module update", "name", m.Name, "namespace", m.Namespace)
 
 	if old != nil {
 		oldModule, ok := old.(*Module)
 		if !ok {
-			return fmt.Errorf("old object %v is not of the expected type *Module", old)
+			return nil, fmt.Errorf("old object %v is not of the expected type *Module", old)
 		}
 
 		if (oldModule.Spec.ModuleLoader.Container.Version == "" && m.Spec.ModuleLoader.Container.Version != "") ||
 			(oldModule.Spec.ModuleLoader.Container.Version != "" && m.Spec.ModuleLoader.Container.Version == "") {
-			return errors.New("cannot update to or from an empty version; please delete the Module and create it again")
+			return nil, errors.New("cannot update to or from an empty version; please delete the Module and create it again")
 		}
 	}
 
@@ -73,15 +74,15 @@ func (m *Module) ValidateUpdate(old runtime.Object) error {
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (m *Module) ValidateDelete() error {
-	return nil
+func (m *Module) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
 
-func (m *Module) validate() error {
+func (m *Module) validate() (admission.Warnings, error) {
 	nameLength := len(m.Name + m.Namespace)
 
-	if m.Spec.ModuleLoader.Container.Version != "" && nameLength > maxCombinedLength {
-		return fmt.Errorf(
+	if nameLength > maxCombinedLength {
+		return nil, fmt.Errorf(
 			"module name and namespace have a combined length of %d characters, which exceeds the maximum of %d when version is set",
 			nameLength,
 			maxCombinedLength,
@@ -89,10 +90,10 @@ func (m *Module) validate() error {
 	}
 
 	if err := m.validateKernelMapping(); err != nil {
-		return fmt.Errorf("failed to validate kernel mappings: %v", err)
+		return nil, fmt.Errorf("failed to validate kernel mappings: %v", err)
 	}
 
-	return m.validateModprobe()
+	return nil, m.validateModprobe()
 }
 
 func (m *Module) validateKernelMapping() error {
