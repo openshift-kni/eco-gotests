@@ -436,7 +436,6 @@ github.com/openshift-kni/cluster-group-upgrades-operator/api/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmh
 github.com/openshift-kni/eco-goinfra/pkg/clients
-github.com/openshift-kni/eco-goinfra/pkg/clusteroperator
 github.com/openshift-kni/eco-goinfra/pkg/clusterversion
 github.com/openshift-kni/eco-goinfra/pkg/configmap
 github.com/openshift-kni/eco-goinfra/pkg/daemonset

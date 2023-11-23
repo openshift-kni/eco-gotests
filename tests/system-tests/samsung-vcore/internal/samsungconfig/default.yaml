@@ -1,8 +1,0 @@
----
-samsung_default_ns: 'samsung-vcore-test'
-odf_label: "odf"
-samsung_pp_label: "samsung-pp"
-samsung_cnf_label: "samsung-cnf"
-host: ""
-user: "kni"
-pass: ""
