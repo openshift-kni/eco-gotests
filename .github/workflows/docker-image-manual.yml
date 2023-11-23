@@ -16,7 +16,9 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      run: |
+        sudo setenforce 0
+        sudo podman run --rm --privileged quay.io/ocp-edge-qe/qemu-user-static --reset -p yes
 
     - name: Build docker image
       id: build-image
