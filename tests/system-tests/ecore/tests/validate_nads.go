@@ -74,7 +74,7 @@ var _ = Describe(
 
 			var cmBuilder *configmap.Builder
 
-			Context("Workloads on the same node in PCC ns", func() {
+			Context("Workloads in the PCC namespace", func() {
 				BeforeEach(func() {
 					if cmBuilder, err := configmap.Pull(
 						APIClient,
@@ -150,7 +150,225 @@ var _ = Describe(
 					}
 				})
 
-				It("Assert workloads from same namespace on same node can reach each other via MACVLAN", func(ctx SpecContext) {
+				It("Can reach workload on the other node via MACVLAN interface", Label("wlkd_nad_pcc_different_nodes"), func() {
+
+					By("Defining container configuration")
+					deployContainer := pod.NewContainerBuilder("withmacvlan-c-one", ECoreConfig.NADWlkdDeployOnePCCImage,
+						ECoreConfig.NADWlkdDeployOnePCCCmd)
+
+					deployContainerTwo := pod.NewContainerBuilder("withmacvlan-c-two", ECoreConfig.NADWlkdDeployTwoPCCImage,
+						ECoreConfig.NADWlkdDeployTwoPCCCmd)
+
+					By("Setting SecurityContext")
+					var trueFlag = true
+					userUID := new(int64)
+					*userUID = 0
+
+					secContext := &v1.SecurityContext{
+						RunAsUser:  userUID,
+						Privileged: &trueFlag,
+						SeccompProfile: &v1.SeccompProfile{
+							Type: v1.SeccompProfileTypeRuntimeDefault,
+						},
+						Capabilities: &v1.Capabilities{
+							Add: []v1.Capability{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK"},
+						},
+					}
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("*** SecurityContext is %v", secContext)
+
+					By("Setting SecurityContext")
+					deployContainer = deployContainer.WithSecurityContext(secContext)
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Container One definition: %#v", deployContainer)
+
+					deployContainerTwo = deployContainerTwo.WithSecurityContext(secContext)
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Container Two definition: %#v", deployContainerTwo)
+
+					By("Dropping ALL security capability")
+					deployContainer = deployContainer.WithDropSecurityCapabilities([]string{"ALL"}, true)
+					deployContainerTwo = deployContainerTwo.WithDropSecurityCapabilities([]string{"ALL"}, true)
+
+					By("Adding VolumeMount to container")
+					volMount := v1.VolumeMount{
+						Name:      "configs",
+						MountPath: "/opt/net/",
+						ReadOnly:  false,
+					}
+
+					deployContainer = deployContainer.WithVolumeMount(volMount)
+					deployContainerTwo = deployContainerTwo.WithVolumeMount(volMount)
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Container One definition: %#v", deployContainer)
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Container Two definition: %#v", deployContainerTwo)
+
+					By("Obtaining container definition")
+					deployContainerCfg, err := deployContainer.GetContainerCfg()
+					Expect(err).ToNot(HaveOccurred(), "Failed to get container definition")
+
+					deployContainerTwoCfg, err := deployContainerTwo.GetContainerCfg()
+					Expect(err).ToNot(HaveOccurred(), "Failed to get container definition")
+
+					By("Defining deployment configuration")
+					deploy := deployment.NewBuilder(APIClient,
+						ECoreConfig.NADWlkdDeployOnePCCName,
+						ECoreConfig.NamespacePCC,
+						map[string]string{"systemtest-test": "ecore-wlkd-macvlan-one"},
+						deployContainerCfg)
+
+					deployTwo := deployment.NewBuilder(APIClient,
+						ECoreConfig.NADWlkdDeployTwoPCCName,
+						ECoreConfig.NamespacePCC,
+						map[string]string{"systemtest-test": "ecore-wlkd-macvlan-two"},
+						deployContainerTwoCfg)
+
+					By("Adding MACVLAN annotations")
+					var networks []*multus.NetworkSelectionElement
+					networks = append(networks,
+						&multus.NetworkSelectionElement{
+							Name:      ECoreConfig.NADWlkdOneNadName,
+							Namespace: ECoreConfig.NamespacePCC})
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("MACVlan networks: %#v", networks)
+
+					deploy = deploy.WithSecondaryNetwork(networks)
+					deployTwo = deployTwo.WithSecondaryNetwork(networks)
+
+					By("Adding NodeSelector to the deployment")
+					deploy = deploy.WithNodeSelector(ECoreConfig.NADWlkdDeployOnePCCSelector)
+					deployTwo = deployTwo.WithNodeSelector(ECoreConfig.NADWlkdDeployTwoPCCSelector)
+
+					By("Adding Volume to the deployment")
+					volMode := new(int32)
+					*volMode = 511
+
+					volDefinition := v1.Volume{
+						Name: "configs",
+						VolumeSource: v1.VolumeSource{
+							ConfigMap: &v1.ConfigMapVolumeSource{
+								DefaultMode: volMode,
+								LocalObjectReference: v1.LocalObjectReference{
+									Name: ECoreConfig.NADConfigMapPCCName,
+								},
+							},
+						},
+					}
+
+					deploy = deploy.WithVolume(volDefinition)
+					deployTwo = deployTwo.WithVolume(volDefinition)
+
+					By("Creating ServiceAccount for the deployment")
+					deploySa := serviceaccount.NewBuilder(
+						APIClient, ECoreConfig.NADWlkdOnePCCSa, ECoreConfig.NamespacePCC)
+
+					deploySa, err = deploySa.Create()
+					Expect(err).ToNot(HaveOccurred(), "Failed to create ServiceAccount",
+						deploySa.Definition.Name)
+
+					By("Creating RBAC for SA")
+					rbacName := "privileged-telco-qe"
+					crbSa := rbac.NewClusterRoleBindingBuilder(APIClient,
+						rbacName,
+						"system:openshift:scc:privileged",
+						rbacv1.Subject{
+							Name:      ECoreConfig.NADWlkdOnePCCSa,
+							Kind:      "ServiceAccount",
+							Namespace: ECoreConfig.NamespacePCC,
+						})
+
+					crbSa, err = crbSa.Create()
+					Expect(err).ToNot(HaveOccurred(), "Failed to create ClusterRoleBinding")
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("ClusterRoleBinding %q created %v", rbacName, crbSa)
+
+					By(fmt.Sprintf("Assigning ServiceAccount %q to the deployment", ECoreConfig.NADWlkdOnePCCSa))
+					deploy = deploy.WithServiceAccountName(ECoreConfig.NADWlkdOnePCCSa)
+					deployTwo = deployTwo.WithServiceAccountName(ECoreConfig.NADWlkdOnePCCSa)
+
+					By("Creating a deployment")
+					deploy, err = deploy.CreateAndWaitUntilReady(60 * time.Second)
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create deployment %s: %v", deploy.Definition.Name, err))
+
+					deployTwo, err = deployTwo.CreateAndWaitUntilReady(60 * time.Second)
+					Expect(err).ToNot(HaveOccurred(),
+						fmt.Sprintf("Failed to create deployment %s: %v", deployTwo.Definition.Name, err))
+
+					By("Getting pods backed by deployment")
+					podOneSelector := metav1.ListOptions{
+						LabelSelector: "systemtest-test=ecore-wlkd-macvlan-one",
+					}
+
+					podOneList, err := pod.List(APIClient, ECoreConfig.NamespacePCC, podOneSelector)
+					Expect(err).ToNot(HaveOccurred(), "Failed to find pods for deployment one")
+					Expect(len(podOneList)).To(Equal(1), "Expected only one pod")
+
+					podOne := podOneList[0]
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Pod one is %v", podOne.Definition.Name)
+
+					podTwoSelector := metav1.ListOptions{
+						LabelSelector: "systemtest-test=ecore-wlkd-macvlan-two",
+					}
+
+					podTwoList, err := pod.List(APIClient, ECoreConfig.NamespacePCC, podTwoSelector)
+					Expect(err).ToNot(HaveOccurred(), "Failed to find pods for deployment two")
+					Expect(len(podTwoList)).To(Equal(1), "Expected only two pod")
+
+					podTwo := podTwoList[0]
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Pod two is %v on node %s",
+						podTwo.Definition.Name, podTwo.Definition.Spec.NodeName)
+
+					By("Sending data from pod one to pod two")
+					msgOne := fmt.Sprintf("Running from pod %s(%s) at %d",
+						podOne.Definition.Name,
+						podOne.Definition.Spec.NodeName,
+						time.Now().Unix())
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Sending msg %q from pod %s",
+						msgOne, podOne.Definition.Name)
+
+					sendDataOneCmd := []string{"/bin/bash", "-c",
+						fmt.Sprintf("echo '%s' | nc 10.46.125.71 2222", msgOne)}
+
+					podOneResult, err := podOne.ExecCommand(sendDataOneCmd, "withmacvlan-c-one")
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
+
+					logStartTimestamp, err := time.ParseDuration("5s")
+					Expect(err).ToNot(HaveOccurred(), "Failed to parse time duration")
+
+					podTwoLog, err := podTwo.GetLog(logStartTimestamp, "withmacvlan-c-two")
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get logs from pod %s", podTwo.Definition.Name))
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Logs from pod %s:\n%s", podTwo.Definition.Name, podTwoLog)
+					Expect(podTwoLog).Should(ContainSubstring(msgOne))
+
+					By("Sending data from pod two to pod one")
+					msgTwo := fmt.Sprintf("Running from pod %s(%s) at %d",
+						podTwo.Definition.Name,
+						podTwo.Definition.Spec.NodeName,
+						time.Now().Unix())
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Sending msg %q from pod %s",
+						msgTwo, podTwo.Definition.Name)
+
+					sendDataTwoCmd := []string{"/bin/bash", "-c",
+						fmt.Sprintf("echo '%s' | nc 10.46.125.70 1111", msgTwo)}
+
+					podTwoResult, err := podTwo.ExecCommand(sendDataTwoCmd, "withmacvlan-c-two")
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to send data from pod %s", podTwo.Definition.Name))
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Result: %v - %s", podTwoResult, &podTwoResult)
+
+					logStartTimestamp, err = time.ParseDuration("5s")
+					Expect(err).ToNot(HaveOccurred(), "Failed to parse time duration")
+
+					podOneLog, err := podOne.GetLog(logStartTimestamp, "withmacvlan-c-one")
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get logs from pod %s", podOne.Definition.Name))
+
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Logs from pod %s:\n%s", podOne.Definition.Name, podOneLog)
+					Expect(podOneLog).Should(ContainSubstring(msgTwo))
+
+				})
+
+				It("Can reach workload on the same node via MACVLAN interface", func(ctx SpecContext) {
 					By("Asserting CM exists")
 					_, err := configmap.Pull(APIClient, ECoreConfig.NADConfigMapPCCName, ECoreConfig.NamespacePCC)
 					Expect(err).ToNot(HaveOccurred(), "Failed to get CM")
