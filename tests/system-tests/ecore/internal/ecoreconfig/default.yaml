@@ -1,9 +1,63 @@
 ---
 ecore_nad_workload_ns_pcc: 'pcc'
 ecore_nad_workload_ns_pcg: 'pcg'
+ecore_nad_workload_pcc_cm_name: 'yp-netconfig'
+ecore_nad_workload_pcg_cm_name: 'yp-netconfig'
+ecore_nad_wlkd_one_pcc_sa: 'telco-qe-sa'
+ecore_nad_wlkd_two_pcc_sa: 'telco-qe-sa'
+ecore_nad_workload_one_pcc_name: 'yp-macvlan-one'
+ecore_nad_workload_two_pcc_name: 'yp-macvlan-two'
+ecore_nad_wlkd_one_image_pcc: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
+ecore_nad_wlkd_one_pcc_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 10.46.125.70/26; nc -k -l 10.46.125.70 1111"
+ecore_nad_wlkd_two_image_pcc: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
+ecore_nad_wlkd_two_pcc_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 10.46.125.71/26; nc -k -l 10.46.125.71 2222"
+ecore_nad_wlkd_one_nad_name: "pc-mm-ext"
+ecore_nad_wlkd_two_nad_name: "pc-mm-ext"
+ecore_nad_workload_pcc_cm_data:
+  config.sh: |
+    #! /bin/bash
+    set -euo pipefail
+    ip=$1
+    ip link add dev bond0 type bond
+    ip link set dev net1 down
+    ip link set dev bond0 down
+    ip link set dev net1 master bond0
+    ip link set dev net1 up
+    ip link set dev bond0 up
+    ip link add link bond0 name bond0.493 type vlan id 493
+    ip link set dev bond0.493 up
+    ip a a $1 dev bond0.493
+    ip --br a s
+ecore_nad_workload_pcg_cm_data:
+  config.sh: |
+    #! /bin/bash
+    set -euo pipefail
+    ip=$1
+    ip link add dev bond0 type bond
+    ip link set dev net1 down
+    ip link set dev bond0 down
+    ip link set dev net1 master bond0
+    ip link set dev net1 up
+    ip link set dev bond0 up
+    ip link add link bond0 name bond0.493 type vlan id 493
+    ip link set dev bond0.493 up
+    ip a a $1 dev bond0.493
+    ip --br a s
 ecore_nad_nad_list_pcg:
 - eric-pc-routing-engine
 ecore_nad_nad_list_pcc:
 - eric-pc-routing-engine-net0
 - eric-pc-vpn-gateway-forwarder-common
 - pc-mm-ext
+ecore_nad_wlkd_one_pcc_selector:
+  kubernetes.io/hostname: openshift-worker-0.ecore.lab.eng.tlv2.redhat.com
+ecore_nad_wlkd_two_pcc_selector:
+  kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com
+ecore_nad_wlkd_one_pcg_selector:
+  kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com

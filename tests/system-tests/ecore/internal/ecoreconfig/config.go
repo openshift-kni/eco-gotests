@@ -19,10 +19,34 @@ const (
 // ECoreConfig type keeps ECore configuration.
 type ECoreConfig struct {
 	*systemtestsconfig.SystemTestsConfig
-	NamespacePCC string   `yaml:"ecore_nad_workload_ns_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_WORKLOAD_NS_PCC"`
-	NamespacePCG string   `yaml:"ecore_nad_workload_ns_pcg" envconfig:"ECO_SYSTEM_ECORE_NAD_WORKLOAD_NS_PCG"`
-	NADListPCC   []string `yaml:"ecore_nad_nad_list_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_NAD_LIST_PCC"`
-	NADListPCG   []string `yaml:"ecore_nad_nad_list_pcg" envconfig:"ECO_SYSTEM_ECORE_NAD_NAD_LIST_PCG"`
+	NamespacePCC        string   `yaml:"ecore_nad_workload_ns_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_WORKLOAD_NS_PCC"`
+	NamespacePCG        string   `yaml:"ecore_nad_workload_ns_pcg" envconfig:"ECO_SYSTEM_ECORE_NAD_WORKLOAD_NS_PCG"`
+	NADListPCC          []string `yaml:"ecore_nad_nad_list_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_NAD_LIST_PCC"`
+	NADListPCG          []string `yaml:"ecore_nad_nad_list_pcg" envconfig:"ECO_SYSTEM_ECORE_NAD_NAD_LIST_PCG"`
+	NADConfigMapPCCName string   `yaml:"ecore_nad_workload_pcc_cm_name" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_NAME_PCC"`
+	//nolint:lll
+	NADConfigMapPCCData map[string]string `yaml:"ecore_nad_workload_pcc_cm_data" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_DATA_PCC"`
+	//nolint:lll
+	NADWlkdDeployOnePCCName string   `yaml:"ecore_nad_workload_one_pcc_name" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_DEPLOY_ONE_PCC_NAME"`
+	NADWlkdDeployOnePCCCmd  []string `yaml:"ecore_nad_wlkd_one_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_ONE_PCC_CMD"`
+	NADWlkdDeployTwoPCCCmd  []string `yaml:"ecore_nad_wlkd_two_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_TWO_PCC_CMD"`
+	//nolint:lll
+	NADWlkdDeployTwoPCCName  string `yaml:"ecore_nad_workload_two_pcc_name" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_DEPLOY_TWO_PCC_NAME"`
+	NADWlkdDeployOnePCCImage string `yaml:"ecore_nad_wlkd_one_image_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_ONE_IMG_PCC"`
+	NADWlkdDeployTwoPCCImage string `yaml:"ecore_nad_wlkd_two_image_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_TWO_IMG_PCC"`
+	NADWlkdOneNadName        string `yaml:"ecore_nad_wlkd_one_nad_name" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_ONE_NAD_NAME"`
+	NADWlkdTwoNadName        string `yaml:"ecore_nad_wlkd_two_nad_name" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_TWO_NAD_NAME"`
+	NADWlkdOnePCCSa          string `yaml:"ecore_nad_wlkd_one_pcc_sa" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_ONE_PCC_SA"`
+	NADWlkdTwoPCCSa          string `yaml:"ecore_nad_wlkd_two_pcc_sa" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_TWO_PCC_SA"`
+	NADConfigMapPCGName      string `yaml:"ecore_nad_workload_pcg_cm_name" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_NAME_PCG"`
+	//nolint:lll
+	NADConfigMapPCGData map[string]string `yaml:"ecore_nad_workload_pcg_cm_data" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_DATA_PCG"`
+	//nolint:lll
+	NADWlkdDeployOnePCCSelector map[string]string `yaml:"ecore_nad_wlkd_one_pcc_selector" envconfig:"ECO_SYSTEM_NAD_WLKD_ONE_PCC_SELECTOR"`
+	//nolint:lll
+	NADWlkdDeployTwoPCCSelector map[string]string `yaml:"ecore_nad_wlkd_two_pcc_selector" envconfig:"ECO_SYSTEM_NAD_WLKD_TWO_PCC_SELECTOR"`
+	//nolint:lll
+	NADWlkdDeployOnePCGSelector map[string]string `yaml:"ecore_nad_wlkd_one_pcg_selector" envconfig:"ECO_SYSTEM_NAD_WLKD_ONE_PCG_SELECTOR"`
 }
 
 // NewECoreConfig returns instance of ECoreConfig config type.
