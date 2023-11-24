@@ -22,7 +22,7 @@ func TestRanDu(t *testing.T) {
 	reporterConfig.JUnitReport = GeneralConfig.GetJunitReportPath(currentFile)
 
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "E/// Core NAD SystemTests Suite", Label(ecoreparams.Labels...), reporterConfig)
+	RunSpecs(t, "E/// Core SystemTests Suite", Label(ecoreparams.Labels...), reporterConfig)
 }
 
 var _ = JustAfterEach(func() {

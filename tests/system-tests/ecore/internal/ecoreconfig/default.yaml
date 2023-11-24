@@ -61,3 +61,6 @@ ecore_nad_wlkd_two_pcc_selector:
   kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com
 ecore_nad_wlkd_one_pcg_selector:
   kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com
+ecore_mcp_list:
+- standard
+- ht100gb

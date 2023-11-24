@@ -8,4 +8,6 @@ const (
 	LabelEcoreValidateNAD = "ecore_validate_nad"
 	// ECoreLogLevel configures logging level for ECore related tests.
 	ECoreLogLevel = 90
+	// LabelEcoreValidateMCP is used to select tests for custom MCP validation.
+	LabelEcoreValidateMCP = "ecore_validate_mcp"
 )
