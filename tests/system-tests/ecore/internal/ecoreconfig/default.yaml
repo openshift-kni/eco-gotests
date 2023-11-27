@@ -64,3 +64,5 @@ ecore_nad_wlkd_one_pcg_selector:
 ecore_mcp_list:
 - standard
 - ht100gb
+ecore_kublet_config_name_cp: autosizing-master
+ecore_kublet_config_name_standard: autosizing-standard

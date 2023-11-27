@@ -10,4 +10,6 @@ const (
 	ECoreLogLevel = 90
 	// LabelEcoreValidateMCP is used to select tests for custom MCP validation.
 	LabelEcoreValidateMCP = "ecore_validate_mcp"
+	// LabelEcoreValidateSysReservedMemory is used to select test for system reserved memory.
+	LabelEcoreValidateSysReservedMemory = "ecore_validate_sys_reserved_memory"
 )
