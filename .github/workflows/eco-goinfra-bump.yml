@@ -6,7 +6,7 @@ env:
 jobs:
   main:
     name: Eco-goinfra module bump
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3  
       - name: Setup agent and add repo ssh key
