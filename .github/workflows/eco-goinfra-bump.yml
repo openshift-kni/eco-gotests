@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 env:
   # SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-  GIT_SSH_COMMAND: 'ssh -i ~/eco-gotests.id_rsa'
+  GIT_SSH_COMMAND1: 'ssh -i ~/eco-gotests.id_rsa'
 jobs:
   main:
     name: Eco-goinfra module bump
