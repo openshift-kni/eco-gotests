@@ -27,6 +27,8 @@ type ECoreConfig struct {
 	NADConfigMapPCCName string   `yaml:"ecore_nad_workload_pcc_cm_name" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_NAME_PCC"`
 	KubeletConfigCPName string   `yaml:"ecore_kublet_config_name_cp" envconfig:"ECO_SYSTEM_ECORE_KUBELET_CONFIG_NAME_CP"`
 	//nolint:lll
+	NodeSelectorHTNodes map[string]string `yaml:"ecore_node_selector_ht_nodes" envconfig:"ECO_SYSTEM_ECORE_NODE_SELECTOR_HT_NODES"`
+	//nolint:lll
 	NADConfigMapPCCData map[string]string `yaml:"ecore_nad_workload_pcc_cm_data" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_DATA_PCC"`
 	//nolint:lll
 	NADWlkdDeployOnePCCName string   `yaml:"ecore_nad_workload_one_pcc_name" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_DEPLOY_ONE_PCC_NAME"`
@@ -51,6 +53,8 @@ type ECoreConfig struct {
 	NADWlkdDeployOnePCGSelector map[string]string `yaml:"ecore_nad_wlkd_one_pcg_selector" envconfig:"ECO_SYSTEM_NAD_WLKD_ONE_PCG_SELECTOR"`
 	//nolint:lll
 	KubeletConfigStandardName string `yaml:"ecore_kublet_config_name_standard" envconfig:"ECO_SYSTEM_ECORE_KUBELET_CONFIG_NAME_STANDARD"`
+	//nolint:lll
+	PerformanceProfileHTName string `yaml:"ecore_performance_profile_ht_name" envconfig:"ECO_SYSTEM_ECORE_PERFORMANCE_PROFILE_HT_NAME"`
 }
 
 // NewECoreConfig returns instance of ECoreConfig config type.

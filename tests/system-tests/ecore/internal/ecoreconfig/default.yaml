@@ -66,3 +66,6 @@ ecore_mcp_list:
 - ht100gb
 ecore_kublet_config_name_cp: autosizing-master
 ecore_kublet_config_name_standard: autosizing-standard
+ecore_performance_profile_ht_name: ht100gb
+ecore_node_selector_ht_nodes:
+  node-role.kubernetes.io/ht100gb: ""
