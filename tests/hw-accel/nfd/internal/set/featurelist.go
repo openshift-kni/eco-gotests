@@ -37,7 +37,7 @@ type Sources struct {
 func CPUConfigLabels(apiClient *clients.Settings,
 	blackListLabels,
 	whiteListLabels []string,
-	enableTopolgy bool,
+	enableTopology bool,
 	namespace,
 	image string) {
 	var cfg Config
@@ -54,7 +54,7 @@ func CPUConfigLabels(apiClient *clients.Settings,
 		panic(err)
 	}
 
-	err = deploy.DeployNfdWithCustomConfig(namespace, enableTopolgy, string(modifiedCPUYAML), image)
+	err = deploy.DeployNfdWithCustomConfig(namespace, enableTopology, string(modifiedCPUYAML), image)
 	if err != nil {
 		panic(err)
 	}

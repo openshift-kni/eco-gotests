@@ -66,4 +66,11 @@ var (
 		"SSSE3",
 		"TDX_GUEST",
 	}
+	// NfdPods list of NFD operator pods.
+	NfdPods = []string{
+		"nfd-controller-manager",
+		"nfd-master",
+		"nfd-topology",
+		"nfd-worker",
+	}
 )

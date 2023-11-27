@@ -48,8 +48,8 @@ func testLabelExist(nodelabels map[string][]string, labelsToSearch, blackList []
 	return nil
 }
 
-func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource) {
-	err := nfdManager.DeployNfd(5*int(time.Minute), false, "")
+func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource, enableTopology bool) {
+	err := nfdManager.DeployNfd(5*int(time.Minute), enableTopology, "")
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 	By("Check that pods are in running state")
 
@@ -76,6 +76,7 @@ func skipIfConfigNotSet(nfdConfig *nfdconfig.NfdConfig) {
 }
 
 var _ = Describe("NFD", Ordered, func() {
+
 	nfdConfig := nfdconfig.NewNfdConfig()
 	nfdManager := nfdDeploy.NewNfdAPIResource(APIClient,
 		ts.Namespace,
@@ -101,7 +102,7 @@ var _ = Describe("NFD", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in cleaning labels\n %s", err))
 
 			By("Creating nfd")
-			runNodeDiscoveryAndTestLabelExistence(nfdManager)
+			runNodeDiscoveryAndTestLabelExistence(nfdManager, true)
 
 			labelExist, labelsError := wait.WaitForLabel(APIClient, time.Minute*5, "feature")
 			if !labelExist || labelsError != nil {
@@ -109,7 +110,17 @@ var _ = Describe("NFD", Ordered, func() {
 			}
 
 		})
+		It("Check pods state", polarion.ID("54548"), func() {
+			podlist, err := get.PodStatus(APIClient, ts.Namespace)
+			Expect(err).NotTo(HaveOccurred())
 
+			for _, pod := range podlist {
+				By("Checking pod: " + pod.Name)
+
+				Expect(pod.State).To((Equal("Running")))
+			}
+
+		})
 		It("Check CPU feature labels", polarion.ID("54222"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)

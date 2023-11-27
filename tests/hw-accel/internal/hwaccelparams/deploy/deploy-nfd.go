@@ -255,7 +255,7 @@ func (n *NfdAPIResource) deploy() error {
 	return nil
 }
 
-func newNfdBuilder(namespace string, enableTopolgy bool, image string) (*nodefeature.Builder, error) {
+func newNfdBuilder(namespace string, enableTopology bool, image string) (*nodefeature.Builder, error) {
 	clusters, err := olm.ListClusterServiceVersion(APIClient, namespace, metaV1.ListOptions{})
 
 	if err != nil {
@@ -278,7 +278,7 @@ func newNfdBuilder(namespace string, enableTopolgy bool, image string) (*nodefea
 	}
 
 	nfdBuilder := nodefeature.NewBuilderFromObjectString(APIClient, almExamples)
-	nfdBuilder.Definition.Spec.TopologyUpdater = enableTopolgy
+	nfdBuilder.Definition.Spec.TopologyUpdater = enableTopology
 
 	if image != "" {
 		nfdBuilder.Definition.Spec.Operand.Image = image
@@ -287,8 +287,8 @@ func newNfdBuilder(namespace string, enableTopolgy bool, image string) (*nodefea
 	return nfdBuilder, nil
 }
 
-func deployNfdCR(namespace string, enableTopolgy bool, image string) error {
-	nfdBuilder, err := newNfdBuilder(namespace, enableTopolgy, image)
+func deployNfdCR(namespace string, enableTopology bool, image string) error {
+	nfdBuilder, err := newNfdBuilder(namespace, enableTopology, image)
 	if err != nil {
 		return err
 	}
@@ -315,8 +315,8 @@ func (n *NfdAPIResource) DeleteNFDCR(nodeFeatureName string) error {
 }
 
 // DeployNfdWithCustomConfig deploys nfd worker with custom config.
-func DeployNfdWithCustomConfig(namespace string, enableTopolgy bool, config string, image string) error {
-	nfdBuilder, err := newNfdBuilder(namespace, enableTopolgy, image)
+func DeployNfdWithCustomConfig(namespace string, enableTopology bool, config string, image string) error {
+	nfdBuilder, err := newNfdBuilder(namespace, enableTopology, image)
 	if err != nil {
 		return err
 	}
