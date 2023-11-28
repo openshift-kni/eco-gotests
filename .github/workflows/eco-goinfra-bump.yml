@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 env:
   # SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-  GIT_SSH_COMMAND1: 'ssh -i ~/eco-gotests.id_rsa'
+  GIT_SSH_COMMAND: 'ssh -i ~/eco-gotests.id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 jobs:
   main:
     name: Eco-goinfra module bump
@@ -54,8 +54,8 @@ jobs:
           git commit -m "deps: bumping eco-goinfra module to ${MODULE}"
           git push origin eco-goinfra-dep-bump-$MODULE
 
-      - name: Cleanup ssh-agent
-        if: always()
-        run: |
-          # ssh-add -D
-          rm -f ~/eco-gotests.id_rsa || true
+      # - name: Cleanup ssh-agent
+      #   if: always()
+      #   run: |
+      #     ssh-add -D
+      #     rm -f ~/eco-gotests.id_rsa || true
