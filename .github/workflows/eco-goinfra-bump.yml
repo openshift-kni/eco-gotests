@@ -2,8 +2,7 @@ name: 'Eco-GoInfra Module Bump'
 on:
   workflow_dispatch:
 env:
-  # SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-  GIT_SSH_COMMAND: 'ssh -i ~/eco-gotests.id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+  GIT_SSH_COMMAND: "ssh -i ~/.ssh/eco-gotests.id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 jobs:
   main:
     name: Eco-goinfra module bump
@@ -13,10 +12,8 @@ jobs:
 
       - name: Setup agent and add repo ssh key
         run: |
-          echo "${{ secrets.REPO_ACCESS_KEY }}" > ~/eco-gotests.id_rsa
-          chmod 0600 ~/eco-gotests.id_rsa
-          # ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          # ssh-add ~/eco-gotests.id_rsa 
+          echo "${{ secrets.REPO_ACCESS_KEY }}" > ~/.ssh/eco-gotests.id_rsa
+          chmod 0600 ~/.ssh/eco-gotests.id_rsa
       
       - name: Set up Go 1.20
         uses: actions/setup-go@v3
@@ -53,9 +50,3 @@ jobs:
           git add go.mod go.sum vendor
           git commit -m "deps: bumping eco-goinfra module to ${MODULE}"
           git push origin eco-goinfra-dep-bump-$MODULE
-
-      # - name: Cleanup ssh-agent
-      #   if: always()
-      #   run: |
-      #     ssh-add -D
-      #     rm -f ~/eco-gotests.id_rsa || true
