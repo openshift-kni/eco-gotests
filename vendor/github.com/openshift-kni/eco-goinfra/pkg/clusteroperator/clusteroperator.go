@@ -123,25 +123,26 @@ func (builder *Builder) WaitUntilConditionTrue(
 		return fmt.Errorf("%s clusterOperator not found", builder.Definition.Name)
 	}
 
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		var err error
-		builder.Object, err = builder.apiClient.ClusterOperators().Get(
-			context.Background(),
-			builder.Definition.Name,
-			metaV1.GetOptions{})
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			builder.Object, err = builder.apiClient.ClusterOperators().Get(
+				context.Background(),
+				builder.Definition.Name,
+				metaV1.GetOptions{})
 
-		if err != nil {
-			return false, nil
-		}
-
-		for _, condition := range builder.Object.Status.Conditions {
-			if condition.Type == conditionType {
-				return condition.Status == isTrue, nil
+			if err != nil {
+				return false, nil
 			}
-		}
 
-		return false, err
-	})
+			for _, condition := range builder.Object.Status.Conditions {
+				if condition.Type == conditionType {
+					return condition.Status == isTrue, nil
+				}
+			}
+
+			return false, err
+		})
 }
 
 // validate will check that the builder and builder definition are properly initialized before
