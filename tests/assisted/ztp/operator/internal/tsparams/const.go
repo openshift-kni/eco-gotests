@@ -44,4 +44,8 @@ const (
 
 	// LabelHTTPWebserverSetup represents label-http-web-server-setup label that can be used for test cases selection.
 	LabelHTTPWebserverSetup = "label-http-web-server-setup"
+
+	// LabelDualstackIPv4FirstACI represents dualstack-ipv4-first-aci label that can be used
+	// for test case selection.
+	LabelDualstackIPv4FirstACI = "dualstack-ipv4-first-aci"
 )
