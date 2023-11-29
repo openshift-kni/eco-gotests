@@ -82,22 +82,31 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 				Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
 
 				By("Create moduleLoader container")
-				moduleLoader, err := kmm.NewModLoaderContainerBuilder("multiplemodules").
+				moduleLoader, err := kmm.NewModLoaderContainerBuilder(kmodName).
 					WithModprobeSpec("", "", nil, nil, nil, []string{"multiplemodules", "kmm-ci-a"}).
 					WithKernelMapping(kernelMapping).
 					BuildModuleLoaderContainerCfg()
 				Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 				By("Create Module")
-				_, err = kmm.NewModuleBuilder(APIClient, "multiplemodules", nSpace).
+				_, err = kmm.NewModuleBuilder(APIClient, kmodName, nSpace).
 					WithNodeSelector(GeneralConfig.WorkerLabelMap).
 					WithModuleLoaderContainer(moduleLoader).
 					WithLoadServiceAccount(svcAccount.Object.Name).
 					Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating module")
 
+				By("Await build pod to complete build")
+				err = await.BuildPodCompleted(APIClient, nSpace, 5*time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "error while building module")
+
+				By("Await driver container deployment")
+				err = await.ModuleDeployment(APIClient, kmodName, nSpace, 3*time.Minute,
+					GeneralConfig.WorkerLabelMap)
+				Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
+
 				By("Check module is loaded on node")
-				err = check.ModuleLoaded(APIClient, "multiplemodules", 5*time.Minute)
+				err = check.ModuleLoaded(APIClient, kmodName, 5*time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 				By("Check module is loaded on node")
