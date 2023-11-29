@@ -69,3 +69,4 @@ ecore_kublet_config_name_standard: autosizing-standard
 ecore_performance_profile_ht_name: ht100gb
 ecore_node_selector_ht_nodes:
   node-role.kubernetes.io/ht100gb: ""
+ecore_policy_ns: ecore

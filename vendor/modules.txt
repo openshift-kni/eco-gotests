@@ -457,6 +457,7 @@ github.com/openshift-kni/eco-goinfra/pkg/nmstate
 github.com/openshift-kni/eco-goinfra/pkg/nodes
 github.com/openshift-kni/eco-goinfra/pkg/nto
 github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu
+github.com/openshift-kni/eco-goinfra/pkg/ocm
 github.com/openshift-kni/eco-goinfra/pkg/olm
 github.com/openshift-kni/eco-goinfra/pkg/pod
 github.com/openshift-kni/eco-goinfra/pkg/proxy

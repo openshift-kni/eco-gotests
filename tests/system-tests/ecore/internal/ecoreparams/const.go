@@ -15,8 +15,10 @@ const (
 
 	// LabelEcoreValidateNAD is used to select all tests for network-attachment-definition validation.
 	LabelEcoreValidateNAD = "ecore_validate_nad"
+
 	// ECoreLogLevel configures logging level for ECore related tests.
 	ECoreLogLevel = 90
+
 	// LabelEcoreValidateMCP is used to select tests for custom MCP validation.
 	LabelEcoreValidateMCP = "ecore_validate_mcp"
 
@@ -25,4 +27,7 @@ const (
 
 	// LabelEcoreValidatePerformanceProfile is used to select tests for PerformanceProfile validation.
 	LabelEcoreValidatePerformanceProfile = "ecore_validate_performance_profile"
+
+	// LabelEcoreValidatePolicies is used to select test for policies validation.
+	LabelEcoreValidatePolicies = "ecore_validate_policies"
 )

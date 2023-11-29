@@ -24,6 +24,7 @@ type ECoreConfig struct {
 	NADListPCC          []string `yaml:"ecore_nad_nad_list_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_NAD_LIST_PCC"`
 	NADListPCG          []string `yaml:"ecore_nad_nad_list_pcg" envconfig:"ECO_SYSTEM_ECORE_NAD_NAD_LIST_PCG"`
 	MCPList             []string `yaml:"ecore_mcp_list" envconfig:"ECO_SYSTEM_ECORE_MCP_LIST"`
+	PolicyNS            string   `yaml:"ecore_policy_ns" envconfig:"ECO_SYSTEM_ECORE_POLICY"`
 	NADConfigMapPCCName string   `yaml:"ecore_nad_workload_pcc_cm_name" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_NAME_PCC"`
 	KubeletConfigCPName string   `yaml:"ecore_kublet_config_name_cp" envconfig:"ECO_SYSTEM_ECORE_KUBELET_CONFIG_NAME_CP"`
 	//nolint:lll
