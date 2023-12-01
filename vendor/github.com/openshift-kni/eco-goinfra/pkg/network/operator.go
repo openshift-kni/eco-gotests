@@ -134,6 +134,45 @@ func (builder *OperatorBuilder) SetLocalGWMode(state bool, timeout time.Duration
 	return builder, err
 }
 
+// SetMultiNetworkPolicy enables network.operator multinetworkpolicy feature.
+func (builder *OperatorBuilder) SetMultiNetworkPolicy(state bool, timeout time.Duration) (*OperatorBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Applying MultiNetworkPolicy flag %t to network.operator %s", state, builder.Definition.Name)
+
+	var err error
+
+	if *builder.Definition.Spec.UseMultiNetworkPolicy != state {
+		builder.Definition.Spec.UseMultiNetworkPolicy = &state
+		builder, err := builder.Update()
+
+		if err != nil {
+			return nil, err
+		}
+
+		err = builder.WaitUntilInCondition(
+			operatorV1.OperatorStatusTypeProgressing, 60*time.Second, operatorV1.ConditionTrue)
+
+		if err != nil {
+			return nil, err
+		}
+
+		err = builder.WaitUntilInCondition(
+			operatorV1.OperatorStatusTypeProgressing, timeout, operatorV1.ConditionFalse)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return builder, builder.WaitUntilInCondition(
+			operatorV1.OperatorStatusTypeAvailable, 60*time.Second, operatorV1.ConditionTrue)
+	}
+
+	return builder, err
+}
+
 // WaitUntilInCondition waits for a specific time duration until the network.operator will have a
 // specified condition type with the expected status.
 func (builder *OperatorBuilder) WaitUntilInCondition(

@@ -28,6 +28,7 @@ type NetworkConfig struct {
 	SriovOperatorNamespace string `yaml:"sriov_operator_namespace" envconfig:"ECO_CNF_CORE_NET_SRIOV_OPERATOR_NAMESPACE"`
 	MlbOperatorNamespace   string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
 	CnfMcpLabel            string `yaml:"cnf_mcp_label" envconfig:"ECO_CNF_CORE_NET_CNF_MCP_LABEL"`
+	MultusNamesapce        string `yaml:"multus_namespace" envconfig:"ECO_CNF_CORE_NET_MULTUS_NAMESPACE"`
 	SwitchUser             string `envconfig:"ECO_CNF_CORE_NET_SWITCH_USER"`
 	SwitchPass             string `envconfig:"ECO_CNF_CORE_NET_SWITCH_PASS"`
 	SwitchIP               string `envconfig:"ECO_CNF_CORE_NET_SWITCH_IP"`

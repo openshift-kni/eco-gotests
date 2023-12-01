@@ -701,6 +701,31 @@ func (builder *Builder) WithAdditionalContainer(container *v1.Container) *Builde
 	return builder
 }
 
+// WithAdditionalInitContainer appends additional init container to pod.
+func (builder *Builder) WithAdditionalInitContainer(container *v1.Container) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding new container %v to pod %s in namespace %s",
+		container, builder.Definition.Name, builder.Definition.Namespace)
+	builder.isMutationAllowed("additional container")
+
+	if container == nil {
+		glog.V(100).Infof("The 'container' parameter of the pod is empty")
+
+		builder.errorMsg = "'container' parameter cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.InitContainers = append(builder.Definition.Spec.InitContainers, *container)
+
+	return builder
+}
+
 // WithSecondaryNetwork applies Multus secondary network on pod definition.
 func (builder *Builder) WithSecondaryNetwork(network []*multus.NetworkSelectionElement) *Builder {
 	if valid, _ := builder.validate(); !valid {

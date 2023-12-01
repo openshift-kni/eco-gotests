@@ -320,6 +320,9 @@ github.com/json-iterator/go
 ## explicit; go 1.13
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta2
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/scheme
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1
 # github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 ## explicit; go 1.17
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
@@ -431,7 +434,7 @@ github.com/onsi/gomega/types
 # github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20230810161322-3ef5efb0de85
 ## explicit; go 1.19
 github.com/openshift-kni/cluster-group-upgrades-operator/api/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20231122173503-d8e4791d65c0
+# github.com/openshift-kni/eco-goinfra v0.0.0-20231130215121-13ec173ff42e
 ## explicit; go 1.20
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmh
@@ -452,6 +455,7 @@ github.com/openshift-kni/eco-goinfra/pkg/msg
 github.com/openshift-kni/eco-goinfra/pkg/nad
 github.com/openshift-kni/eco-goinfra/pkg/namespace
 github.com/openshift-kni/eco-goinfra/pkg/network
+github.com/openshift-kni/eco-goinfra/pkg/networkpolicy
 github.com/openshift-kni/eco-goinfra/pkg/nfd
 github.com/openshift-kni/eco-goinfra/pkg/nmstate
 github.com/openshift-kni/eco-goinfra/pkg/nodes

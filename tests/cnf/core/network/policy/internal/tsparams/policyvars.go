@@ -34,4 +34,13 @@ var (
 		{Cr: &v1.NetworkAttachmentDefinitionList{}},
 		{Cr: &multinetpolicyapiv1.MultiNetworkPolicyList{}},
 	}
+
+	// MCOWaitTimeout represents timeout for mco operations.
+	MCOWaitTimeout = time.Hour
+	// MultiNetworkPolicyDSName represents multi-networkPolicy daemonSet name.
+	MultiNetworkPolicyDSName = "multus-networkpolicy"
+	// WaitTimeout represents timeout for the most ginkgo Eventually functions.
+	WaitTimeout = 3 * time.Minute
+	// RetryInterval represents retry interval for the most ginkgo Eventually functions.
+	RetryInterval = 3 * time.Second
 )
