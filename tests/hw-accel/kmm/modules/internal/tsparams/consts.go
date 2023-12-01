@@ -40,4 +40,6 @@ const (
 	InTreeReplacementNamespace = "ocp-62745"
 	// MultipleModuleTestNamespace represents test case namespace name.
 	MultipleModuleTestNamespace = "multiple-modules"
+	// VersionModuleTestNamespace represents test case namespace name.
+	VersionModuleTestNamespace = "modver"
 )
