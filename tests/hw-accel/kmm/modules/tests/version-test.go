@@ -206,7 +206,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			firstNode, err = firstNode.RemoveLabel(versionLabel, "first").Update()
 			Expect(err).ToNot(HaveOccurred(), "error removing node label")
 
-			By("Set version label on the first worker")
+			By("Check that the module is undeployed on just one node")
+			err = await.ModuleUndeployed(APIClient, tsparams.VersionModuleTestNamespace, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while checking module is undeployed")
+
+			By("Set version label on all workers")
 			nodesBuilder, err := nodes.List(APIClient,
 				v1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "error getting nodes")
