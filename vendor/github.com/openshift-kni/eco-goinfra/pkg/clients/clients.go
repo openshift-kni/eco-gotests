@@ -63,6 +63,7 @@ import (
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 	lsoV1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
 	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
+	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
 
 // Settings provides the struct to talk with relevant API.
@@ -259,7 +260,11 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := policiesv1beta1.AddToScheme(crScheme); err != nil {
-		panic(err)
+		return err
+	}
+
+	if err := placementrulev1.AddToScheme(crScheme); err != nil {
+		return err
 	}
 
 	return nil
