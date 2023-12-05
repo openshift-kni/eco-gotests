@@ -117,9 +117,10 @@ The project uses a development method - forking workflow
    the [eco-gotests](https://github.com/openshift-kni/eco-gotests) .
 
 # Team Documentation
-| Name          | README                                |
-|-------------- | ------------------------------------- |
-| Assisted ZTP  | [README](tests/assisted/ztp/README.md)|
+| Name             | README                                     |
+|------------------|--------------------------------------------|
+| Assisted ZTP     | [README](tests/assisted/ztp/README.md)     |
+| CNF Core Network | [README](tests/cnf/core/network/README.md) |
 
 # eco-tests - Project structure
     .
