@@ -51,6 +51,8 @@ ecore_nad_workload_pcg_cm_data:
     ip --br a s
 ecore_nad_nad_list_pcg:
 - eric-pc-routing-engine
+- eric-pc-up-data-plane-net1
+- eric-pc-up-data-plane-net2
 ecore_nad_nad_list_pcc:
 - eric-pc-routing-engine-net0
 - eric-pc-vpn-gateway-forwarder-common
