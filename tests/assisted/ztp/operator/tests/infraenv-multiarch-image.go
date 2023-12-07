@@ -116,17 +116,18 @@ var _ = Describe(
 
 			})
 			DescribeTable("Assert valid ISO is created by InfraEnv with different cpuArchitecture",
-				func(archUrlReleased string, archUrlPrereleased string, cpuArchitecture string, payloadURL string) {
+				func(archUrlReleased string, archUrlPrereleased string, cpuArchitecture string,
+					payloadURL string, mismatchCPUArchitecture ...string) {
 
 					By("Check the rhcos-live ISO exists")
 					archURL = archUrlReleased
 
-					_, _, err = url.Fetch(archURL, "Head", true)
-					if err != nil {
+					_, statusCode, err := url.Fetch(archURL, "Head", true)
+					if err != nil || statusCode != 200 {
 						archURL = archUrlPrereleased
-						_, _, err = url.Fetch(archURL, "Head", true)
+						_, statusCode, err = url.Fetch(archURL, "Head", true)
 					}
-
+					Expect(statusCode).To(Equal(200), "bad HTTP status from url %s", archURL)
 					Expect(err).ToNot(HaveOccurred(), "error reaching %s", archURL)
 
 					glog.V(ztpparams.ZTPLogLevel).Infof("Verified ISO from URL %s exists", archURL)
@@ -138,11 +139,19 @@ var _ = Describe(
 					if mirrorRegistryRef != nil {
 						tempAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
 					}
-					_, err = tempAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
-						OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
-						Version:          ZTPConfig.HubOCPXYVersion,
-						Url:              archURL,
-						CPUArchitecture:  cpuArchitecture}).Create()
+					if len(mismatchCPUArchitecture) > 0 {
+						_, err = tempAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
+							OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
+							Version:          ZTPConfig.HubOCPXYVersion,
+							Url:              archURL,
+							CPUArchitecture:  mismatchCPUArchitecture[0]}).Create()
+					} else {
+						_, err = tempAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
+							OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
+							Version:          ZTPConfig.HubOCPXYVersion,
+							Url:              archURL,
+							CPUArchitecture:  cpuArchitecture}).Create()
+					}
 					Expect(err).ToNot(HaveOccurred(),
 						"error creating agentserviceconfig with the specific osimage")
 
@@ -161,7 +170,15 @@ var _ = Describe(
 						HubAPIClient, testClusterImageSetName, payloadImage).Create()
 					Expect(err).ToNot(HaveOccurred(), "error creating clusterimageset %s", testClusterImageSetName)
 
-					createSpokeClusterResources(cpuArchitecture)
+					By("Create namespace with pull-secret for the spoke cluster")
+					createSpokeClusterNamespace()
+
+					if len(mismatchCPUArchitecture) > 0 {
+						createSpokeClusterResources(cpuArchitecture, mismatchCPUArchitecture[0])
+					} else {
+						createSpokeClusterResources(cpuArchitecture)
+					}
+
 				},
 
 				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to x86_64",
@@ -199,27 +216,40 @@ var _ = Describe(
 					models.ClusterCPUArchitectureArm64,
 					"https://arm64.ocp.releases.ci.openshift.org/graph",
 					polarion.ID("56186")),
+
+				Entry("Assert the InfraEnv creation fails when the cpuArchitecture is mismatched with ppc64le arch",
+					"https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/"+
+						ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.aarch64.iso",
+					"https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/pre-release/latest-"+
+						ZTPConfig.HubOCPXYVersion+"/rhcos-live.aarch64.iso",
+					models.ClusterCPUArchitectureArm64,
+					"https://arm64.ocp.releases.ci.openshift.org/graph",
+					models.ClusterCPUArchitecturePpc64le,
+					polarion.ID("56190")),
 			)
 		})
 
 	})
 
-// createSpokeClusterResources is a helper function that creates
-// spoke cluster resources required for the test.
-func createSpokeClusterResources(cpuArch string) {
+// createSpokeClusterNamespace is a helper function that creates namespace
+// for the spoke cluster.
+func createSpokeClusterNamespace() {
 	By("Create namespace for the test")
 
 	if nsBuilder.Exists() {
 		glog.V(ztpparams.ZTPLogLevel).Infof("The namespace '%s' already exists",
 			nsBuilder.Object.Name)
 	} else {
-		// create the namespace
 		glog.V(ztpparams.ZTPLogLevel).Infof("Creating the namespace:  %v", infraenvTestSpoke)
 		_, err := nsBuilder.Create()
 		Expect(err).ToNot(HaveOccurred(), "error creating namespace '%s' :  %v ",
 			nsBuilder.Definition.Name, err)
 	}
+}
 
+// createSpokeClusterResources is a helper function that creates
+// spoke cluster resources required for the test.
+func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...string) {
 	By("Create pull-secret in the new namespace")
 
 	testSecret, err := secret.NewBuilder(
@@ -247,7 +277,7 @@ func createSpokeClusterResources(cpuArch string) {
 
 	By("Create agentclusterinstall in the new namespace")
 
-	_, err = assisted.NewAgentClusterInstallBuilder(
+	agentClusterInstallBuilder, err := assisted.NewAgentClusterInstallBuilder(
 		HubAPIClient,
 		infraenvTestSpoke,
 		infraenvTestSpoke,
@@ -270,17 +300,36 @@ func createSpokeClusterResources(cpuArch string) {
 
 	By("Create infraenv in the new namespace")
 
+	cpuArchTemp := cpuArch
+
+	if len(mismatchCPUArchitecture) > 0 {
+		cpuArchTemp = mismatchCPUArchitecture[0]
+	}
+
 	infraEnvBuilder, err := assisted.NewInfraEnvBuilder(
 		HubAPIClient,
 		infraenvTestSpoke,
 		infraenvTestSpoke,
-		testSecret.Definition.Name).WithCPUType(cpuArch).Create()
-	Expect(err).ToNot(HaveOccurred(), "error creating infraenv with cpu architecture %s", cpuArch)
+		testSecret.Definition.Name).WithCPUType(cpuArchTemp).Create()
 
-	By("Wait until the discovery iso is created for the infraenv")
+	Expect(err).ToNot(HaveOccurred(), "error creating infraenv with cpu architecture %s", cpuArchTemp)
 
-	_, err = infraEnvBuilder.WaitForDiscoveryISOCreation(300 * time.Second)
-	Expect(err).ToNot(HaveOccurred(), "error waiting for the discovery iso creation")
+	if len(mismatchCPUArchitecture) == 0 {
+		By("Wait until the discovery iso is created for the infraenv")
+
+		_, err = infraEnvBuilder.WaitForDiscoveryISOCreation(300 * time.Second)
+		Expect(err).ToNot(HaveOccurred(), "error waiting for the discovery iso creation")
+	} else {
+		By("Wait until ACI shows an error for the mismatching image architecture")
+
+		err = agentClusterInstallBuilder.WaitForConditionMessage(v1beta1.ClusterSpecSyncedCondition,
+			"The Spec could not be synced due to an input error: Requested CPU architecture "+
+				cpuArch+
+				" is not available",
+			time.Minute,
+		)
+		Expect(err).ToNot(HaveOccurred(), "didn't get the message about mismatching CPU architecture")
+	}
 }
 
 // getLatestReleasePayload is a helper function that returns
