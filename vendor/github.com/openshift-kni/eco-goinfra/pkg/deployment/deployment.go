@@ -591,3 +591,19 @@ func (builder *Builder) validate() (bool, error) {
 
 	return true, nil
 }
+
+// WithToleration applies a toleration to the deployment's definition.
+func (builder *Builder) WithToleration(toleration coreV1.Toleration) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding TaintToleration %v to deployment %s in namespace %s",
+		toleration, builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.Tolerations = append(
+		builder.Definition.Spec.Template.Spec.Tolerations,
+		toleration)
+
+	return builder
+}

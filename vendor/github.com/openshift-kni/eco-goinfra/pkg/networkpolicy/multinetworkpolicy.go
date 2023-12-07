@@ -135,6 +135,22 @@ func (builder *MultiNetworkPolicyBuilder) WithIngressRule(
 	return builder
 }
 
+// WithEgressRule adds Egress rule to the MultiNetworkPolicy. Empty rule is allowed and works as allow all traffic.
+func (builder *MultiNetworkPolicyBuilder) WithEgressRule(
+	egressRule v1beta1.MultiNetworkPolicyEgressRule) *MultiNetworkPolicyBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Creating multiNetworkPolicy %s in %s namespace with the Egress rule defined: %v",
+		builder.Definition.Name, builder.Definition.Namespace, egressRule)
+
+	builder.Definition.Spec.Egress = append(builder.Definition.Spec.Egress, egressRule)
+
+	return builder
+}
+
 // WithPolicyType adds policyType to the MultiNetworkPolicy.
 func (builder *MultiNetworkPolicyBuilder) WithPolicyType(
 	policyType v1beta1.MultiPolicyType) *MultiNetworkPolicyBuilder {
