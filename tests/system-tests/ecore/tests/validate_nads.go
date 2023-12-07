@@ -73,6 +73,7 @@ var _ = Describe(
 		Describe("Configuring workloads", Label("ecore_validate_cm"), func() {
 
 			var cmBuilder *configmap.Builder
+			const rbacName = "privileged-telco-qe"
 
 			Context("Workloads in the PCC namespace", func() {
 				BeforeEach(func() {
@@ -147,6 +148,20 @@ var _ = Describe(
 							return len(oldPods) == 0
 
 						}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label(s) still present")
+					}
+				})
+
+				// Remove Cluster Role Binding
+				BeforeEach(func() {
+					By("Removing ClusterRoleBinding")
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Assert ClusterRoleBinding %q exists", rbacName)
+
+					if crb, err := rbac.PullClusterRoleBinding(APIClient, rbacName); err == nil {
+						glog.V(ecoreparams.ECoreLogLevel).Infof("ClusterRoleBinding %q found. Removing...", rbacName)
+						err := crb.Delete()
+						Expect(err).ToNot(HaveOccurred(),
+							fmt.Sprintf("Failed to delete ClusterRoleBinding %q", rbacName))
+
 					}
 				})
 
@@ -265,7 +280,6 @@ var _ = Describe(
 						deploySa.Definition.Name)
 
 					By("Creating RBAC for SA")
-					rbacName := "privileged-telco-qe"
 					crbSa := rbac.NewClusterRoleBindingBuilder(APIClient,
 						rbacName,
 						"system:openshift:scc:privileged",
@@ -486,7 +500,6 @@ var _ = Describe(
 						deploySa.Definition.Name)
 
 					By("Creating RBAC for SA")
-					rbacName := "privileged-telco-qe"
 					crbSa := rbac.NewClusterRoleBindingBuilder(APIClient,
 						rbacName,
 						"system:openshift:scc:privileged",
