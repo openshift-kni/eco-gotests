@@ -52,4 +52,8 @@ const (
 	// LabelInfraOperatorProxyDeploy represents infrastructure-operator-proxy-deploy label that can be used
 	// for test case selection.
 	LabelInfraOperatorProxyDeploy = "infrastructure-operator-proxy-deploy"
+
+	// LabelClusterImageSetMatchingOSImage represents clusterimageset-matching-os-image label that can be used
+	// for test case selection.
+	LabelClusterImageSetMatchingOSImage = "clusterimageset-matching-os-image"
 )
