@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
@@ -389,7 +390,7 @@ func createFrrPodOnMasterNodeAndWaitUntilRunning(
 	createFrrPod(
 		masterNodeName,
 		"",
-		cmd.DefineRouteAndSleep(mlbPoolIP, removePrefixFromIP(nodeAddr)),
+		cmd.DefineRouteAndSleep(mlbPoolIP, ipaddr.RemovePrefix(nodeAddr)),
 		podMasterOneNetCfg,
 		name,
 	)
@@ -449,20 +450,20 @@ func testBFDFailOver() {
 	// Sleep until BFD timeout
 	time.Sleep(1200 * time.Millisecond)
 
-	bpgUp, err := frr.BGPNeighborshipHasState(frrPod, removePrefixFromIP(secondWorkerIP), "Established")
+	bpgUp, err := frr.BGPNeighborshipHasState(frrPod, ipaddr.RemovePrefix(secondWorkerIP), "Established")
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp state from FRR router")
 	Expect(bpgUp).Should(BeTrue(), "BGP is not in expected established state")
-	Expect(frr.BFDHasStatus(frrPod, removePrefixFromIP(secondWorkerIP), "up")).Should(BeNil(),
+	Expect(frr.BFDHasStatus(frrPod, ipaddr.RemovePrefix(secondWorkerIP), "up")).Should(BeNil(),
 		"BFD is not in expected up state")
 
 	By("Verifying that FRR pod lost BFD and BGP session with one of the MetalLb speakers")
 
 	firstWorkerNodeIP, err := firstWorkerNode.ExternalIPv4Network()
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect external node ip")
-	bpgUp, err = frr.BGPNeighborshipHasState(frrPod, removePrefixFromIP(firstWorkerNodeIP), "Established")
+	bpgUp, err = frr.BGPNeighborshipHasState(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "Established")
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect BGP state")
 	Expect(bpgUp).Should(BeFalse(), "BGP is not in expected down state")
-	Expect(frr.BFDHasStatus(frrPod, removePrefixFromIP(firstWorkerNodeIP), "down")).
+	Expect(frr.BFDHasStatus(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "down")).
 		ShouldNot(HaveOccurred(), "BFD is not in expected down state")
 }
 

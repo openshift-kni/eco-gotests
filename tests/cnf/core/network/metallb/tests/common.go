@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
@@ -213,13 +213,9 @@ func setupNGNXPod() {
 
 func removePrefixFromIPList(ipAddressList []string) []string {
 	var ipAddressListWithoutPrefix []string
-	for _, ipaddr := range ipAddressList {
-		ipAddressListWithoutPrefix = append(ipAddressListWithoutPrefix, removePrefixFromIP(ipaddr))
+	for _, ipaddress := range ipAddressList {
+		ipAddressListWithoutPrefix = append(ipAddressListWithoutPrefix, ipaddr.RemovePrefix(ipaddress))
 	}
 
 	return ipAddressListWithoutPrefix
-}
-
-func removePrefixFromIP(ipAddr string) string {
-	return strings.Split(ipAddr, "/")[0]
 }
