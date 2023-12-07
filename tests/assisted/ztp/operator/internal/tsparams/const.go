@@ -48,4 +48,8 @@ const (
 	// LabelDualstackIPv4FirstACI represents dualstack-ipv4-first-aci label that can be used
 	// for test case selection.
 	LabelDualstackIPv4FirstACI = "dualstack-ipv4-first-aci"
+
+	// LabelInfraOperatorProxyDeploy represents infrastructure-operator-proxy-deploy label that can be used
+	// for test case selection.
+	LabelInfraOperatorProxyDeploy = "infrastructure-operator-proxy-deploy"
 )
