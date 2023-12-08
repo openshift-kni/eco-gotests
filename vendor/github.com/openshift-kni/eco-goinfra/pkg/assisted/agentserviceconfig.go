@@ -384,28 +384,28 @@ func (builder *AgentServiceConfigBuilder) Update(force bool) (*AgentServiceConfi
 }
 
 // Delete removes an agentserviceconfig from the cluster.
-func (builder *AgentServiceConfigBuilder) Delete() (*AgentServiceConfigBuilder, error) {
+func (builder *AgentServiceConfigBuilder) Delete() error {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return err
 	}
 
 	glog.V(100).Infof("Deleting the agentserviceconfig %s",
 		builder.Definition.Name)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("agentserviceconfig cannot be deleted because it does not exist")
+		return fmt.Errorf("agentserviceconfig cannot be deleted because it does not exist")
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return builder, fmt.Errorf("cannot delete agentserviceconfig: %w", err)
+		return fmt.Errorf("cannot delete agentserviceconfig: %w", err)
 	}
 
 	builder.Object = nil
 	builder.Definition.ResourceVersion = ""
 
-	return builder, nil
+	return nil
 }
 
 // DeleteAndWait deletes an agentserviceconfig and waits until it is removed from the cluster.
@@ -418,7 +418,7 @@ func (builder *AgentServiceConfigBuilder) DeleteAndWait(timeout time.Duration) e
 	waiting for the defined period until it's removed`,
 		builder.Definition.Name)
 
-	if _, err := builder.Delete(); err != nil {
+	if err := builder.Delete(); err != nil {
 		return err
 	}
 

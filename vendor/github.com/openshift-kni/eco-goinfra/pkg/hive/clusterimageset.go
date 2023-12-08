@@ -194,7 +194,7 @@ func (builder *ClusterImageSetBuilder) Update(force bool) (*ClusterImageSetBuild
 			glog.V(100).Infof(
 				msg.FailToUpdateNotification("clusterimageset", builder.Definition.Name, builder.Definition.Namespace))
 
-			builder, err := builder.Delete()
+			err := builder.Delete()
 
 			if err != nil {
 				glog.V(100).Infof(
@@ -215,28 +215,28 @@ func (builder *ClusterImageSetBuilder) Update(force bool) (*ClusterImageSetBuild
 }
 
 // Delete removes a clusterimageset from the cluster.
-func (builder *ClusterImageSetBuilder) Delete() (*ClusterImageSetBuilder, error) {
+func (builder *ClusterImageSetBuilder) Delete() error {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return err
 	}
 
 	glog.V(100).Infof("Deleting the clusterimageset %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("clusterimageset cannot be deleted because it does not exist")
+		return fmt.Errorf("clusterimageset cannot be deleted because it does not exist")
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return builder, fmt.Errorf("cannot delete clusterimageset: %w", err)
+		return fmt.Errorf("cannot delete clusterimageset: %w", err)
 	}
 
 	builder.Object = nil
 	builder.Definition.ResourceVersion = ""
 	builder.Definition.CreationTimestamp = metaV1.Time{}
 
-	return builder, nil
+	return nil
 }
 
 // Exists checks if the defined clusterimageset has already been created.

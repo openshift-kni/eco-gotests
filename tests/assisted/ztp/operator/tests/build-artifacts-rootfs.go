@@ -165,13 +165,13 @@ var _ = Describe(
 			)
 
 			AfterAll(func() {
-				_, err = rootfsTestInfraEnv.Delete()
+				err = rootfsTestInfraEnv.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error removing infraenv")
 
-				_, err = rootfsTestAgentClusterInstall.Delete()
+				err = rootfsTestAgentClusterInstall.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error removing agentclusterinstall")
 
-				_, err = rootfsTestClusterDeployment.Delete()
+				err = rootfsTestClusterDeployment.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error removing clusterdeployment")
 
 				err = rootfsTestPullSecret.Delete()

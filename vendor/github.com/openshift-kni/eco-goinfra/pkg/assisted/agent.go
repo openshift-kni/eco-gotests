@@ -329,27 +329,27 @@ func (builder *agentBuilder) Exists() bool {
 }
 
 // Delete removes an agent from the cluster.
-func (builder *agentBuilder) Delete() (*agentBuilder, error) {
+func (builder *agentBuilder) Delete() error {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return err
 	}
 
 	glog.V(100).Infof("Deleting the agent %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("agent cannot be deleted because it does not exist")
+		return fmt.Errorf("agent cannot be deleted because it does not exist")
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return builder, fmt.Errorf("cannot delete agent: %w", err)
+		return fmt.Errorf("cannot delete agent: %w", err)
 	}
 
 	builder.Object = nil
 
-	return builder, nil
+	return nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before

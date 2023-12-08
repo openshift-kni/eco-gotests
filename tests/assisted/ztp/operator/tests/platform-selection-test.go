@@ -137,7 +137,7 @@ var _ = Describe(
 
 			AfterAll(func() {
 				By("Delete platform-test clusterdeployment")
-				_, err := testClusterDeployment.Delete()
+				err := testClusterDeployment.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when deleting clusterdeployment")
 
 				By("Delete platform-test pull-secret")

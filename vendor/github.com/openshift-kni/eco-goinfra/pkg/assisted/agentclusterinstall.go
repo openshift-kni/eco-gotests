@@ -587,27 +587,27 @@ func (builder *AgentClusterInstallBuilder) Update(force bool) (*AgentClusterInst
 }
 
 // Delete removes an agentclusterinstall from the cluster.
-func (builder *AgentClusterInstallBuilder) Delete() (*AgentClusterInstallBuilder, error) {
+func (builder *AgentClusterInstallBuilder) Delete() error {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return err
 	}
 
 	glog.V(100).Infof("Deleting the agentclusterinstall %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("agentclusterinstall cannot be deleted because it does not exist")
+		return fmt.Errorf("agentclusterinstall cannot be deleted because it does not exist")
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return builder, fmt.Errorf("cannot delete agentclusterinstall: %w", err)
+		return fmt.Errorf("cannot delete agentclusterinstall: %w", err)
 	}
 
 	builder.Object = nil
 
-	return builder, nil
+	return nil
 }
 
 // DeleteAndWait deletes an agentclusterinstall and waits until it is removed from the cluster.
@@ -620,7 +620,7 @@ func (builder *AgentClusterInstallBuilder) DeleteAndWait(timeout time.Duration) 
 	waiting for the defined period until it's removed`,
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	if _, err := builder.Delete(); err != nil {
+	if err := builder.Delete(); err != nil {
 		return err
 	}
 

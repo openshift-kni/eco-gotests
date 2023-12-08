@@ -118,15 +118,15 @@ var _ = Describe(
 
 			AfterAll(func() {
 				By("Deleting osimage-clusterimageset-test infraenv")
-				_, err = osImageClusterImageSetInfraEnv.Delete()
+				err = osImageClusterImageSetInfraEnv.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error deleting infraenv")
 
 				By("Deleting osimage-clusterimageset-test agentclusterinstall")
-				_, err = osImageClusterImageSetACI.Delete()
+				err = osImageClusterImageSetACI.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error deleting agentclusterinstall")
 
 				By("Deleting osimage-clusterimageset-test clusterdeployment")
-				_, err = osImageClusterImageSetCD.Delete()
+				err = osImageClusterImageSetCD.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error deleting clusterdeployment")
 
 				By("Deleting osimage-clusterimageset-test secret")

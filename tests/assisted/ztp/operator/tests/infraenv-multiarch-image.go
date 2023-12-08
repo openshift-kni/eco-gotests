@@ -70,7 +70,7 @@ var _ = Describe(
 
 				By("Delete ClusterImageSet if exists before all tests ")
 				if err == nil {
-					_, err = originalClusterImagesetBuilder.Delete()
+					err = originalClusterImagesetBuilder.Delete()
 					Expect(err).ToNot(HaveOccurred(), "error deleting clusterimageset %s", testClusterImageSetName)
 					glog.V(ztpparams.ZTPLogLevel).Infof("The ClusterImageSet %s was deleted", testClusterImageSetName)
 				} else {
@@ -87,7 +87,7 @@ var _ = Describe(
 				}
 
 				By("Delete ClusterImageSet after a test")
-				_, err = tempClusterImagesetBuilder.Delete()
+				err = tempClusterImagesetBuilder.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error deleting clusterimageset %s", testClusterImageSetName)
 				glog.V(ztpparams.ZTPLogLevel).Infof("The ClusterImageSet %s was deleted", testClusterImageSetName)
 

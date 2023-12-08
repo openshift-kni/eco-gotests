@@ -182,11 +182,11 @@ var _ = Describe(
 			AfterAll(func() {
 
 				By("Deleting agentCLusterInstall")
-				_, err = testAgentClusterInstall.Delete()
+				err = testAgentClusterInstall.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error deleting aci")
 
 				By("Deleting clusterdeployment")
-				_, err = testClusterDeployment.Delete()
+				err = testClusterDeployment.Delete()
 				Expect(err).ToNot(HaveOccurred(), "error deleting clusterdeployment")
 
 				By("Deleting pull secret")

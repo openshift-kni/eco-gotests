@@ -116,9 +116,9 @@ func (builder *NmStateConfigBuilder) Create() (*NmStateConfigBuilder, error) {
 }
 
 // Delete removes nmstateconfig object from a cluster.
-func (builder *NmStateConfigBuilder) Delete() (*NmStateConfigBuilder, error) {
+func (builder *NmStateConfigBuilder) Delete() error {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return err
 	}
 
 	glog.V(100).Infof("Deleting the nmstateconfig object %s in namespace: %s",
@@ -127,12 +127,12 @@ func (builder *NmStateConfigBuilder) Delete() (*NmStateConfigBuilder, error) {
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return builder, fmt.Errorf("can not delete nmstateconfig: %w", err)
+		return fmt.Errorf("can not delete nmstateconfig: %w", err)
 	}
 
 	builder.Object = nil
 
-	return builder, nil
+	return nil
 }
 
 // ListNmStateConfigsInAllNamespaces returns a cluster-wide NMStateConfig list.

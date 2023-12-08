@@ -274,7 +274,7 @@ func (builder *ClusterDeploymentBuilder) Update(force bool) (*ClusterDeploymentB
 			glog.V(100).Infof(
 				msg.FailToUpdateNotification("clusterdeployment", builder.Definition.Name, builder.Definition.Namespace))
 
-			builder, err := builder.Delete()
+			err := builder.Delete()
 
 			if err != nil {
 				glog.V(100).Infof(
@@ -295,27 +295,27 @@ func (builder *ClusterDeploymentBuilder) Update(force bool) (*ClusterDeploymentB
 }
 
 // Delete removes a clusterdeployment from the cluster.
-func (builder *ClusterDeploymentBuilder) Delete() (*ClusterDeploymentBuilder, error) {
+func (builder *ClusterDeploymentBuilder) Delete() error {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return err
 	}
 
 	glog.V(100).Infof("Deleting the clusterdeployment %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("clusterdeployment cannot be deleted because it does not exist")
+		return fmt.Errorf("clusterdeployment cannot be deleted because it does not exist")
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return builder, fmt.Errorf("cannot delete clusterdeployment: %w", err)
+		return fmt.Errorf("cannot delete clusterdeployment: %w", err)
 	}
 
 	builder.Object = nil
 
-	return builder, nil
+	return nil
 }
 
 // Exists checks if the defined clusterdeployment has already been created.
