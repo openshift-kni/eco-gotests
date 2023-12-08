@@ -174,27 +174,25 @@ issues:
         - gochecknoinits
     - path: 'tests/rhwa/internal/rhwainittools'
       linters:
-        - gochecknoinits  
+        - gochecknoinits
     - path: 'tests/internal/polarion'
       linters:
         - exhaustive
-
     - path: "tests/internal/inittools"
       linters:
         - depguard
-
     - path: 'tests/internal/polarion'
       linters:
         - depguard
-
     - path: 'tests/internal/reporter'
       linters:
         - depguard
-
+    - path: 'tests/system-tests/internal/ocpcli'
+      linters:
+        - depguard
     - path: "tests/.*/tests/.*"
       linters:
         - depguard
-
     - path: "tests/.*/.*suite_test.go"
       linters:
         - depguard

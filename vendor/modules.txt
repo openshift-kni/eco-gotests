@@ -765,6 +765,9 @@ github.com/thoas/go-funk
 # github.com/vincent-petithory/dataurl v1.0.0
 ## explicit
 github.com/vincent-petithory/dataurl
+# github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
+## explicit
+github.com/walle/targz
 # github.com/wk8/go-ordered-map/v2 v2.1.8
 ## explicit; go 1.18
 github.com/wk8/go-ordered-map/v2

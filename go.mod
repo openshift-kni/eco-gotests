@@ -30,6 +30,7 @@ require (
 	github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a9
 	github.com/operator-framework/api v0.18.0
 	github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20231116085833-96c2cd1e77e9
+	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 	gopkg.in/k8snetworkplumbingwg/multus-cni.v4 v4.0.2

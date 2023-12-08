@@ -73,4 +73,13 @@ const (
 
 	// RegistryRepository local registry repository to mirror images to.
 	RegistryRepository = "openshift"
+
+	// SccName scc name.
+	SccName = "samsung-cnf-scc"
+
+	// SystemReservedCPU systemreserved cpu value.
+	SystemReservedCPU = "500m"
+
+	// SystemReservedMemory systemreserved memory value.
+	SystemReservedMemory = "27Gi"
 )
