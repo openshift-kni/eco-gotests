@@ -72,3 +72,36 @@ ecore_performance_profile_ht_name: ht100gb
 ecore_node_selector_ht_nodes:
   node-role.kubernetes.io/ht100gb: ""
 ecore_policy_ns: ecore
+ecore_wlkd_sriov_cm_data_pcg:
+  config.sh: |
+    #! /bin/bash
+    set -euo pipefail
+    ip=$1
+    ip link set dev net1 down
+    ip link add link net1 name net1.497 type vlan id 497
+    ip addr add $1 dev net1.497
+    ip link set dev net1 up
+    ip link set dev net1.497 up
+    ip --br a s
+ecore_wlkd_sriov_deploy_one_name: telco-sriov-left
+ecore_wlkd_sriov_deploy_two_name: telco-sriov-right
+ecore_wlkd_sriov_cm_name_pcg: yp-sriov-cm
+
+ecore_wlkd_sriov_one_image: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
+ecore_wlkd_sriov_two_image: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
+ecore_wlkd_sriov_one_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 10.46.126.75/26; nc -k -l 10.46.126.75 1111"
+ecore_wlkd_sriov_two_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 10.46.126.77/26; nc -k -l 10.46.126.77 2222"
+ecore_wlkd_sriov_one_selector:
+  kubernetes.io/hostname: openshift-worker-2.ecore.lab.eng.tlv2.redhat.com
+ecore_wlkd_sriov_two_selector:
+  kubernetes.io/hostname: openshift-worker-3.ecore.lab.eng.tlv2.redhat.com
+ecore_wlkd_sriov_one_sa: telco-qe-sa
+ecore_wlkd_sriov_two_sa: telco-qe-sa
+ecore_wlkd_sriov_net_one: eric-pc-up-data-plane-net1
+ecore_wlkd_sriov_net_two: eric-pc-up-data-plane-net2

@@ -55,7 +55,30 @@ type ECoreConfig struct {
 	//nolint:lll
 	KubeletConfigStandardName string `yaml:"ecore_kublet_config_name_standard" envconfig:"ECO_SYSTEM_ECORE_KUBELET_CONFIG_NAME_STANDARD"`
 	//nolint:lll
-	PerformanceProfileHTName string `yaml:"ecore_performance_profile_ht_name" envconfig:"ECO_SYSTEM_ECORE_PERFORMANCE_PROFILE_HT_NAME"`
+	PerformanceProfileHTName  string `yaml:"ecore_performance_profile_ht_name" envconfig:"ECO_SYSTEM_ECORE_PERFORMANCE_PROFILE_HT_NAME"`
+	WlkdSRIOVConfigMapNamePCG string `yaml:"ecore_wlkd_sriov_cm_name_pcg" envconfig:"ECO_SYSTEM_ECORE_SRIOV_CM_NAME_PCG"`
+	//nolint:lll
+	WlkdSRIOVConfigMapDataPCG map[string]string `yaml:"ecore_wlkd_sriov_cm_data_pcg" envconfig:"ECO_SYSTEM_ECORE_SRIOV_CM_DATA_PCG"`
+	//nolint:lll
+	WlkdSRIOVDeployOneName string `yaml:"ecore_wlkd_sriov_deploy_one_name" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_DEPLOY_ONE_NAME"`
+	//nolint:lll
+	WlkdSRIOVDeployTwoName  string `yaml:"ecore_wlkd_sriov_deploy_two_name" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_DEPLOY_TWO_NAME"`
+	WlkdSRIOVDeployOneImage string `yaml:"ecore_wlkd_sriov_one_image" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_ONE_IMG"`
+	WlkdSRIOVDeployTwoImage string `yaml:"ecore_wlkd_sriov_two_image" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_TWO_IMG"`
+
+	WlkdSRIOVDeployOneCmd []string `yaml:"ecore_wlkd_sriov_one_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_ONE_CMD"`
+	WlkdSRIOVDeployTwoCmd []string `yaml:"ecore_wlkd_sriov_two_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_TWO_CMD"`
+
+	//nolint:lll
+	WlkdSRIOVDeployOneSelector map[string]string `yaml:"ecore_wlkd_sriov_one_selector" envconfig:"ECO_SYSTEM_WLKD_SRIOV_ONE_SELECTOR"`
+	//nolint:lll
+	WlkdSRIOVDeployTwoSelector map[string]string `yaml:"ecore_wlkd_sriov_two_selector" envconfig:"ECO_SYSTEM_WLKD_SRIOV_TWO_SELECTOR"`
+
+	WlkdSRIOVOneSa string `yaml:"ecore_wlkd_sriov_one_sa" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_ONE_SA"`
+	WlkdSRIOVTwoSa string `yaml:"ecore_wlkd_sriov_two_sa" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_TWO_SA"`
+
+	WlkdSRIOVNetOne string `yaml:"ecore_wlkd_sriov_net_one" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_NET_ONE"`
+	WlkdSRIOVNetTwo string `yaml:"ecore_wlkd_sriov_net_two" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_NET_TWO"`
 }
 
 // NewECoreConfig returns instance of ECoreConfig config type.

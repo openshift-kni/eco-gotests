@@ -13,6 +13,9 @@ const (
 	// MachineConfigDaemonContainerName container name within machine-config-daemon pod.
 	MachineConfigDaemonContainerName = "machine-config-daemon"
 
+	// SRIOVOperatorNS namespace where SR-IOV operator is installed.
+	SRIOVOperatorNS = "openshift-sriov-network-operator"
+
 	// LabelEcoreValidateNAD is used to select all tests for network-attachment-definition validation.
 	LabelEcoreValidateNAD = "ecore_validate_nad"
 
@@ -30,4 +33,7 @@ const (
 
 	// LabelEcoreValidatePolicies is used to select test for policies validation.
 	LabelEcoreValidatePolicies = "ecore_validate_policies"
+
+	// LabelEcoreValidateSriov is used to select test for SR-IOV validation.
+	LabelEcoreValidateSriov = "ecore_validate_sriov"
 )
