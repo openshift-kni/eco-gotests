@@ -56,4 +56,8 @@ const (
 	// LabelClusterImageSetMatchingOSImage represents clusterimageset-matching-os-image label that can be used
 	// for test case selection.
 	LabelClusterImageSetMatchingOSImage = "clusterimageset-matching-os-image"
+
+	// LabelAssistedHiveOperatorDeploy represents assisted-hive-operator-deploy label that can be used
+	// for test case selection.
+	LabelAssistedHiveOperatorDeploy = "assisted-hive-operator-deploy"
 )
