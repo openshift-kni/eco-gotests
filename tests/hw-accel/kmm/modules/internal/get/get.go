@@ -4,7 +4,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -123,4 +125,33 @@ func SigningData(key string, value string) map[string][]byte {
 	secretContents := map[string][]byte{key: val}
 
 	return secretContents
+}
+
+// PreflightImage returns preflightvalidationocp image to be used based on architecture.
+func PreflightImage(arch string) string {
+	if arch == "arm64" {
+		arch = "aarch64"
+	}
+
+	if arch == "amd64" {
+		arch = "x86_64"
+	}
+
+	return fmt.Sprintf(tsparams.PreflightTemplateImage, arch)
+}
+
+// PreflightReason returns the reason of a preflightvalidationocp check.
+func PreflightReason(apiClient *clients.Settings, preflight, module, nsname string) (string, error) {
+	pre, _ := kmm.PullPreflightValidationOCP(apiClient, preflight, nsname)
+
+	preflightValidationOCP, err := pre.Get()
+
+	if err == nil {
+		reason := preflightValidationOCP.Status.CRStatuses[module].StatusReason
+		glog.V(kmmparams.KmmLogLevel).Infof("VerificationStatus: %s", reason)
+
+		return reason, nil
+	}
+
+	return "", err
 }

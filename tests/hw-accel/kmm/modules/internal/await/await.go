@@ -54,6 +54,24 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 
 					return true, nil
 				}
+
+				for _, podObj := range pods {
+					if strings.Contains(string(podObj.Object.Status.Phase), "Failed") {
+						err = fmt.Errorf("BuildPod %s has failed", podObj.Object.Name)
+						glog.V(kmmparams.KmmLogLevel).Info(err)
+
+						return false, err
+					}
+
+					if strings.Contains(string(podObj.Object.Status.Phase), "Succeeded") {
+						glog.V(kmmparams.KmmLogLevel).Infof("BuildPod %s is in phase Succeeded",
+							podObj.Object.Name)
+						buildPod[nsname] = ""
+
+						return true, nil
+					}
+
+				}
 			}
 
 			return false, err
@@ -106,6 +124,32 @@ func ModuleObjectDeleted(apiClient *clients.Settings, moduleName, nsName string,
 			}
 
 			return err != nil, nil
+		})
+}
+
+// PreflightStageDone awaits preflightvalidationocp to be in stage Done.
+func PreflightStageDone(apiClinet *clients.Settings, preflight, module, nsname string,
+	timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pre, err := kmm.PullPreflightValidationOCP(apiClinet, preflight,
+				nsname)
+
+			if err != nil {
+				glog.V(kmmparams.KmmLogLevel).Infof("error pulling preflightvalidationocp")
+			}
+
+			preflightValidationOCP, err := pre.Get()
+
+			if err == nil {
+				status := preflightValidationOCP.Status.CRStatuses[module].VerificationStage
+				glog.V(kmmparams.KmmLogLevel).Infof("Stage: %s", status)
+
+				return status == "Done", nil
+			}
+
+			return false, err
+
 		})
 }
 

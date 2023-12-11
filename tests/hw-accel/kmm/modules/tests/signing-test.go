@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -35,8 +36,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 		filesToSign := []string{fmt.Sprintf("/opt/lib/modules/$KERNEL_FULL_VERSION/%s.ko", kmodName)}
 
-		AfterEach(func() {
-
+		AfterAll(func() {
 			By("Delete Module")
 			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting module")
@@ -52,6 +52,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			crb := define.ModuleCRB(*svcAccount, kmodName)
 			err = crb.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+
+			By("Delete preflightvalidationocp")
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
+				tsparams.ModuleBuildAndSignNamespace).Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
 
 			By("Delete Namespace")
 			err = namespace.NewBuilder(APIClient, tsparams.ModuleBuildAndSignNamespace).Delete()
@@ -144,6 +149,76 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			_, err = check.NodeLabel(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+		})
+
+		It("should be able to run preflightvalidation with no push", polarion.ID("56329"), func() {
+			By("Detecting cluster architecture")
+
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+			preflightImage := get.PreflightImage(arch)
+
+			By("Create preflightvalidationocp")
+			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
+				tsparams.ModuleBuildAndSignNamespace).
+				WithReleaseImage(preflightImage).
+				WithPushBuiltImage(false).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, tsparams.ModuleBuildAndSignNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
+
+			By("Await preflightvalidationocp checks")
+			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.ModuleBuildAndSignNamespace, time.Minute)
+			Expect(err).To(HaveOccurred(), "preflightvalidationocp did not complete")
+
+			By("Get status of the preflightvalidationocp checks")
+			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.ModuleBuildAndSignNamespace)
+			Expect(strings.Contains(status, "Failed to verify signing for module")).
+				To(BeTrue(), "expected message not found")
+
+			By("Delete preflight validation")
+			_, err = pre.Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
+		})
+
+		It("should be able to run preflightvalidation and push to registry", polarion.ID("56327"), func() {
+			By("Detecting cluster architecture")
+
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+			preflightImage := get.PreflightImage(arch)
+
+			By("Create preflightvalidationocp")
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
+				tsparams.ModuleBuildAndSignNamespace).
+				WithReleaseImage(preflightImage).
+				WithPushBuiltImage(true).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, tsparams.ModuleBuildAndSignNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
+
+			By("Await preflightvalidationocp checks")
+			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.ModuleBuildAndSignNamespace, 3*time.Minute)
+			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
+
+			By("Get status of the preflightvalidationocp checks")
+			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.ModuleBuildAndSignNamespace)
+			Expect(strings.Contains(status, "Verification successful (sign completes and image pushed)")).
+				To(BeTrue(), "expected message not found")
 		})
 	})
 })

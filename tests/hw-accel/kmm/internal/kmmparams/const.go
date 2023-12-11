@@ -16,7 +16,7 @@ WORKDIR /build
 RUN git clone https://github.com/cdvultur/kmm-kmod.git
 WORKDIR /build/kmm-kmod
 RUN cp kmm_ci_a.c {{.Module}}.c
-RUN make
+RUN make KVER=${KERNEL_VERSION}
 
 FROM registry.redhat.io/ubi8/ubi-minimal
 ARG KERNEL_VERSION
@@ -25,7 +25,7 @@ RUN microdnf -y install kmod
 
 COPY --from=builder /etc/driver-toolkit-release.json /etc/
 COPY --from=builder /build/kmm-kmod/*.ko /opt/lib/modules/${KERNEL_VERSION}/
-RUN depmod -b /opt
+RUN depmod -b /opt ${KERNEL_VERSION}
 `
 	// SimpleKmodContents represents the Dockerfile contents for simple-kmod build.
 	SimpleKmodContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit

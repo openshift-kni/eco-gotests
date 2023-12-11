@@ -2,11 +2,13 @@ package tests
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -42,6 +44,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 		})
 
 		AfterAll(func() {
+
 			By("Delete Module")
 			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting module")
@@ -56,11 +59,17 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			By("Delete ClusterRoleBinding")
 			crb := define.ModuleCRB(*svcAccount, kmodName)
 			err = crb.Delete()
-			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+			Expect(err).ToNot(HaveOccurred(), "error deleting test namespace")
+
+			By("Delete preflightvalidationocp")
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
+				tsparams.UseDtkModuleTestNamespace).Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
 
 			By("Delete Namespace")
 			err = namespace.NewBuilder(APIClient, tsparams.UseDtkModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+
 		})
 
 		It("should use DTK_AUTO parameter", polarion.ID("54283"), func() {
@@ -150,6 +159,77 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			By("Check new kmod was loaded to node")
 			err = check.ModuleLoaded(APIClient, newKmod, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+
+		})
+
+		It("should be able to run preflightvalidation with no push to registry", polarion.ID("56330"), func() {
+			By("Detecting cluster architecture")
+
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+			preflightImage := get.PreflightImage(arch)
+
+			By("Create preflightvalidationocp")
+			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
+				tsparams.UseDtkModuleTestNamespace).
+				WithReleaseImage(preflightImage).
+				WithPushBuiltImage(false).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
+
+			By("Await preflightvalidationocp checks")
+			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.UseDtkModuleTestNamespace, 3*time.Minute)
+			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
+
+			By("Get status of the preflightvalidationocp checks")
+			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.UseDtkModuleTestNamespace)
+			Expect(strings.Contains(status, "Verification successful (build compiles)")).
+				To(BeTrue(), "expected message not found")
+
+			By("Delete preflight validation")
+			_, err = pre.Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
+		})
+
+		It("should be able to run preflightvalidation and push to registry", polarion.ID("56328"), func() {
+			By("Detecting cluster architecture")
+
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+			preflightImage := get.PreflightImage(arch)
+
+			By("Create preflightvalidationocp")
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
+				tsparams.UseDtkModuleTestNamespace).
+				WithReleaseImage(preflightImage).
+				WithPushBuiltImage(true).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
+
+			By("Await preflightvalidationocp checks")
+			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.UseDtkModuleTestNamespace, 3*time.Minute)
+			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
+
+			By("Get status of the preflightvalidationocp checks")
+			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
+				tsparams.UseDtkModuleTestNamespace)
+			Expect(strings.Contains(status, "Verification successful (build compiles and image pushed)")).
+				To(BeTrue(), "expected message not found")
 
 		})
 	})
