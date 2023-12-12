@@ -13,7 +13,7 @@ import (
 // ListPlacementBindingsInAllNamespaces returns a cluster-wide placementBinding inventory.
 func ListPlacementBindingsInAllNamespaces(apiClient *clients.Settings,
 	options ...runtimeclient.ListOptions) (
-	[]*placementBindingBuilder, error) {
+	[]*PlacementBindingBuilder, error) {
 	logMessage := string("Listing all placementBindings in all namespaces")
 	passedOptions := runtimeclient.ListOptions{}
 
@@ -40,17 +40,17 @@ func ListPlacementBindingsInAllNamespaces(apiClient *clients.Settings,
 		return nil, err
 	}
 
-	var placementBindingObjects []*placementBindingBuilder
+	var placementBindingObjects []*PlacementBindingBuilder
 
 	for _, placementBinding := range placementBindingList.Items {
 		copiedplacementBinding := placementBinding
-		placementBindingBuilder := &placementBindingBuilder{
+		placementBinding := &PlacementBindingBuilder{
 			apiClient:  apiClient,
 			Object:     &copiedplacementBinding,
 			Definition: &copiedplacementBinding,
 		}
 
-		placementBindingObjects = append(placementBindingObjects, placementBindingBuilder)
+		placementBindingObjects = append(placementBindingObjects, placementBinding)
 	}
 
 	return placementBindingObjects, nil

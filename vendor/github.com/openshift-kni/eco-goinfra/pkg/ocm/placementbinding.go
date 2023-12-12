@@ -13,7 +13,7 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type placementBindingBuilder struct {
+type PlacementBindingBuilder struct {
 	// placementBinding Definition, used to create the placementBinding object.
 	Definition *policiesv1.PlacementBinding
 	// created placementBinding object.
@@ -25,10 +25,10 @@ type placementBindingBuilder struct {
 }
 
 // PullPlacementBinding pulls existing placementBinding into Builder struct.
-func PullPlacementBinding(apiClient *clients.Settings, name, nsname string) (*placementBindingBuilder, error) {
+func PullPlacementBinding(apiClient *clients.Settings, name, nsname string) (*PlacementBindingBuilder, error) {
 	glog.V(100).Infof("Pulling existing placementBinding name %s under namespace %s from cluster", name, nsname)
 
-	builder := placementBindingBuilder{
+	builder := PlacementBindingBuilder{
 		apiClient: apiClient,
 		Definition: &policiesv1.PlacementBinding{
 			ObjectMeta: metaV1.ObjectMeta{
@@ -60,7 +60,7 @@ func PullPlacementBinding(apiClient *clients.Settings, name, nsname string) (*pl
 }
 
 // Exists checks whether the given placementBinding exists.
-func (builder *placementBindingBuilder) Exists() bool {
+func (builder *PlacementBindingBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
 	}
@@ -75,7 +75,7 @@ func (builder *placementBindingBuilder) Exists() bool {
 }
 
 // Get returns a placementBinding object if found.
-func (builder *placementBindingBuilder) Get() (*policiesv1.PlacementBinding, error) {
+func (builder *PlacementBindingBuilder) Get() (*policiesv1.PlacementBinding, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (builder *placementBindingBuilder) Get() (*policiesv1.PlacementBinding, err
 }
 
 // Create makes a placementBinding in the cluster and stores the created object in struct.
-func (builder *placementBindingBuilder) Create() (*placementBindingBuilder, error) {
+func (builder *PlacementBindingBuilder) Create() (*PlacementBindingBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
@@ -118,7 +118,7 @@ func (builder *placementBindingBuilder) Create() (*placementBindingBuilder, erro
 }
 
 // Delete removes a placementBinding from a cluster.
-func (builder *placementBindingBuilder) Delete() (*placementBindingBuilder, error) {
+func (builder *PlacementBindingBuilder) Delete() (*PlacementBindingBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
@@ -142,7 +142,7 @@ func (builder *placementBindingBuilder) Delete() (*placementBindingBuilder, erro
 }
 
 // Update renovates the existing placementBinding object with the placementBinding definition in builder.
-func (builder *placementBindingBuilder) Update(force bool) (*placementBindingBuilder, error) {
+func (builder *PlacementBindingBuilder) Update(force bool) (*PlacementBindingBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
@@ -181,7 +181,7 @@ func (builder *placementBindingBuilder) Update(force bool) (*placementBindingBui
 
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
-func (builder *placementBindingBuilder) validate() (bool, error) {
+func (builder *PlacementBindingBuilder) validate() (bool, error) {
 	resourceCRD := "PlacementBinding"
 
 	if builder == nil {
