@@ -60,3 +60,10 @@ func LocalMultiStageConfigMapContent(module string) map[string]string {
 
 	return configmapContents
 }
+
+// KmmScannerConfigMapContents returns the configmap for KMM image scanner.
+func KmmScannerConfigMapContents() map[string]string {
+	configMapContent := map[string]string{"dockerfile": kmmparams.KmmScannerDockerfile}
+
+	return configMapContent
+}

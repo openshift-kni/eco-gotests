@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -18,6 +18,7 @@ import (
 var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
 
 	Context("Module", Label("must-gather"), func() {
+
 		It("Check must-gather functionality", polarion.ID("53653"), func() {
 			By("Print Pod Name")
 			pods, _ := pod.List(APIClient, "openshift-kmm", v1.ListOptions{
@@ -27,9 +28,10 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			for _, pod := range pods {
 				for _, container := range pod.Object.Spec.Containers {
 					for _, env := range container.Env {
-						if env.Name == "RELATED_IMAGES_MUST_GATHER" {
+
+						if env.Name == tsparams.RelImgMustGather {
 							mustGatherImage = env.Value
-							fmt.Printf("RELATED_IMAGES_MUST_GATHER: %s\n", mustGatherImage)
+							glog.V(kmmparams.KmmLogLevel).Infof("%s: %s\n", tsparams.RelImgMustGather, mustGatherImage)
 						}
 
 					}

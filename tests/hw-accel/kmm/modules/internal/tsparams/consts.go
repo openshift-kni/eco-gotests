@@ -13,6 +13,12 @@ const (
 	DeploymentName = "kmm-operator-controller"
 	// BuildArgName represents kmod key passed to kmm-ci example.
 	BuildArgName = "MY_MODULE"
+	// RelImgMustGather represents identifier for must-gather image in operator environment variables.
+	RelImgMustGather = "RELATED_IMAGES_MUST_GATHER"
+	// RelImgSign represents identifier for sign image in operator environment variables.
+	RelImgSign = "RELATED_IMAGES_SIGN"
+	// RelImgWorker represents identifier for worker image in operator environment variables.
+	RelImgWorker = "RELATED_IMAGES_WORKER"
 	// ModuleNodeLabelTemplate represents template of the label set on a node for a Module.
 	ModuleNodeLabelTemplate = "kmm.node.kubernetes.io/%s.%s.ready"
 	// DevicePluginNodeLabelTemplate represents template label set by KMM on a node for a Device Plugin.
@@ -46,4 +52,6 @@ const (
 	PreflightTemplateImage = "quay.io/openshift-release-dev/ocp-release:4.10.15-%s"
 	// PreflightName represents preflightvalidation ocp object name.
 	PreflightName = "preflight"
+	// ScannerTestNamespace represents test case namespace name.
+	ScannerTestNamespace = "kmm-scanner"
 )
