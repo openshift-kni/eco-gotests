@@ -33,6 +33,8 @@ type NetworkConfig struct {
 	SwitchPass             string `envconfig:"ECO_CNF_CORE_NET_SWITCH_PASS"`
 	SwitchIP               string `envconfig:"ECO_CNF_CORE_NET_SWITCH_IP"`
 	SwitchInterfaces       string `envconfig:"ECO_CNF_CORE_NET_SWITCH_INTERFACES"`
+	SwitchLagNames         string `envconfig:"ECO_CNF_CORE_NET_SWITCH_LAGS"`
+	ClusterVlan            string `envconfig:"ECO_CNF_CORE_NET_CLUSTER_VLAN"`
 	//nolint:lll
 	NMStateOperatorNamespace string `yaml:"nmstate_operator_namespace" envconfig:"ECO_CNF_CORE_NET_NMSTATE_OPERATOR_NAMESPACE"`
 	//nolint:lll
@@ -144,6 +146,42 @@ func (netConfig *NetworkConfig) GetSwitchIP() (string, error) {
 	}
 
 	return netConfig.SwitchIP, nil
+}
+
+// GetSwitchInterfaces checks the environmental variable ECO_CNF_CORE_NET_SWITCH_INTERFACES
+// and returns the value in []string.
+func (netConfig *NetworkConfig) GetSwitchInterfaces() ([]string, error) {
+	envValue := strings.Split(netConfig.SwitchInterfaces, ",")
+
+	if len(envValue) != 4 {
+		return nil, fmt.Errorf("the number of the switch interfaces is not equal 4," +
+			" check ECO_CNF_CORE_NET_SWITCH_INTERFACES env var")
+	}
+
+	return envValue, nil
+}
+
+// GetSwitchLagNames checks the environmental variable ECO_CNF_CORE_NET_SWITCH_LAGS
+// and returns the value in []string.
+func (netConfig *NetworkConfig) GetSwitchLagNames() ([]string, error) {
+	envValue := strings.Split(netConfig.SwitchLagNames, ",")
+
+	if len(envValue) != 2 {
+		return nil, fmt.Errorf("the number of the switch lag names is not equal 2," +
+			" check ECO_CNF_CORE_NET_SWITCH_LAGS env var")
+	}
+
+	return envValue, nil
+}
+
+// GetClusterVlan checks the environmental variable ECO_CNF_CORE_NET_CLUSTER_VLAN
+// and returns the value in string.
+func (netConfig *NetworkConfig) GetClusterVlan() (string, error) {
+	if netConfig.ClusterVlan == "" {
+		return "", fmt.Errorf("the cluster vlan is empty, check ECO_CNF_CORE_NET_CLUSTER_VLAN env var")
+	}
+
+	return netConfig.ClusterVlan, nil
 }
 
 func readFile(netConfig *NetworkConfig, cfgFile string) error {

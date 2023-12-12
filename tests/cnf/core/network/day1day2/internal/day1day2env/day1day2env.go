@@ -76,6 +76,19 @@ func GetSrIovPf(vfInterfaceName, nodeName string) (string, error) {
 	return strings.TrimRight(pfName, "\r\n"), nil
 }
 
+// GetBondModeViaCmd returns Bond mode for given Bond interface on a specific node.
+func GetBondModeViaCmd(bondInterfaceName, nodeName string) (string, error) {
+	glog.V(90).Infof("Getting Bond mode for bond interface %s on a node %s", bondInterfaceName, nodeName)
+
+	bondMode, err := cmd.RunCommandOnHostNetworkPod(nodeName, tsparams.TestNamespaceName,
+		fmt.Sprintf("cat /sys/class/net/%s/bonding/mode", bondInterfaceName))
+	if err != nil {
+		return "", err
+	}
+
+	return bondMode, nil
+}
+
 // GetBondInterfaceMiimon returns miimon value for given bond interface and node.
 func GetBondInterfaceMiimon(nodeName, bondInterfaceName string) (int, error) {
 	glog.V(90).Infof("Getting miimon value for bond interface %s on node %s", bondInterfaceName, nodeName)

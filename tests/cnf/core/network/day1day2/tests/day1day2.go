@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/day1day2env"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/juniper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
@@ -24,8 +26,9 @@ import (
 
 var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFailure, func() {
 	var (
-		workerNodeList      []*nodes.Builder
-		slaveVlanInterfaces []string
+		workerNodeList          []*nodes.Builder
+		bondName                string
+		bondInterfaceVlanSlaves []string
 	)
 
 	BeforeAll(func() {
@@ -42,7 +45,8 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		By("Verifying that the cluster deployed via bond interface" +
 			" with enslaved Vlan interfaces which based on SR-IOV VFs")
-		slaveVlanInterfaces = verifyBondedVlanVfsDeployment(workerNodeList)
+		bondName, bondInterfaceVlanSlaves = checkThatWorkersDeployedWithBondVlanVfs(workerNodeList)
+
 	})
 
 	AfterEach(func() {
@@ -58,7 +62,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	It("VF: change QOS configuration", polarion.ID("63926"), func() {
 		By("Collecting information about test interfaces")
-		vfInterface, err := netnmstate.GetBaseVlanInterface(slaveVlanInterfaces[0], workerNodeList[0].Definition.Name)
+		vfInterface, err := netnmstate.GetBaseVlanInterface(bondInterfaceVlanSlaves[0], workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get VF base interface")
 		pfUnderTest, err := day1day2env.GetSrIovPf(vfInterface, workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get SR-IOV PF for VF %s", vfInterface))
@@ -121,7 +125,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, "miimon", NetConfig.WorkerLabelMap).
 			WithBondInterface(bondInterfaceVlanSlaves, bondName, "active-backup").
-			WithOptions(netnmstate.WithOptionMiimon(uint64(newExpectedMiimonValue), bondName))
+			WithOptions(netnmstate.WithBondOptionMiimon(uint64(newExpectedMiimonValue), bondName))
 		err = netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
 
@@ -140,7 +144,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		By("Restoring miimon configuration")
 		nmstatePolicy = nmstate.NewPolicyBuilder(APIClient, "restoremiimon", NetConfig.WorkerLabelMap).
 			WithBondInterface(bondInterfaceVlanSlaves, bondName, "active-backup").
-			WithOptions(netnmstate.WithOptionMiimon(uint64(defaultMiimonValue), bondName))
+			WithOptions(netnmstate.WithBondOptionMiimon(uint64(defaultMiimonValue), bondName))
 		err = netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
 
@@ -156,9 +160,112 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		err = day1day2env.CheckConnectivityBetweenMasterAndWorkers()
 		Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
 	})
+
+	Context("", func() {
+		const policyNameBondMode = "changebondmode"
+
+		var (
+			juniperSession   *juniper.JunosSession
+			switchInterfaces []string
+			clusterVlan      string
+			switchLagNames   []string
+		)
+
+		BeforeAll(func() {
+			By("Getting switch credentials")
+			switchCredentials, err := juniper.NewSwitchCredentials()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get switch credentials")
+
+			By("Opening management connection to switch")
+			juniperSession, err = juniper.NewSession(
+				switchCredentials.SwitchIP, switchCredentials.User, switchCredentials.Password)
+			Expect(err).ToNot(HaveOccurred(), "Failed to open a switch session")
+
+			By("Collecting switch interfaces")
+			switchInterfaces, err = NetConfig.GetSwitchInterfaces()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get switch interfaces")
+
+			By("Collecting vlan id")
+			clusterVlan, err = NetConfig.GetClusterVlan()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get cluster vlan")
+
+			By("Collecting switch LAG names")
+			switchLagNames, err = NetConfig.GetSwitchLagNames()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get switch LAG names")
+		})
+
+		AfterEach(func() {
+			if len(juniper.InterfaceConfigs) > 0 {
+				By("Reverting initial switch interface configurations")
+				recoverSwitchConfiguration(juniperSession, switchInterfaces, switchLagNames)
+
+				By("Verifying workers are still available over the bond interface")
+				err := day1day2env.CheckConnectivityBetweenMasterAndWorkers()
+				Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
+			}
+
+			By("Reverting active-backup bond mode on the bond interfaces")
+			nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, policyNameBondMode, NetConfig.WorkerLabelMap).
+				WithBondInterface(bondInterfaceVlanSlaves, bondName, "active-backup").
+				WithOptions(netnmstate.WithBondOptionFailOverMac("none", bondName))
+			err := netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+			Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
+
+			By("Checking that Bond mode is restored")
+			validateBondType("active-backup", bondName, workerNodeList[0].Object.Name)
+		})
+
+		It("Day2 Bond: change mode configuration", polarion.ID("63882"), func() {
+			By("Creating NMState policy to change a bond mode")
+			nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, policyNameBondMode, NetConfig.WorkerLabelMap).
+				WithBondInterface(bondInterfaceVlanSlaves, bondName, "balance-rr").
+				WithOptions(netnmstate.WithBondOptionFailOverMac("active", bondName))
+			err := netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
+
+			By("Checking that Bond mode is configured")
+			validateBondType("balance-rr", bondName, workerNodeList[0].Object.Name)
+
+			By(fmt.Sprintf("Removing all configuration from the switch interfaces %v", switchInterfaces))
+			err = juniper.DumpInterfaceConfigs(juniperSession, switchInterfaces)
+			Expect(err).ToNot(HaveOccurred(), "Failed to save initial switch interfaces configs")
+			err = juniper.RemoveAllConfigurationFromInterfaces(juniperSession, switchInterfaces)
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove configuration from the switch interfaces")
+
+			By("Configuring aggregated interface on a switch")
+			configureLAGsOnSwitch(juniperSession, clusterVlan, switchInterfaces, switchLagNames)
+
+			By("Verifying workers are still available over the bond interface")
+			err = day1day2env.CheckConnectivityBetweenMasterAndWorkers()
+			Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
+
+			By("Disabling one bond slave interface on the switch and check the traffic again via secondary bond interface")
+			err = juniper.DisableSwitchInterface(juniperSession, switchInterfaces[0])
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to shutdown switch interface %s", switchInterfaces[0]))
+
+			err = day1day2env.CheckConnectivityBetweenMasterAndWorkers()
+			Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
+
+			By(fmt.Sprintf("Disabling secondary LAG slave interface %s, bring first LAG slave interface %s back"+
+				" and check the traffic again", switchInterfaces[1], switchInterfaces[0]))
+
+			err = juniper.EnableSwitchInterface(juniperSession, switchInterfaces[0])
+			Expect(err).ToNot(HaveOccurred(),
+				fmt.Sprintf("Failed to turn on the switch interface %s", switchInterfaces[0]))
+
+			err = juniper.DisableSwitchInterface(juniperSession, switchInterfaces[1])
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to shutdown switch interface %s", switchInterfaces[1]))
+
+			waitForSwitchInterfaceUp(juniperSession, switchLagNames[0])
+
+			By("Verifying workers are still available over the bond interface")
+			err = day1day2env.CheckConnectivityBetweenMasterAndWorkers()
+			Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
+		})
+	})
 })
 
-func verifyBondedVlanVfsDeployment(workerNodes []*nodes.Builder) []string {
+func checkThatWorkersDeployedWithBondVlanVfs(workerNodes []*nodes.Builder) (string, []string) {
 	By("Verifying that the cluster deployed via bond interface")
 
 	var (
@@ -199,5 +306,58 @@ func verifyBondedVlanVfsDeployment(workerNodes []*nodes.Builder) []string {
 		Expect(err).ToNot(HaveOccurred(), "Failed to get SR-IOV PF interface")
 	}
 
-	return bondInterfaceVlanSlaves
+	return bondName, bondInterfaceVlanSlaves
+}
+
+func configureLAGsOnSwitch(
+	juniperSession *juniper.JunosSession, clusterVlan string, switchInterfaces, lagInterfaces []string) {
+	err := juniper.SetNonLacpLag(juniperSession, []string{switchInterfaces[0], switchInterfaces[1]},
+		lagInterfaces[0])
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create switch LAG interface %s with enslave itnerfaces: %s, %s",
+			lagInterfaces[0], switchInterfaces[0], switchInterfaces[1]))
+
+	err = juniper.SetNonLacpLag(juniperSession, []string{switchInterfaces[2], switchInterfaces[3]},
+		lagInterfaces[1])
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create switch LAG interface %s with enslave itnerfaces: %s, %s",
+			lagInterfaces[1], switchInterfaces[2], switchInterfaces[3]))
+
+	for _, lagInterface := range lagInterfaces {
+		err = juniper.SetVlanOnTrunkInterface(juniperSession, clusterVlan, lagInterface)
+		Expect(err).ToNot(HaveOccurred(), "Failed to configure VLAN on switch LAG interfaces")
+	}
+}
+
+func recoverSwitchConfiguration(juniperSession *juniper.JunosSession, switchInterfaces, lagInterfaces []string) {
+	err := juniper.RestoreSwitchInterfacesConfiguration(juniperSession, switchInterfaces)
+	Expect(err).ToNot(HaveOccurred(), "Failed to restore initial switch interfaces configurations")
+
+	err = juniper.DeleteInterfaces(juniperSession, lagInterfaces)
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete switch LAG interfaces")
+}
+
+func validateBondType(bondTypeName, bondName, workerName string) {
+	By("Checking Bond mode on a worker")
+
+	bondModeViaCmd, err := day1day2env.GetBondModeViaCmd(bondName, workerName)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to get bond mode interface %s on worker %s via cmd", bondName, workerName))
+	Expect(bondModeViaCmd).To(ContainSubstring(bondTypeName), "Bond mode is not expected one")
+
+	By("Checking Bond mode via NMState")
+
+	bondModeViaNmstate, err := netnmstate.GetBondMode(bondName, workerName)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to get bond mode interface %s on worker %s via nmstate", bondName, workerName))
+	Expect(bondModeViaNmstate).To(Equal(bondTypeName), "Bond mode is not expected one")
+}
+
+func waitForSwitchInterfaceUp(juniperSession *juniper.JunosSession, switchLagName string) {
+	Eventually(func() bool {
+		isBondInterfaceUp, err := juniper.IsSwitchInterfaceUp(juniperSession, switchLagName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get status of switch LAG interface %s", switchLagName))
+
+		return isBondInterfaceUp
+	}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Bond interface is not Up on the switch")
 }
