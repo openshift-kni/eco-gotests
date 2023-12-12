@@ -228,6 +228,9 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			err = check.Dmesg(APIClient, "2.0.0.upgraded", time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking dmesg contents")
 
+			By("Waiting 10 seconds for labels to be be properly set")
+			time.Sleep(10 * time.Second)
+
 			By("Check label is set on all nodes")
 			_, err = check.NodeLabel(APIClient, moduleName, tsparams.VersionModuleTestNamespace, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
