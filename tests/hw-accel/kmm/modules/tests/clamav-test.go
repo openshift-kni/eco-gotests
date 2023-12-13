@@ -80,6 +80,14 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 				}
 			}
 
+			// pre 4.14 there is no worker image. Swapping it with operator image
+			_, ok := relatedImgMap[tsparams.RelImgWorker]
+			if !ok {
+				glog.V(kmmparams.KmmLogLevel).Infof("No %s found. Swapping it with operator image %s",
+					tsparams.RelImgWorker, containerImg[0])
+				relatedImgMap[tsparams.RelImgWorker] = containerImg[0]
+			}
+
 			glog.V(kmmparams.KmmLogLevel).Infof("related: %s", relatedImgMap)
 			glog.V(kmmparams.KmmLogLevel).Infof("container: %s", containerImg)
 
