@@ -33,7 +33,8 @@ import (
 )
 
 const (
-	infraenvTestSpoke string = "infraenv-spoke"
+	infraenvTestSpoke                string = "infraenv-spoke"
+	assistedUnsupportedConfigMapName string = "assisted-unsupported-config-unique"
 )
 
 var (
@@ -63,6 +64,15 @@ var _ = Describe(
 				By("Grab the MirrorRegistryRef value from the spec")
 				mirrorRegistryRef = ZTPConfig.HubAgentServiceConfg.Definition.Spec.MirrorRegistryRef
 
+				By("Create configmap for AgentServiceConfig's annotation")
+				agentServiceConfigMapData := map[string]string{
+					"ISO_IMAGE_TYPE": "full-iso",
+				}
+				configmapBuilder = configmap.NewBuilder(HubAPIClient, assistedUnsupportedConfigMapName,
+					ZTPConfig.HubAssistedServicePod().Object.Namespace)
+				_, err = configmapBuilder.WithData(agentServiceConfigMapData).Create()
+				Expect(err).ToNot(HaveOccurred(), "error creating configmap for AgentServiceConfig's annotation")
+
 				By("Delete the pre-existing AgentServiceConfig")
 				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
@@ -81,15 +91,6 @@ var _ = Describe(
 						testClusterImageSetName)
 				}
 
-				By("Create configmap for AgentServiceConfig's annotation")
-				agentServiceConfigMapData := map[string]string{
-					"ISO_IMAGE_TYPE": "full-iso",
-				}
-				configmapBuilder = configmap.NewBuilder(HubAPIClient, "assisted-unsupported-config",
-					ZTPConfig.HubAssistedServicePod().Object.Namespace)
-				_, err = configmapBuilder.WithData(agentServiceConfigMapData).Create()
-				Expect(err).ToNot(HaveOccurred(), "error creating configmap for AgentServiceConfig's annotation")
-
 				By("Create AgentServiceConfig with OS images for multiple architectures")
 				tempAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
 
@@ -97,7 +98,7 @@ var _ = Describe(
 				tempAgentServiceConfigBuilder.Definition.Annotations = map[string](string){}
 				tempAgentServiceConfigBuilder.Definition.
 					Annotations["unsupported.agent-install.openshift.io/assisted-service-configmap"] =
-					"assisted-unsupported-config"
+					assistedUnsupportedConfigMapName
 
 				if mirrorRegistryRef != nil {
 					tempAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
@@ -234,6 +235,12 @@ var _ = Describe(
 					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
 					models.ClusterCPUArchitectureArm64,
 					polarion.ID("56190")),
+
+				Entry("Assert the InfraEnv creation fails when the cpuArchitecture is mismatched with ppc64le arch",
+					models.ClusterCPUArchitectureX8664,
+					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
+					models.ClusterCPUArchitecturePpc64le,
+					polarion.ID("56189")),
 			)
 		})
 
