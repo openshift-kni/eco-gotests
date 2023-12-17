@@ -2,81 +2,24 @@ package tests
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams/deploy"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/helpers"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/nfdconfig"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/nfddelete"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/search"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/set"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/wait"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-func testLabelExist(nodelabels map[string][]string, labelsToSearch, blackList []string) error {
-	labelList := ts.DefaultBlackList
-
-	if blackList != nil || len(blackList) != 0 {
-		labelList = blackList
-	}
-
-	for nodeName, labels := range nodelabels {
-		allFeatures := strings.Join(labels, ",")
-
-		if len(allFeatures) == 0 {
-			return fmt.Errorf("node feature labels should be greater than zero")
-		}
-
-		for _, featurelabel := range labelsToSearch {
-			if search.StringInSlice(featurelabel, labelList) {
-				continue
-			}
-
-			if !strings.Contains(allFeatures, fmt.Sprintf("%s=", featurelabel)) {
-				return fmt.Errorf("label %s not found in node %s", featurelabel, nodeName)
-			}
-		}
-	}
-
-	return nil
-}
-
-func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource, enableTopology bool) {
-	err := nfdManager.DeployNfd(5*int(time.Minute), enableTopology, "")
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
-	By("Check that pods are in running state")
-
-	res, err := wait.WaitForPod(APIClient, ts.Namespace)
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(res).To(BeTrue())
-	By("Check feature labels exists")
-	Eventually(func() []string {
-		nodesWithLabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
-		Expect(err).ShouldNot(HaveOccurred())
-		allNodeLabels := []string{}
-		for _, labels := range nodesWithLabels {
-			allNodeLabels = append(allNodeLabels, labels...)
-		}
-
-		return allNodeLabels
-	}).WithTimeout(50 * time.Second).ShouldNot(HaveLen(0))
-}
-
-func skipIfConfigNotSet(nfdConfig *nfdconfig.NfdConfig) {
-	if nfdConfig.CatalogSource == "" {
-		Skip("The catalog source is not set.")
-	}
-}
-
 var _ = Describe("NFD", Ordered, func() {
-
 	nfdConfig := nfdconfig.NewNfdConfig()
 	nfdManager := nfdDeploy.NewNfdAPIResource(APIClient,
 		ts.Namespace,
@@ -87,7 +30,7 @@ var _ = Describe("NFD", Ordered, func() {
 		"nfd",
 		"stable")
 	Context("Node featues", Label("discovery-of-labels"), func() {
-		cpuFlags := get.CPUFlags(APIClient, ts.Namespace)
+		var cpuFlags map[string][]string
 
 		AfterAll(func() {
 			By("Undeploy NFD instance")
@@ -96,7 +39,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 		BeforeAll(func() {
-
+			cpuFlags = get.CPUFlags(APIClient, ts.Namespace)
 			By("Clear labels")
 			err := nfddelete.NfdLabelsByKeys(APIClient, "nfd.node.kubernetes.io", "feature.node.kubernetes.io")
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in cleaning labels\n %s", err))
@@ -116,7 +59,6 @@ var _ = Describe("NFD", Ordered, func() {
 
 			for _, pod := range podlist {
 				By("Checking pod: " + pod.Name)
-
 				Expect(pod.State).To((Equal("Running")))
 			}
 
@@ -129,8 +71,10 @@ var _ = Describe("NFD", Ordered, func() {
 
 			By("Check if features exists")
 
-			err = testLabelExist(nodelabels, cpuFlags, nil)
-			Expect(err).NotTo(HaveOccurred())
+			for nodeName := range nodelabels {
+				err = helpers.CheckLabelsExist(nodelabels, cpuFlags[nodeName], nil, nodeName)
+				Expect(err).NotTo(HaveOccurred())
+			}
 
 		})
 
@@ -140,8 +84,10 @@ var _ = Describe("NFD", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Check if custom label topology is exist")
-			err = testLabelExist(nodelabels, ts.KernelConfig, nil)
-			Expect(err).NotTo(HaveOccurred())
+			for nodeName := range nodelabels {
+				err = helpers.CheckLabelsExist(nodelabels, ts.KernelConfig, nil, nodeName)
+				Expect(err).NotTo(HaveOccurred())
+			}
 
 		})
 
@@ -152,8 +98,11 @@ var _ = Describe("NFD", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Check if NFD labeling of the kernel config flags")
-			err = testLabelExist(nodelabels, ts.Topology, nil)
-			Expect(err).NotTo(HaveOccurred())
+			for nodeName := range nodelabels {
+				err = helpers.CheckLabelsExist(nodelabels, ts.Topology, nil, nodeName)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
 		})
 
 		It("Check if NUMA detected ", polarion.ID("54408"), func() {
@@ -162,8 +111,11 @@ var _ = Describe("NFD", Ordered, func() {
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 			Expect(err).NotTo(HaveOccurred())
 			By("Check if NFD labeling nodes with custom NUMA labels")
-			err = testLabelExist(nodelabels, ts.NUMA, nil)
-			Expect(err).NotTo(HaveOccurred())
+			for nodeName := range nodelabels {
+				err = helpers.CheckLabelsExist(nodelabels, ts.NUMA, nil, nodeName)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
 		})
 
 		It("Verify Feature List not contains items from Blacklist ", polarion.ID("68298"), func() {
@@ -191,9 +143,11 @@ var _ = Describe("NFD", Ordered, func() {
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 			Expect(err).NotTo(HaveOccurred())
 			By("Check if features exists")
+			for nodeName := range nodelabels {
+				err = helpers.CheckLabelsExist(nodelabels, []string{"BMI2"}, nil, nodeName)
+				Expect(err).NotTo(HaveOccurred())
+			}
 
-			err = testLabelExist(nodelabels, cpuFlags, []string{"BMI2"})
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("Verify Feature List contains only Whitelist", polarion.ID("68300"), func() {
@@ -221,9 +175,38 @@ var _ = Describe("NFD", Ordered, func() {
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 			Expect(err).NotTo(HaveOccurred())
 			By("Check if features exists")
+			for nodeName := range nodelabels {
+				err = helpers.CheckLabelsExist(nodelabels, []string{"BMI2"}, cpuFlags[nodeName], nodeName)
+				Expect(err).NotTo(HaveOccurred())
+			}
 
-			err = testLabelExist(nodelabels, []string{"BMI2"}, cpuFlags)
-			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })
+
+func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource, enableTopology bool) {
+	err := nfdManager.DeployNfd(5*int(time.Minute), enableTopology, "")
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
+	By("Check that pods are in running state")
+
+	res, err := wait.WaitForPod(APIClient, ts.Namespace)
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(res).To(BeTrue())
+	By("Check feature labels exists")
+	Eventually(func() []string {
+		nodesWithLabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
+		Expect(err).ShouldNot(HaveOccurred())
+		allNodeLabels := []string{}
+		for _, labels := range nodesWithLabels {
+			allNodeLabels = append(allNodeLabels, labels...)
+		}
+
+		return allNodeLabels
+	}).WithTimeout(50 * time.Second).ShouldNot(HaveLen(0))
+}
+
+func skipIfConfigNotSet(nfdConfig *nfdconfig.NfdConfig) {
+	if nfdConfig.CatalogSource == "" {
+		Skip("The catalog source is not set.")
+	}
+}
