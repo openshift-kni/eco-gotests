@@ -241,6 +241,12 @@ var _ = Describe(
 					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
 					models.ClusterCPUArchitecturePpc64le,
 					polarion.ID("56189")),
+
+				Entry("Assert the InfraEnv creation fails when the cpuArchitecture is mismatched with s390x arch",
+					models.ClusterCPUArchitectureX8664,
+					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
+					models.ClusterCPUArchitectureS390x,
+					polarion.ID("56188")),
 			)
 		})
 
