@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams/deploy"
+	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/helpers"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/nfdconfig"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
