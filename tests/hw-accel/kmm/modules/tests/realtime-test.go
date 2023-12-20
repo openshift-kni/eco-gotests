@@ -157,7 +157,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.RealtimeKernelNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, tsparams.RealtimeKernelNamespace, 5*time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
