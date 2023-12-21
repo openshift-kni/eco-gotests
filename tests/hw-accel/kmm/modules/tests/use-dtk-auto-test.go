@@ -5,6 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
+
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
@@ -160,6 +163,29 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			err = check.ModuleLoaded(APIClient, newKmod, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
+		})
+
+		It("should fail to update an existing module with something that is wrong", polarion.ID("62598"), func() {
+			By("Getting the module")
+			moduleBuilder, err := kmm.Pull(APIClient, moduleName, moduleName)
+			Expect(err).ToNot(HaveOccurred(), "error getting the module")
+
+			By("Create KernelMapping")
+			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()
+			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+			By("Create ModuleLoaderContainer")
+			moduleLoaderContainerCfg, err := kmm.NewModLoaderContainerBuilder("webhook").
+				WithKernelMapping(kernelMapping).
+				BuildModuleLoaderContainerCfg()
+			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+			By("Update existing module with something wrong")
+			_, err = moduleBuilder.WithModuleLoaderContainer(moduleLoaderContainerCfg).Update()
+			glog.V(kmmparams.KmmLogLevel).Infof("webhook err: %s", err)
+			Expect(err).To(HaveOccurred(), "error creating module")
+			Expect(err.Error()).To(ContainSubstring("missing spec.moduleLoader.container.kernelMappings"))
+			Expect(err.Error()).To(ContainSubstring(".containerImage"))
 		})
 
 		It("should be able to run preflightvalidation with no push to registry", polarion.ID("56330"), func() {

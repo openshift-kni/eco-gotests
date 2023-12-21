@@ -1,9 +1,14 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
+	"github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -175,6 +180,55 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 					Create()
 				Expect(err).To(HaveOccurred(), "error creating module")
 				Expect(err.Error()).To(ContainSubstring("if a loading order is defined, the first element must be moduleName"))
+			})
+
+			It("should fail creating module with both moduleName and rawargs", polarion.ID("62600"), func() {
+
+				By("Create KernelMapping")
+				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
+					tsparams.LocalImageRegistry, tsparams.WebhookModuleTestNamespace, "my-kmod")
+				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
+					WithContainerImage(image).
+					BuildKernelMappingConfig()
+				Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+				By("Create moduleLoader container")
+				moduleLoader, err := kmm.NewModLoaderContainerBuilder("kmod-a").
+					WithModprobeSpec("", "", nil, nil, []string{"defined"}, nil).
+					WithKernelMapping(kernelMapping).
+					BuildModuleLoaderContainerCfg()
+				Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+				By("Create Module")
+				_, err = kmm.NewModuleBuilder(APIClient, "module", nSpace).
+					WithNodeSelector(GeneralConfig.WorkerLabelMap).
+					WithModuleLoaderContainer(moduleLoader).
+					Create()
+				Expect(err).To(HaveOccurred(), "error creating module")
+				glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
+				Expect(err.Error()).To(ContainSubstring("rawArgs cannot be set when moduleName is set"))
+			})
+
+			It("should require rawargs when moduleName is not net", polarion.ID("62599"), func() {
+
+				By("Preparing module")
+				module := &v1beta1.Module{
+					ObjectMeta: metaV1.ObjectMeta{
+						Name:      "nomodule-raw",
+						Namespace: nSpace,
+					},
+				}
+				module.Spec.Selector = GeneralConfig.WorkerLabelMap
+				kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something"}
+				var KerMapList []v1beta1.KernelMapping
+				mappings := append(KerMapList, kerMap)
+				module.Spec.ModuleLoader.Container.KernelMappings = mappings
+
+				By("Create Module")
+				err := APIClient.Create(context.TODO(), module)
+				Expect(err).To(HaveOccurred(), "error creating module")
+				glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
+				Expect(err.Error()).To(ContainSubstring("load and unload rawArgs must be set when moduleName is unset"))
 			})
 		})
 	})
