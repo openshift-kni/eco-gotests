@@ -27,7 +27,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			}
 
 			By("Getting KMM subscription")
-			sub, err := olm.PullSubscription(APIClient, "kernel-module-management", tsparams.KmmOperatorNamespace)
+			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, tsparams.KmmOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "failed getting subscription")
 
 			By("Update subscription to use new catalog source")
