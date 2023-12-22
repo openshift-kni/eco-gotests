@@ -134,7 +134,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 			if ocpVersion.GreaterThanOrEqual(versionOfFeature) {
 				By("Waiting revert to cgroups v1 due to OCPBUGS-16976 on 4.14 and greater")
 				mcp, err := mco.Pull(APIClient, "master")
-				Expect(err).To(HaveOccurred(), "error while pulling master machineconfigpool")
+				Expect(err).ToNot(HaveOccurred(), "error while pulling master machineconfigpool")
 
 				err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
 				Expect(err).To(HaveOccurred(), "the performance profile did not triggered a mcp update")
