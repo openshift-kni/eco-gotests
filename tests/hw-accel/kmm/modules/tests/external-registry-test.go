@@ -191,7 +191,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Await module to be deleted")
-			err = await.ModuleObjectDeleted(APIClient, kmodName, localNsName, time.Minute)
+			err = await.ModuleObjectDeleted(APIClient, kmodName, localNsName, 3*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 
 			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, moduleName)

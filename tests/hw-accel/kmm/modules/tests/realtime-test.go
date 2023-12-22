@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
+	"github.com/hashicorp/go-version"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -117,6 +122,26 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 				rtCPUIsolated, rtCPUReserved, GeneralConfig.WorkerLabelMap).WithRTKernel()
 			_, err = realtimeProfile.Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating realtime performance profile")
+
+			By("Get cluster's version")
+			clusterVersion, err := cluster.GetOCPClusterVersion(APIClient)
+			Expect(err).ToNot(HaveOccurred(), "error detecting clusterversion")
+
+			ocpVersion, _ := version.NewVersion(clusterVersion.Definition.Status.Desired.Version)
+			glog.V(kmmparams.KmmLogLevel).Infof("Cluster Version: %s", ocpVersion)
+			versionOfFeature, _ := version.NewVersion("4.14.0-0.nightly-2023-01-01-184526")
+
+			if ocpVersion.GreaterThanOrEqual(versionOfFeature) {
+				By("Waiting revert to cgroups v1 due to OCPBUGS-16976 on 4.14 and greater")
+				mcp, err := mco.Pull(APIClient, "master")
+				Expect(err).To(HaveOccurred(), "error while pulling master machineconfigpool")
+
+				err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
+				Expect(err).To(HaveOccurred(), "the performance profile did not triggered a mcp update")
+
+				err = mcp.WaitForUpdate(30 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
+			}
 
 			By("Waiting machine config pool to update")
 			mcp, err := mco.Pull(APIClient, mcpName)
