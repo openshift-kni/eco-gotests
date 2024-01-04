@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/policy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -99,8 +100,8 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				srIovNet.Definition.Name,
 				workerNodeList[1].Definition.Name,
 				tcpProtocol,
-				firstClientPodIP,
-				labelFirstClientPod)
+				labelFirstClientPod,
+				[]string{firstClientPodIP})
 
 			By("Creating second client pod")
 			secondClientPod = createClientPod(
@@ -108,17 +109,17 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				srIovNet.Definition.Name,
 				workerNodeList[1].Definition.Name,
 				tcpProtocol,
-				secondClientPodIP,
-				labelSecondClientPod)
+				labelSecondClientPod,
+				[]string{secondClientPodIP})
 
 			By("Creating server pod")
 			serverPod = createServerPod(
 				srIovNet.Definition.Name,
 				workerNodeList[0].Definition.Name,
-				serverPodIP,
-				firstClientPodIP,
-				secondClientPodIP,
-				tcpProtocol)
+				tcpProtocol,
+				[]string{serverPodIP},
+				[]string{firstClientPodIP},
+				[]string{secondClientPodIP})
 		})
 
 		It("Ingress Default rule without PolicyType deny all", polarion.ID("53901"), func() {
@@ -325,8 +326,8 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				srIovNet.Definition.Name,
 				workerNodeList[1].Definition.Name,
 				sctpProtocol,
-				firstClientPodIPv6,
-				labelFirstClientPod)
+				labelFirstClientPod,
+				[]string{firstClientPodIPv6})
 
 			By("Creating second client pod")
 			secondClientPod = createClientPod(
@@ -334,17 +335,17 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				srIovNet.Definition.Name,
 				workerNodeList[1].Definition.Name,
 				sctpProtocol,
-				secondClientPodIPv6,
-				labelSecondClientPod)
+				labelSecondClientPod,
+				[]string{secondClientPodIPv6})
 
 			By("Creating server pod")
 			serverPod = createServerPod(
 				srIovNet.Definition.Name,
 				workerNodeList[0].Definition.Name,
-				serverPodIPv6,
-				firstClientPodIPv6,
-				secondClientPodIPv6,
-				sctpProtocol)
+				sctpProtocol,
+				[]string{serverPodIPv6},
+				[]string{firstClientPodIPv6},
+				[]string{secondClientPodIPv6})
 
 			Consistently(func() bool {
 				return firstClientPod.WaitUntilRunning(10*time.Second) == nil &&
@@ -461,6 +462,94 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		})
 	})
 
+	Context("dual-stack", func() {
+		BeforeEach(func() {
+			By("Creating first client pod")
+			firstClientPod = createClientPod(
+				"client1",
+				srIovNet.Definition.Name,
+				workerNodeList[1].Definition.Name,
+				sctpProtocol,
+				labelFirstClientPod,
+				[]string{firstClientPodIPv6, firstClientPodIP})
+
+			By("Creating second client pod")
+			secondClientPod = createClientPod(
+				"client2",
+				srIovNet.Definition.Name,
+				workerNodeList[1].Definition.Name,
+				sctpProtocol,
+				labelSecondClientPod,
+				[]string{secondClientPodIPv6, secondClientPodIP})
+
+			By("Creating server pod")
+			serverPod = createServerPod(
+				srIovNet.Definition.Name,
+				workerNodeList[0].Definition.Name,
+				sctpProtocol,
+				[]string{serverPodIPv6, serverPodIP},
+				[]string{firstClientPodIPv6, firstClientPodIP},
+				[]string{secondClientPodIPv6, secondClientPodIP})
+
+			Consistently(func() bool {
+				return firstClientPod.WaitUntilRunning(10*time.Second) == nil &&
+					secondClientPod.WaitUntilRunning(10*time.Second) == nil &&
+					serverPod.WaitUntilRunning(10*time.Second) == nil
+			}, 1*time.Minute, 3*time.Second).Should(BeTrue(), "Failed not all pods are in running state")
+
+			By("Testing connectivity without multiNetworkPolicy applied")
+			// Connectivity works without policy ipv6
+			testSCTPConnectivityWithoutPolicy(firstClientPod, secondClientPod, serverPod, serverPodIPv6, firstClientPodIPv6)
+
+			// Connectivity works without policy ipv4
+			testSCTPConnectivityWithoutPolicy(firstClientPod, secondClientPod, serverPod, serverPodIP, firstClientPodIP)
+		})
+
+		It("Ingress/Egress allow dual-stack subnet sctp", polarion.ID("70042"), func() {
+			ingressRule, err := networkpolicy.NewIngressRuleBuilder().
+				WithCIDR(ipaddr.RemovePrefix(secondClientPodIPv6) + "/128").
+				WithCIDR(ipaddr.RemovePrefix(secondClientPodIP) + "/32").
+				GetIngressRuleCfg()
+			Expect(err).ToNot(HaveOccurred(), "Failed to build ingress rule")
+
+			policy, err := networkpolicy.NewMultiNetworkPolicyBuilder(
+				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
+				WithNetwork(srIovNet.Definition.Name).
+				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
+				WithIngressRule(*ingressRule).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
+
+			// Test ingress rule ipv6
+			for _, serverIP := range []string{serverPodIPv6, serverPodIP} {
+				testIngressSCTPPolicy(firstClientPod, secondClientPod, serverPod, serverIP)
+			}
+
+			err = policy.Delete()
+			Expect(err).ToNot(HaveOccurred(), "Failed to delete multinetworkpolicy object")
+
+			egressRule, err := networkpolicy.NewEgressRuleBuilder().
+				WithPeerPodSelectorAndCIDR(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
+					ipaddr.RemovePrefix(secondClientPodIPv6)+"/"+"128").
+				WithPeerPodSelectorAndCIDR(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
+					ipaddr.RemovePrefix(secondClientPodIP)+"/"+"32").
+				GetEgressRuleCfg()
+			Expect(err).ToNot(HaveOccurred(), "Failed to build egressRule")
+
+			_, err = networkpolicy.NewMultiNetworkPolicyBuilder(
+				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
+				WithNetwork(srIovNet.Definition.Name).
+				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
+				WithEgressRule(*egressRule).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create multinetworkpolicy object")
+
+			// Egress policy works as expected ipv4/ipv6.
+			testEgressSCTPPolicy(firstClientPod, secondClientPod, serverPod, firstClientPodIPv6, secondClientPodIPv6)
+			testEgressSCTPPolicy(firstClientPod, secondClientPod, serverPod, firstClientPodIP, secondClientPodIP)
+		})
+	})
+
 	AfterEach(func() {
 		testNameSpace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull namespace")
@@ -566,15 +655,32 @@ func defineClientCMD(protocol, serverIP string) []string {
 	return []string{"/bin/bash", "-c", cmd}
 }
 
-func createClientPod(podName, srIovNetwork, nodeName, protocol, ipaddress, label string) *pod.Builder {
-	staticAnnotation := pod.StaticIPAnnotation(srIovNetwork, []string{ipaddress})
-	clientPod, err := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-		WithSecondaryNetwork(staticAnnotation).
-		DefineOnNode(nodeName).WithLabel("pod", label).
-		RedefineDefaultCMD(defineClientCMD(protocol, removePrefixFromIP(ipaddress))).
-		WithPrivilegedFlag().
-		CreateAndWaitUntilRunning(tsparams.WaitTimeout)
+func createClientPod(podName, srIovNetwork, nodeName, protocol, label string, ipaddress []string) *pod.Builder {
+	staticAnnotation := pod.StaticIPAnnotation(srIovNetwork, ipaddress)
 
+	var containers []*pod.ContainerBuilder
+	for idx, ipAddr := range ipaddress {
+		containers = append(containers,
+			pod.NewContainerBuilder(
+				fmt.Sprintf("test%d", idx), NetConfig.CnfNetTestContainer, defineClientCMD(protocol, removePrefixFromIP(ipAddr))))
+	}
+
+	clientPod := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		WithSecondaryNetwork(staticAnnotation).
+		DefineOnNode(nodeName).WithLabel("pod", label).WithPrivilegedFlag()
+
+	for idx, container := range containers {
+		containerCfg, err := container.GetContainerCfg()
+		Expect(err).ToNot(HaveOccurred(), "Failed to collect container configuration")
+
+		if idx == 0 {
+			clientPod.RedefineDefaultContainer(*containerCfg)
+		} else {
+			clientPod.WithAdditionalContainer(containerCfg)
+		}
+	}
+
+	clientPod, err := clientPod.CreateAndWaitUntilRunning(tsparams.WaitTimeout)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to define pod annotation for clientPod with IPAddress: %s", ipaddress))
 
@@ -582,32 +688,57 @@ func createClientPod(podName, srIovNetwork, nodeName, protocol, ipaddress, label
 }
 
 func createServerPod(
-	srIovNetworkName, nodeName, serverPodIP, firstClientPodIP, secondClientPodIP, protocol string) *pod.Builder {
+	srIovNetworkName, nodeName, protocol string, serverPodIP, firstClientPodIP, secondClientPodIP []string) *pod.Builder {
 	By("Creating server pod")
 
-	initCommand := []string{"bash", "-c",
-		fmt.Sprintf("ping %s -c 3 -w 90 && ping %s -c 3 -w 90",
-			removePrefixFromIP(firstClientPodIP), removePrefixFromIP(secondClientPodIP))}
+	var (
+		initContainers      []*v1.Container
+		serverPodContainers []*v1.Container
+	)
 
-	InitContainer, err := pod.NewContainerBuilder(
-		"init", NetConfig.CnfNetTestContainer, initCommand).GetContainerCfg()
-	Expect(err).ToNot(HaveOccurred(), "Failed to define init container")
+	for idx, serverIP := range serverPodIP {
+		initCommand := []string{"bash", "-c",
+			fmt.Sprintf("ping %s -c 3 -w 90 && ping %s -c 3 -w 90",
+				removePrefixFromIP(firstClientPodIP[idx]), removePrefixFromIP(secondClientPodIP[idx]))}
+		initContainer, err := pod.NewContainerBuilder(
+			fmt.Sprintf("init%d", idx), NetConfig.CnfNetTestContainer, initCommand).GetContainerCfg()
+		Expect(err).ToNot(HaveOccurred(), "Failed to define init container")
+		initContainers = append(initContainers, initContainer)
 
-	serverPodContainer, err := pod.NewContainerBuilder(
-		"testcmd", NetConfig.CnfNetTestContainer,
-		setTestCmdServer(protocol, removePrefixFromIP(serverPodIP), port5003)).
-		GetContainerCfg()
-	Expect(err).ToNot(HaveOccurred(), "Failed to define server pod container")
+		serverPod5003Container, err := pod.NewContainerBuilder(
+			fmt.Sprintf("testcmd5003%d", idx), NetConfig.CnfNetTestContainer,
+			setTestCmdServer(protocol, removePrefixFromIP(serverIP), port5003)).
+			GetContainerCfg()
+		Expect(err).ToNot(HaveOccurred(), "Failed to define server 5003 pod container")
+		serverPodContainers = append(serverPodContainers, serverPod5003Container)
 
-	serverPod, err := pod.NewBuilder(
-		APIClient, "server", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-		RedefineDefaultCMD(setTestCmdServer(protocol, removePrefixFromIP(serverPodIP), port5001)).
-		WithAdditionalContainer(serverPodContainer).
-		WithAdditionalInitContainer(InitContainer).
-		DefineOnNode(nodeName).
-		WithPrivilegedFlag().WithLabel("pod", labelServerPod).
-		WithSecondaryNetwork(pod.StaticIPAnnotation(srIovNetworkName, []string{serverPodIP})).
-		CreateAndWaitUntilRunning(tsparams.WaitTimeout)
+		serverPod5001Container, err := pod.NewContainerBuilder(
+			fmt.Sprintf("testcmd5001%d", idx), NetConfig.CnfNetTestContainer,
+			setTestCmdServer(protocol, removePrefixFromIP(serverIP), port5001)).
+			GetContainerCfg()
+		Expect(err).ToNot(HaveOccurred(), "Failed to define server 5001 pod container")
+		serverPodContainers = append(serverPodContainers, serverPod5001Container)
+	}
+
+	serverPod := pod.NewBuilder(
+		APIClient, "server", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).DefineOnNode(nodeName).
+		WithPrivilegedFlag().
+		WithLabel("pod", labelServerPod).
+		WithSecondaryNetwork(pod.StaticIPAnnotation(srIovNetworkName, serverPodIP))
+
+	for _, initContainer := range initContainers {
+		serverPod.WithAdditionalInitContainer(initContainer)
+	}
+
+	for idx, container := range serverPodContainers {
+		if idx == 0 {
+			serverPod.RedefineDefaultContainer(*container)
+		} else {
+			serverPod.WithAdditionalContainer(container)
+		}
+	}
+
+	serverPod, err := serverPod.CreateAndWaitUntilRunning(tsparams.WaitTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create server pod")
 
 	return serverPod
@@ -624,4 +755,54 @@ func setTestCmdServer(protocol, serverIP string, port int) []string {
 
 func removePrefixFromIP(ipAddr string) string {
 	return strings.Split(ipAddr, "/")[0]
+}
+
+func testSCTPConnectivityWithoutPolicy(
+	firstClientPod, secondClientPod, serverPod *pod.Builder, serverPodIP, clientPodIP string) {
+	By("Testing SCTP connectivity without multiNetworkPolicy applied")
+
+	err := runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+		firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+
+	err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+		secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5003))
+
+	err = runTraffic(secondClientPod, removePrefixFromIP(clientPodIP), sctpProtocol, port5001)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+		secondClientPod.Definition.Name, firstClientPod.Definition.Name, serverPodIP, port5001))
+}
+
+func testIngressSCTPPolicy(firstClientPod, secondClientPod, serverPod *pod.Builder, serverPodIP string) {
+	By("Testing SCTP connectivity with ingress multiNetworkPolicy applied")
+
+	err := runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dest ip %s with port %d",
+		secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+
+	err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dest ip %s with port %d",
+		secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+
+	err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
+	Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
+		firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+
+	err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
+	Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
+		firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5003))
+}
+
+func testEgressSCTPPolicy(
+	firstClientPod, secondClientPod, serverPod *pod.Builder, firstClientPodIP, secondClientPodIP string) {
+	By("Testing SCTP connectivity with egress multiNetworkPolicy applied")
+
+	err := runTraffic(serverPod, removePrefixFromIP(firstClientPodIP), sctpProtocol, port5001)
+	Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
+		serverPod.Definition.Name, firstClientPod.Definition.Name, firstClientPodIP, port5001))
+
+	err = runTraffic(serverPod, removePrefixFromIP(secondClientPodIP), sctpProtocol, port5001)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+		serverPod.Definition.Name, secondClientPod.Definition.Name, secondClientPodIP, port5001))
 }

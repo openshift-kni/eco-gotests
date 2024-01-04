@@ -52,6 +52,7 @@ import (
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
+	storageV1Client "k8s.io/client-go/kubernetes/typed/storage/v1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
@@ -90,6 +91,7 @@ type Settings struct {
 	grafanaV4V1Alpha1.Grafana
 	LocalVolumeInterface lsoV1alpha1.LocalVolumeSet
 	machinev1beta1client.MachineV1beta1Interface
+	storageV1Client.StorageV1Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -133,6 +135,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.OperatorV1alpha1Interface = operatorv1alpha1.NewForConfigOrDie(config)
 	clientSet.MachineV1beta1Interface = machinev1beta1client.NewForConfigOrDie(config)
 	clientSet.K8sCniCncfIoV1beta1Interface = multinetpolicyclientv1.NewForConfigOrDie(config)
+	clientSet.StorageV1Interface = storageV1Client.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	crScheme := runtime.NewScheme()

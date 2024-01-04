@@ -112,9 +112,7 @@ func (builder *IngressRuleBuilder) WithCIDR(cidr string, except ...[]string) *In
 		return builder
 	}
 
-	if builder.definition.From == nil {
-		builder.definition.From = append(builder.definition.From, v1beta1.MultiNetworkPolicyPeer{})
-	}
+	builder.definition.From = append(builder.definition.From, v1beta1.MultiNetworkPolicyPeer{})
 
 	// Append IPBlock config to the previously added rule
 	builder.definition.From[len(builder.definition.From)-1].IPBlock = &v1beta1.IPBlock{
