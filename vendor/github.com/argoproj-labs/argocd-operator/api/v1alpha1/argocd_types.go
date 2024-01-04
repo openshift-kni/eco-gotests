@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	routev1 "github.com/openshift/api/route/v1"
 
 	"github.com/argoproj-labs/argocd-operator/common"
@@ -34,6 +36,7 @@ func init() {
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 // Important: Run "make" to regenerate code after modifying this file
 
+// +kubebuilder:deprecatedversion:warning="ArgoCD v1alpha1 version is deprecated and will be converted to v1beta1 automatically. Moving forward, please use v1beta1 as the ArgoCD API version."
 //+kubebuilder:object:root=true
 
 // ArgoCD is the Schema for the argocds API
@@ -115,6 +118,20 @@ type ArgoCDApplicationControllerShardSpec struct {
 
 	// Replicas defines the number of replicas to run in the Application controller shard.
 	Replicas int32 `json:"replicas,omitempty"`
+
+	// DynamicScalingEnabled defines whether dynamic scaling should be enabled for Application Controller component
+	DynamicScalingEnabled *bool `json:"dynamicScalingEnabled,omitempty"`
+
+	// MinShards defines the minimum number of shards at any given point
+	// +kubebuilder:validation:Minimum=1
+	MinShards int32 `json:"minShards,omitempty"`
+
+	// MaxShards defines the maximum number of shards at any given point
+	MaxShards int32 `json:"maxShards,omitempty"`
+
+	// ClustersPerShard defines the maximum number of clusters managed by each argocd shard
+	// +kubebuilder:validation:Minimum=1
+	ClustersPerShard int32 `json:"clustersPerShard,omitempty"`
 }
 
 // ArgoCDApplicationSet defines whether the Argo CD ApplicationSet controller should be installed.
@@ -183,12 +200,6 @@ type ArgoCDDexSpec struct {
 	// Version is the Dex container image tag.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Version",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:fieldGroup:Dex","urn:alm:descriptor:com.tectonic.ui:text"}
 	Version string `json:"version,omitempty"`
-}
-
-// ArgoCDDexOAuthSpec defines the desired state for the Dex OAuth configuration.
-type ArgoCDDexOAuthSpec struct {
-	// Enabled will toggle OAuth support for the Dex server.
-	Enabled bool `json:"enabled"`
 }
 
 // ArgoCDGrafanaSpec defines the desired state for the Grafana component.
@@ -602,22 +613,27 @@ const (
 
 // ArgoCDSSOSpec defines SSO provider.
 type ArgoCDSSOSpec struct {
-	// Image is the SSO container image.
-	Image string `json:"image,omitempty"`
 	// Provider installs and configures the given SSO Provider with Argo CD.
 	Provider SSOProviderType `json:"provider,omitempty"`
-	// Resources defines the Compute Resources required by the container for SSO.
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
-	// VerifyTLS set to false disables strict TLS validation.
-	VerifyTLS *bool `json:"verifyTLS,omitempty"`
-	// Version is the SSO container image tag.
-	Version string `json:"version,omitempty"`
 
 	// Dex contains the configuration for Argo CD dex authentication
 	Dex *ArgoCDDexSpec `json:"dex,omitempty"`
 
 	// Keycloak contains the configuration for Argo CD keycloak authentication
 	Keycloak *ArgoCDKeycloakSpec `json:"keycloak,omitempty"`
+
+	// Deprecated field. Support dropped in v1beta1 version.
+	// Image is the SSO container image.
+	Image string `json:"image,omitempty"`
+	// Deprecated field. Support dropped in v1beta1 version.
+	// Resources defines the Compute Resources required by the container for SSO.
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	// Deprecated field. Support dropped in v1beta1 version.
+	// VerifyTLS set to false disables strict TLS validation.
+	VerifyTLS *bool `json:"verifyTLS,omitempty"`
+	// Deprecated field. Support dropped in v1beta1 version.
+	// Version is the SSO container image tag.
+	Version string `json:"version,omitempty"`
 }
 
 // KustomizeVersionSpec is used to specify information about a kustomize version to be used within ArgoCD.
@@ -662,9 +678,6 @@ type ArgoCDSpec struct {
 
 	// Controller defines the Application Controller options for ArgoCD.
 	Controller ArgoCDApplicationControllerSpec `json:"controller,omitempty"`
-
-	// Dex defines the Dex server options for ArgoCD.
-	Dex *ArgoCDDexSpec `json:"dex,omitempty"`
 
 	// DisableAdmin will disable the admin user.
 	DisableAdmin bool `json:"disableAdmin,omitempty"`
@@ -748,6 +761,7 @@ type ArgoCDSpec struct {
 	// RepositoryCredentials are the Git pull credentials to configure Argo CD with upon creation of the cluster.
 	RepositoryCredentials string `json:"repositoryCredentials,omitempty"`
 
+	// Deprecated field. Support dropped in v1beta1 version.
 	// ResourceCustomizations customizes resource behavior. Keys are in the form: group/Kind. Please note that this is being deprecated in favor of ResourceHealthChecks, ResourceIgnoreDifferences, and ResourceActions.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Resource Customizations'",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text","urn:alm:descriptor:com.tectonic.ui:advanced"}
 	ResourceCustomizations string `json:"resourceCustomizations,omitempty"`
@@ -803,6 +817,10 @@ type ArgoCDSpec struct {
 
 	// Banner defines an additional banner to be displayed in Argo CD UI
 	Banner *Banner `json:"banner,omitempty"`
+
+	// Deprecated field. Support dropped in v1beta1 version.
+	// Dex defines the Dex server options for ArgoCD.
+	Dex *ArgoCDDexSpec `json:"dex,omitempty"`
 }
 
 // ArgoCDStatus defines the observed state of ArgoCD
@@ -826,14 +844,14 @@ type ArgoCDStatus struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="ApplicationSetController",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	ApplicationSetController string `json:"applicationSetController,omitempty"`
 
-	// Dex is a simple, high-level summary of where the Argo CD Dex component is in its lifecycle.
-	// There are four possible dex values:
-	// Pending: The Argo CD Dex component has been accepted by the Kubernetes system, but one or more of the required resources have not been created.
-	// Running: All of the required Pods for the Argo CD Dex component are in a Ready state.
-	// Failed: At least one of the  Argo CD Dex component Pods had a failure.
-	// Unknown: The state of the Argo CD Dex component could not be obtained.
-	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Dex",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	Dex string `json:"dex,omitempty"`
+	// SSO is a simple, high-level summary of where the Argo CD SSO(Dex/Keycloak) component is in its lifecycle.
+	// There are four possible sso values:
+	// Pending: The Argo CD SSO component has been accepted by the Kubernetes system, but one or more of the required resources have not been created.
+	// Running: All of the required Pods for the Argo CD SSO component are in a Ready state.
+	// Failed: At least one of the  Argo CD SSO component Pods had a failure.
+	// Unknown: The state of the Argo CD SSO component could not be obtained.
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="SSO",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	SSO string `json:"sso,omitempty"`
 
 	// NotificationsController is a simple, high-level summary of where the Argo CD notifications controller component is in its lifecycle.
 	// There are four possible NotificationsController values:
@@ -843,13 +861,6 @@ type ArgoCDStatus struct {
 	// Unknown: The state of the Argo CD notifications controller component could not be obtained.
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="NotificationsController",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	NotificationsController string `json:"notificationsController,omitempty"`
-
-	// SSOConfig defines the status of SSO configuration.
-	// Success: Only one SSO provider is configured in CR.
-	// Failed: SSO configuration is illegal or more than one SSO providers are configured in CR.
-	// Unknown: The SSO configuration could not be obtained.
-	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="SSOConfig",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	SSOConfig string `json:"ssoConfig,omitempty"`
 
 	// Phase is a simple, high-level summary of where the ArgoCD is in its lifecycle.
 	// There are four possible phase values:
@@ -1020,4 +1031,10 @@ func ParseResourceTrackingMethod(name string) ResourceTrackingMethod {
 	}
 
 	return ResourceTrackingMethodInvalid
+}
+
+// ToLower returns the lower case representation for a SSOProviderType
+func (p SSOProviderType) ToLower() SSOProviderType {
+	str := string(p)
+	return SSOProviderType(strings.ToLower(str))
 }

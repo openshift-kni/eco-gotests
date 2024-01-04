@@ -270,10 +270,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: availabilityZone
       type:
         scalar: string
-    - name: volumeType
-      type:
-        scalar: string
-      default: ""
 - name: com.github.openshift.api.machine.v1beta1.Condition
   map:
     fields:

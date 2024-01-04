@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/installer/pkg/types/aws"
 	"github.com/openshift/installer/pkg/types/azure"
 	"github.com/openshift/installer/pkg/types/baremetal"
-	"github.com/openshift/installer/pkg/types/external"
 	"github.com/openshift/installer/pkg/types/gcp"
 	"github.com/openshift/installer/pkg/types/ibmcloud"
 	"github.com/openshift/installer/pkg/types/libvirt"
@@ -43,6 +42,7 @@ var (
 		ibmcloud.Name,
 		nutanix.Name,
 		openstack.Name,
+		ovirt.Name,
 		powervs.Name,
 		vsphere.Name,
 	}
@@ -51,7 +51,6 @@ var (
 	// to the user in the interactive wizard.
 	HiddenPlatformNames = []string{
 		baremetal.Name,
-		external.Name,
 		none.Name,
 	}
 
@@ -139,13 +138,8 @@ type InstallConfig struct {
 	Proxy *Proxy `json:"proxy,omitempty"`
 
 	// ImageContentSources lists sources/repositories for the release-image content.
-	// The field is deprecated. Please use imageDigestSources.
 	// +optional
-	DeprecatedImageContentSources []ImageContentSource `json:"imageContentSources,omitempty"`
-
-	// ImageDigestSources lists sources/repositories for the release-image content.
-	// +optional
-	ImageDigestSources []ImageDigestSource `json:"imageDigestSources,omitempty"`
+	ImageContentSources []ImageContentSource `json:"imageContentSources,omitempty"`
 
 	// Publish controls how the user facing endpoints of the cluster like the Kubernetes API, OpenShift routes etc. are exposed.
 	// When no strategy is specified, the strategy is "External".
@@ -203,17 +197,8 @@ type InstallConfig struct {
 	Capabilities *Capabilities `json:"capabilities,omitempty"`
 
 	// FeatureSet enables features that are not part of the default feature set.
-	// Valid values are "Default", "TechPreviewNoUpgrade" and "CustomNoUpgrade".
-	// When omitted, the "Default" feature set is used.
 	// +optional
 	FeatureSet configv1.FeatureSet `json:"featureSet,omitempty"`
-
-	// FeatureGates enables a set of custom feature gates.
-	// May only be used in conjunction with FeatureSet "CustomNoUpgrade".
-	// Features may be enabled or disabled by providing a true or false value for the feature gate.
-	// E.g. "featureGates": ["FeatureGate1=true", "FeatureGate2=false"].
-	// +optional
-	FeatureGates []string `json:"featureGates,omitempty"`
 }
 
 // ClusterDomain returns the DNS domain that all records for a cluster must belong to.
@@ -288,10 +273,6 @@ type Platform struct {
 	// platform.
 	None *none.Platform `json:"none,omitempty"`
 
-	// External is the configuration used when installing on
-	// an external cloud provider.
-	External *external.Platform `json:"external,omitempty"`
-
 	// OpenStack is the configuration used when installing on OpenStack.
 	// +optional
 	OpenStack *openstack.Platform `json:"openstack,omitempty"`
@@ -336,8 +317,6 @@ func (p *Platform) Name() string {
 		return libvirt.Name
 	case p.None != nil:
 		return none.Name
-	case p.External != nil:
-		return external.Name
 	case p.OpenStack != nil:
 		return openstack.Name
 	case p.VSphere != nil:
@@ -448,18 +427,7 @@ type Proxy struct {
 }
 
 // ImageContentSource defines a list of sources/repositories that can be used to pull content.
-// The field is deprecated. Please use imageDigestSources.
 type ImageContentSource struct {
-	// Source is the repository that users refer to, e.g. in image pull specifications.
-	Source string `json:"source"`
-
-	// Mirrors is one or more repositories that may also contain the same images.
-	// +optional
-	Mirrors []string `json:"mirrors,omitempty"`
-}
-
-// ImageDigestSource defines a list of sources/repositories that can be used to pull content.
-type ImageDigestSource struct {
 	// Source is the repository that users refer to, e.g. in image pull specifications.
 	Source string `json:"source"`
 

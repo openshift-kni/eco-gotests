@@ -173,6 +173,20 @@ func (builder *PolicyBuilder) WithVhostNet(vhost bool) *PolicyBuilder {
 	return builder
 }
 
+// WithExternallyManaged sets ExternallyManaged option in SriovNetworkNodePolicy object.
+func (builder *PolicyBuilder) WithExternallyManaged(externallyManaged bool) *PolicyBuilder {
+	glog.V(100).Infof("Redefining SriovNetworkNodePolicy %s with"+
+		" externallyManaged: %t", builder.Definition.Name, externallyManaged)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	builder.Definition.Spec.ExternallyManaged = externallyManaged
+
+	return builder
+}
+
 // WithOptions creates SriovNetworkNodePolicy with generic mutation options.
 func (builder *PolicyBuilder) WithOptions(options ...PolicyAdditionalOptions) *PolicyBuilder {
 	if valid, _ := builder.validate(); !valid {

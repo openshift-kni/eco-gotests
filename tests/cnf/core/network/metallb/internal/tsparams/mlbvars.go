@@ -3,7 +3,6 @@ package tsparams
 import (
 	"time"
 
-	metalLbOperatorV1Beta1 "github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/k8sreporter"
@@ -29,7 +28,7 @@ var (
 		{Cr: setUnstructured(metallb.IPAddressPoolList)},
 		{Cr: setUnstructured(metallb.BFDProfileList)},
 		{Cr: setUnstructured(metallb.BGPPeerListKind)},
-		{Cr: &metalLbOperatorV1Beta1.MetalLBList{}},
+		{Cr: setUnstructured(metallb.MetalLBList)},
 	}
 	// TestNamespaceName metalLb namespace where all test cases are performed.
 	TestNamespaceName = "metallb-tests"

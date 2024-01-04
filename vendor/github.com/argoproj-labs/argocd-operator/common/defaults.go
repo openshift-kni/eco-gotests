@@ -61,7 +61,7 @@ const (
 	ArgoCDDefaultArgoImage = "quay.io/argoproj/argocd"
 
 	// ArgoCDDefaultArgoVersion is the Argo CD container image digest to use when version not specified.
-	ArgoCDDefaultArgoVersion = "sha256:7daba5f38b23f4f091951b727db6f87dc04ad396fd21044401502438d633836e" // v2.7.6
+	ArgoCDDefaultArgoVersion = "sha256:acaf3735256979326c8dcd3106454cee65572c40e191525174cba2bcb35541c5" // v2.8.6
 
 	// ArgoCDDefaultBackupKeyLength is the length of the generated default backup key.
 	ArgoCDDefaultBackupKeyLength = 32
@@ -119,7 +119,7 @@ const (
 	ArgoCDDefaultExportJobImage = "quay.io/argoprojlabs/argocd-operator-util"
 
 	// ArgoCDDefaultExportJobVersion is the export job container image tag to use when not specified.
-	ArgoCDDefaultExportJobVersion = "sha256:671c26152af1fa326041695712414cfa56d96212258b5eb6c0fa73166c8a1018" // 0.7.0
+	ArgoCDDefaultExportJobVersion = "sha256:9b7f3aaf6f34e57171575cdd75fe13d223c4ca9f477598f04fc6147a3eb6a2a4" // 0.8.0
 
 	// ArgoCDDefaultExportLocalCapicity is the default capacity to use for local export.
 	ArgoCDDefaultExportLocalCapicity = "2Gi"
@@ -183,11 +183,11 @@ const (
 	ArgoCDKeycloakVersion = "sha256:64fb81886fde61dee55091e6033481fa5ccdac62ae30a4fd29b54eb5e97df6a9"
 
 	// ArgoCDKeycloakImageForOpenShift is the default Keycloak Image used for the OpenShift platform when not specified.
-	ArgoCDKeycloakImageForOpenShift = "registry.redhat.io/rh-sso-7/sso75-openshift-rhel8"
+	ArgoCDKeycloakImageForOpenShift = "registry.redhat.io/rh-sso-7/sso76-openshift-rhel8"
 
 	// ArgoCDKeycloakVersionForOpenShift is the default Keycloak version used for the OpenShift platform when not specified.
-	// Version: 7.5.1
-	ArgoCDKeycloakVersionForOpenShift = "sha256:720a7e4c4926c41c1219a90daaea3b971a3d0da5a152a96fed4fb544d80f52e3"
+	// Version: 7.6-32
+	ArgoCDKeycloakVersionForOpenShift = "sha256:ec9f60018694dcc5d431ba47d5536b761b71cb3f66684978fe6bb74c157679ac"
 
 	// ArgoCDDefaultOIDCConfig is the default OIDC configuration.
 	ArgoCDDefaultOIDCConfig = ""
@@ -246,9 +246,6 @@ const (
 	// ArgoCDDefaultRepositoryCredentials is the default repository credentials
 	ArgoCDDefaultRepositoryCredentials = ""
 
-	// ArgoCDDefaultResourceCustomizations is the default resource customizations.
-	ArgoCDDefaultResourceCustomizations = ""
-
 	// ArgoCDDefaultResourceExclusions is the default resource exclusions.
 	ArgoCDDefaultResourceExclusions = ""
 
@@ -304,6 +301,8 @@ gitlab.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCsj2bNKTBSpIYDEGk9KxsGh3mySTRgM
 ssh.dev.azure.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7Hr1oTWqNqOlzGJOfGJ4NakVyIzf1rXYd4d7wo6jBlkLvCA4odBlL0mDUyZ0/QUfTTqeu+tm22gOsv+VrVTMk6vwRU75gY/y9ut5Mb3bR5BV58dKXyq9A9UeB5Cakehn5Zgm6x1mKoVyf+FFn26iYqXJRgzIZZcZ5V6hrE0Qg39kZm4az48o0AUbf6Sp4SLdvnuMa2sVNwHBboS7EJkm57XQPVU3/QpyNLHbWDdzwtrlS+ez30S3AdYhLKEOxAG8weOnyrtLJAUen9mTkol8oII1edf7mWWbWVf0nBmly21+nZcmCTISQBtdcyPaEno7fFQMDD26/s0lfKob4Kw8H
 vs-ssh.visualstudio.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7Hr1oTWqNqOlzGJOfGJ4NakVyIzf1rXYd4d7wo6jBlkLvCA4odBlL0mDUyZ0/QUfTTqeu+tm22gOsv+VrVTMk6vwRU75gY/y9ut5Mb3bR5BV58dKXyq9A9UeB5Cakehn5Zgm6x1mKoVyf+FFn26iYqXJRgzIZZcZ5V6hrE0Qg39kZm4az48o0AUbf6Sp4SLdvnuMa2sVNwHBboS7EJkm57XQPVU3/QpyNLHbWDdzwtrlS+ez30S3AdYhLKEOxAG8weOnyrtLJAUen9mTkol8oII1edf7mWWbWVf0nBmly21+nZcmCTISQBtdcyPaEno7fFQMDD26/s0lfKob4Kw8H
 `
+	// OperatorMetricsPort is the port that is used to expose default controller-runtime metrics for the operator pod.
+	OperatorMetricsPort = 8080
 )
 
 // DefaultLabels returns the default set of labels for controllers.

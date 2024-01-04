@@ -5,6 +5,8 @@ const (
 	APIGroup = "metallb.io"
 	// APIVersion represents version of metallb api.
 	APIVersion = "v1beta1"
+	// MetalLBList represents kind of MetalLBList object.
+	MetalLBList = "MetalLBList"
 	// BGPPeerListKind represents kind of BGPPeerList object.
 	BGPPeerListKind = "BGPPeerList"
 	// BGPAdvertisementListKind represents kind of BGPAdvertisementList object.

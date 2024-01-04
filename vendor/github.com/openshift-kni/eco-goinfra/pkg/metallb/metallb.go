@@ -4,22 +4,26 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/golang/glog"
-	"github.com/metallb/metallb-operator/api/v1beta1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	goclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+const (
+	metalLb = "MetalLB"
 )
 
 // Builder provides struct for the MetalLb object containing connection to
 // the cluster and the MetalLb definitions.
 type Builder struct {
-	Definition *v1beta1.MetalLB
-	Object     *v1beta1.MetalLB
+	Definition *mlbtypes.MetalLB
+	Object     *mlbtypes.MetalLB
 	apiClient  *clients.Settings
 	errorMsg   string
 }
@@ -35,11 +39,16 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, label map[stri
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1beta1.MetalLB{
+		Definition: &mlbtypes.MetalLB{
+			TypeMeta: metaV1.TypeMeta{
+				Kind:       metalLb,
+				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
+			},
 			ObjectMeta: metaV1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
-			}, Spec: v1beta1.MetalLBSpec{
+			},
+			Spec: mlbtypes.MetalLBSpec{
 				SpeakerNodeSelector: label,
 			},
 		},
@@ -67,7 +76,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1beta1.MetalLB{
+		Definition: &mlbtypes.MetalLB{
 			ObjectMeta: metaV1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -117,7 +126,7 @@ func (builder *Builder) Exists() bool {
 }
 
 // Get returns MetalLb object if found.
-func (builder *Builder) Get() (*v1beta1.MetalLB, error) {
+func (builder *Builder) Get() (*mlbtypes.MetalLB, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -126,11 +135,8 @@ func (builder *Builder) Get() (*v1beta1.MetalLB, error) {
 		"Collecting metallb object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	metalLb := &v1beta1.MetalLB{}
-	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
-		Name:      builder.Definition.Name,
-		Namespace: builder.Definition.Namespace,
-	}, metalLb)
+	unsObject, err := builder.apiClient.Resource(GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Get(
+		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -140,7 +146,7 @@ func (builder *Builder) Get() (*v1beta1.MetalLB, error) {
 		return nil, err
 	}
 
-	return metalLb, err
+	return builder.convertToStructured(unsObject)
 }
 
 // Create makes a MetalLb in the cluster and stores the created object in struct.
@@ -155,9 +161,28 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	var err error
 	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
-		if err == nil {
-			builder.Object = builder.Definition
+		unstructuredMetalLb, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to convert structured MetalLb to unstructured object")
+
+			return nil, err
+		}
+
+		unsObject, err := builder.apiClient.Resource(
+			GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Create(
+			context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metaV1.CreateOptions{})
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create MetalLb")
+
+			return nil, err
+		}
+
+		builder.Object, err = builder.convertToStructured(unsObject)
+
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -178,7 +203,9 @@ func (builder *Builder) Delete() (*Builder, error) {
 		return builder, fmt.Errorf("metallb cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
+	err := builder.apiClient.Resource(
+		GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Delete(
+		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete metallb: %w", err)
@@ -195,6 +222,10 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 		return builder, err
 	}
 
+	if !builder.Exists() {
+		return nil, fmt.Errorf("failed to update metallb, object doesn't exist on cluster")
+	}
+
 	glog.V(100).Infof("Updating the metallb object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
@@ -203,7 +234,19 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
 
-	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
+	builder.Definition.ObjectMeta.ResourceVersion = builder.Object.ObjectMeta.ResourceVersion
+
+	unstructuredMetalLb, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
+	if err != nil {
+		glog.V(100).Infof("Failed to convert structured MetalLb to unstructured object")
+
+		return nil, err
+	}
+
+	_, err = builder.apiClient.Resource(
+		GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Update(
+		context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metaV1.UpdateOptions{})
 
 	if err != nil {
 		if force {
@@ -333,4 +376,19 @@ func (builder *Builder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (builder *Builder) convertToStructured(unsObject *unstructured.Unstructured) (*mlbtypes.MetalLB, error) {
+	metalLb := &mlbtypes.MetalLB{}
+
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, metalLb)
+	if err != nil {
+		glog.V(100).Infof(
+			"Failed to convert from unstructured to MetalLb object in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return metalLb, err
 }

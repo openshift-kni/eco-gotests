@@ -34,12 +34,6 @@ type MachinePool struct {
 	// Leave unset to have the installer create the IAM Role on your behalf.
 	// +optional
 	IAMRole string `json:"iamRole,omitempty"`
-
-	// AdditionalSecurityGroupIDs contains IDs of additional security groups for machines, where each ID
-	// is presented in the format sg-xxxx.
-	//
-	// +optional
-	AdditionalSecurityGroupIDs []string `json:"additionalSecurityGroupIDs,omitempty"`
 }
 
 // Set sets the values from `required` to `a`.
@@ -79,10 +73,6 @@ func (a *MachinePool) Set(required *MachinePool) {
 
 	if required.IAMRole != "" {
 		a.IAMRole = required.IAMRole
-	}
-
-	if len(required.AdditionalSecurityGroupIDs) > 0 {
-		a.AdditionalSecurityGroupIDs = required.AdditionalSecurityGroupIDs
 	}
 }
 

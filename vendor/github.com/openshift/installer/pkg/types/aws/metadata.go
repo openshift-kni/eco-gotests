@@ -18,8 +18,4 @@ type Metadata struct {
 
 	// ClusterDomain is the domain for the cluster.
 	ClusterDomain string `json:"clusterDomain"`
-
-	// HostedZoneRole is the role to assume when performing operations
-	// on a hosted zone owned by another account.
-	HostedZoneRole string `json:"hostedZoneRole,omitempty"`
 }

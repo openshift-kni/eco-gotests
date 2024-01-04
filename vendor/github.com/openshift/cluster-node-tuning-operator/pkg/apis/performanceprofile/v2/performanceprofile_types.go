@@ -34,6 +34,10 @@ const PerformanceProfileEnablePhysicalRpsAnnotation = "performance.openshift.io/
 // that ignores the removal of all RPS settings when realtime workload hint is explicitly set to false.
 const PerformanceProfileEnableRpsAnnotation = "performance.openshift.io/enable-rps"
 
+// PerformanceProfileIgnoreCgroupsVersion allows an admin to suspend the operator's
+// automatic downgrade of Cgroups version to V1 for development purposes.
+const PerformanceProfileIgnoreCgroupsVersion = "performance.openshift.io/ignore-cgroups-version"
+
 // PerformanceProfileSpec defines the desired state of PerformanceProfile.
 type PerformanceProfileSpec struct {
 	// CPU defines a set of CPU related parameters.
@@ -62,7 +66,7 @@ type PerformanceProfileSpec struct {
 	NodeSelector map[string]string `json:"nodeSelector"`
 	// RealTimeKernel defines a set of real time kernel related parameters. RT kernel won't be installed when not set.
 	RealTimeKernel *RealTimeKernel `json:"realTimeKernel,omitempty"`
-	// Addional kernel arguments.
+	// Additional kernel arguments.
 	// +optional
 	AdditionalKernelArgs []string `json:"additionalKernelArgs,omitempty"`
 	// NUMA defines options related to topology aware affinities
@@ -110,6 +114,11 @@ type CPU struct {
 	// Offline defines a set of CPUs that will be unused and set offline
 	// +optional
 	Offlined *CPUSet `json:"offlined,omitempty"`
+	// Shared defines a set of CPUs that will be shared among guaranteed workloads
+	// that needs additional cpus which are not exclusive,
+	// alongside the isolated, exclusive resources that are being used already by those workloads.
+	// +optional
+	Shared *CPUSet `json:"shared,omitempty"`
 }
 
 // HugePageSize defines size of huge pages, can be 2M or 1G.
@@ -187,6 +196,10 @@ type WorkloadHints struct {
 	// PerPodPowerManagement defines if the node should be configured in per pod power management.
 	// PerPodPowerManagement and HighPowerConsumption hints can not be enabled together. Defaults to false.
 	PerPodPowerManagement *bool `json:"perPodPowerManagement,omitempty"`
+	// +optional
+	// MixedCpus enables the mixed-cpu-node-plugin on the node.
+	// Defaults to false.
+	MixedCpus *bool `json:"mixedCpus,omitempty"`
 }
 
 // PerformanceProfileStatus defines the observed state of PerformanceProfile.
