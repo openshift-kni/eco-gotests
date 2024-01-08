@@ -1,4 +1,4 @@
-package allmulti
+package tests
 
 import (
 	"fmt"
