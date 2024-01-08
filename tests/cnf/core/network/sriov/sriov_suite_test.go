@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/tests"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/params"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
