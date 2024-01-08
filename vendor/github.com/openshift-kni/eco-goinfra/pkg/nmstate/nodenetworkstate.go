@@ -100,7 +100,7 @@ func (builder *StateBuilder) GetTotalVFs(sriovInterfaceName string) (int, error)
 
 	for _, interfaceFromCurrentState := range CurrentState.Interfaces {
 		if interfaceFromCurrentState.Name == sriovInterfaceName {
-			return interfaceFromCurrentState.Ethernet.Sriov.TotalVfs, nil
+			return *interfaceFromCurrentState.Ethernet.Sriov.TotalVfs, nil
 		}
 	}
 

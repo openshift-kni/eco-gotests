@@ -211,12 +211,13 @@ func (builder *PolicyBuilder) WithInterfaceAndVFs(sriovInterface string, numberO
 		return builder
 	}
 
+	intNumberOfVF := int(numberOfVF)
 	newInterface := NetworkInterface{
 		Name:  sriovInterface,
 		Type:  "ethernet",
 		State: "up",
 		Ethernet: Ethernet{
-			Sriov: Sriov{TotalVfs: int(numberOfVF)},
+			Sriov: Sriov{TotalVfs: &intNumberOfVF},
 		},
 	}
 

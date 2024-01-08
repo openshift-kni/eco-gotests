@@ -62,6 +62,7 @@ import (
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 	lsoV1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
+	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
 	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
 	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
@@ -218,6 +219,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := moduleV1Beta1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := mcmV1Beta1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 

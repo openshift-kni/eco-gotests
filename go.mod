@@ -17,7 +17,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240104211720-661b41a33ae2
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240105194502-aa28186650a3
 	github.com/openshift-kni/k8sreporter v1.0.4
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -25,7 +25,7 @@ require (
 	github.com/openshift/cluster-nfd-operator v0.0.0-20231206145954-f49a827bf617
 	github.com/openshift/cluster-node-tuning-operator v0.0.0-20231225123609-e63d2c9626fe
 	github.com/openshift/hive/apis v0.0.0-20220222213051-def9088fdb5a
-	github.com/openshift/installer v0.16.1
+	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a9
 	github.com/operator-framework/api v0.20.0
 	github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20240103094011-ff7cd443e51c

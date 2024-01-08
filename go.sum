@@ -441,8 +441,8 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/image-spec v1.1.0-rc5 h1:Ygwkfw9bpDvs+c9E34SdgGOj41dX/cbdlwvlWt0pnFI=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20231216054307-28180628cf50 h1:0Lw0f9ncgoXKo1JnQrEo4fGqYelTV+5huXzJvziDG9E=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20231216054307-28180628cf50/go.mod h1:vfydLuqf4QsLXI5busOIjbuvvURuE0oeLCwjvXj34Mo=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240104211720-661b41a33ae2 h1:gFuXfV+TOvp6PiK5WXIaORAleUfadjGPhhH0pACkpQs=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240104211720-661b41a33ae2/go.mod h1:glATkU/NliNAZZTGgFwY0rTJhrcHnXE+jjAjgQAKoNQ=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240105194502-aa28186650a3 h1:G3fnFCcAcI0UzEmsREpGBDNt38e/4tJGbXNmfUgLWqQ=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240105194502-aa28186650a3/go.mod h1:glATkU/NliNAZZTGgFwY0rTJhrcHnXE+jjAjgQAKoNQ=
 github.com/openshift-kni/k8sreporter v1.0.4 h1:jEwX6Pqei60kO1U0JLo+ePjQaP7DNn/M6d63KCS2tS0=
 github.com/openshift-kni/k8sreporter v1.0.4/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift/api v0.0.0-20231115210901-4c4a0a24f2fc h1:VCR7TBU90EPmz1fjW1sqdVVpe5GmOHyJTTyQ5XmnmtE=

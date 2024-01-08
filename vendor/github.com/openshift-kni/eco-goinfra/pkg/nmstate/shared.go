@@ -24,7 +24,7 @@ type Ethernet struct {
 // Sriov provides struct for the NMState Interface Ethernet Sriov state object containing
 // interface Ethernet Sriov information.
 type Sriov struct {
-	TotalVfs int  `yaml:"total-vfs,omitempty"`
+	TotalVfs *int `yaml:"total-vfs,omitempty"`
 	Vfs      []Vf `yaml:"vfs,omitempty"`
 }
 
