@@ -324,6 +324,44 @@ func (builder *Builder) Delete() (*Builder, error) {
 	return builder, err
 }
 
+// Update renovates the existing PerformanceProfile object with the PerformanceProfile definition in builder.
+func (builder *Builder) Update(force bool) (*Builder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Updating the PerformanceProfile object: %s in namespace: %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err != nil {
+		if force {
+			glog.V(100).Infof(
+				"Failed to update the PerformanceProfile object %s. "+
+					"Note: Force flag set, executed delete/create methods instead", builder.Definition.Name)
+
+			builder, err := builder.Delete()
+
+			if err != nil {
+				glog.V(100).Infof(
+					"Failed to update the PerformanceProfile object %s, "+
+						"due to error in delete function", builder.Definition.Name)
+
+				return nil, err
+			}
+
+			return builder.Create()
+		}
+	}
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
+
+	return builder, err
+}
+
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {

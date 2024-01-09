@@ -210,6 +210,18 @@ func (builder *ModuleBuilder) WithDevicePluginContainer(
 	return builder
 }
 
+// BuildModuleSpec returns module spec.
+func (builder *ModuleBuilder) BuildModuleSpec() (moduleV1Beta1.ModuleSpec, error) {
+	if valid, err := builder.validate(); !valid {
+		return moduleV1Beta1.ModuleSpec{}, err
+	}
+
+	glog.V(100).Infof(
+		"Returning the ModuleSpec structure %v", builder.Definition.Spec)
+
+	return builder.Definition.Spec, nil
+}
+
 // WithOptions creates Module with generic mutation options.
 func (builder *ModuleBuilder) WithOptions(options ...ModuleAdditionalOptions) *ModuleBuilder {
 	if valid, _ := builder.validate(); !valid {
