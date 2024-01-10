@@ -79,6 +79,8 @@ type ECoreConfig struct {
 
 	WlkdSRIOVNetOne string `yaml:"ecore_wlkd_sriov_net_one" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_NET_ONE"`
 	WlkdSRIOVNetTwo string `yaml:"ecore_wlkd_sriov_net_two" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_NET_TWO"`
+
+	StorageClassesMap map[string]string `yaml:"ecore_storage_classes_map" envconfig:"ECO_SYSTEM_SC_MAP"`
 }
 
 // NewECoreConfig returns instance of ECoreConfig config type.

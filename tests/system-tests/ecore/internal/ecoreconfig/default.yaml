@@ -105,3 +105,7 @@ ecore_wlkd_sriov_one_sa: telco-qe-sa
 ecore_wlkd_sriov_two_sa: telco-qe-sa
 ecore_wlkd_sriov_net_one: eric-pc-up-data-plane-net1
 ecore_wlkd_sriov_net_two: eric-pc-up-data-plane-net2
+ecore_storage_classes_map:
+  ocs-external-storagecluster-ceph-rbd: openshift-storage.rbd.csi.ceph.com
+  ocs-external-storagecluster-cephfs: openshift-storage.cephfs.csi.ceph.com
+  openshift-storage.noobaa.io: openshift-storage.noobaa.io/obc

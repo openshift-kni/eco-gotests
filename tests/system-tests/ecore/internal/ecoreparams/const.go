@@ -36,4 +36,7 @@ const (
 
 	// LabelEcoreValidateSriov is used to select test for SR-IOV validation.
 	LabelEcoreValidateSriov = "ecore_validate_sriov"
+
+	// LabelEcoreValidateODFStorage is used to select tests for ODF storage validation.
+	LabelEcoreValidateODFStorage = "ecore_validate_odf_storage"
 )
