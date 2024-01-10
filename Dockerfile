@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi8/ubi:latest
 
 ARG GO_VER=go1.20.11
-ARG GINKGO_VER=ginkgo@v2.13.0
+ARG GINKGO_VER=ginkgo@v2.13.2
 
 LABEL description="eco-gotests development image"
 LABEL go.version=${GO_VER}
