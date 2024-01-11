@@ -330,8 +330,7 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 		return builder, err
 	}
 
-	glog.V(100).Infof("Updating the PerformanceProfile object: %s in namespace: %s",
-		builder.Definition.Name, builder.Definition.Namespace)
+	glog.V(100).Infof("Updating the PerformanceProfile object: %s", builder.Definition.Name)
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 

@@ -17,7 +17,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240109161517-472a5467b2cb
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240111142432-a329937fc333
 	github.com/openshift-kni/k8sreporter v1.0.4
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -120,9 +120,10 @@ require (
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20231216054307-28180628cf50 // indirect
+	github.com/openshift-kni/lifecycle-agent v0.0.0-20240109211418-4489c4a1eb46 // indirect
 	github.com/openshift/client-go v0.0.1 // indirect
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
-	github.com/openshift/library-go v0.0.0-20231017173800-126f85ed0cc7 // indirect
+	github.com/openshift/library-go v0.0.0-20231027143522-b8cd45d2d2c8 // indirect
 	github.com/openshift/local-storage-operator v0.0.0-20231220121151-4e580bd14c46 // indirect
 	github.com/openshift/ptp-operator v0.0.0-20231220185604-29113b41981b // indirect
 	github.com/operator-framework/operator-lifecycle-manager v0.26.0 // indirect
