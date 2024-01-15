@@ -28,7 +28,7 @@ COPY --from=builder /build/kmm-kmod/*.ko /opt/lib/modules/${KERNEL_VERSION}/
 RUN depmod -b /opt ${KERNEL_VERSION}
 `
 	// SimpleKmodContents represents the Dockerfile contents for simple-kmod build.
-	SimpleKmodContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit
+	SimpleKmodContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit as builder
 ARG KERNEL_VERSION
 ARG KMODVER
 WORKDIR /build/
@@ -36,9 +36,18 @@ WORKDIR /build/
 RUN git clone https://github.com/cdvultur/simple-kmod.git && \
 	cd simple-kmod && \
     make all       KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
-    make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
-    mkdir -p /opt/lib/modules/$KERNEL_VERSION && \
-    cp /lib/modules/$KERNEL_VERSION/simple-*.ko /lib/modules/$KERNEL_VERSION/modules.* /opt/lib/modules/$KERNEL_VERSION`
+    make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER
+
+FROM registry.redhat.io/ubi8/ubi-minimal
+ARG KERNEL_VERSION
+ARG MY_MODULE
+RUN microdnf -y install kmod
+
+COPY --from=builder /etc/driver-toolkit-release.json /etc/
+COPY --from=builder /lib/modules/$KERNEL_VERSION/simple-*.ko /opt/lib/modules/${KERNEL_VERSION}/
+COPY --from=builder /lib/modules/$KERNEL_VERSION/modules.* /opt/lib/modules/${KERNEL_VERSION}/
+RUN depmod -b /opt ${KERNEL_VERSION}
+`
 
 	// SecretContents template.
 	SecretContents = `
