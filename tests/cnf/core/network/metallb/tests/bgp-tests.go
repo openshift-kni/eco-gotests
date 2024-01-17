@@ -52,6 +52,30 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
 		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
 
+		By("Listing master nodes")
+		masterNodeList, err = nodes.List(APIClient,
+			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
+		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
+			"Failed to detect master nodes")
+	})
+
+	var speakerPods []*pod.Builder
+
+	BeforeEach(func() {
+		By("Creating External NAD")
+		createExternalNad()
+
+		By("Listing metalLb speakers pod")
+		var err error
+		speakerPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
+			LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
+		})
+		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
+		Expect(len(speakerPods)).To(BeNumerically(">", 0),
+			"Failed the number of frr speaker pods is 0")
+		createBGPPeerAndVerifyIfItsReady(
+			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, speakerPods)
 	})
 
 	AfterEach(func() {
@@ -85,14 +109,6 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					Skip("bgp test cases doesn't support ipv6 yet")
 				}
 
-				By("Creating External NAD")
-				createExternalNad()
-
-				By("Listing metalLb speakers pod")
-				speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
-					LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
-				})
-				Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
 				createBGPPeerAndVerifyIfItsReady(
 					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, speakerPods)
 
@@ -103,15 +119,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				Expect(err).ToNot(HaveOccurred(), "Fail to set iteration parameters")
 
 				By("Creating MetalLb configMap")
-				masterConfigMap := createConfigMap(
-					tsparams.LocalBGPASN, tsparams.LocalBGPASN, nodeAddrList, false, false)
-
-				By("Creating external FRR container")
-				masterNodeList, err := nodes.List(APIClient,
-					metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-				Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-				Expect(len(masterNodeList)).To(BeNumerically(">", 0),
-					"Failed to detect master nodes")
+				masterConfigMap := createConfigMap(tsparams.LocalBGPASN, nodeAddrList, false, false)
 
 				By("Creating static ip annotation")
 				staticIPAnnotation := pod.StaticIPAnnotation(
@@ -150,6 +158,40 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				polarion.SetProperty("IPStack", netparam.IPV6Family),
 				polarion.SetProperty("PrefixLenght", netparam.IPSubnet64)),
 		)
+
+		It("provides Prometheus BGP metrics", polarion.ID("47202"), func() {
+			By("Creating static ip annotation")
+			staticIPAnnotation := pod.StaticIPAnnotation(
+				externalNad.Definition.Name, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})
+
+			By("Creating MetalLb configMap")
+			masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
+
+			By("Creating FRR Pod")
+			frrPod := createFrrPod(
+				masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
+
+			createBGPPeerAndVerifyIfItsReady(
+				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, speakerPods)
+
+			By("Checking that BGP session is established and up")
+			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+
+			By("Label namespace")
+			testNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = testNs.WithLabel(tsparams.PrometheusMonitoringLabel, "true").Update()
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Listing prometheus pods")
+			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, metaV1.ListOptions{
+				LabelSelector: tsparams.PrometheusMonitoringPodLabel,
+			})
+			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
+
+			verifyMetricPresentInPrometheus(
+				speakerPods, prometheusPods[0], "metallb_bgp_", tsparams.MetalLbBgpMetrics)
+		})
 
 		AfterAll(func() {
 			if len(cnfWorkerNodeList) > 2 {

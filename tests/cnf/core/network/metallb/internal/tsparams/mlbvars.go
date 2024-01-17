@@ -66,6 +66,12 @@ var (
 	EBGPProtocol = "eBGP"
 	// IBPGPProtocol represents internal bgp protocol name.
 	IBPGPProtocol = "iBGP"
+	// MetalLbBgpMetrics represents the list of expected metallb metrics.
+	MetalLbBgpMetrics = []string{"metallb_bgp_keepalives_sent", "metallb_bgp_keepalives_received",
+		"metallb_bgp_notifications_sent", "metallb_bgp_opens_received", "metallb_bgp_opens_sent",
+		"metallb_bgp_route_refresh_sent", "metallb_bgp_session_up", "metallb_bgp_total_received", "metallb_bgp_total_sent",
+		"metallb_bgp_updates_total", "metallb_bgp_updates_total_received", "metallb_bgp_announced_prefixes_total",
+	}
 )
 
 func setUnstructured(kind string) *unstructured.UnstructuredList {

@@ -24,7 +24,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -78,8 +77,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				ipv4metalLbIPList[0], bfdProfile.Definition.Name, tsparams.RemoteBGPASN, false, speakerPods)
 
 			By("Creating MetalLb configMap")
-			bfdConfigMap := createConfigMap(
-				tsparams.RemoteBGPASN, tsparams.LocalBGPASN, ipv4NodeAddrList, false, true)
+			bfdConfigMap := createConfigMap(tsparams.RemoteBGPASN, ipv4NodeAddrList, false, true)
 
 			By("Creating static ip annotation")
 			staticIPAnnotation := pod.StaticIPAnnotation(
@@ -124,19 +122,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
 
-			for _, speakerPod := range speakerPods {
-				var metricsFromSpeaker []string
-				Eventually(func() error {
-					metricsFromSpeaker, err = frr.GetMetricsByPrefix(speakerPod, "metallb_bfd_")
-
-					return err
-				}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(),
-					"Failed to collect metrics from speaker pods")
-				Eventually(
-					prometheus.PodMetricsPresentInDB, time.Minute, tsparams.DefaultRetryInterval).WithArguments(
-					prometheusPods[0], speakerPod.Definition.Name, metricsFromSpeaker).Should(
-					BeTrue(), "Failed to match metric in prometheus")
-			}
+			verifyMetricPresentInPrometheus(speakerPods, prometheusPods[0], "metallb_bfd_")
 		})
 
 		AfterEach(func() {
@@ -294,8 +280,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					masterNodes[0].Object.Name, addressPool[0], nodeAddrList[1])
 
 				By("Creating client pod config map")
-				masterConfigMap := createConfigMap(
-					int(neighbourASN), tsparams.LocalBGPASN, nodeAddrList, eBgpMultiHop, true)
+				masterConfigMap := createConfigMap(int(neighbourASN), nodeAddrList, eBgpMultiHop, true)
 
 				By("Creating FRR pod in the test namespace")
 				frrPod := createFrrPod(

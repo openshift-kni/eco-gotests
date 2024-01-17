@@ -18,6 +18,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	coreV1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ var (
 	externalNad       *nad.Builder
 	cnfWorkerNodeList []*nodes.Builder
 	workerNodeList    []*nodes.Builder
+	masterNodeList    []*nodes.Builder
 	workerLabelMap    map[string]string
 	metalLbTestsLabel = map[string]string{"metallb": "metallbtests"}
 )
@@ -74,9 +76,9 @@ func setWorkerNodeListAndLabelForBfdTests(
 }
 
 func createConfigMap(
-	localAsn, remoteAsn int, nodeAddrList []string, enableMultiHop, enableBFD bool) *configmap.Builder {
+	bgpAsn int, nodeAddrList []string, enableMultiHop, enableBFD bool) *configmap.Builder {
 	frrBFDConfig := frr.DefineBGPConfig(
-		localAsn, remoteAsn, removePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
+		bgpAsn, tsparams.LocalBGPASN, removePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
 	configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
 	masterConfigMap, err := configmap.NewBuilder(APIClient, "frr-master-node-config", tsparams.TestNamespaceName).
 		WithData(configMapData).Create()
@@ -218,4 +220,33 @@ func removePrefixFromIPList(ipAddressList []string) []string {
 	}
 
 	return ipAddressListWithoutPrefix
+}
+
+func verifyMetricPresentInPrometheus(
+	speakerPods []*pod.Builder, prometheusPod *pod.Builder, metricPrefix string, expectedMetrics ...[]string) {
+	By("Verifying if metrics are present in Prometheus database")
+
+	for _, speakerPod := range speakerPods {
+		var (
+			metricsFromSpeaker []string
+			err                error
+		)
+
+		Eventually(func() error {
+			metricsFromSpeaker, err = frr.GetMetricsByPrefix(speakerPod, metricPrefix)
+
+			return err
+		}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(),
+			"Failed to collect metrics from speaker pods")
+
+		if len(expectedMetrics) > 0 {
+			By("Verifying if metrics match expected list of metrics")
+			Expect(expectedMetrics[0]).To(ContainElements(metricsFromSpeaker))
+		}
+
+		Eventually(
+			prometheus.PodMetricsPresentInDB, 5*time.Minute, tsparams.DefaultRetryInterval).WithArguments(
+			prometheusPod, speakerPod.Definition.Name, metricsFromSpeaker).Should(
+			BeTrue(), "Failed to match metric in prometheus")
+	}
 }
