@@ -3,7 +3,12 @@ package tests
 import (
 	"context"
 	"encoding/json"
-	"flag"
+
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/nvidiagpuconfig"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/machine"
+	nfddeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/deploy"
+
 	"strings"
 	"time"
 
@@ -42,14 +47,31 @@ var (
 		"amd64": "quay.io/wabouham/gpu_burn_amd64:ubi9",
 		"arm64": "quay.io/wabouham/gpu_burn_arm64:ubi9",
 	}
+
+	machineSetNamespace         = "openshift-machine-api"
+	replicas              int32 = 1
+	workerMachineSetLabel       = "machine.openshift.io/cluster-api-machine-role"
+
+	nfdCleanupAfterInstall bool = false
+
+	// NvidiaGPUConfig provides access to general configuration parameters.
+	nvidiaGPUConfig *nvidiagpuconfig.NvidiaGPUConfig
 )
 
 const (
+	nfdNamespace              = "openshift-nfd"
+	nfdCatalogSource          = "redhat-operators"
+	nfdCatalogSourceNamespace = "openshift-marketplace"
+	nfdOperatorDeploymentName = "nfd-controller-manager"
+	nfdPackage                = "nfd"
+	nfdCRName                 = "nfd-instance"
+
 	nvidiaGPUNamespace        = "nvidia-gpu-operator"
 	nfdRhcosLabel             = "feature.node.kubernetes.io/system-os_release.ID"
 	nfdRhcosLabelValue        = "rhcos"
 	nvidiaGPULabel            = "feature.node.kubernetes.io/pci-10de.present"
 	gpuOperatorGroupName      = "gpu-og"
+	gpuOperatorDeployment     = "gpu-operator"
 	gpuSubscriptionName       = "gpu-subscription"
 	gpuSubscriptionNamespace  = "nvidia-gpu-operator"
 	gpuCatalogSource          = "certified-operators"
@@ -66,42 +88,197 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 	Context("DeployGpu", Label("deploy-gpu-with-dtk"), func() {
 
+		nvidiaGPUConfig = nvidiagpuconfig.NewNvidiaGPUConfig()
+
 		BeforeAll(func() {
-			// Init glog lib and dump logs to stdout
-			_ = flag.Lookup("logtostderr").Value.Set("true")
-			// _ = flag.Lookup("v").Value.Set(GeneralConfig.VerboseLevel)
-			_ = flag.Lookup("v").Value.Set("100")
+			// if gpuinittools.NvidiaGPUConfig.InstanceType == "" {
+			if nvidiaGPUConfig.InstanceType == "" {
+				glog.V(gpuparams.GpuLogLevel).Infof("env variable ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE" +
+					" is not set, skipping test")
+				Skip("No instanceType found in environment variables, Skipping test")
+			}
+
+			By("Check if NFD is installed")
+			nfdInstalled, err := check.NFDDeploymentsReady(APIClient)
+
+			if nfdInstalled && err == nil {
+				glog.V(gpuparams.GpuLogLevel).Infof("The check for ready NFD deployments is: %v", nfdInstalled)
+				glog.V(gpuparams.GpuLogLevel).Infof("NFD operators and operands are already installed on " +
+					"this cluster")
+			} else {
+				glog.V(gpuparams.GpuLogLevel).Infof("NFD is not currently installed on this cluster")
+				glog.V(gpuparams.GpuLogLevel).Infof("Deploying NFD Operator and CR instance on this cluster")
+
+				nfdCleanupAfterInstall = true
+
+				By("Check if 'nfd' packagemanifest exists in 'redhat-operators' catalog")
+				nfdPkgManifestBuilderByCatalog, err := olm.PullPackageManifestByCatalog(APIClient,
+					nfdPackage, nfdCatalogSourceNamespace, nfdCatalogSource)
+				Expect(err).ToNot(HaveOccurred(), "error getting NFD packagemanifest %s "+
+					"from catalog %s:  %v", nfdPackage, nfdCatalogSource, err)
+
+				if nfdPkgManifestBuilderByCatalog == nil {
+					Skip("NFD packagemanifest not found in catalogsource")
+				}
+
+				glog.V(gpuparams.GpuLogLevel).Infof("The nfd packagemanifest name returned: %s",
+					nfdPkgManifestBuilderByCatalog.Object.Name)
+
+				nfdChannel := nfdPkgManifestBuilderByCatalog.Object.Status.DefaultChannel
+				glog.V(gpuparams.GpuLogLevel).Infof("The NFD channel retrieved from packagemanifest is:  %v",
+					nfdChannel)
+
+				By("Deploy NFD Operator in NFD namespace")
+				err = nfddeploy.CreateNFDNamespace(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "error creating  NFD Namespace: %v", err)
+
+				By("Deploy NFD OperatorGroup in NFD namespace")
+				err = nfddeploy.CreateNFDOperatorGroup(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "error creating NFD OperatorGroup:  %v", err)
+
+				By("Deploy NFD Subscription in NFD namespace")
+				err = nfddeploy.CreateNFDSubscription(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "error creating NFD Subscription:  %v", err)
+
+				By("Sleep for 2 minutes to allow the NFD Operator deployment to be created")
+				glog.V(gpuparams.GpuLogLevel).Infof("Sleep for 2 minutes to allow the NFD Operator deployment" +
+					" to be created")
+				time.Sleep(2 * time.Minute)
+
+				By("Wait up to 4 mins for NFD Operator deployment to be created")
+				nfdDeploymentCreated := wait.DeploymentCreated(APIClient, nfdOperatorDeploymentName, nfdNamespace,
+					30*time.Second, 4*time.Minute)
+				Expect(nfdDeploymentCreated).ToNot(BeFalse(), "timed out waiting to deploy "+
+					"NFD operator")
+
+				By("Deploy NFD Subscription in NFD namespace")
+				nfdDeployed, err := nfddeploy.CheckNFDOperatorDeployed(APIClient, 120*time.Second)
+				Expect(err).ToNot(HaveOccurred(), "error deploying NFD Operator in"+
+					" NFD namespace:  %v", err)
+				Expect(nfdDeployed).ToNot(BeFalse(), "failed to deploy NFD operator")
+
+				By("Deploy NFD CR instance in NFD namespace")
+				err = nfddeploy.DeployCRInstance(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "error deploying NFD CR instance in"+
+					" NFD namespace:  %v", err)
+
+			}
 		})
 
-		// "feature.node.kubernetes.io/system-os_release.ID=rhcos"
 		BeforeEach(func() {
-			By("Check if NFD is installed")
-			nfdLabelDetected, err := check.AllNodeLabel(APIClient, nfdRhcosLabel, nfdRhcosLabelValue,
-				GeneralConfig.WorkerLabelMap)
 
-			Expect(err).ToNot(HaveOccurred(), "error calling check.NodeLabel:  %v ", err)
-			Expect(nfdLabelDetected).NotTo(BeFalse(), "NFD node label check failed to match "+
-				"label %s and label value %s on all nodes", nfdRhcosLabel, nfdRhcosLabelValue)
-			// expect if it returns true
-			glog.V(gpuparams.GpuLogLevel).Infof("The check for NFD label returned: %v", nfdLabelDetected)
-
-			// Note for later:  decide if you want to deploy NFD if not deployed
-			nfdInstalled, err := check.NFDDeploymentsReady(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "error checking if NFD deployments are ready:  %v ", err)
-			glog.V(gpuparams.GpuLogLevel).Infof("The check for NFD label returned: %v", nfdInstalled)
-
-			By("Check if at least one worker node is GPU enabled")
-			gpuNodeFound, err := check.NodeWithLabel(APIClient, nvidiaGPULabel, GeneralConfig.WorkerLabelMap)
-			Expect(err).ToNot(HaveOccurred(), "error checking if one node is GPU enabled:  %v ", err)
-			glog.V(gpuparams.GpuLogLevel).Infof("The check for Nvidia GPU label returned: %v", gpuNodeFound)
 		})
 
 		AfterEach(func() {
-			// Later use this for clean up corner cases
+
+		})
+
+		AfterAll(func() {
+
+			if nfdCleanupAfterInstall {
+				// Here need to check if NFD CR is deployed, otherwise Deleting a non-existing CR will throw an error
+				// skipping error check for now cause any failure before entire NFD stack
+				By("Delete NFD CR instance in NFD namespace")
+				_ = nfddeploy.NFDCRDeleteAndWait(APIClient, nfdCRName, nfdNamespace, 30*time.Second, 5*time.Minute)
+
+				By("Delete NFD CSV")
+				_ = nfddeploy.DeleteNFDCSV(APIClient)
+
+				By("Delete NFD Subscription in NFD namespace")
+				_ = nfddeploy.DeleteNFDSubscription(APIClient)
+
+				By("Delete NFD OperatorGroup in NFD namespace")
+				_ = nfddeploy.DeleteNFDOperatorGroup(APIClient)
+
+				By("Delete NFD Namespace in NFD namespace")
+				_ = nfddeploy.DeleteNFDNamespace(APIClient)
+			}
 		})
 
 		It("Deploy NVIDIA GPU Operator with DTK without cluster-wide entitlement",
 			polarion.ID("48452"), func() {
+
+				By("Check if NFD is installed %s")
+				nfdLabelDetected, err := check.AllNodeLabel(APIClient, nfdRhcosLabel, nfdRhcosLabelValue,
+					GeneralConfig.WorkerLabelMap)
+
+				Expect(err).ToNot(HaveOccurred(), "error calling check.NodeLabel:  %v ", err)
+				Expect(nfdLabelDetected).NotTo(BeFalse(), "NFD node label check failed to match "+
+					"label %s and label value %s on all nodes", nfdRhcosLabel, nfdRhcosLabelValue)
+				glog.V(gpuparams.GpuLogLevel).Infof("The check for NFD label returned: %v", nfdLabelDetected)
+
+				isNfdInstalled, err := check.NFDDeploymentsReady(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "error checking if NFD deployments are ready:  "+
+					"%v ", err)
+				glog.V(gpuparams.GpuLogLevel).Infof("The check for NFD deployments ready returned: %v",
+					isNfdInstalled)
+
+				By("Check if at least one worker node is GPU enabled")
+				gpuNodeFound, _ := check.NodeWithLabel(APIClient, nvidiaGPULabel, GeneralConfig.WorkerLabelMap)
+
+				glog.V(gpuparams.GpuLogLevel).Infof("The check for Nvidia GPU label returned: %v", gpuNodeFound)
+
+				if !gpuNodeFound {
+					By("Expand the OCP cluster using instanceType from the env variable " +
+						"ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE")
+
+					var instanceType = nvidiaGPUConfig.InstanceType
+
+					glog.V(gpuparams.GpuLogLevel).Infof(
+						"Initializing new MachineSetBuilder structure with the following params: %s, %s, %v",
+						machineSetNamespace, instanceType, replicas)
+
+					gpuMsBuilder := machine.NewSetBuilderFromCopy(APIClient, machineSetNamespace, instanceType,
+						workerMachineSetLabel, replicas)
+					Expect(gpuMsBuilder).NotTo(BeNil(), "Failed to Initialize MachineSetBuilder"+
+						" from copy")
+
+					glog.V(gpuparams.GpuLogLevel).Infof(
+						"Successfully Initialized new MachineSetBuilder from copy with name: %s",
+						gpuMsBuilder.Definition.Name)
+
+					glog.V(gpuparams.GpuLogLevel).Infof(
+						"Creating MachineSet named: %s", gpuMsBuilder.Definition.Name)
+
+					By("Create the new GPU enabled MachineSet")
+					createdMsBuilder, err := gpuMsBuilder.Create()
+
+					Expect(err).ToNot(HaveOccurred(), "error creating a GPU enabled machineset: %v",
+						err)
+
+					pulledMachineSetBuilder, err := machine.PullSet(APIClient,
+						createdMsBuilder.Definition.ObjectMeta.Name,
+						machineSetNamespace)
+
+					Expect(err).ToNot(HaveOccurred(), "error pulling GPU enabled machineset:"+
+						"  %v", err)
+
+					glog.V(gpuparams.GpuLogLevel).Infof("Successfully pulled GPU enabled machineset %s",
+						pulledMachineSetBuilder.Object.Name)
+
+					By("Wait on machineset to be ready")
+					glog.V(gpuparams.GpuLogLevel).Infof("Just before waiting for GPU enabled machineset %s "+
+						"to be in Ready state", createdMsBuilder.Definition.ObjectMeta.Name)
+
+					err = machine.WaitForMachineSetReady(APIClient, createdMsBuilder.Definition.ObjectMeta.Name,
+						machineSetNamespace, 15*time.Minute)
+
+					Expect(err).ToNot(HaveOccurred(), "Failed to detect at least one replica"+
+						" of MachineSet %s in Ready state during 15 min polling interval: %v",
+						pulledMachineSetBuilder.Definition.ObjectMeta.Name, err)
+
+					defer func() {
+						err := pulledMachineSetBuilder.Delete()
+						Expect(err).ToNot(HaveOccurred())
+
+						// later add wait for machineset to be deleted
+					}()
+				}
+
+				By("Sleep for 2 minutes to allow GPU worker node to be labeled by NFD")
+				glog.V(gpuparams.GpuLogLevel).Infof("Sleep for 2 minutes to allow the GPU worker nodes" +
+					" to be labeled by NFD")
+				time.Sleep(2 * time.Minute)
 
 				By("Get Cluster Architecture from first GPU enabled worker node")
 				glog.V(gpuparams.GpuLogLevel).Infof("Getting cluster architecture from nodes with "+
@@ -124,14 +301,12 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				glog.V(gpuparams.GpuLogLevel).Infof("The gpu channel retrieved from packagemanifest is:  %v",
 					gpuChannel)
 
-				By("Check if NVIDIA GPU Operator namespace exists, otherwise created it")
-				// APIClient comes from package inittools
+				By("Check if NVIDIA GPU Operator namespace exists, otherwise created it and label it")
 				nsBuilder := namespace.NewBuilder(APIClient, nvidiaGPUNamespace)
 				if nsBuilder.Exists() {
 					glog.V(gpuparams.GpuLogLevel).Infof("The namespace '%s' already exists",
 						nsBuilder.Object.Name)
 				} else {
-					// create the namespace
 					glog.V(gpuparams.GpuLogLevel).Infof("Creating the namespace:  %v", nvidiaGPUNamespace)
 					createdNsBuilder, err := nsBuilder.Create()
 					Expect(err).ToNot(HaveOccurred(), "error creating namespace '%s' :  %v ",
@@ -154,7 +329,6 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 					glog.V(gpuparams.GpuLogLevel).Infof("The nvidia-gpu-operator labeled namespace has "+
 						"labels:  %v", newLabeledNsBuilder.Object.Labels)
-
 				}
 
 				defer func() {
@@ -187,8 +361,6 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 					gpuCatalogSource, gpuCatalogSourceNamespace, gpuPackage)
 
 				subBuilder.WithChannel(gpuChannel)
-				// need to determine efficient way to extract this from the packagemanifest
-				// subBuilder.WithStartingCSV(gpuStartingCSV)
 				subBuilder.WithInstallPlanApproval(gpuInstallPlanApproval)
 
 				glog.V(gpuparams.GpuLogLevel).Infof("Creating the subscription, i.e Deploy the GPU operator")
@@ -202,8 +374,8 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 				if createdSub.Exists() {
 					glog.V(gpuparams.GpuLogLevel).Infof("The newly created subscription: %s in namespace: %v "+
-						"has starting CSV:  %v", createdSub.Object.Name, createdSub.Object.Namespace,
-						createdSub.Definition.Spec.StartingCSV)
+						"has current CSV:  %v", createdSub.Object.Name, createdSub.Object.Namespace,
+						createdSub.Definition.Status.CurrentCSV)
 				}
 
 				defer func() {
@@ -211,13 +383,19 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 					Expect(err).ToNot(HaveOccurred())
 				}()
 
-				By("Sleeping for 15 seconds to allow NVIDIA GPU Operator deployment to be created")
-				glog.V(gpuparams.GpuLogLevel).Infof("Sleeping for 15 seconds to allow operator deployment " +
-					"pod to be created")
-				time.Sleep(15 * time.Second)
+				By("Sleep for 2 minutes to allow the GPU Operator deployment to be created")
+				glog.V(gpuparams.GpuLogLevel).Infof("Sleep for 2 minutes to allow the GPU Operator deployment" +
+					" to be created")
+				time.Sleep(2 * time.Minute)
+
+				By("Wait for up to 4 minutes for GPU Operator deployment to be created")
+				gpuDeploymentCreated := wait.DeploymentCreated(APIClient, gpuOperatorDeployment, nvidiaGPUNamespace,
+					30*time.Second, 4*time.Minute)
+				Expect(gpuDeploymentCreated).ToNot(BeFalse(), "timed out waiting to deploy "+
+					"GPU operator")
 
 				By("Check if the GPU operator deployment is ready")
-				gpuOperatorDeployment, err := deployment.Pull(APIClient, "gpu-operator", nvidiaGPUNamespace)
+				gpuOperatorDeployment, err := deployment.Pull(APIClient, gpuOperatorDeployment, nvidiaGPUNamespace)
 
 				Expect(err).ToNot(HaveOccurred(), "Error trying to pull GPU operator "+
 					"deployment is: %v", err)
@@ -225,8 +403,8 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				glog.V(gpuparams.GpuLogLevel).Infof("Pulled GPU operator deployment is:  %v ",
 					gpuOperatorDeployment.Definition.Name)
 
-				if gpuOperatorDeployment.IsReady(180 * time.Second) {
-					glog.V(gpuparams.GpuLogLevel).Infof("Pulled GPU operator deployment is:  %v is Ready ",
+				if gpuOperatorDeployment.IsReady(4 * time.Minute) {
+					glog.V(gpuparams.GpuLogLevel).Infof("Pulled GPU operator deployment '%s' is Ready",
 						gpuOperatorDeployment.Definition.Name)
 				}
 
