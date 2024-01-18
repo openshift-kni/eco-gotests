@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -11,6 +12,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var validPVCModesMap = map[string]string{
@@ -171,6 +173,77 @@ func (builder *PVCBuilder) Create() (*PVCBuilder, error) {
 	}
 
 	return builder, nil
+}
+
+// Delete removes PVC from cluster.
+func (builder *PVCBuilder) Delete() error {
+	if valid, err := builder.validate(); !valid {
+		glog.V(100).Infof("PersistentVolumeClaim %s in %s namespace is invalid: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
+
+		return err
+	}
+
+	glog.V(100).Infof("Delete PersistentVolumeClaim %s from %s namespace",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("PersistentVolumeClaim %s not found in %s namespace",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil
+	}
+
+	err := builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Delete(
+		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+
+	if err != nil {
+		glog.V(100).Infof("Failed to delete PersistentVolumeClaim %s from %s namespace",
+			builder.Definition.Name, builder.Definition.Namespace)
+		glog.V(100).Infof("PersistenteVolumeClaim deletion error: %v", err)
+
+		return err
+	}
+
+	glog.V(100).Infof("Deleted PersistentVolumeClaim %s from %s namespace",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Object = nil
+
+	return err
+}
+
+// DeleteAndWait deletes PersistentVolumeClaim and waits until it's removed from the cluster.
+func (builder *PVCBuilder) DeleteAndWait(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		glog.V(100).Infof("PersistentVolumeClaim %s in %s namespace is invalid: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
+
+		return err
+	}
+
+	glog.V(100).Infof("Deleting PersistenVolumeClaim %s from %s namespace and waiting for the removal to complete",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if err := builder.Delete(); err != nil {
+		glog.V(100).Infof("Failed to delete PersistentVolumeClaim %s from %s namespace",
+			builder.Definition.Name, builder.Definition.Namespace)
+		glog.V(100).Infof("PersistenteVolumeClaim deletion error: %v", err)
+
+		return err
+	}
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Get(
+				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			if k8serrors.IsNotFound(err) {
+
+				return true, nil
+			}
+
+			return false, nil
+		})
 }
 
 // PullPersistentVolumeClaim gets an existing PersistentVolumeClaim
