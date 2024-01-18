@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/wait"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"k8s.io/client-go/util/retry"
 )
 
 var _ = Describe("NFD", Ordered, func() {
@@ -54,13 +55,8 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 		It("Check pods state", polarion.ID("54548"), func() {
-			podlist, err := get.PodStatus(APIClient, ts.Namespace)
+			err := helpers.CheckPodStatus(APIClient)
 			Expect(err).NotTo(HaveOccurred())
-
-			for _, pod := range podlist {
-				By("Checking pod: " + pod.Name)
-				Expect(pod.State).To((Equal("Running")))
-			}
 
 		})
 		It("Check CPU feature labels", polarion.ID("54222"), func() {
@@ -185,7 +181,15 @@ var _ = Describe("NFD", Ordered, func() {
 })
 
 func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource, enableTopology bool) {
-	err := nfdManager.DeployNfd(5*int(time.Minute), enableTopology, "")
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		_, err := get.PodStatus(APIClient, ts.Namespace)
+		glog.Error(err)
+
+		return err
+	})
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
+
+	err = nfdManager.DeployNfd(5*int(time.Minute), enableTopology, "")
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 	By("Check that pods are in running state")
 

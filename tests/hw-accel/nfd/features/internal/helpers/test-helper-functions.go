@@ -4,8 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/search"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
+	"k8s.io/client-go/util/retry"
 )
 
 // CheckLabelsExist check if each node contains the required label.
@@ -33,4 +38,31 @@ func CheckLabelsExist(nodelabels map[string][]string, labelsToSearch, blackList 
 	}
 
 	return nil
+}
+
+// CheckPodStatus check if each pod is in a running status.
+func CheckPodStatus(apiClient *clients.Settings) error {
+	verifyPodStatus := func() error {
+		podlist, err := get.PodStatus(apiClient, ts.Namespace)
+		if err != nil {
+			return err
+		}
+
+		glog.V(nfdparams.LogLevel).Info("validate all pods are running")
+
+		for _, pod := range podlist {
+			if pod.State != "Running" {
+				return fmt.Errorf("pod: %v is in %v status", pod.Name, pod.State)
+			}
+		}
+
+		glog.V(nfdparams.LogLevel).Info("all pods are in running status")
+
+		return nil
+	}
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return verifyPodStatus()
+	})
+
+	return err
 }

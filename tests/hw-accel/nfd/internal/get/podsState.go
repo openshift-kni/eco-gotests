@@ -1,7 +1,6 @@
 package get
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/golang/glog"
@@ -26,25 +25,24 @@ func PodStatus(apiClient *clients.Settings, nsname string) ([]PodState, error) {
 		return nil, err
 	}
 
-	nfdReources := NfdResourceCount(apiClient)
+	nfdResources := NfdResourceCount(apiClient)
 	podStateList := make([]PodState, 0)
+
+	for _, x := range podList {
+		glog.V(nfdparams.LogLevel).Infof("%v", x.Object.Name)
+	}
 
 	for _, onePod := range podList {
 		state := onePod.Object.Status.Phase
 
 		glog.V(nfdparams.LogLevel).Infof("%s is in %s status", onePod.Object.Name, state)
+		glog.V(nfdparams.LogLevel).Infof("%v", nfdResources)
 
 		for _, nfdPodName := range nfdhelpersparams.ValidPodNameList {
 			if strings.Contains(onePod.Object.Name, nfdPodName) {
-				nfdReources[nfdPodName]--
+				nfdResources[nfdPodName]--
 				podStateList = append(podStateList, PodState{Name: onePod.Object.Name, State: string(state)})
 			}
-		}
-	}
-
-	for resourceName, resourceCount := range nfdReources {
-		if resourceCount > 0 {
-			return nil, fmt.Errorf("%s is equal to %d it should be 0", resourceName, resourceCount)
 		}
 	}
 

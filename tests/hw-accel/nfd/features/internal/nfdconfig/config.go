@@ -9,7 +9,7 @@ import (
 // NfdConfig contains environment information related to nfd tests.
 type NfdConfig struct {
 	SubscriptionName string `envconfig:"ECO_HWACCEL_NFD_SUBSCRIPTION_NAME"`
-	Image            string `envconfig:"ECO_HWACCEL_NFD_IMAGE"`
+	Image            string `envconfig:"ECO_HWACCEL_NFD_CR_IMAGE"`
 	CatalogSource    string `envconfig:"ECO_HWACCEL_NFD_CATALOG_SOURCE"`
 }
 
