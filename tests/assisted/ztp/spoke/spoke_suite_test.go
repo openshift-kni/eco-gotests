@@ -26,6 +26,19 @@ func TestSpoke(t *testing.T) {
 	RunSpecs(t, "Spoke Suite", Label(tsparams.Labels...), reporterConfig)
 }
 
+var _ = BeforeSuite(func() {
+	By("Check if hub has valid apiClient")
+	if HubAPIClient == nil {
+		Skip("Cannot run spoke suite when hub has nil api client")
+	}
+
+	By("Check if spoke has valid apiClient")
+	if SpokeAPIClient == nil {
+		Skip("Cannot run spoke suite when spoke has nil api client")
+	}
+
+})
+
 var _ = ReportAfterSuite("", func(report Report) {
 	polarion.CreateReport(
 		report, ZTPConfig.GetPolarionReportPath(), ZTPConfig.PolarionTCPrefix)

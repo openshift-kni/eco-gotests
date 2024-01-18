@@ -33,6 +33,11 @@ var _ = BeforeSuite(func() {
 	if !operandRunning {
 		Skip(msg)
 	}
+
+	By("Check if hub has valid apiClient")
+	if HubAPIClient == nil {
+		Skip("Cannot run spoke suite when hub has nil api client")
+	}
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
