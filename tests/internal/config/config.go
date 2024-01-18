@@ -25,7 +25,8 @@ type GeneralConfig struct {
 	PolarionReport       bool   `yaml:"polarion_report" envconfig:"ECO_POLARION_REPORT"`
 	DryRun               bool   `yaml:"dry_run" envconfig:"ECO_DRY_RUN"`
 	KubernetesRolePrefix string `yaml:"kubernetes_role_prefix" envconfig:"ECO_KUBERNETES_ROLE_PREFIX"`
-	WorkerLabel          string `yaml:"worker_label" envconfig:"ECO_WORKER_LABEL"`
+	WorkerLabelEnvVar    string `yaml:"worker_label" envconfig:"ECO_WORKER_LABEL"`
+	WorkerLabel          string
 	ControlPlaneLabel    string `yaml:"control_plane_label" envconfig:"ECO_CONTROL_PLANE_LABEL"`
 	PolarionTCPrefix     string `yaml:"polarion_tc_prefix" envconfig:"ECO_POLARION_TC_PREFIX"`
 	MCONamespace         string `yaml:"mco_namespace" envconfig:"ECO_MCO_NAMESPACE"`
@@ -132,7 +133,7 @@ func readEnv(cfg *GeneralConfig) error {
 		return err
 	}
 
-	cfg.WorkerLabel = fmt.Sprintf("%s/%s", cfg.KubernetesRolePrefix, cfg.WorkerLabel)
+	cfg.WorkerLabel = fmt.Sprintf("%s/%s", cfg.KubernetesRolePrefix, cfg.WorkerLabelEnvVar)
 	cfg.ControlPlaneLabel = fmt.Sprintf("%s/%s", cfg.KubernetesRolePrefix, cfg.ControlPlaneLabel)
 	cfg.WorkerLabelMap = map[string]string{cfg.WorkerLabel: ""}
 	cfg.ControlPlaneLabelMap = map[string]string{cfg.ControlPlaneLabel: ""}
