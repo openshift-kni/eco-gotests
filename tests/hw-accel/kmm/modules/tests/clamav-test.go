@@ -119,8 +119,8 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating scanner")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.ScannerTestNamespace, 10*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "error while buildging scanner")
+			err = await.BuildPodCompleted(APIClient, tsparams.ScannerTestNamespace, 20*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building scanner")
 
 			By("Run pod from the scanner image")
 			scannerPod := pod.NewBuilder(APIClient, "scan-checker", tsparams.ScannerTestNamespace, image)

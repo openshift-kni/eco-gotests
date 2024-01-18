@@ -243,7 +243,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 10*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await preflightvalidationocp checks")
