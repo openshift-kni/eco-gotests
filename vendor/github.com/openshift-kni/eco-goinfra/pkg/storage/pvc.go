@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
@@ -146,6 +148,38 @@ func (builder *PVCBuilder) WithStorageClass(storageClass string) (*PVCBuilder, e
 	}
 
 	builder.Definition.Spec.StorageClassName = &storageClass
+
+	return builder, nil
+}
+
+// WithVolumeMode configures what type of volume is required by the claim.
+func (builder *PVCBuilder) WithVolumeMode(volumeMode string) (*PVCBuilder, error) {
+	glog.V(100).Infof("Set VolumeMode %s for the PersistentVolumeClaim", volumeMode)
+
+	if volumeMode == "" {
+		glog.V(100).Infof(fmt.Sprintf("Empty volumeMode requested for the PersistentVolumeClaim %s in %s namespace",
+			builder.Definition.Name, builder.Definition.Namespace))
+
+		builder.errorMsg = fmt.Sprintf("Empty volumeMode requested for the PersistentVolumeClaim %s in %s namespace",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return builder, fmt.Errorf(builder.errorMsg)
+	}
+
+	if !validateVolumeMode(volumeMode) {
+		glog.V(100).Infof(fmt.Sprintf("Unsupported VolumeMode: %s", volumeMode))
+
+		builder.errorMsg = fmt.Sprintf("Unsupported VolumeMode %q requested for %s PersistentVolumeClaim in %s namespace",
+			volumeMode, builder.Definition.Name, builder.Definition.Name)
+
+		return builder, fmt.Errorf(builder.errorMsg)
+	}
+
+	// volumeMode is string while Spec.VolumeMode requires pointer to v1.PersistentVolumeMode,
+	// therefore temporary variable strVolMode is created to be used within assignment.
+	strVolMode := v1.PersistentVolumeMode(volumeMode)
+
+	builder.Definition.Spec.VolumeMode = &strVolMode
 
 	return builder, nil
 }
@@ -314,4 +348,16 @@ func (builder *PVCBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+// validateVolumeMode validates if requested volume mode is valid for PVC.
+func validateVolumeMode(volumeMode string) bool {
+	glog.V(100).Info("Validating volumeMode %s", volumeMode)
+
+	var validVolumeModes = []string{
+		"Block",
+		"Filesystem",
+	}
+
+	return slices.Contains(validVolumeModes, volumeMode)
 }

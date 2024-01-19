@@ -264,6 +264,69 @@ func (builder *PolicyBuilder) WithBondInterface(slavePorts []string, bondName, m
 	return builder.withInterface(newInterface)
 }
 
+// WithVlanInterface adds VLAN interface configuration to the NodeNetworkConfigurationPolicy.
+func (builder *PolicyBuilder) WithVlanInterface(baseInterface string, vlanID uint16) *PolicyBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Creating NodeNetworkConfigurationPolicy %s with VLAN interface %s and vlanID %d",
+		builder.Definition.Name, baseInterface, vlanID)
+
+	if baseInterface == "" {
+		glog.V(100).Infof("The baseInterface can not be empty string")
+
+		builder.errorMsg = "nodenetworkconfigurationpolicy 'baseInterface' cannot be empty"
+	}
+
+	if vlanID > 4094 {
+		builder.errorMsg = "invalid vlanID, allowed vlanID values are between 0-4094"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	newInterface := NetworkInterface{
+		Name:  fmt.Sprintf("%s.%d", baseInterface, vlanID),
+		Type:  "vlan",
+		State: "up",
+		Vlan: Vlan{
+			BaseIface: baseInterface,
+			ID:        int(vlanID),
+		},
+	}
+
+	return builder.withInterface(newInterface)
+}
+
+// WithAbsentInterface appends the configuration for an absent interface to the NodeNetworkConfigurationPolicy.
+func (builder *PolicyBuilder) WithAbsentInterface(interfaceName string) *PolicyBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Creating NodeNetworkConfigurationPolicy %s with absent interface configuration:"+
+		" interface %s", builder.Definition.Name, interfaceName)
+
+	if interfaceName == "" {
+		glog.V(100).Infof("The interfaceName can not be empty string")
+
+		builder.errorMsg = "nodenetworkconfigurationpolicy 'interfaceName' cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	newInterface := NetworkInterface{
+		Name:  interfaceName,
+		State: "absent",
+	}
+
+	return builder.withInterface(newInterface)
+}
+
 // WithOptions creates pod with generic mutation options.
 func (builder *PolicyBuilder) WithOptions(options ...AdditionalOptions) *PolicyBuilder {
 	if valid, _ := builder.validate(); !valid {

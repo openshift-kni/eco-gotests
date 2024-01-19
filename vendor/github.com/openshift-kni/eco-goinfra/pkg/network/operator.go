@@ -114,7 +114,7 @@ func (builder *OperatorBuilder) SetLocalGWMode(state bool, timeout time.Duration
 		}
 
 		err = builder.WaitUntilInCondition(
-			operatorV1.OperatorStatusTypeProgressing, 60*time.Second, operatorV1.ConditionTrue)
+			operatorV1.OperatorStatusTypeProgressing, 300*time.Second, operatorV1.ConditionTrue)
 
 		if err != nil {
 			return nil, err

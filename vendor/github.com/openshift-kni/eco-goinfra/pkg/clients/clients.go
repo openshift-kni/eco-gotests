@@ -44,6 +44,7 @@ import (
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
 	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
 
+	lcasgv1alpha1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1alpha1"
 	lcav1alpha1 "github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
 	operatorV1 "github.com/openshift/api/operator/v1"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
@@ -192,6 +193,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := lcav1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := lcasgv1alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
