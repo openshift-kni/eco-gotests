@@ -107,15 +107,15 @@ RUN depmod -b /opt
 
 	// KmmScannerDockerfile represents dockerfile used to run clamav on KMM images.
 	KmmScannerDockerfile = `ARG OPERATOR_IMAGE
-ARG RELATED_IMAGES_MUST_GATHER
-ARG RELATED_IMAGES_SIGN
-ARG RELATED_IMAGES_WORKER
+ARG MUST_GATHER
+ARG SIGN
+ARG WORKER
 ARG RBAC_IMAGE
 
 FROM ${OPERATOR_IMAGE} as operator
-FROM ${RELATED_IMAGES_MUST_GATHER} as must-gather
-FROM ${RELATED_IMAGES_SIGN} as sign
-FROM ${RELATED_IMAGES_WORKER} as worker
+FROM ${MUST_GATHER} as must-gather
+FROM ${SIGN} as sign
+FROM ${WORKER} as worker
 FROM ${RBAC_IMAGE} as rbac
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8-1072

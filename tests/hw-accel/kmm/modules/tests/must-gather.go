@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -29,7 +30,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 				for _, container := range pod.Object.Spec.Containers {
 					for _, env := range container.Env {
 
-						if env.Name == tsparams.RelImgMustGather {
+						if strings.Contains(env.Name, tsparams.RelImgMustGather) {
 							mustGatherImage = env.Value
 							glog.V(kmmparams.KmmLogLevel).Infof("%s: %s\n", tsparams.RelImgMustGather, mustGatherImage)
 						}

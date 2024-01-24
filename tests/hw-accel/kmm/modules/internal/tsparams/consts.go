@@ -14,11 +14,11 @@ const (
 	// BuildArgName represents kmod key passed to kmm-ci example.
 	BuildArgName = "MY_MODULE"
 	// RelImgMustGather represents identifier for must-gather image in operator environment variables.
-	RelImgMustGather = "RELATED_IMAGES_MUST_GATHER"
+	RelImgMustGather = "MUST_GATHER"
 	// RelImgSign represents identifier for sign image in operator environment variables.
-	RelImgSign = "RELATED_IMAGES_SIGN"
+	RelImgSign = "SIGN"
 	// RelImgWorker represents identifier for worker image in operator environment variables.
-	RelImgWorker = "RELATED_IMAGES_WORKER"
+	RelImgWorker = "WORKER"
 	// ModuleNodeLabelTemplate represents template of the label set on a node for a Module.
 	ModuleNodeLabelTemplate = "kmm.node.kubernetes.io/%s.%s.ready"
 	// DevicePluginNodeLabelTemplate represents template label set by KMM on a node for a Device Plugin.

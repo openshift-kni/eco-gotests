@@ -67,13 +67,13 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 				for _, container := range pod.Object.Spec.Containers {
 					containerImg = append(containerImg, container.Image)
 					for _, env := range container.Env {
-						if env.Name == tsparams.RelImgSign {
+						if strings.Contains(env.Name, tsparams.RelImgSign) {
 							relatedImgMap[tsparams.RelImgSign] = env.Value
 						}
-						if env.Name == tsparams.RelImgWorker {
+						if strings.Contains(env.Name, tsparams.RelImgWorker) {
 							relatedImgMap[tsparams.RelImgWorker] = env.Value
 						}
-						if env.Name == tsparams.RelImgMustGather {
+						if strings.Contains(env.Name, tsparams.RelImgMustGather) {
 							relatedImgMap[tsparams.RelImgMustGather] = env.Value
 						}
 					}
