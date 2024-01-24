@@ -37,204 +37,212 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 			sriovInterfacesUnderTest []string
 			workerNodeList           []*nodes.Builder
 		)
-		BeforeAll(func() {
-			By("Verifying if SR-IOV tests can be executed on given cluster")
-			err := netenv.DoesClusterHasEnoughNodes(APIClient, NetConfig, 1, 2)
-			if err != nil {
-				Skip(fmt.Sprintf(
-					"given cluster is not suitable for SR-IOV tests because it doesn't have enought nodes: %s", err.Error()))
-			}
+		Context("General", Label("generalexcreated"), func() {
+			BeforeAll(func() {
+				By("Verifying if SR-IOV tests can be executed on given cluster")
+				err := netenv.DoesClusterHasEnoughNodes(APIClient, NetConfig, 1, 2)
+				if err != nil {
+					Skip(fmt.Sprintf(
+						"given cluster is not suitable for SR-IOV tests because it doesn't have enought nodes: %s", err.Error()))
+				}
 
-			By("Creating a new instance of NMstate instance")
-			err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
+				By("Creating a new instance of NMstate instance")
+				err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
-			By("Validating SR-IOV interfaces")
-			workerNodeList, err = nodes.List(APIClient,
-				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-			Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+				By("Validating SR-IOV interfaces")
+				workerNodeList, err = nodes.List(APIClient,
+					metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+				Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
-			Expect(sriovenv.ValidateSriovInterfaces(workerNodeList, 2)).ToNot(HaveOccurred(),
-				"Failed to get required SR-IOV interfaces")
-			sriovInterfacesUnderTest, err = NetConfig.GetSriovInterfaces(2)
-			Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
+				Expect(sriovenv.ValidateSriovInterfaces(workerNodeList, 2)).ToNot(HaveOccurred(),
+					"Failed to get required SR-IOV interfaces")
+				sriovInterfacesUnderTest, err = NetConfig.GetSriovInterfaces(2)
+				Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
-			By("Creating SR-IOV VFs via NMState")
-			err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(
-				configureNMStatePolicyName,
-				sriovInterfacesUnderTest[0],
-				NetConfig.WorkerLabelMap,
-				5,
-				netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to create VFs via NMState")
+				By("Creating SR-IOV VFs via NMState")
+				err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(
+					configureNMStatePolicyName,
+					sriovInterfacesUnderTest[0],
+					NetConfig.WorkerLabelMap,
+					5,
+					netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create VFs via NMState")
 
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
+				err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
 
-			By("Configure SR-IOV with flag ExternallyManaged true")
-			createSriovConfiguration(sriovAndResourceNameExManagedTrue, sriovInterfacesUnderTest[0], true)
-		})
+				By("Configure SR-IOV with flag ExternallyManaged true")
+				createSriovConfiguration(sriovAndResourceNameExManagedTrue, sriovInterfacesUnderTest[0], true)
+			})
 
-		AfterAll(func() {
-			By("Remove all SR-IOV networks")
-			sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
-			err = sriovNs.CleanObjects(
-				netparam.DefaultTimeout,
-				sriov.GetSriovNetworksGVR())
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV networks from SR-IOV operator namespace")
+			AfterAll(func() {
+				By("Remove all SR-IOV networks")
+				sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
+				Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
+				err = sriovNs.CleanObjects(
+					netparam.DefaultTimeout,
+					sriov.GetSriovNetworksGVR())
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV networks from SR-IOV operator namespace")
 
-			By("Remove all SR-IOV policies")
-			err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+				By("Remove all SR-IOV policies")
+				err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
 
-			By("Verifying that VFs still exist")
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
+				By("Verifying that VFs still exist")
+				err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
 
-			err = netnmstate.AreVFsCreated(workerNodeList[0].Object.Name, sriovInterfacesUnderTest[0], 5)
-			Expect(err).ToNot(HaveOccurred(), "VFs were removed during the test")
+				err = netnmstate.AreVFsCreated(workerNodeList[0].Object.Name, sriovInterfacesUnderTest[0], 5)
+				Expect(err).ToNot(HaveOccurred(), "VFs were removed during the test")
 
-			By("Removing SR-IOV VFs via NMState")
-			nmstatePolicy := nmstate.NewPolicyBuilder(
-				APIClient, configureNMStatePolicyName, NetConfig.WorkerLabelMap).WithInterfaceAndVFs(sriovInterfacesUnderTest[0], 0)
-			err = netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
-			Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
+				By("Removing SR-IOV VFs via NMState")
+				nmstatePolicy := nmstate.NewPolicyBuilder(
+					APIClient, configureNMStatePolicyName, NetConfig.WorkerLabelMap).
+					WithInterfaceAndVFs(sriovInterfacesUnderTest[0], 0)
+				err = netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+				Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
 
-			By("Verifying that VFs removed")
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 0, netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
+				By("Verifying that VFs removed")
+				err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 0, netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
 
-			By("Removing NMState policies")
-			err = nmstate.CleanAllNMStatePolicies(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
-		})
+				By("Removing NMState policies")
+				err = nmstate.CleanAllNMStatePolicies(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
+			})
 
-		AfterEach(func() {
-			By("Cleaning test namespace")
-			err := namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-				netparam.DefaultTimeout, pod.GetGVR())
+			AfterEach(func() {
+				By("Cleaning test namespace")
+				err := namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+					netparam.DefaultTimeout, pod.GetGVR())
 
-			Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
-		})
+				Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
+			})
 
-		DescribeTable("Verifying connectivity with different IP protocols", polarion.ID("63527"),
-			func(ipStack string) {
-				By("Defining test parameters")
-				clientIPs, serverIPs, err := defineIterationParams(ipStack)
-				Expect(err).ToNot(HaveOccurred(), "Failed to define test parameters")
+			DescribeTable("Verifying connectivity with different IP protocols", polarion.ID("63527"),
+				func(ipStack string) {
+					By("Defining test parameters")
+					clientIPs, serverIPs, err := defineIterationParams(ipStack)
+					Expect(err).ToNot(HaveOccurred(), "Failed to define test parameters")
+
+					By("Creating test pods and checking connectivity")
+					createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
+						"", "", clientIPs, serverIPs)
+				},
+
+				Entry("", netparam.IPV4Family, polarion.SetProperty("IPStack", netparam.IPV4Family)),
+				Entry("", netparam.IPV6Family, polarion.SetProperty("IPStack", netparam.IPV6Family)),
+				Entry("", netparam.DualIPFamily, polarion.SetProperty("IPStack", netparam.DualIPFamily)),
+			)
+
+			It("Recreate VFs when SR-IOV policy is applied", polarion.ID("63533"), func() {
+				By("Creating test pods and checking connectivity")
+				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+
+				By("Removing created SR-IOV VFs via NMState")
+				nmstatePolicy := nmstate.NewPolicyBuilder(
+					APIClient, configureNMStatePolicyName, NetConfig.WorkerLabelMap).
+					WithInterfaceAndVFs(sriovInterfacesUnderTest[0], 0)
+				err := netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+				Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
+
+				By("Verifying that VFs removed")
+				err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 0, netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
+
+				By("Removing NMState policies")
+				err = nmstate.CleanAllNMStatePolicies(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
+
+				By("Removing all test pods")
+				err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+					netparam.DefaultTimeout, pod.GetGVR())
+				Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
+
+				By("Creating SR-IOV VFs again via NMState")
+				err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(configureNMStatePolicyName,
+					sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 5, netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Failed to recreate VFs via NMState")
+
+				err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
+
+				By("Re-create test pods and verify connectivity after recreating the VFs")
+				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+			})
+
+			It("SR-IOV network with options", polarion.ID("63534"), func() {
+				By("Collecting default MaxTxRate and Vlan values")
+				defaultMaxTxRate, defaultVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
+					sriovInterfacesUnderTest[0])
+
+				By("Updating Vlan and MaxTxRate configurations in the SriovNetwork")
+				newMaxTxRate := defaultMaxTxRate + 1
+				newVlanID := defaultVlanID + 1
+				sriovNetwork, err := sriov.PullNetwork(APIClient, sriovAndResourceNameExManagedTrue,
+					NetConfig.SriovOperatorNamespace)
+				Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV network object")
+				_, err = sriovNetwork.WithMaxTxRate(uint16(newMaxTxRate)).WithVLAN(uint16(newVlanID)).Update(false)
+				Expect(err).ToNot(HaveOccurred(), "Failed to update SR-IOV network with new configuration")
 
 				By("Creating test pods and checking connectivity")
-				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
-					"", "", clientIPs, serverIPs)
-			},
+				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 
-			Entry("", netparam.IPV4Family, polarion.SetProperty("IPStack", netparam.IPV4Family)),
-			Entry("", netparam.IPV6Family, polarion.SetProperty("IPStack", netparam.IPV6Family)),
-			Entry("", netparam.DualIPFamily, polarion.SetProperty("IPStack", netparam.DualIPFamily)),
-		)
+				By("Checking that VF configured with new VLAN and MaxTxRate values")
+				Eventually(func() []int {
+					currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
+						sriovInterfacesUnderTest[0])
 
-		It("Recreate VFs when SR-IOV policy is applied", polarion.ID("63533"), func() {
-			By("Creating test pods and checking connectivity")
-			createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
-				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+					return []int{currentmaxTxRate, currentVlanID}
+				}, time.Minute, tsparams.RetryInterval).Should(Equal([]int{newMaxTxRate, newVlanID}),
+					"MaxTxRate and VlanId have been not configured properly")
 
-			By("Removing created SR-IOV VFs via NMState")
-			nmstatePolicy := nmstate.NewPolicyBuilder(
-				APIClient, configureNMStatePolicyName, NetConfig.WorkerLabelMap).WithInterfaceAndVFs(sriovInterfacesUnderTest[0], 0)
-			err := netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
-			Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
+				By("Removing all test pods")
+				err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+					netparam.DefaultTimeout, pod.GetGVR())
+				Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
 
-			By("Verifying that VFs removed")
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 0, netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Unexpected amount of VF")
+				By("Checking that VF has initial configuration")
 
-			By("Removing NMState policies")
-			err = nmstate.CleanAllNMStatePolicies(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
+				Eventually(func() []int {
+					currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
+						sriovInterfacesUnderTest[0])
 
-			By("Removing all test pods")
-			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-				netparam.DefaultTimeout, pod.GetGVR())
-			Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
+					return []int{currentmaxTxRate, currentVlanID}
+				}, netparam.DefaultTimeout, tsparams.RetryInterval).
+					Should(Equal([]int{defaultMaxTxRate, defaultVlanID}),
+						"MaxTxRate and VlanId configuration have not been reverted to the initial one")
 
-			By("Creating SR-IOV VFs again via NMState")
-			err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(configureNMStatePolicyName,
-				sriovInterfacesUnderTest[0], NetConfig.WorkerLabelMap, 5, netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to recreate VFs via NMState")
+				By("Remove all SR-IOV networks")
+				sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
+				Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
+				err = sriovNs.CleanObjects(netparam.DefaultTimeout, sriov.GetSriovNetworksGVR())
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from SR-IOV operator namespace")
 
-			err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
+				By("Remove all SR-IOV policies")
+				err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
 
-			By("Re-create test pods and verify connectivity after recreating the VFs")
-			createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
-				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+				By("Checking that VF has initial configuration")
+				Eventually(func() []int {
+					currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
+						sriovInterfacesUnderTest[0])
+
+					return []int{currentmaxTxRate, currentVlanID}
+				}, time.Minute, tsparams.RetryInterval).Should(And(Equal([]int{defaultMaxTxRate, defaultVlanID})),
+					"MaxTxRate and VlanId configurations have not been reverted to the initial one")
+			})
 		})
 
-		It("SR-IOV network with options", polarion.ID("63534"), func() {
-			By("Collecting default MaxTxRate and Vlan values")
-			defaultMaxTxRate, defaultVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
-				sriovInterfacesUnderTest[0])
+		Context("Bond deployment", Label("bonddeployment"), func() {
 
-			By("Updating Vlan and MaxTxRate configurations in the SriovNetwork")
-			newMaxTxRate := defaultMaxTxRate + 1
-			newVlanID := defaultVlanID + 1
-			sriovNetwork, err := sriov.PullNetwork(APIClient, sriovAndResourceNameExManagedTrue,
-				NetConfig.SriovOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV network object")
-			_, err = sriovNetwork.WithMaxTxRate(uint16(newMaxTxRate)).WithVLAN(uint16(newVlanID)).Update(false)
-			Expect(err).ToNot(HaveOccurred(), "Failed to update SR-IOV network with new configuration")
-
-			By("Creating test pods and checking connectivity")
-			createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
-				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
-
-			By("Checking that VF configured with new VLAN and MaxTxRate values")
-			Eventually(func() []int {
-				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
-					sriovInterfacesUnderTest[0])
-
-				return []int{currentmaxTxRate, currentVlanID}
-			}, time.Minute, tsparams.RetryInterval).Should(Equal([]int{newMaxTxRate, newVlanID}),
-				"MaxTxRate and VlanId have been not configured properly")
-
-			By("Removing all test pods")
-			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-				netparam.DefaultTimeout, pod.GetGVR())
-			Expect(err).ToNot(HaveOccurred(), "Failed to clean all test pods")
-
-			By("Checking that VF has initial configuration")
-
-			Eventually(func() []int {
-				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
-					sriovInterfacesUnderTest[0])
-
-				return []int{currentmaxTxRate, currentVlanID}
-			}, netparam.DefaultTimeout, tsparams.RetryInterval).
-				Should(Equal([]int{defaultMaxTxRate, defaultVlanID}),
-					"MaxTxRate and VlanId configuration have not been reverted to the initial one")
-
-			By("Remove all SR-IOV networks")
-			sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
-			err = sriovNs.CleanObjects(netparam.DefaultTimeout, sriov.GetSriovNetworksGVR())
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from SR-IOV operator namespace")
-
-			By("Remove all SR-IOV policies")
-			err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
-
-			By("Checking that VF has initial configuration")
-			Eventually(func() []int {
-				currentmaxTxRate, currentVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
-					sriovInterfacesUnderTest[0])
-
-				return []int{currentmaxTxRate, currentVlanID}
-			}, time.Minute, tsparams.RetryInterval).Should(And(Equal([]int{defaultMaxTxRate, defaultVlanID})),
-				"MaxTxRate and VlanId configurations have not been reverted to the initial one")
 		})
 	})
 
