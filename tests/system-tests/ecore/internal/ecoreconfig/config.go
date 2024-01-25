@@ -80,7 +80,13 @@ type ECoreConfig struct {
 	WlkdSRIOVNetOne string `yaml:"ecore_wlkd_sriov_net_one" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_NET_ONE"`
 	WlkdSRIOVNetTwo string `yaml:"ecore_wlkd_sriov_net_two" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_NET_TWO"`
 
-	StorageClassesMap map[string]string `yaml:"ecore_storage_classes_map" envconfig:"ECO_SYSTEM_SC_MAP"`
+	//nolint:lll
+	StorageODFWorkloadImage string            `yaml:"ecore_storage_odf_wlkd_image" envconfig:"ECO_SYSTEM_ECORE_ODF_WLKD_IMAGE"`
+	StorageClassesMap       map[string]string `yaml:"ecore_storage_classes_map" envconfig:"ECO_SYSTEM_SC_MAP"`
+	//nolint:lll
+	StorageODFDeployOneSelector map[string]string `yaml:"ecore_wlkd_odf_one_selector" envconfig:"ECO_SYSTEM_WLKD_ODF_ONE_SELECTOR"`
+	//nolint:lll
+	StorageODFDeployTwoSelector map[string]string `yaml:"ecore_wlkd_odf_two_selector" envconfig:"ECO_SYSTEM_WLKD_ODF_TWO_SELECTOR"`
 }
 
 // NewECoreConfig returns instance of ECoreConfig config type.
