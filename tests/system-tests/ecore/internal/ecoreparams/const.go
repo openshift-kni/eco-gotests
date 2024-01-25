@@ -39,4 +39,13 @@ const (
 
 	// LabelEcoreValidateODFStorage is used to select tests for ODF storage validation.
 	LabelEcoreValidateODFStorage = "ecore_validate_odf_storage"
+
+	// LabelEcoreValidateNmstate is used to select tests for NMState validation.
+	LabelEcoreValidateNmstate = "ecore_validate_nmstate"
+
+	// NMStateInstanceName is a name of the NMState instance.
+	NMStateInstanceName = "nmstate"
+
+	// NMStateNS namespace for OpensShift-NMState operator.
+	NMStateNS = "openshift-nmstate"
 )
