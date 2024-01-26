@@ -447,8 +447,8 @@ github.com/openshift-kni/k8sreporter v1.0.5 h1:1GYBc/BTZyVoXilHef43v9A8BSzw700zA
 github.com/openshift-kni/k8sreporter v1.0.5/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20240109211418-4489c4a1eb46 h1:I6ZcMvy98fAzd/5IySrli8inlMuUFfS0+LE57ln8lqs=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20240109211418-4489c4a1eb46/go.mod h1:+7AXvmYXtR4+UjvoMDeeRt4MrV32YK0uUHtHhEPn8MQ=
-github.com/openshift/api v0.0.0-20231115210901-4c4a0a24f2fc h1:VCR7TBU90EPmz1fjW1sqdVVpe5GmOHyJTTyQ5XmnmtE=
-github.com/openshift/api v0.0.0-20231115210901-4c4a0a24f2fc/go.mod h1:yimSGmjsI+XF1mr+AKBs2//fSXIOhhetHGbMlBEfXbs=
+github.com/openshift/api v0.0.0-20240116035456-11ed2fbcb805 h1:5NjcOG5i+WH0F4FI8dKSf0fNgX0YQkrJ8w3YcsHx6KM=
+github.com/openshift/api v0.0.0-20240116035456-11ed2fbcb805/go.mod h1:qNtV0315F+f8ld52TLtPvrfivZpdimOzTi3kn9IVbtU=
 github.com/openshift/assisted-service/api v0.0.0-20231207085132-610c679d626d h1:xltGn+LIMx+H3LfVLGk4wp5+74Rf2XgK81ntWnI3+B4=
 github.com/openshift/assisted-service/api v0.0.0-20231207085132-610c679d626d/go.mod h1:beaoSFvU8GCXwVb11vgQEGdPGSko+CQCSIYHc04if5Y=
 github.com/openshift/assisted-service/models v0.0.0-20230906121258-6d85fb16f8dd h1:mp17d/oh1i+/IcVqztelI6prQPWhtfPdhrZWSWWBmtg=

@@ -181,7 +181,7 @@ require (
 
 replace (
 	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20231221010717-5042b58e87db // release-4.15
-	github.com/openshift/api => github.com/openshift/api v0.0.0-20231115210901-4c4a0a24f2fc // release-4.15
+	github.com/openshift/api => github.com/openshift/api v0.0.0-20240116035456-11ed2fbcb805 // release-4.15
 	github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20231207085132-610c679d626d // release-4.15
 	github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20230906121258-6d85fb16f8dd // release-4.15
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.1
