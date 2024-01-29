@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,7 +16,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
@@ -29,15 +32,12 @@ const sriovAndResourceNameExManagedTrue = "extmanaged"
 
 var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyManagedTestCases),
 	ContinueOnFailure, func() {
-		const (
-			configureNMStatePolicyName = "configurevfs"
-			removeNMStatePolicyName    = "removevfs"
-		)
-		var (
-			sriovInterfacesUnderTest []string
-			workerNodeList           []*nodes.Builder
-		)
 		Context("General", Label("generalexcreated"), func() {
+			const configureNMStatePolicyName = "configurevfs"
+			var (
+				sriovInterfacesUnderTest []string
+				workerNodeList           []*nodes.Builder
+			)
 			BeforeAll(func() {
 				By("Verifying if SR-IOV tests can be executed on given cluster")
 				err := netenv.DoesClusterHasEnoughNodes(APIClient, NetConfig, 1, 2)
@@ -128,7 +128,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 					By("Creating test pods and checking connectivity")
 					createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
-						"", "", clientIPs, serverIPs)
+						sriovAndResourceNameExManagedTrue, "", "", clientIPs, serverIPs)
 				},
 
 				Entry("", netparam.IPV4Family, polarion.SetProperty("IPStack", netparam.IPV4Family)),
@@ -139,7 +139,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 			It("Recreate VFs when SR-IOV policy is applied", polarion.ID("63533"), func() {
 				By("Creating test pods and checking connectivity")
 				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+					sriovAndResourceNameExManagedTrue, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 
 				By("Removing created SR-IOV VFs via NMState")
@@ -172,7 +172,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 				By("Re-create test pods and verify connectivity after recreating the VFs")
 				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+					sriovAndResourceNameExManagedTrue, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 			})
 
@@ -192,7 +192,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 				By("Creating test pods and checking connectivity")
 				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+					sriovAndResourceNameExManagedTrue, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 
 				By("Checking that VF configured with new VLAN and MaxTxRate values")
@@ -239,10 +239,124 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				}, time.Minute, tsparams.RetryInterval).Should(And(Equal([]int{defaultMaxTxRate, defaultVlanID})),
 					"MaxTxRate and VlanId configurations have not been reverted to the initial one")
 			})
+
 		})
 
 		Context("Bond deployment", Label("bonddeployment"), func() {
+			var (
+				vfsUnderTest            []string
+				workerNodeList          []*nodes.Builder
+				err                     error
+				testVlan                uint64
+				secondBondInterfaceName = "bond2"
+			)
 
+			BeforeAll(func() {
+				By("Verifying that the cluster deployed via bond interface")
+				workerNodeList, err = nodes.List(APIClient,
+					metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+				Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+
+				_, _, baseVfInterfaces, err := netnmstate.
+					CheckThatWorkersDeployedWithBondVlanVfs(workerNodeList, tsparams.TestNamespaceName)
+				if err != nil {
+					Skip(fmt.Sprintf("The cluster is not suitable for testing: %s", err.Error()))
+				}
+
+				Expect(len(baseVfInterfaces)).To(BeNumerically(">", 1),
+					"Base VF interfaces should be more than 2")
+
+				By("Getting VFs for the test")
+				vfsUnderTest = getVfsUnderTest(baseVfInterfaces)
+
+				By("Getting cluster vlan for the test")
+				testVlanString, err := NetConfig.GetClusterVlan()
+				Expect(err).ToNot(HaveOccurred(), "Failed to get test Vlan")
+				testVlan, err = strconv.ParseUint(testVlanString, 10, 16)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to convert testVlanString %s to integer",
+					testVlanString))
+			})
+
+			AfterAll(func() {
+				By("Removing created bond interface via NMState")
+				nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, secondBondInterfaceName, NetConfig.WorkerLabelMap).
+					WithAbsentInterface(fmt.Sprintf("%s.%d", secondBondInterfaceName, testVlan)).
+					WithAbsentInterface(secondBondInterfaceName)
+				err = netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+				Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
+
+				By("Remove all SR-IOV networks")
+				sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
+				Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
+				err = sriovNs.CleanObjects(
+					netparam.DefaultTimeout,
+					sriov.GetSriovNetworksGVR())
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV networks from SR-IOV operator namespace")
+
+				By("Remove all SR-IOV policies")
+				err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+
+				By("Cleaning test namespace")
+				testNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
+				Expect(err).ToNot(HaveOccurred(),
+					fmt.Sprintf("Failed to pull test namespace %s", tsparams.TestNamespaceName))
+
+				err = testNamespace.CleanObjects(
+					tsparams.DefaultTimeout,
+					pod.GetGVR(),
+					nad.GetGVR())
+				Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
+
+				By("Removing NMState policies")
+				err = nmstate.CleanAllNMStatePolicies(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
+			})
+
+			It("Combination between SR-IOV and MACVLAN CNIs", polarion.ID("63536"), func() {
+				By("Creating a new bond interface with the VFs and vlan interface for this bond via nmstate operator")
+				bondPolicy := nmstate.NewPolicyBuilder(APIClient, secondBondInterfaceName, NetConfig.WorkerLabelMap).
+					WithBondInterface(vfsUnderTest, secondBondInterfaceName, "active-backup").
+					WithVlanInterface(secondBondInterfaceName, uint16(testVlan))
+
+				err = netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, bondPolicy)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create NMState Policy")
+
+				By("Creating mac-vlan networkAttachmentDefinition for the new bond interface")
+				macVlanPlugin, err := define.MasterNadPlugin(secondBondInterfaceName, "bridge", nad.IPAMStatic(),
+					fmt.Sprintf("%s.%d", secondBondInterfaceName, testVlan))
+				Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
+				bondNad, err := nad.NewBuilder(APIClient, "nadbond", tsparams.TestNamespaceName).
+					WithMasterPlugin(macVlanPlugin).Create()
+				Expect(err).ToNot(HaveOccurred(), "Failed to create nadbond NetworkAttachmentDefinition")
+
+				By("Creating SR-IOV policy with flag ExternallyManage true")
+				pfInterface, err := cmd.GetSrIovPf(vfsUnderTest[0], tsparams.TestNamespaceName, workerNodeList[0].Object.Name)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get PF for VF interface %s", vfsUnderTest[0]))
+
+				sriovPolicy := sriov.NewPolicyBuilder(
+					APIClient,
+					sriovAndResourceNameExManagedTrue,
+					NetConfig.SriovOperatorNamespace,
+					sriovAndResourceNameExManagedTrue,
+					3, []string{fmt.Sprintf("%s#%d-%d", pfInterface, 2, 2)}, NetConfig.WorkerLabelMap).
+					WithExternallyManaged(true)
+
+				err = sriovenv.CreateSriovPolicyAndWaitUntilItsApplied(sriovPolicy, tsparams.MCOWaitTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Failed to configure SR-IOV policy")
+
+				By("Creating SR-IOV network")
+				_, err = sriov.NewNetworkBuilder(
+					APIClient, sriovAndResourceNameExManagedTrue, NetConfig.SriovOperatorNamespace,
+					tsparams.TestNamespaceName, sriovAndResourceNameExManagedTrue).
+					WithStaticIpam().WithMacAddressSupport().WithIPAddressSupport().WithVLAN(uint16(testVlan)).Create()
+				Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
+
+				By("Creating test pods and checking connectivity between test pods")
+				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
+					bondNad.Definition.Name, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+			})
 		})
 	})
 
@@ -283,6 +397,8 @@ func defineIterationParams(ipFamily string) (clientIPs, serverIPs []string, err 
 func createAndWaitTestPods(
 	clientNodeName string,
 	serverNodeName string,
+	sriovResNameClient string,
+	sriovResNameServer string,
 	clientMac string,
 	serverMac string,
 	clientIPs []string,
@@ -290,13 +406,13 @@ func createAndWaitTestPods(
 	By("Creating client test pod")
 
 	clientPod, err := createAndWaitTestPodWithSecondaryNetwork("client", clientNodeName,
-		sriovAndResourceNameExManagedTrue, clientMac, clientIPs)
+		sriovResNameClient, clientMac, clientIPs)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create client pod")
 
 	By("Creating server test pod")
 
 	serverPod, err := createAndWaitTestPodWithSecondaryNetwork("server", serverNodeName,
-		sriovAndResourceNameExManagedTrue, serverMac, serverIPs)
+		sriovResNameServer, serverMac, serverIPs)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create server pod")
 
 	return clientPod, serverPod
@@ -324,13 +440,22 @@ func createAndWaitTestPodWithSecondaryNetwork(
 func createPodsAndRunTraffic(
 	clientNodeName string,
 	serverNodeName string,
+	sriovResNameClient string,
 	clientMac string,
 	serverMac string,
 	clientIPs []string,
 	serverIPs []string) {
 	By("Creating test pods")
 
-	clientPod, _ := createAndWaitTestPods(clientNodeName, serverNodeName, clientMac, serverMac, clientIPs, serverIPs)
+	clientPod, _ := createAndWaitTestPods(
+		clientNodeName,
+		serverNodeName,
+		sriovResNameClient,
+		sriovAndResourceNameExManagedTrue,
+		clientMac,
+		serverMac,
+		clientIPs,
+		serverIPs)
 
 	By("Checking connectivity between test pods")
 
@@ -345,4 +470,18 @@ func getVlanIDAndMaxTxRateForVf(nodeName, sriovInterfaceName string) (maxTxRate,
 	Expect(err).ToNot(HaveOccurred(), "Failed to get all SR-IOV VFs")
 
 	return *sriovVfs[0].MaxTxRate, *sriovVfs[0].VlanID
+}
+
+func getVfsUnderTest(busyVfs []string) []string {
+	var vfsUnderTest []string
+
+	for _, busyVf := range busyVfs {
+		runes := []rune(busyVf)
+		if len(runes) > 0 {
+			runes[len(runes)-1] = '1'
+		}
+		vfsUnderTest = append(vfsUnderTest, string(runes))
+	}
+
+	return vfsUnderTest
 }

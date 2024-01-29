@@ -15,6 +15,7 @@ import (
 func WaitForSriovAndMCPStable(
 	apiClient *clients.Settings, waitingTime, stableDuration time.Duration, mcpName, sriovOperatorNamespace string) error {
 	glog.V(90).Infof("Waiting for SR-IOV and MCP become stable.")
+	time.Sleep(10 * time.Second)
 
 	err := WaitForSriovStable(apiClient, waitingTime, sriovOperatorNamespace)
 	if err != nil {

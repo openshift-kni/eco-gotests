@@ -2,7 +2,7 @@ package tests
 
 import (
 	"fmt"
-	"strings"
+
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/day1day2env"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/juniper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
@@ -48,7 +49,11 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		By("Verifying that the cluster deployed via bond interface" +
 			" with enslaved Vlan interfaces which based on SR-IOV VFs")
-		bondName, bondInterfaceVlanSlaves = checkThatWorkersDeployedWithBondVlanVfs(workerNodeList)
+		bondName, bondInterfaceVlanSlaves, _, err = netnmstate.CheckThatWorkersDeployedWithBondVlanVfs(
+			workerNodeList, tsparams.TestNamespaceName)
+		if err != nil {
+			Skip(fmt.Sprintf("Day1Day2 tests skipped. Cluster is not suitable due to: %s", err.Error()))
+		}
 
 		By("Getting switch credentials")
 		switchCredentials, err := juniper.NewSwitchCredentials()
@@ -101,7 +106,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		By("Collecting information about test interfaces")
 		vfInterface, err := netnmstate.GetBaseVlanInterface(bondInterfaceVlanSlaves[0], workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get VF base interface")
-		pfUnderTest, err := day1day2env.GetSrIovPf(vfInterface, workerNodeList[0].Definition.Name)
+		pfUnderTest, err := cmd.GetSrIovPf(vfInterface, tsparams.TestNamespaceName, workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get SR-IOV PF for VF %s", vfInterface))
 
 		By(fmt.Sprintf("Saving MaxTxRate value on the first VF of interface %s before the test", pfUnderTest))
@@ -247,50 +252,6 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		})
 	})
 })
-
-func checkThatWorkersDeployedWithBondVlanVfs(workerNodes []*nodes.Builder) (string, []string) {
-	By("Verifying that the cluster deployed via bond interface")
-
-	var (
-		bondName string
-		err      error
-	)
-
-	for _, worker := range workerNodes {
-		bondName, err = netnmstate.GetPrimaryInterfaceBond(worker.Definition.Name)
-		Expect(err).ToNot(HaveOccurred(), "Failed to check primary interface")
-
-		if bondName == "" {
-			Skip("The test skipped because of primary interface is not a bond interface")
-		}
-	}
-
-	By("Gathering enslave interfaces for the bond interface")
-
-	bondInterfaceVlanSlaves, err := netnmstate.GetBondSlaves(bondName, workerNodes[0].Definition.Name)
-	Expect(err).ToNot(HaveOccurred(), "Failed to get bond slave interfaces")
-
-	By("Verifying that enslave interfaces are vlan interfaces and base-interface for Vlan interface is a VF interface")
-
-	for _, bondSlave := range bondInterfaceVlanSlaves {
-		baseInterface, err := netnmstate.GetBaseVlanInterface(bondSlave, workerNodes[0].Definition.Name)
-		if err != nil && strings.Contains(err.Error(), "it is not a vlan type") {
-			Skip("The test skipped because of bond slave interfaces are not vlan interfaces")
-		}
-
-		Expect(err).ToNot(HaveOccurred(), "Failed to get Vlan base interface")
-
-		// If a Vlan baseInterface has SR-IOV PF, it means that the baseInterface is VF.
-		_, err = day1day2env.GetSrIovPf(baseInterface, workerNodes[0].Definition.Name)
-		if err != nil && strings.Contains(err.Error(), "No such file or directory") {
-			Skip("The test skipped because of bond slave interfaces are not vlan interfaces")
-		}
-
-		Expect(err).ToNot(HaveOccurred(), "Failed to get SR-IOV PF interface")
-	}
-
-	return bondName, bondInterfaceVlanSlaves
-}
 
 func configureLAGsOnSwitch(
 	juniperSession *juniper.JunosSession, clusterVlan string, switchInterfaces, lagInterfaces []string) {
