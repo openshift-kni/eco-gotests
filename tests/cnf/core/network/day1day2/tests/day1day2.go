@@ -44,7 +44,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
 		By("Creating a new instance of NMState instance")
-		err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(netparam.DefaultTimeout)
+		err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(7 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
 		By("Verifying that the cluster deployed via bond interface" +

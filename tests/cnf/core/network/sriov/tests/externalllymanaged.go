@@ -47,7 +47,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				}
 
 				By("Creating a new instance of NMstate instance")
-				err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(netparam.DefaultTimeout)
+				err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(7 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
 				By("Validating SR-IOV interfaces")
