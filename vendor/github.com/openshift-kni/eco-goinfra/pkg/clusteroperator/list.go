@@ -58,14 +58,15 @@ func WaitForAllClusteroperatorsAvailable(
 	apiClient *clients.Settings, timeout time.Duration, options ...metaV1.ListOptions) (bool, error) {
 	glog.V(100).Info("Waiting for all clusterOperators to be in available state")
 
-	coList, err := List(apiClient, options...)
-	if err != nil {
-		glog.V(100).Infof("Failed to list all clusterOperators due to %s", err.Error())
+	err := wait.PollUntilContextTimeout(context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
+		coList, err := List(apiClient, options...)
 
-		return false, err
-	}
+		if err != nil {
+			glog.V(100).Infof("Failed to list all clusterOperators due to %s", err.Error())
 
-	err = wait.PollUntilContextTimeout(context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
+			return false, err
+		}
+
 		for _, clusteroperator := range coList {
 			if !clusteroperator.IsAvailable() {
 				glog.V(100).Infof("The %s clusterOperator is not available",

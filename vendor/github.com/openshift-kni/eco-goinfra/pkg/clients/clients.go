@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
@@ -72,6 +73,7 @@ import (
 // Settings provides the struct to talk with relevant API.
 type Settings struct {
 	KubeconfigPath string
+	K8sClient      *kubernetes.Clientset
 	coreV1Client.CoreV1Interface
 	clientConfigV1.ConfigV1Interface
 	clientMachineConfigV1.MachineconfigurationV1Interface
@@ -138,6 +140,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.MachineV1beta1Interface = machinev1beta1client.NewForConfigOrDie(config)
 	clientSet.K8sCniCncfIoV1beta1Interface = multinetpolicyclientv1.NewForConfigOrDie(config)
 	clientSet.StorageV1Interface = storageV1Client.NewForConfigOrDie(config)
+	clientSet.K8sClient = kubernetes.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	crScheme := runtime.NewScheme()

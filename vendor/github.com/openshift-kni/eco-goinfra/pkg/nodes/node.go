@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -15,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubectl/pkg/drain"
 )
 
 const (
@@ -23,10 +25,88 @@ const (
 
 // Builder provides struct for Node object containing connection to the cluster and the list of Node definitions.
 type Builder struct {
-	Definition *v1.Node
-	Object     *v1.Node
-	apiClient  *clients.Settings
-	errorMsg   string
+	Definition  *v1.Node
+	Object      *v1.Node
+	apiClient   *clients.Settings
+	errorMsg    string
+	drainHelper *drain.Helper
+}
+
+// SetDrainHelper builds drain Helper that contains parameters to control the behaviour of drain.
+func (builder *Builder) SetDrainHelper(
+	force bool,
+	ignoreDaemonsets bool,
+	deleteLocalData bool,
+	gracePeriod int,
+	skipWaitForDeleteTimeoutSeconds int,
+	timeout time.Duration,
+) {
+	glog.V(100).Infof("Creating new DrainOptions config")
+
+	msg := fmt.Sprintf("Node draining configuration: 'force': %v,", force)
+	msg += fmt.Sprintf(" 'gracePeriod': %d seconds,", gracePeriod)
+	msg += fmt.Sprintf(" 'skipWaitForDeletionTimeout': %d seconds,", skipWaitForDeleteTimeoutSeconds)
+	msg += fmt.Sprintf(" 'ignoreAllDaemonSets': %v,", ignoreDaemonsets)
+	msg += fmt.Sprintf(" 'timeout': %v,", timeout)
+	msg += fmt.Sprintf(" 'deleteEmptyDir': %v", deleteLocalData)
+
+	glog.V(100).Infof(msg)
+
+	builder.drainHelper = &drain.Helper{
+		Ctx:    context.TODO(),
+		Client: builder.apiClient.K8sClient,
+		// Delete pods that do not declare a controller.
+		Force: force,
+		// GracePeriodSeconds is how long to wait for a pod to terminate.
+		GracePeriodSeconds: gracePeriod,
+		// Ignore DaemonSet-managed pods
+		IgnoreAllDaemonSets: ignoreDaemonsets,
+		// The length of time to wait before giving up
+		Timeout: timeout,
+		// Local data from emptyDir volumes will be deleted
+		// when the node is drained
+		DeleteEmptyDirData: deleteLocalData,
+		Out:                os.Stdout,
+		ErrOut:             os.Stderr,
+		// If pod DeletionTimestamp older than N seconds, skip waiting for the pod.
+		SkipWaitForDeleteTimeoutSeconds: skipWaitForDeleteTimeoutSeconds,
+	}
+}
+
+// Drain evicts or deletes all pods.
+func (builder *Builder) Drain() error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	builder.ensureDrainHelperIsSet()
+	glog.V(100).Infof("Draining node %s", builder.Definition.Name)
+
+	return drain.RunNodeDrain(builder.drainHelper, builder.Definition.Name)
+}
+
+// Cordon marks node as unschedulable.
+func (builder *Builder) Cordon() error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	builder.ensureDrainHelperIsSet()
+	glog.V(100).Infof("Cordoning node %s", builder.Definition.Name)
+
+	return drain.RunCordonOrUncordon(builder.drainHelper, builder.Definition, true)
+}
+
+// Uncordon marks node as schedulable.
+func (builder *Builder) Uncordon() error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	builder.ensureDrainHelperIsSet()
+	glog.V(100).Infof("Uncordoning node %s", builder.Definition.Name)
+
+	return drain.RunCordonOrUncordon(builder.drainHelper, builder.Definition, false)
 }
 
 // AdditionalOptions additional options for node object.
@@ -345,4 +425,14 @@ func (builder *Builder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+// ensureDrainHelperIsSet ensures that drainHelper is always set.
+func (builder *Builder) ensureDrainHelperIsSet() {
+	if builder.drainHelper == nil {
+		glog.V(100).Infof(
+			"DrainHelper is not initialized for node %s. Init DrainHelper with defaul parameters",
+			builder.Definition.Name)
+		builder.SetDrainHelper(true, true, true, 300, 180, 10*time.Minute)
+	}
 }
