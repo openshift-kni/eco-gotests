@@ -70,7 +70,8 @@ var _ = Describe(
 					fmt.Sprintf("\t Processing %s NodeNetworkConfigurationPolicy", nncp.Definition.Name))
 
 				for _, condition := range nncp.Object.Status.Conditions {
-					switch condition.Type {
+					//nolint:nolintlint
+					switch condition.Type { //nolint:exhaustive
 					case "Available":
 						if condition.Status != ConditionTypeTrue {
 							nonAvailableNNCP[nncp.Definition.Name] = condition.Message
