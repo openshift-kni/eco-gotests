@@ -83,7 +83,7 @@ var _ = Describe(
 						fmt.Sprintf("Checking power state on %s", nodeName))
 
 					state, err := client.GetPowerState(bmcCtx)
-					msgRegex := "Chassis Power is on"
+					msgRegex := `(?i)chassis power is on|(?i)^on$`
 
 					glog.V(ecoreparams.ECoreLogLevel).Infof(
 						fmt.Sprintf("Power state on %s -> %s", nodeName, state))
