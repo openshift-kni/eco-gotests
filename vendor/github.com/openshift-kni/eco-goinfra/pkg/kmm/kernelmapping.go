@@ -249,6 +249,7 @@ func (builder *KernelMappingBuilder) RegistryTLS(insecure, skipTLSVerify bool) *
 		"Creating new Module KernelMapping parameter with RegistryTLS. Insecure: %t, InsecureSkipTLSVerify: %t",
 		insecure, skipTLSVerify)
 
+	builder.definition.RegistryTLS = &moduleV1Beta1.TLSOptions{}
 	builder.definition.RegistryTLS.Insecure = insecure
 	builder.definition.RegistryTLS.InsecureSkipTLSVerify = skipTLSVerify
 
