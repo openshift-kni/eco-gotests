@@ -1,0 +1,8 @@
+### Go template
+
+# Test binary, build with `go test -c`
+*.test
+
+*~
+.*.swp
+.*.swo

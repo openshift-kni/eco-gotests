@@ -48,4 +48,7 @@ const (
 
 	// NMStateNS namespace for OpensShift-NMState operator.
 	NMStateNS = "openshift-nmstate"
+
+	// LabelEcoreValidateReboots is used to select tests that reboot cluster.
+	LabelEcoreValidateReboots = "ecore_validate_reboots"
 )

@@ -1,6 +1,8 @@
 package ecoreconfig
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -83,10 +85,38 @@ type ECoreConfig struct {
 	//nolint:lll
 	StorageODFWorkloadImage string            `yaml:"ecore_storage_odf_wlkd_image" envconfig:"ECO_SYSTEM_ECORE_ODF_WLKD_IMAGE"`
 	StorageClassesMap       map[string]string `yaml:"ecore_storage_classes_map" envconfig:"ECO_SYSTEM_SC_MAP"`
+	NodesCredentialsMap     NodesBMCMap       `yaml:"ecore_nodes_bmc_map" envconfig:"ECO_SYSTEM_NODES_CREDENTIALS_MAP"`
 	//nolint:lll
 	StorageODFDeployOneSelector map[string]string `yaml:"ecore_wlkd_odf_one_selector" envconfig:"ECO_SYSTEM_WLKD_ODF_ONE_SELECTOR"`
 	//nolint:lll
 	StorageODFDeployTwoSelector map[string]string `yaml:"ecore_wlkd_odf_two_selector" envconfig:"ECO_SYSTEM_WLKD_ODF_TWO_SELECTOR"`
+}
+
+// BMCDetails structure to hold BMC details.
+type BMCDetails struct {
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	BMCAddress string `json:"bmc"`
+}
+
+// NodesBMCMap holds info about BMC connection for a specific node.
+type NodesBMCMap map[string]BMCDetails
+
+// Decode - method for envconfig package to parse JSON encoded environment variables.
+func (nad *NodesBMCMap) Decode(value string) error {
+	nodesAuthMap := new(map[string]BMCDetails)
+
+	err := json.Unmarshal([]byte(value), nodesAuthMap)
+
+	if err != nil {
+		log.Printf("Error to parse data %v", err)
+
+		return fmt.Errorf("invalid map json: %w", err)
+	}
+
+	*nad = *nodesAuthMap
+
+	return nil
 }
 
 // NewECoreConfig returns instance of ECoreConfig config type.
