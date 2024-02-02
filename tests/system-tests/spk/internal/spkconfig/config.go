@@ -33,6 +33,11 @@ type SPKConfig struct {
 	SPKDnsNS               string `yaml:"spk_dns_ns" envconfig:"ECO_SYSTEM_SPK_DNS_NS"`
 	SPKUtilitiesNS         string `yaml:"spk_utilities_ns" envconfig:"ECO_SYSTEM_SPK_UTILITIES_NS"`
 	SPKCoreDNSNS           string `yaml:"spk_coredns_ns" envconfig:"ECO_SYSTEM_COREDNS_NS"`
+	SPKDataTMMDeployName   string `yaml:"spk_data_tmm_deploy_name" envconfig:"ECO_SYSTEM_SPK_DATA_TMM_DEPLOY_NAME"`
+	SPKDnsTMMDeployName    string `yaml:"spk_dns_tmm_deploy_name" envconfig:"ECO_SYSTEM_SPK_DNS_TMM_DEPLOY_NAME"`
+	//nolint:lll
+	SPKDataIngressDeployName string `yaml:"spk_data_ingress_deploy_name" envconfig:"ECO_SYSTEM_SPK_DATA_INGRESS_DEPLOY_NAME"`
+	SPKDnsIngressDeployName  string `yaml:"spk_dns_ingress_deploy_name" envconfig:"ECO_SYSTEM_SPK_DNS_INGRESS_DEPLOY_NAME"`
 }
 
 // NewSPKConfig returns instance of SPKConfig config type.

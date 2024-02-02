@@ -9,3 +9,7 @@ spk_data_ns: 'spk-data'
 spk_dns_ns: 'spk-dns46'
 spk_utilities_ns: 'spk-utilities'
 spk_coredns_ns: 'spk-coredns'
+spk_data_tmm_deploy_name: f5-tmm
+spk_dns_tmm_deploy_name: f5-tmm
+spk_data_ingress_deploy_name: spk-data-f5ingress
+spk_dns_ingress_deploy_name: spk-dns46-f5ingress
