@@ -462,10 +462,18 @@ var _ = Describe(
 					deployApp.Definition.Name, deployApp.Definition.Namespace))
 
 			By("Finding pod backed by deployment")
-			appPods, err = pod.List(APIClient, SPKConfig.Namespace,
-				metav1.ListOptions{LabelSelector: "app=mttool"})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list DCI pod(s) matching label")
-			Expect(len(appPods)).To(Equal(2), "Not enough application pods found")
+			Eventually(func() bool {
+				appPods, err := pod.List(APIClient, SPKConfig.Namespace,
+					metav1.ListOptions{LabelSelector: "app=mttool"})
+
+				if err != nil {
+					return false
+				}
+
+				return len(appPods) == 2
+
+			}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+				"Not enough application pods found")
 
 			By("Asserting DNS/NAT46 from new set of application pods")
 
