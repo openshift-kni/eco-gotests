@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,11 +20,11 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("multiple"), func() {
 
-		var nSpace = tsparams.MultipleModuleTestNamespace
+		var nSpace = kmmparams.MultipleModuleTestNamespace
 		kmodName := "multiplemodules"
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 		serviceAccountName := "multiple-sa"
@@ -76,7 +77,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 					tsparams.LocalImageRegistry, nSpace, "multiplemodules")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
 					WithContainerImage(image).
-					WithBuildArg(tsparams.BuildArgName, buildArgValue).
+					WithBuildArg(kmmparams.BuildArgName, buildArgValue).
 					WithBuildDockerCfgFile(dockerFileConfigMap.Object.Name).
 					BuildKernelMappingConfig()
 				Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")

@@ -2,16 +2,17 @@ package tests
 
 import (
 	"fmt"
+
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -24,7 +25,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("multi-stage"), func() {
 
@@ -32,34 +33,34 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 		kmodName := "multi-stage"
 		serviceAccountName := "multi-stage-manager"
 		plainImage := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION-plain",
-			tsparams.LocalImageRegistry, tsparams.UseLocalMultiStageTestNamespace, kmodName)
+			tsparams.LocalImageRegistry, kmmparams.UseLocalMultiStageTestNamespace, kmodName)
 		signedImage := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION-signed",
-			tsparams.LocalImageRegistry, tsparams.UseLocalMultiStageTestNamespace, kmodName)
+			tsparams.LocalImageRegistry, kmmparams.UseLocalMultiStageTestNamespace, kmodName)
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 		filesToSign := []string{fmt.Sprintf("/opt/lib/modules/$KERNEL_FULL_VERSION/%s.ko", kmodName)}
 
 		BeforeAll(func() {
 			By("Create Namespace")
-			_, err := namespace.NewBuilder(APIClient, tsparams.UseLocalMultiStageTestNamespace).Create()
+			_, err := namespace.NewBuilder(APIClient, kmmparams.UseLocalMultiStageTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
 
 		AfterEach(func() {
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Await pods deletion")
-			err = await.ModuleUndeployed(APIClient, tsparams.UseLocalMultiStageTestNamespace, time.Minute)
+			err = await.ModuleUndeployed(APIClient, kmmparams.UseLocalMultiStageTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting pods to be deleted")
 
 			By("Await module to be deleted")
-			err = await.ModuleObjectDeleted(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace, time.Minute)
+			err = await.ModuleObjectDeleted(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 		})
 
 		AfterAll(func() {
-			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.UseLocalMultiStageTestNamespace)
+			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, kmmparams.UseLocalMultiStageTestNamespace)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
@@ -68,7 +69,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, tsparams.UseLocalMultiStageTestNamespace).Delete()
+			err = namespace.NewBuilder(APIClient, kmmparams.UseLocalMultiStageTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
 
@@ -78,13 +79,13 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 			By("Create ConfigMap")
 			dockerfileConfigMap, err := configmap.
-				NewBuilder(APIClient, kmodName, tsparams.UseLocalMultiStageTestNamespace).
+				NewBuilder(APIClient, kmodName, kmmparams.UseLocalMultiStageTestNamespace).
 				WithData(configmapContents).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 
 			By("Create ServiceAccount")
 			svcAccount, err := serviceaccount.
-				NewBuilder(APIClient, serviceAccountName, tsparams.UseLocalMultiStageTestNamespace).Create()
+				NewBuilder(APIClient, serviceAccountName, kmmparams.UseLocalMultiStageTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create ClusterRoleBinding")
@@ -96,7 +97,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
 
 			kernelMapping.WithContainerImage(plainImage).
-				WithBuildArg(tsparams.BuildArgName, buildArgValue).
+				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
@@ -109,7 +110,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -117,11 +118,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.UseLocalMultiStageTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.UseLocalMultiStageTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace, time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
@@ -130,7 +131,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace,
+			_, err = check.NodeLabel(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
@@ -140,19 +141,19 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			signKey := get.SigningData("cert", kmmparams.SigningCertBase64)
 
 			_, err := secret.NewBuilder(APIClient, "my-signing-key-pub",
-				tsparams.UseLocalMultiStageTestNamespace, v1.SecretTypeOpaque).WithData(signKey).Create()
+				kmmparams.UseLocalMultiStageTestNamespace, v1.SecretTypeOpaque).WithData(signKey).Create()
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
 
 			By("Creating my-signing-key")
 			signCert := get.SigningData("key", kmmparams.SigningKeyBase64)
 
 			_, err = secret.NewBuilder(APIClient, "my-signing-key",
-				tsparams.UseLocalMultiStageTestNamespace, v1.SecretTypeOpaque).WithData(signCert).Create()
+				kmmparams.UseLocalMultiStageTestNamespace, v1.SecretTypeOpaque).WithData(signCert).Create()
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
 
 			By("Reusing previously created ServiceAccount")
 			svcAccount, err := serviceaccount.
-				NewBuilder(APIClient, serviceAccountName, tsparams.UseLocalMultiStageTestNamespace).Create()
+				NewBuilder(APIClient, serviceAccountName, kmmparams.UseLocalMultiStageTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create KernelMapping")
@@ -172,7 +173,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -180,7 +181,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace, 3*time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace, 3*time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
@@ -190,11 +191,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 			By("Check module is signed")
 			err = check.ModuleSigned(APIClient, kmodName, "cdvtest signing key",
-				tsparams.UseLocalMultiStageTestNamespace, signedImage)
+				kmmparams.UseLocalMultiStageTestNamespace, signedImage)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is signed")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, moduleName, tsparams.UseLocalMultiStageTestNamespace,
+			_, err = check.NodeLabel(APIClient, moduleName, kmmparams.UseLocalMultiStageTestNamespace,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})

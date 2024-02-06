@@ -11,9 +11,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
@@ -21,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 	Context("Module", Label("versions"), func() {
 
 		moduleName := "modver"
@@ -30,11 +31,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 		serviceAccountName := "modver-manager"
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-			tsparams.LocalImageRegistry, tsparams.VersionModuleTestNamespace, kmodName)
+			tsparams.LocalImageRegistry, kmmparams.VersionModuleTestNamespace, kmodName)
 		imageV1 := fmt.Sprintf("%s-1.0.0", image)
 		imageV2 := fmt.Sprintf("%s-2.0.0", image)
 		versionLabel := fmt.Sprintf("kmm.node.kubernetes.io/version-module-loader.%s.%s",
-			tsparams.VersionModuleTestNamespace, moduleName)
+			kmmparams.VersionModuleTestNamespace, moduleName)
 
 		var dockerfileConfigMap *configmap.Builder
 		var svcAccount *serviceaccount.Builder
@@ -42,19 +43,19 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 		BeforeAll(func() {
 			By("Create Namespace")
-			_, err := namespace.NewBuilder(APIClient, tsparams.VersionModuleTestNamespace).Create()
+			_, err := namespace.NewBuilder(APIClient, kmmparams.VersionModuleTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred())
 
 			configMapContents := define.MultiStageConfigMapContent(kmodName)
 
 			By("Create ConfigMap")
-			dockerfileConfigMap, err = configmap.NewBuilder(APIClient, kmodName, tsparams.VersionModuleTestNamespace).
+			dockerfileConfigMap, err = configmap.NewBuilder(APIClient, kmodName, kmmparams.VersionModuleTestNamespace).
 				WithData(configMapContents).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 
 			By("Create ServiceAccount")
 			svcAccount, err = serviceaccount.
-				NewBuilder(APIClient, serviceAccountName, tsparams.VersionModuleTestNamespace).Create()
+				NewBuilder(APIClient, serviceAccountName, kmmparams.VersionModuleTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating service account")
 
 			By("Create ClusterRoleBinding")
@@ -67,15 +68,15 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 		AfterAll(func() {
 
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.VersionModuleTestNamespace).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.VersionModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Await module deletion")
-			err = await.ModuleUndeployed(APIClient, tsparams.VersionModuleTestNamespace, time.Minute)
+			err = await.ModuleUndeployed(APIClient, kmmparams.VersionModuleTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting pods to be deleted")
 
 			By("Await module to be deleted")
-			err = await.ModuleObjectDeleted(APIClient, moduleName, tsparams.VersionModuleTestNamespace, time.Minute)
+			err = await.ModuleObjectDeleted(APIClient, moduleName, kmmparams.VersionModuleTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 
 			By("Delete ClusterRoleBinding")
@@ -84,7 +85,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, tsparams.VersionModuleTestNamespace).Delete()
+			err = namespace.NewBuilder(APIClient, kmmparams.VersionModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Remove existing node label")
@@ -110,7 +111,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
 
 			kernelMapping.WithContainerImage(imageV1).
-				WithBuildArg(tsparams.BuildArgName, buildArgValue).
+				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
@@ -125,7 +126,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.VersionModuleTestNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.VersionModuleTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -133,11 +134,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.VersionModuleTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.VersionModuleTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Make sure the module is not loaded")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.VersionModuleTestNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.VersionModuleTestNamespace, time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).To(HaveOccurred(), "module should not be loaded")
 
@@ -151,7 +152,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error setting node label")
 
 			By("Check that the module is deployed on just one node")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.VersionModuleTestNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.VersionModuleTestNamespace, time.Minute,
 				firstNode.Object.Labels)
 			Expect(err).ToNot(HaveOccurred(), "error while checking module is deployed")
 		})
@@ -162,7 +163,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
 			kernelMapping.WithContainerImage(imageV2).
-				WithBuildArg(tsparams.BuildArgName, buildArgValue).
+				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
@@ -177,7 +178,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create temporary Module")
-			tempModule := kmm.NewModuleBuilder(APIClient, temporaryModuleName, tsparams.VersionModuleTestNamespace).
+			tempModule := kmm.NewModuleBuilder(APIClient, temporaryModuleName, kmmparams.VersionModuleTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			tempModule = tempModule.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -185,7 +186,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.VersionModuleTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.VersionModuleTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Deleting temporary module")
@@ -193,7 +194,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error deleting test namespace")
 
 			By("Update existing module with new version and params")
-			module, err := kmm.Pull(APIClient, kmodName, tsparams.VersionModuleTestNamespace)
+			module, err := kmm.Pull(APIClient, kmodName, kmmparams.VersionModuleTestNamespace)
 			Expect(err).ToNot(HaveOccurred(), "error pulling existing module")
 
 			module.Definition.Spec.ModuleLoader.Container.Version = "second"
@@ -207,7 +208,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error removing node label")
 
 			By("Check that the module is undeployed on just one node")
-			err = await.ModuleUndeployed(APIClient, tsparams.VersionModuleTestNamespace, time.Minute)
+			err = await.ModuleUndeployed(APIClient, kmmparams.VersionModuleTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while checking module is undeployed")
 
 			By("Set version label on all workers")
@@ -232,7 +233,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			time.Sleep(10 * time.Second)
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, moduleName, tsparams.VersionModuleTestNamespace, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, moduleName, kmmparams.VersionModuleTestNamespace, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 	})

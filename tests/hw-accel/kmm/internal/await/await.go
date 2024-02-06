@@ -6,13 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -81,7 +79,7 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 // ModuleDeployment awaits module to de deployed.
 func ModuleDeployment(apiClient *clients.Settings, moduleName, nsname string,
 	timeout time.Duration, selector map[string]string) error {
-	label := fmt.Sprintf(tsparams.ModuleNodeLabelTemplate, nsname, moduleName)
+	label := fmt.Sprintf(kmmparams.ModuleNodeLabelTemplate, nsname, moduleName)
 
 	return deploymentPerLabel(apiClient, moduleName, label, timeout, selector)
 }
@@ -89,7 +87,7 @@ func ModuleDeployment(apiClient *clients.Settings, moduleName, nsname string,
 // DeviceDriverDeployment awaits device driver pods to de deployed.
 func DeviceDriverDeployment(apiClient *clients.Settings, moduleName, nsname string,
 	timeout time.Duration, selector map[string]string) error {
-	label := fmt.Sprintf(tsparams.DevicePluginNodeLabelTemplate, nsname, moduleName)
+	label := fmt.Sprintf(kmmparams.DevicePluginNodeLabelTemplate, nsname, moduleName)
 
 	return deploymentPerLabel(apiClient, moduleName, label, timeout, selector)
 }

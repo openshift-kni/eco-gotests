@@ -6,12 +6,11 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -24,24 +23,24 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("use-dtk"), func() {
 
 		var testNamespace *namespace.Builder
 
-		moduleName := tsparams.UseDtkModuleTestNamespace
+		moduleName := kmmparams.UseDtkModuleTestNamespace
 		kmodName := "use-dtk"
 		serviceAccountName := "dtk-manager"
 		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-			tsparams.LocalImageRegistry, tsparams.UseDtkModuleTestNamespace, kmodName)
+			tsparams.LocalImageRegistry, kmmparams.UseDtkModuleTestNamespace, kmodName)
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 
 		BeforeAll(func() {
 
 			By("Create Namespace")
 			var err error
-			testNamespace, err = namespace.NewBuilder(APIClient, tsparams.UseDtkModuleTestNamespace).Create()
+			testNamespace, err = namespace.NewBuilder(APIClient, kmmparams.UseDtkModuleTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 		})
@@ -49,14 +48,14 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 		AfterAll(func() {
 
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.UseDtkModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting module")
 
 			By("Await module to be deleted")
-			err = await.ModuleObjectDeleted(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace, time.Minute)
+			err = await.ModuleObjectDeleted(APIClient, moduleName, kmmparams.UseDtkModuleTestNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 
-			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.UseDtkModuleTestNamespace)
+			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, kmmparams.UseDtkModuleTestNamespace)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
@@ -65,12 +64,12 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error deleting test namespace")
 
 			By("Delete preflightvalidationocp")
-			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
-				tsparams.UseDtkModuleTestNamespace).Delete()
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.UseDtkModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
 
 			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, tsparams.UseDtkModuleTestNamespace).Delete()
+			err = namespace.NewBuilder(APIClient, kmmparams.UseDtkModuleTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 		})
@@ -87,7 +86,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 			By("Create ServiceAccount")
 			svcAccount, err := serviceaccount.
-				NewBuilder(APIClient, serviceAccountName, tsparams.UseDtkModuleTestNamespace).Create()
+				NewBuilder(APIClient, serviceAccountName, kmmparams.UseDtkModuleTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create ClusterRoleBinding")
@@ -99,7 +98,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
 
 			kernelMapping.WithContainerImage(image).
-				WithBuildArg(tsparams.BuildArgName, buildArgValue).
+				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
@@ -112,7 +111,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.UseDtkModuleTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -120,11 +119,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.UseDtkModuleTestNamespace, time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
@@ -133,7 +132,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace,
+			_, err = check.NodeLabel(APIClient, moduleName, kmmparams.UseDtkModuleTestNamespace,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
@@ -155,7 +154,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			time.Sleep(time.Minute)
 
 			By("Await new driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.UseDtkModuleTestNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.UseDtkModuleTestNamespace, time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
@@ -198,25 +197,25 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			preflightImage := get.PreflightImage(arch)
 
 			By("Create preflightvalidationocp")
-			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
-				tsparams.UseDtkModuleTestNamespace).
+			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.UseDtkModuleTestNamespace).
 				WithReleaseImage(preflightImage).
 				WithPushBuiltImage(false).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await preflightvalidationocp checks")
-			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.UseDtkModuleTestNamespace, 3*time.Minute)
+			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
 			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
 			By("Get status of the preflightvalidationocp checks")
-			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.UseDtkModuleTestNamespace)
+			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.UseDtkModuleTestNamespace)
 			Expect(strings.Contains(status, "Verification successful (build compiles)")).
 				To(BeTrue(), "expected message not found")
 
@@ -235,25 +234,25 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			preflightImage := get.PreflightImage(arch)
 
 			By("Create preflightvalidationocp")
-			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
-				tsparams.UseDtkModuleTestNamespace).
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.UseDtkModuleTestNamespace).
 				WithReleaseImage(preflightImage).
 				WithPushBuiltImage(true).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.UseDtkModuleTestNamespace, 10*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 10*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await preflightvalidationocp checks")
-			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.UseDtkModuleTestNamespace, 3*time.Minute)
+			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
 			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
 			By("Get status of the preflightvalidationocp checks")
-			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.UseDtkModuleTestNamespace)
+			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.UseDtkModuleTestNamespace)
 			Expect(strings.Contains(status, "Verification successful (build compiles and image pushed)")).
 				To(BeTrue(), "expected message not found")
 

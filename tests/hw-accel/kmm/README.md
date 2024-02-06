@@ -26,16 +26,16 @@ Notes:
 
 ### Internal pkgs
 
-[**await**](modules/internal/await/await.go)
+[**await**](internal/await/await.go)
 - Helper for waiting for various states of builds, module, preflight.
 
-[**check**](modules/internal/check/check.go)
+[**check**](internal/check/check.go)
 - Tool that checks different states for module, dmesg, node labels.
 
-[**define**](modules/internal/define)
+[**define**](internal/define)
 - Utility that helps create custom objects like clusterrolebinding, configmap and secret used in tests.
 
-[**get**](modules/internal/get/get.go)
+[**get**](internal/get/get.go)
 - Utility used to obtain various variables like number of nodes for selector, cluster architecture, node kernel version.
 
 ### Eco-goinfra pkgs

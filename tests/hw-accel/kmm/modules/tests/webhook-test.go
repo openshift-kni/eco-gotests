@@ -18,11 +18,11 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("webhook"), func() {
 
-		var nSpace = tsparams.WebhookModuleTestNamespace
+		var nSpace = kmmparams.WebhookModuleTestNamespace
 
 		BeforeAll(func() {
 
@@ -134,7 +134,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-					tsparams.LocalImageRegistry, tsparams.WebhookModuleTestNamespace, "my-kmod")
+					tsparams.LocalImageRegistry, kmmparams.WebhookModuleTestNamespace, "my-kmod")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
 					WithContainerImage(image).
 					BuildKernelMappingConfig()
@@ -160,7 +160,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-					tsparams.LocalImageRegistry, tsparams.WebhookModuleTestNamespace, "my-kmod")
+					tsparams.LocalImageRegistry, kmmparams.WebhookModuleTestNamespace, "my-kmod")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
 					WithContainerImage(image).
 					BuildKernelMappingConfig()
@@ -186,7 +186,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-					tsparams.LocalImageRegistry, tsparams.WebhookModuleTestNamespace, "my-kmod")
+					tsparams.LocalImageRegistry, kmmparams.WebhookModuleTestNamespace, "my-kmod")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
 					WithContainerImage(image).
 					BuildKernelMappingConfig()

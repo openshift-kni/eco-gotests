@@ -11,12 +11,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 	Context("Module", Label("check-install"), func() {
 
 		It("Operator should be properly installed", polarion.ID("56674"), func() {
@@ -25,21 +24,21 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			}
 
 			By("Checking subscription exists")
-			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, tsparams.KmmOperatorNamespace)
+			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, kmmparams.KmmOperatorNamespace)
 			Expect(err).NotTo(HaveOccurred(), "error getting subscription")
 			Expect(string(sub.Object.Status.State)).To(Equal("AtLatestKnown"))
 
 			By("Checking operator namespace exists")
-			exists := namespace.NewBuilder(APIClient, tsparams.KmmOperatorNamespace).Exists()
+			exists := namespace.NewBuilder(APIClient, kmmparams.KmmOperatorNamespace).Exists()
 			Expect(exists).To(Equal(true))
 
 			By("Listing deployment in operator namespace")
-			deploymentList, err := deployment.List(APIClient, tsparams.KmmOperatorNamespace)
+			deploymentList, err := deployment.List(APIClient, kmmparams.KmmOperatorNamespace)
 			Expect(err).NotTo(HaveOccurred(), "error getting deployment list")
 
 			By("Checking deployment")
 			for _, ds := range deploymentList {
-				if strings.Contains(ds.Object.Name, tsparams.DeploymentName) {
+				if strings.Contains(ds.Object.Name, kmmparams.DeploymentName) {
 					Expect(err).NotTo(HaveOccurred(), "error getting deployment")
 					Expect(ds.Object.Status.ReadyReplicas).To(Equal(int32(1)))
 					glog.V(kmmparams.KmmLogLevel).Infof("Successfully found deployment '%s'"+

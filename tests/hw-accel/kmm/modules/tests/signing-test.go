@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+
 	"strings"
 	"time"
 
@@ -10,11 +11,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	v1 "k8s.io/api/core/v1"
@@ -24,28 +25,28 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("build-sign"), func() {
 
-		moduleName := tsparams.ModuleBuildAndSignNamespace
+		moduleName := kmmparams.ModuleBuildAndSignNamespace
 		kmodName := "module-signing"
 		serviceAccountName := "build-and-sign-sa"
 		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-			tsparams.LocalImageRegistry, tsparams.ModuleBuildAndSignNamespace, kmodName)
+			tsparams.LocalImageRegistry, kmmparams.ModuleBuildAndSignNamespace, kmodName)
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 		filesToSign := []string{fmt.Sprintf("/opt/lib/modules/$KERNEL_FULL_VERSION/%s.ko", kmodName)}
 
 		AfterAll(func() {
 			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace).Delete()
+			_, err := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting module")
 
 			By("Await module to be deleted")
-			err = await.ModuleObjectDeleted(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace, time.Minute)
+			err = await.ModuleObjectDeleted(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 
-			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.ModuleBuildAndSignNamespace)
+			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, kmmparams.ModuleBuildAndSignNamespace)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
@@ -54,12 +55,12 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Delete preflightvalidationocp")
-			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
-				tsparams.ModuleBuildAndSignNamespace).Delete()
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.ModuleBuildAndSignNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
 
 			By("Delete Namespace")
-			err = namespace.NewBuilder(APIClient, tsparams.ModuleBuildAndSignNamespace).Delete()
+			err = namespace.NewBuilder(APIClient, kmmparams.ModuleBuildAndSignNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 		})
@@ -67,21 +68,21 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 		It("should use build and sign a module", polarion.ID("56252"), func() {
 
 			By("Create Namespace")
-			testNamespace, err := namespace.NewBuilder(APIClient, tsparams.ModuleBuildAndSignNamespace).Create()
+			testNamespace, err := namespace.NewBuilder(APIClient, kmmparams.ModuleBuildAndSignNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			By("Creating my-signing-key-pub")
 			signKey := get.SigningData("cert", kmmparams.SigningCertBase64)
 
 			_, err = secret.NewBuilder(APIClient, "my-signing-key-pub",
-				tsparams.ModuleBuildAndSignNamespace, v1.SecretTypeOpaque).WithData(signKey).Create()
+				kmmparams.ModuleBuildAndSignNamespace, v1.SecretTypeOpaque).WithData(signKey).Create()
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
 
 			By("Creating my-signing-key")
 			signCert := get.SigningData("key", kmmparams.SigningKeyBase64)
 
 			_, err = secret.NewBuilder(APIClient, "my-signing-key",
-				tsparams.ModuleBuildAndSignNamespace, v1.SecretTypeOpaque).WithData(signCert).Create()
+				kmmparams.ModuleBuildAndSignNamespace, v1.SecretTypeOpaque).WithData(signCert).Create()
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
 
 			By("Create ConfigMap")
@@ -94,7 +95,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 			By("Create ServiceAccount")
 			svcAccount, err := serviceaccount.
-				NewBuilder(APIClient, serviceAccountName, tsparams.ModuleBuildAndSignNamespace).Create()
+				NewBuilder(APIClient, serviceAccountName, kmmparams.ModuleBuildAndSignNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create ClusterRoleBinding")
@@ -106,7 +107,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
 
 			kernelMapping.WithContainerImage(image).
-				WithBuildArg(tsparams.BuildArgName, buildArgValue).
+				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name).
 				WithSign("my-signing-key-pub", "my-signing-key", filesToSign)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
@@ -120,7 +121,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -128,11 +129,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.ModuleBuildAndSignNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace, time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
@@ -142,11 +143,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 
 			By("Check module is signed")
 			err = check.ModuleSigned(APIClient, kmodName, "cdvtest signing key",
-				tsparams.ModuleBuildAndSignNamespace, image)
+				kmmparams.ModuleBuildAndSignNamespace, image)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is signed")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, moduleName, tsparams.ModuleBuildAndSignNamespace,
+			_, err = check.NodeLabel(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
@@ -161,25 +162,25 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			preflightImage := get.PreflightImage(arch)
 
 			By("Create preflightvalidationocp")
-			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
-				tsparams.ModuleBuildAndSignNamespace).
+			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.ModuleBuildAndSignNamespace).
 				WithReleaseImage(preflightImage).
 				WithPushBuiltImage(false).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.ModuleBuildAndSignNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await preflightvalidationocp checks")
-			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.ModuleBuildAndSignNamespace, time.Minute)
+			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace, time.Minute)
 			Expect(err).To(HaveOccurred(), "preflightvalidationocp did not complete")
 
 			By("Get status of the preflightvalidationocp checks")
-			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.ModuleBuildAndSignNamespace)
+			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace)
 			Expect(strings.Contains(status, "Failed to verify signing for module")).
 				To(BeTrue(), "expected message not found")
 
@@ -198,25 +199,25 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			preflightImage := get.PreflightImage(arch)
 
 			By("Create preflightvalidationocp")
-			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, tsparams.PreflightName,
-				tsparams.ModuleBuildAndSignNamespace).
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.ModuleBuildAndSignNamespace).
 				WithReleaseImage(preflightImage).
 				WithPushBuiltImage(true).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.ModuleBuildAndSignNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await preflightvalidationocp checks")
-			err = await.PreflightStageDone(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.ModuleBuildAndSignNamespace, 3*time.Minute)
+			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace, 3*time.Minute)
 			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
 			By("Get status of the preflightvalidationocp checks")
-			status, _ := get.PreflightReason(APIClient, tsparams.PreflightName, moduleName,
-				tsparams.ModuleBuildAndSignNamespace)
+			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace)
 			Expect(strings.Contains(status, "Verification successful (sign completes and image pushed)")).
 				To(BeTrue(), "expected message not found")
 		})

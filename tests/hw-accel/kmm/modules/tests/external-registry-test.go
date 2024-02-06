@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+
 	"log"
 	"time"
 
@@ -12,23 +13,23 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	v1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("simple-kmod"), func() {
 
 		moduleName := "simple-kmod"
 		kmodName := "simple-kmod"
-		localNsName := tsparams.SimpleKmodModuleTestNamespace
+		localNsName := kmmparams.SimpleKmodModuleTestNamespace
 		serviceAccountName := "simple-kmod-manager"
 		secretName := "ocp-edge-qe-build-secret"
 		image := fmt.Sprintf("%s/%s:$KERNEL_FULL_VERSION-%v",
@@ -83,7 +84,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
 
 			kernelMapping.WithContainerImage(image).
-				WithBuildArg(tsparams.BuildArgName, buildArgValue).
+				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")

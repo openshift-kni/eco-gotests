@@ -11,27 +11,28 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/check"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRun), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLongRun), func() {
 
 	Context("Module", Label("firmware"), func() {
 
 		var mcpName string
 
-		moduleName := tsparams.FirmwareTestNamespace
+		moduleName := kmmparams.FirmwareTestNamespace
 		kmodName := "simple-kmod-firmware"
 		serviceAccountName := "firmware-manager"
 		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
-			tsparams.LocalImageRegistry, tsparams.FirmwareTestNamespace, kmodName)
+			tsparams.LocalImageRegistry, kmmparams.FirmwareTestNamespace, kmodName)
 		machineConfigName := "99-worker-kernel-args-firmware-path"
 		machineConfigRole := "machineconfiguration.openshift.io/role"
 		workerKernelArgs := []string{"firmware_class.path=/var/lib/firmware"}
@@ -44,13 +45,13 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 		AfterEach(func() {
 			mcpName := get.MachineConfigPoolName(APIClient)
 			By("Delete Module")
-			_, _ = kmm.NewModuleBuilder(APIClient, moduleName, tsparams.FirmwareTestNamespace).Delete()
+			_, _ = kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.FirmwareTestNamespace).Delete()
 
 			By("Await module to be deleted")
-			err := await.ModuleObjectDeleted(APIClient, moduleName, tsparams.FirmwareTestNamespace, 3*time.Minute)
+			err := await.ModuleObjectDeleted(APIClient, moduleName, kmmparams.FirmwareTestNamespace, 3*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
 
-			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, tsparams.FirmwareTestNamespace)
+			svcAccount := serviceaccount.NewBuilder(APIClient, serviceAccountName, kmmparams.FirmwareTestNamespace)
 			svcAccount.Exists()
 
 			By("Delete ClusterRoleBinding")
@@ -58,7 +59,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 			_ = crb.Delete()
 
 			By("Delete Namespace")
-			_ = namespace.NewBuilder(APIClient, tsparams.FirmwareTestNamespace).Delete()
+			_ = namespace.NewBuilder(APIClient, kmmparams.FirmwareTestNamespace).Delete()
 
 			By("Delete machine configuration that sets Kernel Arguments on workers")
 			kernelArgsMc, err := mco.PullMachineConfig(APIClient, machineConfigName)
@@ -80,7 +81,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 		It("should properly build a module with firmware support", polarion.ID("56675"), func() {
 
 			By("Create Namespace")
-			testNamespace, err := namespace.NewBuilder(APIClient, tsparams.FirmwareTestNamespace).Create()
+			testNamespace, err := namespace.NewBuilder(APIClient, kmmparams.FirmwareTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 
 			configmapContents := define.SimpleKmodFirmwareConfigMapContents()
@@ -93,7 +94,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 
 			By("Create ServiceAccount")
 			svcAccount, err := serviceaccount.
-				NewBuilder(APIClient, serviceAccountName, tsparams.FirmwareTestNamespace).Create()
+				NewBuilder(APIClient, serviceAccountName, kmmparams.FirmwareTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 			By("Create ClusterRoleBinding")
@@ -138,7 +139,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
 
 			By("Create Module")
-			module := kmm.NewModuleBuilder(APIClient, moduleName, tsparams.FirmwareTestNamespace).
+			module := kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.FirmwareTestNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap)
 			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				WithLoadServiceAccount(svcAccount.Object.Name)
@@ -146,11 +147,11 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 			Expect(err).ToNot(HaveOccurred(), "error creating module")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.FirmwareTestNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.FirmwareTestNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, tsparams.FirmwareTestNamespace, 3*time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.FirmwareTestNamespace, 3*time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
@@ -163,7 +164,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelLongRu
 			Expect(err).ToNot(HaveOccurred(), "error while checking dmesg contents")
 
 			By("Check label is set on all nodes")
-			_, err = check.NodeLabel(APIClient, moduleName, tsparams.FirmwareTestNamespace, GeneralConfig.WorkerLabelMap)
+			_, err = check.NodeLabel(APIClient, moduleName, kmmparams.FirmwareTestNamespace, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 
 		})

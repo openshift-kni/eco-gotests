@@ -9,3 +9,6 @@ var (
 	// KmmHubSelector represents MCM object generic selector.
 	KmmHubSelector = map[string]string{"cluster.open-cluster-management.io/clusterset": "default"}
 )
+
+// KmmTestHelperLabelName represents label set on the helper resources.
+var KmmTestHelperLabelName = "kmm-test-helper"

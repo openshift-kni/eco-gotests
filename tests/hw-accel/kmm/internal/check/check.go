@@ -8,9 +8,8 @@ import (
 
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/get"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 
@@ -31,7 +30,7 @@ func NodeLabel(apiClient *clients.Settings, moduleName, nsname string, nodeSelec
 	}
 
 	foundLabels := 0
-	label := fmt.Sprintf(tsparams.ModuleNodeLabelTemplate, nsname, moduleName)
+	label := fmt.Sprintf(kmmparams.ModuleNodeLabelTemplate, nsname, moduleName)
 
 	for _, node := range nodeBuilder {
 		_, ok := node.Object.Labels[label]
@@ -116,9 +115,9 @@ func runCommandOnTestPods(apiClient *clients.Settings,
 	command []string, message string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			pods, err := pod.List(apiClient, tsparams.KmmOperatorNamespace, v1.ListOptions{
+			pods, err := pod.List(apiClient, kmmparams.KmmOperatorNamespace, v1.ListOptions{
 				FieldSelector: "status.phase=Running",
-				LabelSelector: tsparams.KmmTestHelperLabelName,
+				LabelSelector: kmmparams.KmmTestHelperLabelName,
 			})
 
 			if err != nil {

@@ -10,13 +10,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("must-gather"), func() {
 
@@ -30,9 +29,9 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity
 				for _, container := range pod.Object.Spec.Containers {
 					for _, env := range container.Env {
 
-						if strings.Contains(env.Name, tsparams.RelImgMustGather) {
+						if strings.Contains(env.Name, kmmparams.RelImgMustGather) {
 							mustGatherImage = env.Value
-							glog.V(kmmparams.KmmLogLevel).Infof("%s: %s\n", tsparams.RelImgMustGather, mustGatherImage)
+							glog.V(kmmparams.KmmLogLevel).Infof("%s: %s\n", kmmparams.RelImgMustGather, mustGatherImage)
 						}
 
 					}

@@ -9,21 +9,21 @@ import (
 
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
-	Labels = append(kmmparams.Labels, LabelSuite)
+	Labels = append(kmmparams.Labels, kmmparams.LabelSuite)
 
 	// LocalImageRegistry represents the local registry used in KMM tests.
 	LocalImageRegistry = "image-registry.openshift-image-registry.svc:5000"
 
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		KmmOperatorNamespace:          "kmm",
-		UseDtkModuleTestNamespace:     "module",
-		SimpleKmodModuleTestNamespace: "module",
-		DevicePluginTestNamespace:     "module",
-		RealtimeKernelNamespace:       "module",
-		FirmwareTestNamespace:         "module",
-		ModuleBuildAndSignNamespace:   "module",
-		InTreeReplacementNamespace:    "module",
+		kmmparams.KmmOperatorNamespace:          "kmm",
+		kmmparams.UseDtkModuleTestNamespace:     "module",
+		kmmparams.SimpleKmodModuleTestNamespace: "module",
+		kmmparams.DevicePluginTestNamespace:     "module",
+		kmmparams.RealtimeKernelNamespace:       "module",
+		kmmparams.FirmwareTestNamespace:         "module",
+		kmmparams.ModuleBuildAndSignNamespace:   "module",
+		kmmparams.InTreeReplacementNamespace:    "module",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
@@ -48,7 +48,4 @@ var (
 			Add: capabilityAll,
 		},
 	}
-
-	// KmmTestHelperLabelName represents label set on the helper resources.
-	KmmTestHelperLabelName = "kmm-test-helper"
 )

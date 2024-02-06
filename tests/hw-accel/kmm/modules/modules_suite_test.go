@@ -13,8 +13,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
@@ -47,7 +47,7 @@ var _ = BeforeSuite(func() {
 
 	By("Create helper ServiceAccount")
 	svcAccount, err := serviceaccount.
-		NewBuilder(APIClient, prereqName, tsparams.KmmOperatorNamespace).Create()
+		NewBuilder(APIClient, prereqName, kmmparams.KmmOperatorNamespace).Create()
 	Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
 
 	By("Create helper ClusterRoleBinding")
@@ -65,14 +65,14 @@ var _ = BeforeSuite(func() {
 	for _, node := range nodeList {
 		glog.V(kmmparams.KmmLogLevel).Infof("Creating privileged deployment on node '%v'", node.Object.Name)
 
-		deploymentName := fmt.Sprintf("%s-%s", tsparams.KmmTestHelperLabelName, node.Object.Name)
+		deploymentName := fmt.Sprintf("%s-%s", kmmparams.KmmTestHelperLabelName, node.Object.Name)
 		containerCfg, _ := pod.NewContainerBuilder("test", tsparams.DTKImage,
 			[]string{"/bin/bash", "-c", "sleep INF"}).
 			WithSecurityContext(tsparams.PrivilegedSC).GetContainerCfg()
 
-		deploymentCfg := deployment.NewBuilder(APIClient, deploymentName, tsparams.KmmOperatorNamespace,
-			map[string]string{tsparams.KmmTestHelperLabelName: ""}, containerCfg)
-		deploymentCfg.WithLabel(tsparams.KmmTestHelperLabelName, "").
+		deploymentCfg := deployment.NewBuilder(APIClient, deploymentName, kmmparams.KmmOperatorNamespace,
+			map[string]string{kmmparams.KmmTestHelperLabelName: ""}, containerCfg)
+		deploymentCfg.WithLabel(kmmparams.KmmTestHelperLabelName, "").
 			WithNodeSelector(map[string]string{"kubernetes.io/hostname": node.Object.Name}).
 			WithServiceAccountName("kmm-operator-module-loader")
 
@@ -90,7 +90,7 @@ var _ = AfterSuite(func() {
 	glog.V(kmmparams.KmmLogLevel).Infof("Deleting test deployments")
 
 	By("Delete helper deployments")
-	testDeployments, err := deployment.List(APIClient, tsparams.KmmOperatorNamespace, metaV1.ListOptions{})
+	testDeployments, err := deployment.List(APIClient, kmmparams.KmmOperatorNamespace, metaV1.ListOptions{})
 
 	if err != nil {
 		Fail(fmt.Sprintf("Error cleaning up environment. Got error: %v", err))
@@ -98,7 +98,7 @@ var _ = AfterSuite(func() {
 
 	for _, deploymentObj := range testDeployments {
 		glog.V(kmmparams.KmmLogLevel).Infof("Deployment: '%s'\n", deploymentObj.Object.Name)
-		if strings.Contains(deploymentObj.Object.Name, tsparams.KmmTestHelperLabelName) {
+		if strings.Contains(deploymentObj.Object.Name, kmmparams.KmmTestHelperLabelName) {
 			glog.V(kmmparams.KmmLogLevel).Infof("Deleting deployment: '%s'\n", deploymentObj.Object.Name)
 			err = deploymentObj.DeleteAndWait(time.Minute)
 
@@ -107,7 +107,7 @@ var _ = AfterSuite(func() {
 	}
 
 	By("Delete helper clusterrolebinding")
-	svcAccount := serviceaccount.NewBuilder(APIClient, prereqName, tsparams.KmmOperatorNamespace)
+	svcAccount := serviceaccount.NewBuilder(APIClient, prereqName, kmmparams.KmmOperatorNamespace)
 	svcAccount.Exists()
 
 	crb := define.ModuleCRB(*svcAccount, prereqName)
