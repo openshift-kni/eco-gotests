@@ -185,6 +185,8 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until the original agentserviceconfig is deployed")
 
+				reqMet, msg := meets.HubInfrastructureOperandRunningRequirement()
+				Expect(reqMet).To(BeTrue(), "error waiting for hub infrastructure operand to start running: %s", msg)
 			})
 			DescribeTable("Assert valid ISO is created by InfraEnv with different cpuArchitecture",
 				func(cpuArchitecture string, payloadURL string, mismatchCPUArchitecture ...string) {

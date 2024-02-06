@@ -136,6 +136,8 @@ var _ = Describe(
 				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Second * 180)
 				Expect(err).ToNot(HaveOccurred(), "error while deploying original agentserviceconfig")
 
+				reqMet, msg := meets.HubInfrastructureOperandRunningRequirement()
+				Expect(reqMet).To(BeTrue(), "error waiting for hub infrastructure operand to start running: %s", msg)
 			})
 		})
 
