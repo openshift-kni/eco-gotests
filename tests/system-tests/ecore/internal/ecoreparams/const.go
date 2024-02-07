@@ -51,4 +51,10 @@ const (
 
 	// LabelEcoreValidateReboots is used to select tests that reboot cluster.
 	LabelEcoreValidateReboots = "ecore_validate_reboots"
+
+	// ConditionTypeReadyString constant to fix linter warning.
+	ConditionTypeReadyString = "Ready"
+
+	// ConstantTrueString constant to fix linter warning.
+	ConstantTrueString = "True"
 )

@@ -72,6 +72,7 @@ var _ = Describe(
 				for _, condition := range nncp.Object.Status.Conditions {
 					//nolint:nolintlint
 					switch condition.Type { //nolint:exhaustive
+					//nolint:goconst
 					case "Available":
 						if condition.Status != ConditionTypeTrue {
 							nonAvailableNNCP[nncp.Definition.Name] = condition.Message
