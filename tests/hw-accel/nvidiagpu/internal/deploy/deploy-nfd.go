@@ -356,8 +356,8 @@ func NFDCRDeleteAndWait(apiClient *clients.Settings, nfdCRName string, nfdCRName
 			}
 
 			if !nfdCR.Exists() {
-				glog.V(gpuparams.GpuLogLevel).Infof("NodeFeatureDiscovery instance %s in namespace %s does "+
-					"not exist", nfdCR.Object.Name, nfdCR.Object.Namespace)
+				glog.V(gpuparams.GpuLogLevel).Infof("NodeFeatureDiscovery instance '%s' in namespace '%s' does "+
+					"not exist", nfdCRName, nfdCRNamespace)
 
 				// this exists out of the wait.PollImmediate()
 				return true, nil

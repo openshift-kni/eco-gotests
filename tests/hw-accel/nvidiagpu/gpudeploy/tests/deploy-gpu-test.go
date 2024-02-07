@@ -55,7 +55,8 @@ var (
 	nfdCleanupAfterInstall bool = false
 
 	// NvidiaGPUConfig provides access to general configuration parameters.
-	nvidiaGPUConfig *nvidiagpuconfig.NvidiaGPUConfig
+	nvidiaGPUConfig  *nvidiagpuconfig.NvidiaGPUConfig
+	gpuCatalogSource = "undefined"
 )
 
 const (
@@ -74,7 +75,7 @@ const (
 	gpuOperatorDeployment     = "gpu-operator"
 	gpuSubscriptionName       = "gpu-subscription"
 	gpuSubscriptionNamespace  = "nvidia-gpu-operator"
-	gpuCatalogSource          = "certified-operators"
+	gpuCatalogSourceDefault   = "certified-operators"
 	gpuCatalogSourceNamespace = "openshift-marketplace"
 	gpuPackage                = "gpu-operator-certified"
 	gpuClusterPolicyName      = "gpu-cluster-policy"
@@ -96,6 +97,16 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				glog.V(gpuparams.GpuLogLevel).Infof("env variable ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE" +
 					" is not set, skipping test")
 				Skip("No instanceType found in environment variables, Skipping test")
+			}
+
+			if nvidiaGPUConfig.CatalogSource == "" {
+				glog.V(gpuparams.GpuLogLevel).Infof("env variable ECO_HWACCEL_NVIDIAGPU_CATALOGSOURCE"+
+					" is not set, using default GPU catalogsource '%s'", gpuCatalogSourceDefault)
+				gpuCatalogSource = gpuCatalogSourceDefault
+			} else {
+				gpuCatalogSource = nvidiaGPUConfig.CatalogSource
+				glog.V(gpuparams.GpuLogLevel).Infof("GPU catalogsource now set to env variable "+
+					"ECO_HWACCEL_NVIDIAGPU_CATALOGSOURCE value '%s'", gpuCatalogSource)
 			}
 
 			By("Check if NFD is installed")
@@ -288,7 +299,9 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				glog.V(gpuparams.GpuLogLevel).Infof("cluster architecture for GPU enabled worker node is: %s",
 					clusterArch)
 
-				By("Check if 'gpu-operator-certified' packagemanifest exists in 'certified-operators' catalog")
+				By("Check if 'gpu-operator-certified' packagemanifest exists in GPU catalog")
+				glog.V(gpuparams.GpuLogLevel).Infof("Using GPU catalogsource '%s'", gpuCatalogSource)
+
 				gpuPkgManifestBuilderByCatalog, err := olm.PullPackageManifestByCatalog(APIClient,
 					gpuPackage, gpuCatalogSourceNamespace, gpuCatalogSource)
 				Expect(err).ToNot(HaveOccurred(), "error getting GPU packagemanifest %s from catalog %s:"+

@@ -8,7 +8,8 @@ import (
 
 // NvidiaGPUConfig contains environment information related to nvidiagpu tests.
 type NvidiaGPUConfig struct {
-	InstanceType string `envconfig:"ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE"`
+	InstanceType  string `envconfig:"ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE"`
+	CatalogSource string `envconfig:"ECO_HWACCEL_NVIDIAGPU_CATALOGSOURCE"`
 }
 
 // NewNvidiaGPUConfig returns instance of NvidiaGPUConfig type.
