@@ -1,12 +1,12 @@
 package ecoreconfig
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsconfig"
@@ -104,17 +104,27 @@ type NodesBMCMap map[string]BMCDetails
 
 // Decode - method for envconfig package to parse JSON encoded environment variables.
 func (nad *NodesBMCMap) Decode(value string) error {
-	nodesAuthMap := new(map[string]BMCDetails)
+	nodesAuthMap := make(map[string]BMCDetails)
 
-	err := json.Unmarshal([]byte(value), nodesAuthMap)
+	for _, record := range strings.Split(value, ";") {
+		log.Printf("Processing: %v", record)
 
-	if err != nil {
-		log.Printf("Error to parse data %v", err)
+		parsedRecord := strings.Split(record, ",")
+		if len(parsedRecord) != 4 {
+			log.Printf("Error to parse data %v", value)
+			log.Printf("Expected 4 entries, found %d", len(parsedRecord))
 
-		return fmt.Errorf("invalid map json: %w", err)
+			return fmt.Errorf("error parsing data %v", value)
+		}
+
+		nodesAuthMap[parsedRecord[0]] = BMCDetails{
+			Username:   parsedRecord[1],
+			Password:   parsedRecord[2],
+			BMCAddress: parsedRecord[3],
+		}
 	}
 
-	*nad = *nodesAuthMap
+	*nad = nodesAuthMap
 
 	return nil
 }
