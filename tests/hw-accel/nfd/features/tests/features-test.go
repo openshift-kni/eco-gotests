@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/machine"
+
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -40,20 +42,21 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 		BeforeAll(func() {
-			cpuFlags = get.CPUFlags(APIClient, ts.Namespace)
 			By("Clear labels")
 			err := nfddelete.NfdLabelsByKeys(APIClient, "nfd.node.kubernetes.io", "feature.node.kubernetes.io")
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in cleaning labels\n %s", err))
 
 			By("Creating nfd")
 			runNodeDiscoveryAndTestLabelExistence(nfdManager, true)
+			cpuFlags = get.CPUFlags(APIClient, ts.Namespace)
 
-			labelExist, labelsError := wait.WaitForLabel(APIClient, time.Minute*5, "feature")
+			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
 			if !labelExist || labelsError != nil {
 				glog.Error("feature labels was not found in the given time error=%v", labelsError)
 			}
 
 		})
+
 		It("Check pods state", polarion.ID("54548"), func() {
 			err := helpers.CheckPodStatus(APIClient)
 			Expect(err).NotTo(HaveOccurred())
@@ -131,12 +134,13 @@ var _ = Describe("NFD", Ordered, func() {
 				ts.Namespace,
 				nfdConfig.Image)
 
-			labelExist, labelsError := wait.WaitForLabel(APIClient, time.Minute*5, "feature")
+			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
 			if !labelExist || labelsError != nil {
 				glog.Error("feature labels was not found in the given time error=%v", labelsError)
 			}
 
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
+			glog.V(ts.LogLevel).Info("Received nodelabel: %v", nodelabels)
 			Expect(err).NotTo(HaveOccurred())
 			By("Check if features exists")
 			for nodeName := range nodelabels {
@@ -163,7 +167,7 @@ var _ = Describe("NFD", Ordered, func() {
 				ts.Namespace,
 				nfdConfig.Image)
 
-			labelExist, labelsError := wait.WaitForLabel(APIClient, time.Minute*5, "feature")
+			labelExist, labelsError := wait.ForLabel(APIClient, time.Minute*15, "feature")
 			if !labelExist || labelsError != nil {
 				glog.Error("feature labels was not found in the given time error=%v", labelsError)
 			}
@@ -177,6 +181,63 @@ var _ = Describe("NFD", Ordered, func() {
 			}
 
 		})
+
+		It("Add day2 workers", polarion.ID("54539"), func() {
+			skipIfConfigNotSet(nfdConfig)
+			if !nfdConfig.AwsTest {
+				Skip("This test works only on AWS cluster." +
+					"Set ECO_HWACCEL_NFD_AWS_TESTS=true when running NFD tests against AWS cluster. ")
+			}
+
+			By("Creating machine set")
+			msBuilder := machine.NewSetBuilderFromCopy(APIClient, ts.MachineSetNamespace, ts.InstanceType,
+				ts.WorkerMachineSetLabel, ts.Replicas)
+			Expect(msBuilder).NotTo(BeNil(), "Failed to Initialize MachineSetBuilder from copy")
+
+			By("Create the new MachineSet")
+			createdMsBuilder, err := msBuilder.Create()
+
+			Expect(err).ToNot(HaveOccurred(), "error creating a machineset: %v", err)
+
+			pulledMachineSetBuilder, err := machine.PullSet(APIClient,
+				createdMsBuilder.Definition.ObjectMeta.Name,
+				ts.MachineSetNamespace)
+
+			Expect(err).ToNot(HaveOccurred(), "error pulling machineset: %v", err)
+
+			By("Wait on machineset to be ready")
+
+			err = machine.WaitForMachineSetReady(APIClient, createdMsBuilder.Definition.ObjectMeta.Name,
+				ts.MachineSetNamespace, 15*time.Minute)
+
+			Expect(err).ToNot(HaveOccurred(),
+				"Failed to detect at least one replica of MachineSet %s in Ready state during 15 min polling interval: %v",
+				pulledMachineSetBuilder.Definition.ObjectMeta.Name,
+				err)
+
+			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
+
+			Expect(err).NotTo(HaveOccurred())
+
+			By("check node readiness")
+
+			isNodeReady, err := wait.ForNodeReadiness(APIClient, 10*time.Minute, GeneralConfig.WorkerLabelMap)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(isNodeReady).To(BeTrue(), "the new node is not ready for use")
+
+			By("Check if features exists")
+			cpuFlags = get.CPUFlags(APIClient, ts.Namespace)
+			for nodeName := range nodelabels {
+				glog.V(ts.LogLevel).Infof("checking labels in %v", nodeName)
+				err = helpers.CheckLabelsExist(nodelabels, cpuFlags[nodeName], nil, nodeName)
+				Expect(err).NotTo(HaveOccurred())
+			}
+			defer func() {
+				err := pulledMachineSetBuilder.Delete()
+				Expect(err).ToNot(HaveOccurred())
+			}()
+
+		})
 	})
 })
 
@@ -187,13 +248,14 @@ func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource,
 
 		return err
 	})
+
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 
-	err = nfdManager.DeployNfd(5*int(time.Minute), enableTopology, "")
+	err = nfdManager.DeployNfd(15*int(time.Minute), enableTopology, "")
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 	By("Check that pods are in running state")
 
-	res, err := wait.WaitForPod(APIClient, ts.Namespace)
+	res, err := wait.ForPod(APIClient, ts.Namespace)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(res).To(BeTrue())
 	By("Check feature labels exists")

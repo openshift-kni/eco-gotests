@@ -41,7 +41,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 		podWorker.Definition.Spec.Containers = make([]v1.Container, 0)
 		podWorker.Definition.Spec.Containers = append(podWorker.Definition.Spec.Containers, *container)
 		podWorker.Definition.Spec.RestartPolicy = v1.RestartPolicyNever
-		podWorker.Definition.Spec.NodeName = nodeName
+		podWorker.Definition.Spec.NodeName = strings.ReplaceAll(nodeName, ".", "")
 		podWorker.Definition.Spec.NodeSelector = map[string]string{"node-role.kubernetes.io/worker": ""}
 
 		_, err = podWorker.Create()

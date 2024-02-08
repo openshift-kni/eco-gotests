@@ -367,6 +367,14 @@ func (n *NfdAPIResource) removeResource(resourceName string,
 	case NodeFeatureDiscovery:
 		nfdbuilder, err = nodefeature.Pull(n.APIClients,
 			resourceName, n.Namespace)
+		if err != nil {
+			return err
+		}
+
+		if nfdbuilder == nil {
+			return fmt.Errorf("resource %v not found", resourceName)
+		}
+
 		nfdbuilder.Definition.Finalizers = []string{}
 		_, updateErr := nfdbuilder.Update(true)
 

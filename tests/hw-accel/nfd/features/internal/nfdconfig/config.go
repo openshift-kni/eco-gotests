@@ -11,6 +11,7 @@ type NfdConfig struct {
 	SubscriptionName string `envconfig:"ECO_HWACCEL_NFD_SUBSCRIPTION_NAME"`
 	Image            string `envconfig:"ECO_HWACCEL_NFD_CR_IMAGE"`
 	CatalogSource    string `envconfig:"ECO_HWACCEL_NFD_CATALOG_SOURCE"`
+	AwsTest          bool   `envconfig:"ECO_HWACCEL_NFD_AWS_TESTS"`
 }
 
 // NewNfdConfig returns instance of NfdConfig type.

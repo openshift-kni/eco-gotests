@@ -73,4 +73,16 @@ var (
 		"nfd-topology",
 		"nfd-worker",
 	}
+
+	// MachineSetNamespace machineset namespace .
+	MachineSetNamespace = "openshift-machine-api"
+
+	// Replicas number of machine replicas.
+	Replicas int32 = 1
+
+	// WorkerMachineSetLabel macjine set label.
+	WorkerMachineSetLabel = "machine.openshift.io/cluster-api-machine-role"
+
+	// InstanceType AWS machine type.
+	InstanceType = "m6a.large"
 )
