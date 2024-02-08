@@ -99,3 +99,47 @@ func ListClusterServiceVersionWithNamePattern(
 
 	return finalCsvList, nil
 }
+
+// ListClusterServiceVersionInAllNamespaces returns cluster-wide clusterserviceversion inventory.
+func ListClusterServiceVersionInAllNamespaces(
+	apiClient *clients.Settings,
+	options ...metaV1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
+	passedOptions := metaV1.ListOptions{}
+	logMessage := "Listing CSVs in all namespaces"
+
+	if len(options) > 1 {
+		glog.V(100).Infof("'options' parameter must be empty or single-valued")
+
+		return nil, fmt.Errorf("error: more than one ListOptions was passed")
+	}
+
+	if len(options) == 1 {
+		passedOptions = options[0]
+		logMessage += fmt.Sprintf(" with the options %v", passedOptions)
+	}
+
+	glog.V(100).Infof(logMessage)
+
+	csvList, err := apiClient.ClusterServiceVersions("").List(context.Background(), passedOptions)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to list CSVs in all namespaces due to %s", err.Error())
+
+		return nil, err
+	}
+
+	var csvObjects []*ClusterServiceVersionBuilder
+
+	for _, csvs := range csvList.Items {
+		copiedCSV := csvs
+		csvBuilder := &ClusterServiceVersionBuilder{
+			apiClient:  apiClient,
+			Object:     &copiedCSV,
+			Definition: &copiedCSV,
+		}
+
+		csvObjects = append(csvObjects, csvBuilder)
+	}
+
+	return csvObjects, nil
+}

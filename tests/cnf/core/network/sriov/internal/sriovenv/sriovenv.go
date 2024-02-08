@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 
@@ -91,6 +93,40 @@ func WaitUntilVfsCreated(
 			})
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+// IsSriovDeployed checks SR-IOV deployment in the cluster.
+// Returns nil if SR-IOV is deployed & daemonsets are ready, else returns an error.
+func IsSriovDeployed() error {
+	glog.V(90).Infof("Validating all SR-IOV operator resources are ready")
+
+	sriovNS := namespace.NewBuilder(APIClient, NetConfig.SriovOperatorNamespace)
+	if !sriovNS.Exists() {
+		glog.V(90).Infof("SR-IOV operator namespace doesn't exist")
+
+		return fmt.Errorf("error SR-IOV namespace %s doesn't exist", sriovNS.Definition.Name)
+	}
+
+	for _, sriovDaemonsetName := range tsparams.OperatorSriovDaemonsets {
+		glog.V(90).Infof("Validating daemonset %s exists and ready", sriovDaemonsetName)
+		sriovDaemonset, err := daemonset.Pull(
+			APIClient, sriovDaemonsetName, NetConfig.SriovOperatorNamespace)
+
+		if err != nil {
+			glog.V(90).Infof("Pulling daemonset %s failed", sriovDaemonsetName)
+
+			return fmt.Errorf("error to pull SR-IOV daemonset %s from cluster: %s", sriovDaemonsetName, err.Error())
+		}
+
+		if !sriovDaemonset.IsReady(3 * time.Minute) {
+			glog.V(90).Infof("Daemonset %s is not ready", sriovDaemonsetName)
+
+			return fmt.Errorf("error SR-IOV deployment %s is not in ready/ready state",
+				sriovDaemonsetName)
 		}
 	}
 

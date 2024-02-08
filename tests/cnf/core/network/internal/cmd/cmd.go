@@ -30,7 +30,7 @@ func ICMPConnectivityCheck(clientPod *pod.Builder, destIPAddresses []string) err
 
 		output, err := clientPod.ExecCommand([]string{"bash", "-c", TestCmdIcmpCommand})
 		if err != nil {
-			return fmt.Errorf("ICMP connectivity failed: %s", output.String())
+			return fmt.Errorf("ICMP connectivity failed: %s/nerror: %w", output.String(), err)
 		}
 	}
 

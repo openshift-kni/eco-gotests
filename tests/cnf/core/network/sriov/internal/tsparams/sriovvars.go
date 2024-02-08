@@ -49,4 +49,12 @@ var (
 	ClientMacAddress = "20:04:0f:f1:88:01"
 	// ServerMacAddress represents the test server MacAddress.
 	ServerMacAddress = "20:04:0f:f1:88:02"
+	// OperatorConfigDaemon defaults SR-IOV config daemon daemonset.
+	OperatorConfigDaemon = "sriov-network-config-daemon"
+	// OperatorWebhook defaults SR-IOV webhook daemonset.
+	OperatorWebhook = "operator-webhook"
+	// OperatorResourceInjector defaults SR-IOV network resource injector daemonset.
+	OperatorResourceInjector = "network-resources-injector"
+	// OperatorSriovDaemonsets represents all default SR-IOV operator daemonset names.
+	OperatorSriovDaemonsets = []string{OperatorConfigDaemon, OperatorWebhook, OperatorResourceInjector}
 )

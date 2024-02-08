@@ -7,16 +7,19 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
+	"github.com/openshift-kni/eco-goinfra/pkg/webhook"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
@@ -238,6 +241,44 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					return []int{currentmaxTxRate, currentVlanID}
 				}, time.Minute, tsparams.RetryInterval).Should(And(Equal([]int{defaultMaxTxRate, defaultVlanID})),
 					"MaxTxRate and VlanId configurations have not been reverted to the initial one")
+
+				By("Configure SR-IOV with flag ExternallyManaged true")
+				createSriovConfiguration(sriovAndResourceNameExManagedTrue, sriovInterfacesUnderTest[0], true)
+			})
+
+			It("SR-IOV operator removal", polarion.ID("63537"), func() {
+				By("Creating test pods and checking connectivity")
+				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					sriovAndResourceNameExManagedTrue, "", "",
+					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+
+				By("Collecting info about installed SR-IOV operator")
+				sriovNamespace, sriovOperatorgroup, sriovSubscription := collectingInfoSriovOperator()
+
+				By("Removing SR-IOV operator")
+				removeSriovOperator(sriovNamespace)
+				Expect(sriovenv.IsSriovDeployed()).To(HaveOccurred(), "SR-IOV operator is not removed")
+
+				By("Installing SR-IOV operator")
+				installSriovOperator(sriovNamespace, sriovOperatorgroup, sriovSubscription)
+				Eventually(sriovenv.IsSriovDeployed, time.Minute, tsparams.RetryInterval).
+					ShouldNot(HaveOccurred(), "SR-IOV operator is not installed")
+
+				By("Verifying that VFs still exist after SR-IOV operator reinstallation")
+				err := netnmstate.AreVFsCreated(workerNodeList[0].Object.Name, sriovInterfacesUnderTest[0], 5)
+				Expect(err).ToNot(HaveOccurred(), "VFs were removed after SR-IOV operator reinstallation")
+
+				By("Configure SR-IOV with flag ExternallyManage true")
+				createSriovConfiguration(sriovAndResourceNameExManagedTrue, sriovInterfacesUnderTest[0], true)
+
+				By("Recreating test pods and checking connectivity")
+				err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+					netparam.DefaultTimeout, pod.GetGVR())
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove test pods")
+
+				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					sriovAndResourceNameExManagedTrue, "", "",
+					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 			})
 
 		})
@@ -470,6 +511,88 @@ func getVlanIDAndMaxTxRateForVf(nodeName, sriovInterfaceName string) (maxTxRate,
 	Expect(err).ToNot(HaveOccurred(), "Failed to get all SR-IOV VFs")
 
 	return *sriovVfs[0].MaxTxRate, *sriovVfs[0].VlanID
+}
+
+func collectingInfoSriovOperator() (
+	sriovNamespace *namespace.Builder,
+	sriovOperatorGroup *olm.OperatorGroupBuilder,
+	sriovSubscription *olm.SubscriptionBuilder) {
+	sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
+	sriovOg, err := olm.PullOperatorGroup(APIClient, "sriov-network-operators", NetConfig.SriovOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV OperatorGroup")
+	sriovSub, err := olm.PullSubscription(
+		APIClient,
+		"sriov-network-operator-subscription",
+		NetConfig.SriovOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull sriov-network-operator-subscription")
+
+	return sriovNs, sriovOg, sriovSub
+}
+
+func removeSriovOperator(sriovNamespace *namespace.Builder) {
+	By("Clean all SR-IOV policies and networks")
+
+	err := sriovNamespace.CleanObjects(
+		tsparams.DefaultTimeout,
+		sriov.GetSriovNetworksGVR())
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from SR-IOV operator namespace")
+
+	err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+
+	By("Removing SR-IOV webhooks")
+
+	injectorWebhook, err := webhook.PullMutatingConfiguration(APIClient, "network-resources-injector-config")
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull network-resources-injector-config webhook")
+	_, err = injectorWebhook.Delete()
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete network-resources-injector-config webhook")
+
+	sriovMutatingWebhook, err := webhook.PullMutatingConfiguration(APIClient, "sriov-operator-webhook-config")
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull sriov-operator-webhook-config MutatingWebhook")
+	_, err = sriovMutatingWebhook.Delete()
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete sriov-operator-webhook-config MutatingWebhook")
+
+	sriovValidatingWebhook, err := webhook.PullValidatingConfiguration(APIClient, "sriov-operator-webhook-config")
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull sriov-operator-webhook-config ValidatingWebhook")
+	_, err = sriovValidatingWebhook.Delete()
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete sriov-operator-webhook-config ValidatingWebhook")
+
+	By("Removing SR-IOV namespace")
+
+	err = sriovNamespace.DeleteAndWait(tsparams.DefaultTimeout)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+		"Failed to delete SR-IOV namespace %s", NetConfig.SriovOperatorNamespace))
+}
+
+func installSriovOperator(sriovNamespace *namespace.Builder,
+	sriovOperatorGroup *olm.OperatorGroupBuilder,
+	sriovSubscription *olm.SubscriptionBuilder) {
+	By("Creating SR-IOV operator namespace")
+
+	sriovNs := namespace.NewBuilder(APIClient, sriovNamespace.Definition.Name)
+	_, err := sriovNs.Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create SR-IOV namespace %s", sriovNs.Definition.Name))
+
+	By("Creating SR-IOV OperatorGroup")
+
+	sriovOg := olm.NewOperatorGroupBuilder(
+		APIClient,
+		sriovOperatorGroup.Definition.Name,
+		sriovOperatorGroup.Definition.Namespace)
+	_, err = sriovOg.Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create SR-IOV OperatorGroup %s", sriovOg.Definition.Name))
+
+	By("Creating SR-IOV operator Subscription")
+
+	sriovSub := olm.NewSubscriptionBuilder(
+		APIClient, sriovSubscription.Definition.Name,
+		sriovSubscription.Definition.Namespace,
+		sriovSubscription.Definition.Spec.CatalogSource,
+		sriovSubscription.Definition.Spec.CatalogSourceNamespace,
+		sriovSubscription.Definition.Spec.Package)
+	_, err = sriovSub.Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create SR-IOV Subscription %s", sriovSub.Definition.Name))
 }
 
 func getVfsUnderTest(busyVfs []string) []string {
