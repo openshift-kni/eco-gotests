@@ -310,7 +310,7 @@ var _ = Describe(
 					for _, condition := range currentNode.Object.Status.Conditions {
 						if condition.Type == ecoreparams.ConditionTypeReadyString {
 							if condition.Status == ecoreparams.ConstantTrueString {
-								glog.V(ecoreparams.ECoreLogLevel).Infof("Node %q is notReady", currentNode.Definition.Name)
+								glog.V(ecoreparams.ECoreLogLevel).Infof("Node %q is Ready", currentNode.Definition.Name)
 								glog.V(ecoreparams.ECoreLogLevel).Infof("  Reason: %s", condition.Reason)
 
 								return true
