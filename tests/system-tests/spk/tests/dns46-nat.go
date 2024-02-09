@@ -326,7 +326,7 @@ var _ = Describe(
 			for _, _pod := range appPods {
 				By("Running DNS resolution from within a pod")
 
-				cmdDig := fmt.Sprintf("dig -t A %s", SPKConfig.WorkloadTestURL)
+				cmdDig := fmt.Sprintf("dig +short -t A %s", SPKConfig.WorkloadTestURL)
 
 				Eventually(func(cmd string, mpod *pod.Builder) bool {
 					glog.V(spkparams.SPKLogLevel).Infof("Running %q from within a pod %s", cmd, mpod.Definition.Name)
@@ -339,7 +339,7 @@ var _ = Describe(
 					}
 					glog.V(spkparams.SPKLogLevel).Infof("Command's Output:\n%v\n", output.String())
 
-					return true
+					return output.String() != ""
 				}).WithContext(ctx).WithArguments(cmdDig, _pod).WithPolling(5*time.Second).WithTimeout(
 					5*time.Minute).Should(BeTrue(),
 					fmt.Sprintf("Command %q from within a pod failed", cmdDig))
@@ -475,12 +475,16 @@ var _ = Describe(
 			}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 				"Not enough application pods found")
 
+			appPods, err = pod.List(APIClient, SPKConfig.Namespace,
+				metav1.ListOptions{LabelSelector: "app=mttool"})
+			Expect(err).ToNot(HaveOccurred(), "Failed to get application pods")
+
 			By("Asserting DNS/NAT46 from new set of application pods")
 
 			for _, _pod := range appPods {
 				By("Running DNS resolution from within a pod")
 
-				cmdDig := fmt.Sprintf("dig -t A %s", SPKConfig.WorkloadTestURL)
+				cmdDig := fmt.Sprintf("dig +short -t A %s", SPKConfig.WorkloadTestURL)
 
 				Eventually(func(cmd string, mpod *pod.Builder) bool {
 					glog.V(spkparams.SPKLogLevel).Infof("Running %q from within a pod %s", cmd, mpod.Definition.Name)
@@ -493,7 +497,7 @@ var _ = Describe(
 					}
 					glog.V(spkparams.SPKLogLevel).Infof("Command's Output:\n%v\n", output.String())
 
-					return true
+					return output.String() != ""
 				}).WithContext(ctx).WithArguments(cmdDig, _pod).WithPolling(5*time.Second).WithTimeout(
 					5*time.Minute).Should(BeTrue(),
 					fmt.Sprintf("Command %q from within a pod failed", cmdDig))
@@ -531,22 +535,22 @@ var _ = Describe(
 					glog.V(spkparams.SPKLogLevel).Infof("Trying to reach endpoint %q via F5SPKIngressTCP", _url)
 
 					By("Checking workload via SPK F5SPKIngressTCP")
-					Eventually(func(furl string) bool {
-						result, _, err := url.Fetch(furl, "GET")
+					Eventually(func(furl string) int {
+						result, statusCode, err := url.Fetch(furl, "GET")
 						if err != nil {
 							glog.V(spkparams.SPKLogLevel).Infof("Failed to reach endpoint %q due to %v",
 								furl, err)
 
-							return false
+							return 1
 						}
 
 						glog.V(spkparams.SPKLogLevel).Infof("Successfully reached endpoint %q. Result:\n%v",
 							furl, result)
 
-						return true
+						return statusCode
 
 					}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(3*time.Minute).WithArguments(_url).Should(
-						BeTrue(), fmt.Sprintf("Failed to reach workload %q via F5SPKIngressTCP", _url))
+						BeElementOf(200, 404), fmt.Sprintf("Failed to reach workload %q via F5SPKIngressTCP", _url))
 				}
 			}
 
