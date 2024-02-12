@@ -174,6 +174,7 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 			foundLabels := 0
 
 			for _, node := range nodeBuilder {
+				glog.V(kmmparams.KmmLogLevel).Infof("%v", node.Object.Labels)
 				_, ok := node.Object.Labels[label]
 				if ok {
 					glog.V(kmmparams.KmmLogLevel).Infof("Found label %v that contains %v on node %v",
