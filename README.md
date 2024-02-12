@@ -27,7 +27,7 @@ The  [eco-gotests](https://github.com/openshift-kni/eco-gotests) is designed to 
 * Single Node Cluster (VM or BM)
 * Public cloud (AWS)
 
-**WARNING!**: [eco-gotests](https://github.com/openshift-kni/eco-gotests) removes existing configuration such as
+**WARNING!**: Some test suites of the [eco-gotests](https://github.com/openshift-kni/eco-gotests) framework remove existing configuration such as
 PtpConfig, SR-IOV, SriovFecClusterConfig configs .
 
 ### General environment variables
@@ -152,12 +152,6 @@ The project uses a development method - forking workflow
     │   │   └── compute                    # compute test suites folder
     │   ├── external                       # external test cases from partners
     │   └── system                         # system group test folder
-    ├── pkg                                # utils packages that later will be upstreamed
-    │   ├── client
-    │   ├── config
-    │   ├── node
-    │   ├── namespace
-    │   └── pod
     └── vendors                            # Dependencies folder 
 ### Code conventions
 #### Lint
