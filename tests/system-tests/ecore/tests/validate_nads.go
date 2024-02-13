@@ -123,6 +123,23 @@ var _ = Describe(
 					}
 				})
 
+				AfterEach(func() {
+					By("Cleaning ServiceAccount")
+					if sAccount, err := serviceaccount.Pull(
+						APIClient,
+						ECoreConfig.NADWlkdOnePCCSa,
+						ECoreConfig.NamespacePCC); err == nil {
+
+						glog.V(ecoreparams.ECoreLogLevel).Infof("Deleting SA %q from %q ns",
+							ECoreConfig.NADWlkdOnePCCSa, ECoreConfig.NamespacePCC)
+
+						err := sAccount.Delete()
+						Expect(err).ToNot(HaveOccurred(),
+							fmt.Sprintf("Failed to delete SA %q from %q ns",
+								ECoreConfig.NADWlkdOnePCCSa, ECoreConfig.NamespacePCC))
+					}
+				})
+
 				// Remove deployment
 				BeforeEach(func(ctx SpecContext) {
 					By("Asserting deployments do not exist")
@@ -151,9 +168,49 @@ var _ = Describe(
 					}
 				})
 
+				AfterEach(func(ctx SpecContext) {
+					By("Cleaning existing deployments")
+					for _, dName := range []string{ECoreConfig.NADWlkdDeployOnePCCName, ECoreConfig.NADWlkdDeployTwoPCCName} {
+						deploy, _ := deployment.Pull(APIClient, dName, ECoreConfig.NamespacePCC)
+						if deploy != nil {
+							glog.V(ecoreparams.ECoreLogLevel).Infof("Existing deployment %q found. Removing...", dName)
+							err := deploy.DeleteAndWait(300 * time.Second)
+							Expect(err).ToNot(HaveOccurred(),
+								fmt.Sprintf("failed to delete deployment %q", dName))
+						}
+					}
+
+					By("Asserting pods from deployments are gone")
+					labelsWlkdOne := "systemtest-test=ecore-wlkd-macvlan-one"
+					labelsWlkdTwo := "systemtest-test=ecore-wlkd-macvlan-two"
+
+					for _, label := range []string{labelsWlkdOne, labelsWlkdTwo} {
+						Eventually(func() bool {
+							oldPods, _ := pod.List(APIClient, ECoreConfig.NamespacePCC,
+								metav1.ListOptions{LabelSelector: label})
+
+							return len(oldPods) == 0
+
+						}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label(s) still present")
+					}
+				})
+
 				// Remove Cluster Role Binding
 				BeforeEach(func() {
 					By("Removing ClusterRoleBinding")
+					glog.V(ecoreparams.ECoreLogLevel).Infof("Assert ClusterRoleBinding %q exists", rbacName)
+
+					if crb, err := rbac.PullClusterRoleBinding(APIClient, rbacName); err == nil {
+						glog.V(ecoreparams.ECoreLogLevel).Infof("ClusterRoleBinding %q found. Removing...", rbacName)
+						err := crb.Delete()
+						Expect(err).ToNot(HaveOccurred(),
+							fmt.Sprintf("Failed to delete ClusterRoleBinding %q", rbacName))
+
+					}
+				})
+
+				AfterEach(func() {
+					By("Cleaning ClusterRoleBinding")
 					glog.V(ecoreparams.ECoreLogLevel).Infof("Assert ClusterRoleBinding %q exists", rbacName)
 
 					if crb, err := rbac.PullClusterRoleBinding(APIClient, rbacName); err == nil {

@@ -145,6 +145,36 @@ var _ = Describe(
 
 			}) // BeforeAll
 
+			AfterAll(func(ctx SpecContext) {
+				By("Removing test deployments")
+				for _, dName := range []string{ECoreConfig.WlkdSRIOVDeployOneName, ECoreConfig.WlkdSRIOVDeployTwoName} {
+					deploy, err := deployment.Pull(APIClient, dName, ECoreConfig.NamespacePCG)
+					if deploy != nil && err == nil {
+						glog.V(ecoreparams.ECoreLogLevel).Infof("Deployment %q found in %q namespace. Deleting...",
+							deploy.Definition.Name, ECoreConfig.NamespacePCG)
+
+						err := deploy.DeleteAndWait(300 * time.Second)
+						Expect(err).ToNot(HaveOccurred(),
+							fmt.Sprintf("failed to delete deployment %q", dName))
+
+					}
+				}
+
+				By("Asserting pods from deployments are gone")
+				labelsWlkdOne := labelsWlkdOneString
+				labelsWlkdTwo := labelsWlkdTwoString
+
+				for _, label := range []string{labelsWlkdOne, labelsWlkdTwo} {
+					Eventually(func() bool {
+						oldPods, _ := pod.List(APIClient, ECoreConfig.NamespacePCG,
+							metav1.ListOptions{LabelSelector: label})
+
+						return len(oldPods) == 0
+
+					}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label(s) still present")
+				}
+			})
+
 			Context("Different SR-IOV networks", func() {
 				It("Assert SR-IOV workloads on the same node", func(ctx SpecContext) {
 
