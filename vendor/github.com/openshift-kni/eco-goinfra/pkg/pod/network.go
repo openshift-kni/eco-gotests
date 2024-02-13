@@ -4,6 +4,13 @@ import (
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 )
 
+// StaticAnnotation defines network annotation for pod object.
+func StaticAnnotation(name string) *multus.NetworkSelectionElement {
+	return &multus.NetworkSelectionElement{
+		Name: name,
+	}
+}
+
 // StaticIPAnnotation defines static ip address network annotation for pod object.
 func StaticIPAnnotation(name string, ipAddr []string) []*multus.NetworkSelectionElement {
 	return []*multus.NetworkSelectionElement{
@@ -57,4 +64,19 @@ func StaticIPAnnotationWithInterfaceMacAndNamespace(
 	baseAnnotation[0].InterfaceRequest = intName
 
 	return baseAnnotation
+}
+
+// StaticIPBondAnnotationWithInterface defines static name for bonded interfaces and name, interface and IP for the
+// main bond int.
+func StaticIPBondAnnotationWithInterface(
+	bondNadName, bondIntName string, sriovNetworkNameList, ipAddrBond []string) []*multus.NetworkSelectionElement {
+	annotation := []*multus.NetworkSelectionElement{}
+	for _, sriovNetName := range sriovNetworkNameList {
+		annotation = append(annotation, StaticAnnotation(sriovNetName))
+	}
+
+	bond := StaticIPAnnotation(bondNadName, ipAddrBond)
+	bond[0].InterfaceRequest = bondIntName
+
+	return append(annotation, bond[0])
 }
