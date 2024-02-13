@@ -103,7 +103,7 @@ var _ = Describe(
 			glog.V(ecoreparams.ECoreLogLevel).Infof("\t* Isolated CPU config: %#v", *perfProfile.Definition.Spec.CPU.Isolated)
 			glog.V(ecoreparams.ECoreLogLevel).Infof("\t* Reserved CPU config: %#v", *perfProfile.Definition.Spec.CPU.Reserved)
 
-			By(fmt.Sprintf("Getting pods in %s NS", ecoreparams.MachineConfigOperatorNS))
+			By(fmt.Sprintf("Getting pods in %s NS", ECoreConfig.MCONamespace))
 			var mcPods []*pod.Builder
 
 			for _, htNode := range htNodes {
@@ -116,7 +116,7 @@ var _ = Describe(
 					FieldSelector: fmt.Sprintf("spec.nodeName=%s", nodeName),
 				}
 
-				tmpPods, err := pod.List(APIClient, ecoreparams.MachineConfigOperatorNS, podSelector)
+				tmpPods, err := pod.List(APIClient, ECoreConfig.MCONamespace, podSelector)
 				Expect(err).ToNot(HaveOccurred(), "Failed to find pods")
 				Expect(len(tmpPods)).To(Equal(1), "More then 1 pod found")
 
@@ -176,7 +176,7 @@ var _ = Describe(
 					hugePagesRequested += int(hugePageValue.Count)
 				}
 
-				By(fmt.Sprintf("Getting pods in %s NS", ecoreparams.MachineConfigOperatorNS))
+				By(fmt.Sprintf("Getting pods in %s NS", ECoreConfig.MCONamespace))
 				var mcPods []*pod.Builder
 
 				for _, htNode := range htNodes {
@@ -189,7 +189,7 @@ var _ = Describe(
 						FieldSelector: fmt.Sprintf("spec.nodeName=%s", nodeName),
 					}
 
-					tmpPods, err := pod.List(APIClient, ecoreparams.MachineConfigOperatorNS, podSelector)
+					tmpPods, err := pod.List(APIClient, ECoreConfig.MCONamespace, podSelector)
 					Expect(err).ToNot(HaveOccurred(), "Failed to find pods")
 					Expect(len(tmpPods)).To(Equal(1), "More then 1 pod found")
 

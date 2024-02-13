@@ -21,7 +21,7 @@ var (
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
 		NetConfig.SriovOperatorNamespace: NetConfig.SriovOperatorNamespace,
-		"openshift-multus":               "openshift-multus",
+		NetConfig.MultusNamesapce:        NetConfig.MultusNamesapce,
 		TestNamespaceName:                "other",
 	}
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

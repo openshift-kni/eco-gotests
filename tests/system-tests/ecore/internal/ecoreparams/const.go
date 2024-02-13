@@ -7,14 +7,8 @@ const (
 	// MachineConfidDaemonPodSelector is a a label selector for all machine-config-daemon pods.
 	MachineConfidDaemonPodSelector = "k8s-app=machine-config-daemon"
 
-	// MachineConfigOperatorNS namespace for Machine Config Operator.
-	MachineConfigOperatorNS = "openshift-machine-config-operator"
-
 	// MachineConfigDaemonContainerName container name within machine-config-daemon pod.
 	MachineConfigDaemonContainerName = "machine-config-daemon"
-
-	// SRIOVOperatorNS namespace where SR-IOV operator is installed.
-	SRIOVOperatorNS = "openshift-sriov-network-operator"
 
 	// LabelEcoreValidateNAD is used to select all tests for network-attachment-definition validation.
 	LabelEcoreValidateNAD = "ecore_validate_nad"
@@ -45,9 +39,6 @@ const (
 
 	// NMStateInstanceName is a name of the NMState instance.
 	NMStateInstanceName = "nmstate"
-
-	// NMStateNS namespace for OpensShift-NMState operator.
-	NMStateNS = "openshift-nmstate"
 
 	// LabelEcoreValidateReboots is used to select tests that reboot cluster.
 	LabelEcoreValidateReboots = "ecore_validate_reboots"

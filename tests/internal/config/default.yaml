@@ -11,4 +11,6 @@ control_plane_label: "control-plane"
 polarion_tc_prefix: "OCP-"
 mco_namespace: "openshift-machine-config-operator"
 mco_config_daemon_name: "machine-config-daemon"
+sriov_operator_namespace: "openshift-sriov-network-operator"
+nmstate_operator_namespace: "openshift-nmstate"
 ...

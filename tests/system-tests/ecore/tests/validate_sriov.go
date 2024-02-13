@@ -31,8 +31,8 @@ var _ = Describe(
 			It("Asserts SR-IOV network(s) exist", func() {
 
 				glog.V(ecoreparams.ECoreLogLevel).Infof(fmt.Sprintf("Listing SR-IOV networks in %q ns",
-					ecoreparams.SRIOVOperatorNS))
-				sriovNetworks, err := sriov.List(APIClient, ecoreparams.SRIOVOperatorNS, metav1.ListOptions{})
+					ECoreConfig.SriovOperatorNamespace))
+				sriovNetworks, err := sriov.List(APIClient, ECoreConfig.SriovOperatorNamespace, metav1.ListOptions{})
 				Expect(err).ToNot(HaveOccurred(), "Failed to list SR-IOV networks")
 				Expect(len(sriovNetworks)).ToNot(Equal(0), "Found 0 SR-IOV networks")
 				for _, net := range sriovNetworks {

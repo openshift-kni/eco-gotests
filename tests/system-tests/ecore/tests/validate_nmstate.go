@@ -24,12 +24,12 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(ecoreparams.LabelEcoreValidateNmstate), func() {
-		It(fmt.Sprintf("Verifies %s namespace exists", ecoreparams.NMStateNS), func() {
+		It(fmt.Sprintf("Verifies %s namespace exists", ECoreConfig.NMStateOperatorNamespace), func() {
 			glog.V(ecoreparams.ECoreLogLevel).Infof(
-				fmt.Sprintf("Verify namespace %q exists", ecoreparams.NMStateNS))
+				fmt.Sprintf("Verify namespace %q exists", ECoreConfig.NMStateOperatorNamespace))
 
-			_, err := namespace.Pull(APIClient, ecoreparams.NMStateNS)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", ecoreparams.NMStateNS))
+			_, err := namespace.Pull(APIClient, ECoreConfig.NMStateOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", ECoreConfig.NMStateOperatorNamespace))
 		})
 
 		It("Verifies NMState instance exists", func() {
@@ -42,14 +42,14 @@ var _ = Describe(
 
 		It("Verifies all pods are running", func() {
 			glog.V(ecoreparams.ECoreLogLevel).Infof(
-				fmt.Sprintf("Verify all pods in namespace %q are running", ecoreparams.NMStateNS))
+				fmt.Sprintf("Verify all pods in namespace %q are running", ECoreConfig.NMStateOperatorNamespace))
 
 			podsRunning, err := pod.WaitForAllPodsInNamespaceRunning(APIClient,
-				ecoreparams.NMStateNS, 3*time.Minute, metav1.ListOptions{})
+				ECoreConfig.NMStateOperatorNamespace, 3*time.Minute, metav1.ListOptions{})
 			Expect(podsRunning).To(BeTrue(),
-				fmt.Sprintf("Some pods in %q namespace ain't running", ecoreparams.NMStateNS))
+				fmt.Sprintf("Some pods in %q namespace ain't running", ECoreConfig.NMStateOperatorNamespace))
 			Expect(err).ToNot(HaveOccurred(),
-				fmt.Sprintf("Error checking pods in %s namespace", ecoreparams.NMStateNS))
+				fmt.Sprintf("Error checking pods in %s namespace", ECoreConfig.NMStateOperatorNamespace))
 		})
 
 		It("Verifies all NodeNetworkConfigurationPolicies are Available", func() {
