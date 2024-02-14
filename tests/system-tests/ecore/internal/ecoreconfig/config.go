@@ -71,6 +71,7 @@ type ECoreConfig struct {
 	WlkdSRIOVDeployOneCmd []string `yaml:"ecore_wlkd_sriov_one_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_ONE_CMD"`
 	WlkdSRIOVDeployTwoCmd []string `yaml:"ecore_wlkd_sriov_two_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_TWO_CMD"`
 
+	KernelModulesMap map[string][]string `yaml:"ecore_kernel_modules_map" envconfig:"ECO_SYSTEM_KERNEL_MODULES_MAP"`
 	//nolint:lll
 	WlkdSRIOVDeployOneSelector map[string]string `yaml:"ecore_wlkd_sriov_one_selector" envconfig:"ECO_SYSTEM_WLKD_SRIOV_ONE_SELECTOR"`
 	//nolint:lll
