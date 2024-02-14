@@ -44,7 +44,7 @@ var _ = Describe(
 				}
 
 				By("Check that rootfs was not passed via osImages")
-				for _, osImage := range ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages {
+				for _, osImage := range ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages {
 					if osImage.OpenshiftVersion == ZTPConfig.HubOCPXYVersion && osImage.RootFSUrl != "" {
 						Skip("RootFSUrl was provided through osImages")
 					}

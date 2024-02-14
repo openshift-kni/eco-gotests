@@ -35,10 +35,10 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 				By("Initialize osImage variable for the test from the original AgentServiceConfig")
-				osImageUR = ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages
+				osImageUR = ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages
 
 				By("Delete the pre-existing AgentServiceConfig")
-				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 10)
+				err = ZTPConfig.HubAgentServiceConfig.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
 
 			})
@@ -49,10 +49,10 @@ var _ = Describe(
 			})
 			AfterAll(func() {
 				By("Re-create the original AgentServiceConfig after all tests")
-				_, err = ZTPConfig.HubAgentServiceConfg.Create()
+				_, err = ZTPConfig.HubAgentServiceConfig.Create()
 				Expect(err).ToNot(HaveOccurred(), "error re-creating the original agentserviceconfig after all tests")
 
-				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Minute * 10)
+				_, err = ZTPConfig.HubAgentServiceConfig.WaitUntilDeployed(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until the original agentserviceconfig is deployed")
 
@@ -84,7 +84,7 @@ var _ = Describe(
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
 
-					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
+					unAuthenticatedRegistriesDefaultEntries(configMapBuilder)
 				})
 
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing a default entry",
@@ -113,7 +113,7 @@ var _ = Describe(
 					Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf(
 						"failed to get configmap %s in namespace %s", assistedConfigMapName, tsparams.MCENameSpace))
 
-					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
+					unAuthenticatedRegistriesDefaultEntries(configMapBuilder)
 				})
 
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing a specific entry",
@@ -152,7 +152,7 @@ var _ = Describe(
 						errorVerifyingMsg+unAuthenticatedNonDefaultRegistriesList()[0]+
 							"\" is listed among unauthenticated registries by default")
 
-					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
+					unAuthenticatedRegistriesDefaultEntries(configMapBuilder)
 				})
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing multiple entries",
 				polarion.ID("56555"), func() {
@@ -193,7 +193,7 @@ var _ = Describe(
 							errorVerifyingMsg+registry+
 								"\" is listed among unauthenticated registries")
 					}
-					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
+					unAuthenticatedRegistriesDefaultEntries(configMapBuilder)
 				})
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing an incorrect entry",
 				polarion.ID("56556"), func() {
@@ -229,7 +229,7 @@ var _ = Describe(
 						errorVerifyingMsg+incorrectRegistry+
 							"\" is listed among unauthenticated registries by default")
 
-					unAuthentcatedRegistriesDefaultEntries(configMapBuilder)
+					unAuthenticatedRegistriesDefaultEntries(configMapBuilder)
 				})
 		})
 	})
@@ -251,9 +251,9 @@ func unAuthenticatedNonDefaultRegistriesList() []string {
 	}
 }
 
-// unAuthentcatedRegistriesDefaultEntries verifies the existence of default registries
+// unAuthenticatedRegistriesDefaultEntries verifies the existence of default registries
 // in the assisted-service configmap.
-func unAuthentcatedRegistriesDefaultEntries(configMapBuilder *configmap.Builder) {
+func unAuthenticatedRegistriesDefaultEntries(configMapBuilder *configmap.Builder) {
 	for _, registry := range unAuthenticatedDefaultRegistriesList() {
 		By(verifyPublicContainerRegistriesMsg + registry +
 			"\" in the " + assistedConfigMapName + " configmap by default")

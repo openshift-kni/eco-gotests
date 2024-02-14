@@ -15,8 +15,8 @@ type AssistedConfig struct {
 func NewAssistedConfig() *AssistedConfig {
 	log.Print("Creating new AssistedConfig struct")
 
-	var assisetdConfig AssistedConfig
-	assisetdConfig.GeneralConfig = config.NewConfig()
+	var assistedConfig AssistedConfig
+	assistedConfig.GeneralConfig = config.NewConfig()
 
-	return &assisetdConfig
+	return &assistedConfig
 }

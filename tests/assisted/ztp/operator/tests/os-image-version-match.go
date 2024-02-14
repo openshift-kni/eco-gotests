@@ -53,8 +53,8 @@ var _ = Describe(
 			err = json.Unmarshal(osImagesBuffer.Bytes(), &envOSImages)
 			Expect(err).ToNot(HaveOccurred(), "error occurred while unmarshaling")
 
-			Expect(ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages).ToNot(BeNil(), "osimages field is nil")
-			envOSVersions = osImagesToEnvOsImages(ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages)
+			Expect(ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages).ToNot(BeNil(), "osimages field is nil")
+			envOSVersions = osImagesToEnvOsImages(ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages)
 		})
 
 		When("Test for os-version matches between the pod and the AgentServiceConfig", func() {

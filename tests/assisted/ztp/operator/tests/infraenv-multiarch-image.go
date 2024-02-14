@@ -62,7 +62,7 @@ var _ = Describe(
 				nsBuilder = namespace.NewBuilder(HubAPIClient, infraenvTestSpoke)
 
 				By("Grab the MirrorRegistryRef value from the spec")
-				mirrorRegistryRef = ZTPConfig.HubAgentServiceConfg.Definition.Spec.MirrorRegistryRef
+				mirrorRegistryRef = ZTPConfig.HubAgentServiceConfig.Definition.Spec.MirrorRegistryRef
 
 				By("Create configmap for AgentServiceConfig's annotation")
 				agentServiceConfigMapData := map[string]string{
@@ -74,7 +74,7 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "error creating configmap for AgentServiceConfig's annotation")
 
 				By("Delete the pre-existing AgentServiceConfig")
-				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 10)
+				err = ZTPConfig.HubAgentServiceConfig.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
 
 				By("Retrieve ClusterImageSet before all tests if exists")
@@ -178,10 +178,10 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "error deleting configmap after test")
 
 				By("Re-create the original AgentServiceConfig after all tests")
-				_, err = ZTPConfig.HubAgentServiceConfg.Create()
+				_, err = ZTPConfig.HubAgentServiceConfig.Create()
 				Expect(err).ToNot(HaveOccurred(), "error re-creating the original agentserviceconfig after all tests")
 
-				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Minute * 10)
+				_, err = ZTPConfig.HubAgentServiceConfig.WaitUntilDeployed(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until the original agentserviceconfig is deployed")
 

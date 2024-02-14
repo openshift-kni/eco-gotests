@@ -45,7 +45,7 @@ var _ = Describe(
 
 				osImageFound := false
 
-				for _, image := range ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages {
+				for _, image := range ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages {
 					if image.OpenshiftVersion == ZTPConfig.HubOCPXYVersion {
 						osImageFound = true
 					}

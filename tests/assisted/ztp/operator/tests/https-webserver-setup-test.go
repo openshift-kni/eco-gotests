@@ -76,7 +76,7 @@ var _ = Describe(
 
 				By("Downloading osImage to new mirror")
 				var imageName string
-				for _, image := range ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages {
+				for _, image := range ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages {
 					if image.OpenshiftVersion == version {
 						testOSImage = image
 						splitURL := strings.Split(testOSImage.Url, "/")
@@ -94,7 +94,7 @@ var _ = Describe(
 				By("Deleting old agentserviceconfig")
 				testOSImage.Url = fmt.Sprintf("https://%s.%s.svc.cluster.local:%d/%s",
 					serviceBuilder.Object.Name, serviceBuilder.Object.Namespace, containerPort, imageName)
-				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 20)
+				err = ZTPConfig.HubAgentServiceConfig.DeleteAndWait(time.Second * 20)
 				Expect(err).ToNot(HaveOccurred(), "could not delete agentserviceconfig")
 
 				By("Creating agentserviceconfig with annotation and osImages pointing to new mirror")
@@ -130,10 +130,10 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "could not delete agentserviceconfig")
 
 				By("Restoring the original agentserviceconfig")
-				_, err = ZTPConfig.HubAgentServiceConfg.Create()
+				_, err = ZTPConfig.HubAgentServiceConfig.Create()
 				Expect(err).ToNot(HaveOccurred(), "could not reinstate original agentserviceconfig")
 
-				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Second * 180)
+				_, err = ZTPConfig.HubAgentServiceConfig.WaitUntilDeployed(time.Second * 180)
 				Expect(err).ToNot(HaveOccurred(), "error while deploying original agentserviceconfig")
 
 				reqMet, msg := meets.HubInfrastructureOperandRunningRequirement()
@@ -143,7 +143,7 @@ var _ = Describe(
 
 		Describe("Verifying TLS", Label(tsparams.LabelHTTPWebserverSetup), func() {
 			BeforeAll(func() {
-				if tlsVerifySkipped, ok := ZTPConfig.HubAgentServiceConfg.Object.
+				if tlsVerifySkipped, ok := ZTPConfig.HubAgentServiceConfig.Object.
 					Annotations["unsupported.agent-install.openshift.io/assisted-image-service-skip-verify-tls"]; ok {
 					if tlsVerifySkipped == "true" {
 						Skip("TLS cert checking is explicitly skipped")
@@ -151,7 +151,7 @@ var _ = Describe(
 				}
 
 				validOSImage := false
-				for _, image := range ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages {
+				for _, image := range ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages {
 					if strings.Contains(image.Url, "https") {
 						validOSImage = true
 

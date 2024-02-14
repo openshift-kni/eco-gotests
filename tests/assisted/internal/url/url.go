@@ -70,7 +70,7 @@ func DownloadToDir(url, dirName string, skipCertVerify bool) error {
 	if skipCertVerify {
 		transport, ok := grabClient.HTTPClient.(*http.Client).Transport.(*http.Transport)
 		if !ok {
-			return fmt.Errorf("error: receieved unexpected http client")
+			return fmt.Errorf("error: received unexpected http client")
 		}
 
 		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}

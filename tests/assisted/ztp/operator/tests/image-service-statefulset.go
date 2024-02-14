@@ -33,12 +33,12 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 				By("Initialize variables for the test from the original AgentServiceConfig")
-				databaseStorage = ZTPConfig.HubAgentServiceConfg.Definition.Spec.DatabaseStorage
-				fileSystemStorage = ZTPConfig.HubAgentServiceConfg.Definition.Spec.FileSystemStorage
-				osImage = ZTPConfig.HubAgentServiceConfg.Object.Spec.OSImages
+				databaseStorage = ZTPConfig.HubAgentServiceConfig.Definition.Spec.DatabaseStorage
+				fileSystemStorage = ZTPConfig.HubAgentServiceConfig.Definition.Spec.FileSystemStorage
+				osImage = ZTPConfig.HubAgentServiceConfig.Object.Spec.OSImages
 
 				By("Delete the pre-existing AgentServiceConfig")
-				err = ZTPConfig.HubAgentServiceConfg.DeleteAndWait(time.Second * 10)
+				err = ZTPConfig.HubAgentServiceConfig.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting pre-existing agentserviceconfig")
 
 			})
@@ -49,10 +49,10 @@ var _ = Describe(
 			})
 			AfterAll(func() {
 				By("Re-create the original AgentServiceConfig after all tests")
-				_, err = ZTPConfig.HubAgentServiceConfg.Create()
+				_, err = ZTPConfig.HubAgentServiceConfig.Create()
 				Expect(err).ToNot(HaveOccurred(), "error re-creating the original agentserviceconfig after all tests")
 
-				_, err = ZTPConfig.HubAgentServiceConfg.WaitUntilDeployed(time.Minute * 10)
+				_, err = ZTPConfig.HubAgentServiceConfig.WaitUntilDeployed(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until agentserviceconfig without imagestorage is deployed")
 
