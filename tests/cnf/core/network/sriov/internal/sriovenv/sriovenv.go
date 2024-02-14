@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 
 	sriovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
@@ -146,6 +147,54 @@ func RemoveAllPoliciesAndWaitForSriovAndMCPStable() error {
 	return netenv.WaitForSriovStable(APIClient, tsparams.MCOWaitTimeout, NetConfig.SriovOperatorNamespace)
 }
 
+// IsMellanoxDevice checks if a given network interface on a node is a Mellanox device.
+func IsMellanoxDevice(intName, nodeName string) bool {
+	glog.V(90).Infof("Checking if specific interface %s on node %s is a Mellanox device.", intName, nodeName)
+	sriovNetworkState := sriov.NewNetworkNodeStateBuilder(APIClient, nodeName, NetConfig.SriovOperatorNamespace)
+	driverName, err := sriovNetworkState.GetDriverName(intName)
+
+	if err != nil {
+		glog.V(90).Infof("Failed to get driver name for interface %s on node %s: %w", intName, nodeName, err)
+
+		return false
+	}
+
+	return driverName == "mlx5_core"
+}
+
+// ConfigureSriovMlnxFirmwareOnWorkers configures SR-IOV firmware on a given Mellanox device.
+func ConfigureSriovMlnxFirmwareOnWorkers(
+	workerNodes []*nodes.Builder, sriovInterfaceName string, enableSriov bool, numVfs int) error {
+	for _, workerNode := range workerNodes {
+		glog.V(90).Infof("Configuring SR-IOV firmware on the Mellanox device %s on the workers"+
+			" %v with parameters: enableSriov %t and numVfs %d", sriovInterfaceName, workerNodes, enableSriov, numVfs)
+
+		sriovNetworkState := sriov.NewNetworkNodeStateBuilder(
+			APIClient, workerNode.Object.Name, NetConfig.SriovOperatorNamespace)
+		pciAddress, err := sriovNetworkState.GetPciAddress(sriovInterfaceName)
+
+		if err != nil {
+			glog.V(90).Infof("Failed to get PCI address for the interface %s", sriovInterfaceName)
+
+			return fmt.Errorf("failed to get PCI address: %s", err.Error())
+		}
+
+		output, err := runCommandOnConfigDaemon(workerNode.Object.Name,
+			[]string{"bash", "-c",
+				fmt.Sprintf("mstconfig -y -d %s set SRIOV_EN=%t NUM_OF_VFS=%d && chroot /host reboot",
+					pciAddress, enableSriov, numVfs)})
+
+		if err != nil {
+			glog.V(90).Infof("Failed to configure SR-IOV firmware.")
+
+			return fmt.Errorf("failed to configure Mellanox firmware for interface %s on a node %s: %s\n %s",
+				pciAddress, workerNode.Object.Name, output, err.Error())
+		}
+	}
+
+	return nil
+}
+
 func isVfCreated(sriovNodeState *sriov.NetworkNodeStateBuilder, vfNumber int, sriovInterfaceName string) error {
 	sriovNumVfs, err := sriovNodeState.GetNumVFs(sriovInterfaceName)
 	if err != nil {
@@ -157,4 +206,21 @@ func isVfCreated(sriovNodeState *sriov.NetworkNodeStateBuilder, vfNumber int, sr
 	}
 
 	return nil
+}
+
+func runCommandOnConfigDaemon(nodeName string, command []string) (string, error) {
+	pods, err := pod.List(APIClient, NetConfig.SriovOperatorNamespace, v1.ListOptions{
+		LabelSelector: "app=sriov-network-config-daemon", FieldSelector: fmt.Sprintf("spec.nodeName=%s", nodeName)})
+	if err != nil {
+		return "", err
+	}
+
+	if len(pods) != 1 {
+		return "", fmt.Errorf("there should be exactly one 'sriov-network-config-daemon' pod per node,"+
+			" but found %d on node %s", len(pods), nodeName)
+	}
+
+	output, err := pods[0].ExecCommand(command)
+
+	return output.String(), err
 }

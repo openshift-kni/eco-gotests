@@ -22,7 +22,7 @@ func WaitForSriovAndMCPStable(
 		return err
 	}
 
-	err = waitForMcpStable(apiClient, waitingTime, stableDuration, mcpName)
+	err = WaitForMcpStable(apiClient, waitingTime, stableDuration, mcpName)
 	if err != nil {
 		return err
 	}
@@ -52,8 +52,8 @@ func WaitForSriovStable(apiClient *clients.Settings, waitingTime time.Duration, 
 	return nil
 }
 
-// waitForMcpStable waits for the stability of the MCP with the given name.
-func waitForMcpStable(apiClient *clients.Settings, waitingTime, stableDuration time.Duration, mcpName string) error {
+// WaitForMcpStable waits for the stability of the MCP with the given name.
+func WaitForMcpStable(apiClient *clients.Settings, waitingTime, stableDuration time.Duration, mcpName string) error {
 	mcp, err := mco.Pull(apiClient, mcpName)
 
 	if err != nil {

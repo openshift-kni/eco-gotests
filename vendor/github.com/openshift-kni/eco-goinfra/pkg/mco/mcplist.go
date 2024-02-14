@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+// ListMCP returns a list of MachineConfigPoolBuilder.
 func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCPBuilder, error) {
 	passedOptions := metav1.ListOptions{}
 	logMessage := "Listing all MCP resources"
@@ -53,6 +54,7 @@ func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCP
 	return mcpObjects, nil
 }
 
+// ListMCPByMachineConfigSelector returns a list of MachineConfigurationPoolBuilders for given selector.
 func ListMCPByMachineConfigSelector(
 	apiClient *clients.Settings, mcpLabel string, options ...metav1.ListOptions) (*MCPBuilder, error) {
 	glog.V(100).Infof("GetByLabel returns MachineConfigPool with the specified label: %v", mcpLabel)
@@ -82,6 +84,7 @@ func ListMCPByMachineConfigSelector(
 	return nil, fmt.Errorf("cannot find MachineConfigPool that targets machineConfig with label: %s", mcpLabel)
 }
 
+// ListMCPWaitToBeStableFor waits for a given MachineConfigurationPool to be stable for a given period.
 func ListMCPWaitToBeStableFor(
 	apiClient *clients.Settings, stableDuration, timeout time.Duration, options ...metav1.ListOptions) error {
 	glog.V(100).Infof("WaitForMcpListToBeStableFor waits up to duration of %v for "+

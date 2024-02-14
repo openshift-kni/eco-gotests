@@ -63,6 +63,10 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				sriovInterfacesUnderTest, err = NetConfig.GetSriovInterfaces(2)
 				Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
+				if sriovenv.IsMellanoxDevice(sriovInterfacesUnderTest[0], workerNodeList[0].Object.Name) {
+					configureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, sriovInterfacesUnderTest[0], true, 5)
+				}
+
 				By("Creating SR-IOV VFs via NMState")
 				err = netnmstate.ConfigureVFsAndWaitUntilItsConfigured(
 					configureNMStatePolicyName,
@@ -113,6 +117,10 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				By("Removing NMState policies")
 				err = nmstate.CleanAllNMStatePolicies(APIClient)
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
+
+				if sriovenv.IsMellanoxDevice(sriovInterfacesUnderTest[0], workerNodeList[0].Object.Name) {
+					configureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, sriovInterfacesUnderTest[0], false, 0)
+				}
 			})
 
 			AfterEach(func() {
@@ -607,4 +615,14 @@ func getVfsUnderTest(busyVfs []string) []string {
 	}
 
 	return vfsUnderTest
+}
+
+func configureSriovMlnxFirmwareOnWorkersAndWaitMCP(
+	workerNodes []*nodes.Builder, sriovInterfaceName string, enableSriov bool, numVfs int) {
+	By("Enabling SR-IOV on Mellanox device")
+
+	err := sriovenv.ConfigureSriovMlnxFirmwareOnWorkers(workerNodes, sriovInterfaceName, enableSriov, numVfs)
+	Expect(err).ToNot(HaveOccurred(), "Failed to configure SR-IOV Mellanox firmware")
+	err = netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 5*time.Minute, NetConfig.CnfMcpLabel)
+	Expect(err).ToNot(HaveOccurred(), "Machineconfigpool is not stable")
 }

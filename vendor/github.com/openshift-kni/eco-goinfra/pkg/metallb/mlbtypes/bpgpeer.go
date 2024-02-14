@@ -2,6 +2,7 @@ package mlbtypes
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+// MatchExpression definition.
 type MatchExpression struct {
 	Key      string `json:"key"`
 	Operator string `json:"operator"`
@@ -9,6 +10,7 @@ type MatchExpression struct {
 	Values []string `json:"values"`
 }
 
+// NodeSelector type definition.
 type NodeSelector struct {
 	// +optional
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
@@ -85,8 +87,8 @@ type BGPPeer struct {
 	Status BGPPeerStatus `json:"status,omitempty"`
 }
 
+// BGPPeerList contains a list of Peer.
 // +kubebuilder:object:root=true
-// PeerList contains a list of Peer.
 type BGPPeerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

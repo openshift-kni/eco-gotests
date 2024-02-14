@@ -13,6 +13,7 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// PlacementBindingBuilder type definition.
 type PlacementBindingBuilder struct {
 	// placementBinding Definition, used to create the placementBinding object.
 	Definition *policiesv1.PlacementBinding

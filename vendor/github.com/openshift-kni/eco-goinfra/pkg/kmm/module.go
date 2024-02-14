@@ -300,6 +300,7 @@ func (builder *ModuleBuilder) Create() (*ModuleBuilder, error) {
 	return builder, err
 }
 
+// Update modifies the existing module in the cluster.
 func (builder *ModuleBuilder) Update() (*ModuleBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err

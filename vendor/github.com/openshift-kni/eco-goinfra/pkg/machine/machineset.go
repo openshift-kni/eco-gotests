@@ -33,8 +33,11 @@ type SetBuilder struct {
 }
 
 const (
-	AwsCloud   = "aws"
-	GcpCloud   = "gcp"
+	// AwsCloud const definition.
+	AwsCloud = "aws"
+	// GcpCloud const definition.
+	GcpCloud = "gcp"
+	// AzureCloud const definition.
 	AzureCloud = "azure"
 )
 

@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -151,15 +149,52 @@ func (builder *NetworkNodeStateBuilder) WaitUntilSyncStatus(syncStatus string, t
 
 // GetNumVFs returns num-vfs under the given interface.
 func (builder *NetworkNodeStateBuilder) GetNumVFs(sriovInterfaceName string) (int, error) {
-	if valid, err := builder.validate(); !valid {
-		return 0, err
-	}
-
 	glog.V(100).Infof("Getting num-vfs under interface %s from SriovNetworkNodeState %s",
 		sriovInterfaceName, builder.nodeName)
 
-	if builder.Objects == nil {
-		builder.errorMsg = msg.UndefinedCrdObjectErrString("SriovNetworkNodeState")
+	interf, err := builder.findInterfaceByName(sriovInterfaceName)
+	if err != nil {
+		return 0, err
+	}
+
+	return interf.NumVfs, nil
+}
+
+// GetDriverName returns driver name under the given interface.
+func (builder *NetworkNodeStateBuilder) GetDriverName(sriovInterfaceName string) (string, error) {
+	glog.V(100).Infof("Getting driver name for interface %s from SriovNetworkNodeState %s",
+		sriovInterfaceName, builder.nodeName)
+
+	interf, err := builder.findInterfaceByName(sriovInterfaceName)
+	if err != nil {
+		return "", err
+	}
+
+	return interf.Driver, nil
+}
+
+// GetPciAddress returns PciAddress under the given interface.
+func (builder *NetworkNodeStateBuilder) GetPciAddress(sriovInterfaceName string) (string, error) {
+	glog.V(100).Infof("Getting PCI address for interface %s from SriovNetworkNodeState %s",
+		sriovInterfaceName, builder.nodeName)
+
+	interf, err := builder.findInterfaceByName(sriovInterfaceName)
+	if err != nil {
+		return "", err
+	}
+
+	return interf.PciAddress, nil
+}
+
+func (builder *NetworkNodeStateBuilder) findInterfaceByName(sriovInterfaceName string) (*srIovV1.InterfaceExt, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	if err := builder.Discover(); err != nil {
+		glog.V(100).Infof("Error to discover sriov network node state for node %s", builder.nodeName)
+
+		builder.errorMsg = "failed to discover sriov network node state"
 	}
 
 	if sriovInterfaceName == "" {
@@ -169,16 +204,16 @@ func (builder *NetworkNodeStateBuilder) GetNumVFs(sriovInterfaceName string) (in
 	}
 
 	if builder.errorMsg != "" {
-		return 0, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf(builder.errorMsg)
 	}
 
 	for _, interf := range builder.Objects.Status.Interfaces {
 		if interf.Name == sriovInterfaceName {
-			return interf.NumVfs, nil
+			return &interf, nil
 		}
 	}
 
-	return 0, fmt.Errorf("failed to find interface %s", sriovInterfaceName)
+	return nil, fmt.Errorf("interface %s was not found", sriovInterfaceName)
 }
 
 // validate will check that the builder and builder definition are properly initialized before

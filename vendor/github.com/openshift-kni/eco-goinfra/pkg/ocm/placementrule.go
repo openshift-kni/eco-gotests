@@ -26,7 +26,7 @@ type PlacementRuleBuilder struct {
 	errorMsg string
 }
 
-// Pull pulls existing placementrule into Builder struct.
+// PullPlacementRule pulls existing placementrule into Builder struct.
 func PullPlacementRule(apiClient *clients.Settings, name, nsname string) (*PlacementRuleBuilder, error) {
 	glog.V(100).Infof("Pulling existing placementrule name %s under namespace %s from cluster", name, nsname)
 
