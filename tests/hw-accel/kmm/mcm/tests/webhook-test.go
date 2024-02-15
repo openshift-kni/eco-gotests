@@ -37,6 +37,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
 				tsparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
+				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
 			Expect(err).To(HaveOccurred(), "error creating module")
 			Expect(err.Error()).To(ContainSubstring("missing spec.moduleLoader.container.kernelMappings"))
@@ -68,6 +69,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
 				tsparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
+				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
 			Expect(err).To(HaveOccurred(), "error creating module")
 			Expect(err.Error()).To(ContainSubstring("regexp or literal must be set"))
@@ -98,6 +100,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
 				tsparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
+				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
 			Expect(err).To(HaveOccurred(), "error creating module")
 			Expect(err.Error()).To(ContainSubstring("regexp and literal are mutually exclusive properties"))
@@ -127,9 +130,41 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
 				tsparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
+				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
 			Expect(err).To(HaveOccurred(), "error creating module")
 			Expect(err.Error()).To(ContainSubstring("invalid regexp"))
+		})
+	})
+
+	Context("KMM-HUB", Label("mcm-crd"), func() {
+
+		It("should fail if no spokeNamespace is set in MCM", polarion.ID("71692"), func() {
+
+			By("Create KernelMapping")
+			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()
+			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+			By("Create ModuleLoaderContainer")
+			moduleLoaderContainerCfg, err := kmm.NewModLoaderContainerBuilder("crd").
+				WithKernelMapping(kernelMapping).
+				BuildModuleLoaderContainerCfg()
+			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+			By("Build Module")
+			moduleSpec, err := kmm.NewModuleBuilder(APIClient, "no-spoke-namespace", "default").
+				WithNodeSelector(GeneralConfig.WorkerLabelMap).
+				WithModuleLoaderContainer(moduleLoaderContainerCfg).
+				BuildModuleSpec()
+			Expect(err).ToNot(HaveOccurred(), "error building module spec")
+
+			By("Create ManagedClusterModule")
+			Expect(err).To(HaveOccurred(), "error creating module")
+			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "no-spoke-namespace",
+				tsparams.KmmHubOperatorNamespace).
+				WithModuleSpec(moduleSpec).
+				WithSelector(kmmparams.KmmHubSelector).Create()
+			Expect(err.Error()).To(ContainSubstring("is invalid: spec.spokeNamespace: Required value"))
 		})
 	})
 })
