@@ -61,7 +61,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		It("should pass malware testing", polarion.ID("68147"), func() {
 			By("Obtain KMM images for test")
-			pods, _ := pod.List(APIClient, "openshift-kmm", v1.ListOptions{
+			pods, _ := pod.List(APIClient, kmmparams.KmmOperatorNamespace, v1.ListOptions{
 				FieldSelector: "status.phase=Running",
 			})
 

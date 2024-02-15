@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/helpers"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/nfdconfig"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
@@ -25,7 +26,7 @@ import (
 var _ = Describe("NFD", Ordered, func() {
 	nfdConfig := nfdconfig.NewNfdConfig()
 	nfdManager := nfdDeploy.NewNfdAPIResource(APIClient,
-		ts.Namespace,
+		hwaccelparams.NFDNamespace,
 		"op-nfd",
 		"nfd",
 		nfdConfig.CatalogSource,
@@ -48,7 +49,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 			By("Creating nfd")
 			runNodeDiscoveryAndTestLabelExistence(nfdManager, true)
-			cpuFlags = get.CPUFlags(APIClient, ts.Namespace)
+			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace)
 
 			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
 			if !labelExist || labelsError != nil {
@@ -131,7 +132,7 @@ var _ = Describe("NFD", Ordered, func() {
 				[]string{"BMI2"},
 				nil,
 				true,
-				ts.Namespace,
+				hwaccelparams.NFDNamespace,
 				nfdConfig.Image)
 
 			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
@@ -164,7 +165,7 @@ var _ = Describe("NFD", Ordered, func() {
 				nil,
 				[]string{"BMI2"},
 				true,
-				ts.Namespace,
+				hwaccelparams.NFDNamespace,
 				nfdConfig.Image)
 
 			labelExist, labelsError := wait.ForLabel(APIClient, time.Minute*15, "feature")
@@ -226,7 +227,7 @@ var _ = Describe("NFD", Ordered, func() {
 			Expect(isNodeReady).To(BeTrue(), "the new node is not ready for use")
 
 			By("Check if features exists")
-			cpuFlags = get.CPUFlags(APIClient, ts.Namespace)
+			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace)
 			for nodeName := range nodelabels {
 				glog.V(ts.LogLevel).Infof("checking labels in %v", nodeName)
 				err = helpers.CheckLabelsExist(nodelabels, cpuFlags[nodeName], nil, nodeName)
@@ -243,7 +244,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource, enableTopology bool) {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		_, err := get.PodStatus(APIClient, ts.Namespace)
+		_, err := get.PodStatus(APIClient, hwaccelparams.NFDNamespace)
 		glog.Error(err)
 
 		return err
@@ -255,7 +256,7 @@ func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource,
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 	By("Check that pods are in running state")
 
-	res, err := wait.ForPod(APIClient, ts.Namespace)
+	res, err := wait.ForPod(APIClient, hwaccelparams.NFDNamespace)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(res).To(BeTrue())
 	By("Check feature labels exists")

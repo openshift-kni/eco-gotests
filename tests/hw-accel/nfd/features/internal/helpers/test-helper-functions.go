@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/search"
@@ -43,14 +44,14 @@ func CheckLabelsExist(nodelabels map[string][]string, labelsToSearch, blackList 
 // CheckPodStatus check if each pod is in a running status.
 func CheckPodStatus(apiClient *clients.Settings) error {
 	verifyPodStatus := func() error {
-		_, err := wait.ForPod(apiClient, ts.Namespace)
+		_, err := wait.ForPod(apiClient, hwaccelparams.NFDNamespace)
 		if err != nil {
 			return err
 		}
 
 		glog.V(nfdparams.LogLevel).Info("validate all pods are running")
 
-		podlist, err := get.PodStatus(apiClient, ts.Namespace)
+		podlist, err := get.PodStatus(apiClient, hwaccelparams.NFDNamespace)
 		if err != nil {
 			return err
 		}

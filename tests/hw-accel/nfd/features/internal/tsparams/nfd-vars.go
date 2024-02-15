@@ -10,9 +10,9 @@ import (
 var (
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		"openshift-nfd":     "nfd",
-		"openshift-nfd-hub": "nfd-hub",
-		"":                  "other",
+		hwaccelparams.NFDNamespace: "nfd",
+		"openshift-nfd-hub":        "nfd-hub",
+		"":                         "other",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
@@ -31,9 +31,6 @@ var (
 
 	// NUMA labels.
 	NUMA = []string{"memory-numa"}
-
-	// Namespace represents operator namespace value.
-	Namespace = "openshift-nfd"
 
 	// Name represents operand name.
 	Name = "nfd-instance-test"

@@ -7,7 +7,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -18,7 +17,7 @@ func OperatorUpgrade(apiClient *clients.Settings, semver string, timeout time.Du
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 
 			csv, err := olm.ListClusterServiceVersionWithNamePattern(apiClient, "kernel",
-				tsparams.KmmOperatorNamespace)
+				kmmparams.KmmOperatorNamespace)
 
 			for _, c := range csv {
 				glog.V(kmmparams.KmmLogLevel).Infof("CSV: %s, Version: %s, Status: %s",

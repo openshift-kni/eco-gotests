@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nfd"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
 	nvidiagpuwait "github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/wait"
@@ -20,7 +21,6 @@ import (
 )
 
 const (
-	nfdNamespace                                = "openshift-nfd"
 	nfdOperatorGroupName                        = "nfd-og"
 	nfdSubscriptionName                         = "nfd-subscription"
 	nfdSubscriptionNamespace                    = "openshift-nfd"
@@ -37,9 +37,9 @@ const (
 func CreateNFDNamespace(apiClient *clients.Settings) error {
 	glog.V(gpuparams.GpuLogLevel).Infof("Check if NFD Operator namespace exists, otherwise created it")
 
-	nfdNsBuilder := namespace.NewBuilder(apiClient, nfdNamespace)
+	nfdNsBuilder := namespace.NewBuilder(apiClient, hwaccelparams.NFDNamespace)
 
-	glog.V(gpuparams.GpuLogLevel).Infof("Creating the namespace:  %v", nfdNamespace)
+	glog.V(gpuparams.GpuLogLevel).Infof("Creating the namespace:  %v", hwaccelparams.NFDNamespace)
 
 	createdNfdNsBuilder, err := nfdNsBuilder.Create()
 
@@ -80,7 +80,7 @@ func CreateNFDNamespace(apiClient *clients.Settings) error {
 func CreateNFDOperatorGroup(apiClient *clients.Settings) error {
 	glog.V(gpuparams.GpuLogLevel).Infof("Create the NFD operatorgroup")
 
-	nfdOgBuilder := olm.NewOperatorGroupBuilder(apiClient, nfdOperatorGroupName, nfdNamespace)
+	nfdOgBuilder := olm.NewOperatorGroupBuilder(apiClient, nfdOperatorGroupName, hwaccelparams.NFDNamespace)
 
 	if nfdOgBuilder.Exists() {
 		glog.V(gpuparams.GpuLogLevel).Infof("The nfdOgBuilder that exists has name:  %v",
@@ -141,7 +141,7 @@ func CreateNFDSubscription(apiClient *clients.Settings) error {
 func CheckNFDOperatorDeployed(apiClient *clients.Settings, waitTime time.Duration) (bool, error) {
 	glog.V(gpuparams.GpuLogLevel).Infof("Check if the NFD operator deployment is ready")
 
-	nfdOperatorDeployment, err := deployment.Pull(apiClient, nfdOperatorDeploymentName, nfdNamespace)
+	nfdOperatorDeployment, err := deployment.Pull(apiClient, nfdOperatorDeploymentName, hwaccelparams.NFDNamespace)
 
 	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("Error trying to pull NFD operator "+
@@ -186,7 +186,8 @@ func CheckNFDOperatorDeployed(apiClient *clients.Settings, waitTime time.Duratio
 		"Succeeded phase")
 	glog.V(gpuparams.GpuLogLevel).Infof("Waiting for NFD ClusterServiceVersion to be Succeeded phase")
 
-	err = nvidiagpuwait.CSVSucceeded(apiClient, nfdCurrentCSVFromSub, nfdNamespace, 60*time.Second, 5*time.Minute)
+	err = nvidiagpuwait.CSVSucceeded(
+		apiClient, nfdCurrentCSVFromSub, hwaccelparams.NFDNamespace, 60*time.Second, 5*time.Minute)
 
 	glog.V(gpuparams.GpuLogLevel).Infof("error waiting for NFD ClusterServiceVersion to be "+
 		"in Succeeded phase:  %v ", err)
@@ -200,7 +201,7 @@ func CheckNFDOperatorDeployed(apiClient *clients.Settings, waitTime time.Duratio
 
 	glog.V(gpuparams.GpuLogLevel).Infof("Pull existing CSV in NFD Operator Namespace")
 
-	clusterNfdCSV, err := olm.PullClusterServiceVersion(apiClient, nfdCurrentCSVFromSub, nfdNamespace)
+	clusterNfdCSV, err := olm.PullClusterServiceVersion(apiClient, nfdCurrentCSVFromSub, hwaccelparams.NFDNamespace)
 
 	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("error pulling CSV %v from cluster:  %v",
@@ -242,7 +243,7 @@ func DeployCRInstance(apiClient *clients.Settings) error {
 
 	glog.V(gpuparams.GpuLogLevel).Infof("Pull existing CSV in NFD Operator Namespace")
 
-	clusterNfdCSV, err := olm.PullClusterServiceVersion(apiClient, nfdCurrentCSVFromSub, nfdNamespace)
+	clusterNfdCSV, err := olm.PullClusterServiceVersion(apiClient, nfdCurrentCSVFromSub, hwaccelparams.NFDNamespace)
 
 	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("Error from PullClusterServiceVersion:  %v ", err)
@@ -275,7 +276,7 @@ func DeployCRInstance(apiClient *clients.Settings) error {
 
 	glog.V(gpuparams.GpuLogLevel).Infof("Waiting for NFD CR deployment '%s' to be created", nfdCRDeploymentName)
 
-	nfdCRDeploymentCreated := nvidiagpuwait.DeploymentCreated(apiClient, nfdCRDeploymentName, nfdNamespace,
+	nfdCRDeploymentCreated := nvidiagpuwait.DeploymentCreated(apiClient, nfdCRDeploymentName, hwaccelparams.NFDNamespace,
 		30*time.Second, 4*time.Minute)
 
 	if !nfdCRDeploymentCreated {
@@ -286,7 +287,7 @@ func DeployCRInstance(apiClient *clients.Settings) error {
 
 	glog.V(gpuparams.GpuLogLevel).Infof("Check if the NFD CR deployment is ready")
 
-	nfdCRDeployment, err := deployment.Pull(apiClient, nfdCRDeploymentName, nfdNamespace)
+	nfdCRDeployment, err := deployment.Pull(apiClient, nfdCRDeploymentName, hwaccelparams.NFDNamespace)
 
 	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("Error pulling NFD CR deployment  %v ", err)
@@ -372,13 +373,13 @@ func NFDCRDeleteAndWait(apiClient *clients.Settings, nfdCRName string, nfdCRName
 
 // DeleteNFDNamespace creates and labels NFD namespace.
 func DeleteNFDNamespace(apiClient *clients.Settings) error {
-	glog.V(gpuparams.GpuLogLevel).Infof("Deleting NFD namespace '%s'", nfdNamespace)
+	glog.V(gpuparams.GpuLogLevel).Infof("Deleting NFD namespace '%s'", hwaccelparams.NFDNamespace)
 
-	pulledNFDNsBuilder, err := namespace.Pull(apiClient, nfdNamespace)
+	pulledNFDNsBuilder, err := namespace.Pull(apiClient, hwaccelparams.NFDNamespace)
 
 	if err != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("error pulling NFD namespace '%s' :  %v ",
-			nfdNamespace, err)
+			hwaccelparams.NFDNamespace, err)
 
 		return err
 	}
@@ -391,9 +392,9 @@ func DeleteNFDNamespace(apiClient *clients.Settings) error {
 // DeleteNFDOperatorGroup creates NFD OperatorGroup in NFD namespace.
 func DeleteNFDOperatorGroup(apiClient *clients.Settings) error {
 	glog.V(gpuparams.GpuLogLevel).Infof("Deleting NFD OperatorGroup '%s' in namespace '%s'",
-		nfdOperatorGroupName, nfdNamespace)
+		nfdOperatorGroupName, hwaccelparams.NFDNamespace)
 
-	pulledNFDOg, err := olm.PullOperatorGroup(apiClient, nfdOperatorGroupName, nfdNamespace)
+	pulledNFDOg, err := olm.PullOperatorGroup(apiClient, nfdOperatorGroupName, hwaccelparams.NFDNamespace)
 
 	if !pulledNFDOg.Exists() {
 		glog.V(gpuparams.GpuLogLevel).Infof("The NFD OperatorGroup %s does not exist", nfdOperatorGroupName)
@@ -409,7 +410,7 @@ func DeleteNFDOperatorGroup(apiClient *clients.Settings) error {
 // DeleteNFDSubscription Deletes NFD Subscription in NFD namespace.
 func DeleteNFDSubscription(apiClient *clients.Settings) error {
 	glog.V(gpuparams.GpuLogLevel).Info("Deleting NFD Subscription '%s' in namespace '%s'",
-		nfdSubscriptionName, nfdNamespace)
+		nfdSubscriptionName, hwaccelparams.NFDNamespace)
 
 	pulledNFDSub, err := olm.PullSubscription(apiClient, nfdSubscriptionName, nfdSubscriptionNamespace)
 
@@ -439,7 +440,7 @@ func DeleteNFDCSV(apiClient *clients.Settings) error {
 		return fmt.Errorf("current NFD CSV name is empty string '%s'", nfdCurrentCSVFromSub)
 	}
 
-	clusterNfdCSV, err := olm.PullClusterServiceVersion(apiClient, nfdCurrentCSVFromSub, nfdNamespace)
+	clusterNfdCSV, err := olm.PullClusterServiceVersion(apiClient, nfdCurrentCSVFromSub, hwaccelparams.NFDNamespace)
 
 	if err != nil {
 		return fmt.Errorf("error pulling CSV %v from cluster:  %w", nfdCurrentCSVFromSub, err)

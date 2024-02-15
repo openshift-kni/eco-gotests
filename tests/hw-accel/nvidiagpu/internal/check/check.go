@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -16,7 +17,6 @@ import (
 const (
 	nfdOperatorDeployment = "nfd-controller-manager"
 	nfdMasterDeployment   = "nfd-master"
-	nfdNamespace          = "openshift-nfd"
 )
 
 // AllNodeLabel checks if label is present on all nodes matching nodeSelector.
@@ -88,7 +88,7 @@ func NodeWithLabel(apiClient *clients.Settings, nodeLabel string, nodeSelector m
 // NFDDeploymentsReady verifies if NFD Operator and Operand deployments are ready in the openshift-nfd namespace.
 func NFDDeploymentsReady(apiClient *clients.Settings) (bool, error) {
 	// here check if the 2 NFD deployments in openshift-nfd namespace are ready, first nfd operator
-	nfdOperatorDeployment, err1 := deployment.Pull(apiClient, nfdOperatorDeployment, nfdNamespace)
+	nfdOperatorDeployment, err1 := deployment.Pull(apiClient, nfdOperatorDeployment, hwaccelparams.NFDNamespace)
 
 	if err1 != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("Error trying to pull NFD operator deployment:  %v ", err1)
@@ -100,7 +100,7 @@ func NFDDeploymentsReady(apiClient *clients.Settings) (bool, error) {
 		nfdOperatorDeployment.Definition.Name)
 
 	// Check nfd-master deployment.
-	nfdMasterDeployment, err2 := deployment.Pull(apiClient, nfdMasterDeployment, nfdNamespace)
+	nfdMasterDeployment, err2 := deployment.Pull(apiClient, nfdMasterDeployment, hwaccelparams.NFDNamespace)
 
 	if err2 != nil {
 		glog.V(gpuparams.GpuLogLevel).Infof("Error trying to pull NFD master deployment:  %v ", err2)

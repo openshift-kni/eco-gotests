@@ -6,10 +6,10 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/tsparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/tests"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-
-	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/tests"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,5 +33,5 @@ var _ = ReportAfterSuite("1upgrade", func(report Report) {
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, map[string]string{"openshift-kmm": "op"}, nil, clients.SetScheme)
+		CurrentSpecReport(), currentFile, map[string]string{kmmparams.KmmOperatorNamespace: "op"}, nil, clients.SetScheme)
 })

@@ -21,7 +21,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		It("Check must-gather functionality", polarion.ID("53653"), func() {
 			By("Print Pod Name")
-			pods, _ := pod.List(APIClient, "openshift-kmm", v1.ListOptions{
+			pods, _ := pod.List(APIClient, kmmparams.KmmOperatorNamespace, v1.ListOptions{
 				FieldSelector: "status.phase=Running",
 			})
 			var mustGatherImage string
@@ -39,7 +39,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			}
 			// Create must-gather pod
 			By("Creating must-gather pod")
-			mgPod, err := pod.NewBuilder(APIClient, "must-gather-pod", "openshift-kmm", mustGatherImage).
+			mgPod, err := pod.NewBuilder(APIClient, "must-gather-pod", kmmparams.KmmOperatorNamespace, mustGatherImage).
 				CreateAndWaitUntilRunning(300 * time.Second)
 			Expect(err).ToNot(HaveOccurred(), "error creating must-gather pod")
 			cmdToExec := []string{"ls", "-l", "/usr/bin/gather"}
@@ -52,7 +52,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			glog.V(90).Infof("gather binary found: %s", buf.String())
 
 			By("Deleting must-gather pod")
-			_, err2 := pod.NewBuilder(APIClient, "must-gather-pod", "openshift-kmm", mustGatherImage).
+			_, err2 := pod.NewBuilder(APIClient, "must-gather-pod", kmmparams.KmmOperatorNamespace, mustGatherImage).
 				DeleteAndWait(300 * time.Second)
 			Expect(err2).ToNot(HaveOccurred(), "error deleting must-gather pod")
 		})

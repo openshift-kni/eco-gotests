@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
@@ -27,7 +28,7 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 			}
 
 			By("Getting KMM subscription")
-			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, tsparams.KmmOperatorNamespace)
+			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, kmmparams.KmmOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "failed getting subscription")
 
 			By("Update subscription to use new catalog source")

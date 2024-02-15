@@ -21,6 +21,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/gpudeploy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/get"
@@ -60,7 +61,6 @@ var (
 )
 
 const (
-	nfdNamespace              = "openshift-nfd"
 	nfdCatalogSource          = "redhat-operators"
 	nfdCatalogSourceNamespace = "openshift-marketplace"
 	nfdOperatorDeploymentName = "nfd-controller-manager"
@@ -157,7 +157,7 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				time.Sleep(2 * time.Minute)
 
 				By("Wait up to 4 mins for NFD Operator deployment to be created")
-				nfdDeploymentCreated := wait.DeploymentCreated(APIClient, nfdOperatorDeploymentName, nfdNamespace,
+				nfdDeploymentCreated := wait.DeploymentCreated(APIClient, nfdOperatorDeploymentName, hwaccelparams.NFDNamespace,
 					30*time.Second, 4*time.Minute)
 				Expect(nfdDeploymentCreated).ToNot(BeFalse(), "timed out waiting to deploy "+
 					"NFD operator")
@@ -190,7 +190,7 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				// Here need to check if NFD CR is deployed, otherwise Deleting a non-existing CR will throw an error
 				// skipping error check for now cause any failure before entire NFD stack
 				By("Delete NFD CR instance in NFD namespace")
-				_ = nfddeploy.NFDCRDeleteAndWait(APIClient, nfdCRName, nfdNamespace, 30*time.Second, 5*time.Minute)
+				_ = nfddeploy.NFDCRDeleteAndWait(APIClient, nfdCRName, hwaccelparams.NFDNamespace, 30*time.Second, 5*time.Minute)
 
 				By("Delete NFD CSV")
 				_ = nfddeploy.DeleteNFDCSV(APIClient)
