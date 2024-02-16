@@ -159,7 +159,6 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error building module spec")
 
 			By("Create ManagedClusterModule")
-			Expect(err).To(HaveOccurred(), "error creating module")
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "no-spoke-namespace",
 				tsparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
