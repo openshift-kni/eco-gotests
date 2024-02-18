@@ -114,7 +114,7 @@ func (n *NfdAPIResource) DeployNfd(waitTime int, addToplogy bool, nfdInstanceIma
 		return err
 	}
 
-	deploymentReady, err := n.IsDeploymentReady(time.Second*time.Duration(waitTime), NfdController)
+	deploymentReady, err := n.IsDeploymentReady(time.Minute*time.Duration(waitTime), NfdController)
 
 	if err != nil {
 		glog.V(logLevel).Infof(
@@ -204,10 +204,6 @@ func (n nfdAdapter) Exists() bool {
 func (n *NfdAPIResource) IsDeploymentReady(waitTime time.Duration,
 	deployment string) (bool, error) {
 	deploymentBuilder, err := deploymentbuilder.Pull(n.APIClients, deployment, n.Namespace)
-
-	if deploymentBuilder.IsReady(waitTime) {
-		return true, nil
-	}
 
 	timeOutError := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, waitTime, true, func(ctx context.Context) (bool, error) {
