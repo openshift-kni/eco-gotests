@@ -1,8 +1,6 @@
 package ecore_system_test
 
 import (
-	"fmt"
-
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,12 +16,12 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(ecoreparams.LabelEcoreValidateMCP), func() {
-		It("Assert that custom MCPs are present", polarion.ID("67022"), polarion.ID("67023"), func() {
-
-			for _, mcpName := range ECoreConfig.MCPList {
-				glog.V(ecoreparams.ECoreLogLevel).Infof(fmt.Sprintf("Checking if %q MCP exists", mcpName))
-				_, err := mco.Pull(APIClient, mcpName)
-				Expect(err).ToNot(HaveOccurred(), "Error pulling MCP %q", mcpName)
-			}
-		})
+		DescribeTable("Verify MCP exists", func(mcpName string) {
+			glog.V(ecoreparams.ECoreLogLevel).Infof("Checking if %q MCP exists", mcpName)
+			_, err := mco.Pull(APIClient, mcpName)
+			Expect(err).ToNot(HaveOccurred(), "Error pulling MCP %q", mcpName)
+		},
+			Entry("Assert 'standard' MCP", ECoreConfig.MCPOneName, polarion.ID("67022")),
+			Entry("Assert 'ht100gb' MCP", ECoreConfig.MCPTwoName, polarion.ID("67023")),
+		)
 	})
