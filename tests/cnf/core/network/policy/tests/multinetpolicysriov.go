@@ -133,18 +133,24 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 			By("Traffic verification")
 			// All traffic should be blocked to the serverPod
-			err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5001)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
-			err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5003)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 
 			// Traffic between firstClientPod and secondClientPod should not be affected (not blocked)
-			err = runTraffic(secondClientPod, removePrefixFromIP(firstClientPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(firstClientPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("Pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 		})
 
 		// 53899
@@ -161,18 +167,24 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 			// All traffic is accepted
 			By("Traffic verification")
-			err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Unexpectedly pod %s can NOT reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("Unexpectedly pod %s can NOT reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
-			err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Unexpectedly pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("Unexpectedly pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
 			// Traffic between firstClientPod and secondClientPod should not be affected (not blocked)
-			err = runTraffic(firstClientPod, removePrefixFromIP(secondClientPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(secondClientPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 		})
 
 		// 53900
@@ -198,28 +210,38 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 			By("Traffic verification")
 			// Traffic from firstClientPod to serverPod with port range 5000-5002 should pass.
-			err = runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
 			// Port 5003 is out of the accepted port range. Traffic should be dropped.
-			err = runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 
 			// Traffic between firstClientPod and secondClientPod is not allowed
-			err = runTraffic(firstClientPod, ipaddr.RemovePrefix(secondClientPodIP), tcpProtocol, port5001)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
-				firstClientPod.Definition.Name, secondClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, ipaddr.RemovePrefix(secondClientPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
+					firstClientPod.Definition.Name, secondClientPod.Definition.Name, port5001))
 
 			// Traffic between secondClientPod and serverPod is not affected by rule.
-			err = runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
-			err = runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 		})
 
 		// 53898
@@ -249,23 +271,31 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 			By("Traffic verification")
 			// Traffic from firstClientPod to serverPod with source IP netpolicyparameters.Pod2IPAddress should pass
-			err = runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
 			// Traffic from serverPod to secondClientPod with destination IP netpolicyparameters.Pod3IPAddress should pass
-			err = runTraffic(serverPod, ipaddr.RemovePrefix(secondClientPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				serverPod.Definition.Name, secondClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(serverPod, ipaddr.RemovePrefix(secondClientPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					serverPod.Definition.Name, secondClientPod.Definition.Name, port5001))
 
 			// All other traffic should be dropped
-			err = runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
-			err = runTraffic(serverPod, ipaddr.RemovePrefix(firstClientPodIP), tcpProtocol, port5001)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
-				serverPod.Definition.Name, firstClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(serverPod, ipaddr.RemovePrefix(firstClientPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("unexpectedly pod %s can reach %s with port %d",
+					serverPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 		})
 
 		// 55990
@@ -281,31 +311,41 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 			By("Traffic verification")
 			// All traffic should be blocked to the serverPod
-			err = runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
-			err = runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
-			Expect(err).Should(HaveOccurred(), fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("Unexpectedly pod %s can reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 
 			// Traffic between firstClientPod and secondClientPod should not be affected (not blocked)
-			err = runTraffic(secondClientPod, ipaddr.RemovePrefix(firstClientPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("Pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, ipaddr.RemovePrefix(firstClientPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("Pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 
 			By("Disable MultiNetworkPolicy feature")
 			enableMultiNetworkPolicy(false)
 
 			By("Traffic verification with MultiNetworkPolicy disabled")
 			// All traffic is accepted and there is no any policy because feature is off
-			err = runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
-			err = runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
-			Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, ipaddr.RemovePrefix(serverPodIP), tcpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 
 			By("Applying MultiNetworkPolicy should fail")
 			_, err = networkpolicy.NewMultiNetworkPolicyBuilder(
@@ -355,16 +395,23 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 			// Connectivity works without policy
 			By("Testing connectivity without multiNetworkPolicy applied")
-			err := runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
-			err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
-			err = runTraffic(secondClientPod, removePrefixFromIP(firstClientPodIPv6), sctpProtocol, port5001)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(firstClientPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 		})
 
 		It("Ingress/Egress Allow access only to a specific port/protocol", polarion.ID("70040"), func() {
@@ -387,24 +434,35 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 			By("Testing connectivity with multiNetworkPolicy applied")
 			// Allowed port works as expected.
-			err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 			// Same client but port is not allowed.
-			err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("pod %s CAN reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 			// Traffic from different pod denied.
-			err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("pod %s CAN reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 			// Egress policy works as expected.
-			err = runTraffic(serverPod, removePrefixFromIP(firstClientPodIPv6), sctpProtocol, port5001)
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s with port %d",
-				serverPod.Definition.Name, firstClientPod.Definition.Name, port5001))
-			err = runTraffic(serverPod, removePrefixFromIP(secondClientPodIPv6), sctpProtocol, port5001)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				serverPod.Definition.Name, secondClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(serverPod, removePrefixFromIP(firstClientPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("pod %s CAN reach %s with port %d",
+					serverPod.Definition.Name, firstClientPod.Definition.Name, port5001))
+
+			Eventually(func() error {
+				return runTraffic(serverPod, removePrefixFromIP(secondClientPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					serverPod.Definition.Name, secondClientPod.Definition.Name, port5001))
 		})
 
 		It("Ingress/Egress Allow access only to a specific subnet", polarion.ID("70041"), func() {
@@ -422,19 +480,29 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
 
 			By("Testing connectivity with multiNetworkPolicy applied")
-			err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
-			err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
-			err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
-			err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s with port %d",
-				firstClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+			Eventually(func() error {
+				return runTraffic(secondClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
+
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("pod %s CAN reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+
+			Eventually(func() error {
+				return runTraffic(firstClientPod, removePrefixFromIP(serverPodIPv6), sctpProtocol, port5003)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("pod %s CAN reach %s with port %d",
+					firstClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 
 			err = policy.Delete()
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete multinetworkpolicy object")
@@ -453,12 +521,17 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multinetworkpolicy object")
 
 			// Egress policy works as expected.
-			err = runTraffic(serverPod, removePrefixFromIP(firstClientPodIPv6), sctpProtocol, port5001)
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s with port %d",
-				serverPod.Definition.Name, firstClientPod.Definition.Name, port5001))
-			err = runTraffic(serverPod, removePrefixFromIP(secondClientPodIPv6), sctpProtocol, port5001)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-				serverPod.Definition.Name, secondClientPod.Definition.Name, port5001))
+			Eventually(func() error {
+				return runTraffic(serverPod, removePrefixFromIP(firstClientPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+				fmt.Sprintf("pod %s CAN reach %s with port %d",
+					serverPod.Definition.Name, firstClientPod.Definition.Name, port5001))
+
+			Eventually(func() error {
+				return runTraffic(serverPod, removePrefixFromIP(secondClientPodIPv6), sctpProtocol, port5001)
+			}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+				fmt.Sprintf("pod %s can NOT reach %s with port %d",
+					serverPod.Definition.Name, secondClientPod.Definition.Name, port5001))
 		})
 	})
 
@@ -573,9 +646,11 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		}
 
 		// All traffic is accepted
-		err = runTraffic(firstClientPod, removePrefixFromIP(serverIP), protocol, port5001)
-		Expect(err).ShouldNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s with port %d",
-			firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
+		Eventually(func() error {
+			return runTraffic(firstClientPod, removePrefixFromIP(serverIP), protocol, port5001)
+		}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+			fmt.Sprintf("pod %s can NOT reach %s with port %d",
+				firstClientPod.Definition.Name, serverPod.Definition.Name, port5001))
 
 		err = testNameSpace.CleanObjects(
 			10*time.Minute,
@@ -760,49 +835,65 @@ func removePrefixFromIP(ipAddr string) string {
 func testSCTPConnectivityWithoutPolicy(
 	firstClientPod, secondClientPod, serverPod *pod.Builder, serverPodIP, clientPodIP string) {
 	By("Testing SCTP connectivity without multiNetworkPolicy applied")
+	Eventually(func() error {
+		return runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+		fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+			firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
 
-	err := runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
-		firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+	Eventually(func() error {
+		return runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+		fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+			secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5003))
 
-	err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
-		secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5003))
-
-	err = runTraffic(secondClientPod, removePrefixFromIP(clientPodIP), sctpProtocol, port5001)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
-		secondClientPod.Definition.Name, firstClientPod.Definition.Name, serverPodIP, port5001))
+	Eventually(func() error {
+		return runTraffic(secondClientPod, removePrefixFromIP(clientPodIP), sctpProtocol, port5001)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+		fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+			secondClientPod.Definition.Name, firstClientPod.Definition.Name, serverPodIP, port5001))
 }
 
 func testIngressSCTPPolicy(firstClientPod, secondClientPod, serverPod *pod.Builder, serverPodIP string) {
 	By("Testing SCTP connectivity with ingress multiNetworkPolicy applied")
 
-	err := runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dest ip %s with port %d",
-		secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+	Eventually(func() error {
+		return runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+		fmt.Sprintf("pod %s can NOT reach %s dest ip %s with port %d",
+			secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
 
-	err = runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dest ip %s with port %d",
-		secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+	Eventually(func() error {
+		return runTraffic(secondClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+		fmt.Sprintf("pod %s can NOT reach %s dest ip %s with port %d",
+			secondClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
 
-	err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
-	Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
-		firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
+	Eventually(func() error {
+		return runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5001)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+		fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
+			firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5001))
 
-	err = runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
-	Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
-		firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5003))
+	Eventually(func() error {
+		return runTraffic(firstClientPod, removePrefixFromIP(serverPodIP), sctpProtocol, port5003)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+		fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
+			firstClientPod.Definition.Name, serverPod.Definition.Name, serverPodIP, port5003))
 }
 
 func testEgressSCTPPolicy(
 	firstClientPod, secondClientPod, serverPod *pod.Builder, firstClientPodIP, secondClientPodIP string) {
 	By("Testing SCTP connectivity with egress multiNetworkPolicy applied")
+	Eventually(func() error {
+		return runTraffic(serverPod, removePrefixFromIP(firstClientPodIP), sctpProtocol, port5001)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).Should(HaveOccurred(),
+		fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
+			serverPod.Definition.Name, firstClientPod.Definition.Name, firstClientPodIP, port5001))
 
-	err := runTraffic(serverPod, removePrefixFromIP(firstClientPodIP), sctpProtocol, port5001)
-	Expect(err).To(HaveOccurred(), fmt.Sprintf("pod %s CAN reach %s dst ip %s with port %d",
-		serverPod.Definition.Name, firstClientPod.Definition.Name, firstClientPodIP, port5001))
-
-	err = runTraffic(serverPod, removePrefixFromIP(secondClientPodIP), sctpProtocol, port5001)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
-		serverPod.Definition.Name, secondClientPod.Definition.Name, secondClientPodIP, port5001))
+	Eventually(func() error {
+		return runTraffic(serverPod, removePrefixFromIP(secondClientPodIP), sctpProtocol, port5001)
+	}, tsparams.WaitTrafficTimeout, tsparams.RetryTrafficInterval).ShouldNot(HaveOccurred(),
+		fmt.Sprintf("pod %s can NOT reach %s dst ip %s with port %d",
+			serverPod.Definition.Name, secondClientPod.Definition.Name, secondClientPodIP, port5001))
 }

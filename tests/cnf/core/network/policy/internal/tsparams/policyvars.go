@@ -43,4 +43,8 @@ var (
 	WaitTimeout = 3 * time.Minute
 	// RetryInterval represents retry interval for the most ginkgo Eventually functions.
 	RetryInterval = 3 * time.Second
+	// WaitTrafficTimeout represents timeout for the traffic Eventually functions.
+	WaitTrafficTimeout = 1 * time.Minute
+	// RetryTrafficInterval represents retry interval for the traffic Eventually functions.
+	RetryTrafficInterval = 20 * time.Second
 )
