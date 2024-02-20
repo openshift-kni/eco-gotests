@@ -58,10 +58,14 @@ var (
 	workerNodes               []*nodes.Builder
 	multicastPingIPv6CMD      = []string{"bash", "-c", "sleep 5; ping -I net1 ff05:5::05"}
 	multicastPingIPv4CMD      = []string{"bash", "-c", "sleep 5; ping -I net1 239.100.100.250"}
-	multicastPingDualStackCMD = []string{"bash", "-c", "sleep 5; ping -I net1 239.100.100.250 & ping -I net1 ff05:5::05"}
-	tcpDumpCMD                = []string{"bash", "-c", "tcpdump -i net1 -c 10"}
-	addIPv6MCGroupMacCMD      = []string{"bash", "-c", "ip maddr add 33:33:0:0:0:5 dev net1"}
-	addIPv4MCGroupMacCMD      = []string{"bash", "-c", "ip maddr add 01:00:5e:64:64:fa dev net1"}
+	multicastPingDualStackCMD = []string{"bash", "-c", "sleep 5; ping -I net1 239.100.100.250 & " +
+		"ping -I net1 ff05:5::05"}
+	multicastPingDualNet1Net2StackCMD = []string{"bash", "-c", "sleep 5; ping -I net1 239.100.100.250 & " +
+		"ping -I net1 ff05:5::05 & ping -I net2 239.100.100.250 & ping -I net2 ff05:5::05"}
+	tcpDumpCMD           = []string{"bash", "-c", "tcpdump -i net1 -c 10"}
+	tcpDumpCMDNet2       = []string{"bash", "-c", "tcpdump -i net2 -c 10"}
+	addIPv6MCGroupMacCMD = []string{"bash", "-c", "ip maddr add 33:33:0:0:0:5 dev net1"}
+	addIPv4MCGroupMacCMD = []string{"bash", "-c", "ip maddr add 01:00:5e:64:64:fa dev net1"}
 )
 
 var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFailure, func() {
@@ -259,6 +263,39 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			clientAllmultiDisabledIPv6, multicastIPv6GroupIP, addIPv6MCGroupMacCMD)
 	})
 
+	It("Validate a pod does not receive non-member multicast traffic over a third SRIOV dual stack interface "+
+		"when allmulti mode is enabled on the second SRIOV interface from a multicast source in the same PF",
+		polarion.ID("67820"), func() {
+			multicastServer := createMulticastServerWithMultiNets(srIovNetworkDefaultNode1, srIovNetworkDefaultNode1,
+				[]string{multicastServerIPv4, multicastServerIPv6, "192.168.101.20/24", "2001:101::20/64"},
+				multicastPingDualNet1Net2StackCMD, workerNodes[0].Definition.Name)
+
+			defaultClient := createTestClientWithMultiInterfaces(clientDefaultName,
+				srIovNetworkDefaultNode1, srIovNetworkDefaultNode1, workerNodes[0].Definition.Name,
+				[]string{clientAllmultiDisabledIPv4, clientAllmultiDisabledIPv6, "192.168.101.2/24", "2001:101::2/64"})
+
+			allMultiEnabledClient := createTestClientWithMultiInterfaces(clientAllmultiEnabledName,
+				srIovNetworkDefaultNode1, srIovNetworkAllMultiNode1, workerNodes[0].Definition.Name,
+				[]string{clientAllmultiEnabledIPv4, clientAllmultiEnabledIPv6, "192.168.101.1/24", "2001:101::1/64"})
+
+			By("Verify IPv4 and IPv6 on net1 connectivity between the clients and multicast source")
+			err := cmd.ICMPConnectivityCheck(multicastServer, []string{clientAllmultiEnabledIPv4,
+				clientAllmultiEnabledIPv6, clientAllmultiDisabledIPv4,
+				clientAllmultiDisabledIPv6})
+			Expect(err).ToNot(HaveOccurred(),
+				"Failed to ping between the multicast source and the clients")
+
+			By("Verify IPv4 and IPv6 on net2 connectivity between the clients and multicast source")
+			err = cmd.ICMPConnectivityCheck(multicastServer, []string{"192.168.101.1/24", "2001:101::1/64",
+				"192.168.101.2/24", "2001:101::2/64"})
+			Expect(err).ToNot(HaveOccurred(),
+				"Failed to ping between the multicast source and the clients")
+
+			By("Run IPv4 and IPv6 multicast tests on Net1 and Net2")
+			runAllMultiDualInterfaceTestCase(defaultClient, allMultiEnabledClient,
+				multicastIPv4GroupIP, multicastIPv6GroupIP)
+		})
+
 	AfterEach(func() {
 		By("Removing all pods from test namespace")
 		runningNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
@@ -335,6 +372,25 @@ func createTestClient(
 	return clientDefault
 }
 
+func createTestClientWithMultiInterfaces(
+	name string,
+	sriovNetworkNet1 string,
+	sriovNetworkNet2 string,
+	nodeName string,
+	ipAddresses []string) *pod.Builder {
+	By(fmt.Sprintf("Define and run container %s", name))
+
+	annotation, err := pod.StaticIPMultiNetDualStackAnnotation([]string{sriovNetworkNet1, sriovNetworkNet2}, ipAddresses)
+	Expect(err).ToNot(HaveOccurred(), "Failed to define a 2 net dual stack nad annotation")
+
+	clientDefault, err := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName,
+		NetConfig.CnfNetTestContainer).DefineOnNode(nodeName).WithPrivilegedFlag().
+		WithSecondaryNetwork(annotation).CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+	Expect(err).ToNot(HaveOccurred(), "Failed to define and run default client")
+
+	return clientDefault
+}
+
 func createBondedTestClient(
 	name string,
 	sriovNetworkNet1 string,
@@ -355,6 +411,25 @@ func createBondedTestClient(
 	return bondedTestContainer
 }
 
+func createMulticastServerWithMultiNets(
+	sriovNetworkNet1 string,
+	sriovNetworkNet2 string,
+	ipAddresses []string,
+	multicastCmd []string,
+	nodeName string) *pod.Builder {
+	By("Define and run a multicast server")
+
+	annotation, err := pod.StaticIPMultiNetDualStackAnnotation([]string{sriovNetworkNet1, sriovNetworkNet2}, ipAddresses)
+	Expect(err).ToNot(HaveOccurred(), "Failed to define a 2 net dual stack nad annotation")
+
+	multicastSourceClient, err := pod.NewBuilder(APIClient, "mc-source-server", tsparams.TestNamespaceName,
+		NetConfig.CnfNetTestContainer).DefineOnNode(nodeName).WithPrivilegedFlag().RedefineDefaultCMD(multicastCmd).
+		WithSecondaryNetwork(annotation).CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+	Expect(err).ToNot(HaveOccurred(), "Failed to define and run multicast source server")
+
+	return multicastSourceClient
+}
+
 func runAllMultiTestCases(
 	multicastSourcePod *pod.Builder,
 	defaultClientPod *pod.Builder,
@@ -370,27 +445,10 @@ func runAllMultiTestCases(
 	Expect(err).ToNot(HaveOccurred(), "Failed to ping between the multicast source and the clients")
 
 	By("Verify multicast group is not accessible from container without allmulti enabled")
-	Consistently(func() string {
-		output, err := defaultClientPod.ExecCommand(tcpDumpCMD)
-		if err != nil {
-			glog.V(100).Info(err)
-		}
-
-		return output.String()
-
-	}, 5*time.Second, 1*time.Second).ShouldNot(MatchRegexp(multicastGroupIP))
+	assertMulticastTrafficIsNotReceived(defaultClientPod, tcpDumpCMD, multicastGroupIP)
 
 	By("Verify multicast group is accessible from container with allmulti enabled")
-
-	Eventually(func() string {
-		output, err := allMultiEnabledPod.ExecCommand(tcpDumpCMD)
-		if err != nil {
-			glog.V(100).Info(err)
-		}
-
-		return output.String()
-
-	}, 5*time.Second, 1*time.Second).Should(MatchRegexp(multicastGroupIP))
+	assertMulticastTrafficIsReceived(allMultiEnabledPod, tcpDumpCMD, multicastGroupIP)
 
 	By("Add client without allmulti enabled to the multicast group")
 
@@ -398,15 +456,7 @@ func runAllMultiTestCases(
 	Expect(err).ToNot(HaveOccurred(), "Failed to add the multicast group mac address")
 
 	By("Verify the client receives traffic from the multicast group after being added to the group")
-	Eventually(func() string {
-		output, err := defaultClientPod.ExecCommand(tcpDumpCMD)
-		if err != nil {
-			glog.V(100).Info(err)
-		}
-
-		return output.String()
-
-	}, 5*time.Second, 1*time.Second).Should(MatchRegexp(multicastGroupIP))
+	assertMulticastTrafficIsReceived(defaultClientPod, tcpDumpCMD, multicastGroupIP)
 }
 
 // defineBondNAD returns network attachment definition for a Bond interface.
@@ -442,4 +492,73 @@ func defineAndCreateSrIovNetworkWithOutIPAM(srIovNetwork string, allMulti bool) 
 		return err == nil
 	}, tsparams.WaitTimeout, tsparams.RetryInterval).Should(BeTrue(), "Failed to pull "+
 		"NetworkAttachmentDefinition")
+}
+
+func runAllMultiDualInterfaceTestCase(
+	defaultClientPod *pod.Builder,
+	allMultiEnabledPod *pod.Builder,
+	multicastGroupIPv4 string,
+	multicastGroupIPv6 string) {
+	By("Verify IPv4 multicast group is not accessible from default container without allmulti enabled")
+	assertMulticastTrafficIsNotReceived(defaultClientPod, tcpDumpCMD, multicastGroupIPv4)
+
+	By("Verify IPv6 multicast group is not accessible from default container without allmulti enabled")
+	assertMulticastTrafficIsNotReceived(defaultClientPod, tcpDumpCMD, multicastGroupIPv6)
+
+	By("Verify IPv4 multicast group is accessible from allmulti enabled container net1 with allmulti enabled")
+	assertMulticastTrafficIsReceived(allMultiEnabledPod, tcpDumpCMDNet2, multicastGroupIPv4)
+
+	By("Verify IPv6 multicast group is accessible from allmulti enabled container net1 with allmulti enabled")
+	assertMulticastTrafficIsReceived(allMultiEnabledPod, tcpDumpCMDNet2, multicastGroupIPv6)
+
+	By("Verify IPv4 multicast group is not accessible from allmulti enabled container net2 without allmulti enabled")
+	assertMulticastTrafficIsNotReceived(allMultiEnabledPod, tcpDumpCMD, multicastGroupIPv4)
+
+	By("Verify IPv6 multicast group is not accessible from allmulti enabled container net2 without allmulti enabled")
+	assertMulticastTrafficIsNotReceived(allMultiEnabledPod, tcpDumpCMD, multicastGroupIPv6)
+
+	By("Add client without allmulti enabled to the IPv4 multicast group")
+
+	_, err := allMultiEnabledPod.ExecCommand(addIPv4MCGroupMacCMD)
+	Expect(err).ToNot(HaveOccurred(), "Failed to add the multicast group mac address")
+
+	By("Verify the client receives IPv4 multicast traffic after being added to the group")
+	assertMulticastTrafficIsReceived(allMultiEnabledPod, tcpDumpCMD, multicastGroupIPv4)
+
+	By("Add client without allmulti enabled to the IPv6 multicast group")
+
+	_, err = allMultiEnabledPod.ExecCommand(addIPv6MCGroupMacCMD)
+	Expect(err).ToNot(HaveOccurred(), "Failed to add the multicast group mac address")
+
+	By("Verify the client receives IPv6 multicast traffic after being added to the group")
+	assertMulticastTrafficIsReceived(allMultiEnabledPod, tcpDumpCMD, multicastGroupIPv6)
+}
+
+// assertMulticastTrafficIsNotReceived uses Consistently waiting a specific amount to time to verify that the
+// multicastGroupIP is not received.
+func assertMulticastTrafficIsNotReceived(clientPod *pod.Builder, testCmd []string, multicastGroupIP string) {
+	execCommand := func() string {
+		output, err := clientPod.ExecCommand(testCmd)
+		if err != nil {
+			glog.V(100).Infof("Error executing command: %s", err)
+		}
+
+		return output.String()
+	}
+
+	Consistently(execCommand, 5*time.Second, 1*time.Second).ShouldNot(MatchRegexp(multicastGroupIP))
+}
+
+// assertMulticastTrafficIsReceived uses Eventually expecting to see the multicastGroupIP.
+func assertMulticastTrafficIsReceived(clientPod *pod.Builder, testCmd []string, multicastGroupIP string) {
+	execCommand := func() string {
+		output, err := clientPod.ExecCommand(testCmd)
+		if err != nil {
+			glog.V(100).Infof("Error executing command: %s", err)
+		}
+
+		return output.String()
+	}
+
+	Eventually(execCommand, 5*time.Second, 1*time.Second).Should(MatchRegexp(multicastGroupIP))
 }

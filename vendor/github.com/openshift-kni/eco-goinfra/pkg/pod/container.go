@@ -280,6 +280,25 @@ func (builder *ContainerBuilder) WithResourceRequest(hugePages, memory string, c
 	return builder
 }
 
+// WithCustomResourcesLimits applies custom resource limit struct on container.
+func (builder *ContainerBuilder) WithCustomResourcesLimits(resourceList v1.ResourceList) *ContainerBuilder {
+	glog.V(100).Infof("Applying custom resource limit to container: %v", resourceList)
+
+	if len(resourceList) == 0 {
+		glog.V(100).Infof("Container's resource limit var 'resourceList' is empty")
+
+		builder.errorMsg = "container's resource limit var 'resourceList' is empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.definition.Resources.Limits = resourceList
+
+	return builder
+}
+
 // WithEnvVar adds environment variables to container.
 func (builder *ContainerBuilder) WithEnvVar(name, value string) *ContainerBuilder {
 	glog.V(100).Infof("Applying custom environment variables to container: name %s, value: %s", name, value)

@@ -1,6 +1,9 @@
 package pod
 
 import (
+	"fmt"
+
+	"github.com/golang/glog"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 )
 
@@ -79,4 +82,30 @@ func StaticIPBondAnnotationWithInterface(
 	bond[0].InterfaceRequest = bondIntName
 
 	return append(annotation, bond[0])
+}
+
+// StaticIPMultiNetDualStackAnnotation defines network annotation for multiple interfaces with dual stack addresses.
+func StaticIPMultiNetDualStackAnnotation(sriovNets, ipAddr []string) ([]*multus.NetworkSelectionElement, error) {
+	if len(sriovNets) == 0 {
+		glog.V(100).Infof("sriovNets cannot be empty")
+
+		return nil, fmt.Errorf("sriovNets []string cannot be empty")
+	}
+
+	annotation := []*multus.NetworkSelectionElement{}
+
+	// Verify ipAddr has an even number of IP addresses and not empty.
+	if len(ipAddr) == 0 || len(ipAddr)%2 != 0 {
+		glog.V(100).Infof("ipAddr needs to contain an even number of IP addresses")
+
+		return nil, fmt.Errorf("ipAddr []string cannot be empy or an odd number")
+	}
+
+	for i, sriovNetName := range sriovNets {
+		if i*2+1 < len(ipAddr) {
+			annotation = append(annotation, StaticIPAnnotation(sriovNetName, []string{ipAddr[i*2], ipAddr[i*2+1]})...)
+		}
+	}
+
+	return annotation, nil
 }

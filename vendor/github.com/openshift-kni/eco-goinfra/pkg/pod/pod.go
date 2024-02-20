@@ -559,7 +559,7 @@ func (builder *Builder) WithTolerationToMaster() *Builder {
 		return builder
 	}
 
-	glog.V(100).Infof("Redefining pod's %s with toleration to master node", builder.Definition.Name)
+	glog.V(100).Infof("Appending pod's %s with toleration to master node", builder.Definition.Name)
 
 	builder.isMutationAllowed("toleration to master node")
 
@@ -573,6 +573,53 @@ func (builder *Builder) WithTolerationToMaster() *Builder {
 			Effect: "NoSchedule",
 		},
 	}
+
+	return builder
+}
+
+// WithToleration adds a toleration configuration inside the pod.
+func (builder *Builder) WithToleration(toleration v1.Toleration) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Updating pod %s with toleration %v", builder.Definition.Name, toleration)
+
+	builder.isMutationAllowed("custom toleration")
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.Tolerations = append(builder.Definition.Spec.Tolerations, toleration)
+
+	return builder
+}
+
+// WithNodeSelector adds a nodeSelector configuration inside the pod.
+func (builder *Builder) WithNodeSelector(nodeSelector map[string]string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Redefining pod %s in namespace %s with nodeSelector %v",
+		builder.Definition.Name, builder.Definition.Namespace, nodeSelector)
+
+	builder.isMutationAllowed("nodeSelector")
+
+	if len(nodeSelector) == 0 {
+		glog.V(100).Infof(
+			"Failed to set nodeSelector on pod %s in namespace %s. nodeSelector can not be empty",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.errorMsg = "can not define pod with empty nodeSelector"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.NodeSelector = nodeSelector
 
 	return builder
 }
