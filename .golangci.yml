@@ -200,3 +200,6 @@ issues:
     - path: "tests/.*/.*suite_test.go"
       linters:
         - depguard
+    - path: "tests/system-tests/rdscore/internal/.*"
+      linters:
+        - depguard
