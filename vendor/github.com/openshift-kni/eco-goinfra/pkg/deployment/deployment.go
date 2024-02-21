@@ -341,6 +341,28 @@ func (builder *Builder) WithVolume(deployVolume coreV1.Volume) *Builder {
 	return builder
 }
 
+// WithSchedulerName configures a scheduler to process pod's scheduling.
+func (builder *Builder) WithSchedulerName(schedulerName string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if schedulerName == "" {
+		glog.V(100).Infof("Scheduler's name cannot be empty")
+
+		builder.errorMsg = "Scheduler's name cannot be empty"
+
+		return builder
+	}
+
+	glog.V(100).Infof("Setting scheduler %s for deployment %s in namespace %s",
+		schedulerName, builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.SchedulerName = schedulerName
+
+	return builder
+}
+
 // WithOptions creates deployment with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {

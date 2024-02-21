@@ -299,6 +299,25 @@ func (builder *ContainerBuilder) WithCustomResourcesLimits(resourceList v1.Resou
 	return builder
 }
 
+// WithImagePullPolicy applies specific image pull policy on container.
+func (builder *ContainerBuilder) WithImagePullPolicy(pullPolicy v1.PullPolicy) *ContainerBuilder {
+	glog.V(100).Infof("Applying image pull policy to container: %s", pullPolicy)
+
+	if len(pullPolicy) == 0 {
+		glog.V(100).Infof("Container's image pull policy 'pullPolicy' is empty")
+
+		builder.errorMsg = "container's pull policy var 'pullPolicy' is empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.definition.ImagePullPolicy = pullPolicy
+
+	return builder
+}
+
 // WithEnvVar adds environment variables to container.
 func (builder *ContainerBuilder) WithEnvVar(name, value string) *ContainerBuilder {
 	glog.V(100).Infof("Applying custom environment variables to container: name %s, value: %s", name, value)
