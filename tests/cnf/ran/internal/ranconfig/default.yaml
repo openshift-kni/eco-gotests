@@ -1,0 +1,9 @@
+---
+# General configurations
+hubKubeEnvKey: "KUBECONFIG"
+spokeKubeEnvKey: "KUBECONFIG_SPOKE1"
+acmOperatorName: "advanced-cluster-management"
+acmOperatorNamespace: "rhacm"
+openshiftGitops: "openshift-gitops"
+openshiftGitopsRepoServer: "openshift-gitops-repo-server"
+...
