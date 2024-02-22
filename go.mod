@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240220183418-527e361b3d51
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240222153034-c560fc012d4b
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -38,7 +38,6 @@ require (
 	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.16.3
 )
 
@@ -142,7 +141,7 @@ require (
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20231216054307-28180628cf50 // indirect
-	github.com/openshift-kni/lifecycle-agent v0.0.0-20240109211418-4489c4a1eb46 // indirect
+	github.com/openshift-kni/lifecycle-agent v0.0.0-20240215213309-6737db7143ec // indirect
 	github.com/openshift/client-go v0.0.1 // indirect
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
 	github.com/openshift/library-go v0.0.0-20231027143522-b8cd45d2d2c8 // indirect
@@ -178,7 +177,7 @@ require (
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
@@ -204,6 +203,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/kubectl v0.28.3 // indirect
 	k8s.io/kubelet v0.27.4 // indirect
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	open-cluster-management.io/governance-policy-propagator v0.12.0 // indirect
 	open-cluster-management.io/multicloud-operators-subscription v0.11.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

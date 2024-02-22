@@ -25,12 +25,13 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=imagebasedupgrades,scope=Cluster,shortName=ibu
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:printcolumn:name="Stage",type="string",JSONPath=".spec.stage"
-// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.conditions[-1:].type"
+// +kubebuilder:printcolumn:name="Desired Stage",type="string",JSONPath=".spec.stage"
+// +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.conditions[-1:].reason"
 // +kubebuilder:printcolumn:name="Details",type="string",JSONPath=".status.conditions[-1:].message"
 // +kubebuilder:validation:XValidation:message="can not change spec.seedImageRef while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.seedImageRef) && has(self.spec.seedImageRef) && oldSelf.spec.seedImageRef==self.spec.seedImageRef || !has(self.spec.seedImageRef) && !has(oldSelf.spec.seedImageRef)"
 // +kubebuilder:validation:XValidation:message="can not change spec.oadpContent while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.oadpContent) && has(self.spec.oadpContent) && oldSelf.spec.oadpContent==self.spec.oadpContent || !has(self.spec.oadpContent) && !has(oldSelf.spec.oadpContent)"
 // +kubebuilder:validation:XValidation:message="can not change spec.extraManifests while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.extraManifests) && has(self.spec.extraManifests) && oldSelf.spec.extraManifests==self.spec.extraManifests || !has(self.spec.extraManifests) && !has(oldSelf.spec.extraManifests)"
+// +kubebuilder:validation:XValidation:message="can not change spec.autoRollbackOnFailure while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.autoRollbackOnFailure) && has(self.spec.autoRollbackOnFailure) && oldSelf.spec.autoRollbackOnFailure==self.spec.autoRollbackOnFailure || !has(self.spec.autoRollbackOnFailure) && !has(oldSelf.spec.autoRollbackOnFailure)"
 // +operator-sdk:csv:customresourcedefinitions:displayName="Image-based Cluster Upgrade",resources={{Namespace, v1},{Deployment,apps/v1}}
 // ImageBasedUpgrade is the Schema for the ImageBasedUpgrades API
 type ImageBasedUpgrade struct {
@@ -63,11 +64,13 @@ type ImageBasedUpgradeSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Stage"
 	Stage ImageBasedUpgradeStage `json:"stage,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Seed Image Reference"
-	SeedImageRef     SeedImageRef   `json:"seedImageRef,omitempty"`
-	AdditionalImages ConfigMapRef   `json:"additionalImages,omitempty"`
-	OADPContent      []ConfigMapRef `json:"oadpContent,omitempty"`
-	ExtraManifests   []ConfigMapRef `json:"extraManifests,omitempty"`
-	RollbackTarget   string         `json:"rollbackTarget,omitempty"`
+	SeedImageRef     SeedImageRef `json:"seedImageRef,omitempty"`
+	AdditionalImages ConfigMapRef `json:"additionalImages,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OADP Content"
+	OADPContent []ConfigMapRef `json:"oadpContent,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Extra Manifests"
+	ExtraManifests        []ConfigMapRef        `json:"extraManifests,omitempty"`
+	AutoRollbackOnFailure AutoRollbackOnFailure `json:"autoRollbackOnFailure,omitempty"`
 }
 
 // SeedImageRef defines the seed image and OCP version for the upgrade
@@ -75,6 +78,13 @@ type SeedImageRef struct {
 	Version       string         `json:"version,omitempty"`
 	Image         string         `json:"image,omitempty"`
 	PullSecretRef *PullSecretRef `json:"pullSecretRef,omitempty"`
+}
+
+type AutoRollbackOnFailure struct {
+	DisabledForPostRebootConfig  bool `json:"disabledForPostRebootConfig,omitempty"`  // If true, disable auto-rollback for post-reboot config service-unit(s)
+	DisabledForUpgradeCompletion bool `json:"disabledForUpgradeCompletion,omitempty"` // If true, disable auto-rollback for Upgrade completion handler
+	DisabledInitMonitor          bool `json:"disabledInitMonitor,omitempty"`          // If true, disable LCA Init Monitor watchdog, which triggers auto-rollback if timeout occurs before upgrade completion
+	InitMonitorTimeoutSeconds    int  `json:"initMonitorTimeoutSeconds,omitempty"`    // LCA Init Monitor watchdog timeout, in seconds. Value <= 0 is treated as "use default" when writing config file in Prep stage
 }
 
 // ConfigMapRef defines a reference to a config map
@@ -97,19 +107,13 @@ type PullSecretRef struct {
 
 // ImageBasedUpgradeStatus defines the observed state of ImageBasedUpgrade
 type ImageBasedUpgradeStatus struct {
-	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Status"
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	StartedAt          metav1.Time `json:"startedAt,omitempty"`
 	CompletedAt        metav1.Time `json:"completedAt,omitempty"`
-	StateRoots         []StateRoot `json:"stateRoots,omitempty"`
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions"
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-}
-
-// StateRoot defines a list of saved pod states and the running OCP version when they are saved
-type StateRoot struct {
-	Version string `json:"version,omitempty"`
-	// TODO add fields for saved states
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Valid Next Stage"
+	ValidNextStages []ImageBasedUpgradeStage `json:"validNextStages,omitempty"`
 }
 
 // +kubebuilder:object:root=true

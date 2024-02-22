@@ -148,6 +148,23 @@ func (builder *Builder) Exists() bool {
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
+// Update modifies the existing secret in the cluster.
+func (builder *Builder) Update() (*Builder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Updating secret %s in namespace %s",
+		builder.Definition.Name,
+		builder.Definition.Namespace)
+
+	var err error
+	builder.Object, err = builder.apiClient.Secrets(builder.Definition.Namespace).Update(
+		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+
+	return builder, err
+}
+
 // WithData defines the data placed in the secret.
 func (builder *Builder) WithData(data map[string][]byte) *Builder {
 	if valid, _ := builder.validate(); !valid {
@@ -155,7 +172,7 @@ func (builder *Builder) WithData(data map[string][]byte) *Builder {
 	}
 
 	glog.V(100).Infof(
-		"Creating secret %s in namespace %s with this data: %s",
+		"Defining secret %s in namespace %s with this data: %s",
 		builder.Definition.Name, builder.Definition.Namespace, data)
 
 	if len(data) == 0 {

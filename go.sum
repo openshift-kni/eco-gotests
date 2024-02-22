@@ -499,12 +499,12 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/image-spec v1.1.0-rc5 h1:Ygwkfw9bpDvs+c9E34SdgGOj41dX/cbdlwvlWt0pnFI=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20231216054307-28180628cf50 h1:0Lw0f9ncgoXKo1JnQrEo4fGqYelTV+5huXzJvziDG9E=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20231216054307-28180628cf50/go.mod h1:vfydLuqf4QsLXI5busOIjbuvvURuE0oeLCwjvXj34Mo=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240220183418-527e361b3d51 h1:62Q5xPGpPQSdDJxg+eaV9Q5cL4XUYWv26cv4ZF83buo=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240220183418-527e361b3d51/go.mod h1:Fi2MRjD91qHEMk2YgXmTLSP+IBiWJBkGO9ARY9wx6S8=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240222153034-c560fc012d4b h1:Q62ufJI/Mp03BUv5y0UKG7o2znXzAMAXpEqEsipla/8=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240222153034-c560fc012d4b/go.mod h1:zg2Hb0aL9Q+w/KOQjiDIqu1jXQTg/2nnrnS+Gnmqcj0=
 github.com/openshift-kni/k8sreporter v1.0.5 h1:1GYBc/BTZyVoXilHef43v9A8BSzw700zAPZ6zsZvo6Y=
 github.com/openshift-kni/k8sreporter v1.0.5/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
-github.com/openshift-kni/lifecycle-agent v0.0.0-20240109211418-4489c4a1eb46 h1:I6ZcMvy98fAzd/5IySrli8inlMuUFfS0+LE57ln8lqs=
-github.com/openshift-kni/lifecycle-agent v0.0.0-20240109211418-4489c4a1eb46/go.mod h1:+7AXvmYXtR4+UjvoMDeeRt4MrV32YK0uUHtHhEPn8MQ=
+github.com/openshift-kni/lifecycle-agent v0.0.0-20240215213309-6737db7143ec h1:laWzXomy6GGQMw8ZxsSzzvhAakNPRzAJO9yKo4bKPAs=
+github.com/openshift-kni/lifecycle-agent v0.0.0-20240215213309-6737db7143ec/go.mod h1:MnDMJcGBORle3bvdbUol8yVXm2/nD3vQd/Pctk1HIkY=
 github.com/openshift/api v0.0.0-20240116035456-11ed2fbcb805 h1:5NjcOG5i+WH0F4FI8dKSf0fNgX0YQkrJ8w3YcsHx6KM=
 github.com/openshift/api v0.0.0-20240116035456-11ed2fbcb805/go.mod h1:qNtV0315F+f8ld52TLtPvrfivZpdimOzTi3kn9IVbtU=
 github.com/openshift/assisted-service/api v0.0.0-20231207085132-610c679d626d h1:xltGn+LIMx+H3LfVLGk4wp5+74Rf2XgK81ntWnI3+B4=
@@ -763,8 +763,8 @@ golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.1.0/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
-golang.org/x/sync v0.5.0 h1:60k92dhOjHxJkrqnwsfl8KuaHbn/5dl0lUPUklKo3qE=
-golang.org/x/sync v0.5.0/go.mod h1:Czt+wKu1gCyEFDUtn0jG5QVvpJ6rzVqr5aXyt9drQfk=
+golang.org/x/sync v0.6.0 h1:5BMeUDZ7vkXGfEr1x9B4bRcTH4lpkTkpdh0T/J+qjbQ=
+golang.org/x/sync v0.6.0/go.mod h1:Czt+wKu1gCyEFDUtn0jG5QVvpJ6rzVqr5aXyt9drQfk=
 golang.org/x/sys v0.0.0-20180830151530-49385e6e1522/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20180905080454-ebe1bf3edb33/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
