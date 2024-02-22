@@ -63,6 +63,11 @@ type CoreConfig struct {
 	NamespacePCG string `yaml:"rcore_nad_workload_ns_two" envconfig:"ECO_RDS_CORE_NAD_WORKLOAD_NS_TWO"`
 	//nolint:lll
 	PerformanceProfileHTName string `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
+	StorageODFWorkloadImage  string `yaml:"rdscore_storage_storage_wlkd_image" envconfig:"ECO_RDSCORE_STORAGE_WLKD_IMAGE"`
+	//nolint:lll
+	StorageODFDeployOneSelector map[string]string `yaml:"rdscore_wlkd_odf_one_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_ONE_SELECTOR"`
+	//nolint:lll
+	StorageODFDeployTwoSelector map[string]string `yaml:"rdscore_wlkd_odf_two_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_TWO_SELECTOR"`
 	//nolint:lll
 	NodeSelectorHTNodes map[string]string `yaml:"rdscore_node_selector_ht_nodes" envconfig:"ECO_RDSCORE_NODE_SELECTOR_HT_NODES"`
 }
