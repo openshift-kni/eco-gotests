@@ -47,7 +47,7 @@ func DoesClusterSupportDpdkTests(
 		}
 	}
 
-	err = netenv.DoesClusterSupportSrIovTests(apiClient, netConfig)
+	err = netenv.IsSriovDeployed(apiClient, netConfig)
 	if err != nil {
 		return err
 	}

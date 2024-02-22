@@ -40,7 +40,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred(), "error to create test namespace")
 
 	By("Verifying if sriov tests can be executed on given cluster")
-	err = netenv.DoesClusterSupportSrIovTests(APIClient, NetConfig)
+	err = netenv.IsSriovDeployed(APIClient, NetConfig)
 	Expect(err).ToNot(HaveOccurred(), "Cluster doesn't support sriov test cases")
 
 	By("Pulling test images on cluster before running test cases")
