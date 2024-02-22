@@ -21,4 +21,10 @@ const (
 
 	// LabelValidateNMState a label to select tests for NMState validation.
 	LabelValidateNMState = "rds-core-validate-nmstate"
+
+	// ConditionTypeReadyString constant to fix linter warning.
+	ConditionTypeReadyString = "Ready"
+
+	// ConstantTrueString constant to fix linter warning.
+	ConstantTrueString = "True"
 )

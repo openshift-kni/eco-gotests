@@ -1,6 +1,7 @@
 package rdscorecommon
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -17,6 +18,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
+)
+
+const (
+	labelsWlkdOneString = "systemtest-test=rdscore-odf-pvc"
+	labelsWlkdTwoString = "systemtest-test=rdscore-odf-two"
 )
 
 func createPVC(fPVCName, fNamespace, fStorageClass, fVolumeMode, fCapacity string) *storage.PVCBuilder {
@@ -61,11 +67,6 @@ func createPVC(fPVCName, fNamespace, fStorageClass, fVolumeMode, fCapacity strin
 
 //nolint:funlen
 func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName string, fVolumeMode string) {
-	const (
-		labelsWlkdOneString = "systemtest-test=rdscore-odf-pvc"
-		labelsWlkdTwoString = "systemtest-test=rdscore-odf-two"
-	)
-
 	var (
 		ctx               SpecContext
 		workloadNS        *namespace.Builder
@@ -358,6 +359,77 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 	Expect(podOneResult.String()).Should(MatchRegexp(verificationRegex), "Command's output doesn't match regex")
 }
 
+func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []string) {
+	By(fmt.Sprintf("Getting pod(s) matching selector %q", podLabel))
+
+	var (
+		podMatchingSelector []*pod.Builder
+		err                 error
+		ctx                 SpecContext
+		podCommandResult    bytes.Buffer
+	)
+
+	podOneSelector := metav1.ListOptions{
+		LabelSelector: podLabel,
+		// LabelSelector: labelsWlkdOneString,
+	}
+
+	Eventually(func() bool {
+		podMatchingSelector, err = pod.List(APIClient, fNamespace, podOneSelector)
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods in %q namespace: %v",
+				fNamespace, err)
+
+			return false
+		}
+
+		if len(podMatchingSelector) == 0 {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found 0 pods matching label %q in namespace %q",
+				podLabel, fNamespace)
+
+			return false
+		}
+
+		return true
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+		fmt.Sprintf("Failed to find pod matching label %q in %q namespace", podLabel, fNamespace))
+
+	By("Waiting until pod(s) is running")
+
+	for _, podOne := range podMatchingSelector {
+		err = podOne.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Pod %s in %s namespace isn't running after 5 minutes",
+				podOne.Definition.Name, podOne.Definition.Namespace))
+	}
+
+	By("Reading data from CephFS backed storage")
+
+	for _, podOne := range podMatchingSelector {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Resetting command's output buffer")
+		podCommandResult.Reset()
+
+		Eventually(func() bool {
+			podCommandResult, err = podOne.ExecCommand(cmdToRun, "one")
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command on pod %s - %v",
+					podOne.Definition.Name, err)
+
+				return false
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(fmt.Sprintf("Command's result:\n\t%s",
+				&podCommandResult))
+
+			return true
+		}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+			fmt.Sprintf("Failed to run command in pod %q", podOne.Definition.Name))
+
+		Expect(podCommandResult.String()).Should(MatchRegexp(verificationRegex), "Command's output doesn't match regex")
+	}
+}
+
 // VerifyCephFSPVC Verify workload with CephFS PVC.
 func VerifyCephFSPVC(ctx SpecContext) {
 	createWorkloadWithPVC("rds-cephfs-ns", "ocs-external-storagecluster-cephfs", "rds-cephfs-fs", "Filesystem")
@@ -366,4 +438,14 @@ func VerifyCephFSPVC(ctx SpecContext) {
 // VerifyCephRBDPVC Verify workload with CephRBD PVC.
 func VerifyCephRBDPVC(ctx SpecContext) {
 	createWorkloadWithPVC("rds-cephrbd-ns", "ocs-external-storagecluster-ceph-rbd", "rds-cephrbd-fs", "Filesystem")
+}
+
+// VerifyDataOnCephFSPVC verify data on CephFS PVC.
+func VerifyDataOnCephFSPVC(ctx SpecContext) {
+	verificationRegex := `Deployment[[:space:]]+[[:alnum:]-_]+;Pod[[:space:]]+[[:alnum:]-_]+` +
+		`\([[:alnum:]-._]+\);Timestamp[[:space:]]+[[:digit:]]+`
+
+	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
+
+	verifyDataOnPVC("rds-cephfs-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
 }

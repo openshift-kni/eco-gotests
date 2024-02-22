@@ -70,6 +70,7 @@ type CoreConfig struct {
 	StorageODFDeployTwoSelector map[string]string `yaml:"rdscore_wlkd_odf_two_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_TWO_SELECTOR"`
 	//nolint:lll
 	NodeSelectorHTNodes map[string]string `yaml:"rdscore_node_selector_ht_nodes" envconfig:"ECO_RDSCORE_NODE_SELECTOR_HT_NODES"`
+	NodesCredentialsMap NodesBMCMap       `yaml:"rdscore_nodes_bmc_map" envconfig:"ECO_RDSCORE_NODES_CREDENTIALS_MAP"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
@@ -109,7 +110,7 @@ func NewCoreConfig() *CoreConfig {
 	return &rdsCoreConf
 }
 
-func readFile(ecoreConfig *CoreConfig, cfgFile string) error {
+func readFile(rdsConfig *CoreConfig, cfgFile string) error {
 	openedCfgFile, err := os.Open(cfgFile)
 	if err != nil {
 		return err
@@ -120,7 +121,7 @@ func readFile(ecoreConfig *CoreConfig, cfgFile string) error {
 	}()
 
 	decoder := yaml.NewDecoder(openedCfgFile)
-	err = decoder.Decode(&ecoreConfig)
+	err = decoder.Decode(&rdsConfig)
 
 	if err != nil {
 		return err
@@ -129,8 +130,8 @@ func readFile(ecoreConfig *CoreConfig, cfgFile string) error {
 	return nil
 }
 
-func readEnv(ecoreConfig *CoreConfig) error {
-	err := envconfig.Process("", ecoreConfig)
+func readEnv(rdsConfig *CoreConfig) error {
+	err := envconfig.Process("", rdsConfig)
 	if err != nil {
 		return err
 	}
