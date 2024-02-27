@@ -27,4 +27,7 @@ const (
 
 	// ConstantTrueString constant to fix linter warning.
 	ConstantTrueString = "True"
+
+	// LabelValidateSRIOV a label to select tests for SR-IOV validation.
+	LabelValidateSRIOV = "rds-core-validate-sriov"
 )
