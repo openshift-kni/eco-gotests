@@ -1,10 +1,12 @@
 package tests
 
 import (
+	"encoding/json"
 	"fmt"
-
 	"log"
 	"time"
+
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,11 +39,12 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 
 		var module *kmm.ModuleBuilder
-
 		var svcAccount *serviceaccount.Builder
+		var originalSecretMap map[string]map[string]interface{}
+		var secretMap map[string]map[string]interface{}
 
 		BeforeAll(func() {
-			if ModulesConfig.PullSecret == "" {
+			if ModulesConfig.PullSecret == "" || ModulesConfig.Registry == "" {
 				Skip("No external registry secret found in environment, Skipping test")
 			}
 
@@ -49,14 +52,20 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			_, err := namespace.NewBuilder(APIClient, localNsName).Create()
 			Expect(err).NotTo(HaveOccurred(), "error creating test namespace")
 
-			By("creating registry secret")
-
+			By("Creating registry secret")
 			secretContent := define.SecretContent(ModulesConfig.Registry, ModulesConfig.PullSecret)
-
 			_, err = secret.NewBuilder(APIClient, secretName,
 				localNsName, v1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
-
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
+
+			By("Get cluster's global pull-secret")
+			globalSecret, err := cluster.GetOCPPullSecret(APIClient)
+			Expect(err).ToNot(HaveOccurred(), "error fetching cluster's pull-secret")
+
+			err = json.Unmarshal(globalSecret.Object.Data[".dockerconfigjson"], &secretMap)
+			Expect(err).ToNot(HaveOccurred(), "error unmarshal pull-secret")
+			err = json.Unmarshal(globalSecret.Object.Data[".dockerconfigjson"], &originalSecretMap)
+			Expect(err).ToNot(HaveOccurred(), "error unmarshal pull-secret")
 
 		})
 		It("should build and push image to quay", polarion.ID("53584"), func() {
@@ -186,6 +195,81 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 
+		It("should delete simple-kmod module", polarion.ID("53413"), func() {
+			By("Deleting the module")
+			_, err := module.Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting the module")
+
+			By("Await module to be deleted")
+			err = await.ModuleObjectDeleted(APIClient, kmodName, localNsName, 3*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
+
+			By("Await pods deletion")
+			err = await.ModuleUndeployed(APIClient, localNsName, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting pods to be deleted")
+
+			By("Check labels are removed on all nodes")
+			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
+			log.Printf("error is: %v", err)
+			Expect(err).To(HaveOccurred(), "error while checking the module is loaded")
+
+		})
+
+		It("should deploy prebuild image with global secret", polarion.ID("71694"), func() {
+
+			By("Update global pull-secret")
+			if secretMap["auths"][ModulesConfig.Registry] == nil {
+				secretMap["auths"][ModulesConfig.Registry] = map[string]string{
+					"auth":  ModulesConfig.PullSecret,
+					"email": "",
+				}
+
+				ps, err := json.Marshal(secretMap)
+				Expect(err).ToNot(HaveOccurred(), "error encoding pull secret")
+				secretContents := map[string][]byte{".dockerconfigjson": ps}
+
+				pullSecret, _ := secret.Pull(APIClient, "pull-secret", "openshift-config")
+				_, err = pullSecret.WithData(secretContents).Update()
+				Expect(err).ToNot(HaveOccurred(), "error updating global pull secret")
+			}
+
+			By("Create kernel mapping")
+			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
+
+			kernelMapping.WithContainerImage(image)
+
+			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
+			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+			By("Create Module LoaderContainer")
+			moduleLoaderContainer := kmm.NewModLoaderContainerBuilder(moduleName)
+			moduleLoaderContainer.WithKernelMapping(kerMapOne)
+			moduleLoaderContainer.WithImagePullPolicy("Always")
+			moduleLoaderContainerCfg, err := moduleLoaderContainer.BuildModuleLoaderContainerCfg()
+			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+			By("Create module")
+			module = kmm.NewModuleBuilder(APIClient, moduleName, localNsName).
+				WithNodeSelector(GeneralConfig.WorkerLabelMap)
+
+			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
+				WithLoadServiceAccount(svcAccount.Object.Name)
+			_, err = module.Create()
+			Expect(err).ToNot(HaveOccurred(), "error creating module")
+
+			By("Await driver container deployment")
+			err = await.ModuleDeployment(APIClient, moduleName, localNsName, 3*time.Minute, GeneralConfig.WorkerLabelMap)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
+
+			By("Check module is loaded on node")
+			err = check.ModuleLoaded(APIClient, kmodName, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+
+			By("Check label is set on all nodes")
+			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
+			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+		})
+
 		AfterAll(func() {
 			By("Delete Module")
 			_, err := kmm.NewModuleBuilder(APIClient, kmodName, localNsName).Delete()
@@ -206,6 +290,18 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			By("Delete Namespace")
 			err = namespace.NewBuilder(APIClient, moduleName).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
+
+			By("Restore original global pull-secret")
+			if originalSecretMap["auths"][ModulesConfig.Registry] == nil {
+				pullSecret, err := secret.Pull(APIClient, "pull-secret", "openshift-config")
+				Expect(err).ToNot(HaveOccurred(), "error pulling global pull secret")
+				ps, err := json.Marshal(originalSecretMap)
+				Expect(err).ToNot(HaveOccurred(), "error encoding pull-secret")
+
+				origSecretContents := map[string][]byte{".dockerconfigjson": ps}
+				_, err = pullSecret.WithData(origSecretContents).Update()
+				Expect(err).ToNot(HaveOccurred(), "error restoring global pull secret")
+			}
 		})
 
 	})
