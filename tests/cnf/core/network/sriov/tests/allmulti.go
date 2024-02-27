@@ -171,7 +171,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	It("Validate a pod can receive non-member multicast IPv4 traffic over a secondary SRIOV interface"+
 		" when allmulti mode is enabled from a multicast source is on a different node",
-		polarion.ID("67813"), func() {
+		polarion.ID("67815"), func() {
 			multicastServer := createMulticastServer(srIovNetworkDefaultNode2,
 				multicastServerIPv4Mac, []string{multicastServerIPv4}, multicastPingIPv4CMD,
 				workerNodes[1].Definition.Name)
