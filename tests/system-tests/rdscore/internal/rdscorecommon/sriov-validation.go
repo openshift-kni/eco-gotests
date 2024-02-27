@@ -426,6 +426,53 @@ func verifyMsgInPodLogs(podObj *pod.Builder, msg, cName string, timeSpan time.Ti
 	Expect(podLog).Should(ContainSubstring(msg))
 }
 
+func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLabels, targetAddr string) {
+	By("Getting pods backed by deployment")
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
+		deployOneLabels, nsOneName)
+
+	podOneList := findPodWithSelector(nsOneName, deployOneLabels)
+	Expect(len(podOneList)).To(Equal(1), "Expected only one pod")
+
+	podOne := podOneList[0]
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one is %q on node %q",
+		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
+		deployTwoLabels, nsTwoName)
+
+	podTwoList := findPodWithSelector(nsTwoName, deployTwoLabels)
+	Expect(len(podTwoList)).To(Equal(1), "Expected only one pod")
+
+	podTwo := podTwoList[0]
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two is %q on node %q",
+		podTwo.Definition.Name, podTwo.Definition.Spec.NodeName)
+
+	By("Sending data from pod one to pod two")
+
+	msgOne := fmt.Sprintf("Running from pod %s(%s) at %d",
+		podOne.Definition.Name,
+		podOne.Definition.Spec.NodeName,
+		time.Now().Unix())
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending msg %q from pod %s",
+		msgOne, podOne.Definition.Name)
+
+	sendDataOneCmd := []string{"/bin/bash", "-c",
+		fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
+
+	timeStart := time.Now()
+	podOneResult, err := podOne.ExecCommand(sendDataOneCmd, podOne.Definition.Spec.Containers[0].Name)
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
+
+	verifyMsgInPodLogs(podTwo, msgOne, podTwo.Definition.Spec.Containers[0].Name, timeStart)
+}
+
 // VerifySRIOVWorkloadsOnSameNode deploy worklods with SRIOV interfaces on the same node
 //
 //nolint:funlen
@@ -539,64 +586,21 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create deployment %s: %v", deployTwo.Definition.Name, err))
 
-	By("Getting pods backed by deployment")
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
 
-	podOneList := findPodWithSelector(RDSCoreConfig.WlkdSRIOVOneNS, sriovDeployOneLabel)
-	Expect(len(podOneList)).To(Equal(1), "Expected only one pod")
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeployOneLabel,
+		sriovDeployTwoLabel,
+		RDSCoreConfig.WlkdSRIOVDeployOneTargetAddress)
 
-	podOne := podOneList[0]
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one is %v on node %s",
-		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
-
-	podTwoList := findPodWithSelector(RDSCoreConfig.WlkdSRIOVOneNS, sriovDeployTwoLabel)
-	Expect(len(podTwoList)).To(Equal(1), "Expected only one pod")
-
-	podTwo := podTwoList[0]
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two is %v on node %s",
-		podTwo.Definition.Name, podTwo.Definition.Spec.NodeName)
-
-	By("Sending data from pod one to pod two")
-
-	msgOne := fmt.Sprintf("Running from pod %s(%s) at %d",
-		podOne.Definition.Name,
-		podOne.Definition.Spec.NodeName,
-		time.Now().Unix())
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending msg %q from pod %s",
-		msgOne, podOne.Definition.Name)
-
-	sendDataOneCmd := []string{"/bin/bash", "-c",
-		fmt.Sprintf("echo '%s' | nc %s", msgOne, RDSCoreConfig.WlkdSRIOVDeployOneTargetAddress)}
-
-	timeStart := time.Now()
-	podOneResult, err := podOne.ExecCommand(sendDataOneCmd, sriovContainerOneName)
-
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
-
-	verifyMsgInPodLogs(podTwo, msgOne, sriovContainerTwoName, timeStart)
-
-	By("Sending data from pod two to pod one")
-
-	msgTwo := fmt.Sprintf("Running from pod %s(%s) at %d",
-		podTwo.Definition.Name,
-		podTwo.Definition.Spec.NodeName,
-		time.Now().Unix())
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending msg %q from pod %s",
-		msgTwo, podTwo.Definition.Name)
-
-	sendDataTwoCmd := []string{"/bin/bash", "-c",
-		fmt.Sprintf("echo '%s' | nc %s", msgTwo, RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress)}
-
-	timeStart = time.Now()
-	podTwoResult, err := podTwo.ExecCommand(sendDataTwoCmd, sriovContainerTwoName)
-
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to send data from pod %s", podTwo.Definition.Name))
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podTwoResult, &podTwoResult)
-
-	verifyMsgInPodLogs(podOne, msgTwo, sriovContainerOneName, timeStart)
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeployTwoLabel,
+		sriovDeployOneLabel,
+		RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress)
 }
 
 // VerifySRIOVWorkloadsOnDifferentNodes deploy worklods with SRIOV interfaces on the same node
@@ -723,61 +727,55 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q in %q ns is Ready",
 		deployTwo.Definition.Name, deployTwo.Definition.Namespace)
 
-	By("Getting pods backed by deployment")
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeploy2OneLabel,
+		sriovDeploy2TwoLabel,
+		RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddress)
 
-	podOneList := findPodWithSelector(RDSCoreConfig.WlkdSRIOVOneNS, sriovDeploy2OneLabel)
-	Expect(len(podOneList)).To(Equal(1), "Expected only one pod")
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeploy2TwoLabel,
+		sriovDeploy2OneLabel,
+		RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddress)
+}
 
-	podOne := podOneList[0]
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one is %v on node %s",
-		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
+// VerifySRIOVConnectivityBetweenDifferentNodes test connectivity after cluster's reboot.
+func VerifySRIOVConnectivityBetweenDifferentNodes(ctx SpecContext) {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on different node")
 
-	podTwoList := findPodWithSelector(RDSCoreConfig.WlkdSRIOVOneNS, sriovDeploy2TwoLabel)
-	Expect(len(podTwoList)).To(Equal(1), "Expected only one pod")
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeploy2OneLabel,
+		sriovDeploy2TwoLabel,
+		RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddress)
 
-	podTwo := podTwoList[0]
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two is %v on node %s",
-		podTwo.Definition.Name, podTwo.Definition.Spec.NodeName)
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeploy2TwoLabel,
+		sriovDeploy2OneLabel,
+		RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddress)
+}
 
-	By("Sending data from pod one to pod two")
+// VerifySRIOVConnectivityOnSameNode tests connectivity after cluster's reboot.
+func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
 
-	msgOne := fmt.Sprintf("Running from pod %s(%s) at %d",
-		podOne.Definition.Name,
-		podOne.Definition.Spec.NodeName,
-		time.Now().Unix())
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeployOneLabel,
+		sriovDeployTwoLabel,
+		RDSCoreConfig.WlkdSRIOVDeployOneTargetAddress)
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending msg %q from pod %s",
-		msgOne, podOne.Definition.Name)
-
-	sendDataOneCmd := []string{"/bin/bash", "-c",
-		fmt.Sprintf("echo '%s' | nc %s", msgOne, RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddress)}
-
-	timeStart := time.Now()
-	podOneResult, err := podOne.ExecCommand(sendDataOneCmd, sriovContainerOneName)
-
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
-
-	verifyMsgInPodLogs(podTwo, msgOne, sriovContainerTwoName, timeStart)
-
-	By("Sending data from pod two to pod one")
-
-	msgTwo := fmt.Sprintf("Running from pod %s(%s) at %d",
-		podTwo.Definition.Name,
-		podTwo.Definition.Spec.NodeName,
-		time.Now().Unix())
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending msg %q from pod %s",
-		msgTwo, podTwo.Definition.Name)
-
-	sendDataTwoCmd := []string{"/bin/bash", "-c",
-		fmt.Sprintf("echo '%s' | nc %s", msgTwo, RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddress)}
-
-	timeStart = time.Now()
-	podTwoResult, err := podTwo.ExecCommand(sendDataTwoCmd, sriovContainerTwoName)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to send data from pod %s", podTwo.Definition.Name))
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podTwoResult, &podTwoResult)
-
-	verifyMsgInPodLogs(podOne, msgTwo, sriovContainerOneName, timeStart)
+	verifySRIOVConnectivity(
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		RDSCoreConfig.WlkdSRIOVOneNS,
+		sriovDeployTwoLabel,
+		sriovDeployOneLabel,
+		RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress)
 }
