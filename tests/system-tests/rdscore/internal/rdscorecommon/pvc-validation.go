@@ -23,6 +23,8 @@ import (
 const (
 	labelsWlkdOneString = "systemtest-test=rdscore-odf-pvc"
 	labelsWlkdTwoString = "systemtest-test=rdscore-odf-two"
+	regexPartOne        = `Deployment[[:space:]]+[[:alnum:]-_]+;Pod[[:space:]]+[[:alnum:]-_]+`
+	regexPartTwo        = `\([[:alnum:]-._]+\);Timestamp[[:space:]]+[[:digit:]]+`
 )
 
 func createPVC(fPVCName, fNamespace, fStorageClass, fVolumeMode, fCapacity string) *storage.PVCBuilder {
@@ -35,25 +37,25 @@ func createPVC(fPVCName, fNamespace, fStorageClass, fVolumeMode, fCapacity strin
 
 	myPVC, err := myPVC.WithPVCAccessMode("ReadWriteOnce")
 	Expect(err).ToNot(HaveOccurred(), "Failed to set AccessMode")
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC accessMode: ", myPVC.Definition.Spec.AccessModes)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC accessMode: %v", myPVC.Definition.Spec.AccessModes)
 
 	By("Setting PVC capacity")
 
 	myPVC, err = myPVC.WithPVCCapacity(fCapacity)
 	Expect(err).ToNot(HaveOccurred(), "Failed to set Capacity")
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC Capacity: ", myPVC.Definition.Spec.Resources)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC Capacity: %#v", myPVC.Definition.Spec.Resources)
 
 	By("Setting StorageClass for PVC")
 
 	myPVC, err = myPVC.WithStorageClass(fStorageClass)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to use StorageClass %q: %v", fStorageClass, err))
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC StorageClass: ", myPVC.Definition.Spec.StorageClassName)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC StorageClass: %s", myPVC.Definition.Spec.StorageClassName)
 
 	By("Setting VolumeMode")
 
 	myPVC, err = myPVC.WithVolumeMode(fVolumeMode)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to set VolumeMode %q: %v", fVolumeMode, err))
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC StorageClass: ", myPVC.Definition.Spec.VolumeMode)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PVC VolumeMode: %s", myPVC.Definition.Spec.VolumeMode)
 
 	By("Creating PVC")
 
@@ -261,6 +263,9 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 
 	By("Scaling down deployment")
 
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Scaling down deployment %q in %q namespace",
+		deploy.Definition.Name, deploy.Definition.Namespace)
+
 	deploy = deploy.WithReplicas(int32(0))
 
 	deploy, err = deploy.Update()
@@ -269,6 +274,10 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 			deploy.Definition.Name, deploy.Definition.Namespace))
 
 	By("Asserting pods from deployments are gone")
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check pods from deployment %q in are gone",
+		deploy.Definition.Name)
+
 	Eventually(func() bool {
 		oldPods, _ := pod.List(APIClient, fNamespace,
 			metav1.ListOptions{LabelSelector: labelsWlkdOneString})
@@ -278,9 +287,15 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 
 	By("Resetting NodeSelector on the deployment")
 
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Updating nodeSelector for deployment %q",
+		deploy.Definition.Name)
+
 	deploy = deploy.WithNodeSelector(RDSCoreConfig.StorageODFDeployTwoSelector)
 
 	By("Scaling up deployment")
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Scaling up deployment %q in %q namespace",
+		deploy.Definition.Name, deploy.Definition.Namespace)
 
 	deploy = deploy.WithReplicas(int32(1))
 
@@ -291,13 +306,8 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 
 	By("Asserting new pods from deployments are present")
 
-	Eventually(func() bool {
-		oldPods, _ := pod.List(APIClient, fNamespace,
-			metav1.ListOptions{LabelSelector: labelsWlkdOneString})
-
-		return len(oldPods) == 1
-
-	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label(s) not found")
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check pods from deployment %q in are present",
+		deploy.Definition.Name)
 
 	Eventually(func() bool {
 		podOneList, err = pod.List(APIClient, fNamespace, podOneSelector)
@@ -324,6 +334,9 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
 
 	By("Waiting until pod is running")
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Waiting 5 minutes for pod %q to be Ready",
+		podOne.Definition.Name)
 
 	err = podOne.WaitUntilReady(5 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
@@ -371,8 +384,10 @@ func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []
 
 	podOneSelector := metav1.ListOptions{
 		LabelSelector: podLabel,
-		// LabelSelector: labelsWlkdOneString,
 	}
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pods with label %q in %q namespace",
+		podLabel, fNamespace)
 
 	Eventually(func() bool {
 		podMatchingSelector, err = pod.List(APIClient, fNamespace, podOneSelector)
@@ -397,6 +412,9 @@ func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []
 	By("Waiting until pod(s) is running")
 
 	for _, podOne := range podMatchingSelector {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Waiting 5 minutes for pod %q in %q namespace to be Ready",
+			podOne.Definition.Name, podOne.Definition.Namespace)
+
 		err = podOne.WaitUntilReady(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Pod %s in %s namespace isn't running after 5 minutes",
@@ -406,7 +424,10 @@ func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []
 	By("Reading data from CephFS backed storage")
 
 	for _, podOne := range podMatchingSelector {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Reading data from within pod %q in %q namespace",
+			podOne.Definition.Name, podOne.Definition.Namespace)
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Resetting command's output buffer")
+
 		podCommandResult.Reset()
 
 		Eventually(func() bool {
@@ -442,10 +463,22 @@ func VerifyCephRBDPVC(ctx SpecContext) {
 
 // VerifyDataOnCephFSPVC verify data on CephFS PVC.
 func VerifyDataOnCephFSPVC(ctx SpecContext) {
-	verificationRegex := `Deployment[[:space:]]+[[:alnum:]-_]+;Pod[[:space:]]+[[:alnum:]-_]+` +
-		`\([[:alnum:]-._]+\);Timestamp[[:space:]]+[[:digit:]]+`
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify data on CephFS PVC")
+
+	verificationRegex := regexPartOne + regexPartTwo
 
 	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
 
 	verifyDataOnPVC("rds-cephfs-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
+}
+
+// VerifyDataOnCephRBDPVC verify data on CephRBD PVC.
+func VerifyDataOnCephRBDPVC(ctx SpecContext) {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify data on CephRBD PVC")
+
+	verificationRegex := regexPartOne + regexPartTwo
+
+	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
+
+	verifyDataOnPVC("rds-cephrbd-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
 }

@@ -34,50 +34,12 @@ var _ = Describe(
 		It("Verifies ungraceful cluster reboot",
 			Label("rds-core-hard-reboot"), polarion.ID("30020"), rdscorecommon.VerifyUngracefulReboot)
 
-		It("Removes all pods with UnexpectedAdmissionError", Label("sriov-unexpected-pods"), func(ctx SpecContext) {
-			By("Remove any pods in UnexpectedAdmissionError state")
-
-			listOptions := metav1.ListOptions{
-				FieldSelector: "status.phase=Failed",
-			}
-
-			var podsList []*pod.Builder
-			var err error
-
-			Eventually(func() bool {
-				podsList, err = pod.ListInAllNamespaces(APIClient, listOptions)
-				if err != nil {
-					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods: %v", err)
-
-					return false
-				}
-
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d pods matching search criteria",
-					len(podsList))
-
-				for _, failedPod := range podsList {
-					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q in %q ns matches search criteria",
-						failedPod.Definition.Name, failedPod.Definition.Namespace)
-				}
-
-				return true
-			}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
-				"Failed to search for pods with UnexpectedAdmissionError status")
-
-			for _, failedPod := range podsList {
-				if failedPod.Definition.Status.Reason == "UnexpectedAdmissionError" {
-					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting pod %q in %q ns",
-						failedPod.Definition.Name, failedPod.Definition.Namespace)
-
-					_, err := failedPod.DeleteAndWait(5 * time.Minute)
-					Expect(err).ToNot(HaveOccurred(), "could not delete pod in UnexpectedAdmissionError state")
-				}
-			}
-		})
-
 		It("Verifies all ClusterOperators are Available after ungraceful reboot",
 			Label("rds-core-hard-reboot"), polarion.ID("71868"), func() {
 				By("Checking all cluster operators")
+
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Waiting for all ClusterOperators to be Available")
+
 				ok, err := clusteroperator.WaitForAllClusteroperatorsAvailable(
 					APIClient, 15*time.Minute, metav1.ListOptions{})
 				Expect(err).ToNot(HaveOccurred(), "Failed to get cluster operator status")
@@ -85,11 +47,64 @@ var _ = Describe(
 
 			})
 
+		It("Removes all pods with UnexpectedAdmissionError", Label("sriov-unexpected-pods"),
+			MustPassRepeatedly(3), func(ctx SpecContext) {
+				By("Remove any pods in UnexpectedAdmissionError state")
+
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Remove pods with UnexpectedAdmissionError status")
+
+				listOptions := metav1.ListOptions{
+					FieldSelector: "status.phase=Failed",
+				}
+
+				var podsList []*pod.Builder
+				var err error
+
+				Eventually(func() bool {
+					podsList, err = pod.ListInAllNamespaces(APIClient, listOptions)
+					if err != nil {
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods: %v", err)
+
+						return false
+					}
+
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d pods matching search criteria",
+						len(podsList))
+
+					for _, failedPod := range podsList {
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q in %q ns matches search criteria",
+							failedPod.Definition.Name, failedPod.Definition.Namespace)
+					}
+
+					return true
+				}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+					"Failed to search for pods with UnexpectedAdmissionError status")
+
+				for _, failedPod := range podsList {
+					if failedPod.Definition.Status.Reason == "UnexpectedAdmissionError" {
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting pod %q in %q ns",
+							failedPod.Definition.Name, failedPod.Definition.Namespace)
+
+						_, err := failedPod.DeleteAndWait(5 * time.Minute)
+						Expect(err).ToNot(HaveOccurred(), "could not delete pod in UnexpectedAdmissionError state")
+					}
+				}
+			})
+
 		It("Verifies all deploymentes are available",
 			Label("rds-core-hard-reboot"), polarion.ID("71872"), rdscorecommon.WaitAllDeploymentsAreAvailable)
 
 		It("Verifies CephFS PVC is still accessible",
 			Label("rds-core-hard-reboot-cephfs"), polarion.ID("71873"), rdscorecommon.VerifyDataOnCephFSPVC)
+
+		It("Verifies CephRBD PVC is still accessible",
+			Label("rds-core-hard-reboot-cephrbd"), polarion.ID("71990"), rdscorecommon.VerifyDataOnCephRBDPVC)
+
+		It("Verifies CephFS workload is deployable after hard reboot",
+			Label("odf-cephfs-pvc"), polarion.ID("71851"), MustPassRepeatedly(3), rdscorecommon.VerifyCephFSPVC)
+
+		It("Verifies CephRBD workload is deployable after hard reboot",
+			Label("odf-cephrbd-pvc"), polarion.ID("71992"), MustPassRepeatedly(3), rdscorecommon.VerifyCephRBDPVC)
 
 		It("Verifices SR-IOV workloads on different nodes post reboot",
 			Label("rds-core-hard-reboot-sriov-different-node"), polarion.ID("71952"),
