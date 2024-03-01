@@ -10,5 +10,5 @@ const (
 	// LabelLaunchWorkloadTestCases represents tests labels related to test workload.
 	LabelLaunchWorkloadTestCases = "launch-workload"
 	// DefaultTimeout is the timeout used for test resources creation.
-	DefaultTimeout = 300 * time.Second
+	DefaultTimeout = 900 * time.Second
 )

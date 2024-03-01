@@ -11,7 +11,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuparams"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randutestworkload"
 )
 
 var _ = Describe(
@@ -23,8 +22,9 @@ var _ = Describe(
 			By("Preparing workload")
 
 			if namespace.NewBuilder(APIClient, RanDuTestConfig.TestWorkload.Namespace).Exists() {
-				err := randutestworkload.CleanNameSpace(randuparams.DefaultTimeout, RanDuTestConfig.TestWorkload.Namespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to clean workload test namespace objects")
+				By("Deleting workload using shell method")
+				_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
 			}
 
 			if RanDuTestConfig.TestWorkload.CreateMethod == "shell" {
@@ -51,7 +51,7 @@ var _ = Describe(
 		})
 		AfterAll(func() {
 			By("Cleaning up test workload resources")
-			err := randutestworkload.CleanNameSpace(randuparams.DefaultTimeout, RanDuTestConfig.TestWorkload.Namespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to clean workload test namespace objects")
+			_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+			Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
 		})
 	})
