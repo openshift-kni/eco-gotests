@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
@@ -120,3 +121,19 @@ func VerifyAllNNCPsAreOK(ctx SpecContext) {
 	Expect(len(degradedNNCP)).To(Equal(0), "There are Degraded NodeNetworkConfigurationPolicies")
 	Expect(len(nonAvailableNNCP)).To(Equal(0), "There are Progressing NodeNetworkConfigurationPolicies")
 } // func VerifyNNCP (ctx SpecContext)
+
+// VerifyNMStateSuite container that contains tests for NMState verification.
+func VerifyNMStateSuite() {
+	Describe(
+		"NMState validation",
+		Label(rdscoreparams.LabelValidateNMState), func() {
+			It(fmt.Sprintf("Verifies %s namespace exists", RDSCoreConfig.NMStateOperatorNamespace),
+				Label("nmstate-ns"), VerifyNMStateNamespaceExists)
+
+			It("Verifies NMState instance exists",
+				Label("nmstate-instance"), polarion.ID("67027"), VerifyNMStateInstanceExists)
+
+			It("Verifies all NodeNetworkConfigurationPolicies are Available",
+				Label("nmstate-nncp"), polarion.ID("71846"), VerifyAllNNCPsAreOK)
+		})
+}

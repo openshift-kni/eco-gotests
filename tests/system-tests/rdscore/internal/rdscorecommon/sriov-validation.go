@@ -19,6 +19,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
@@ -778,4 +779,23 @@ func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
 		sriovDeployTwoLabel,
 		sriovDeployOneLabel,
 		RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress)
+}
+
+// VerifySRIOVSuite container that contains tests for SR-IOV verification.
+func VerifySRIOVSuite() {
+	Describe(
+		"SR-IOV verification",
+		Label(rdscoreparams.LabelValidateSRIOV), func() {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("*******************************************")
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("*** Starting SR-IOV RDS Core Test Suite ***")
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("*******************************************")
+
+			It("Verifices SR-IOV workloads on the same node",
+				Label("sriov-same-node"), polarion.ID("71949"), MustPassRepeatedly(3),
+				VerifySRIOVWorkloadsOnSameNode)
+
+			It("Verifices SR-IOV workloads on different nodes",
+				Label("sriov-different-node"), polarion.ID("71950"), MustPassRepeatedly(3),
+				VerifySRIOVWorkloadsOnDifferentNodes)
+		})
 }

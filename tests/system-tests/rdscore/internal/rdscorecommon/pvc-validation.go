@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
+	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
@@ -481,4 +482,19 @@ func VerifyDataOnCephRBDPVC(ctx SpecContext) {
 	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
 
 	verifyDataOnPVC("rds-cephrbd-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
+}
+
+// VefityPersistentStorageSuite container that contains tests for persistent storage verification.
+func VefityPersistentStorageSuite() {
+	Describe(
+		"Persistent storage validation",
+		Label("rds-core-persistent-storage"), func() {
+
+			It("Verifies CephFS",
+				Label("odf-cephfs-pvc"), polarion.ID("71850"), MustPassRepeatedly(3), VerifyCephFSPVC)
+
+			It("Verifies CephRBD",
+				Label("odf-cephrbd-pvc"), polarion.ID("71989"), MustPassRepeatedly(3), VerifyCephRBDPVC)
+
+		})
 }
