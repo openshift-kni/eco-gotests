@@ -1,6 +1,7 @@
 package rdscorecommon
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -463,13 +464,30 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 	sendDataOneCmd := []string{"/bin/bash", "-c",
 		fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
 
+	var (
+		podOneResult bytes.Buffer
+		err          error
+		ctx          SpecContext
+	)
+
 	timeStart := time.Now()
-	podOneResult, err := podOne.ExecCommand(sendDataOneCmd, podOne.Definition.Spec.Containers[0].Name)
 
-	Expect(err).ToNot(HaveOccurred(),
+	Eventually(func() bool {
+		podOneResult, err = podOne.ExecCommand(sendDataOneCmd, podOne.Definition.Spec.Containers[0].Name)
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", err)
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command within container %q",
+			podOne.Definition.Spec.Containers[0].Name)
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
+
+		return true
+	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
 		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
 
 	verifyMsgInPodLogs(podTwo, msgOne, podTwo.Definition.Spec.Containers[0].Name, timeStart)
 }
