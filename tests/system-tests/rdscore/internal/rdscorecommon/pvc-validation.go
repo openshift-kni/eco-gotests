@@ -209,7 +209,7 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 	By("Creating a deployment")
 
 	deploy, err = deploy.CreateAndWaitUntilReady(5 * time.Minute)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create deployment %s: %v", deploy.Definition.Name, err))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create deployment %s: %v", wlkdODFDeployName, err))
 
 	By("Getting pods backed by deployment")
 
