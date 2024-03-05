@@ -203,3 +203,6 @@ issues:
     - path: "tests/system-tests/rdscore/internal/.*"
       linters:
         - depguard
+    - path: "tests/system-tests/spk/internal/.*"
+      linters:
+        - depguard
