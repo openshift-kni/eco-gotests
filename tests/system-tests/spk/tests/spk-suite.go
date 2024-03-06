@@ -11,6 +11,12 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label("spk-all-suite"), func() {
+		It("Asserts workload reachable via IPv4 address", polarion.ID("64119"),
+			Label("spkingresstcp"), spkcommon.AssertIPv4WorkloadURL)
+
+		It("Asserts workload reachable via IPv6 address", polarion.ID("65886"),
+			Label("spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
+
 		It("Asserts DNS resoulution from new deployment", polarion.ID("63171"),
 			Label("spkdns46new"), spkcommon.VerifyDNSResolutionFromNewDeploy)
 
