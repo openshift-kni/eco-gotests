@@ -64,3 +64,6 @@ jobs:
 
     - name: Print image url
       run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
+
+    - name: Print image url eco-gotests-ran-du
+      run: echo "Image pushed to ${{ steps.push-to-quay-eco-gotests-ran-du.outputs.registry-paths }}"
