@@ -53,7 +53,7 @@ jobs:
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
 
     - name: Push To quay.io eco-gotests-ran-du image
-      id: push-to-quay
+      id: push-to-quay-eco-gotests-ran-du
       uses: redhat-actions/push-to-registry@v2
       with:
         image: ${{ steps.build-image-system.outputs.image }}
