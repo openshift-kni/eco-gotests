@@ -2,13 +2,17 @@ package tests
 
 import (
 	"fmt"
+	"strings"
+
 	"time"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/machine"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/machine"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/helpers"
@@ -101,6 +105,32 @@ var _ = Describe("NFD", Ordered, func() {
 			for nodeName := range nodelabels {
 				err = helpers.CheckLabelsExist(nodelabels, ts.Topology, nil, nodeName)
 				Expect(err).NotTo(HaveOccurred())
+			}
+
+		})
+		It("Check Logs", polarion.ID("54491"), func() {
+			errorKeywords := []string{"error", "exception", "failed"}
+			skipIfConfigNotSet(nfdConfig)
+			listOptions := metav1.ListOptions{
+				AllowWatchBookmarks: false,
+			}
+			By("Check if NFD labeling of the kernel config flags")
+			pods, err := pod.List(APIClient, hwaccelparams.NFDNamespace, listOptions)
+			Expect(err).NotTo(HaveOccurred())
+			for _, p := range pods {
+				glog.Info("retrieve logs from %v", p.Object.Name)
+				log, err := get.PodLogs(APIClient, hwaccelparams.NFDNamespace, p.Object.Name)
+				Expect(err).NotTo(HaveOccurred())
+
+				for _, errorKeyword := range errorKeywords {
+					if strings.Contains(log, "read /host-sys/class/net/ens5/speed") {
+						Skip("known error")
+					}
+
+					Expect(log).ShouldNot(ContainSubstring(errorKeyword))
+
+				}
+
 			}
 
 		})
