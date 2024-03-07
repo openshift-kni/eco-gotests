@@ -13,4 +13,10 @@ const (
 	LabelSPKDnsNat46 = "spkdnsnat46"
 	// SPKLogLevel configures logging level for SPK related tests.
 	SPKLogLevel = 90
+
+	// ConditionTypeReadyString constant to fix linter warning.
+	ConditionTypeReadyString = "Ready"
+
+	// ConstantTrueString constant to fix linter warning.
+	ConstantTrueString = "True"
 )

@@ -1,10 +1,12 @@
 package spkconfig
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsconfig"
@@ -23,7 +25,8 @@ type SPKConfig struct {
 	IngressTCPIPv4URL string `yaml:"spk_ingress_tcp_ipv4_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV4_URL"`
 	IngressTCPIPv6URL string `yaml:"spk_ingress_tcp_ipv6_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV6_URL"`
 	//nolint:lll
-	WorkloadDCIDeploymentName string `yaml:"spk_dci_workload_deployment_name" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DCI_DEPLOYEMNT_NAME"`
+	WorkloadDCIDeploymentName string      `yaml:"spk_dci_workload_deployment_name" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DCI_DEPLOYEMNT_NAME"`
+	NodesCredentialsMap       NodesBMCMap `yaml:"spk_nodes_bmc_map" envconfig:"ECO_SYSTEM_SPK_NODES_CREDENTIALS_MAP"`
 	//nolint:lll
 	WorkloadContainerImage string `yaml:"spk_workload_deployment_image" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DEPLOYMENT_IMAGE"`
 	WorkloadDeploymentName string `yaml:"spk_workload_deployment_name" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DEPLOYMENT_NAME"`
@@ -38,6 +41,43 @@ type SPKConfig struct {
 	//nolint:lll
 	SPKDataIngressDeployName string `yaml:"spk_data_ingress_deploy_name" envconfig:"ECO_SYSTEM_SPK_DATA_INGRESS_DEPLOY_NAME"`
 	SPKDnsIngressDeployName  string `yaml:"spk_dns_ingress_deploy_name" envconfig:"ECO_SYSTEM_SPK_DNS_INGRESS_DEPLOY_NAME"`
+}
+
+// BMCDetails structure to hold BMC details.
+type BMCDetails struct {
+	Username   string `json:"username"`
+	Password   string `json:"password"`
+	BMCAddress string `json:"bmc"`
+}
+
+// NodesBMCMap holds info about BMC connection for a specific node.
+type NodesBMCMap map[string]BMCDetails
+
+// Decode - method for envconfig package to parse JSON encoded environment variables.
+func (nad *NodesBMCMap) Decode(value string) error {
+	nodesAuthMap := make(map[string]BMCDetails)
+
+	for _, record := range strings.Split(value, ";") {
+		log.Printf("Processing: %v", record)
+
+		parsedRecord := strings.Split(record, ",")
+		if len(parsedRecord) != 4 {
+			log.Printf("Error to parse data %v", value)
+			log.Printf("Expected 4 entries, found %d", len(parsedRecord))
+
+			return fmt.Errorf("error parsing data %v", value)
+		}
+
+		nodesAuthMap[parsedRecord[0]] = BMCDetails{
+			Username:   parsedRecord[1],
+			Password:   parsedRecord[2],
+			BMCAddress: parsedRecord[3],
+		}
+	}
+
+	*nad = nodesAuthMap
+
+	return nil
 }
 
 // NewSPKConfig returns instance of SPKConfig config type.
