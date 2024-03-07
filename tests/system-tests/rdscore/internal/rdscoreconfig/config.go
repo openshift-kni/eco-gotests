@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/internal/config"
 
@@ -24,6 +26,38 @@ type BMCDetails struct {
 	Username   string `json:"username"`
 	Password   string `json:"password"`
 	BMCAddress string `json:"bmc"`
+}
+
+// TolerationList used to store tolerations for test workloads.
+type TolerationList []v1.Toleration
+
+// Decode - method for envconfig package to parse environment variable.
+func (tl *TolerationList) Decode(value string) error {
+	tmpTolerationList := []v1.Toleration{}
+
+	for _, record := range strings.Split(value, ";") {
+		log.Printf("Processing toleration record: %q", record)
+
+		parsedToleration := v1.Toleration{}
+
+		for _, parsedRecord := range strings.Split(record, ",") {
+			switch strings.Split(parsedRecord, "=")[0] {
+			case "key":
+				parsedToleration.Key = strings.Split(parsedRecord, "=")[1]
+			case "value":
+				parsedToleration.Value = strings.Split(parsedRecord, "=")[1]
+			case "effect":
+				parsedToleration.Effect = v1.TaintEffect(strings.Split(parsedRecord, "=")[1])
+			case "operator":
+				parsedToleration.Operator = v1.TolerationOperator(strings.Split(parsedRecord, "=")[1])
+			}
+		}
+		tmpTolerationList = append(tmpTolerationList, parsedToleration)
+	}
+
+	*tl = tmpTolerationList
+
+	return nil
 }
 
 // NodesBMCMap holds info about BMC connection for a specific node.
@@ -62,7 +96,8 @@ type CoreConfig struct {
 	WlkdSRIOVOneNS string `yaml:"rdscore_wlkd_sriov_one_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_NS"`
 	WlkdSRIOVTwoNS string `yaml:"rdscore_wlkd_sriov_two_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_NS"`
 	//nolint:lll
-	PerformanceProfileHTName string `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
+	PerformanceProfileHTName string         `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
+	WlkdTolerationList       TolerationList `yaml:"rdscore_tolerations_list" envconfig:"ECO_RDSCORE_TOLERATIONS_LIST"`
 	//nolint:lll
 	StorageODFWorkloadImage string      `yaml:"rdscore_storage_storage_wlkd_image" envconfig:"ECO_RDSCORE_STORAGE_WLKD_IMAGE"`
 	NodesCredentialsMap     NodesBMCMap `yaml:"rdscore_nodes_bmc_map" envconfig:"ECO_RDSCORE_NODES_CREDENTIALS_MAP"`

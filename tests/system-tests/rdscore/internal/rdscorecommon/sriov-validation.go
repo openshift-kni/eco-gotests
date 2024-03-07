@@ -390,6 +390,16 @@ func defineDeployment(containerConfig *v1.Container, deployName, deployNs, sriov
 
 	deploy = deploy.WithReplicas(int32(1))
 
+	if len(RDSCoreConfig.WlkdTolerationList) > 0 {
+		By("Adding TaintToleration")
+
+		for _, toleration := range RDSCoreConfig.WlkdTolerationList {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding toleration: %v", toleration)
+
+			deploy = deploy.WithToleration(toleration)
+		}
+	}
+
 	return deploy
 }
 

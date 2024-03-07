@@ -66,3 +66,4 @@ rdscore_wlkd_sriov_one_ns: rds-sriov-wlkd
 rdscore_wlkd_sriov_two_ns: rds-sriov-wlkd
 rdscore_wlkd_sriov_net_one: sriov-net-one
 rdscore_wlkd_sriov_net_two: sriov-net-two
+rdscore_tolerations_list: []
