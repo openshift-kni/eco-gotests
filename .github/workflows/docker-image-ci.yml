@@ -32,12 +32,32 @@ jobs:
           ./Dockerfile
         archs: amd64, arm64
 
+    - name: Build docker eco-gotests-ran-du image
+      id: build-image-system
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: eco-gotests-ran-du
+        tags: ${{ github.event_name == 'push' && 'latest' || github.ref_name }}
+        containerfiles: |
+          ./images/system-tests/ran-du/Dockerfile
+        archs: amd64, arm64
+
     - name: Push To quay.io
       id: push-to-quay
       uses: redhat-actions/push-to-registry@v2
       with:
         image: ${{ steps.build-image.outputs.image }}
         tags: ${{ steps.build-image.outputs.tags }}
+        registry: quay.io/ocp-edge-qe
+        username: ocp-edge-qe+ocp_edge_qe_robot
+        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
+
+    - name: Push To quay.io eco-gotests-ran-du image
+      id: push-to-quay
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.build-image-system.outputs.image }}
+        tags: ${{ steps.build-image-system.outputs.tags }}
         registry: quay.io/ocp-edge-qe
         username: ocp-edge-qe+ocp_edge_qe_robot
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
