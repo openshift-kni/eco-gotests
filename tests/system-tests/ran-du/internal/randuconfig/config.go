@@ -25,6 +25,7 @@ type RanDuConfig struct {
 		CreateShellCmd string `yaml:"create_shell_cmd" envconfig:"ECO_RANDU_TESTWORKLOAD_CREATE_SHELLCMD"`
 		DeleteShellCmd string `yaml:"delete_shell_cmd" envconfig:"ECO_RANDU_TESTWORKLOAD_DELETE_SHELLCMD"`
 	} `yaml:"randu_test_workload"`
+	LaunchWorkloadIterations int `yaml:"launch_workload_iterations" envconfig:"ECO_RANDU_LAUNCH_WORKLOAD_ITERATIONS"`
 }
 
 // NewRanDuConfig returns instance of RanDuConfig config type.

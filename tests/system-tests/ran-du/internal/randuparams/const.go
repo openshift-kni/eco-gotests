@@ -11,4 +11,6 @@ const (
 	LabelLaunchWorkloadTestCases = "launch-workload"
 	// DefaultTimeout is the timeout used for test resources creation.
 	DefaultTimeout = 900 * time.Second
+	// TestWorkloadShellLaunchMethod is used when using a shell script for launching the test workload.
+	TestWorkloadShellLaunchMethod = "shell"
 )

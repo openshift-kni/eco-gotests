@@ -19,4 +19,11 @@ var (
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &v1.PodList{}},
 	}
+
+	// TestNamespaceName is used for defining the namespace name where test resources are created.
+	TestNamespaceName = "ran-du-system-tests"
+
+	// TestMultipleLaunchWorkloadLoadAvg is used for defining the node load average threshold to be
+	// used in the LaunchWorkloadMultipleIterations test.
+	TestMultipleLaunchWorkloadLoadAvg = 100
 )
