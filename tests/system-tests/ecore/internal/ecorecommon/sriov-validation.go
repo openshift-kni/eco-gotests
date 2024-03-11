@@ -834,42 +834,170 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 	}
 }
 
-// VerifySRIOVConnectivityBetweenDifferentNodes test connectivity after cluster's reboot.
-func VerifySRIOVConnectivityBetweenDifferentNodes(ctx SpecContext) {
+// VerifySRIOVConnectivityBetweenDifferentNodesSameNet test connectivity after cluster's reboot.
+func VerifySRIOVConnectivityBetweenDifferentNodesSameNet(ctx SpecContext) {
 	glog.V(ecoreparams.ECoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on different node")
 
-	verifySRIOVConnectivity(
-		ECoreConfig.NamespacePCG,
-		ECoreConfig.NamespacePCG,
-		sriovDeploy2OneLabel,
-		sriovDeploy2TwoLabel,
-		ECoreConfig.WlkdSRIOVDeploy2OneTargetAddress)
+	addressesList := []string{ECoreConfig.WlkdSRIOVDeploy2OneTargetAddress,
+		ECoreConfig.WlkdSRIOVDeploy2OneTargetAddressIPv6}
 
-	verifySRIOVConnectivity(
-		ECoreConfig.NamespacePCG,
-		ECoreConfig.NamespacePCG,
-		sriovDeploy2TwoLabel,
-		sriovDeploy2OneLabel,
-		ECoreConfig.WlkdSRIOVDeploy2TwoTargetAddress)
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeploy2OneLabel,
+			sriovDeploy2TwoLabel,
+			targetAddr)
+	}
+
+	addressesList = []string{ECoreConfig.WlkdSRIOVDeploy2TwoTargetAddress,
+		ECoreConfig.WlkdSRIOVDeploy2TwoTargetAddressIPv6}
+
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeploy2TwoLabel,
+			sriovDeploy2OneLabel,
+			targetAddr)
+	}
 }
 
-// VerifySRIOVConnectivityOnSameNode tests connectivity after cluster's reboot.
-func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
+// VerifySRIOVConnectivityOnSameNodeSameNet tests connectivity after cluster's reboot.
+func VerifySRIOVConnectivityOnSameNodeSameNet(ctx SpecContext) {
 	glog.V(ecoreparams.ECoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
 
-	verifySRIOVConnectivity(
-		ECoreConfig.NamespacePCG,
-		ECoreConfig.NamespacePCG,
-		sriovDeployOneLabel,
-		sriovDeployTwoLabel,
-		ECoreConfig.WlkdSRIOVDeployOneTargetAddress)
+	addressesList := []string{ECoreConfig.WlkdSRIOVDeployOneTargetAddress,
+		ECoreConfig.WlkdSRIOVDeployOneTargetAddressIPv6}
 
-	verifySRIOVConnectivity(
-		ECoreConfig.NamespacePCG,
-		ECoreConfig.NamespacePCG,
-		sriovDeployTwoLabel,
-		sriovDeployOneLabel,
-		ECoreConfig.WlkdSRIOVDeployTwoTargetAddress)
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeployOneLabel,
+			sriovDeployTwoLabel,
+			targetAddr)
+	}
+
+	addressesList = []string{ECoreConfig.WlkdSRIOVDeployTwoTargetAddress,
+		ECoreConfig.WlkdSRIOVDeployTwoTargetAddressIPv6}
+
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeployTwoLabel,
+			sriovDeployOneLabel,
+			targetAddr)
+	}
+}
+
+// VerifySRIOVConnectivityOnSameNodeDifferentNets assert connectivity between SR-IOV workloads
+// that run on the same node and are connected to different SR-IOV networks.
+func VerifySRIOVConnectivityOnSameNodeDifferentNets(ctx SpecContext) {
+	glog.V(ecoreparams.ECoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
+
+	addressesList := []string{ECoreConfig.WlkdSRIOVDeploy3OneTargetAddress,
+		ECoreConfig.WlkdSRIOVDeploy3OneTargetAddressIPv6}
+
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeploy3OneLabel,
+			sriovDeploy3TwoLabel,
+			targetAddr)
+	}
+
+	addressesList = []string{ECoreConfig.WlkdSRIOVDeploy3TwoTargetAddress,
+		ECoreConfig.WlkdSRIOVDeploy3TwoTargetAddressIPv6}
+
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeploy3TwoLabel,
+			sriovDeploy3OneLabel,
+			targetAddr)
+	}
+}
+
+// VerifySRIOVConnectivityOnDifferentNodesDifferentNets asserts connectivity between SR-IOV workloads
+// that run on different nodes and are connected to different SR-IOV networks.
+func VerifySRIOVConnectivityOnDifferentNodesDifferentNets(ctx SpecContext) {
+	glog.V(ecoreparams.ECoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on different nodes")
+
+	addressesList := []string{ECoreConfig.WlkdSRIOVDeploy4OneTargetAddress,
+		ECoreConfig.WlkdSRIOVDeploy4OneTargetAddressIPv6}
+
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeploy4OneLabel,
+			sriovDeploy4TwoLabel,
+			targetAddr)
+	}
+
+	addressesList = []string{ECoreConfig.WlkdSRIOVDeploy4TwoTargetAddress,
+		ECoreConfig.WlkdSRIOVDeploy4TwoTargetAddressIPv6}
+
+	for _, targetAddr := range addressesList {
+		if targetAddr == "" {
+			continue
+		}
+
+		glog.V(ecoreparams.ECoreLogLevel).Infof("Access %q address", targetAddr)
+
+		verifySRIOVConnectivity(
+			ECoreConfig.NamespacePCG,
+			ECoreConfig.NamespacePCG,
+			sriovDeploy4TwoLabel,
+			sriovDeploy4OneLabel,
+			targetAddr)
+	}
 }
 
 // VerifySRIOVSuite container that contains tests for SR-IOV verification.
@@ -877,24 +1005,24 @@ func VerifySRIOVSuite() {
 	Describe(
 		"SR-IOV verification",
 		Label("ecore-validate-sriov-suite"), func() {
-			glog.V(ecoreparams.ECoreLogLevel).Infof("*******************************************")
-			glog.V(ecoreparams.ECoreLogLevel).Infof("*** Starting SR-IOV RDS Core Test Suite ***")
-			glog.V(ecoreparams.ECoreLogLevel).Infof("*******************************************")
+			glog.V(ecoreparams.ECoreLogLevel).Infof("***************************************")
+			glog.V(ecoreparams.ECoreLogLevel).Infof("*** Starting SR-IOV Core Test Suite ***")
+			glog.V(ecoreparams.ECoreLogLevel).Infof("***************************************")
 
-			It("Verifices SR-IOV workloads on the same node",
-				Label("sriov-same-node"), polarion.ID("71949"), MustPassRepeatedly(1),
+			It("Verifies SR-IOV workloads on the same node",
+				Label("sriov-same-net-same-node"), polarion.ID("71949"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNode)
 
-			It("Verifices SR-IOV workloads on different nodes",
-				Label("sriov-different-node"), polarion.ID("71950"), MustPassRepeatedly(1),
+			It("Verifies SR-IOV workloads on different nodes",
+				Label("sriov-same-net-different-node"), polarion.ID("71950"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnDifferentNodes)
 
-			It("Verifies SR-IOV workloads on the same net and same node",
-				Label("sriov-same-net-same-node"), MustPassRepeatedly(1),
+			It("Verifies SR-IOV workloads on the different SR-IOV nets and same node",
+				Label("sriov-different-net-same-node"), polarion.ID("72258"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNodeDifferentNetworks)
 
-			It("Verifies SR-IOV workloads on the same net and same node",
-				Label("sriov-same-net-different-node"), MustPassRepeatedly(1),
+			It("Verifies SR-IOV workloads on different SR-IOV nets and different nodes",
+				Label("sriov-same-net-different-node"), polarion.ID("72259"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
 		})
 }

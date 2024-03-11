@@ -29,5 +29,9 @@ var _ = Describe(
 				Label("validate-nmstate"), ecorecommon.VerifyNMStatePoliciesAvailable)
 
 			ecorecommon.VerifySRIOVSuite()
+
+			ecorecommon.VerifyHardRebootSuite()
+
+			ecorecommon.VerifyGracefulRebootSuite()
 		})
 	})
