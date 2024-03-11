@@ -41,6 +41,20 @@ var _ = Describe(
 
 			It("Asserts DNS Resolution after Ingress scale-down and scale-up from new deployment",
 				polarion.ID("72144"), Label("spk-multi-tmm-existing"), spkcommon.VerifyDNSResolutionFromNewDeploy)
+
+			It("Assert DNS resolution after Ingress pods were deleted from existing deployment", polarion.ID("72280"),
+				Label("spk-ingress-delete-existing"), spkcommon.VerifyDNSResolutionAfterIngressPodIsDeleteExistinDeploy)
+
+			It("Assert DNS resolution after Ingress pods were deleted from new deployment", polarion.ID("72283"),
+				Label("spk-ingress-delete-existing"), spkcommon.VerifyDNSResolutionAfterIngressPodIsDeleteNewDeploy)
+
+			It("Assert workload is reachable over IPv4 SPK ingress after pod was deleted", polarion.ID("72278"),
+				Label("spk-ingress-delete-ipv4"),
+				spkcommon.AssertIPv4WorkloadURLAfterIngressPodDeleted)
+
+			It("Assert workload is reachable over IPv6 SPK ingress after pod was deleted", polarion.ID("72279"),
+				Label("spk-ingress-delete"),
+				spkcommon.AssertIPv6WorkloadURLAfterIngressPodDeleted)
 		})
 
 		Describe("Hard reboot", Label("spk-hard-reboot"), func() {

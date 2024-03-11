@@ -56,3 +56,19 @@ func AssertIPv6WorkloadURL(ctx SpecContext) {
 
 	reachURL(SPKConfig.IngressTCPIPv6URL, int(200))
 }
+
+// AssertIPv4WorkloadURLAfterIngressPodDeleted assert workoads are reachable over IPv4 SPK Ingress,
+// after SPK Ingress pods are deleted.
+func AssertIPv4WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
+	AssertIPv4WorkloadURL(ctx)
+}
+
+// AssertIPv6WorkloadURLAfterIngressPodDeleted assert workoads are reachable over IPv6 SPK Ingress,
+// after SPK Ingress pods are delete.
+func AssertIPv6WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
+	AssertIPv6WorkloadURL(ctx)
+}

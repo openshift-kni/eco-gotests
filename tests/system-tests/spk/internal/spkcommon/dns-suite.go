@@ -3,6 +3,7 @@ package spkcommon
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -170,6 +171,7 @@ func VerifyIngressScaleDownUp(ctx SpecContext) {
 	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
 }
 
+//nolint:funlen
 func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string) {
 	By("Asserting deployment exists")
 
@@ -187,10 +189,12 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 	By("Finding pod backed by deployment")
 
 	var (
-		appPods []*pod.Builder
-		err     error
-		ctx     SpecContext
-		output  bytes.Buffer
+		appPods  []*pod.Builder
+		err      error
+		ctx      SpecContext
+		output   bytes.Buffer
+		rGroup   = `((2[0-4][0-9])|(25[05]))|(1[0-9][0-9])|([1-9][0-9])|([1-9])`
+		ipRegexp = `(` + rGroup + `\.){3}` + rGroup
 	)
 
 	Expect(err).ToNot(HaveOccurred(), "Failed to find DCI pod(s) matching label")
@@ -215,9 +219,11 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 	for _, _pod := range appPods {
 		By("Running DNS resolution from within a pod")
 
-		cmdDig := fmt.Sprintf("dig -t A %s", SPKConfig.WorkloadTestURL)
+		cmdDig := fmt.Sprintf("dig -t A %s +short", SPKConfig.WorkloadTestURL)
 		glog.V(spkparams.SPKLogLevel).Infof("Running command %q from within a pod %q",
 			cmdDig, _pod.Definition.Name)
+
+		ipRegObj := regexp.MustCompile(ipRegexp)
 
 		Eventually(func() bool {
 			output, err := _pod.ExecCommand([]string{"/bin/sh", "-c", cmdDig}, containerName)
@@ -227,6 +233,15 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 
 				return false
 			}
+
+			if !ipRegObj.MatchString(output.String()) {
+				glog.V(spkparams.SPKLogLevel).Infof("Command's output doesn't match regexp: %q", ipRegexp)
+				glog.V(spkparams.SPKLogLevel).Infof("Command's Output:\n%v\n", output.String())
+
+				return false
+			}
+
+			glog.V(spkparams.SPKLogLevel).Infof("Command's output matches regexp: %q", ipRegexp)
 			glog.V(spkparams.SPKLogLevel).Infof("Command's Output:\n%v\n", output.String())
 
 			return true
@@ -400,4 +415,61 @@ func scaleUpDeployment(deployName, deployNS, deployLabel string, replicas int32)
 		Fail(fmt.Sprintf("Deployment %q in %q namespace hasn't reached Ready state",
 			deployData.Definition.Name, deployData.Definition.Namespace))
 	}
+}
+
+//nolint:unparam
+func deletePodMatchingLabel(nsName, labelSelector, waitDuration string) {
+	var (
+		ctx     SpecContext
+		oldPods []*pod.Builder
+		err     error
+	)
+
+	delDuration, err := time.ParseDuration(waitDuration)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse duration: %q", waitDuration))
+
+	Eventually(func() bool {
+		oldPods, err = pod.List(APIClient, nsName,
+			metav1.ListOptions{LabelSelector: labelSelector})
+
+		if err != nil {
+			glog.V(spkparams.SPKLogLevel).Infof("Error listing pods in %q namespace: %v", nsName, err)
+
+			return false
+		}
+
+		glog.V(spkparams.SPKLogLevel).Infof("Found %d pods matching label %q ", len(oldPods), labelSelector)
+
+		return true
+	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+		fmt.Sprintf("Error listing pods in %q namespace", nsName))
+
+	if len(oldPods) == 0 {
+		glog.V(spkparams.SPKLogLevel).Infof("No pods matching label %q found in %q namespace",
+			labelSelector, nsName)
+	}
+
+	for _, _pod := range oldPods {
+		glog.V(spkparams.SPKLogLevel).Infof("Deleting pod %q in %q namspace",
+			_pod.Definition.Name, _pod.Definition.Namespace)
+
+		_pod, err = _pod.DeleteAndWait(delDuration)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to delete pod %q: %v", _pod.Definition.Name, err))
+	}
+}
+
+// VerifyDNSResolutionAfterIngressPodIsDeleteExistinDeploy assert DNS resolution from existing deployment,
+// after SPK Ingress pods are deleted.
+func VerifyDNSResolutionAfterIngressPodIsDeleteExistinDeploy(ctx SpecContext) {
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+}
+
+// VerifyDNSResolutionAfterIngressPodIsDeleteNewDeploy assert DNS resolution from new deployment,
+// after SPK Ingress pods are delete.
+func VerifyDNSResolutionAfterIngressPodIsDeleteNewDeploy(ctx SpecContext) {
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
+	VerifyDNSResolutionFromNewDeploy(ctx)
 }
