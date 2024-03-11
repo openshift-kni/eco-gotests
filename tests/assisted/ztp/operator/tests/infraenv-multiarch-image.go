@@ -38,6 +38,7 @@ const (
 )
 
 var (
+	multiarchAgentServiceConfigBuilder                         *assisted.AgentServiceConfigBuilder
 	testClusterImageSetName                                    string
 	nsBuilder                                                  *namespace.Builder
 	archURL                                                    string
@@ -92,18 +93,18 @@ var _ = Describe(
 				}
 
 				By("Create AgentServiceConfig with OS images for multiple architectures")
-				tempAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
+				multiarchAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
 
 				// Add annotation to be able to use full ISO with s390x arch
-				tempAgentServiceConfigBuilder.Definition.Annotations = map[string](string){}
-				tempAgentServiceConfigBuilder.Definition.
+				multiarchAgentServiceConfigBuilder.Definition.Annotations = map[string](string){}
+				multiarchAgentServiceConfigBuilder.Definition.
 					Annotations["unsupported.agent-install.openshift.io/assisted-service-configmap"] =
 					assistedUnsupportedConfigMapName
 
 				if mirrorRegistryRef != nil {
-					tempAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
+					multiarchAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
 				}
-				_, err = tempAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
+				_, err = multiarchAgentServiceConfigBuilder.WithOSImage(agentInstallV1Beta1.OSImage{
 					OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
 					Version:          ZTPConfig.HubOCPXYVersion,
 					Url: getArchURL(
@@ -141,7 +142,7 @@ var _ = Describe(
 					"error creating agentserviceconfig with osimages for multiple archs")
 
 				By("Wait until AgentServiceConfig with OSImages for multiple archs is deployed")
-				_, err = tempAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
+				_, err = multiarchAgentServiceConfigBuilder.WaitUntilDeployed(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(),
 					"error waiting until agentserviceconfig with osimages for multiple archs is deployed")
 
@@ -170,7 +171,7 @@ var _ = Describe(
 					glog.V(ztpparams.ZTPLogLevel).Infof("Skip on re-creating the ClusterImageSet after all tests - didn't exist.")
 				}
 				By("Delete AgentServiceConfig after test")
-				err = tempAgentServiceConfigBuilder.DeleteAndWait(time.Second * 10)
+				err = multiarchAgentServiceConfigBuilder.DeleteAndWait(time.Second * 10)
 				Expect(err).ToNot(HaveOccurred(), "error deleting agentserviceconfig after test")
 
 				By("Delete ConfigMap after test")
