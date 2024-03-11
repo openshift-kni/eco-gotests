@@ -206,3 +206,6 @@ issues:
     - path: "tests/system-tests/spk/internal/.*"
       linters:
         - depguard
+    - path: "tests/system-tests/ecore/internal/.*"
+      linters:
+        - depguard

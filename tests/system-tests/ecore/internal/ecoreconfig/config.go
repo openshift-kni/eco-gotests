@@ -11,6 +11,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsconfig"
 	"gopkg.in/yaml.v2"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -73,6 +74,15 @@ type ECoreConfig struct {
 	WlkdSRIOVDeployOneCmd []string `yaml:"ecore_wlkd_sriov_one_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_ONE_CMD"`
 	WlkdSRIOVDeployTwoCmd []string `yaml:"ecore_wlkd_sriov_two_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD_SRIOV_TWO_CMD"`
 
+	WlkdSRIOVDeploy2OneCmd []string `yaml:"ecore_wlkd2_sriov_one_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD2_SRIOV_ONE_CMD"`
+	WlkdSRIOVDeploy2TwoCmd []string `yaml:"ecore_wlkd2_sriov_two_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD2_SRIOV_TWO_CMD"`
+
+	WlkdSRIOVDeploy3OneCmd []string `yaml:"ecore_wlkd3_sriov_one_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD3_SRIOV_ONE_CMD"`
+	WlkdSRIOVDeploy3TwoCmd []string `yaml:"ecore_wlkd3_sriov_two_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD3_SRIOV_TWO_CMD"`
+
+	WlkdSRIOVDeploy4OneCmd []string `yaml:"ecore_wlkd4_sriov_one_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD4_SRIOV_ONE_CMD"`
+	WlkdSRIOVDeploy4TwoCmd []string `yaml:"ecore_wlkd4_sriov_two_cmd" envconfig:"ECO_SYSTEM_ECORE_WLKD4_SRIOV_TWO_CMD"`
+
 	KernelModulesMap map[string][]string `yaml:"ecore_kernel_modules_map" envconfig:"ECO_SYSTEM_KERNEL_MODULES_MAP"`
 	//nolint:lll
 	WlkdSRIOVDeployOneSelector map[string]string `yaml:"ecore_wlkd_sriov_one_selector" envconfig:"ECO_SYSTEM_WLKD_SRIOV_ONE_SELECTOR"`
@@ -89,10 +99,75 @@ type ECoreConfig struct {
 	StorageODFWorkloadImage string            `yaml:"ecore_storage_odf_wlkd_image" envconfig:"ECO_SYSTEM_ECORE_ODF_WLKD_IMAGE"`
 	StorageClassesMap       map[string]string `yaml:"ecore_storage_classes_map" envconfig:"ECO_SYSTEM_SC_MAP"`
 	NodesCredentialsMap     NodesBMCMap       `yaml:"ecore_nodes_bmc_map" envconfig:"ECO_SYSTEM_NODES_CREDENTIALS_MAP"`
+	WlkdTolerationList      TolerationList    `yaml:"ecore_tolerations_list" envconfig:"ECO_SYSTEM_ECORE_TOLERATIONS_LIST"`
 	//nolint:lll
 	StorageODFDeployOneSelector map[string]string `yaml:"ecore_wlkd_odf_one_selector" envconfig:"ECO_SYSTEM_WLKD_ODF_ONE_SELECTOR"`
 	//nolint:lll
 	StorageODFDeployTwoSelector map[string]string `yaml:"ecore_wlkd_odf_two_selector" envconfig:"ECO_SYSTEM_WLKD_ODF_TWO_SELECTOR"`
+	//nolint:lll
+	WlkdSRIOVDeployOneTargetAddress string `yaml:"ecore_wlkd_sriov_deploy_one_target" envconfig:"ECO_SYSTEM_WLKD_SRIOV_DEPLOY_ONE_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeployOneTargetAddressIPv6 string `yaml:"ecore_wlkd_sriov_deploy_one_target_ipv6" envconfig:"ECO_SYSTEM_WLKD_SRIOV_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeployTwoTargetAddress string `yaml:"ecore_wlkd_sriov_deploy_two_target" envconfig:"ECO_SYSTEM_WLKD_SRIOV_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeployTwoTargetAddressIPv6 string `yaml:"ecore_wlkd_sriov_deploy_two_target_ipv6" envconfig:"ECO_SYSTEM_WLKD_SRIOV_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy2OneTargetAddress string `yaml:"ecore_wlkd2_sriov_deploy_one_target" envconfig:"ECO_SYSTEM_WLKD2_SRIOV_DEPLOY_ONE_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy2OneTargetAddressIPv6 string `yaml:"ecore_wlkd2_sriov_deploy_one_target_ipv6" envconfig:"ECO_SYSTEM_WLKD2_SRIOV_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy2TwoTargetAddress string `yaml:"ecore_wlkd2_sriov_deploy_two_target" envconfig:"ECO_SYSTEM_WLKD2_SRIOV_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy2TwoTargetAddressIPv6 string `yaml:"ecore_wlkd2_sriov_deploy_two_target_ipv6" envconfig:"ECO_SYSTEM_WLKD2_SRIOV_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy3OneTargetAddress string `yaml:"ecore_wlkd3_sriov_deploy_one_target" envconfig:"ECO_SYSTEM_WLKD3_SRIOV_DEPLOY_ONE_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy3OneTargetAddressIPv6 string `yaml:"ecore_wlkd3_sriov_deploy_one_target_ipv6" envconfig:"ECO_SYSTEM_WLKD3_SRIOV_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy3TwoTargetAddress string `yaml:"ecore_wlkd3_sriov_deploy_two_target" envconfig:"ECO_SYSTEM_WLKD3_SRIOV_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy3TwoTargetAddressIPv6 string `yaml:"ecore_wlkd3_sriov_deploy_two_target_ipv6" envconfig:"ECO_SYSTEM_WLKD3_SRIOV_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy4OneTargetAddress string `yaml:"ecore_wlkd4_sriov_deploy_one_target" envconfig:"ECO_SYSTEM_WLKD4_SRIOV_DEPLOY_ONE_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy4OneTargetAddressIPv6 string `yaml:"ecore_wlkd4_sriov_deploy_one_target_ipv6" envconfig:"ECO_SYSTEM_WLKD4_SRIOV_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy4TwoTargetAddress string `yaml:"ecore_wlkd4_sriov_deploy_two_target" envconfig:"ECO_SYSTEM_WLKD4_SRIOV_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy4TwoTargetAddressIPv6 string `yaml:"ecore_wlkd4_sriov_deploy_two_target_ipv6" envconfig:"ECO_SYSTEM_WLKD4_SRIOV_DEPLOY_TWO_TARGET_IPV6"`
+}
+
+// TolerationList used to store tolerations for test workloads.
+type TolerationList []v1.Toleration
+
+// Decode - method for envconfig package to parse environment variable.
+func (tl *TolerationList) Decode(value string) error {
+	tmpTolerationList := []v1.Toleration{}
+
+	for _, record := range strings.Split(value, ";") {
+		log.Printf("Processing toleration record: %q", record)
+
+		parsedToleration := v1.Toleration{}
+
+		for _, parsedRecord := range strings.Split(record, ",") {
+			switch strings.Split(parsedRecord, "=")[0] {
+			case "key":
+				parsedToleration.Key = strings.Split(parsedRecord, "=")[1]
+			case "value":
+				parsedToleration.Value = strings.Split(parsedRecord, "=")[1]
+			case "effect":
+				parsedToleration.Effect = v1.TaintEffect(strings.Split(parsedRecord, "=")[1])
+			case "operator":
+				parsedToleration.Operator = v1.TolerationOperator(strings.Split(parsedRecord, "=")[1])
+			}
+		}
+		tmpTolerationList = append(tmpTolerationList, parsedToleration)
+	}
+
+	*tl = tmpTolerationList
+
+	return nil
 }
 
 // BMCDetails structure to hold BMC details.

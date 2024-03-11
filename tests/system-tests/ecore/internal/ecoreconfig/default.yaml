@@ -78,13 +78,25 @@ ecore_wlkd_sriov_cm_data_pcg:
   config.sh: |
     #! /bin/bash
     set -euo pipefail
-    ip=$1
+    vid=${1}
+    ip4=${2}
+    ip6=${3:-''}
     ip link set dev net1 down
-    ip link add link net1 name net1.497 type vlan id 497
-    ip addr add $1 dev net1.497
+    ip link add link net1 name net1.${vid} type vlan id ${vid}
+    ip addr add ${ip4} dev net1.${vid}
+
+    if [[ ${ip6} != '' ]]; then
+      ip addr add ${ip6} dev net1.${vid}
+    fi
+
     ip link set dev net1 up
-    ip link set dev net1.497 up
+    ip link set dev net1.${vid} up
     ip --br a s
+
+    set -x
+    sleep 1
+
+    nc -k -l 1111
 ecore_wlkd_sriov_deploy_one_name: telco-sriov-left
 ecore_wlkd_sriov_deploy_two_name: telco-sriov-right
 ecore_wlkd_sriov_cm_name_pcg: yp-sriov-cm
@@ -94,11 +106,51 @@ ecore_wlkd_sriov_two_image: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampo
 ecore_wlkd_sriov_one_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 10.46.126.75/26; nc -k -l 10.46.126.75 1111"
+- "/opt/net/config.sh 497 10.46.126.75/26 2620:52:0:2e7e::41/122"
 ecore_wlkd_sriov_two_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 10.46.126.77/26; nc -k -l 10.46.126.77 2222"
+- "/opt/net/config.sh 497 10.46.126.77/26 2620:52:0:2e7e::42/122"
+ecore_wlkd_sriov_deploy_one_target: "10.46.126.77 1111"
+ecore_wlkd_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::42 1111"
+ecore_wlkd_sriov_deploy_two_target: "10.46.126.75 1111"
+ecore_wlkd_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::41 1111"
+ecore_wlkd2_sriov_one_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 497 10.46.126.80/26 2620:52:0:2e7e::50/122"
+ecore_wlkd2_sriov_two_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 497 10.46.126.81/26 2620:52:0:2e7e::51/122"
+ecore_wlkd2_sriov_deploy_one_target: "10.46.126.81 1111"
+ecore_wlkd2_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::51 1111"
+ecore_wlkd2_sriov_deploy_two_target: "10.46.126.80 1111"
+ecore_wlkd2_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::50 1111"
+ecore_wlkd3_sriov_one_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 497 10.46.126.82/26 2620:52:0:2e7e::52/122"
+ecore_wlkd3_sriov_two_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 497 10.46.126.83/26 2620:52:0:2e7e::53/122"
+ecore_wlkd3_sriov_deploy_one_target: "10.46.126.83 1111"
+ecore_wlkd3_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::53 1111"
+ecore_wlkd3_sriov_deploy_two_target: "10.46.126.82 1111"
+ecore_wlkd3_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::52 1111"
+ecore_wlkd4_sriov_one_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 497 10.46.126.84/26 2620:52:0:2e7e::54/122"
+ecore_wlkd4_sriov_two_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 497 10.46.126.85/26 2620:52:0:2e7e::55/122"
+ecore_wlkd4_sriov_deploy_one_target: "10.46.126.85 1111"
+ecore_wlkd4_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::55 1111"
+ecore_wlkd4_sriov_deploy_two_target: "10.46.126.84 1111"
+ecore_wlkd4_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::54 1111"
 ecore_wlkd_sriov_one_selector:
   kubernetes.io/hostname: openshift-worker-2.ecore.lab.eng.tlv2.redhat.com
 ecore_wlkd_sriov_two_selector:
@@ -131,7 +183,7 @@ ecore_kernel_modules_map:
   - xt_REDIRECT
   - xt_statistic
   - xt_TCPMSS
-  - xt_u32
+  #- xt_u32
   node-role.kubernetes.io/master:
   - ip_gre
   - ip6_tables
@@ -146,4 +198,4 @@ ecore_kernel_modules_map:
   - xt_REDIRECT
   - xt_statistic
   - xt_TCPMSS
-  - xt_u32
+  #- xt_u32
