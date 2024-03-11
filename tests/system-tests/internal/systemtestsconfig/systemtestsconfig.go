@@ -19,6 +19,7 @@ const (
 // SystemTestsConfig type keeps general configuration.
 type SystemTestsConfig struct {
 	*config.GeneralConfig
+	IpmiToolImage string `yaml:"ipmitool_image" envconfig:"ECO_SYSTEM_TESTS_IPMITOOL_IMAGE"`
 }
 
 // NewSystemTestsConfig returns instance of SystemTestsConfig type.

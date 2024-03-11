@@ -27,6 +27,7 @@ type RanDuConfig struct {
 	} `yaml:"randu_test_workload"`
 	LaunchWorkloadIterations int `yaml:"launch_workload_iterations" envconfig:"ECO_RANDU_LAUNCH_WORKLOAD_ITERATIONS"`
 	SoftRebootIterations     int `yaml:"soft_reboot_iterations" envconfig:"ECO_RANDU_SOFT_REBOOT_ITERATIONS"`
+	HardRebootIterations     int `yaml:"hard_reboot_iterations" envconfig:"ECO_RANDU_HARD_REBOOT_ITERATIONS"`
 }
 
 // NewRanDuConfig returns instance of RanDuConfig config type.

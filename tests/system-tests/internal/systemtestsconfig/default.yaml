@@ -1,3 +1,4 @@
 ---
 # System tests default configurations.
+ipmitool_image: 'quay.io/ocp-edge-qe/ipmitool@sha256:e843f0b3f20224d549b1b74c99f8e26da7877eea8053c8ad75e5dd5e087b9a65'
 ...
