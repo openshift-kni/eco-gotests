@@ -44,3 +44,16 @@ func KernelCrashKdump(nodeName string) error {
 
 	return nil
 }
+
+// SoftRebootNode executes systemctl reboot on a node.
+func SoftRebootNode(nodeName string) error {
+	cmdToExec := []string{"chroot", "/rootfs", "systemctl", "reboot"}
+
+	_, err := cmd.ExecCmdOnNode(cmdToExec, nodeName)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
