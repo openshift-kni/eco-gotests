@@ -549,22 +549,29 @@ func removeSriovOperator(sriovNamespace *namespace.Builder) {
 	err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
 	Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
 
-	By("Removing SR-IOV webhooks")
+	By("Disabling SR-IOV webhooks")
 
-	injectorWebhook, err := webhook.PullMutatingConfiguration(APIClient, "network-resources-injector-config")
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull network-resources-injector-config webhook")
-	_, err = injectorWebhook.Delete()
-	Expect(err).ToNot(HaveOccurred(), "Failed to delete network-resources-injector-config webhook")
+	sriovOperatorConfig, err := sriov.PullOperatorConfig(APIClient, NetConfig.SriovOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull SriovOperatorConfig")
 
-	sriovMutatingWebhook, err := webhook.PullMutatingConfiguration(APIClient, "sriov-operator-webhook-config")
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull sriov-operator-webhook-config MutatingWebhook")
-	_, err = sriovMutatingWebhook.Delete()
-	Expect(err).ToNot(HaveOccurred(), "Failed to delete sriov-operator-webhook-config MutatingWebhook")
+	_, err = sriovOperatorConfig.WithOperatorWebhook(false).WithInjector(false).Update()
+	Expect(err).ToNot(HaveOccurred(), "Failed to disable webhooks")
 
-	sriovValidatingWebhook, err := webhook.PullValidatingConfiguration(APIClient, "sriov-operator-webhook-config")
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull sriov-operator-webhook-config ValidatingWebhook")
-	_, err = sriovValidatingWebhook.Delete()
-	Expect(err).ToNot(HaveOccurred(), "Failed to delete sriov-operator-webhook-config ValidatingWebhook")
+	for _, webhookname := range []string{"network-resources-injector-config", "sriov-operator-webhook-config"} {
+		Eventually(func() error {
+			_, err := webhook.PullMutatingConfiguration(APIClient, webhookname)
+
+			return err
+		}, time.Minute, tsparams.RetryInterval).Should(HaveOccurred(),
+			fmt.Sprintf("MutatingWebhook %s was not removed", webhookname))
+	}
+
+	Eventually(func() error {
+		_, err := webhook.PullValidatingConfiguration(APIClient, "sriov-operator-webhook-config")
+
+		return err
+	}, time.Minute, tsparams.RetryInterval).Should(HaveOccurred(),
+		"ValidatingWebhook sriov-operator-webhook-config was not removed")
 
 	By("Removing SR-IOV namespace")
 

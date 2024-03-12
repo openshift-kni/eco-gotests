@@ -577,6 +577,30 @@ func (builder *Builder) WithTolerationToMaster() *Builder {
 	return builder
 }
 
+// WithTolerationToControlPlane sets toleration policy which allows pod to be running on control plane node.
+func (builder *Builder) WithTolerationToControlPlane() *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Appending pod's %s with toleration to control plane node", builder.Definition.Name)
+
+	builder.isMutationAllowed("toleration to control plane node")
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.Tolerations = []v1.Toleration{
+		{
+			Key:    "node-role.kubernetes.io/control-plane",
+			Effect: "NoSchedule",
+		},
+	}
+
+	return builder
+}
+
 // WithToleration adds a toleration configuration inside the pod.
 func (builder *Builder) WithToleration(toleration v1.Toleration) *Builder {
 	if valid, _ := builder.validate(); !valid {

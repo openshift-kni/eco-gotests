@@ -199,7 +199,7 @@ func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuild
 	}
 
 	if !stateBuilder.Exists() {
-		return nil, fmt.Errorf("NodeNetworkState oject %s doesn't exist", name)
+		return nil, fmt.Errorf("NodeNetworkState object %s doesn't exist", name)
 	}
 
 	return &stateBuilder, nil
