@@ -391,6 +391,10 @@ func VerifyHardRebootSuite() {
 
 					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Remove pods with UnexpectedAdmissionError status")
 
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sleeping for 3 minutes")
+
+					time.Sleep(3 * time.Minute)
+
 					listOptions := metav1.ListOptions{
 						FieldSelector: "status.phase=Failed",
 					}
