@@ -186,7 +186,6 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.Namespaces().Get(context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
-
 				return true, nil
 			}
 

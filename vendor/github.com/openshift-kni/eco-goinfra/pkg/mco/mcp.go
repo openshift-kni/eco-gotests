@@ -261,12 +261,10 @@ func (builder *MCPBuilder) WaitToBeStableFor(stableDuration time.Duration, timeo
 	// or times out after stableDuration
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
-
 			isMcpStable = true
 
 			_ = wait.PollUntilContextTimeout(
 				context.TODO(), fiveScds, stableDuration, true, func(ctx2 context.Context) (done bool, err error) {
-
 					if !builder.Exists() {
 						return false, nil
 					}
@@ -274,7 +272,6 @@ func (builder *MCPBuilder) WaitToBeStableFor(stableDuration time.Duration, timeo
 					if builder.Object.Status.ReadyMachineCount != builder.Object.Status.MachineCount ||
 						builder.Object.Status.MachineCount != builder.Object.Status.UpdatedMachineCount ||
 						builder.Object.Status.DegradedMachineCount != 0 {
-
 						glog.V(100).Infof("MachineConfigPool: %v degraded and has a mismatch in "+
 							"machineCount: %v "+"vs machineCountUpdated: "+"%v vs readyMachineCount: %v and "+
 							"degradedMachineCount is : %v \n", builder.Object.ObjectMeta.Name,

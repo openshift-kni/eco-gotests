@@ -41,7 +41,9 @@ type SeedGenerator struct {
 
 // SeedGeneratorSpec defines the desired state of SeedGenerator
 type SeedGeneratorSpec struct {
-	SeedImage   string `json:"seedImage,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Seed Image",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	SeedImage string `json:"seedImage,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	RecertImage string `json:"recertImage,omitempty"`
 }
 
@@ -51,7 +53,7 @@ type SeedGeneratorStatus struct {
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	StartedAt          metav1.Time `json:"startedAt,omitempty"`
 	CompletedAt        metav1.Time `json:"completedAt,omitempty"`
-	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions"
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 

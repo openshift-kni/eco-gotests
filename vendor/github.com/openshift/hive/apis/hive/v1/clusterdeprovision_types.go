@@ -15,6 +15,11 @@ type ClusterDeprovisionSpec struct {
 	// ClusterID is a globally unique identifier for the cluster to deprovision. It will be used if specified.
 	ClusterID string `json:"clusterID,omitempty"`
 
+	// ClusterName is the friendly name of the cluster. It is used for subdomains,
+	// some resource tagging, and other instances where a friendly name for the
+	// cluster is useful.
+	ClusterName string `json:"clusterName,omitempty"`
+
 	// Platform contains platform-specific configuration for a ClusterDeprovision
 	Platform ClusterDeprovisionPlatform `json:"platform,omitempty"`
 }
@@ -32,6 +37,8 @@ type ClusterDeprovisionStatus struct {
 // ClusterDeprovisionPlatform contains platform-specific configuration for the
 // deprovision
 type ClusterDeprovisionPlatform struct {
+	// AlibabaCloud contains Alibaba Cloud specific deprovision settings
+	AlibabaCloud *AlibabaCloudClusterDeprovision `json:"alibabacloud,omitempty"`
 	// AWS contains AWS-specific deprovision settings
 	AWS *AWSClusterDeprovision `json:"aws,omitempty"`
 	// Azure contains Azure-specific deprovision settings
@@ -46,6 +53,16 @@ type ClusterDeprovisionPlatform struct {
 	Ovirt *OvirtClusterDeprovision `json:"ovirt,omitempty"`
 	// IBMCloud contains IBM Cloud specific deprovision settings
 	IBMCloud *IBMClusterDeprovision `json:"ibmcloud,omitempty"`
+}
+
+// AlibabaCloudClusterDeprovision contains AlibabaCloud-specific configuration for a ClusterDeprovision
+type AlibabaCloudClusterDeprovision struct {
+	// Region is the Alibaba region for this deprovision
+	Region string `json:"region"`
+	// BaseDomain is the DNS base domain
+	BaseDomain string `json:"baseDomain"`
+	// CredentialsSecretRef is the Alibaba account credentials to use for deprovisioning the cluster
+	CredentialsSecretRef corev1.LocalObjectReference `json:"credentialsSecretRef"`
 }
 
 // AWSClusterDeprovision contains AWS-specific configuration for a ClusterDeprovision
@@ -122,10 +139,6 @@ type OvirtClusterDeprovision struct {
 type IBMClusterDeprovision struct {
 	// CredentialsSecretRef is the IBM Cloud credentials to use for deprovisioning the cluster
 	CredentialsSecretRef corev1.LocalObjectReference `json:"credentialsSecretRef"`
-	// AccountID is the IBM Cloud Account ID
-	AccountID string `json:"accountID"`
-	// CISInstanceCRN is the IBM Cloud Internet Services Instance CRN
-	CISInstanceCRN string `json:"cisInstanceCRN"`
 	// Region specifies the IBM Cloud region
 	Region string `json:"region"`
 	// BaseDomain is the DNS base domain

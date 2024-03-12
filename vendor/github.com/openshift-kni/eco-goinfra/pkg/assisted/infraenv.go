@@ -278,7 +278,6 @@ func (builder *InfraEnvBuilder) WaitForDiscoveryISOCreation(timeout time.Duratio
 			}
 
 			return builder.Object.Status.CreatedTime != nil, nil
-
 		})
 
 	if err == nil {
@@ -444,7 +443,6 @@ func (builder *InfraEnvBuilder) WaitForAgentsToRegister(timeout time.Duration) (
 	// Polls every retryInterval to determine if agent has registered.
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
-
 			agentList, err = builder.GetAllAgents()
 
 			if err != nil {
@@ -479,7 +477,6 @@ func (builder *InfraEnvBuilder) WaitForMasterAgents(timeout time.Duration) ([]*a
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			agentList, err = builder.GetAgentsByRole("master")
 			if err != nil {
-
 				return false, err
 			}
 
@@ -501,10 +498,8 @@ func (builder *InfraEnvBuilder) WaitForMasterAgentCount(count int, timeout time.
 	// Polls every retryInterval to determine if agent has registered.
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
-
 			agentList, err := builder.GetAgentsByRole("master")
 			if err != nil {
-
 				return false, err
 			}
 
@@ -556,10 +551,8 @@ func (builder *InfraEnvBuilder) WaitForWorkerAgents(timeout time.Duration) ([]*a
 	// Polls every retryInterval to determine if agent has registered.
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
-
 			agentList, err = builder.GetAgentsByRole("worker")
 			if err != nil {
-
 				return false, err
 			}
 
@@ -581,10 +574,8 @@ func (builder *InfraEnvBuilder) WaitForWorkerAgentCount(count int, timeout time.
 	// Polls every retryInterval to determine if agent has registered.
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
-
 			agentList, err := builder.GetAgentsByRole("worker")
 			if err != nil {
-
 				return false, err
 			}
 
@@ -853,7 +844,6 @@ func (builder *InfraEnvBuilder) DeleteAndWait(timeout time.Duration) error {
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.Get()
 			if err != nil {
-
 				return true, nil
 			}
 

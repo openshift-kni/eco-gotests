@@ -297,11 +297,13 @@ func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 
 				return false, nil
 			}
+
 			if k8serrors.IsNotFound(err) {
 				glog.V(100).Infof("pod %s/%s is gone", builder.Definition.Namespace, builder.Definition.Name)
 
 				return true, nil
 			}
+
 			glog.V(100).Infof("failed to get pod %s/%s: %v", builder.Definition.Namespace, builder.Definition.Name, err)
 
 			return false, err
@@ -346,7 +348,6 @@ func (builder *Builder) WaitUntilCondition(condition v1.PodConditionType, timeou
 			}
 
 			return false, nil
-
 		})
 }
 

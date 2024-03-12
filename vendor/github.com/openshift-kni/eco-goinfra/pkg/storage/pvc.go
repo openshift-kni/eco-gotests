@@ -272,7 +272,6 @@ func (builder *PVCBuilder) DeleteAndWait(timeout time.Duration) error {
 			_, err := builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Get(
 				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
-
 				return true, nil
 			}
 

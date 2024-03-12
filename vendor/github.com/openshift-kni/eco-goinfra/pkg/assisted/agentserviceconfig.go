@@ -427,7 +427,6 @@ func (builder *AgentServiceConfigBuilder) DeleteAndWait(timeout time.Duration) e
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.Get()
 			if k8serrors.IsNotFound(err) {
-
 				return true, nil
 			}
 

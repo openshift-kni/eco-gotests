@@ -610,6 +610,7 @@ func (builder *BmhBuilder) WaitUntilDeleted(timeout time.Duration) error {
 
 				return false, nil
 			}
+
 			if k8serrors.IsNotFound(err) {
 				glog.V(100).Infof("bmh %s/%s is gone",
 					builder.Definition.Namespace,
@@ -617,6 +618,7 @@ func (builder *BmhBuilder) WaitUntilDeleted(timeout time.Duration) error {
 
 				return true, nil
 			}
+
 			glog.V(100).Infof("failed to get bmh %s/%s: %v",
 				builder.Definition.Namespace,
 				builder.Definition.Name, err)

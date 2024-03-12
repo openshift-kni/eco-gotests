@@ -312,7 +312,6 @@ func (builder *AgentClusterInstallBuilder) WaitForState(
 			}
 
 			return builder.Object.Status.DebugInfo.State == state, err
-
 		})
 
 	if err == nil {
@@ -341,7 +340,6 @@ func (builder *AgentClusterInstallBuilder) WaitForStateInfo(
 			}
 
 			return builder.Object.Status.DebugInfo.StateInfo == stateInfo, err
-
 		})
 
 	if err == nil {
@@ -629,7 +627,6 @@ func (builder *AgentClusterInstallBuilder) DeleteAndWait(timeout time.Duration) 
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.Get()
 			if k8serrors.IsNotFound(err) {
-
 				return true, nil
 			}
 

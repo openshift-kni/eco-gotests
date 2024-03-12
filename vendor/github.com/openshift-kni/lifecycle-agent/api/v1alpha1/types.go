@@ -64,37 +64,49 @@ type ImageBasedUpgradeSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Stage"
 	Stage ImageBasedUpgradeStage `json:"stage,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Seed Image Reference"
-	SeedImageRef     SeedImageRef `json:"seedImageRef,omitempty"`
+	SeedImageRef SeedImageRef `json:"seedImageRef,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Additional Images"
 	AdditionalImages ConfigMapRef `json:"additionalImages,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OADP Content"
 	OADPContent []ConfigMapRef `json:"oadpContent,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Extra Manifests"
-	ExtraManifests        []ConfigMapRef        `json:"extraManifests,omitempty"`
+	ExtraManifests []ConfigMapRef `json:"extraManifests,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Auto Rollback On Failure"
 	AutoRollbackOnFailure AutoRollbackOnFailure `json:"autoRollbackOnFailure,omitempty"`
 }
 
 // SeedImageRef defines the seed image and OCP version for the upgrade
 type SeedImageRef struct {
-	Version       string         `json:"version,omitempty"`
-	Image         string         `json:"image,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Version string `json:"version,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	Image string `json:"image,omitempty"`
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Pull Secret Reference"
 	PullSecretRef *PullSecretRef `json:"pullSecretRef,omitempty"`
 }
 
 type AutoRollbackOnFailure struct {
-	DisabledForPostRebootConfig  bool `json:"disabledForPostRebootConfig,omitempty"`  // If true, disable auto-rollback for post-reboot config service-unit(s)
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
+	DisabledForPostRebootConfig bool `json:"disabledForPostRebootConfig,omitempty"` // If true, disable auto-rollback for post-reboot config service-unit(s)
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
 	DisabledForUpgradeCompletion bool `json:"disabledForUpgradeCompletion,omitempty"` // If true, disable auto-rollback for Upgrade completion handler
-	DisabledInitMonitor          bool `json:"disabledInitMonitor,omitempty"`          // If true, disable LCA Init Monitor watchdog, which triggers auto-rollback if timeout occurs before upgrade completion
-	InitMonitorTimeoutSeconds    int  `json:"initMonitorTimeoutSeconds,omitempty"`    // LCA Init Monitor watchdog timeout, in seconds. Value <= 0 is treated as "use default" when writing config file in Prep stage
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
+	DisabledInitMonitor bool `json:"disabledInitMonitor,omitempty"` // If true, disable LCA Init Monitor watchdog, which triggers auto-rollback if timeout occurs before upgrade completion
+	// +kubebuilder:validation:Minimum=0
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
+	InitMonitorTimeoutSeconds int `json:"initMonitorTimeoutSeconds,omitempty"` // LCA Init Monitor watchdog timeout, in seconds. Value = 0 is treated as "use default" when writing config file in Prep stage
 }
 
 // ConfigMapRef defines a reference to a config map
 type ConfigMapRef struct {
 	// +kubebuilder:validation:Required
 	// +required
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 
 	// +kubebuilder:validation:Required
 	// +required
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Namespace string `json:"namespace"`
 }
 
@@ -102,6 +114,7 @@ type ConfigMapRef struct {
 type PullSecretRef struct {
 	// +kubebuilder:validation:Required
 	// +required
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Name string `json:"name"`
 }
 
@@ -110,7 +123,7 @@ type ImageBasedUpgradeStatus struct {
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	StartedAt          metav1.Time `json:"startedAt,omitempty"`
 	CompletedAt        metav1.Time `json:"completedAt,omitempty"`
-	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions"
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Valid Next Stage"
 	ValidNextStages []ImageBasedUpgradeStage `json:"validNextStages,omitempty"`

@@ -141,7 +141,8 @@ spec:
                           audiences:
                             description: Audiences is an array of audiences that the token was issued for. Valid tokens must include at least one of these values in their "aud" claim. Must be set to exactly one value.
                             type: array
-                            maxItems: 1
+                            maxItems: 10
+                            minItems: 1
                             items:
                               type: string
                               minLength: 1
@@ -216,6 +217,11 @@ spec:
                 type:
                   description: type identifies the cluster managed, user facing authentication mode in use. Specifically, it manages the component that responds to login attempts. The default is IntegratedOAuth.
                   type: string
+                  enum:
+                    - ""
+                    - None
+                    - IntegratedOAuth
+                    - OIDC
                 webhookTokenAuthenticator:
                   description: "webhookTokenAuthenticator configures a remote token reviewer. These remote authentication webhooks can be used to verify bearer tokens via the tokenreviews.authentication.k8s.io REST API. This is required to honor bearer tokens that are provisioned by an external authentication service. \n Can only be set if \"Type\" is set to \"None\"."
                   type: object

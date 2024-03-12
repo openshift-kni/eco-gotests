@@ -197,7 +197,6 @@ func (builder *OperatorBuilder) WaitUntilInCondition(
 			}
 
 			return false, nil
-
 		})
 
 	return err

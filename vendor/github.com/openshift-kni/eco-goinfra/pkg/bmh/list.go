@@ -90,7 +90,6 @@ func WaitForAllBareMetalHostsInGoodOperationalState(apiClient *clients.Settings,
 	// after availableDuration
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
-
 			for _, baremetalhost := range bmhList {
 				status := baremetalhost.GetBmhOperationalState()
 

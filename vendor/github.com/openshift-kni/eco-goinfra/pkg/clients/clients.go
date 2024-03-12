@@ -111,9 +111,11 @@ func New(kubeconfig string) *Settings {
 
 	if kubeconfig != "" {
 		log.Printf("Loading kube client config from path %q", kubeconfig)
+
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	} else {
 		log.Print("Using in-cluster kube client config")
+
 		config, err = rest.InClusterConfig()
 	}
 

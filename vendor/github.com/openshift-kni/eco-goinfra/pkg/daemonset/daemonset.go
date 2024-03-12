@@ -279,7 +279,6 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 			}
 
 			return false, err
-
 		})
 
 	if err == nil {
@@ -308,7 +307,6 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 			_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
 				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
-
 				return true, nil
 			}
 
@@ -365,7 +363,6 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 			}
 
 			return false, err
-
 		})
 
 	return err == nil

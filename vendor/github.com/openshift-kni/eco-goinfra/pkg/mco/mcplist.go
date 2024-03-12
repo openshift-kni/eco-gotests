@@ -96,14 +96,12 @@ func ListMCPWaitToBeStableFor(
 	// after stableDuration
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
-
 			isMcpListStable = true
 
 			// check if cluster is stable every 5 seconds during entire stableDuration time period
 			// Here we need to run through the entire stableDuration till it times out.
 			_ = wait.PollUntilContextTimeout(
 				context.TODO(), fiveScds, stableDuration, true, func(ctx2 context.Context) (done bool, err error) {
-
 					mcpList, err := ListMCP(apiClient, options...)
 
 					if err != nil {
@@ -145,7 +143,6 @@ func ListMCPWaitToBeStableFor(
 
 			// keep iterating in the outer wait.PollUntilContextTimeout waiting for cluster to be stable.
 			return false, nil
-
 		})
 
 	if err == nil {
