@@ -442,6 +442,9 @@ func VerifyHardRebootSuite() {
 			It("Verifies all deploymentes are available",
 				Label("ecore-hard-reboot"), polarion.ID("71872"), WaitAllDeploymentsAreAvailable)
 
+			It("Verifies all policies are compliant", polarion.ID("72355"), Label("ecore-hard-reboot-validate-policies"),
+				ValidateAllPoliciesCompliant)
+
 			It("Verifies SR-IOV workloads on different nodes post reboot",
 				Label("ecore-hard-reboot-sriov-different-node", "ecore-hard-reboot-sriov"), polarion.ID("71952"),
 				VerifySRIOVConnectivityBetweenDifferentNodesSameNet)
@@ -518,6 +521,9 @@ func VerifyGracefulRebootSuite() {
 
 			It("Verifies all deploymentes are available",
 				Label("ecore-soft-reboot-all-deployments"), polarion.ID("72041"), WaitAllDeploymentsAreAvailable)
+
+			It("Verifies all policies are compliant", polarion.ID("72357"), Label("ecore-soft-reboot-validate-policies"),
+				ValidateAllPoliciesCompliant)
 
 			It("Verifies SR-IOV workloads on different nodes post graceful reboot",
 				Label("ecore-soft-reboot-sriov-different-nodes-same-net", "ecore-soft-reboot-sriov"),

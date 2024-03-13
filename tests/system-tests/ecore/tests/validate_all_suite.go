@@ -28,6 +28,9 @@ var _ = Describe(
 			It("Verifies NMState Operator is installed", polarion.ID("72251"),
 				Label("validate-nmstate"), ecorecommon.VerifyNMStatePoliciesAvailable)
 
+			It("Verifies all policies are compliant", polarion.ID("72354"), Label("validate-policies"),
+				ecorecommon.ValidateAllPoliciesCompliant)
+
 			ecorecommon.VerifySRIOVSuite()
 
 			ecorecommon.VerifyHardRebootSuite()
