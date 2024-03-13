@@ -108,19 +108,19 @@ var _ = Describe("NFD", Ordered, func() {
 			}
 
 		})
-		It("Check Logs", polarion.ID("54491"), func() {
+		It("Check Logs", polarion.ID("54549"), func() {
 			errorKeywords := []string{"error", "exception", "failed"}
 			skipIfConfigNotSet(nfdConfig)
 			listOptions := metav1.ListOptions{
 				AllowWatchBookmarks: false,
 			}
-			By("Check if NFD labeling of the kernel config flags")
+			By("Check if NFD pod's log not contains in error messages")
 			pods, err := pod.List(APIClient, hwaccelparams.NFDNamespace, listOptions)
 			Expect(err).NotTo(HaveOccurred())
 			for _, p := range pods {
-				glog.Info("retrieve logs from %v", p.Object.Name)
+				glog.V(ts.LogLevel).Info("retrieve logs from %v", p.Object.Name)
 				log, err := get.PodLogs(APIClient, hwaccelparams.NFDNamespace, p.Object.Name)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred(), "Error retrieving pod logs.")
 
 				for _, errorKeyword := range errorKeywords {
 					if strings.Contains(log, "read /host-sys/class/net/ens5/speed") {
@@ -133,6 +133,24 @@ var _ = Describe("NFD", Ordered, func() {
 
 			}
 
+		})
+
+		It("Check Restart Count", polarion.ID("54538"), func() {
+			skipIfConfigNotSet(nfdConfig)
+			listOptions := metav1.ListOptions{
+				AllowWatchBookmarks: false,
+			}
+			By("Check if NFD pods reset count equal to zero")
+			pods, err := pod.List(APIClient, hwaccelparams.NFDNamespace, listOptions)
+			Expect(err).NotTo(HaveOccurred())
+			for _, p := range pods {
+				glog.V(ts.LogLevel).Info("retrieve reset count from %v.", p.Object.Name)
+				resetCount, err := get.PodRestartCount(APIClient, hwaccelparams.NFDNamespace, p.Object.Name)
+				Expect(err).NotTo(HaveOccurred(), "Error retrieving reset count.")
+				glog.V(ts.LogLevel).Info("Total resets %d.", resetCount)
+				Expect(resetCount).To(Equal(int32(0)))
+
+			}
 		})
 
 		It("Check if NUMA detected ", polarion.ID("54408"), func() {
