@@ -617,19 +617,45 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeployOneLabel,
-		sriovDeployTwoLabel,
-		RDSCoreConfig.WlkdSRIOVDeployOneTargetAddress)
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeployOneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeployOneTargetAddressIPv6}
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeployTwoLabel,
-		sriovDeployOneLabel,
-		RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress)
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeployOneLabel,
+			sriovDeployTwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeployTwoLabel,
+			sriovDeployOneLabel,
+			targetAddress)
+	}
 }
 
 // VerifySRIOVWorkloadsOnDifferentNodes deploy worklods with SRIOV interfaces on the same node
@@ -756,57 +782,135 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q in %q ns is Ready",
 		deployTwo.Definition.Name, deployTwo.Definition.Namespace)
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeploy2OneLabel,
-		sriovDeploy2TwoLabel,
-		RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddress)
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddressIPv6}
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeploy2TwoLabel,
-		sriovDeploy2OneLabel,
-		RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddress)
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeploy2OneLabel,
+			sriovDeploy2TwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeploy2TwoLabel,
+			sriovDeploy2OneLabel,
+			targetAddress)
+	}
 }
 
 // VerifySRIOVConnectivityBetweenDifferentNodes test connectivity after cluster's reboot.
 func VerifySRIOVConnectivityBetweenDifferentNodes(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on different node")
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeploy2OneLabel,
-		sriovDeploy2TwoLabel,
-		RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddress)
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy2OneTargetAddressIPv6}
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeploy2TwoLabel,
-		sriovDeploy2OneLabel,
-		RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddress)
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeploy2OneLabel,
+			sriovDeploy2TwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy2TwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeploy2TwoLabel,
+			sriovDeploy2OneLabel,
+			targetAddress)
+	}
 }
 
 // VerifySRIOVConnectivityOnSameNode tests connectivity after cluster's reboot.
 func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeployOneLabel,
-		sriovDeployTwoLabel,
-		RDSCoreConfig.WlkdSRIOVDeployOneTargetAddress)
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeployOneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeployOneTargetAddressIPv6}
 
-	verifySRIOVConnectivity(
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		RDSCoreConfig.WlkdSRIOVOneNS,
-		sriovDeployTwoLabel,
-		sriovDeployOneLabel,
-		RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress)
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeployOneLabel,
+			sriovDeployTwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeployTwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			RDSCoreConfig.WlkdSRIOVOneNS,
+			sriovDeployTwoLabel,
+			sriovDeployOneLabel,
+			targetAddress)
+	}
 }
 
 // VerifySRIOVSuite container that contains tests for SR-IOV verification.

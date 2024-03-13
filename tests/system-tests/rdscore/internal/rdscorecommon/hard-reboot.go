@@ -483,7 +483,7 @@ func VerifyGracefulRebootSuite() {
 				Label("rds-core-soft-reboot"), polarion.ID("30021"), VerifySoftReboot)
 
 			It("Verifies all ClusterOperators are Available after ungraceful reboot",
-				Label("rds-core-hard-reboot"), polarion.ID("72040"), func() {
+				Label("rds-core-soft-reboot"), polarion.ID("72040"), func() {
 					By("Checking all cluster operators")
 
 					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Waiting for all ClusterOperators to be Available")
@@ -499,34 +499,34 @@ func VerifyGracefulRebootSuite() {
 				})
 
 			It("Verifies all deploymentes are available",
-				Label("rds-core-hard-reboot"), polarion.ID("72041"), WaitAllDeploymentsAreAvailable)
+				Label("rds-core-soft-reboot"), polarion.ID("72041"), WaitAllDeploymentsAreAvailable)
 
 			It("Verifies CephFS PVC is still accessible",
-				Label("rds-core-hard-reboot-cephfs"), polarion.ID("72042"), VerifyDataOnCephFSPVC)
+				Label("rds-core-soft-reboot-cephfs"), polarion.ID("72042"), VerifyDataOnCephFSPVC)
 
 			It("Verifies CephRBD PVC is still accessible",
-				Label("rds-core-hard-reboot-cephrbd"), polarion.ID("72044"), VerifyDataOnCephRBDPVC)
+				Label("rds-core-soft-reboot-cephrbd"), polarion.ID("72044"), VerifyDataOnCephRBDPVC)
 
 			It("Verifies CephFS workload is deployable after graceful reboot",
-				Label("odf-cephfs-pvc"), polarion.ID("72045"), MustPassRepeatedly(3), VerifyCephFSPVC)
+				Label("rds-core-sofrt-reboot-odf-cephfs-pvc"), polarion.ID("72045"), MustPassRepeatedly(3), VerifyCephFSPVC)
 
 			It("Verifies CephRBD workload is deployable after graceful reboot",
-				Label("odf-cephrbd-pvc"), polarion.ID("72046"), MustPassRepeatedly(3), VerifyCephRBDPVC)
+				Label("rds-core-soft-reboot-odf-cephrbd-pvc"), polarion.ID("72046"), MustPassRepeatedly(3), VerifyCephRBDPVC)
 
 			It("Verifies SR-IOV workloads on different nodes post graceful reboot",
-				Label("rds-core-hard-reboot-sriov-different-node"), polarion.ID("72039"),
+				Label("rds-core-soft-reboot-sriov-different-node"), polarion.ID("72039"),
 				VerifySRIOVConnectivityBetweenDifferentNodes)
 
 			It("Verifies SR-IOV workloads on the same node post graceful reboot",
-				Label("rds-core-hard-reboot-sriov-same-node"), polarion.ID("72038"),
+				Label("rds-core-soft-reboot-sriov-same-node"), polarion.ID("72038"),
 				VerifySRIOVConnectivityOnSameNode)
 
 			It("Verifies SR-IOV workloads deployable on the same node after graceful reboot",
-				Label("sriov-same-node"), polarion.ID("72048"), MustPassRepeatedly(3),
+				Label("rds-core-soft-reboot-sriov-same-node"), polarion.ID("72048"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNode)
 
 			It("Verifies SR-IOV workloads deployable on different nodes after graceful reboot",
-				Label("sriov-different-node"), polarion.ID("72049"), MustPassRepeatedly(3),
+				Label("rds-core-soft-reboot-sriov-different-node"), polarion.ID("72049"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnDifferentNodes)
 
 		})

@@ -14,47 +14,74 @@ rdscore_wlkd_sriov_two_image: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karam
 rdscore_wlkd_sriov_one_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 497 10.46.126.75/26; nc -k -l 10.46.126.75 1111"
+- "/opt/net/config.sh 497 10.46.126.75/26 2620:52:0:2e7e::41/122"
 rdscore_wlkd_sriov_two_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 497 10.46.126.77/26; nc -k -l 10.46.126.77 2222"
+- "/opt/net/config.sh 497 10.46.126.77/26 2620:52:0:2e7e::42/122"
 rdscore_wlkd2_sriov_one_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 497 10.46.126.76/26; nc -k -l 10.46.126.76 1111"
+- "/opt/net/config.sh 497 10.46.126.76/26 2620:52:0:2e7e::43/122"
 rdscore_wlkd2_sriov_two_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 497 10.46.126.78/26; nc -k -l 10.46.126.78 2222"
+- "/opt/net/config.sh 497 10.46.126.78/26 2620:52:0:2e7e::44/122"
 rdscore_wlkd_sriov_cm_data_one:
   config.sh: |
     #! /bin/bash
     set -euo pipefail
     vid=${1}
-    ip=${2}
+    ip4=${2}
+    ip6=${3:-''}
     ip link set dev net1 down
     ip link add link net1 name net1.${vid} type vlan id ${vid}
-    ip addr add ${ip} dev net1.${vid}
+    ip addr add ${ip4} dev net1.${vid}
+
+    if [[ ${ip6} != '' ]]; then
+      ip addr add ${ip6} dev net1.${vid}
+    fi
+
     ip link set dev net1 up
     ip link set dev net1.${vid} up
     ip --br a s
+
+    set -x
+    sleep 1
+
+    nc -k -l 1111
 rdscore_wlkd_sriov_cm_data_two:
   config.sh: |
     #! /bin/bash
     set -euo pipefail
     vid=${1}
-    ip=${2}
+    ip4=${2}
+    ip6=${3:-''}
     ip link set dev net1 down
     ip link add link net1 name net1.${vid} type vlan id ${vid}
-    ip addr add ${ip} dev net1.${vid}
+    ip addr add ${ip4} dev net1.${vid}
+
+    if [[ ${ip6} != '' ]]; then
+      ip addr add ${ip6} dev net1.${vid}
+    fi
+
     ip link set dev net1 up
     ip link set dev net1.${vid} up
     ip --br a s
-rdscore_wlkd_sriov_deploy_one_target: "10.46.126.77 2222"
+
+    set -x
+    sleep 1
+
+    nc -k -l 1111
+
+rdscore_wlkd_sriov_deploy_one_target: "10.46.126.77 1111"
+rdscore_wlkd_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::42 1111"
 rdscore_wlkd_sriov_deploy_two_target: "10.46.126.75 1111"
-rdscore_wlkd2_sriov_deploy_one_target: "10.46.126.78 2222"
+rdscore_wlkd_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::41 1111"
+rdscore_wlkd2_sriov_deploy_one_target: "10.46.126.78 1111"
+rdscore_wlkd2_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::44 1111"
 rdscore_wlkd2_sriov_deploy_two_target: "10.46.126.76 1111"
+rdscore_wlkd2_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::43 1111"
 ecore_wlkd_sriov_net_one: sriov-net-one
 ecore_wlkd_sriov_net_two: sriov-net-two
 rdscore_wlkd_sriov_one_selector:

@@ -127,11 +127,19 @@ type CoreConfig struct {
 	//nolint:lll
 	WlkdSRIOVDeployOneTargetAddress string `yaml:"rdscore_wlkd_sriov_deploy_one_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_ONE_TARGET"`
 	//nolint:lll
+	WlkdSRIOVDeployOneTargetAddressIPv6 string `yaml:"rdscore_wlkd_sriov_deploy_one_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
 	WlkdSRIOVDeployTwoTargetAddress string `yaml:"rdscore_wlkd_sriov_deploy_two_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeployTwoTargetAddressIPv6 string `yaml:"rdscore_wlkd_sriov_deploy_two_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_TWO_TARGET_IPV6"`
 	//nolint:lll
 	WlkdSRIOVDeploy2OneTargetAddress string `yaml:"rdscore_wlkd2_sriov_deploy_one_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_ONE_TARGET"`
 	//nolint:lll
+	WlkdSRIOVDeploy2OneTargetAddressIPv6 string `yaml:"rdscore_wlkd2_sriov_deploy_one_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
 	WlkdSRIOVDeploy2TwoTargetAddress string `yaml:"rdscore_wlkd2_sriov_deploy_two_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy2TwoTargetAddressIPv6 string `yaml:"rdscore_wlkd2_sriov_deploy_two_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_TWO_TARGET_IPV6"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
