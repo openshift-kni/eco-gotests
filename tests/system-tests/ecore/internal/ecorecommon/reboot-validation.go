@@ -370,6 +370,12 @@ func VerifyHardRebootSuite() {
 
 				By("Creating SR-IOV workloads on different SR-IOV nets and different nodes")
 				VerifySRIOVWorkloadsDifferentNodesDifferentNetworks(ctx)
+
+				By("Creating a workload with CephFS PVC")
+				VerifyCephFSPVC(ctx)
+
+				By("Creating a workload with CephFS PVC")
+				VerifyCephRBDPVC(ctx)
 			})
 
 			It("Verifies ungraceful cluster reboot",
@@ -445,6 +451,20 @@ func VerifyHardRebootSuite() {
 			It("Verifies all policies are compliant", polarion.ID("72355"), Label("ecore-hard-reboot-validate-policies"),
 				ValidateAllPoliciesCompliant)
 
+			It("Verifies CephFS PVC is still accessible after hard rebot",
+				Label("ecore-hard-reboot-cephfs"), polarion.ID("71873"), VerifyDataOnCephFSPVC)
+
+			It("Verifies CephRBD PVC is still accessible after hard reboot",
+				Label("ecore-hard-reboot-cephrbd"), polarion.ID("71990"), VerifyDataOnCephRBDPVC)
+
+			It("Verifies CephFS workload is deployable after hard reboot",
+				Label("ecore-hard-reboot-odf-cephfs-pvc"), polarion.ID("71851"), MustPassRepeatedly(3),
+				VerifyCephFSPVC)
+
+			It("Verifies CephRBD workload is deployable after hard reboot",
+				Label("ecore-hard-reboot-odf-cephrbd-pvc"), polarion.ID("71992"), MustPassRepeatedly(3),
+				VerifyCephRBDPVC)
+
 			It("Verifies SR-IOV workloads on different nodes post reboot",
 				Label("ecore-hard-reboot-sriov-different-node", "ecore-hard-reboot-sriov"), polarion.ID("71952"),
 				VerifySRIOVConnectivityBetweenDifferentNodesSameNet)
@@ -481,6 +501,8 @@ func VerifyHardRebootSuite() {
 }
 
 // VerifyGracefulRebootSuite container that contains tests for graceful reboot verification.
+//
+//nolint:funlen
 func VerifyGracefulRebootSuite() {
 	Describe(
 		"Graceful reboot validation",
@@ -498,6 +520,12 @@ func VerifyGracefulRebootSuite() {
 
 				By("Creating SR-IOV workloads on different SR-IOV nets and different nodes")
 				VerifySRIOVWorkloadsDifferentNodesDifferentNetworks(ctx)
+
+				By("Creating a workload with CephFS PVC")
+				VerifyCephFSPVC(ctx)
+
+				By("Creating a workload with CephFS PVC")
+				VerifyCephRBDPVC(ctx)
 			})
 
 			It("Verifies graceful cluster reboot",
@@ -524,6 +552,20 @@ func VerifyGracefulRebootSuite() {
 
 			It("Verifies all policies are compliant", polarion.ID("72357"), Label("ecore-soft-reboot-validate-policies"),
 				ValidateAllPoliciesCompliant)
+
+			It("Verifies CephFS PVC is still accessible after graceful reboot",
+				Label("ecore-soft-reboot-cephfs"), polarion.ID("72042"), VerifyDataOnCephFSPVC)
+
+			It("Verifies CephRBD PVC is still accessible after graceful reboot",
+				Label("ecore-soft-reboot-cephrbd"), polarion.ID("72044"), VerifyDataOnCephRBDPVC)
+
+			It("Verifies CephFS workload is deployable after graceful reboot",
+				Label("ecore-soft-rebboot-odf-cephfs-pvc"), polarion.ID("72045"), MustPassRepeatedly(3),
+				VerifyCephFSPVC)
+
+			It("Verifies CephRBD workload is deployable after graceful reboot",
+				Label("ecore-soft-reboot-odf-cephrbd-pvc"), polarion.ID("72046"), MustPassRepeatedly(3),
+				VerifyCephRBDPVC)
 
 			It("Verifies SR-IOV workloads on different nodes post graceful reboot",
 				Label("ecore-soft-reboot-sriov-different-nodes-same-net", "ecore-soft-reboot-sriov"),

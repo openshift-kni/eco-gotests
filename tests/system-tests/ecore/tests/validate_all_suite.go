@@ -31,6 +31,8 @@ var _ = Describe(
 			It("Verifies all policies are compliant", polarion.ID("72354"), Label("validate-policies"),
 				ecorecommon.ValidateAllPoliciesCompliant)
 
+			ecorecommon.VerifyPersistentStorageSuite()
+
 			ecorecommon.VerifySRIOVSuite()
 
 			ecorecommon.VerifyHardRebootSuite()
