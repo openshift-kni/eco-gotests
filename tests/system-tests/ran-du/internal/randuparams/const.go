@@ -13,4 +13,6 @@ const (
 	DefaultTimeout = 900 * time.Second
 	// TestWorkloadShellLaunchMethod is used when using a shell script for launching the test workload.
 	TestWorkloadShellLaunchMethod = "shell"
+	// RanDuLogLevel configures logging level for RAN DU related tests.
+	RanDuLogLevel = 90
 )

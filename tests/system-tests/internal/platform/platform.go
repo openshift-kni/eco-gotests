@@ -50,7 +50,10 @@ func GetOCPClusterName(apiClient *clients.Settings) (string, error) {
 		return "", err
 	}
 
-	return strings.ToLower(infraConfig.Object.Status.InfrastructureName), nil
+	// The cluster name is the infrastructure name without the last part, e.g. "kni-qe-12-p746q" -> "kni-qe-12"
+	parts := strings.Split(infraConfig.Object.Status.InfrastructureName, "-")
+
+	return strings.Join(parts[:len(parts)-1], "-"), nil
 }
 
 // GetOCPPlatformType retrieves the OCP cluster platform type from an arbitrary cluster.
