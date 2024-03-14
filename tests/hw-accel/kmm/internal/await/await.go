@@ -14,7 +14,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -28,7 +28,7 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 			var err error
 
 			if buildPod[nsname] == "" {
-				pods, err := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: "status.phase=Running"})
+				pods, err := pod.List(apiClient, nsname, metav1.ListOptions{FieldSelector: "status.phase=Running"})
 
 				if err != nil {
 					glog.V(kmmparams.KmmLogLevel).Infof("build list error: %s", err)
@@ -44,7 +44,7 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 
 			if buildPod[nsname] != "" {
 				fieldSelector := fmt.Sprintf("metadata.name=%s", buildPod[nsname])
-				pods, _ := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: fieldSelector})
+				pods, _ := pod.List(apiClient, nsname, metav1.ListOptions{FieldSelector: fieldSelector})
 
 				if len(pods) == 0 {
 					glog.V(kmmparams.KmmLogLevel).Infof("BuildPod %s no longer in namespace", buildPod)
@@ -96,7 +96,7 @@ func DeviceDriverDeployment(apiClient *clients.Settings, moduleName, nsname stri
 func ModuleUndeployed(apiClient *clients.Settings, nsName string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			pods, err := pod.List(apiClient, nsName, v1.ListOptions{})
+			pods, err := pod.List(apiClient, nsName, metav1.ListOptions{})
 
 			if err != nil {
 				glog.V(kmmparams.KmmLogLevel).Infof("pod list error: %s\n", err)
@@ -156,7 +156,7 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
 
-			nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(selector).String()})
+			nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(selector).String()})
 
 			if err != nil {
 				glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", selector)

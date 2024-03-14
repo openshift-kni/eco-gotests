@@ -21,7 +21,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -36,13 +36,13 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 		By("Getting external nodes ip addresses")
 		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
 		By("Selecting worker node for BGP tests")
 		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
 		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
+			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
 
 		By("Creating a new instance of MetalLB Speakers on workers")
@@ -54,7 +54,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 		By("Listing master nodes")
 		masterNodeList, err = nodes.List(APIClient,
-			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
 		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
 			"Failed to detect master nodes")
@@ -68,7 +68,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 		By("Listing metalLb speakers pod")
 		var err error
-		speakerPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
+		speakerPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 			LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 		})
 		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
@@ -184,7 +184,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Listing prometheus pods")
-			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, metaV1.ListOptions{
+			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, metav1.ListOptions{
 				LabelSelector: tsparams.PrometheusMonitoringPodLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")

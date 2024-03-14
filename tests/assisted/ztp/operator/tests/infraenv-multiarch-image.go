@@ -27,8 +27,8 @@ import (
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
 	"github.com/openshift/assisted-service/models"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -44,7 +44,7 @@ var (
 	archURL                                                    string
 	platformType                                               v1beta1.PlatformType
 	originalClusterImagesetBuilder, tempClusterImagesetBuilder *hive.ClusterImageSetBuilder
-	mirrorRegistryRef                                          *v1.LocalObjectReference
+	mirrorRegistryRef                                          *corev1.LocalObjectReference
 	configmapBuilder                                           *configmap.Builder
 )
 var _ = Describe(
@@ -307,7 +307,7 @@ func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...stri
 		HubAPIClient,
 		fmt.Sprintf("%s-pull-secret", infraenvTestSpoke),
 		infraenvTestSpoke,
-		v1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
+		corev1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
 	Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 	By("Create clusterdeployment in the new namespace")
@@ -319,7 +319,7 @@ func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...stri
 		infraenvTestSpoke,
 		"qe.lab.redhat.com",
 		infraenvTestSpoke,
-		metaV1.LabelSelector{
+		metav1.LabelSelector{
 			MatchLabels: map[string]string{
 				"dummy": "label",
 			},

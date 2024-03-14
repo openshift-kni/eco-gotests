@@ -18,7 +18,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -75,7 +75,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		var err error
 
 		workerNodes, err = nodes.List(APIClient,
-			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Fail to discover nodes")
 
 		By("Collecting SR-IOV interfaces for allmulti testing")
@@ -307,12 +307,12 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	AfterAll(func() {
 		By("Removing all SR-IOV Policy")
-		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metaV1.ListOptions{})
+		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean srIovPolicy")
 
 		By("Removing all srIovNetworks")
 		err = sriov.CleanAllNetworksByTargetNamespace(
-			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metaV1.ListOptions{})
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean sriov networks")
 	})
 })

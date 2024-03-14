@@ -3,8 +3,8 @@ package samsungparams
 import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
 	"github.com/openshift-kni/k8sreporter"
-	securityV1 "github.com/openshift/api/security/v1"
-	v1 "k8s.io/api/core/v1"
+	securityv1 "github.com/openshift/api/security/v1"
+	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 )
 
@@ -17,7 +17,7 @@ var (
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
-		{Cr: &v1.PodList{}},
+		{Cr: &corev1.PodList{}},
 	}
 
 	// PossibleWorkerNodeRoles list of the possible worker roles.
@@ -53,15 +53,15 @@ var (
 	}
 
 	// CnfSccAllowCapabilities cnf scc AllowCapabilites value.
-	CnfSccAllowCapabilities = []v1.Capability{"SYS_PTRACE", "SYS_ADMIN", "NET_ADMIN", "NET_RAW", "NET_BIND_SERVICE"}
+	CnfSccAllowCapabilities = []corev1.Capability{"SYS_PTRACE", "SYS_ADMIN", "NET_ADMIN", "NET_RAW", "NET_BIND_SERVICE"}
 
 	// CnfSccGroups cnf scc Groups value.
 	CnfSccGroups = []string{"system:authenticated"}
 
 	// CnfSccDropCapabilities cnf scc DropCapabilites value.
-	CnfSccDropCapabilities = []v1.Capability{"KILL", "MKNOD"}
+	CnfSccDropCapabilities = []corev1.Capability{"KILL", "MKNOD"}
 
 	// CnfSccVolumes cnf scc Volumes value.
-	CnfSccVolumes = []securityV1.FSType{"configMap", "downwardAPI", "emptyDir",
+	CnfSccVolumes = []securityv1.FSType{"configMap", "downwardAPI", "emptyDir",
 		"persistentVolumeClaim", "projected", "secret"}
 )

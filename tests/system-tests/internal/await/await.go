@@ -12,13 +12,13 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // WaitUntilAllDeploymentsReady waits for the duration of the defined timeout or until all deployments
 // in the namespace reach the Ready condition.
 func WaitUntilAllDeploymentsReady(apiClient *clients.Settings, nsname string, timeout time.Duration) (bool, error) {
-	deployments, err := deployment.List(apiClient, nsname, metaV1.ListOptions{})
+	deployments, err := deployment.List(apiClient, nsname, metav1.ListOptions{})
 
 	if err != nil {
 		glog.V(100).Infof("deployment list error: %s", err)
@@ -39,7 +39,7 @@ func WaitUntilAllDeploymentsReady(apiClient *clients.Settings, nsname string, ti
 // WaitUntilAllStatefulSetsReady waits for the duration of the defined timeout or until all deployments
 // in the namespace reach the Ready condition.
 func WaitUntilAllStatefulSetsReady(apiClient *clients.Settings, nsname string, timeout time.Duration) (bool, error) {
-	statefulsets, err := statefulset.List(apiClient, nsname, metaV1.ListOptions{})
+	statefulsets, err := statefulset.List(apiClient, nsname, metav1.ListOptions{})
 
 	if err != nil {
 		glog.V(100).Infof("statefulsets list error: %s", err)
@@ -60,7 +60,7 @@ func WaitUntilAllStatefulSetsReady(apiClient *clients.Settings, nsname string, t
 // WaitUntilAllPodsReady waits for the duration of the defined timeout or until all deployments
 // in the namespace reach the Ready condition.
 func WaitUntilAllPodsReady(apiClient *clients.Settings, nsname string, timeout time.Duration) (bool, error) {
-	pods, err := pod.List(apiClient, nsname, metaV1.ListOptions{})
+	pods, err := pod.List(apiClient, nsname, metav1.ListOptions{})
 
 	if err != nil {
 		glog.V(100).Infof("pods list error: %s", err)

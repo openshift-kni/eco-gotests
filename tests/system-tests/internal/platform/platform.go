@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/infrastructure"
 	"github.com/openshift-kni/eco-goinfra/pkg/ingress"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 )
 
 // GetOCPVersion retrieves the OCP clusterversion object from an arbitrary cluster and get current ocp version value.
@@ -57,7 +57,7 @@ func GetOCPClusterName(apiClient *clients.Settings) (string, error) {
 }
 
 // GetOCPPlatformType retrieves the OCP cluster platform type from an arbitrary cluster.
-func GetOCPPlatformType(apiClient *clients.Settings) (v1.PlatformType, error) {
+func GetOCPPlatformType(apiClient *clients.Settings) (configv1.PlatformType, error) {
 	glog.V(100).Info("Gathering OCP cluster platform type from cluster at %s", apiClient.KubeconfigPath)
 
 	infraConfig, err := infrastructure.Pull(apiClient)

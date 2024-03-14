@@ -8,8 +8,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -19,7 +19,7 @@ func ForLabel(apiClient *clients.Settings, timeout time.Duration, label string) 
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			nodes, e := apiClient.CoreV1Interface.Nodes().List(
-				context.TODO(), metaV1.ListOptions{})
+				context.TODO(), metav1.ListOptions{})
 			if e != nil {
 				return false, e
 			}
@@ -60,7 +60,7 @@ func ForNodeReadiness(apiClient *clients.Settings,
 	nodeSelector map[string]string) (bool, error) {
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			nodes, err := nodes.List(apiClient, metaV1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+			nodes, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
 			if err != nil {
 				return false, err
 			}
@@ -88,7 +88,7 @@ func ForNodeReadiness(apiClient *clients.Settings,
 
 // ForPod check that all pods in namespace are in running state.
 func ForPod(apiClient *clients.Settings, nsname string) (bool, error) {
-	podList, err := pod.List(apiClient, nsname, metaV1.ListOptions{})
+	podList, err := pod.List(apiClient, nsname, metav1.ListOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -103,8 +103,8 @@ func ForPod(apiClient *clients.Settings, nsname string) (bool, error) {
 	return true, nil
 }
 
-func filterNodesByLabel(nodes *v1.NodeList, keyword string) []v1.Node {
-	var filteredNodes []v1.Node
+func filterNodesByLabel(nodes *corev1.NodeList, keyword string) []corev1.Node {
+	var filteredNodes []corev1.Node
 
 	for _, node := range nodes.Items {
 		// Check if any label key contains the keyword

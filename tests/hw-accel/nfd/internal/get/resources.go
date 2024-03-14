@@ -4,7 +4,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -23,7 +23,7 @@ func initMap(nfdResourceCount map[string]int) {
 
 // NfdResourceCount count nfd topology and worker pods.
 func NfdResourceCount(apiClient *clients.Settings) map[string]int {
-	nodelistt, _ := nodes.List(apiClient, metaV1.ListOptions{})
+	nodelistt, _ := nodes.List(apiClient, metav1.ListOptions{})
 
 	nfdResourceCount := make(map[string]int)
 

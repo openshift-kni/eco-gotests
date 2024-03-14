@@ -1,7 +1,7 @@
 package tsparams
 
 import (
-	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/k8sreporter"
@@ -21,5 +21,5 @@ var (
 	}
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
-		{Cr: &v1.NetworkAttachmentDefinitionList{}}}
+		{Cr: &nadv1.NetworkAttachmentDefinitionList{}}}
 )

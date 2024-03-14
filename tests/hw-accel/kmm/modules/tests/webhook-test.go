@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	"github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -213,7 +213,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 				By("Preparing module")
 				module := &v1beta1.Module{
-					ObjectMeta: metaV1.ObjectMeta{
+					ObjectMeta: metav1.ObjectMeta{
 						Name:      "nomodule-raw",
 						Namespace: nSpace,
 					},

@@ -7,7 +7,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/golang/glog"
@@ -56,7 +56,7 @@ func CurrentCSVFromSubscription(apiClient *clients.Settings, gpuSubscriptionName
 
 // GetFirstPodNameWithLabel returns a the first pod name matching pod labelSelector in specified namespace.
 func GetFirstPodNameWithLabel(apiClient *clients.Settings, podNamespace, podLabelSelector string) (string, error) {
-	podList, err := pod.List(apiClient, podNamespace, v1.ListOptions{LabelSelector: podLabelSelector})
+	podList, err := pod.List(apiClient, podNamespace, metav1.ListOptions{LabelSelector: podLabelSelector})
 
 	glog.V(gpuparams.GpuLogLevel).Infof("Length of podList matching podLabelSelector is '%v'", len(podList))
 	glog.V(gpuparams.GpuLogLevel).Infof("podList[0] matching podLabelSelector is '%v'",
@@ -67,7 +67,7 @@ func GetFirstPodNameWithLabel(apiClient *clients.Settings, podNamespace, podLabe
 
 // GetClusterArchitecture returns first node architecture of the nodes that match nodeSelector (e.g. worker nodes).
 func GetClusterArchitecture(apiClient *clients.Settings, nodeSelector map[string]string) (string, error) {
-	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+	nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
 
 	// Check if at least one node matching the nodeSelector has the specific nodeLabel label set to true
 	// For example, look in all the worker nodes for specific label

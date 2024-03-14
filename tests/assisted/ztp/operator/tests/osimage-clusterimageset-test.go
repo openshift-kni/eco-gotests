@@ -14,8 +14,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -66,7 +66,7 @@ var _ = Describe(
 					HubAPIClient,
 					fmt.Sprintf("%s-pull-secret", osImageClusterImageSetName),
 					osImageClusterImageSetName,
-					v1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
+					corev1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 				By("Creating osimage-clusterimageset-test clusterdeployment")
@@ -77,7 +77,7 @@ var _ = Describe(
 					osImageClusterImageSetName,
 					"qe.lab.redhat.com",
 					osImageClusterImageSetName,
-					metaV1.LabelSelector{
+					metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"dummy": "label",
 						},

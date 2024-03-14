@@ -15,7 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -236,14 +236,14 @@ var _ = Describe(
 					userUID := new(int64)
 					*userUID = 0
 
-					secContext := &v1.SecurityContext{
+					secContext := &corev1.SecurityContext{
 						RunAsUser:  userUID,
 						Privileged: &trueFlag,
-						SeccompProfile: &v1.SeccompProfile{
-							Type: v1.SeccompProfileTypeRuntimeDefault,
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
-						Capabilities: &v1.Capabilities{
-							Add: []v1.Capability{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK"},
+						Capabilities: &corev1.Capabilities{
+							Add: []corev1.Capability{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK"},
 						},
 					}
 
@@ -261,7 +261,7 @@ var _ = Describe(
 					deployContainerTwo = deployContainerTwo.WithDropSecurityCapabilities([]string{"ALL"}, true)
 
 					By("Adding VolumeMount to container")
-					volMount := v1.VolumeMount{
+					volMount := corev1.VolumeMount{
 						Name:      "configs",
 						MountPath: "/opt/net/",
 						ReadOnly:  false,
@@ -313,12 +313,12 @@ var _ = Describe(
 					volMode := new(int32)
 					*volMode = 511
 
-					volDefinition := v1.Volume{
+					volDefinition := corev1.Volume{
 						Name: "configs",
-						VolumeSource: v1.VolumeSource{
-							ConfigMap: &v1.ConfigMapVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
 								DefaultMode: volMode,
-								LocalObjectReference: v1.LocalObjectReference{
+								LocalObjectReference: corev1.LocalObjectReference{
 									Name: ECoreConfig.NADConfigMapPCCName,
 								},
 							},
@@ -456,14 +456,14 @@ var _ = Describe(
 					userUID := new(int64)
 					*userUID = 0
 
-					secContext := &v1.SecurityContext{
+					secContext := &corev1.SecurityContext{
 						RunAsUser:  userUID,
 						Privileged: &trueFlag,
-						SeccompProfile: &v1.SeccompProfile{
-							Type: v1.SeccompProfileTypeRuntimeDefault,
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
-						Capabilities: &v1.Capabilities{
-							Add: []v1.Capability{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK"},
+						Capabilities: &corev1.Capabilities{
+							Add: []corev1.Capability{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK"},
 						},
 					}
 
@@ -481,7 +481,7 @@ var _ = Describe(
 					deployContainerTwo = deployContainerTwo.WithDropSecurityCapabilities([]string{"ALL"}, true)
 
 					By("Adding VolumeMount to container")
-					volMount := v1.VolumeMount{
+					volMount := corev1.VolumeMount{
 						Name:      "configs",
 						MountPath: "/opt/net/",
 						ReadOnly:  false,
@@ -533,12 +533,12 @@ var _ = Describe(
 					volMode := new(int32)
 					*volMode = 511
 
-					volDefinition := v1.Volume{
+					volDefinition := corev1.Volume{
 						Name: "configs",
-						VolumeSource: v1.VolumeSource{
-							ConfigMap: &v1.ConfigMapVolumeSource{
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
 								DefaultMode: volMode,
-								LocalObjectReference: v1.LocalObjectReference{
+								LocalObjectReference: corev1.LocalObjectReference{
 									Name: ECoreConfig.NADConfigMapPCCName,
 								},
 							},

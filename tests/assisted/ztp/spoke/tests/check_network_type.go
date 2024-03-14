@@ -15,7 +15,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	"github.com/openshift/assisted-service/models"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe(
@@ -187,7 +187,7 @@ var _ = Describe(
 
 func agentClusterInstallCompleted(agentClusterInstallBuilder *assisted.AgentClusterInstallBuilder) {
 	err := agentClusterInstallBuilder.WaitForConditionStatus(
-		v1beta1.ClusterCompletedCondition, v1.ConditionTrue, time.Second*5)
+		v1beta1.ClusterCompletedCondition, corev1.ConditionTrue, time.Second*5)
 	Expect(err).ToNot(HaveOccurred(), "error verifying that the completed condition status is True")
 	err = agentClusterInstallBuilder.WaitForConditionReason(
 		v1beta1.ClusterCompletedCondition, v1beta1.ClusterInstalledReason, time.Second*5)

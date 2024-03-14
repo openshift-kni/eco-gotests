@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/internal/config"
@@ -29,16 +29,16 @@ type BMCDetails struct {
 }
 
 // TolerationList used to store tolerations for test workloads.
-type TolerationList []v1.Toleration
+type TolerationList []corev1.Toleration
 
 // Decode - method for envconfig package to parse environment variable.
 func (tl *TolerationList) Decode(value string) error {
-	tmpTolerationList := []v1.Toleration{}
+	tmpTolerationList := []corev1.Toleration{}
 
 	for _, record := range strings.Split(value, ";") {
 		log.Printf("Processing toleration record: %q", record)
 
-		parsedToleration := v1.Toleration{}
+		parsedToleration := corev1.Toleration{}
 
 		for _, parsedRecord := range strings.Split(record, ",") {
 			switch strings.Split(parsedRecord, "=")[0] {
@@ -47,9 +47,9 @@ func (tl *TolerationList) Decode(value string) error {
 			case "value":
 				parsedToleration.Value = strings.Split(parsedRecord, "=")[1]
 			case "effect":
-				parsedToleration.Effect = v1.TaintEffect(strings.Split(parsedRecord, "=")[1])
+				parsedToleration.Effect = corev1.TaintEffect(strings.Split(parsedRecord, "=")[1])
 			case "operator":
-				parsedToleration.Operator = v1.TolerationOperator(strings.Split(parsedRecord, "=")[1])
+				parsedToleration.Operator = corev1.TolerationOperator(strings.Split(parsedRecord, "=")[1])
 			}
 		}
 		tmpTolerationList = append(tmpTolerationList, parsedToleration)

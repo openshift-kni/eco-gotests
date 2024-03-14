@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -21,7 +21,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		It("Check must-gather functionality", polarion.ID("53653"), func() {
 			By("Print Pod Name")
-			pods, _ := pod.List(APIClient, kmmparams.KmmOperatorNamespace, v1.ListOptions{
+			pods, _ := pod.List(APIClient, kmmparams.KmmOperatorNamespace, metav1.ListOptions{
 				FieldSelector: "status.phase=Running",
 			})
 			var mustGatherImage string

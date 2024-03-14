@@ -20,7 +20,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -61,7 +61,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		It("should pass malware testing", polarion.ID("68147"), func() {
 			By("Obtain KMM images for test")
-			pods, _ := pod.List(APIClient, kmmparams.KmmOperatorNamespace, v1.ListOptions{
+			pods, _ := pod.List(APIClient, kmmparams.KmmOperatorNamespace, metav1.ListOptions{
 				FieldSelector: "status.phase=Running",
 			})
 

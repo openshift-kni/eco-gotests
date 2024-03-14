@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/mcm/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -54,12 +54,12 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Delete Hub Secret")
 			err = secret.NewBuilder(APIClient, secretName,
-				tsparams.KmmHubOperatorNamespace, v1.SecretTypeDockerConfigJson).Delete()
+				tsparams.KmmHubOperatorNamespace, corev1.SecretTypeDockerConfigJson).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting hub registry secret")
 
 			By("Delete Spoke Secret")
 			err = secret.NewBuilder(ModulesConfig.SpokeAPIClient, secretName,
-				kmmparams.KmmOperatorNamespace, v1.SecretTypeDockerConfigJson).Delete()
+				kmmparams.KmmOperatorNamespace, corev1.SecretTypeDockerConfigJson).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting spoke registry secret")
 
 		})
@@ -70,12 +70,12 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			secretContent := define.SecretContent(ModulesConfig.Registry, ModulesConfig.PullSecret)
 
 			_, err := secret.NewBuilder(APIClient, secretName,
-				tsparams.KmmHubOperatorNamespace, v1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
+				tsparams.KmmHubOperatorNamespace, corev1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating secret on hub")
 
 			By("Creating registry secret on Spoke")
 			_, err = secret.NewBuilder(ModulesConfig.SpokeAPIClient, secretName,
-				kmmparams.KmmOperatorNamespace, v1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
+				kmmparams.KmmOperatorNamespace, corev1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating secret on spoke")
 
 			By("Create ConfigMap")

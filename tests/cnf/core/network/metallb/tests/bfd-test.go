@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	coreV1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -45,14 +45,14 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		By("Getting external nodes ip addresses")
 		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
 		By("Selecting worker node for BFD tests")
 		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
 
 		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
+			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
 
 		By("Creating a new instance of MetalLB Speakers on workers")
@@ -67,7 +67,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 	Context("single hop", Label("singlehop"), func() {
 		BeforeEach(func() {
 			By("Collect running metallb bgp speakers")
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
+			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
@@ -85,7 +85,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 			By("Listing control-plane nodes")
 			masterNodeList, err := nodes.List(APIClient,
-				metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
 
 			By("Creating FRR Pod with network and IP address")
@@ -113,11 +113,11 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to redefine %s namespace with the label %s",
 				NetConfig.MlbOperatorNamespace, tsparams.PrometheusMonitoringLabel))
 
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
+			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list MetalLB speaker pods")
 
-			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, metaV1.ListOptions{
+			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, metav1.ListOptions{
 				LabelSelector: tsparams.PrometheusMonitoringPodLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
@@ -155,7 +155,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		BeforeEach(func() {
 			By("Collecting information before test")
-			speakerPodList, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
+			speakerPodList, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list speaker pods")
@@ -181,7 +181,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
 			By("Removing static routes from the speakers")
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
+			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
@@ -211,7 +211,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		})
 
 		DescribeTable("should provide fast link failure detection", polarion.ID("47186"),
-			func(bgpProtocol, ipStack string, externalTrafficPolicy coreV1.ServiceExternalTrafficPolicyType) {
+			func(bgpProtocol, ipStack string, externalTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
 				createExternalNad()
 
 				By("Verifying that speaker route map is not empty")
@@ -227,7 +227,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				}
 
 				By("Collecting running MetalLB speakers")
-				speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metaV1.ListOptions{
+				speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 					LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
 				})
 				Expect(err).ToNot(HaveOccurred(), "Failed to list metalLb speaker pods")
@@ -266,7 +266,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 				By("Discovering Master nodes")
 				masterNodes, err := nodes.List(APIClient,
-					metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+					metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
 				Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
 
 				By("Creating FRR pod one on master node")
@@ -314,27 +314,27 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				httpOutput, err = cmd.Curl(frrPod, masterClientPodIP, addressPool[0], ipStack, tsparams.FRRSecondContainerName)
 				// If externalTrafficPolicy is Local, the server pod should be unreachable.
 				switch externalTrafficPolicy {
-				case coreV1.ServiceExternalTrafficPolicyTypeLocal:
+				case corev1.ServiceExternalTrafficPolicyTypeLocal:
 					Expect(err).To(HaveOccurred(), httpOutput)
-				case coreV1.ServiceExternalTrafficPolicyTypeCluster:
+				case corev1.ServiceExternalTrafficPolicyTypeCluster:
 					Expect(err).ToNot(HaveOccurred(), httpOutput)
 				}
 				testBFDFailBack()
 			},
 
-			Entry("", tsparams.IBPGPProtocol, netparam.IPV4Family, coreV1.ServiceExternalTrafficPolicyTypeCluster,
+			Entry("", tsparams.IBPGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeCluster,
 				polarion.SetProperty("BGPPeer", tsparams.IBPGPProtocol),
 				polarion.SetProperty("IPStack", netparam.IPV4Family),
 				polarion.SetProperty("TrafficPolicy", "Cluster")),
-			Entry("", tsparams.IBPGPProtocol, netparam.IPV4Family, coreV1.ServiceExternalTrafficPolicyTypeLocal,
+			Entry("", tsparams.IBPGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeLocal,
 				polarion.SetProperty("BGPPeer", tsparams.IBPGPProtocol),
 				polarion.SetProperty("IPStack", netparam.IPV4Family),
 				polarion.SetProperty("TrafficPolicy", "Local")),
-			Entry("", tsparams.EBGPProtocol, netparam.IPV4Family, coreV1.ServiceExternalTrafficPolicyTypeCluster,
+			Entry("", tsparams.EBGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeCluster,
 				polarion.SetProperty("BGPPeer", tsparams.EBGPProtocol),
 				polarion.SetProperty("IPStack", netparam.IPV4Family),
 				polarion.SetProperty("TrafficPolicy", "Custer")),
-			Entry("", tsparams.EBGPProtocol, netparam.IPV4Family, coreV1.ServiceExternalTrafficPolicyTypeLocal,
+			Entry("", tsparams.EBGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeLocal,
 				polarion.SetProperty("BGPPeer", tsparams.EBGPProtocol),
 				polarion.SetProperty("IPStack", netparam.IPV4Family),
 				polarion.SetProperty("TrafficPolicy", "Local")),

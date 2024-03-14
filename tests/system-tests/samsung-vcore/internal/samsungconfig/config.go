@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsconfig"
@@ -29,10 +29,10 @@ type SamsungConfig struct {
 	Host                        string `yaml:"host" envconfig:"ECO_SYSTEM_SAMSUNG_HOST"`
 	User                        string `yaml:"user" envconfig:"ECO_SYSTEM_SAMSUNG_USER"`
 	Pass                        string `yaml:"pass" envconfig:"ECO_SYSTEM_SAMSUNG_PASS"`
-	ControlPlaneLabelListOption v1.ListOptions
-	OdfLabelListOption          v1.ListOptions
-	SamsungPpLabelListOption    v1.ListOptions
-	SamsungCnfLabelListOption   v1.ListOptions
+	ControlPlaneLabelListOption metav1.ListOptions
+	OdfLabelListOption          metav1.ListOptions
+	SamsungPpLabelListOption    metav1.ListOptions
+	SamsungCnfLabelListOption   metav1.ListOptions
 }
 
 // NewSamsungConfig returns instance of SamsungConfig config type.
@@ -94,10 +94,10 @@ func readEnv(samsungConfig *SamsungConfig) error {
 	samsungConfig.SamsungPpLabel = fmt.Sprintf("%s/%s", samsungConfig.KubernetesRolePrefix, samsungConfig.SamsungPpLabel)
 	samsungConfig.SamsungCnfLabel =
 		fmt.Sprintf("%s/%s", samsungConfig.KubernetesRolePrefix, samsungConfig.SamsungCnfLabel)
-	samsungConfig.ControlPlaneLabelListOption = v1.ListOptions{LabelSelector: samsungConfig.ControlPlaneLabel}
-	samsungConfig.OdfLabelListOption = v1.ListOptions{LabelSelector: samsungConfig.OdfLabel}
-	samsungConfig.SamsungPpLabelListOption = v1.ListOptions{LabelSelector: samsungConfig.SamsungPpLabel}
-	samsungConfig.SamsungCnfLabelListOption = v1.ListOptions{LabelSelector: samsungConfig.SamsungCnfLabel}
+	samsungConfig.ControlPlaneLabelListOption = metav1.ListOptions{LabelSelector: samsungConfig.ControlPlaneLabel}
+	samsungConfig.OdfLabelListOption = metav1.ListOptions{LabelSelector: samsungConfig.OdfLabel}
+	samsungConfig.SamsungPpLabelListOption = metav1.ListOptions{LabelSelector: samsungConfig.SamsungPpLabel}
+	samsungConfig.SamsungCnfLabelListOption = metav1.ListOptions{LabelSelector: samsungConfig.SamsungCnfLabel}
 
 	return nil
 }

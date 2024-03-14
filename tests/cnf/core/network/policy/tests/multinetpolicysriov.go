@@ -20,8 +20,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/policy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -57,7 +57,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		By("Listing worker nodes")
 		var err error
 		workerNodeList, err = nodes.List(
-			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			APIClient, metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to list worker nodes")
 		Expect(len(workerNodeList)).To(BeNumerically(">", 1),
 			"Failed cluster doesn't have enough nodes")
@@ -127,7 +127,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
 				WithEmptyIngress().
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
 
@@ -162,7 +162,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
 				WithIngressRule(multinetpolicyapiv1.MultiNetworkPolicyIngressRule{}).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{}}).Create()
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{}}).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
 
 			// All traffic is accepted
@@ -195,14 +195,14 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			//Port:     &policyPort5000,
 			//EndPort:  &policyPort5002,
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().WithPortAndProtocol(uint16(port5001), "TCP").
-				WithPeerPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPeerPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				GetEgressRuleCfg()
 			Expect(err).ToNot(HaveOccurred(), "Failed to build egress rule")
 
 			_, err = networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelFirstClientPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelFirstClientPod}}).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 				WithEgressRule(*egressRule).Create()
 
@@ -248,7 +248,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		It("Ingress and Egress allow IPv4 address", polarion.ID("53898"), func() {
 			By("Apply MultiNetworkPolicy with ingress and egress rules allow specific IPv4 addresses")
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().WithPeerPodSelectorAndCIDR(
-				metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
+				metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
 				ipaddr.RemovePrefix(secondClientPodIP)+"/"+"32").
 				GetEgressRuleCfg()
 			Expect(err).ToNot(HaveOccurred(), "Failed to build egress rule")
@@ -261,7 +261,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			multiNetPolicy := networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 				WithIngressRule(*ingressRule).WithEgressRule(*egressRule)
@@ -305,7 +305,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 				WithEmptyIngress().
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
 
@@ -416,18 +416,18 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 		It("Ingress/Egress Allow access only to a specific port/protocol", polarion.ID("70040"), func() {
 			ingressRule, err := networkpolicy.NewIngressRuleBuilder().WithPortAndProtocol(uint16(port5001), "SCTP").
-				WithPeerPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelFirstClientPod}}).
+				WithPeerPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelFirstClientPod}}).
 				GetIngressRuleCfg()
 			Expect(err).ToNot(HaveOccurred(), "Failed to build ingress rule")
 
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().WithPortAndProtocol(uint16(port5001), "SCTP").
-				WithPeerPodSelectorAndCIDR(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
+				WithPeerPodSelectorAndCIDR(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
 					ipaddr.RemovePrefix(secondClientPodIPv6)+"/"+"128").GetEgressRuleCfg()
 			Expect(err).ToNot(HaveOccurred(), "Failed to build egress rule")
 			_, err = networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 				WithIngressRule(*ingressRule).WithEgressRule(*egressRule).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
@@ -474,7 +474,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			policy, err := networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 				WithIngressRule(*ingressRule).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
@@ -508,14 +508,14 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete multinetworkpolicy object")
 
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().
-				WithPeerPodSelectorAndCIDR(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
+				WithPeerPodSelectorAndCIDR(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
 					ipaddr.RemovePrefix(secondClientPodIPv6)+"/"+"128").GetEgressRuleCfg()
 			Expect(err).ToNot(HaveOccurred(), "Failed to build egressRule")
 
 			_, err = networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 				WithEgressRule(*egressRule).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multinetworkpolicy object")
@@ -588,7 +588,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			policy, err := networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 				WithIngressRule(*ingressRule).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multiNetworkPolicy")
@@ -602,9 +602,9 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete multinetworkpolicy object")
 
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().
-				WithPeerPodSelectorAndCIDR(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
+				WithPeerPodSelectorAndCIDR(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
 					ipaddr.RemovePrefix(secondClientPodIPv6)+"/"+"128").
-				WithPeerPodSelectorAndCIDR(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
+				WithPeerPodSelectorAndCIDR(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
 					ipaddr.RemovePrefix(secondClientPodIP)+"/"+"32").
 				GetEgressRuleCfg()
 			Expect(err).ToNot(HaveOccurred(), "Failed to build egressRule")
@@ -612,7 +612,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			_, err = networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
-				WithPodSelector(metaV1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
+				WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 				WithEgressRule(*egressRule).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create multinetworkpolicy object")
@@ -635,7 +635,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		serverIP := serverPodIP
 		// Pull the latest version of firstClientPod in order to get an updated network Annotations from the cluster.
 		Expect(firstClientPod.Exists()).To(BeTrue(), "Client pod doesn't exist")
-		if strings.Contains(firstClientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"],
+		if strings.Contains(firstClientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"],
 			removePrefixFromIP(firstClientPodIPv6)) {
 			serverIP = serverPodIPv6
 		}
@@ -660,12 +660,12 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 	AfterAll(func() {
 		By("Removing all SR-IOV Policies")
-		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metaV1.ListOptions{})
+		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred(), "Fail to clean srIovPolicy")
 
 		By("Removing all srIovNetworks")
 		err = sriov.CleanAllNetworksByTargetNamespace(
-			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metaV1.ListOptions{})
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred(), "Fail to clean sriov networks")
 
 		By("Waiting until cluster MCP and SR-IOV are stable")
@@ -767,8 +767,8 @@ func createServerPod(
 	By("Creating server pod")
 
 	var (
-		initContainers      []*v1.Container
-		serverPodContainers []*v1.Container
+		initContainers      []*corev1.Container
+		serverPodContainers []*corev1.Container
 	)
 
 	for idx, serverIP := range serverPodIP {

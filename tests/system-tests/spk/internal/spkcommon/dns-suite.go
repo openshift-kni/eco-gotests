@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools"
@@ -82,7 +82,7 @@ func VerifyDNSResolutionFromNewDeploy(ctx SpecContext) {
 
 	glog.V(spkparams.SPKLogLevel).Infof("Setting SCC")
 
-	deployContainer = deployContainer.WithSecurityContext(&v1.SecurityContext{RunAsGroup: nil, RunAsUser: nil})
+	deployContainer = deployContainer.WithSecurityContext(&corev1.SecurityContext{RunAsGroup: nil, RunAsUser: nil})
 
 	By("Obtaining container definition")
 

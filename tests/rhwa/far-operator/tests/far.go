@@ -15,7 +15,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwaparams"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe(
@@ -34,7 +34,7 @@ var _ = Describe(
 		})
 		It("Verify Fence Agents Remediation Operator pod is running", polarion.ID("66026"), func() {
 
-			listOptions := v1.ListOptions{
+			listOptions := metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", farparams.OperatorControllerPodLabel),
 			}
 			_, err := pod.WaitForAllPodsInNamespaceRunning(

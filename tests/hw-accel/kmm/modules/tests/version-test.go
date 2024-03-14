@@ -18,7 +18,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -96,7 +96,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error removing node label")
 
 			nodesBuilder, err := nodes.List(APIClient,
-				v1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
+				metav1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "error getting nodes")
 
 			for _, nodeBuilder := range nodesBuilder {
@@ -144,7 +144,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 			By("Set version label on the first worker")
 			nodesBuilder, err := nodes.List(APIClient,
-				v1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
+				metav1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "error getting nodes")
 
 			firstNode = nodesBuilder[0]
@@ -213,7 +213,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 			By("Set version label on all workers")
 			nodesBuilder, err := nodes.List(APIClient,
-				v1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
+				metav1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "error getting nodes")
 
 			for _, nodeBuilder := range nodesBuilder {

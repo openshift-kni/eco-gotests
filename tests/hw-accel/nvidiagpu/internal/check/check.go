@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/gpuparams"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -22,7 +22,7 @@ const (
 // AllNodeLabel checks if label is present on all nodes matching nodeSelector.
 func AllNodeLabel(apiClient *clients.Settings, nodeLabel, nodeLabelValue string,
 	nodeSelector map[string]string) (bool, error) {
-	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+	nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
 
 	// in all the nodes that match the nodeSelectors, look for specific label
 	// For example, look in all the worker nodes for a specific label with specific value
@@ -59,7 +59,7 @@ func AllNodeLabel(apiClient *clients.Settings, nodeLabel, nodeLabelValue string,
 
 // NodeWithLabel checks if label is present on at least one node matching nodeSelector.
 func NodeWithLabel(apiClient *clients.Settings, nodeLabel string, nodeSelector map[string]string) (bool, error) {
-	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+	nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
 
 	// Check if at least one node matching the nodeSelector has the specific nodeLabel label set to true
 	// For example, look in all the worker nodes for specific label

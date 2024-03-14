@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -54,11 +54,11 @@ var _ = Describe(
 					httpdContainerImage).WithLabel("app", serverName)
 
 				By("Adding an httpd container to the pod")
-				httpPodBuilder.WithAdditionalContainer(&v1.Container{
+				httpPodBuilder.WithAdditionalContainer(&corev1.Container{
 					Name:    serverName,
 					Image:   httpdContainerImage,
 					Command: []string{"run-httpd"},
-					Ports: []v1.ContainerPort{
+					Ports: []corev1.ContainerPort{
 						{
 							ContainerPort: containerPort,
 						},
@@ -71,7 +71,7 @@ var _ = Describe(
 
 				By("Create a service for the pod")
 				serviceBuilder, err := service.NewBuilder(HubAPIClient, serverName, testNS.Definition.Name,
-					map[string]string{"app": serverName}, v1.ServicePort{Port: containerPort, Protocol: "TCP"}).Create()
+					map[string]string{"app": serverName}, corev1.ServicePort{Port: containerPort, Protocol: "TCP"}).Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating service")
 
 				By("Downloading osImage to new mirror")

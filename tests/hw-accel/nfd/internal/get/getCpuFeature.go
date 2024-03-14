@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
@@ -38,9 +38,9 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 			glog.V(nfdparams.LogLevel).Infof("Failed to define the default container settings %v", err)
 		}
 
-		podWorker.Definition.Spec.Containers = make([]v1.Container, 0)
+		podWorker.Definition.Spec.Containers = make([]corev1.Container, 0)
 		podWorker.Definition.Spec.Containers = append(podWorker.Definition.Spec.Containers, *container)
-		podWorker.Definition.Spec.RestartPolicy = v1.RestartPolicyNever
+		podWorker.Definition.Spec.RestartPolicy = corev1.RestartPolicyNever
 		podWorker.Definition.Spec.NodeName = strings.ReplaceAll(nodeName, ".", "")
 		podWorker.Definition.Spec.NodeSelector = map[string]string{"node-role.kubernetes.io/worker": ""}
 
@@ -52,7 +52,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 			return nil
 		}
 
-		err = podWorker.WaitUntilInStatus(v1.PodSucceeded, 5*time.Minute)
+		err = podWorker.WaitUntilInStatus(corev1.PodSucceeded, 5*time.Minute)
 		if err != nil {
 			glog.V(nfdparams.LogLevel).Infof(
 				"Error in waiting for pod: %s", err.Error())
@@ -60,7 +60,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 			return nil
 		}
 
-		con := v1.PodLogOptions{
+		con := corev1.PodLogOptions{
 			Container: containerName,
 		}
 

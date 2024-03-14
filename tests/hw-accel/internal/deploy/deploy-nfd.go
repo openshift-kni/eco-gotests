@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -251,7 +251,7 @@ func (n *NfdAPIResource) deploy() error {
 }
 
 func newNfdBuilder(namespace string, enableTopology bool, image string) (*nodefeature.Builder, error) {
-	clusters, err := olm.ListClusterServiceVersion(APIClient, namespace, metaV1.ListOptions{})
+	clusters, err := olm.ListClusterServiceVersion(APIClient, namespace, metav1.ListOptions{})
 
 	if err != nil {
 		return nil, err
@@ -336,7 +336,7 @@ func (n *NfdAPIResource) createNameSpaceIfNotExist() {
 
 func findCSV(namespace string) (string, error) {
 	clusterServices, err := olm.ListClusterServiceVersion(APIClient,
-		namespace, metaV1.ListOptions{})
+		namespace, metav1.ListOptions{})
 
 	if err == nil && len(clusterServices) > 0 {
 		return clusterServices[0].Definition.Name, nil

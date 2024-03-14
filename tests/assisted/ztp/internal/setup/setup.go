@@ -12,9 +12,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // SpokeClusterResources contains necessary resources for creating a spoke cluster.
@@ -65,7 +65,7 @@ func (spoke *SpokeClusterResources) WithDefaultPullSecret() *SpokeClusterResourc
 		spoke.apiClient,
 		fmt.Sprintf("%s-pull-secret", spoke.Name),
 		spoke.Name,
-		v1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data)
+		corev1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data)
 
 	return spoke
 }
@@ -79,7 +79,7 @@ func (spoke *SpokeClusterResources) WithDefaultClusterDeployment() *SpokeCluster
 		spoke.Name,
 		"qe.lab.redhat.com",
 		spoke.Name,
-		metaV1.LabelSelector{
+		metav1.LabelSelector{
 			MatchLabels: map[string]string{
 				"dummy": "label",
 			},

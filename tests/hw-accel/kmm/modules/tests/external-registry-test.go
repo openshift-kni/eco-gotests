@@ -22,7 +22,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -55,7 +55,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			By("Creating registry secret")
 			secretContent := define.SecretContent(ModulesConfig.Registry, ModulesConfig.PullSecret)
 			_, err = secret.NewBuilder(APIClient, secretName,
-				localNsName, v1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
+				localNsName, corev1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
 
 			By("Get cluster's global pull-secret")

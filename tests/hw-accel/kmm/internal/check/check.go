@@ -16,14 +16,14 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // NodeLabel checks if label is present on the node.
 func NodeLabel(apiClient *clients.Settings, moduleName, nsname string, nodeSelector map[string]string) (bool, error) {
-	nodeBuilder, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
+	nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(nodeSelector).String()})
 
 	if err != nil {
 		glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", nodeSelector)
@@ -115,7 +115,7 @@ func runCommandOnTestPods(apiClient *clients.Settings,
 	command []string, message string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			pods, err := pod.List(apiClient, kmmparams.KmmOperatorNamespace, v1.ListOptions{
+			pods, err := pod.List(apiClient, kmmparams.KmmOperatorNamespace, metav1.ListOptions{
 				FieldSelector: "status.phase=Running",
 				LabelSelector: kmmparams.KmmTestHelperLabelName,
 			})

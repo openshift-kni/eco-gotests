@@ -10,8 +10,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	configV1 "github.com/openshift/api/config/v1"
-	v1 "k8s.io/api/core/v1"
+	configv1 "github.com/openshift/api/config/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // AllRequirements accepts multiple requirement functions to ensure the environment meets all requirements.
@@ -144,7 +144,7 @@ func SpokeDualStackRequirement() (bool, string) {
 
 // checkPodRunning waits for the specified pod to be running.
 func checkPodRunning(podBuilder *pod.Builder) (bool, string) {
-	err := podBuilder.WaitUntilInStatus(v1.PodRunning, time.Second*10)
+	err := podBuilder.WaitUntilInStatus(corev1.PodRunning, time.Second*10)
 	if err != nil {
 		return false, fmt.Sprintf("%s pod found but was not running", podBuilder.Definition.Name)
 	}
@@ -194,7 +194,7 @@ func disconnectedRequirement(clusterobj cluster.APIClientGetter) (bool, string) 
 	}
 
 	for _, condition := range clusterVersion.Object.Status.Conditions {
-		if condition.Type == configV1.RetrievedUpdates {
+		if condition.Type == configv1.RetrievedUpdates {
 			if condition.Reason == "RemoteFailed" {
 				return true, ""
 			}
@@ -204,7 +204,7 @@ func disconnectedRequirement(clusterobj cluster.APIClientGetter) (bool, string) 
 	}
 
 	return false, fmt.Sprintf("Failed to determine if cluster is disconnected, "+
-		"could not find '%s' condition", configV1.RetrievedUpdates)
+		"could not find '%s' condition", configv1.RetrievedUpdates)
 }
 
 // connectedRequirement checks that the OCP cluster of the provided client is connected.
@@ -215,7 +215,7 @@ func connectedRequirement(clusterobj cluster.APIClientGetter) (bool, string) {
 	}
 
 	for _, condition := range clusterVersion.Object.Status.Conditions {
-		if condition.Type == configV1.RetrievedUpdates {
+		if condition.Type == configv1.RetrievedUpdates {
 			if condition.Reason == "RemoteFailed" {
 				return false, "Provided cluster is disconnected"
 			}
@@ -225,7 +225,7 @@ func connectedRequirement(clusterobj cluster.APIClientGetter) (bool, string) {
 	}
 
 	return false, fmt.Sprintf("Failed to determine if cluster is connected, "+
-		"could not find '%s' condition", configV1.RetrievedUpdates)
+		"could not find '%s' condition", configv1.RetrievedUpdates)
 }
 
 // singleStackIPv4Requirement checks that the OCP network of the provided client is single-stack ipv4.

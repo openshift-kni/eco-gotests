@@ -26,8 +26,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -76,25 +76,25 @@ var (
 	trueFlag         = true
 	workerNodes      []*nodes.Builder
 
-	serverSC = v1.SecurityContext{
+	serverSC = corev1.SecurityContext{
 		RunAsUser: &rootUser,
-		Capabilities: &v1.Capabilities{
-			Add: []v1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_RAW"},
+		Capabilities: &corev1.Capabilities{
+			Add: []corev1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_RAW"},
 		},
 	}
 
-	clientPodSC = v1.PodSecurityContext{
+	clientPodSC = corev1.PodSecurityContext{
 		FSGroup:    &hugePagesGroup,
 		RunAsGroup: &customSCCGroupID,
-		SeccompProfile: &v1.SeccompProfile{
+		SeccompProfile: &corev1.SeccompProfile{
 			Type: "RuntimeDefault",
 		},
 	}
 
-	clientSC = v1.SecurityContext{
-		Capabilities: &v1.Capabilities{
-			Drop: []v1.Capability{"ALL"},
-			Add:  []v1.Capability{"IPC_LOCK", "NET_ADMIN", "NET_RAW"},
+	clientSC = corev1.SecurityContext{
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+			Add:  []corev1.Capability{"IPC_LOCK", "NET_ADMIN", "NET_RAW"},
 		},
 		RunAsUser:                &customSCCUserID,
 		Privileged:               &falseFlag,
@@ -142,7 +142,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			By("Discover worker nodes")
 			var err error
 			workerNodes, err = nodes.List(APIClient,
-				metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 			Expect(err).ToNot(HaveOccurred(), "Fail to discover nodes")
 
 			By("Collecting SR-IOV interface for rootless dpdk tests")
@@ -327,7 +327,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				Eventually(
 					isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
 				pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-					clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
+					clientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
 				Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 				By("Running client dpdk-testpmd")
@@ -389,7 +389,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Eventually(
 				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
 			pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-				clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
+				clientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
@@ -446,8 +446,8 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			By("Creating SCC")
 			_, err = scc.NewBuilder(APIClient, "scc-test-admin", "MustRunAsNonRoot", "RunAsAny").
 				WithPrivilegedContainer(false).WithPrivilegedEscalation(true).
-				WithDropCapabilities([]v1.Capability{"ALL"}).
-				WithAllowCapabilities([]v1.Capability{"IPC_LOCK", "NET_ADMIN", "NET_RAW"}).
+				WithDropCapabilities([]corev1.Capability{"ALL"}).
+				WithAllowCapabilities([]corev1.Capability{"IPC_LOCK", "NET_ADMIN", "NET_RAW"}).
 				WithFSGroup("RunAsAny").
 				WithSeccompProfiles([]string{"*"}).
 				WithSupplementalGroups("RunAsAny").
@@ -489,7 +489,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Eventually(
 				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(deploymentPod).Should(BeTrue())
 			pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
+				deploymentPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
@@ -522,7 +522,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Eventually(
 				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(deploymentPod).Should(BeTrue())
 			pciAddressList, err = getPCIAddressListFromSrIovNetworkName(
-				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
+				deploymentPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
@@ -546,7 +546,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	AfterEach(func() {
 		By("Removing all srIovNetworks")
 		err := sriov.CleanAllNetworksByTargetNamespace(
-			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metaV1.ListOptions{})
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred(), "Fail to clean srIovNetworks")
 
 		By("Removing all pods from test namespace")
@@ -568,12 +568,12 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		Expect(err).ToNot(HaveOccurred(), "Fail to disable selinux flag")
 
 		By("Removing all SR-IOV Policy")
-		err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metaV1.ListOptions{})
+		err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred(), "Fail to clean srIovPolicy")
 
 		By("Removing all srIovNetworks")
 		err = sriov.CleanAllNetworksByTargetNamespace(
-			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metaV1.ListOptions{})
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
 		Expect(err).ToNot(HaveOccurred(), "Fail to clean sriov networks")
 
 		By("Removing SecurityContextConstraints")
@@ -649,8 +649,8 @@ func defineAndCreateSrIovNetwork(srIovNetwork, resName string, vlanID uint16) {
 func defineAndCreateDPDKPod(
 	podName,
 	nodeName string,
-	securityContext v1.SecurityContext,
-	podSC *v1.PodSecurityContext,
+	securityContext corev1.SecurityContext,
+	podSC *corev1.PodSecurityContext,
 	serverPodNetConfig []*types.NetworkSelectionElement,
 	podCmd []string) *pod.Builder {
 	dpdkContainer := pod.NewContainerBuilder(podName, NetConfig.DpdkTestContainer, podCmd)
@@ -795,7 +795,7 @@ func isPciAddressAvailable(clientPod *pod.Builder) bool {
 		return false
 	}
 
-	podNetAnnotation := clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"]
+	podNetAnnotation := clientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"]
 	if podNetAnnotation == "" {
 		return false
 	}
@@ -888,7 +888,7 @@ func fetchNewDeploymentPod(deploymentPodPrefix string) *pod.Builder {
 	var deploymentPod *pod.Builder
 
 	Eventually(func() bool {
-		namespacePodList, _ := pod.List(APIClient, tsparams.TestNamespaceName, metaV1.ListOptions{})
+		namespacePodList, _ := pod.List(APIClient, tsparams.TestNamespaceName, metav1.ListOptions{})
 		for _, namespacePod := range namespacePodList {
 			if strings.Contains(namespacePod.Definition.Name, deploymentPodPrefix) {
 				deploymentPod = namespacePod

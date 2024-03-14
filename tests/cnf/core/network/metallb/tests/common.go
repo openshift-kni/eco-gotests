@@ -21,7 +21,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
-	coreV1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // test cases variables that are accessible across entire package.
@@ -190,14 +190,14 @@ func createFrrPod(
 func setupMetalLbService(
 	ipStack string,
 	ipAddressPool *metallb.IPAddressPoolBuilder,
-	extTrafficPolicy coreV1.ServiceExternalTrafficPolicyType) {
+	extTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
 	servicePort, err := service.DefineServicePort(80, 80, "TCP")
 	Expect(err).ToNot(HaveOccurred(), "Failed to define service port")
 
 	_, err = service.NewBuilder(APIClient, "service-mlb", tsparams.TestNamespaceName,
 		map[string]string{"app": "nginx1"}, *servicePort).
 		WithExternalTrafficPolicy(extTrafficPolicy).
-		WithIPFamily([]coreV1.IPFamily{coreV1.IPFamily(ipStack)}, coreV1.IPFamilyPolicySingleStack).
+		WithIPFamily([]corev1.IPFamily{corev1.IPFamily(ipStack)}, corev1.IPFamilyPolicySingleStack).
 		WithAnnotation(map[string]string{"metallb.universe.tf/address-pool": ipAddressPool.Definition.Name}).
 		Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create MetalLB Service")

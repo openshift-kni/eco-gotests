@@ -3,7 +3,7 @@ package randuparams
 import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
 	"github.com/openshift-kni/k8sreporter"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
-		{Cr: &v1.PodList{}},
+		{Cr: &corev1.PodList{}},
 	}
 
 	// TestNamespaceName is used for defining the namespace name where test resources are created.

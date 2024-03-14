@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -22,7 +22,7 @@ var (
 	tempAgentServiceConfigBuilder         *assisted.AgentServiceConfigBuilder
 	pvcbuilder                            *storage.PVCBuilder
 	imageServicePersistentVolumeClaimName string = "image-service-data-assisted-image-service-0"
-	databaseStorage, fileSystemStorage    v1.PersistentVolumeClaimSpec
+	databaseStorage, fileSystemStorage    corev1.PersistentVolumeClaimSpec
 	osImage                               []v1beta1.OSImage
 )
 var _ = Describe(

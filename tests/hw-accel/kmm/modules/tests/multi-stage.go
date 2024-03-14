@@ -7,7 +7,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
@@ -141,14 +141,14 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			signKey := get.SigningData("cert", kmmparams.SigningCertBase64)
 
 			_, err := secret.NewBuilder(APIClient, "my-signing-key-pub",
-				kmmparams.UseLocalMultiStageTestNamespace, v1.SecretTypeOpaque).WithData(signKey).Create()
+				kmmparams.UseLocalMultiStageTestNamespace, corev1.SecretTypeOpaque).WithData(signKey).Create()
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
 
 			By("Creating my-signing-key")
 			signCert := get.SigningData("key", kmmparams.SigningKeyBase64)
 
 			_, err = secret.NewBuilder(APIClient, "my-signing-key",
-				kmmparams.UseLocalMultiStageTestNamespace, v1.SecretTypeOpaque).WithData(signCert).Create()
+				kmmparams.UseLocalMultiStageTestNamespace, corev1.SecretTypeOpaque).WithData(signCert).Create()
 			Expect(err).ToNot(HaveOccurred(), "failed creating secret")
 
 			By("Reusing previously created ServiceAccount")

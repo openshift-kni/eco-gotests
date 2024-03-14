@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -141,7 +141,7 @@ func IsSriovDeployed() error {
 func RemoveAllPoliciesAndWaitForSriovAndMCPStable() error {
 	glog.V(90).Infof("Deleting all SriovNetworkNodePolicies and waiting for SR-IOV and MCP become stable.")
 
-	err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, v1.ListOptions{})
+	err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func isVfCreated(sriovNodeState *sriov.NetworkNodeStateBuilder, vfNumber int, sr
 }
 
 func runCommandOnConfigDaemon(nodeName string, command []string) (string, error) {
-	pods, err := pod.List(APIClient, NetConfig.SriovOperatorNamespace, v1.ListOptions{
+	pods, err := pod.List(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{
 		LabelSelector: "app=sriov-network-config-daemon", FieldSelector: fmt.Sprintf("spec.nodeName=%s", nodeName)})
 	if err != nil {
 		return "", err

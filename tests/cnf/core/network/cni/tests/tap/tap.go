@@ -9,7 +9,7 @@ import (
 	orderedMap "github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -385,7 +385,7 @@ var _ = Describe("", Ordered,
 
 					Eventually(func() bool {
 						eventList, err := APIClient.Events(tsparams.TestNamespaceName).List(
-							context.TODO(), v1.ListOptions{FieldSelector: "reason=FailedCreatePodSandBox"})
+							context.TODO(), metav1.ListOptions{FieldSelector: "reason=FailedCreatePodSandBox"})
 						Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
 
 						for _, event := range eventList.Items {
@@ -471,7 +471,7 @@ func fetchNewDeploymentPod(waitUntilRunning bool) *pod.Builder {
 	var deploymentPodList []*pod.Builder
 
 	Eventually(func() bool {
-		deploymentPodList, _ = pod.List(APIClient, tsparams.TestNamespaceName, v1.ListOptions{})
+		deploymentPodList, _ = pod.List(APIClient, tsparams.TestNamespaceName, metav1.ListOptions{})
 
 		return len(deploymentPodList) == 1
 

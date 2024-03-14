@@ -9,7 +9,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -137,7 +137,7 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 
 	By("Adding VolumeMount to container")
 
-	volMount := v1.VolumeMount{
+	volMount := corev1.VolumeMount{
 		Name:      "cephfs-pvc",
 		MountPath: "/opt/cephfs-pvc/",
 		ReadOnly:  false,
@@ -150,12 +150,12 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 
 	var falseFlag = false
 
-	secContext := &v1.SecurityContext{
+	secContext := &corev1.SecurityContext{
 		Privileged: &falseFlag,
-		SeccompProfile: &v1.SeccompProfile{
-			Type: v1.SeccompProfileTypeRuntimeDefault,
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},
-		Capabilities: &v1.Capabilities{},
+		Capabilities: &corev1.Capabilities{},
 	}
 
 	By("Setting SecurityContext")
@@ -181,10 +181,10 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 	volMode := new(int32)
 	*volMode = 511
 
-	volDefinition := v1.Volume{
+	volDefinition := corev1.Volume{
 		Name: "cephfs-pvc",
-		VolumeSource: v1.VolumeSource{
-			PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 				ClaimName: fPVCName,
 				ReadOnly:  false,
 			},

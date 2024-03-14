@@ -8,14 +8,15 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/retry"
 )
 
 // NfdLabelsByKeys delete labels from a given list.
 func NfdLabelsByKeys(apiClient *clients.Settings, labelsRemove ...string) error {
-	nodes, err := nodes.List(apiClient, v1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
+	nodes, err := nodes.List(apiClient, metav1.ListOptions{
+		LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
 	if err != nil {
 		glog.V(nfdparams.LogLevel).Infof("failed retrieving node list")
 

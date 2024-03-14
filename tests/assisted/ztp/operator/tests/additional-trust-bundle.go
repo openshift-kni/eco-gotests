@@ -15,8 +15,8 @@ import (
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentinstallv1beta1 "github.com/openshift/assisted-service/api/v1beta1"
 
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -77,7 +77,7 @@ var _ = Describe(
 					HubAPIClient,
 					trustBundleTestNS+"-pull-secret",
 					trustBundleTestNS,
-					v1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
+					corev1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 				By("Create trustbundle-test clusterdeployment")
@@ -88,7 +88,7 @@ var _ = Describe(
 					trustBundleTestNS,
 					"qe.lab.redhat.com",
 					trustBundleTestNS,
-					metaV1.LabelSelector{
+					metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							"dummy": "label",
 						},
@@ -138,7 +138,7 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "error retrieving infraenv")
 				for _, condition := range infraenv.Object.Status.Conditions {
 					if agentinstallv1beta1.ImageCreatedCondition == condition.Type {
-						Expect(condition.Status).To(Equal(v1.ConditionTrue), "error creating image")
+						Expect(condition.Status).To(Equal(corev1.ConditionTrue), "error creating image")
 					}
 				}
 
@@ -165,7 +165,7 @@ var _ = Describe(
 				By("Checking image was not created due to invalid certificate")
 				for _, condition := range infraenv.Object.Status.Conditions {
 					if agentinstallv1beta1.ImageCreatedCondition == condition.Type {
-						Expect(condition.Status).ToNot(Equal(v1.ConditionTrue), "image was created with invalid certificate")
+						Expect(condition.Status).ToNot(Equal(corev1.ConditionTrue), "image was created with invalid certificate")
 					}
 				}
 

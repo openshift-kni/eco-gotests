@@ -18,7 +18,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
@@ -57,7 +57,7 @@ var _ = BeforeSuite(func() {
 
 	By("Create helper Deployments")
 	nodeList, err := nodes.List(
-		APIClient, metaV1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
+		APIClient, metav1.ListOptions{LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String()})
 
 	if err != nil {
 		Skip(fmt.Sprintf("Error listing worker nodes. Got error: '%v'", err))
@@ -90,7 +90,7 @@ var _ = AfterSuite(func() {
 	glog.V(kmmparams.KmmLogLevel).Infof("Deleting test deployments")
 
 	By("Delete helper deployments")
-	testDeployments, err := deployment.List(APIClient, kmmparams.KmmOperatorNamespace, metaV1.ListOptions{})
+	testDeployments, err := deployment.List(APIClient, kmmparams.KmmOperatorNamespace, metav1.ListOptions{})
 
 	if err != nil {
 		Fail(fmt.Sprintf("Error cleaning up environment. Got error: %v", err))

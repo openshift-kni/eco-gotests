@@ -6,7 +6,7 @@ import (
 	"github.com/openshift-kni/k8sreporter"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
-	v1 "github.com/openshift/hive/apis/hive/v1"
+	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -22,7 +22,7 @@ var (
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &corev1.SecretList{}},
-		{Cr: &v1.ClusterDeploymentList{}},
+		{Cr: &hivev1.ClusterDeploymentList{}},
 		{Cr: &hiveextV1Beta1.AgentClusterInstallList{}},
 		{Cr: &agentInstallV1Beta1.InfraEnvList{}},
 		{Cr: &bmhv1alpha1.BareMetalHostList{}},
