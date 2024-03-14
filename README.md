@@ -54,7 +54,7 @@ We use glog library for logging in the project. In order to enable verbose loggi
   1. The value for the variable has to be >= 100.
   2. The variable can simply be exported in the shell where you run your automation.
   3. The go file you work on has to be in a directory under github.com/openshift-kni/eco-gotests/tests/ directory for being able to import inittools.
-  4. Importing inittool also intializes the apiclient and it's available via "APIClient" variable.
+  4. Importing inittool also initializes the apiclient and it's available via "APIClient" variable.
 
 * Collect logs from cluster with reporter
 
@@ -129,8 +129,8 @@ The project uses a development method - forking workflow
     ├── images                             # container images artifacts: Dockerfile ?
     ├── scripts                            # makefile scripts
     ├── tests                              # test cases directory
-    │   ├── internal                       # common packages used acrossed framework
-    │   │   ├── params                     # common constant and parameters used acrossed framework
+    │   ├── internal                       # common packages used across framework
+    │   │   ├── params                     # common constant and parameters used across framework
     │   │   └── config                     # common config struct used across framework
     │   ├── cnf                            # cnf group test folder
     │   │   ├── network                    # networking test suites directory
@@ -141,7 +141,7 @@ The project uses a development method - forking workflow
     │   │   │   │        ├── common.go     # ginkgo common cni test functions
     │   │   │   │        ├── sysctl        # sysctl test cases
     │   │   │   │        │   ├──api.go     # api test cases
-    │   │   │   │        │   ├──common.go  # common sysctl ginkngo function
+    │   │   │   │        │   ├──common.go  # common sysctl ginkgo function
     │   │   │   │        │   └──e2e.go     # e2e sysctl test cases
     │   │   │   │        └── vrf           # vrf test cases
     │   │   │   ├── dummy                  # dummy test suite directory 

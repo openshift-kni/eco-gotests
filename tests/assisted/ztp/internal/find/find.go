@@ -18,9 +18,9 @@ func ClusterVersion(clusterObj cluster.APIClientGetter) (string, error) {
 		return "", err
 	}
 
-	splittedVersion := strings.Split(clusterVersion.Object.Status.Desired.Version, ".")
+	splitVersion := strings.Split(clusterVersion.Object.Status.Desired.Version, ".")
 
-	return fmt.Sprintf("%s.%s", splittedVersion[0], splittedVersion[1]), nil
+	return fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1]), nil
 }
 
 // SpokeClusterName returns the spoke cluster name based on hub and spoke cluster apiclients.

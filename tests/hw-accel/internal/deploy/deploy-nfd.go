@@ -66,7 +66,7 @@ func deleteAndWait(builder builder, timeout time.Duration) error {
 		})
 }
 
-// NfdAPIResource object that represents NodeFeatureDiscoery resource with API client.
+// NfdAPIResource object that represents NodeFeatureDiscovery resource with API client.
 type NfdAPIResource struct {
 	APIClients             *clients.Settings
 	Namespace              string
@@ -101,7 +101,7 @@ func NewNfdAPIResource(
 }
 
 // DeployNfd deploy NodeFeatureDiscovery operator and cr return error if it failed.
-func (n *NfdAPIResource) DeployNfd(waitTime int, addToplogy bool, nfdInstanceImage string) error {
+func (n *NfdAPIResource) DeployNfd(waitTime int, addTopology bool, nfdInstanceImage string) error {
 	glog.V(logLevel).Infof(
 		"Deploying node feature discovery")
 
@@ -126,7 +126,7 @@ func (n *NfdAPIResource) DeployNfd(waitTime int, addToplogy bool, nfdInstanceIma
 		return fmt.Errorf("nfd deployment didn't become ready within the specified timeout")
 	}
 
-	err = deployNfdCR(n.Namespace, addToplogy, nfdInstanceImage)
+	err = deployNfdCR(n.Namespace, addTopology, nfdInstanceImage)
 	if err != nil {
 		glog.V(logLevel).Infof(
 			"Error in deploying NodeFeatureDiscovery CR cause: %s", err.Error())
@@ -137,7 +137,7 @@ func (n *NfdAPIResource) DeployNfd(waitTime int, addToplogy bool, nfdInstanceIma
 	return nil
 }
 
-// UndeployNfd remove nfd compeletly instance name.
+// UndeployNfd remove nfd completely instance name.
 func (n *NfdAPIResource) UndeployNfd(nodeFeatureName string) error {
 	csvName, err := findCSV(n.Namespace)
 	if err != nil {
@@ -296,7 +296,7 @@ func deployNfdCR(namespace string, enableTopology bool, image string) error {
 	return nil
 }
 
-// DeleteNFDCR removes node feature discvory worker.
+// DeleteNFDCR removes node feature discovery worker.
 func (n *NfdAPIResource) DeleteNFDCR(nodeFeatureName string) error {
 	err := n.removeResource(nodeFeatureName, NodeFeatureDiscovery)
 	if err != nil {
