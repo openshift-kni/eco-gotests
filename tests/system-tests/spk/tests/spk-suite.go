@@ -12,11 +12,22 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("spk-all-suite"), func() {
 		Describe("On clean deployment", Label("spk-vanila-deployment"), func() {
+			It("Setups workload for SPK Ingress tests", Label("spk-setup-ingress-workload"),
+				spkcommon.SetupSPKBackendWorkload)
+
 			It("Asserts workload reachable via IPv4 address", polarion.ID("64119"),
 				Label("spkingresstcp"), spkcommon.AssertIPv4WorkloadURL)
 
 			It("Asserts workload reachable via IPv6 address", polarion.ID("65886"),
 				Label("spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
+
+			It("Asserts workload reachable via IPv4 address after application recreation", polarion.ID("72437"),
+				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3),
+				spkcommon.AssertIPv4WorkloadURLAfterAppRecreated)
+
+			It("Asserts workload reachable via IPv6 address after application recreation", polarion.ID("72439"),
+				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3),
+				spkcommon.AssertIPv6WorkloadURLAfterAppRecreated)
 
 			It("Asserts DNS resoulution from new deployment", polarion.ID("63171"),
 				Label("spkdns46new"), spkcommon.VerifyDNSResolutionFromNewDeploy)
@@ -58,6 +69,9 @@ var _ = Describe(
 		})
 
 		Describe("Hard reboot", Label("spk-hard-reboot"), func() {
+			It("Setups workload for SPK Ingress tests", Label("spk-setup-ingress-workload"),
+				spkcommon.SetupSPKBackendWorkload)
+
 			spkcommon.VerifyHardRebootSuite()
 
 			// https://issues.redhat.com/browse/OCPBUGS-30170
@@ -75,6 +89,14 @@ var _ = Describe(
 
 			It("Asserts DNS resolution from existing deployment", polarion.ID("72197"),
 				Label("spk-post-hard-reboot", "spkdns46existing"), spkcommon.VerifyDNSResolutionFromExistingDeploy)
+
+			It("Asserts workload reachable via IPv4 address after hard reboot and application recreation",
+				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3), polarion.ID("72438"),
+				spkcommon.AssertIPv4WorkloadURLAfterAppRecreated)
+
+			It("Asserts workload reachable via IPv6 address after hard reboot and application recreation",
+				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3), polarion.ID("72440"),
+				spkcommon.AssertIPv6WorkloadURLAfterAppRecreated)
 		})
 
 		Describe("Soft Reboot", Label("spk-soft-reboot"), func() {
@@ -92,5 +114,12 @@ var _ = Describe(
 			It("Asserts DNS resolution from existing deployment", polarion.ID("72201"),
 				Label("spk-post-soft-reboot", "spkdns46existing"), spkcommon.VerifyDNSResolutionFromExistingDeploy)
 
+			It("Asserts workload reachable via IPv4 address after soft reboot and application recreation",
+				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3), polarion.ID("72441"),
+				spkcommon.AssertIPv4WorkloadURLAfterAppRecreated)
+
+			It("Asserts workload reachable via IPv6 address after soft reboot and application recreation",
+				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3), polarion.ID("72442"),
+				spkcommon.AssertIPv6WorkloadURLAfterAppRecreated)
 		})
 	})

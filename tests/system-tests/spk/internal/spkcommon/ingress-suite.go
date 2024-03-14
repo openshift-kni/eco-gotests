@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkparams"
 )
 
+//nolint:unparam
 func reachURL(targetURL string, expectedCode int) {
 	glog.V(spkparams.SPKLogLevel).Infof("Accessing %q via SPK Ingress", targetURL)
 
@@ -46,6 +47,20 @@ func AssertIPv4WorkloadURL(ctx SpecContext) {
 	reachURL(SPKConfig.IngressTCPIPv4URL, int(200))
 }
 
+// AssertIPv4WorkloadURLAfterAppRecreated access workload via IPv4 address,
+// after target workload was re-created.
+func AssertIPv4WorkloadURLAfterAppRecreated(ctx SpecContext) {
+	glog.V(spkparams.SPKLogLevel).Infof("*** AssertIPv4WorkloadURL ***")
+
+	if SPKConfig.IngressTCPIPv4URL == "" {
+		Skip("IPv4 URL for SPK backed workload not defined")
+	}
+
+	SetupSPKBackendWorkload()
+
+	reachURL(SPKConfig.IngressTCPIPv4URL, int(200))
+}
+
 // AssertIPv6WorkloadURL access workload via IPv6 address.
 func AssertIPv6WorkloadURL(ctx SpecContext) {
 	glog.V(spkparams.SPKLogLevel).Infof("*** AssertIPv6WorkloadURL ***")
@@ -54,6 +69,19 @@ func AssertIPv6WorkloadURL(ctx SpecContext) {
 		Skip("IPv6 URL for SPK backed workload not defined")
 	}
 
+	reachURL(SPKConfig.IngressTCPIPv6URL, int(200))
+}
+
+// AssertIPv6WorkloadURLAfterAppRecreated access workload via IPv6 address,
+// after target workload was re-created.
+func AssertIPv6WorkloadURLAfterAppRecreated(ctx SpecContext) {
+	glog.V(spkparams.SPKLogLevel).Infof("*** AssertIPv6WorkloadURL ***")
+
+	if SPKConfig.IngressTCPIPv6URL == "" {
+		Skip("IPv6 URL for SPK backed workload not defined")
+	}
+
+	SetupSPKBackendWorkload()
 	reachURL(SPKConfig.IngressTCPIPv6URL, int(200))
 }
 

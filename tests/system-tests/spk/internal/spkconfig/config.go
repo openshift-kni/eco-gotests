@@ -29,6 +29,7 @@ type SPKConfig struct {
 	NodesCredentialsMap       NodesBMCMap `yaml:"spk_nodes_bmc_map" envconfig:"ECO_SYSTEM_SPK_NODES_CREDENTIALS_MAP"`
 	//nolint:lll
 	WorkloadContainerImage string `yaml:"spk_workload_deployment_image" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DEPLOYMENT_IMAGE"`
+	BackendContainerImage  string `yaml:"spk_backend_deployment_image" envconfig:"ECO_SYSTEM_SPK_BACKEND_DEPLOYMENT_IMAGE"`
 	WorkloadDeploymentName string `yaml:"spk_workload_deployment_name" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DEPLOYMENT_NAME"`
 	WorkloadTestURL        string `yaml:"spk_workload_test_url" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_TEST_URL"`
 	WorkloadTestPort       string `yaml:"spk_workload_test_port" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_TEST_PORT"`
