@@ -128,6 +128,7 @@ func runCommandOnTestPods(apiClient *clients.Settings,
 
 			// using a map so that both ModuleLoaded and Dmesg calls don't interfere with the counter
 			iter := 0
+
 			for _, iterPod := range pods {
 				glog.V(kmmparams.KmmLogLevel).Infof("\n\nPodName: %v\nCommand: %v\nExpect: %v\n\n",
 					iterPod.Object.Name, command, message)
@@ -140,9 +141,11 @@ func runCommandOnTestPods(apiClient *clients.Settings,
 
 				contents := buff.String()
 				glog.V(kmmparams.KmmLogLevel).Infof("%s contents: \n \t%v\n", command, contents)
+
 				if strings.Contains(contents, message) {
 					glog.V(kmmparams.KmmLogLevel).Infof(
 						"command '%s' contains '%s' in pod %s\n", command, message, iterPod.Object.Name)
+
 					iter++
 
 					if iter == len(pods) {

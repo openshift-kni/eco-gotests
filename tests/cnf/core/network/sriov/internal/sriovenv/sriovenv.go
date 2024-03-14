@@ -81,10 +81,12 @@ func WaitUntilVfsCreated(
 		err := wait.PollUntilContextTimeout(
 			context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 				sriovNetworkState := sriov.NewNetworkNodeStateBuilder(APIClient, node.Object.Name, NetConfig.SriovOperatorNamespace)
+
 				err := sriovNetworkState.Discover()
 				if err != nil {
 					return false, nil
 				}
+
 				err = isVfCreated(sriovNetworkState, numberOfVfs, sriovInterfaceName)
 				if err != nil {
 					return false, nil

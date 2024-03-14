@@ -49,6 +49,7 @@ func DownloadFile(fileURL, fileName, targetFolder string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file %s at folder %s due to: %w", fileName, targetFolder, err)
 	}
+
 	defer out.Close()
 
 	// Write the body to file

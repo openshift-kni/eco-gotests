@@ -357,7 +357,6 @@ func VerifyHardRebootSuite() {
 	Describe(
 		"Ungraceful reboot validation",
 		Label("ecore-ungraceful-reboot"), func() {
-
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating SR-IOV workloads on same SR-IOV net and the same node")
 				VerifySRIOVWorkloadsOnSameNode(ctx)
@@ -394,7 +393,6 @@ func VerifyHardRebootSuite() {
 						APIClient, 15*time.Minute, metav1.ListOptions{})
 					Expect(err).ToNot(HaveOccurred(), "Failed to get cluster operator status")
 					Expect(ok).To(BeTrue(), "Some cluster operators not Available")
-
 				})
 
 			It("Removes all pods with UnexpectedAdmissionError", Label("sriov-unexpected-pods"),
@@ -412,6 +410,7 @@ func VerifyHardRebootSuite() {
 					}
 
 					var podsList []*pod.Builder
+
 					var err error
 
 					Eventually(func() bool {
@@ -496,7 +495,6 @@ func VerifyHardRebootSuite() {
 			It("Verifies SR-IOV workloads on different SR-IOV nets and different nodes",
 				Label("sriov-same-net-different-node"), polarion.ID("72265"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
-
 		})
 }
 
@@ -507,7 +505,6 @@ func VerifyGracefulRebootSuite() {
 	Describe(
 		"Graceful reboot validation",
 		Label("ecore-graceful-reboot"), func() {
-
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating SR-IOV workloads on same SR-IOV net and the same node")
 				VerifySRIOVWorkloadsOnSameNode(ctx)
@@ -544,7 +541,6 @@ func VerifyGracefulRebootSuite() {
 						APIClient, 15*time.Minute, metav1.ListOptions{})
 					Expect(err).ToNot(HaveOccurred(), "Failed to get cluster operator status")
 					Expect(ok).To(BeTrue(), "Some cluster operators not Available")
-
 				})
 
 			It("Verifies all deploymentes are available",

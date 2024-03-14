@@ -59,7 +59,6 @@ func deleteAndWait(builder builder, timeout time.Duration) error {
 		context.TODO(), time.Second, timeout*5, true, func(ctx context.Context) (bool, error) {
 			isFound := builder.Exists()
 			if isFound {
-
 				return false, nil
 			}
 

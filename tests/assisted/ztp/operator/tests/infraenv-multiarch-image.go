@@ -291,6 +291,7 @@ func createSpokeClusterNamespace() {
 			nsBuilder.Object.Name)
 	} else {
 		glog.V(ztpparams.ZTPLogLevel).Infof("Creating the namespace:  %v", infraenvTestSpoke)
+
 		_, err := nsBuilder.Create()
 		Expect(err).ToNot(HaveOccurred(), "error creating namespace '%s' :  %v ",
 			nsBuilder.Definition.Name, err)

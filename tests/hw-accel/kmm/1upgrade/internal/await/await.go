@@ -15,7 +15,6 @@ import (
 func OperatorUpgrade(apiClient *clients.Settings, semver string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-
 			csv, err := olm.ListClusterServiceVersionWithNamePattern(apiClient, "kernel",
 				kmmparams.KmmOperatorNamespace)
 

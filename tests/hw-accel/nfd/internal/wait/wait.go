@@ -64,12 +64,15 @@ func ForNodeReadiness(apiClient *clients.Settings,
 			if err != nil {
 				return false, err
 			}
+
 			checkReadiness := true
+
 			for _, node := range nodes {
 				isNodeReady, err := node.IsReady()
 				if err != nil {
 					return false, err
 				}
+
 				checkReadiness = checkReadiness && isNodeReady
 			}
 

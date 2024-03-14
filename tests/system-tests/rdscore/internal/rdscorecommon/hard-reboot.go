@@ -357,7 +357,6 @@ func VerifyHardRebootSuite() {
 	Describe(
 		"Ungraceful reboot validation",
 		Label("rds-core-ungraceful-reboot"), func() {
-
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating a workload with CephFS PVC")
 				VerifyCephFSPVC(ctx)
@@ -382,7 +381,6 @@ func VerifyHardRebootSuite() {
 						APIClient, 15*time.Minute, metav1.ListOptions{})
 					Expect(err).ToNot(HaveOccurred(), "Failed to get cluster operator status")
 					Expect(ok).To(BeTrue(), "Some cluster operators not Available")
-
 				})
 
 			It("Removes all pods with UnexpectedAdmissionError", Label("sriov-unexpected-pods"),
@@ -400,6 +398,7 @@ func VerifyHardRebootSuite() {
 					}
 
 					var podsList []*pod.Builder
+
 					var err error
 
 					Eventually(func() bool {
@@ -455,7 +454,6 @@ func VerifyHardRebootSuite() {
 			It("Verifies SR-IOV workloads on the same node post reboot",
 				Label("rds-core-hard-reboot-sriov-same-node"), polarion.ID("71951"),
 				VerifySRIOVConnectivityOnSameNode)
-
 		})
 }
 
@@ -464,7 +462,6 @@ func VerifyGracefulRebootSuite() {
 	Describe(
 		"Graceful reboot validation",
 		Label("rds-core-graceful-reboot"), func() {
-
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating a workload with CephFS PVC")
 				VerifyCephFSPVC(ctx)
@@ -495,7 +492,6 @@ func VerifyGracefulRebootSuite() {
 						APIClient, 15*time.Minute, metav1.ListOptions{})
 					Expect(err).ToNot(HaveOccurred(), "Failed to get cluster operator status")
 					Expect(ok).To(BeTrue(), "Some cluster operators not Available")
-
 				})
 
 			It("Verifies all deploymentes are available",
@@ -528,6 +524,5 @@ func VerifyGracefulRebootSuite() {
 			It("Verifies SR-IOV workloads deployable on different nodes after graceful reboot",
 				Label("rds-core-soft-reboot-sriov-different-node"), polarion.ID("72049"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnDifferentNodes)
-
 		})
 }

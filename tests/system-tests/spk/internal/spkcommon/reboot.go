@@ -355,7 +355,6 @@ func VerifyHardRebootSuite() {
 	Describe(
 		"Ungraceful reboot validation",
 		Label("spk-ungraceful-reboot"), func() {
-
 			It("Verifies ungraceful cluster reboot",
 				Label("spk-hard-reboot"), polarion.ID("30020"), VerifyUngracefulReboot)
 
@@ -372,7 +371,6 @@ func VerifyHardRebootSuite() {
 						APIClient, 15*time.Minute, metav1.ListOptions{})
 					Expect(err).ToNot(HaveOccurred(), "Failed to get cluster operator status")
 					Expect(ok).To(BeTrue(), "Some cluster operators not Available")
-
 				})
 
 			It("Removes all pods with UnexpectedAdmissionError", Label("sriov-unexpected-pods"),
@@ -390,6 +388,7 @@ func VerifyHardRebootSuite() {
 					}
 
 					var podsList []*pod.Builder
+
 					var err error
 
 					Eventually(func() bool {
@@ -425,7 +424,6 @@ func VerifyHardRebootSuite() {
 
 			It("Verifies all deploymentes are available",
 				Label("spk-hard-reboot"), polarion.ID("71872"), WaitAllDeploymentsAreAvailable)
-
 		})
 }
 
@@ -434,7 +432,6 @@ func VerifyGracefulRebootSuite() {
 	Describe(
 		"Graceful reboot validation",
 		Label("spk-graceful-reboot"), func() {
-
 			It("Verifies graceful cluster reboot",
 				Label("spk-soft-reboot"), polarion.ID("30021"), VerifySoftReboot)
 
@@ -451,12 +448,10 @@ func VerifyGracefulRebootSuite() {
 						APIClient, 15*time.Minute, metav1.ListOptions{})
 					Expect(err).ToNot(HaveOccurred(), "Failed to get cluster operator status")
 					Expect(ok).To(BeTrue(), "Some cluster operators not Available")
-
 				})
 
 			It("Verifies all deploymentes are available after graceful reboot",
 				Label("spk-hard-reboot"), polarion.ID("72041"), WaitAllDeploymentsAreAvailable)
-
 		})
 }
 

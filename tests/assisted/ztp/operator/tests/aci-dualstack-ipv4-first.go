@@ -73,6 +73,7 @@ func createDualstackSpokeClusterResources() *assisted.AgentClusterInstallBuilder
 	} else {
 		// create the namespace
 		glog.V(ztpparams.ZTPLogLevel).Infof("Creating the namespace:  %v", dualstackTestSpoke)
+
 		_, err := nsBuilder.Create()
 		Expect(err).ToNot(HaveOccurred(), "error creating namespace '%s' :  %v ",
 			nsBuilder.Definition.Name, err)

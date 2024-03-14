@@ -489,12 +489,10 @@ func VefityPersistentStorageSuite() {
 	Describe(
 		"Persistent storage validation",
 		Label("rds-core-persistent-storage"), func() {
-
 			It("Verifies CephFS",
 				Label("odf-cephfs-pvc"), polarion.ID("71850"), MustPassRepeatedly(3), VerifyCephFSPVC)
 
 			It("Verifies CephRBD",
 				Label("odf-cephrbd-pvc"), polarion.ID("71989"), MustPassRepeatedly(3), VerifyCephRBDPVC)
-
 		})
 }

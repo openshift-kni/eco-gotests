@@ -4,7 +4,7 @@ set -e
 
 . "$(dirname "$0")"/common.sh
 
-GOLANGCI_LINT_VERSION="1.55.2"
+GOLANGCI_LINT_VERSION="1.56.2"
 
 # IsGoLangCiLintInstalled is used to check whether golangci-lint executable is on the $PATH.
 function IsGolangCiLintInstalled() {

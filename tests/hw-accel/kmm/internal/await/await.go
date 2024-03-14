@@ -38,7 +38,6 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 					if strings.Contains(podObj.Object.Name, "-build") {
 						buildPod[nsname] = podObj.Object.Name
 						glog.V(kmmparams.KmmLogLevel).Infof("Build podObj '%s' is Running\n", podObj.Object.Name)
-
 					}
 				}
 			}
@@ -46,6 +45,7 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 			if buildPod[nsname] != "" {
 				fieldSelector := fmt.Sprintf("metadata.name=%s", buildPod[nsname])
 				pods, _ := pod.List(apiClient, nsname, v1.ListOptions{FieldSelector: fieldSelector})
+
 				if len(pods) == 0 {
 					glog.V(kmmparams.KmmLogLevel).Infof("BuildPod %s no longer in namespace", buildPod)
 					buildPod[nsname] = ""
@@ -64,11 +64,11 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 					if strings.Contains(string(podObj.Object.Status.Phase), "Succeeded") {
 						glog.V(kmmparams.KmmLogLevel).Infof("BuildPod %s is in phase Succeeded",
 							podObj.Object.Name)
+
 						buildPod[nsname] = ""
 
 						return true, nil
 					}
-
 				}
 			}
 
@@ -147,7 +147,6 @@ func PreflightStageDone(apiClinet *clients.Settings, preflight, module, nsname s
 			}
 
 			return false, err
-
 		})
 }
 
@@ -175,6 +174,7 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 
 			for _, node := range nodeBuilder {
 				glog.V(kmmparams.KmmLogLevel).Infof("%v", node.Object.Labels)
+
 				_, ok := node.Object.Labels[label]
 				if ok {
 					glog.V(kmmparams.KmmLogLevel).Infof("Found label %v that contains %v on node %v",
@@ -183,6 +183,7 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 					foundLabels++
 					glog.V(kmmparams.KmmLogLevel).Infof("Number of nodes: %v, Number of nodes with '%v' label pods: %v\n",
 						nodesForSelector, label, foundLabels)
+
 					if foundLabels == len(nodeBuilder) {
 						return true, nil
 					}
