@@ -501,6 +501,14 @@ func VerifyHardRebootSuite() {
 			It("Verifies SR-IOV workloads on different SR-IOV nets and different nodes",
 				Label("sriov-same-net-different-node"), polarion.ID("72265"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
+
+			It("Verifies MACVLAN workloads on the same net and different nodes after hard reboot",
+				Label("macvlan-same-net-different-nodes"), polarion.ID("72568"), MustPassRepeatedly(3),
+				VerifyMACVLANConnectivityBetweenDifferentNodes)
+
+			It("Verifies MACVLAN workloads on the same net and the same node after hard reboot",
+				Label("macvlan-same-net-different-nodes"), polarion.ID("72569"), MustPassRepeatedly(3),
+				VerifyMACVLANConnectivityOnSameNode)
 		})
 }
 
@@ -607,11 +615,11 @@ func VerifyGracefulRebootSuite() {
 				Label("sriov-same-net-different-node"), MustPassRepeatedly(3),
 				polarion.ID("72261"), VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
 
-			It("Verifies MACVLAN workloads on the same net and different nodes",
+			It("Verifies MACVLAN workloads on the same net and different nodes after graceful reboot",
 				Label("macvlan-same-net-different-nodes"), polarion.ID("72570"), MustPassRepeatedly(3),
 				VerifyMACVLANConnectivityBetweenDifferentNodes)
 
-			It("Verifies MACVLAN workloads on the same net and the same node",
+			It("Verifies MACVLAN workloads on the same net and the same node after graceful reboot",
 				Label("macvlan-same-net-different-nodes"), polarion.ID("72571"), MustPassRepeatedly(3),
 				VerifyMACVLANConnectivityOnSameNode)
 		})
