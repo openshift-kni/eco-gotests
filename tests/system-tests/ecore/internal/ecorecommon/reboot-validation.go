@@ -375,6 +375,12 @@ func VerifyHardRebootSuite() {
 
 				By("Creating a workload with CephFS PVC")
 				VerifyCephRBDPVC(ctx)
+
+				By("Creating MACVLAN workloads that run on different nodes")
+				VerifyMacVlanOnDifferentNodes()
+
+				By("Creating MACVLAN workloads that run on the same node")
+				VerifyMacVlanOnSameNode()
 			})
 
 			It("Verifies ungraceful cluster reboot",
@@ -523,6 +529,12 @@ func VerifyGracefulRebootSuite() {
 
 				By("Creating a workload with CephFS PVC")
 				VerifyCephRBDPVC(ctx)
+
+				By("Creating MACVLAN workloads that run on different nodes")
+				VerifyMacVlanOnDifferentNodes()
+
+				By("Creating MACVLAN workloads that run on the same node")
+				VerifyMacVlanOnSameNode()
 			})
 
 			It("Verifies graceful cluster reboot",
@@ -594,5 +606,13 @@ func VerifyGracefulRebootSuite() {
 			It("Verifies SR-IOV workloads on the same net and same node",
 				Label("sriov-same-net-different-node"), MustPassRepeatedly(3),
 				polarion.ID("72261"), VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
+
+			It("Verifies MACVLAN workloads on the same net and different nodes",
+				Label("macvlan-same-net-different-nodes"), polarion.ID("72570"), MustPassRepeatedly(3),
+				VerifyMACVLANConnectivityBetweenDifferentNodes)
+
+			It("Verifies MACVLAN workloads on the same net and the same node",
+				Label("macvlan-same-net-different-nodes"), polarion.ID("72571"), MustPassRepeatedly(3),
+				VerifyMACVLANConnectivityOnSameNode)
 		})
 }

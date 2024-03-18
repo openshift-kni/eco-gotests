@@ -14,6 +14,12 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("validate-ecore-suite"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verify MACVLAN", Label("validate-new-macvlan-different-nodes"), polarion.ID("72566"),
+				ecorecommon.VerifyMacVlanOnDifferentNodes)
+
+			It("Verify MACVLAN", Label("validate-new-macvlan-same-node"), polarion.ID("72567"),
+				ecorecommon.VerifyMacVlanOnSameNode)
+
 			It("Verify kernel modules on control-plane nodes", polarion.ID("67036"),
 				Label("validate_kernel_modules", "validate_kernel_modules_control_plane"),
 				ecorecommon.ValidateKernelModulesOnControlPlane)

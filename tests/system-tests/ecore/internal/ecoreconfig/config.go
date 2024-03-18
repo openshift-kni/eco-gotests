@@ -38,8 +38,10 @@ type ECoreConfig struct {
 	NADConfigMapPCCData map[string]string `yaml:"ecore_nad_workload_pcc_cm_data" envconfig:"ECO_SYSTEM_ECORE_NAD_CM_DATA_PCC"`
 	//nolint:lll
 	NADWlkdDeployOnePCCName string   `yaml:"ecore_nad_workload_one_pcc_name" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_DEPLOY_ONE_PCC_NAME"`
-	NADWlkdDeployOnePCCCmd  []string `yaml:"ecore_nad_wlkd_one_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_ONE_PCC_CMD"`
-	NADWlkdDeployTwoPCCCmd  []string `yaml:"ecore_nad_wlkd_two_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_TWO_PCC_CMD"`
+	NADWlkdDeployOnePCCCmd  []string `yaml:"ecore_nad_wlkd_1_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_1_PCC_CMD"`
+	NADWlkdDeployTwoPCCCmd  []string `yaml:"ecore_nad_wlkd_2_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_2_PCC_CMD"`
+	NADWlkdDeploy3PCCCmd    []string `yaml:"ecore_nad_wlkd_3_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_3_PCC_CMD"`
+	NADWlkdDeploy4PCCCmd    []string `yaml:"ecore_nad_wlkd_4_pcc_cmd" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_4_PCC_CMD"`
 	//nolint:lll
 	NADWlkdDeployTwoPCCName  string `yaml:"ecore_nad_workload_two_pcc_name" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_DEPLOY_TWO_PCC_NAME"`
 	NADWlkdDeployOnePCCImage string `yaml:"ecore_nad_wlkd_one_image_pcc" envconfig:"ECO_SYSTEM_ECORE_NAD_WLKD_ONE_IMG_PCC"`
@@ -136,6 +138,22 @@ type ECoreConfig struct {
 	WlkdSRIOVDeploy4TwoTargetAddress string `yaml:"ecore_wlkd4_sriov_deploy_two_target" envconfig:"ECO_SYSTEM_WLKD4_SRIOV_DEPLOY_TWO_TARGET"`
 	//nolint:lll
 	WlkdSRIOVDeploy4TwoTargetAddressIPv6 string `yaml:"ecore_wlkd4_sriov_deploy_two_target_ipv6" envconfig:"ECO_SYSTEM_WLKD4_SRIOV_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	WlkdMACVLANDeployOneTargetAddress string `yaml:"ecore_wlkd_macvlan_deploy_one_target" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_ONE_TARGET"`
+	//nolint:lll
+	WlkdMACVLANDeployOneTargetAddressIPv6 string `yaml:"ecore_wlkd_macvlan_deploy_one_target_ipv6" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
+	WlkdMACVLANDeployTwoTargetAddress string `yaml:"ecore_wlkd_macvlan_deploy_two_target" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdMACVLANDeployTwoTargetAddressIPv6 string `yaml:"ecore_wlkd_macvlan_deploy_two_target_ipv6" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	WlkdMACVLANDeploy3TargetAddress string `yaml:"ecore_wlkd_macvlan_deploy_3_target" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_3_TARGET"`
+	//nolint:lll
+	WlkdMACVLANDeploy3TargetAddressIPv6 string `yaml:"ecore_wlkd_macvlan_deploy_3_target_ipv6" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_3_TARGET_IPV6"`
+	//nolint:lll
+	WlkdMACVLANDeploy4TargetAddress string `yaml:"ecore_wlkd_macvlan_deploy_4_target" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_4_TARGET"`
+	//nolint:lll
+	WlkdMACVLANDeploy4TargetAddressIPv6 string `yaml:"ecore_wlkd_macvlan_deploy_4_target_ipv6" envconfig:"ECO_SYSTEM_WLKD_MACVLAN_DEPLOY_4_TARGET_IPV6"`
 }
 
 // TolerationList used to store tolerations for test workloads.

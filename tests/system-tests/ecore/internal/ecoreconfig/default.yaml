@@ -8,47 +8,96 @@ ecore_nad_wlkd_two_pcc_sa: 'telco-qe-sa'
 ecore_nad_workload_one_pcc_name: 'yp-macvlan-one'
 ecore_nad_workload_two_pcc_name: 'yp-macvlan-two'
 ecore_nad_wlkd_one_image_pcc: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
-ecore_nad_wlkd_one_pcc_cmd:
+ecore_nad_wlkd_1_pcc_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 10.46.125.70/26; nc -k -l 10.46.125.70 1111"
+- "/opt/net/config.sh 493 10.46.125.70/26 2620:52:0:2e7d::45/122"
 ecore_nad_wlkd_two_image_pcc: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
-ecore_nad_wlkd_two_pcc_cmd:
+ecore_nad_wlkd_2_pcc_cmd:
 - "/bin/sh"
 - "-c"
-- "/opt/net/config.sh 10.46.125.71/26; nc -k -l 10.46.125.71 2222"
+- "/opt/net/config.sh 493 10.46.125.71/26 2620:52:0:2e7d::46/122"
+ecore_nad_wlkd_3_pcc_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 493 10.46.125.72/26 2620:52:0:2e7d::47/122"
+ecore_nad_wlkd_4_pcc_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 493 10.46.125.73/26 2620:52:0:2e7d::48/122"
 ecore_nad_wlkd_one_nad_name: "pc-mm-ext"
-ecore_nad_wlkd_two_nad_name: "pc-mm-ext"
+ecore_nad_wlkd_two_nad_name: "eric-pc-vpn-gateway-forwarder-common"
+ecore_wlkd_macvlan_deploy_one_target: "10.46.125.71 1111"
+ecore_wlkd_macvlan_deploy_two_target: "10.46.125.70 1111"
+ecore_wlkd_macvlan_deploy_3_target: "10.46.125.73 1111"
+ecore_wlkd_macvlan_deploy_4_target: "10.46.125.72 1111"
+ecore_wlkd_macvlan_deploy_one_target_ipv6: "2620:52:0:2e7d::46 1111"
+ecore_wlkd_macvlan_deploy_two_target_ipv6: "2620:52:0:2e7d::45 1111"
+ecore_wlkd_macvlan_deploy_3_target_ipv6: "2620:52:0:2e7d::48 1111"
+ecore_wlkd_macvlan_deploy_4_target_ipv6: "2620:52:0:2e7d::47 1111"
 ecore_nad_workload_pcc_cm_data:
   config.sh: |
     #! /bin/bash
     set -euo pipefail
-    ip=$1
+    vid=${1}
+    ip4=${2}
+    ip6=${3:-''}
     ip link add dev bond0 type bond
     ip link set dev net1 down
     ip link set dev bond0 down
     ip link set dev net1 master bond0
+
+    ip link add link bond0 name bond0.${vid} type vlan id ${vid}
+
     ip link set dev net1 up
     ip link set dev bond0 up
-    ip link add link bond0 name bond0.493 type vlan id 493
-    ip link set dev bond0.493 up
-    ip a a $1 dev bond0.493
+
+    ip addr add ${ip4} dev bond0.${vid}
+
+    if [[ ${ip6} != '' ]]; then
+      ip addr add ${ip6} dev bond0.${vid}
+    fi
+
+    ip link set dev bond0.${vid} up
+
     ip --br a s
+
+    set -x
+    sleep 1
+
+    nc -k -l 1111
 ecore_nad_workload_pcg_cm_data:
   config.sh: |
     #! /bin/bash
     set -euo pipefail
-    ip=$1
+    vid=${1}
+    ip4=${2}
+    ip6=${3:-''}
     ip link add dev bond0 type bond
     ip link set dev net1 down
     ip link set dev bond0 down
     ip link set dev net1 master bond0
+
+    ip link add link bond0 name bond0.${vid} type vlan id ${vid}
+
     ip link set dev net1 up
     ip link set dev bond0 up
-    ip link add link bond0 name bond0.493 type vlan id 493
-    ip link set dev bond0.493 up
-    ip a a $1 dev bond0.493
+
+    ip addr add ${ip4} dev bond0.${vid}
+
+    if [[ ${ip6} != '' ]]; then
+      ip addr add ${ip6} dev bond0.${vid}
+    fi
+
+    ip link set dev bond0.${vid} up
+
     ip --br a s
+
+    set -x
+    sleep 1
+
+    nc -k -l 1111
+    #! /bin/bash
 ecore_nad_nad_list_pcg:
 - eric-pc-routing-engine
 - eric-pc-up-data-plane-net1
