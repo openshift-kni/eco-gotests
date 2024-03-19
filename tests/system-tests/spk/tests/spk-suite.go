@@ -41,6 +41,12 @@ var _ = Describe(
 			It("Asserts DNS Resolution after SPK scale-down and scale-up from new deployment",
 				polarion.ID("72140"), Label("spkscaledown"), spkcommon.VerifyDNSResolutionFromNewDeploy)
 
+			It("Asserts DNS Resolution after SPK TMM pod(s) are deleted from existing deployment",
+				polarion.ID("72644"), Label("spk-tmm-delete"), spkcommon.VerifyDNSResolutionAfterTMMPodIsDeletedExistingDeploy)
+
+			It("Asserts DNS Resolution after SPK TMM pod(s) are deleted from new deployment",
+				polarion.ID("72645"), Label("spk-tmm-delete"), spkcommon.VerifyDNSResolutionAfterTMMPodIsDeletedNewDeploy)
+
 			It("Asserts DNS Resolution with multiple TMM controllers from existing deployment",
 				polarion.ID("72141"), Label("spk-multi-tmm-new"), spkcommon.VerifyDNSResolutionWithMultipleTMMsExisting)
 
@@ -97,6 +103,12 @@ var _ = Describe(
 			It("Asserts workload reachable via IPv6 address after hard reboot and application recreation",
 				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3), polarion.ID("72440"),
 				spkcommon.AssertIPv6WorkloadURLAfterAppRecreated)
+
+			It("Asserts DNS Resolution after soft reboot and SPK TMM pod(s) are deleted from existing deployment",
+				polarion.ID("72648"), Label("spk-tmm-delete"), spkcommon.VerifyDNSResolutionAfterTMMPodIsDeletedExistingDeploy)
+
+			It("Asserts DNS Resolution after soft reboot and SPK TMM pod(s) are deleted from new deployment",
+				polarion.ID("72649"), Label("spk-tmm-delete"), spkcommon.VerifyDNSResolutionAfterTMMPodIsDeletedNewDeploy)
 		})
 
 		Describe("Soft Reboot", Label("spk-soft-reboot"), func() {
@@ -121,5 +133,11 @@ var _ = Describe(
 			It("Asserts workload reachable via IPv6 address after soft reboot and application recreation",
 				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3), polarion.ID("72442"),
 				spkcommon.AssertIPv6WorkloadURLAfterAppRecreated)
+
+			It("Asserts DNS Resolution after soft reboot and SPK TMM pod(s) are deleted from existing deployment",
+				polarion.ID("72646"), Label("spk-tmm-delete"), spkcommon.VerifyDNSResolutionAfterTMMPodIsDeletedExistingDeploy)
+
+			It("Asserts DNS Resolution after soft reboot and SPK TMM pod(s) are deleted from new deployment",
+				polarion.ID("72647"), Label("spk-tmm-delete"), spkcommon.VerifyDNSResolutionAfterTMMPodIsDeletedNewDeploy)
 		})
 	})

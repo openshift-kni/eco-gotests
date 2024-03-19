@@ -417,7 +417,6 @@ func scaleUpDeployment(deployName, deployNS, deployLabel string, replicas int32)
 	}
 }
 
-//nolint:unparam
 func deletePodMatchingLabel(nsName, labelSelector, waitDuration string) {
 	var (
 		ctx     SpecContext
@@ -472,4 +471,20 @@ func VerifyDNSResolutionAfterIngressPodIsDeleteNewDeploy(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
 	VerifyDNSResolutionFromNewDeploy(ctx)
+}
+
+// VerifyDNSResolutionAfterTMMPodIsDeletedExistingDeploy assert DNS resolution from existing deployment,
+// after SPK TMM pod(s) are deleted.
+func VerifyDNSResolutionAfterTMMPodIsDeletedExistingDeploy(ctx SpecContext) {
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+}
+
+// VerifyDNSResolutionAfterTMMPodIsDeletedNewDeploy assert DNS resolution from new deployment,
+// after SPK TMM pod(s) are deleted.
+func VerifyDNSResolutionAfterTMMPodIsDeletedNewDeploy(ctx SpecContext) {
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
 }
