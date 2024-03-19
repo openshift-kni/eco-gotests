@@ -16,52 +16,61 @@ import (
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/mcm/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
+var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 
 	Context("Operator images", Label("clamav"), func() {
 		relatedImgMap := map[string]string{}
 		scanner := "scanner"
-		image := fmt.Sprintf("%s/%s/%s:latest",
-			tsparams.LocalImageRegistry, kmmparams.ScannerTestNamespace, scanner)
+		scanPod := "scan-checker"
+		// using a timestamp tag, since there is no support for deleting imagestreams
+		image := fmt.Sprintf("%s/%s/%s:%v",
+			kmmparams.LocalImageRegistry, tsparams.KmmHubOperatorNamespace, scanner, time.Now().Unix())
 		var containerImg []string
 		var dockerfileConfigMap *configmap.Builder
 
 		BeforeAll(func() {
+			By("Checking SpokeClusterName")
+			if ModulesConfig.SpokeClusterName == "" {
+				Skip("Skipping test. No Spoke environment variables defined.")
+			}
+
 			By("Create Namespace")
-			_, err := namespace.NewBuilder(APIClient, kmmparams.ScannerTestNamespace).Create()
+			_, err := namespace.NewBuilder(APIClient, tsparams.KmmHubOperatorNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating namespace")
 
 			By("Create Configmap")
 			configmMapContents := define.KmmScannerConfigMapContents()
-			dockerfileConfigMap, err = configmap.NewBuilder(APIClient, scanner, kmmparams.ScannerTestNamespace).
+			dockerfileConfigMap, err = configmap.NewBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).
 				WithData(configmMapContents).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 		})
 
 		AfterAll(func() {
-			By("Delete Module")
-			_, err := kmm.NewModuleBuilder(APIClient, scanner, kmmparams.ScannerTestNamespace).Delete()
+			By("Delete Configmap")
+			err := configmap.NewBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).Delete()
+			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
+
+			By("Delete ManagedClusterModule")
+			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting scanner module")
 
-			By("Await module to be deleted")
-			err = await.ModuleObjectDeleted(APIClient, scanner, kmmparams.ScannerTestNamespace, time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "error while waiting module to be deleted")
-
-			By("Delete namespace")
-			err = namespace.NewBuilder(APIClient, kmmparams.ScannerTestNamespace).Delete()
-			Expect(err).ToNot(HaveOccurred(), "error deleting namespace")
+			By("Delete pod pod from the scanner image")
+			scannerPod := pod.NewBuilder(APIClient, scanPod, tsparams.KmmHubOperatorNamespace, image)
+			_, err = scannerPod.Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting scanner pod")
 		})
 
-		It("should pass malware testing", polarion.ID("68147"), func() {
+		It("should pass malware testing", polarion.ID("68376"), func() {
 			By("Obtain KMM images for test")
-			pods, _ := pod.List(APIClient, kmmparams.KmmOperatorNamespace, metav1.ListOptions{
+			pods, _ := pod.List(APIClient, tsparams.KmmHubOperatorNamespace, v1.ListOptions{
 				FieldSelector: "status.phase=Running",
 			})
 
@@ -115,19 +124,28 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			moduleLoaderContainerCfg, err := moduleLoaderContainer.BuildModuleLoaderContainerCfg()
 			Expect(err).ToNot(HaveOccurred(), "Error creating moduleloadercontainer")
 
-			By("Create module")
-			module := kmm.NewModuleBuilder(APIClient, scanner, kmmparams.ScannerTestNamespace).
-				WithNodeSelector(GeneralConfig.WorkerLabelMap)
-			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg)
-			_, err = module.Create()
+			By("Build module Spec")
+			moduleSpec, err := kmm.NewModuleBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).
+				WithNodeSelector(GeneralConfig.WorkerLabelMap).
+				WithModuleLoaderContainer(moduleLoaderContainerCfg).
+				BuildModuleSpec()
 			Expect(err).ToNot(HaveOccurred(), "error creating scanner")
 
+			By("Create ManagedClusterModule")
+			selector := map[string]string{"name": ModulesConfig.SpokeClusterName}
+			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).
+				WithModuleSpec(moduleSpec).
+				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
+				WithSelector(selector).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "error creating managedclustermodule")
+
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, kmmparams.ScannerTestNamespace, 20*time.Minute)
+			err = await.BuildPodCompleted(APIClient, tsparams.KmmHubOperatorNamespace, 20*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building scanner")
 
 			By("Run pod from the scanner image")
-			scannerPod := pod.NewBuilder(APIClient, "scan-checker", kmmparams.ScannerTestNamespace, image)
+			scannerPod := pod.NewBuilder(APIClient, scanPod, tsparams.KmmHubOperatorNamespace, image)
 			_, err = scannerPod.CreateAndWaitUntilRunning(time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error running scanner image")
 
