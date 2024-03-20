@@ -635,7 +635,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		serverIP := serverPodIP
 		// Pull the latest version of firstClientPod in order to get an updated network Annotations from the cluster.
 		Expect(firstClientPod.Exists()).To(BeTrue(), "Client pod doesn't exist")
-		if strings.Contains(firstClientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"],
+		if strings.Contains(firstClientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"],
 			removePrefixFromIP(firstClientPodIPv6)) {
 			serverIP = serverPodIPv6
 		}

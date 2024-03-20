@@ -327,7 +327,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				Eventually(
 					isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
 				pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-					clientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
+					clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 				Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 				By("Running client dpdk-testpmd")
@@ -389,7 +389,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Eventually(
 				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(clientPod).Should(BeTrue())
 			pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-				clientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
+				clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
@@ -489,7 +489,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Eventually(
 				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(deploymentPod).Should(BeTrue())
 			pciAddressList, err := getPCIAddressListFromSrIovNetworkName(
-				deploymentPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
+				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
@@ -522,7 +522,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Eventually(
 				isPciAddressAvailable, tsparams.WaitTimeout, tsparams.RetryInterval).WithArguments(deploymentPod).Should(BeTrue())
 			pciAddressList, err = getPCIAddressListFromSrIovNetworkName(
-				deploymentPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"])
+				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
@@ -795,7 +795,7 @@ func isPciAddressAvailable(clientPod *pod.Builder) bool {
 		return false
 	}
 
-	podNetAnnotation := clientPod.Object.Annotations["k8s.corev1.cni.cncf.io/network-status"]
+	podNetAnnotation := clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"]
 	if podNetAnnotation == "" {
 		return false
 	}
