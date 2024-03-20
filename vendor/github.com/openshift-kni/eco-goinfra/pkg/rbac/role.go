@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	v1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // RoleBuilder provides a struct for role object containing connection to the cluster and the role definitions.
@@ -37,7 +37,7 @@ func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule v1.Po
 	builder := RoleBuilder{
 		apiClient: apiClient,
 		Definition: &v1.Role{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -146,7 +146,7 @@ func PullRole(apiClient *clients.Settings, name, nsname string) (*RoleBuilder, e
 	builder := RoleBuilder{
 		apiClient: apiClient,
 		Definition: &v1.Role{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -186,7 +186,7 @@ func (builder *RoleBuilder) Create() (*RoleBuilder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.Roles(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -206,7 +206,7 @@ func (builder *RoleBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.Roles(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -228,7 +228,7 @@ func (builder *RoleBuilder) Update() (*RoleBuilder, error) {
 
 	var err error
 	builder.Object, err = builder.apiClient.Roles(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }
@@ -244,7 +244,7 @@ func (builder *RoleBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.Roles(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

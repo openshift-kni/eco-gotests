@@ -6,18 +6,18 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListPolicy returns SriovNetworkNodePolicies inventory in the given namespace.
-func ListPolicy(apiClient *clients.Settings, nsname string, options ...metaV1.ListOptions) ([]*PolicyBuilder, error) {
+func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*PolicyBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("SriovNetworkNodePolicies 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list SriovNetworkNodePolicies, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metaV1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 	logMessage := fmt.Sprintf("Listing SriovNetworkNodePolicies in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -59,7 +59,7 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metaV1.Li
 
 // CleanAllNetworkNodePolicies removes all SriovNetworkNodePolicies that are not set as default.
 func CleanAllNetworkNodePolicies(
-	apiClient *clients.Settings, operatornsname string, options ...metaV1.ListOptions) error {
+	apiClient *clients.Settings, operatornsname string, options ...metav1.ListOptions) error {
 	glog.V(100).Infof("Cleaning up SriovNetworkNodePolicies in the %s namespace", operatornsname)
 
 	if operatornsname == "" {

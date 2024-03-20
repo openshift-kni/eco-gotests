@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,11 +40,11 @@ func NewBGPAdvertisementBuilder(apiClient *clients.Settings, name, nsname string
 	builder := BGPAdvertisementBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.BGPAdvertisement{
-			TypeMeta: metaV1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       bpgAdvertisementKind,
 				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
 			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			}, Spec: mlbtypes.BGPAdvertisementSpec{},
@@ -94,7 +94,7 @@ func (builder *BGPAdvertisementBuilder) Get() (*mlbtypes.BGPAdvertisement, error
 
 	unsObject, err := builder.apiClient.Resource(
 		GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -114,7 +114,7 @@ func PullBGPAdvertisement(apiClient *clients.Settings, name, nsname string) (*BG
 	builder := BGPAdvertisementBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.BGPAdvertisement{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -164,7 +164,7 @@ func (builder *BGPAdvertisementBuilder) Create() (*BGPAdvertisementBuilder, erro
 
 		unsObject, err := builder.apiClient.Resource(
 			GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpAdvertisement}, metaV1.CreateOptions{})
+			context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpAdvertisement}, metav1.CreateOptions{})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create BGPAdvertisement")
@@ -198,7 +198,7 @@ func (builder *BGPAdvertisementBuilder) Delete() (*BGPAdvertisementBuilder, erro
 
 	err := builder.apiClient.Resource(
 		GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete BGPAdvertisement: %w", err)
@@ -240,7 +240,7 @@ func (builder *BGPAdvertisementBuilder) Update(force bool) (*BGPAdvertisementBui
 
 	_, err = builder.apiClient.Resource(
 		GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpAdvert}, metaV1.UpdateOptions{})
+		context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpAdvert}, metav1.UpdateOptions{})
 
 	if err != nil {
 		if force {
@@ -374,7 +374,7 @@ func (builder *BGPAdvertisementBuilder) WithIPAddressPools(ipAddressPools []stri
 
 // WithIPAddressPoolsSelectors adds the specified IPAddressPoolSelectors to the BGPAdvertisement.
 func (builder *BGPAdvertisementBuilder) WithIPAddressPoolsSelectors(
-	poolSelector []metaV1.LabelSelector) *BGPAdvertisementBuilder {
+	poolSelector []metav1.LabelSelector) *BGPAdvertisementBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -399,7 +399,7 @@ func (builder *BGPAdvertisementBuilder) WithIPAddressPoolsSelectors(
 
 // WithNodeSelector adds the specified NodeSelectors to the BGPAdvertisement.
 func (builder *BGPAdvertisementBuilder) WithNodeSelector(
-	nodeSelectors []metaV1.LabelSelector) *BGPAdvertisementBuilder {
+	nodeSelectors []metav1.LabelSelector) *BGPAdvertisementBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}

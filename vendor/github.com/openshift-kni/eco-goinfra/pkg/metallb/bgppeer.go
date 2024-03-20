@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -43,11 +43,11 @@ func NewBPGPeerBuilder(
 	builder := BGPPeerBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.BGPPeer{
-			TypeMeta: metaV1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       bpgPeerKind,
 				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
 			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			}, Spec: mlbtypes.BGPPeerSpec{
@@ -91,7 +91,7 @@ func (builder *BGPPeerBuilder) Get() (*mlbtypes.BGPPeer, error) {
 
 	unsObject, err := builder.apiClient.Resource(
 		GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -127,7 +127,7 @@ func PullBGPPeer(apiClient *clients.Settings, name, nsname string) (*BGPPeerBuil
 	builder := BGPPeerBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.BGPPeer{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -177,7 +177,7 @@ func (builder *BGPPeerBuilder) Create() (*BGPPeerBuilder, error) {
 
 		unsObject, err := builder.apiClient.Resource(
 			GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpPeer}, metaV1.CreateOptions{})
+			context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpPeer}, metav1.CreateOptions{})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create BGPPeer")
@@ -211,7 +211,7 @@ func (builder *BGPPeerBuilder) Delete() (*BGPPeerBuilder, error) {
 
 	err := builder.apiClient.Resource(
 		GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete BGPPeer: %w", err)
@@ -242,7 +242,7 @@ func (builder *BGPPeerBuilder) Update(force bool) (*BGPPeerBuilder, error) {
 
 	_, err = builder.apiClient.Resource(
 		GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpPeer}, metaV1.UpdateOptions{})
+		context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpPeer}, metav1.UpdateOptions{})
 
 	if err != nil {
 		if force {
@@ -358,7 +358,7 @@ func (builder *BGPPeerBuilder) WithPort(port uint16) *BGPPeerBuilder {
 }
 
 // WithHoldTime defines the holdTime placed in the BGPPeer spec.
-func (builder *BGPPeerBuilder) WithHoldTime(holdTime metaV1.Duration) *BGPPeerBuilder {
+func (builder *BGPPeerBuilder) WithHoldTime(holdTime metav1.Duration) *BGPPeerBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -373,7 +373,7 @@ func (builder *BGPPeerBuilder) WithHoldTime(holdTime metaV1.Duration) *BGPPeerBu
 }
 
 // WithKeepalive defines the keepAliveTime placed in the BGPPeer spec.
-func (builder *BGPPeerBuilder) WithKeepalive(keepalive metaV1.Duration) *BGPPeerBuilder {
+func (builder *BGPPeerBuilder) WithKeepalive(keepalive metav1.Duration) *BGPPeerBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}

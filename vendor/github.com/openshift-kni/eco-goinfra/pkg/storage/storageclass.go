@@ -7,10 +7,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	storageV1 "k8s.io/api/storage/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ClassBuilder provides struct for storageclass object containing
@@ -38,7 +38,7 @@ func NewClassBuilder(apiClient *clients.Settings, name, provisioner string) *Cla
 	builder := ClassBuilder{
 		apiClient: apiClient,
 		Definition: &storageV1.StorageClass{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 			Provisioner: provisioner,
@@ -62,7 +62,7 @@ func NewClassBuilder(apiClient *clients.Settings, name, provisioner string) *Cla
 
 // WithReclaimPolicy adds a reclaimPolicy to the storageclass definition.
 func (builder *ClassBuilder) WithReclaimPolicy(
-	reclaimPolicy v1.PersistentVolumeReclaimPolicy) *ClassBuilder {
+	reclaimPolicy corev1.PersistentVolumeReclaimPolicy) *ClassBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -171,7 +171,7 @@ func (builder *ClassBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.StorageClasses().Get(
-		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -187,7 +187,7 @@ func (builder *ClassBuilder) Create() (*ClassBuilder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.StorageClasses().Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -206,7 +206,7 @@ func (builder *ClassBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.StorageClasses().Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err

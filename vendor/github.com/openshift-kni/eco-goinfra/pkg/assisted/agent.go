@@ -11,7 +11,7 @@ import (
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
 	"github.com/openshift/assisted-service/models"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -58,7 +58,7 @@ func PullAgent(apiClient *clients.Settings, name, nsname string) (*agentBuilder,
 	builder := agentBuilder{
 		apiClient: apiClient,
 		Definition: &agentInstallV1Beta1.Agent{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},

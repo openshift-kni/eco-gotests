@@ -15,9 +15,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
-	coreV1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/strings/slices"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,7 +52,7 @@ func NewPolicyBuilder(apiClient *clients.Settings, name string, nodeSelector map
 	builder := PolicyBuilder{
 		apiClient: apiClient,
 		Definition: &nmstateV1.NodeNetworkConfigurationPolicy{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			}, Spec: nmstateShared.NodeNetworkConfigurationPolicySpec{
 				NodeSelector: nodeSelector,
@@ -378,7 +378,7 @@ func (builder *PolicyBuilder) WaitUntilCondition(condition nmstateShared.Conditi
 			}
 
 			for _, cond := range builder.Object.Status.Conditions {
-				if cond.Type == condition && cond.Status == coreV1.ConditionTrue {
+				if cond.Type == condition && cond.Status == corev1.ConditionTrue {
 					return true, nil
 				}
 			}

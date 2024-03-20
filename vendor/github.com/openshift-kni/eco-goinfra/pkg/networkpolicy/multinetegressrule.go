@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -35,7 +35,7 @@ func NewEgressRuleBuilder() *EgressRuleBuilder {
 }
 
 // WithPortAndProtocol adds port and protocol to Egress rule.
-func (builder *EgressRuleBuilder) WithPortAndProtocol(port uint16, protocol v1.Protocol) *EgressRuleBuilder {
+func (builder *EgressRuleBuilder) WithPortAndProtocol(port uint16, protocol corev1.Protocol) *EgressRuleBuilder {
 	glog.V(100).Infof("Adding port %d and protocol %s to EgressRule", port, protocol)
 
 	if port == 0 {
@@ -78,7 +78,7 @@ func (builder *EgressRuleBuilder) WithOptions(options ...EgressAdditionalOptions
 }
 
 // WithPeerPodSelector adds pod selector to Egress rule.
-func (builder *EgressRuleBuilder) WithPeerPodSelector(podSelector metaV1.LabelSelector) *EgressRuleBuilder {
+func (builder *EgressRuleBuilder) WithPeerPodSelector(podSelector metav1.LabelSelector) *EgressRuleBuilder {
 	glog.V(100).Infof("Adding peer pod selector %v to EgressRule", podSelector)
 
 	if builder.errorMsg != "" {
@@ -92,7 +92,7 @@ func (builder *EgressRuleBuilder) WithPeerPodSelector(podSelector metaV1.LabelSe
 
 // WithPeerPodSelectorAndCIDR adds pod selector and CIDR to Egress rule.
 func (builder *EgressRuleBuilder) WithPeerPodSelectorAndCIDR(
-	podSelector metaV1.LabelSelector, cidr string, except ...[]string) *EgressRuleBuilder {
+	podSelector metav1.LabelSelector, cidr string, except ...[]string) *EgressRuleBuilder {
 	glog.V(100).Infof("Adding peer pod selector %v to EgressRule", podSelector)
 
 	_, _, err := net.ParseCIDR(cidr)

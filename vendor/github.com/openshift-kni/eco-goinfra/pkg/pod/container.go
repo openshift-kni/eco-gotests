@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/golang/glog"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -15,14 +15,14 @@ var (
 	AllowedSCList          = []string{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK", "ALL"}
 	falseVar               = false
 	trueVar                = true
-	capabilityAll          = []v1.Capability{"ALL"}
+	capabilityAll          = []corev1.Capability{"ALL"}
 	defaultGroupID         = int64(3000)
 	defaultUserID          = int64(2000)
-	defaultSecurityContext = &v1.SecurityContext{
+	defaultSecurityContext = &corev1.SecurityContext{
 		AllowPrivilegeEscalation: &falseVar,
 		RunAsNonRoot:             &trueVar,
-		SeccompProfile:           &v1.SeccompProfile{Type: "RuntimeDefault"},
-		Capabilities: &v1.Capabilities{
+		SeccompProfile:           &corev1.SeccompProfile{Type: "RuntimeDefault"},
+		Capabilities: &corev1.Capabilities{
 			Drop: capabilityAll,
 		},
 		RunAsGroup: &defaultGroupID,
@@ -33,7 +33,7 @@ var (
 // ContainerBuilder provides a struct for container's object definition.
 type ContainerBuilder struct {
 	// Container definition, used to create the Container object.
-	definition *v1.Container
+	definition *corev1.Container
 	// Used to store latest error message upon defining or mutating container definition.
 	errorMsg string
 }
@@ -44,7 +44,7 @@ func NewContainerBuilder(name, image string, cmd []string) *ContainerBuilder {
 		"name: %s, image: %s, cmd: %v", name, image, cmd)
 
 	builder := &ContainerBuilder{
-		definition: &v1.Container{
+		definition: &corev1.Container{
 			Name:            name,
 			Image:           image,
 			Command:         cmd,
@@ -99,13 +99,13 @@ func (builder *ContainerBuilder) WithSecurityCapabilities(sCapabilities []string
 		return builder
 	}
 
-	var sCapabilitiesList []v1.Capability
+	var sCapabilitiesList []corev1.Capability
 	for _, capability := range sCapabilities {
-		sCapabilitiesList = append(sCapabilitiesList, v1.Capability(capability))
+		sCapabilitiesList = append(sCapabilitiesList, corev1.Capability(capability))
 	}
 
-	builder.definition.SecurityContext = &v1.SecurityContext{
-		Capabilities: &v1.Capabilities{
+	builder.definition.SecurityContext = &corev1.SecurityContext{
+		Capabilities: &corev1.Capabilities{
 			Add: sCapabilitiesList,
 		},
 	}
@@ -128,9 +128,9 @@ func (builder *ContainerBuilder) WithDropSecurityCapabilities(sCapabilities []st
 		return builder
 	}
 
-	var sCapabilitiesList []v1.Capability
+	var sCapabilitiesList []corev1.Capability
 	for _, capability := range sCapabilities {
-		sCapabilitiesList = append(sCapabilitiesList, v1.Capability(capability))
+		sCapabilitiesList = append(sCapabilitiesList, corev1.Capability(capability))
 	}
 
 	// filter possible duplicated capabilities from user's input
@@ -163,13 +163,13 @@ func (builder *ContainerBuilder) WithDropSecurityCapabilities(sCapabilities []st
 	if builder.definition.SecurityContext == nil {
 		glog.V(100).Infof("SecurityContext is nil. Initializing one")
 
-		builder.definition.SecurityContext = new(v1.SecurityContext)
+		builder.definition.SecurityContext = new(corev1.SecurityContext)
 	}
 
 	if builder.definition.SecurityContext.Capabilities == nil {
 		glog.V(100).Infof("Capabilities are nil. Initializing one")
 
-		builder.definition.SecurityContext.Capabilities = new(v1.Capabilities)
+		builder.definition.SecurityContext.Capabilities = new(corev1.Capabilities)
 	}
 
 	if !redefine {
@@ -190,7 +190,7 @@ func (builder *ContainerBuilder) WithDropSecurityCapabilities(sCapabilities []st
 }
 
 // WithSecurityContext applies security Context on container.
-func (builder *ContainerBuilder) WithSecurityContext(securityContext *v1.SecurityContext) *ContainerBuilder {
+func (builder *ContainerBuilder) WithSecurityContext(securityContext *corev1.SecurityContext) *ContainerBuilder {
 	glog.V(100).Infof("Applying custom securityContext %v", securityContext)
 
 	if securityContext == nil {
@@ -235,7 +235,7 @@ func (builder *ContainerBuilder) WithResourceLimit(hugePages, memory string, cpu
 		return builder
 	}
 
-	builder.definition.Resources.Limits = v1.ResourceList{
+	builder.definition.Resources.Limits = corev1.ResourceList{
 		"hugepages-1Gi": resource.MustParse(hugePages),
 		"memory":        resource.MustParse(memory),
 		"cpu":           *resource.NewQuantity(cpu, resource.DecimalSI),
@@ -271,7 +271,7 @@ func (builder *ContainerBuilder) WithResourceRequest(hugePages, memory string, c
 		return builder
 	}
 
-	builder.definition.Resources.Requests = v1.ResourceList{
+	builder.definition.Resources.Requests = corev1.ResourceList{
 		"hugepages-1Gi": resource.MustParse(hugePages),
 		"memory":        resource.MustParse(memory),
 		"cpu":           *resource.NewQuantity(cpu, resource.DecimalSI),
@@ -281,7 +281,7 @@ func (builder *ContainerBuilder) WithResourceRequest(hugePages, memory string, c
 }
 
 // WithCustomResourcesLimits applies custom resource limit struct on container.
-func (builder *ContainerBuilder) WithCustomResourcesLimits(resourceList v1.ResourceList) *ContainerBuilder {
+func (builder *ContainerBuilder) WithCustomResourcesLimits(resourceList corev1.ResourceList) *ContainerBuilder {
 	glog.V(100).Infof("Applying custom resource limit to container: %v", resourceList)
 
 	if len(resourceList) == 0 {
@@ -300,7 +300,7 @@ func (builder *ContainerBuilder) WithCustomResourcesLimits(resourceList v1.Resou
 }
 
 // WithImagePullPolicy applies specific image pull policy on container.
-func (builder *ContainerBuilder) WithImagePullPolicy(pullPolicy v1.PullPolicy) *ContainerBuilder {
+func (builder *ContainerBuilder) WithImagePullPolicy(pullPolicy corev1.PullPolicy) *ContainerBuilder {
 	glog.V(100).Infof("Applying image pull policy to container: %s", pullPolicy)
 
 	if len(pullPolicy) == 0 {
@@ -339,18 +339,18 @@ func (builder *ContainerBuilder) WithEnvVar(name, value string) *ContainerBuilde
 	}
 
 	if builder.definition.Env != nil {
-		builder.definition.Env = append(builder.definition.Env, v1.EnvVar{Name: name, Value: value})
+		builder.definition.Env = append(builder.definition.Env, corev1.EnvVar{Name: name, Value: value})
 
 		return builder
 	}
 
-	builder.definition.Env = []v1.EnvVar{{Name: name, Value: value}}
+	builder.definition.Env = []corev1.EnvVar{{Name: name, Value: value}}
 
 	return builder
 }
 
 // WithVolumeMount adds a pod volume mount inside the container.
-func (builder *ContainerBuilder) WithVolumeMount(volMount v1.VolumeMount) *ContainerBuilder {
+func (builder *ContainerBuilder) WithVolumeMount(volMount corev1.VolumeMount) *ContainerBuilder {
 	glog.V(100).Infof("Adding VolumeMount to the %s container's definition", builder.definition.Name)
 
 	if volMount.Name == "" {
@@ -376,7 +376,7 @@ func (builder *ContainerBuilder) WithVolumeMount(volMount v1.VolumeMount) *Conta
 }
 
 // GetContainerCfg returns Container struct.
-func (builder *ContainerBuilder) GetContainerCfg() (*v1.Container, error) {
+func (builder *ContainerBuilder) GetContainerCfg() (*corev1.Container, error) {
 	glog.V(100).Infof("Returning configuration for container %s", builder.definition.Name)
 
 	if builder.errorMsg != "" {
@@ -401,9 +401,9 @@ func areCapabilitiesValid(capabilities []string) bool {
 }
 
 // uniqueCapabilities filters duplicated Security Capabilities from the provided list.
-func uniqueCapabilities(sCap []v1.Capability) []v1.Capability {
-	uniqMap := make(map[v1.Capability]bool)
-	uniqSlice := []v1.Capability{}
+func uniqueCapabilities(sCap []corev1.Capability) []corev1.Capability {
+	uniqMap := make(map[corev1.Capability]bool)
+	uniqSlice := []corev1.Capability{}
 
 	for _, val := range sCap {
 		uniqMap[val] = true
@@ -417,8 +417,8 @@ func uniqueCapabilities(sCap []v1.Capability) []v1.Capability {
 }
 
 // capabilitiesIntersection returns an intersection of 2 Security Capabilities lists.
-func capabilitiesIntersection(aCaps, bCaps []v1.Capability) []v1.Capability {
-	var resultCaps []v1.Capability
+func capabilitiesIntersection(aCaps, bCaps []corev1.Capability) []corev1.Capability {
+	var resultCaps []corev1.Capability
 
 	for _, bVal := range bCaps {
 		found := false
@@ -440,8 +440,8 @@ func capabilitiesIntersection(aCaps, bCaps []v1.Capability) []v1.Capability {
 }
 
 // capabilitiesDifference returns a difference of 2 Security Capabilities lists.
-func capabilitiesDifference(aCaps, bCaps []v1.Capability) []v1.Capability {
-	var resultCaps []v1.Capability
+func capabilitiesDifference(aCaps, bCaps []corev1.Capability) []corev1.Capability {
+	var resultCaps []corev1.Capability
 
 	for _, bVal := range bCaps {
 		found := false

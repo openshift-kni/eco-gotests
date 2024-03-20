@@ -7,18 +7,18 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PVBuilder provides struct for persistentvolume object containing connection
 // to the cluster and the persistentvolume definitions.
 type PVBuilder struct {
 	// PersistentVolume definition. Used to create a persistentvolume object
-	Definition *v1.PersistentVolume
+	Definition *corev1.PersistentVolume
 	// Created persistentvolume object
-	Object *v1.PersistentVolume
+	Object *corev1.PersistentVolume
 
 	apiClient *clients.Settings
 }
@@ -29,8 +29,8 @@ func PullPersistentVolume(apiClient *clients.Settings, persistentVolume string) 
 
 	builder := PVBuilder{
 		apiClient: apiClient,
-		Definition: &v1.PersistentVolume{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.PersistentVolume{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: persistentVolume,
 			},
 		},
@@ -55,7 +55,7 @@ func (builder *PVBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.PersistentVolumes().Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

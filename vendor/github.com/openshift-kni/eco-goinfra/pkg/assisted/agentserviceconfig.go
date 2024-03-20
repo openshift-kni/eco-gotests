@@ -12,7 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -49,7 +49,7 @@ func NewAgentServiceConfigBuilder(
 	builder := AgentServiceConfigBuilder{
 		apiClient: apiClient,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: agentServiceConfigName,
 			},
 			Spec: agentInstallV1Beta1.AgentServiceConfigSpec{
@@ -71,7 +71,7 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 	builder := AgentServiceConfigBuilder{
 		apiClient: apiClient,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: agentServiceConfigName,
 			},
 			Spec: agentInstallV1Beta1.AgentServiceConfigSpec{},
@@ -277,7 +277,7 @@ func PullAgentServiceConfig(apiClient *clients.Settings) (*AgentServiceConfigBui
 	builder := AgentServiceConfigBuilder{
 		apiClient: apiClient,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: agentServiceConfigName,
 			},
 		},
@@ -363,7 +363,7 @@ func (builder *AgentServiceConfigBuilder) Update(force bool) (*AgentServiceConfi
 
 			err = builder.DeleteAndWait(time.Second * 5)
 			builder.Definition.ResourceVersion = ""
-			builder.Definition.CreationTimestamp = metaV1.Time{}
+			builder.Definition.CreationTimestamp = metav1.Time{}
 
 			if err != nil {
 				glog.V(100).Infof(

@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -92,7 +92,7 @@ func Pull(apiClient *clients.Settings, name, namespace string) (*Builder, error)
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &nfdv1.NodeFeatureDiscovery{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: namespace,
 			},

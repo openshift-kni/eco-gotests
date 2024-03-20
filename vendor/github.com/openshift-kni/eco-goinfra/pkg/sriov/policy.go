@@ -11,7 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"golang.org/x/exp/slices"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PolicyBuilder provides struct for srIovPolicy object containing connection to the cluster and the srIovPolicy
@@ -43,7 +43,7 @@ func NewPolicyBuilder(
 	builder := PolicyBuilder{
 		apiClient: apiClient,
 		Definition: &srIovV1.SriovNetworkNodePolicy{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -219,7 +219,7 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 	builder := PolicyBuilder{
 		apiClient: apiClient,
 		Definition: &srIovV1.SriovNetworkNodePolicy{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -256,7 +256,7 @@ func (builder *PolicyBuilder) Create() (*PolicyBuilder, error) {
 	if !builder.Exists() {
 		var err error
 		builder.Object, err = builder.apiClient.SriovNetworkNodePolicies(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{},
+			context.TODO(), builder.Definition, metav1.CreateOptions{},
 		)
 
 		if err != nil {
@@ -278,7 +278,7 @@ func (builder *PolicyBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.SriovNetworkNodePolicies(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -297,7 +297,7 @@ func (builder *PolicyBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.SriovNetworkNodePolicies(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

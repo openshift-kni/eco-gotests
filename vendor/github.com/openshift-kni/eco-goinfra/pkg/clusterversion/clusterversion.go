@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	v1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -33,7 +33,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &v1.ClusterVersion{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterVersionName,
 			},
 		},
@@ -60,7 +60,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.ConfigV1Interface.ClusterVersions().Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

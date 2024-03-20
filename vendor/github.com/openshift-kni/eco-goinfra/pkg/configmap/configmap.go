@@ -7,18 +7,18 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Builder provides struct for configmap object containing connection to the cluster and the configmap definitions.
 type Builder struct {
 	// ConfigMap definition. Used to create configmap object.
-	Definition *v1.ConfigMap
+	Definition *corev1.ConfigMap
 	// Created configmap object.
-	Object *v1.ConfigMap
+	Object *corev1.ConfigMap
 	// Used in functions that defines or mutates configmap definition. errorMsg is processed before the configmap
 	// object is created.
 	errorMsg  string
@@ -32,8 +32,8 @@ type AdditionalOptions func(builder *Builder) (*Builder, error)
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.ConfigMap{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -71,8 +71,8 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.ConfigMap{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -105,7 +105,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.ConfigMaps(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -124,7 +124,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.ConfigMaps(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.ConfigMaps(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

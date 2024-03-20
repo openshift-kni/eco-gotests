@@ -6,7 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // KernelMappingBuilder builds kernelMapping struct based on given parameters.
@@ -152,7 +152,7 @@ func (builder *KernelMappingBuilder) WithBuildSecret(secret string) *KernelMappi
 	builder.addBuild()
 
 	builder.definition.Build.Secrets = append(
-		builder.definition.Build.Secrets, v1.LocalObjectReference{Name: secret})
+		builder.definition.Build.Secrets, corev1.LocalObjectReference{Name: secret})
 
 	return builder
 }
@@ -193,7 +193,7 @@ func (builder *KernelMappingBuilder) WithBuildDockerCfgFile(name string) *Kernel
 	}
 
 	builder.addBuild()
-	builder.definition.Build.DockerfileConfigMap = &v1.LocalObjectReference{Name: name}
+	builder.definition.Build.DockerfileConfigMap = &corev1.LocalObjectReference{Name: name}
 
 	return builder
 }
@@ -231,8 +231,8 @@ func (builder *KernelMappingBuilder) WithSign(certSecret, keySecret string, file
 	}
 
 	builder.definition.Sign = &moduleV1Beta1.Sign{
-		CertSecret:  &v1.LocalObjectReference{Name: certSecret},
-		KeySecret:   &v1.LocalObjectReference{Name: keySecret},
+		CertSecret:  &corev1.LocalObjectReference{Name: certSecret},
+		KeySecret:   &corev1.LocalObjectReference{Name: keySecret},
 		FilesToSign: fileToSign,
 	}
 

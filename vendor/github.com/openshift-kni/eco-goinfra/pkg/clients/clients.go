@@ -57,6 +57,14 @@ import (
 	storageV1Client "k8s.io/client-go/kubernetes/typed/storage/v1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 
+	appsv1 "k8s.io/api/apps/v1"
+	scalingv1 "k8s.io/api/autoscaling/v1"
+	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	k8sFakeClient "k8s.io/client-go/kubernetes/fake"
+
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	multinetpolicyclientv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1"
@@ -73,11 +81,11 @@ import (
 // Settings provides the struct to talk with relevant API.
 type Settings struct {
 	KubeconfigPath string
-	K8sClient      *kubernetes.Clientset
+	K8sClient      kubernetes.Interface
 	coreV1Client.CoreV1Interface
 	clientConfigV1.ConfigV1Interface
 	clientMachineConfigV1.MachineconfigurationV1Interface
-	networkV1Client.NetworkingV1Client
+	networkV1Client.NetworkingV1Interface
 	appsV1Client.AppsV1Interface
 	rbacV1Client.RbacV1Interface
 	clientSrIovV1.SriovnetworkV1Interface
@@ -129,7 +137,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.MachineconfigurationV1Interface = clientMachineConfigV1.NewForConfigOrDie(config)
 	clientSet.AppsV1Interface = appsV1Client.NewForConfigOrDie(config)
 	clientSet.SriovnetworkV1Interface = clientSrIovV1.NewForConfigOrDie(config)
-	clientSet.NetworkingV1Client = *networkV1Client.NewForConfigOrDie(config)
+	clientSet.NetworkingV1Interface = networkV1Client.NewForConfigOrDie(config)
 	clientSet.PtpV1Interface = ptpV1.NewForConfigOrDie(config)
 	clientSet.RbacV1Interface = rbacV1Client.NewForConfigOrDie(config)
 	clientSet.OperatorsV1alpha1Interface = olm.NewForConfigOrDie(config)
@@ -297,4 +305,64 @@ func (settings *Settings) GetAPIClient() (*Settings, error) {
 	}
 
 	return settings, nil
+}
+
+// GetTestClients returns a fake clientset for testing.
+//
+//nolint:funlen
+func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
+	clientSet := &Settings{}
+
+	var k8sClientObjects []runtime.Object
+
+	//nolint:varnamelen
+	for _, v := range k8sMockObjects {
+		// Based on what type of object is, populate certain object slices
+		// with what is supported by a certain client.
+		// Add more items below if/when needed.
+		switch v.(type) {
+		// K8s Client Objects
+		case *corev1.ServiceAccount:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *rbacv1.ClusterRole:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *rbacv1.ClusterRoleBinding:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *rbacv1.Role:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *rbacv1.RoleBinding:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.Pod:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.Service:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.Node:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *appsv1.Deployment:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *appsv1.StatefulSet:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.ResourceQuota:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.PersistentVolume:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.PersistentVolumeClaim:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *policyv1.PodDisruptionBudget:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *scalingv1.HorizontalPodAutoscaler:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *storagev1.StorageClass:
+			k8sClientObjects = append(k8sClientObjects, v)
+		}
+	}
+
+	// Assign the fake clientset to the clientSet
+	clientSet.K8sClient = k8sFakeClient.NewSimpleClientset(k8sClientObjects...)
+	clientSet.CoreV1Interface = clientSet.K8sClient.CoreV1()
+	clientSet.AppsV1Interface = clientSet.K8sClient.AppsV1()
+	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
+	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
+
+	return clientSet
 }

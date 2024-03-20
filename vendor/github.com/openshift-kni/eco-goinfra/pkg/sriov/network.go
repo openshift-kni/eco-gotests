@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"golang.org/x/exp/slices"
 
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NetworkBuilder provides struct for srIovNetwork object which contains connection to cluster and
@@ -40,7 +40,7 @@ func NewNetworkBuilder(
 	builder := NetworkBuilder{
 		apiClient: apiClient,
 		Definition: &srIovV1.SriovNetwork{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -248,7 +248,7 @@ func PullNetwork(apiClient *clients.Settings, name, nsname string) (*NetworkBuil
 	builder := NetworkBuilder{
 		apiClient: apiClient,
 		Definition: &srIovV1.SriovNetwork{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -285,7 +285,7 @@ func (builder *NetworkBuilder) Create() (*NetworkBuilder, error) {
 	if !builder.Exists() {
 		var err error
 		builder.Object, err = builder.apiClient.SriovNetworks(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{},
+			context.TODO(), builder.Definition, metav1.CreateOptions{},
 		)
 
 		if err != nil {
@@ -307,7 +307,7 @@ func (builder *NetworkBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.SriovNetworks(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -326,7 +326,7 @@ func (builder *NetworkBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.SriovNetworks(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

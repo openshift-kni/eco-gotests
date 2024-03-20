@@ -15,7 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -186,7 +186,7 @@ func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuild
 	stateBuilder := StateBuilder{
 		apiClient: apiClient,
 		Object: &nmstateV1alpha1.NodeNetworkState{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},

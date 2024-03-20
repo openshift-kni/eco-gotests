@@ -10,7 +10,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // InstallPlanBuilder provides a struct for installplan object from the cluster and an installplan definition.
@@ -33,7 +33,7 @@ func NewInstallPlanBuilder(apiClient *clients.Settings, name, nsname string) *In
 	builder := InstallPlanBuilder{
 		apiClient: apiClient,
 		Definition: &v1alpha1.InstallPlan{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -67,7 +67,7 @@ func (builder *InstallPlanBuilder) Create() (*InstallPlanBuilder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.InstallPlans(builder.Definition.Namespace).Create(context.Background(),
-			builder.Definition, metaV1.CreateOptions{})
+			builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -84,7 +84,7 @@ func (builder *InstallPlanBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.InstallPlans(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -103,7 +103,7 @@ func (builder *InstallPlanBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.InstallPlans(builder.Definition.Namespace).Delete(context.TODO(),
-		builder.Object.Name, metaV1.DeleteOptions{})
+		builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func (builder *InstallPlanBuilder) Update() (*InstallPlanBuilder, error) {
 
 	var err error
 	builder.Object, err = builder.apiClient.InstallPlans(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }

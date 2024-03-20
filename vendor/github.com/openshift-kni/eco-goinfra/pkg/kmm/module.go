@@ -8,9 +8,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -39,7 +39,7 @@ func NewModuleBuilder(
 	builder := ModuleBuilder{
 		apiClient: apiClient,
 		Definition: &moduleV1Beta1.Module{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -126,7 +126,7 @@ func (builder *ModuleBuilder) WithImageRepoSecret(imageRepoSecret string) *Modul
 		return builder
 	}
 
-	builder.Definition.Spec.ImageRepoSecret = &v1.LocalObjectReference{Name: imageRepoSecret}
+	builder.Definition.Spec.ImageRepoSecret = &corev1.LocalObjectReference{Name: imageRepoSecret}
 
 	return builder
 }
@@ -153,11 +153,11 @@ func (builder *ModuleBuilder) WithDevicePluginVolume(name string, configMapName 
 		builder.Definition.Spec.DevicePlugin = &moduleV1Beta1.DevicePluginSpec{}
 	}
 
-	builder.Definition.Spec.DevicePlugin.Volumes = append(builder.Definition.Spec.DevicePlugin.Volumes, v1.Volume{
+	builder.Definition.Spec.DevicePlugin.Volumes = append(builder.Definition.Spec.DevicePlugin.Volumes, corev1.Volume{
 		Name: name,
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
-				LocalObjectReference: v1.LocalObjectReference{
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: configMapName},
 			},
 		},
@@ -254,7 +254,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*ModuleBuilder, err
 	builder := ModuleBuilder{
 		apiClient: apiClient,
 		Definition: &moduleV1Beta1.Module{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},

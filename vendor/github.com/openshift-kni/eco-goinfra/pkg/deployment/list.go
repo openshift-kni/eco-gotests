@@ -6,18 +6,18 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // List returns deployment inventory in the given namespace.
-func List(apiClient *clients.Settings, nsname string, options ...metaV1.ListOptions) ([]*Builder, error) {
+func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*Builder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("deployment 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list deployments, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metaV1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 	logMessage := fmt.Sprintf("Listing deployments in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -58,8 +58,8 @@ func List(apiClient *clients.Settings, nsname string, options ...metaV1.ListOpti
 }
 
 // ListInAllNamespaces returns deployment inventory in the all the namespaces.
-func ListInAllNamespaces(apiClient *clients.Settings, options ...metaV1.ListOptions) ([]*Builder, error) {
-	passedOptions := metaV1.ListOptions{}
+func ListInAllNamespaces(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builder, error) {
+	passedOptions := metav1.ListOptions{}
 	logMessage := "Listing deployments in all namespaces"
 
 	if len(options) > 1 {

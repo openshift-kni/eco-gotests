@@ -8,9 +8,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -21,9 +21,9 @@ import (
 // Builder provides struct for namespace object containing connection to the cluster and the namespace definitions.
 type Builder struct {
 	// Namespace definition. Used to create namespace object.
-	Definition *v1.Namespace
+	Definition *corev1.Namespace
 	// Created namespace object
-	Object *v1.Namespace
+	Object *corev1.Namespace
 	// Used in functions that define or mutate namespace definition. errorMsg is processed before the namespace
 	// object is created
 	errorMsg  string
@@ -40,8 +40,8 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Namespace{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},
@@ -126,7 +126,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.Namespaces().Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -142,7 +142,7 @@ func (builder *Builder) Update() (*Builder, error) {
 
 	var err error
 	builder.Object, err = builder.apiClient.Namespaces().Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }
@@ -159,7 +159,7 @@ func (builder *Builder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.Namespaces().Delete(context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+	err := builder.apiClient.Namespaces().Delete(context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			_, err := builder.apiClient.Namespaces().Get(context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+			_, err := builder.apiClient.Namespaces().Get(context.Background(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -203,7 +203,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.Namespaces().Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -214,8 +214,8 @@ func Pull(apiClient *clients.Settings, nsname string) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Namespace{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: nsname,
 			},
 		},
@@ -257,9 +257,9 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 			resource.Resource, builder.Definition.Name)
 
 		err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).DeleteCollection(
-			context.Background(), metaV1.DeleteOptions{
+			context.Background(), metav1.DeleteOptions{
 				GracePeriodSeconds: ptr.To(int64(0)),
-			}, metaV1.ListOptions{})
+			}, metav1.ListOptions{})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to remove resources: %s in namespace: %s",
@@ -271,7 +271,7 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 		err = wait.PollUntilContextTimeout(
 			context.TODO(), 3*time.Second, cleanTimeout, true, func(ctx context.Context) (bool, error) {
 				objList, err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).List(
-					context.Background(), metaV1.ListOptions{})
+					context.Background(), metav1.ListOptions{})
 
 				if err != nil || len(objList.Items) > 1 {
 					// avoid timeout due to default automatically created openshift

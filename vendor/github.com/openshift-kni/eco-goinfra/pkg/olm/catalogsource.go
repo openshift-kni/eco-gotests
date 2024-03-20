@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CatalogSourceBuilder provides a struct for catalogsource object
@@ -33,7 +33,7 @@ func NewCatalogSourceBuilder(apiClient *clients.Settings, name, nsname string) *
 	builder := CatalogSourceBuilder{
 		apiClient: apiClient,
 		Definition: &oplmV1alpha1.CatalogSource{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -63,7 +63,7 @@ func PullCatalogSource(apiClient *clients.Settings, name, nsname string) (*Catal
 	builder := CatalogSourceBuilder{
 		apiClient: apiClient,
 		Definition: &oplmV1alpha1.CatalogSource{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -99,7 +99,7 @@ func (builder *CatalogSourceBuilder) Create() (*CatalogSourceBuilder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.CatalogSources(builder.Definition.Namespace).Create(context.Background(),
-			builder.Definition, metaV1.CreateOptions{})
+			builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -118,7 +118,7 @@ func (builder *CatalogSourceBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.OperatorsV1alpha1Interface.CatalogSources(
 		builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -137,7 +137,7 @@ func (builder *CatalogSourceBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.CatalogSources(builder.Definition.Namespace).Delete(context.TODO(),
-		builder.Object.Name, metaV1.DeleteOptions{})
+		builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err

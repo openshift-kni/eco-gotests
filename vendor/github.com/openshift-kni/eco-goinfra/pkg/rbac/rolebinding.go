@@ -10,7 +10,7 @@ import (
 	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // RoleBindingBuilder provides struct for RoleBinding object containing connection
@@ -41,7 +41,7 @@ func NewRoleBindingBuilder(apiClient *clients.Settings,
 	builder := RoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &v1.RoleBinding{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -143,7 +143,7 @@ func PullRoleBinding(apiClient *clients.Settings, name, nsname string) (*RoleBin
 	builder := RoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &v1.RoleBinding{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -183,7 +183,7 @@ func (builder *RoleBindingBuilder) Create() (*RoleBindingBuilder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.RoleBindings(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -203,7 +203,7 @@ func (builder *RoleBindingBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.RoleBindings(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	builder.Object = nil
 
@@ -221,7 +221,7 @@ func (builder *RoleBindingBuilder) Update() (*RoleBindingBuilder, error) {
 
 	var err error
 	builder.Object, err = builder.apiClient.RoleBindings(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }
@@ -237,7 +237,7 @@ func (builder *RoleBindingBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.RoleBindings(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

@@ -8,19 +8,19 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/apps/v1"
-	coreV1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Builder provides struct for daemonset object containing connection to the cluster and the daemonset definitions.
 type Builder struct {
 	// Daemonset definition. Used to create a daemonset object.
-	Definition *v1.DaemonSet
+	Definition *appsv1.DaemonSet
 	// Created daemonset object.
-	Object *v1.DaemonSet
+	Object *appsv1.DaemonSet
 	// Used in functions that define or mutate daemonset definition. errorMsg is processed before the daemonset
 	// object is created.
 	errorMsg  string
@@ -34,7 +34,7 @@ var retryInterval = time.Second * 3
 
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(
-	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec coreV1.Container) *Builder {
+	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec corev1.Container) *Builder {
 	glog.V(100).Infof(
 		"Initializing new daemonset structure with the following params: "+
 			"name: %s, namespace: %s, labels: %s, containerSpec %v",
@@ -42,25 +42,25 @@ func NewBuilder(
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.DaemonSet{
-			Spec: v1.DaemonSetSpec{
-				Selector: &metaV1.LabelSelector{
+		Definition: &appsv1.DaemonSet{
+			Spec: appsv1.DaemonSetSpec{
+				Selector: &metav1.LabelSelector{
 					MatchLabels: labels,
 				},
-				Template: coreV1.PodTemplateSpec{
-					ObjectMeta: metaV1.ObjectMeta{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
 						Labels: labels,
 					},
 				},
 			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
 		},
 	}
 
-	builder.WithAdditionalContainerSpecs([]coreV1.Container{containerSpec})
+	builder.WithAdditionalContainerSpecs([]corev1.Container{containerSpec})
 
 	if name == "" {
 		glog.V(100).Infof("The name of the daemonset is empty")
@@ -89,8 +89,8 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.DaemonSet{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &appsv1.DaemonSet{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -139,7 +139,7 @@ func (builder *Builder) WithNodeSelector(selector map[string]string) *Builder {
 }
 
 // WithAdditionalContainerSpecs appends a list of container specs to the daemonset definition.
-func (builder *Builder) WithAdditionalContainerSpecs(specs []coreV1.Container) *Builder {
+func (builder *Builder) WithAdditionalContainerSpecs(specs []corev1.Container) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -202,7 +202,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -218,7 +218,7 @@ func (builder *Builder) Update() (*Builder, error) {
 
 	var err error
 	builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }
@@ -237,7 +237,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -266,7 +266,7 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+				context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
 				return false, nil
@@ -305,7 +305,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+				context.Background(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -325,7 +325,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -348,7 +348,7 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 
 			var err error
 			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+				context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
 				return false, nil

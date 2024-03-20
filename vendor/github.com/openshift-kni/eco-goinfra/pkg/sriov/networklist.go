@@ -6,18 +6,18 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // List returns sriov networks in the given namespace.
-func List(apiClient *clients.Settings, nsname string, options ...metaV1.ListOptions) ([]*NetworkBuilder, error) {
+func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*NetworkBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("sriov network 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list sriov networks, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metaV1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 	logMessage := fmt.Sprintf("Listing sriov networks in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -62,7 +62,7 @@ func CleanAllNetworksByTargetNamespace(
 	apiClient *clients.Settings,
 	operatornsname string,
 	targetnsname string,
-	options ...metaV1.ListOptions) error {
+	options ...metav1.ListOptions) error {
 	glog.V(100).Infof("Cleaning up sriov networks in the %s namespace with %s NetworkNamespace spec",
 		operatornsname, targetnsname)
 

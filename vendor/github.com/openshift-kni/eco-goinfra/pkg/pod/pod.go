@@ -14,9 +14,9 @@ import (
 
 	"github.com/golang/glog"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/httpstream/spdy"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -31,9 +31,9 @@ import (
 // Builder provides a struct for pod object from the cluster and a pod definition.
 type Builder struct {
 	// Pod definition, used to create the pod object.
-	Definition *v1.Pod
+	Definition *corev1.Pod
 	// Created pod object.
-	Object *v1.Pod
+	Object *corev1.Pod
 	// Used to store latest error message upon defining or mutating pod definition.
 	errorMsg string
 	// api client to interact with the cluster.
@@ -92,8 +92,8 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Pod{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -169,7 +169,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.Pods(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -189,7 +189,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 	}
 
 	err := builder.apiClient.Pods(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete pod: %w", err)
@@ -255,11 +255,11 @@ func (builder *Builder) WaitUntilRunning(timeout time.Duration) error {
 	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s is running",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	return builder.WaitUntilInStatus(v1.PodRunning, timeout)
+	return builder.WaitUntilInStatus(corev1.PodRunning, timeout)
 }
 
 // WaitUntilInStatus waits for the duration of the defined timeout or until the pod gets to a specific status.
-func (builder *Builder) WaitUntilInStatus(status v1.PodPhase, timeout time.Duration) error {
+func (builder *Builder) WaitUntilInStatus(status corev1.PodPhase, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err
 	}
@@ -270,7 +270,7 @@ func (builder *Builder) WaitUntilInStatus(status v1.PodPhase, timeout time.Durat
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-				context.Background(), builder.Object.Name, metaV1.GetOptions{})
+				context.Background(), builder.Object.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}
@@ -291,7 +291,7 @@ func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, false, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+				context.Background(), builder.Definition.Name, metav1.GetOptions{})
 			if err == nil {
 				glog.V(100).Infof("pod %s/%s still present", builder.Definition.Namespace, builder.Definition.Name)
 
@@ -321,11 +321,11 @@ func (builder *Builder) WaitUntilReady(timeout time.Duration) error {
 	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s is Ready",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	return builder.WaitUntilCondition(v1.PodReady, timeout)
+	return builder.WaitUntilCondition(corev1.PodReady, timeout)
 }
 
 // WaitUntilCondition waits for the duration of the defined timeout or until the pod gets to a specific condition.
-func (builder *Builder) WaitUntilCondition(condition v1.PodConditionType, timeout time.Duration) error {
+func (builder *Builder) WaitUntilCondition(condition corev1.PodConditionType, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err
 	}
@@ -336,13 +336,13 @@ func (builder *Builder) WaitUntilCondition(condition v1.PodConditionType, timeou
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-				context.Background(), builder.Object.Name, metaV1.GetOptions{})
+				context.Background(), builder.Object.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}
 
 			for _, cond := range updatePod.Status.Conditions {
-				if cond.Type == condition && cond.Status == v1.ConditionTrue {
+				if cond.Type == condition && cond.Status == corev1.ConditionTrue {
 					return true, nil
 				}
 			}
@@ -377,7 +377,7 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 		Resource("pods").
 		Name(builder.Object.Name).
 		SubResource("exec").
-		VersionedParams(&v1.PodExecOptions{
+		VersionedParams(&corev1.PodExecOptions{
 			Container: cName,
 			Command:   command,
 			Stdin:     true,
@@ -439,7 +439,7 @@ func (builder *Builder) Copy(path, containerName string, tar bool) (bytes.Buffer
 		Resource("pods").
 		Name(builder.Object.Name).
 		SubResource("exec").
-		VersionedParams(&v1.PodExecOptions{
+		VersionedParams(&corev1.PodExecOptions{
 			Container: containerName,
 			Command:   command,
 			Stdin:     true,
@@ -503,7 +503,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.Pods(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -528,7 +528,7 @@ func (builder *Builder) RedefineDefaultCMD(command []string) *Builder {
 }
 
 // WithRestartPolicy applies restart policy to pod's definition.
-func (builder *Builder) WithRestartPolicy(restartPolicy v1.RestartPolicy) *Builder {
+func (builder *Builder) WithRestartPolicy(restartPolicy corev1.RestartPolicy) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -568,7 +568,7 @@ func (builder *Builder) WithTolerationToMaster() *Builder {
 		return builder
 	}
 
-	builder.Definition.Spec.Tolerations = []v1.Toleration{
+	builder.Definition.Spec.Tolerations = []corev1.Toleration{
 		{
 			Key:    "node-role.kubernetes.io/master",
 			Effect: "NoSchedule",
@@ -592,7 +592,7 @@ func (builder *Builder) WithTolerationToControlPlane() *Builder {
 		return builder
 	}
 
-	builder.Definition.Spec.Tolerations = []v1.Toleration{
+	builder.Definition.Spec.Tolerations = []corev1.Toleration{
 		{
 			Key:    "node-role.kubernetes.io/control-plane",
 			Effect: "NoSchedule",
@@ -603,7 +603,7 @@ func (builder *Builder) WithTolerationToControlPlane() *Builder {
 }
 
 // WithToleration adds a toleration configuration inside the pod.
-func (builder *Builder) WithToleration(toleration v1.Toleration) *Builder {
+func (builder *Builder) WithToleration(toleration corev1.Toleration) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -664,7 +664,7 @@ func (builder *Builder) WithPrivilegedFlag() *Builder {
 	}
 
 	for idx := range builder.Definition.Spec.Containers {
-		builder.Definition.Spec.Containers[idx].SecurityContext = &v1.SecurityContext{}
+		builder.Definition.Spec.Containers[idx].SecurityContext = &corev1.SecurityContext{}
 		trueFlag := true
 		builder.Definition.Spec.Containers[idx].SecurityContext.Privileged = &trueFlag
 	}
@@ -673,7 +673,7 @@ func (builder *Builder) WithPrivilegedFlag() *Builder {
 }
 
 // WithVolume attaches given volume to a pod.
-func (builder *Builder) WithVolume(volume v1.Volume) *Builder {
+func (builder *Builder) WithVolume(volume corev1.Volume) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -719,7 +719,7 @@ func (builder *Builder) WithLocalVolume(volumeName, mountPath string) *Builder {
 		builder.errorMsg = "'mountPath' parameter is empty"
 	}
 
-	mountConfig := v1.VolumeMount{Name: volumeName, MountPath: mountPath, ReadOnly: false}
+	mountConfig := corev1.VolumeMount{Name: volumeName, MountPath: mountPath, ReadOnly: false}
 
 	builder.isMountAlreadyInUseInPod(mountConfig)
 
@@ -740,9 +740,9 @@ func (builder *Builder) WithLocalVolume(volumeName, mountPath string) *Builder {
 	}
 
 	builder.Definition.Spec.Volumes = append(builder.Definition.Spec.Volumes,
-		v1.Volume{Name: mountConfig.Name, VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
-				LocalObjectReference: v1.LocalObjectReference{
+		corev1.Volume{Name: mountConfig.Name, VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: mountConfig.Name,
 				},
 			},
@@ -752,7 +752,7 @@ func (builder *Builder) WithLocalVolume(volumeName, mountPath string) *Builder {
 }
 
 // WithAdditionalContainer appends additional container to pod.
-func (builder *Builder) WithAdditionalContainer(container *v1.Container) *Builder {
+func (builder *Builder) WithAdditionalContainer(container *corev1.Container) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -774,7 +774,7 @@ func (builder *Builder) WithAdditionalContainer(container *v1.Container) *Builde
 }
 
 // WithAdditionalInitContainer appends additional init container to pod.
-func (builder *Builder) WithAdditionalInitContainer(container *v1.Container) *Builder {
+func (builder *Builder) WithAdditionalInitContainer(container *corev1.Container) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -822,7 +822,7 @@ func (builder *Builder) WithSecondaryNetwork(network []*multus.NetworkSelectionE
 		return builder
 	}
 
-	builder.Definition.Annotations = map[string]string{"k8s.v1.cni.cncf.io/networks": string(netAnnotation)}
+	builder.Definition.Annotations = map[string]string{"k8s.corev1.cni.cncf.io/networks": string(netAnnotation)}
 
 	return builder
 }
@@ -867,7 +867,7 @@ func (builder *Builder) WithHostPid(hostPid bool) *Builder {
 }
 
 // RedefineDefaultContainer redefines default container with the new one.
-func (builder *Builder) RedefineDefaultContainer(container v1.Container) *Builder {
+func (builder *Builder) RedefineDefaultContainer(container corev1.Container) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -893,13 +893,13 @@ func (builder *Builder) WithHugePages() *Builder {
 	builder.isMutationAllowed("hugepages")
 
 	if builder.Definition.Spec.Volumes != nil {
-		builder.Definition.Spec.Volumes = append(builder.Definition.Spec.Volumes, v1.Volume{
-			Name: "hugepages", VolumeSource: v1.VolumeSource{
-				EmptyDir: &v1.EmptyDirVolumeSource{Medium: "HugePages"}}})
+		builder.Definition.Spec.Volumes = append(builder.Definition.Spec.Volumes, corev1.Volume{
+			Name: "hugepages", VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "HugePages"}}})
 	} else {
-		builder.Definition.Spec.Volumes = []v1.Volume{
-			{Name: "hugepages", VolumeSource: v1.VolumeSource{
-				EmptyDir: &v1.EmptyDirVolumeSource{Medium: "HugePages"}},
+		builder.Definition.Spec.Volumes = []corev1.Volume{
+			{Name: "hugepages", VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "HugePages"}},
 			},
 		}
 	}
@@ -908,9 +908,9 @@ func (builder *Builder) WithHugePages() *Builder {
 		if builder.Definition.Spec.Containers[idx].VolumeMounts != nil {
 			builder.Definition.Spec.Containers[idx].VolumeMounts = append(
 				builder.Definition.Spec.Containers[idx].VolumeMounts,
-				v1.VolumeMount{Name: "hugepages", MountPath: "/mnt/huge"})
+				corev1.VolumeMount{Name: "hugepages", MountPath: "/mnt/huge"})
 		} else {
-			builder.Definition.Spec.Containers[idx].VolumeMounts = []v1.VolumeMount{{
+			builder.Definition.Spec.Containers[idx].VolumeMounts = []corev1.VolumeMount{{
 				Name:      "hugepages",
 				MountPath: "/mnt/huge",
 			},
@@ -922,7 +922,7 @@ func (builder *Builder) WithHugePages() *Builder {
 }
 
 // WithSecurityContext sets SecurityContext on pod definition.
-func (builder *Builder) WithSecurityContext(securityContext *v1.PodSecurityContext) *Builder {
+func (builder *Builder) WithSecurityContext(securityContext *corev1.PodSecurityContext) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -957,7 +957,7 @@ func (builder *Builder) PullImage(timeout time.Duration, testCmd []string) error
 		"Pulling container image %s to node: %s", builder.Definition.Spec.Containers[0].Image,
 		builder.Definition.Spec.NodeName)
 
-	builder.WithRestartPolicy(v1.RestartPolicyNever)
+	builder.WithRestartPolicy(corev1.RestartPolicyNever)
 	builder.RedefineDefaultCMD(testCmd)
 	_, err := builder.Create()
 
@@ -970,7 +970,7 @@ func (builder *Builder) PullImage(timeout time.Duration, testCmd []string) error
 		return err
 	}
 
-	statusErr := builder.WaitUntilInStatus(v1.PodSucceeded, timeout)
+	statusErr := builder.WaitUntilInStatus(corev1.PodSucceeded, timeout)
 
 	if statusErr != nil {
 		glog.V(100).Infof(
@@ -1077,7 +1077,7 @@ func (builder *Builder) GetLog(logStartTime time.Duration, containerName string)
 	}
 
 	logStart := int64(logStartTime.Seconds())
-	req := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name, &v1.PodLogOptions{
+	req := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name, &corev1.PodLogOptions{
 		SinceSeconds: &logStart, Container: containerName})
 	log, err := req.Stream(context.Background())
 
@@ -1106,7 +1106,7 @@ func (builder *Builder) GetFullLog(containerName string) (string, error) {
 	}
 
 	logStream, err := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name,
-		&v1.PodLogOptions{Container: containerName}).Stream(context.Background())
+		&corev1.PodLogOptions{Container: containerName}).Stream(context.Background())
 
 	if err != nil {
 		return "", err
@@ -1131,12 +1131,12 @@ func GetGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 }
 
-func getDefinition(name, nsName string) *v1.Pod {
-	return &v1.Pod{
-		ObjectMeta: metaV1.ObjectMeta{
+func getDefinition(name, nsName string) *corev1.Pod {
+	return &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: nsName},
-		Spec: v1.PodSpec{
+		Spec: corev1.PodSpec{
 			TerminationGracePeriodSeconds: ptr.To(int64(0)),
 		},
 	}
@@ -1155,7 +1155,7 @@ func (builder *Builder) isMutationAllowed(configToMutate string) {
 	}
 }
 
-func (builder *Builder) isMountAlreadyInUseInPod(newMount v1.VolumeMount) {
+func (builder *Builder) isMountAlreadyInUseInPod(newMount corev1.VolumeMount) {
 	if valid, _ := builder.validate(); valid {
 		for index := range builder.Definition.Spec.Containers {
 			if builder.Definition.Spec.Containers[index].VolumeMounts != nil {
@@ -1168,7 +1168,7 @@ func (builder *Builder) isMountAlreadyInUseInPod(newMount v1.VolumeMount) {
 	}
 }
 
-func isMountInUse(containerMounts []v1.VolumeMount, newMount v1.VolumeMount) bool {
+func isMountInUse(containerMounts []corev1.VolumeMount, newMount corev1.VolumeMount) bool {
 	for _, containerMount := range containerMounts {
 		if containerMount.Name == newMount.Name && containerMount.MountPath == newMount.MountPath {
 			return true

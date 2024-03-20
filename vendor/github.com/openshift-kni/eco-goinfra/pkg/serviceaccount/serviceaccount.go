@@ -7,18 +7,18 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Builder provides struct for serviceaccount object containing connection to the cluster and the
 // serviceaccount definitions.
 type Builder struct {
 	// ServiceAccount definition. Used to create serviceaccount object.
-	Definition *v1.ServiceAccount
+	Definition *corev1.ServiceAccount
 	// Created serviceaccount object.
-	Object *v1.ServiceAccount
+	Object *corev1.ServiceAccount
 	// Used in functions that defines or mutates configmap definition. errorMsg is processed before the configmap
 	// object is created.
 	errorMsg  string
@@ -34,8 +34,8 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.ServiceAccount{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -63,8 +63,8 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.ServiceAccount{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -101,7 +101,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.ServiceAccounts(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -122,7 +122,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.ServiceAccounts(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -145,7 +145,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.ServiceAccounts(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

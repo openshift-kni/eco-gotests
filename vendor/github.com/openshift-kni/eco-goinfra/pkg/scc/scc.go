@@ -8,9 +8,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	securityV1 "github.com/openshift/api/security/v1"
-	coreV1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const redefiningMsg = "Redefining SecurityContextConstraints"
@@ -40,7 +40,7 @@ func NewBuilder(apiClient *clients.Settings, name, runAsUser, selinuxContext str
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &securityV1.SecurityContextConstraints{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 			RunAsUser: securityV1.RunAsUserStrategyOptions{
@@ -80,7 +80,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &securityV1.SecurityContextConstraints{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},
@@ -213,7 +213,7 @@ func (builder *Builder) WithReadOnlyRootFilesystem(readOnlyRootFilesystem bool) 
 }
 
 // WithDropCapabilities adds list of drop capabilities to SecurityContextConstraints.
-func (builder *Builder) WithDropCapabilities(requiredDropCapabilities []coreV1.Capability) *Builder {
+func (builder *Builder) WithDropCapabilities(requiredDropCapabilities []corev1.Capability) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -242,7 +242,7 @@ func (builder *Builder) WithDropCapabilities(requiredDropCapabilities []coreV1.C
 }
 
 // WithAllowCapabilities adds list of allow capabilities to SecurityContextConstraints.
-func (builder *Builder) WithAllowCapabilities(allowCapabilities []coreV1.Capability) *Builder {
+func (builder *Builder) WithAllowCapabilities(allowCapabilities []corev1.Capability) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -270,7 +270,7 @@ func (builder *Builder) WithAllowCapabilities(allowCapabilities []coreV1.Capabil
 }
 
 // WithDefaultAddCapabilities adds list of defaultAddCapabilities to SecurityContextConstraints.
-func (builder *Builder) WithDefaultAddCapabilities(defaultAddCapabilities []coreV1.Capability) *Builder {
+func (builder *Builder) WithDefaultAddCapabilities(defaultAddCapabilities []corev1.Capability) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -503,7 +503,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.SecurityContextConstraints().Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -522,7 +522,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.SecurityContextConstraints().Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	builder.Object = nil
 
@@ -539,7 +539,7 @@ func (builder *Builder) Update() (*Builder, error) {
 
 	var err error
 	builder.Object, err = builder.apiClient.SecurityContextConstraints().Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }
@@ -554,7 +554,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.SecurityContextConstraints().Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

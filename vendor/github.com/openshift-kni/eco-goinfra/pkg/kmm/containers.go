@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // ModuleLoaderContainerBuilder provides struct for the module object containing the ModuleLoaderContainerSpec
@@ -119,7 +119,7 @@ func (builder *ModuleLoaderContainerBuilder) WithImagePullPolicy(policy string) 
 		return builder
 	}
 
-	builder.definition.ImagePullPolicy = v1.PullPolicy(policy)
+	builder.definition.ImagePullPolicy = corev1.PullPolicy(policy)
 
 	return builder
 }
@@ -262,7 +262,7 @@ func (builder *DevicePluginContainerBuilder) WithEnv(name, value string) *Device
 		return builder
 	}
 
-	builder.definition.Env = append(builder.definition.Env, v1.EnvVar{Name: name, Value: value})
+	builder.definition.Env = append(builder.definition.Env, corev1.EnvVar{Name: name, Value: value})
 
 	return builder
 }
@@ -294,7 +294,7 @@ func (builder *DevicePluginContainerBuilder) WithVolumeMount(mountPath, name str
 	}
 
 	builder.definition.VolumeMounts = append(
-		builder.definition.VolumeMounts, v1.VolumeMount{Name: name, MountPath: mountPath})
+		builder.definition.VolumeMounts, corev1.VolumeMount{Name: name, MountPath: mountPath})
 
 	return builder
 }

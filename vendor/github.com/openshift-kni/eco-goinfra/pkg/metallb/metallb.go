@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,11 +40,11 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, label map[stri
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.MetalLB{
-			TypeMeta: metaV1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       metalLb,
 				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
 			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -77,7 +77,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.MetalLB{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -136,7 +136,7 @@ func (builder *Builder) Get() (*mlbtypes.MetalLB, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	unsObject, err := builder.apiClient.Resource(GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -171,7 +171,7 @@ func (builder *Builder) Create() (*Builder, error) {
 
 		unsObject, err := builder.apiClient.Resource(
 			GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metaV1.CreateOptions{})
+			context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metav1.CreateOptions{})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create MetalLb")
@@ -205,7 +205,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 
 	err := builder.apiClient.Resource(
 		GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete metallb: %w", err)
@@ -246,7 +246,7 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 
 	_, err = builder.apiClient.Resource(
 		GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metaV1.UpdateOptions{})
+		context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metav1.UpdateOptions{})
 
 	if err != nil {
 		if force {

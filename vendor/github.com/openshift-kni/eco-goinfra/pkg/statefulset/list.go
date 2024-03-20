@@ -6,18 +6,18 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // List returns statefulset inventory in the given namespace.
-func List(apiClient *clients.Settings, nsname string, options ...metaV1.ListOptions) ([]*Builder, error) {
+func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*Builder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("statefulset 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list statefulsets, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metaV1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 	logMessage := fmt.Sprintf("Listing statefulsets in the namespace %s", nsname)
 
 	if len(options) > 1 {

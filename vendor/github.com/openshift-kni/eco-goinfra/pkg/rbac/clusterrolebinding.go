@@ -10,7 +10,7 @@ import (
 	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ClusterRoleBindingBuilder provides struct for clusterrolebinding object
@@ -40,7 +40,7 @@ func NewClusterRoleBindingBuilder(
 	builder := ClusterRoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &v1.ClusterRoleBinding{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 			RoleRef: v1.RoleRef{
@@ -137,7 +137,7 @@ func PullClusterRoleBinding(apiClient *clients.Settings, name string) (*ClusterR
 	builder := ClusterRoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &v1.ClusterRoleBinding{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},
@@ -170,7 +170,7 @@ func (builder *ClusterRoleBindingBuilder) Create() (*ClusterRoleBindingBuilder, 
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.ClusterRoleBindings().Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -190,7 +190,7 @@ func (builder *ClusterRoleBindingBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.ClusterRoleBindings().Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -212,7 +212,7 @@ func (builder *ClusterRoleBindingBuilder) Update() (*ClusterRoleBindingBuilder, 
 
 	var err error
 	builder.Object, err = builder.apiClient.ClusterRoleBindings().Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }
@@ -228,7 +228,7 @@ func (builder *ClusterRoleBindingBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.ClusterRoleBindings().Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

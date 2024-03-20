@@ -7,14 +7,14 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // List returns clusterOperators inventory.
-func List(apiClient *clients.Settings, options ...metaV1.ListOptions) ([]*Builder, error) {
+func List(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builder, error) {
 	logMessage := "Listing all clusterOperators"
-	passedOptions := metaV1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")
@@ -55,7 +55,7 @@ func List(apiClient *clients.Settings, options ...metaV1.ListOptions) ([]*Builde
 
 // WaitForAllClusteroperatorsAvailable waits until all clusterOperators are in available state.
 func WaitForAllClusteroperatorsAvailable(
-	apiClient *clients.Settings, timeout time.Duration, options ...metaV1.ListOptions) (bool, error) {
+	apiClient *clients.Settings, timeout time.Duration, options ...metav1.ListOptions) (bool, error) {
 	glog.V(100).Info("Waiting for all clusterOperators to be in available state")
 
 	err := wait.PollUntilContextTimeout(context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
@@ -95,7 +95,7 @@ func WaitForAllClusteroperatorsAvailable(
 
 // WaitForAllClusteroperatorsStopProgressing waits until all clusterOperators stopped progressing.
 func WaitForAllClusteroperatorsStopProgressing(
-	apiClient *clients.Settings, timeout time.Duration, options ...metaV1.ListOptions) (bool, error) {
+	apiClient *clients.Settings, timeout time.Duration, options ...metav1.ListOptions) (bool, error) {
 	glog.V(100).Infof("Waiting for all clusteroperators to stop progressing")
 
 	coList, err := List(apiClient, options...)

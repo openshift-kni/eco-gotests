@@ -6,12 +6,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListNetworkNodeState returns SriovNetworkNodeStates inventory in the given namespace.
 func ListNetworkNodeState(
-	apiClient *clients.Settings, nsname string, options ...metaV1.ListOptions) ([]*NetworkNodeStateBuilder, error) {
+	apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*NetworkNodeStateBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("SriovNetworkNodeStates 'nsname' parameter can not be empty")
 
@@ -19,7 +19,7 @@ func ListNetworkNodeState(
 	}
 
 	logMessage := fmt.Sprintf("Listing SriovNetworkNodeStates in the namespace %s", nsname)
-	passedOptions := metaV1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")

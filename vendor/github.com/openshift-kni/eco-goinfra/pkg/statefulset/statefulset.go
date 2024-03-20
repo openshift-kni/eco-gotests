@@ -8,10 +8,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/apps/v1"
-	coreV1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -19,9 +19,9 @@ import (
 // Builder provides struct for statefulset object containing connection to the cluster and the statefulset definitions.
 type Builder struct {
 	// StatefulSet definition. Used to create the statefulset object.
-	Definition *v1.StatefulSet
+	Definition *appsv1.StatefulSet
 	// Created statefulset object
-	Object *v1.StatefulSet
+	Object *appsv1.StatefulSet
 	// Used in functions that define or mutate statefulset definition. errorMsg is processed before the statefulset
 	// object is created.
 	errorMsg  string
@@ -37,7 +37,7 @@ func NewBuilder(
 	name string,
 	nsname string,
 	labels map[string]string,
-	containerSpec *coreV1.Container) *Builder {
+	containerSpec *corev1.Container) *Builder {
 	glog.V(100).Infof(
 		"Initializing new statefulset structure with the following params: "+
 			"name: %s, namespace: %s, labels: %s, containerSpec %v",
@@ -45,25 +45,25 @@ func NewBuilder(
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.StatefulSet{
-			Spec: v1.StatefulSetSpec{
-				Selector: &metaV1.LabelSelector{
+		Definition: &appsv1.StatefulSet{
+			Spec: appsv1.StatefulSetSpec{
+				Selector: &metav1.LabelSelector{
 					MatchLabels: labels,
 				},
-				Template: coreV1.PodTemplateSpec{
-					ObjectMeta: metaV1.ObjectMeta{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
 						Labels: labels,
 					},
 				},
 			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
 		},
 	}
 
-	builder.WithAdditionalContainerSpecs([]coreV1.Container{*containerSpec})
+	builder.WithAdditionalContainerSpecs([]corev1.Container{*containerSpec})
 
 	if name == "" {
 		glog.V(100).Infof("The name of the statefulset is empty")
@@ -87,7 +87,7 @@ func NewBuilder(
 }
 
 // WithAdditionalContainerSpecs appends a list of container specs to the statefulset definition.
-func (builder *Builder) WithAdditionalContainerSpecs(specs []coreV1.Container) *Builder {
+func (builder *Builder) WithAdditionalContainerSpecs(specs []corev1.Container) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -147,8 +147,8 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.StatefulSet{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -183,7 +183,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.StatefulSets(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -200,7 +200,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.StatefulSets(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -222,7 +222,7 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
 			builder.Object, err = builder.apiClient.StatefulSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+				context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
 				return false, err

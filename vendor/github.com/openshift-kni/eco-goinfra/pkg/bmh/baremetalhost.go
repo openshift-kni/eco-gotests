@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	"golang.org/x/exp/slices"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // BmhBuilder provides struct for the bmh object containing connection to
@@ -55,7 +55,7 @@ func NewBuilder(
 				Online:                true,
 				ExternallyProvisioned: false,
 			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -370,7 +370,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*BmhBuilder, error)
 	builder := BmhBuilder{
 		apiClient: apiClient,
 		Definition: &bmhv1alpha1.BareMetalHost{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},

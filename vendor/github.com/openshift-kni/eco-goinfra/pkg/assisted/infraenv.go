@@ -15,7 +15,7 @@ import (
 	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,7 +48,7 @@ func NewInfraEnvBuilder(apiClient *clients.Settings, name, nsname, psName string
 	builder := InfraEnvBuilder{
 		apiClient: apiClient,
 		Definition: &agentInstallV1Beta1.InfraEnv{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -171,7 +171,7 @@ func (builder *InfraEnvBuilder) WithProxy(proxy agentInstallV1Beta1.Proxy) *Infr
 
 // WithNmstateConfigLabelSelector adds a selector for identifying
 // nmstateconfigs that should be applied to this infraenv.
-func (builder *InfraEnvBuilder) WithNmstateConfigLabelSelector(selector metaV1.LabelSelector) *InfraEnvBuilder {
+func (builder *InfraEnvBuilder) WithNmstateConfigLabelSelector(selector metav1.LabelSelector) *InfraEnvBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -702,7 +702,7 @@ func PullInfraEnvInstall(apiClient *clients.Settings, name, nsname string) (*Inf
 	builder := InfraEnvBuilder{
 		apiClient: apiClient,
 		Definition: &agentInstallV1Beta1.InfraEnv{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},

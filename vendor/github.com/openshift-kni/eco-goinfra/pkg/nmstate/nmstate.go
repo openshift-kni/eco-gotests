@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -36,7 +36,7 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &nmstateV1.NMState{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},
@@ -165,7 +165,7 @@ func PullNMstate(apiClient *clients.Settings, name string) (*Builder, error) {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &nmstateV1.NMState{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},

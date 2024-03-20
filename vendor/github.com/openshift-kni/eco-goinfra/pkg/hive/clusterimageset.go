@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -34,7 +34,7 @@ func NewClusterImageSetBuilder(apiClient *clients.Settings, name, releaseImage s
 	builder := ClusterImageSetBuilder{
 		apiClient: apiClient,
 		Definition: &hiveV1.ClusterImageSet{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 			Spec: hiveV1.ClusterImageSetSpec{
@@ -121,7 +121,7 @@ func PullClusterImageSet(apiClient *clients.Settings, name string) (*ClusterImag
 	builder := ClusterImageSetBuilder{
 		apiClient: apiClient,
 		Definition: &hiveV1.ClusterImageSet{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},
@@ -234,7 +234,7 @@ func (builder *ClusterImageSetBuilder) Delete() error {
 
 	builder.Object = nil
 	builder.Definition.ResourceVersion = ""
-	builder.Definition.CreationTimestamp = metaV1.Time{}
+	builder.Definition.CreationTimestamp = metav1.Time{}
 
 	return nil
 }

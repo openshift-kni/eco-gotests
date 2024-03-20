@@ -11,7 +11,7 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NmStateConfigBuilder provides struct for the NMStateConfig object containing connection to
@@ -34,7 +34,7 @@ func NewNmStateConfigBuilder(apiClient *clients.Settings, name, namespace string
 	builder := NmStateConfigBuilder{
 		apiClient: apiClient,
 		Definition: &assistedv1beta1.NMStateConfig{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: namespace,
 			},

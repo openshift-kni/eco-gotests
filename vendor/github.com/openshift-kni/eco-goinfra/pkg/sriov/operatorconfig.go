@@ -29,6 +29,54 @@ type OperatorConfigBuilder struct {
 	errorMsg  string
 }
 
+// NewOperatorConfigBuilder creates new instance of OperatorConfigBuilder.
+func NewOperatorConfigBuilder(apiClient *clients.Settings, nsname string) *OperatorConfigBuilder {
+	glog.V(100).Infof(
+		"Initializing new OperatorConfigBuilder structure with the following params: namespace: %s", nsname)
+
+	builder := &OperatorConfigBuilder{
+		apiClient: apiClient,
+		Definition: &srIovV1.SriovOperatorConfig{
+			ObjectMeta: metaV1.ObjectMeta{
+				Name:      sriovOperatorConfigName,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if nsname == "" {
+		glog.V(100).Infof("The namespace of the SriovOperatorConfig is empty")
+
+		builder.errorMsg = "SriovOperatorConfig 'nsname' is empty"
+	}
+
+	return builder
+}
+
+// Create generates SriovOperatorConfig in a cluster and stores the created object in struct.
+func (builder *OperatorConfigBuilder) Create() (*OperatorConfigBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Creating the SriovOperatorConfig in namespace %s", builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		var err error
+		builder.Object, err = builder.apiClient.SriovOperatorConfigs(builder.Definition.Namespace).Create(
+			context.TODO(), builder.Definition, metaV1.CreateOptions{},
+		)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create the SriovOperatorConfig")
+
+			return nil, err
+		}
+	}
+
+	return builder, nil
+}
+
 // PullOperatorConfig loads an existing SriovOperatorConfig into OperatorConfigBuilder struct.
 func PullOperatorConfig(apiClient *clients.Settings, nsname string) (*OperatorConfigBuilder, error) {
 	glog.V(100).Infof("Pulling existing default SriovOperatorConfig: %s", sriovOperatorConfigName)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"fmt"
 
@@ -46,7 +46,7 @@ func (builder *Builder) Exists() bool {
 	_, err := builder.apiClient.ClusterOperators().Get(
 		context.Background(),
 		builder.Definition.Name,
-		metaV1.GetOptions{})
+		metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -129,7 +129,7 @@ func (builder *Builder) WaitUntilConditionTrue(
 			builder.Object, err = builder.apiClient.ClusterOperators().Get(
 				context.Background(),
 				builder.Definition.Name,
-				metaV1.GetOptions{})
+				metav1.GetOptions{})
 
 			if err != nil {
 				return false, nil

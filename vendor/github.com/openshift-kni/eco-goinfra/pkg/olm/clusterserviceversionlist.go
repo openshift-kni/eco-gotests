@@ -7,21 +7,21 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListClusterServiceVersion returns clusterserviceversion inventory in the given namespace.
 func ListClusterServiceVersion(
 	apiClient *clients.Settings,
 	nsname string,
-	options ...metaV1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
+	options ...metav1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("clusterserviceversion 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list clusterserviceversion, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metaV1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 	logMessage := fmt.Sprintf("Listing clusterserviceversion in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -68,7 +68,7 @@ func ListClusterServiceVersionWithNamePattern(
 	apiClient *clients.Settings,
 	namePattern string,
 	nsname string,
-	options ...metaV1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
+	options ...metav1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
 	if namePattern == "" {
 		glog.V(100).Info(
 			"The namePattern field to filter out all relevant clusterserviceversion cannot be empty")
@@ -103,8 +103,8 @@ func ListClusterServiceVersionWithNamePattern(
 // ListClusterServiceVersionInAllNamespaces returns cluster-wide clusterserviceversion inventory.
 func ListClusterServiceVersionInAllNamespaces(
 	apiClient *clients.Settings,
-	options ...metaV1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
-	passedOptions := metaV1.ListOptions{}
+	options ...metav1.ListOptions) ([]*ClusterServiceVersionBuilder, error) {
+	passedOptions := metav1.ListOptions{}
 	logMessage := "Listing CSVs in all namespaces"
 
 	if len(options) > 1 {

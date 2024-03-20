@@ -10,10 +10,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -28,9 +28,9 @@ var validPVCModesMap = map[string]string{
 // to the cluster and the persistentvolumeclaim definitions.
 type PVCBuilder struct {
 	// PersistentVolumeClaim definition. Used to create a persistentvolumeclaim object
-	Definition *v1.PersistentVolumeClaim
+	Definition *corev1.PersistentVolumeClaim
 	// Created persistentvolumeclaim object
-	Object *v1.PersistentVolumeClaim
+	Object *corev1.PersistentVolumeClaim
 
 	errorMsg  string
 	apiClient *clients.Settings
@@ -42,12 +42,12 @@ func NewPVCBuilder(apiClient *clients.Settings, name, nsname string) *PVCBuilder
 		name, nsname)
 
 	builder := PVCBuilder{
-		Definition: &v1.PersistentVolumeClaim{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
-			Spec: v1.PersistentVolumeClaimSpec{},
+			Spec: corev1.PersistentVolumeClaimSpec{},
 		},
 	}
 
@@ -88,9 +88,10 @@ func (builder *PVCBuilder) WithPVCAccessMode(accessMode string) (*PVCBuilder, er
 
 	if builder.Definition.Spec.AccessModes != nil {
 		builder.Definition.Spec.AccessModes = append(builder.Definition.Spec.AccessModes,
-			v1.PersistentVolumeAccessMode(accessMode))
+			corev1.PersistentVolumeAccessMode(accessMode))
 	} else {
-		builder.Definition.Spec.AccessModes = []v1.PersistentVolumeAccessMode{v1.PersistentVolumeAccessMode(accessMode)}
+		builder.Definition.Spec.AccessModes =
+			[]corev1.PersistentVolumeAccessMode{corev1.PersistentVolumeAccessMode(accessMode)}
 	}
 
 	return builder, nil
@@ -126,10 +127,10 @@ func (builder *PVCBuilder) WithPVCCapacity(capacity string) (*PVCBuilder, error)
 		return builder, nil
 	}() //nolint:errcheck
 
-	capMap := make(map[v1.ResourceName]resource.Quantity)
-	capMap[v1.ResourceStorage] = resource.MustParse(capacity)
+	capMap := make(map[corev1.ResourceName]resource.Quantity)
+	capMap[corev1.ResourceStorage] = resource.MustParse(capacity)
 
-	builder.Definition.Spec.Resources = v1.ResourceRequirements{Requests: capMap}
+	builder.Definition.Spec.Resources = corev1.ResourceRequirements{Requests: capMap}
 
 	return builder, nil
 }
@@ -175,9 +176,9 @@ func (builder *PVCBuilder) WithVolumeMode(volumeMode string) (*PVCBuilder, error
 		return builder, fmt.Errorf(builder.errorMsg)
 	}
 
-	// volumeMode is string while Spec.VolumeMode requires pointer to v1.PersistentVolumeMode,
+	// volumeMode is string while Spec.VolumeMode requires pointer to corev1.PersistentVolumeMode,
 	// therefore temporary variable strVolMode is created to be used within assignment.
-	strVolMode := v1.PersistentVolumeMode(volumeMode)
+	strVolMode := corev1.PersistentVolumeMode(volumeMode)
 
 	builder.Definition.Spec.VolumeMode = &strVolMode
 
@@ -195,7 +196,7 @@ func (builder *PVCBuilder) Create() (*PVCBuilder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	if err != nil {
@@ -229,7 +230,7 @@ func (builder *PVCBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		glog.V(100).Infof("Failed to delete PersistentVolumeClaim %s from %s namespace",
@@ -270,7 +271,7 @@ func (builder *PVCBuilder) DeleteAndWait(timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+				context.Background(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -289,8 +290,8 @@ func PullPersistentVolumeClaim(
 
 	builder := PVCBuilder{
 		apiClient: apiClient,
-		Definition: &v1.PersistentVolumeClaim{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      persistentVolumeClaim,
 				Namespace: nsname,
 			},
@@ -318,7 +319,7 @@ func (builder *PVCBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

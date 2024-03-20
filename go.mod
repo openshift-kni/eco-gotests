@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240319010415-c1448ca0df1a // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240320192835-0edfbd9d62e6 // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -26,7 +26,6 @@ require (
 	github.com/openshift/cluster-nfd-operator v0.0.0-20231206145954-f49a827bf617
 	github.com/openshift/cluster-node-tuning-operator v0.0.0-20231225123609-e63d2c9626fe
 	github.com/openshift/hive/apis v0.0.0-20220707210052-4804c09ccc5a
-	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a9
 	github.com/operator-framework/api v0.22.0
 	github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20240214075243-67ea06a82ab8
@@ -40,6 +39,8 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.16.3
 )
+
+require github.com/openshift/installer v0.0.0-00010101000000-000000000000
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	operatorV1 "github.com/openshift/api/operator/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -33,7 +33,7 @@ func PullOperator(apiClient *clients.Settings) (*OperatorBuilder, error) {
 	builder := OperatorBuilder{
 		apiClient: apiClient,
 		Definition: &operatorV1.Network{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterNetworkName,
 			},
 		},

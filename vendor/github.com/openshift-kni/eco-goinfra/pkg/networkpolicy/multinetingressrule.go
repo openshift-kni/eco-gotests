@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
-	v1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -34,7 +34,7 @@ func NewIngressRuleBuilder() *IngressRuleBuilder {
 }
 
 // WithPortAndProtocol adds port and protocol to Ingress rule.
-func (builder *IngressRuleBuilder) WithPortAndProtocol(port uint16, protocol v1.Protocol) *IngressRuleBuilder {
+func (builder *IngressRuleBuilder) WithPortAndProtocol(port uint16, protocol corev1.Protocol) *IngressRuleBuilder {
 	glog.V(100).Infof("Adding port %d protocol %s to IngressRule", port, protocol)
 
 	if port == 0 {
@@ -77,7 +77,7 @@ func (builder *IngressRuleBuilder) WithOptions(options ...IngressAdditionalOptio
 }
 
 // WithPeerPodSelector adds peer pod selector to Ingress rule.
-func (builder *IngressRuleBuilder) WithPeerPodSelector(podSelector metaV1.LabelSelector) *IngressRuleBuilder {
+func (builder *IngressRuleBuilder) WithPeerPodSelector(podSelector metav1.LabelSelector) *IngressRuleBuilder {
 	glog.V(100).Infof("Adding peer pod selector %v to Ingress Rule", podSelector)
 
 	if builder.errorMsg != "" {
@@ -128,7 +128,7 @@ func (builder *IngressRuleBuilder) WithCIDR(cidr string, except ...[]string) *In
 
 // WithPeerPodSelectorAndCIDR adds port and protocol,CIDR to Ingress rule.
 func (builder *IngressRuleBuilder) WithPeerPodSelectorAndCIDR(
-	podSelector metaV1.LabelSelector, cidr string, except ...[]string) *IngressRuleBuilder {
+	podSelector metav1.LabelSelector, cidr string, except ...[]string) *IngressRuleBuilder {
 	glog.V(100).Infof("Adding peer pod selector %v and CIDR %s to IngressRule", podSelector, cidr)
 
 	if builder.errorMsg != "" {

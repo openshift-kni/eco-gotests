@@ -8,9 +8,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -18,9 +18,9 @@ import (
 // Builder provides struct for service object containing connection to the cluster and the service definitions.
 type Builder struct {
 	// Service definition. Used to create a service object
-	Definition *v1.Service
+	Definition *corev1.Service
 	// Created service object
-	Object *v1.Service
+	Object *corev1.Service
 	// Used in functions that define or mutate the service definition.
 	// errorMsg is processed before the service object is created
 	errorMsg  string
@@ -38,20 +38,20 @@ func NewBuilder(
 	name string,
 	nsname string,
 	labels map[string]string,
-	servicePort v1.ServicePort) *Builder {
+	servicePort corev1.ServicePort) *Builder {
 	glog.V(100).Infof(
 		"Initializing new service structure with the following params: %s, %s", name, nsname)
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Service{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
-			Spec: v1.ServiceSpec{
+			Spec: corev1.ServiceSpec{
 				Selector: labels,
-				Ports:    []v1.ServicePort{servicePort},
+				Ports:    []corev1.ServicePort{servicePort},
 			},
 		},
 	}
@@ -96,8 +96,8 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Service{
-			ObjectMeta: metaV1.ObjectMeta{
+		Definition: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -132,7 +132,7 @@ func (builder *Builder) Create() (*Builder, error) {
 	var err error
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.Services(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metaV1.CreateOptions{})
+			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
 	return builder, err
@@ -150,7 +150,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.Services(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -168,7 +168,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.Services(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -205,7 +205,7 @@ func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 }
 
 // WithExternalTrafficPolicy redefines the service with ServiceExternalTrafficPolicy type.
-func (builder *Builder) WithExternalTrafficPolicy(policyType v1.ServiceExternalTrafficPolicyType) *Builder {
+func (builder *Builder) WithExternalTrafficPolicy(policyType corev1.ServiceExternalTrafficPolicyType) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -259,7 +259,7 @@ func (builder *Builder) WithAnnotation(annotation map[string]string) *Builder {
 }
 
 // WithIPFamily redefines the service with IPFamilies type.
-func (builder *Builder) WithIPFamily(ipFamily []v1.IPFamily, ipStackPolicy v1.IPFamilyPolicyType) *Builder {
+func (builder *Builder) WithIPFamily(ipFamily []corev1.IPFamily, ipStackPolicy corev1.IPFamilyPolicyType) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -291,7 +291,7 @@ func (builder *Builder) WithIPFamily(ipFamily []v1.IPFamily, ipStackPolicy v1.IP
 }
 
 // DefineServicePort helper for creating a Service with a ServicePort.
-func DefineServicePort(port, targetPort int32, protocol v1.Protocol) (*v1.ServicePort, error) {
+func DefineServicePort(port, targetPort int32, protocol corev1.Protocol) (*corev1.ServicePort, error) {
 	glog.V(100).Infof(
 		"Defining ServicePort with port %d and targetport %d", port, targetPort)
 
@@ -303,7 +303,7 @@ func DefineServicePort(port, targetPort int32, protocol v1.Protocol) (*v1.Servic
 		return nil, fmt.Errorf("invalid target port number")
 	}
 
-	return &v1.ServicePort{
+	return &corev1.ServicePort{
 		Protocol: protocol,
 		Port:     port,
 		TargetPort: intstr.IntOrString{

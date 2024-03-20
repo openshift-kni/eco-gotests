@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ClusterServiceVersionBuilder provides a struct for clusterserviceversion object
@@ -35,7 +35,7 @@ func PullClusterServiceVersion(apiClient *clients.Settings, name, namespace stri
 	builder := ClusterServiceVersionBuilder{
 		apiClient: apiClient,
 		Definition: &oplmV1alpha1.ClusterServiceVersion{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: namespace,
 			},
@@ -72,7 +72,7 @@ func (builder *ClusterServiceVersionBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.OperatorsV1alpha1Interface.ClusterServiceVersions(
 		builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -91,7 +91,7 @@ func (builder *ClusterServiceVersionBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.ClusterServiceVersions(builder.Definition.Namespace).Delete(context.TODO(),
-		builder.Object.Name, metaV1.DeleteOptions{})
+		builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err

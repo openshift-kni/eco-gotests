@@ -10,9 +10,9 @@ import (
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 	"github.com/openshift/hive/apis/hive/v1/agent"
-	coreV1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -37,7 +37,7 @@ func NewABMClusterDeploymentBuilder(
 	clusterName string,
 	baseDomain string,
 	clusterInstallRef string,
-	agentSelector metaV1.LabelSelector) *ClusterDeploymentBuilder {
+	agentSelector metav1.LabelSelector) *ClusterDeploymentBuilder {
 	glog.V(100).Infof(
 		`Initializing new agentbaremetal clusterdeployment structure with the following params: name: %s, namespace: %s,
 		  clusterName: %s, baseDomain: %s, clusterInstallRef: %s, agentSelector: %s`,
@@ -46,7 +46,7 @@ func NewABMClusterDeploymentBuilder(
 	builder := ClusterDeploymentBuilder{
 		apiClient: apiClient,
 		Definition: &hiveV1.ClusterDeployment{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -150,7 +150,7 @@ func (builder *ClusterDeploymentBuilder) WithPullSecret(psName string) *ClusterD
 		"Adding pull-secret ref %s to clusterdeployment %s in namespace %s",
 		psName, builder.Definition.Name, builder.Definition.Namespace)
 
-	builder.Definition.Spec.PullSecretRef = &coreV1.LocalObjectReference{Name: psName}
+	builder.Definition.Spec.PullSecretRef = &corev1.LocalObjectReference{Name: psName}
 
 	return builder
 }
@@ -184,7 +184,7 @@ func PullClusterDeployment(apiClient *clients.Settings, name, nsname string) (*C
 	builder := ClusterDeploymentBuilder{
 		apiClient: apiClient,
 		Definition: &hiveV1.ClusterDeployment{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},

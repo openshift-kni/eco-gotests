@@ -6,7 +6,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"context"
@@ -39,7 +39,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &nadV1.NetworkAttachmentDefinition{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -68,7 +68,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &nadV1.NetworkAttachmentDefinition{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -119,7 +119,7 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).
-			Create(context.Background(), builder.Definition, metaV1.CreateOptions{})
+			Create(context.Background(), builder.Definition, metav1.CreateOptions{})
 		if err != nil {
 			return builder, fmt.Errorf("fail to create NAD object due to: " + err.Error())
 		}
@@ -144,7 +144,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Delete(
-		context.Background(), builder.Definition.Namespace, metaV1.DeleteOptions{})
+		context.Background(), builder.Definition.Namespace, metav1.DeleteOptions{})
 
 	if err != nil {
 		return fmt.Errorf("fail to delete NAD object due to: %w", err)
@@ -166,11 +166,11 @@ func (builder *Builder) Update() (*Builder, error) {
 
 	var err error
 
-	builder.Definition.CreationTimestamp = metaV1.Time{}
+	builder.Definition.CreationTimestamp = metav1.Time{}
 	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 
 	builder.Object, err = builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metaV1.UpdateOptions{})
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
 }
@@ -188,7 +188,7 @@ func (builder *Builder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	_, err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Get(context.Background(),
-		builder.Definition.Name, metaV1.GetOptions{})
+		builder.Definition.Name, metav1.GetOptions{})
 
 	return nil == err || !k8serrors.IsNotFound(err)
 }

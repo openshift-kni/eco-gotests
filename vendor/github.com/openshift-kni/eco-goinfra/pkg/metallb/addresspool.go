@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,11 +41,11 @@ func NewIPAddressPoolBuilder(
 	builder := IPAddressPoolBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.IPAddressPool{
-			TypeMeta: metaV1.TypeMeta{
+			TypeMeta: metav1.TypeMeta{
 				Kind:       ipAddressPoolKind,
 				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
 			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			}, Spec: mlbtypes.IPAddressPoolSpec{
@@ -87,7 +87,7 @@ func (builder *IPAddressPoolBuilder) Get() (*mlbtypes.IPAddressPool, error) {
 
 	unsObject, err := builder.apiClient.Resource(
 		GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -123,7 +123,7 @@ func PullAddressPool(apiClient *clients.Settings, name, nsname string) (*IPAddre
 	builder := IPAddressPoolBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.IPAddressPool{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -173,7 +173,7 @@ func (builder *IPAddressPoolBuilder) Create() (*IPAddressPoolBuilder, error) {
 
 		unsObject, err := builder.apiClient.Resource(
 			GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredIPAddressPool}, metaV1.CreateOptions{})
+			context.TODO(), &unstructured.Unstructured{Object: unstructuredIPAddressPool}, metav1.CreateOptions{})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create IPAddressPool")
@@ -207,7 +207,7 @@ func (builder *IPAddressPoolBuilder) Delete() (*IPAddressPoolBuilder, error) {
 
 	err := builder.apiClient.Resource(
 		GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete IPAddressPool: %w", err)
@@ -238,7 +238,7 @@ func (builder *IPAddressPoolBuilder) Update(force bool) (*IPAddressPoolBuilder, 
 
 	_, err = builder.apiClient.Resource(
 		GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredIPAddressPool}, metaV1.UpdateOptions{})
+		context.TODO(), &unstructured.Unstructured{Object: unstructuredIPAddressPool}, metav1.UpdateOptions{})
 
 	if err != nil {
 		if force {

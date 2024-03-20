@@ -16,9 +16,9 @@ import (
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	"github.com/openshift/assisted-service/models"
 	v1 "github.com/openshift/hive/apis/hive/v1"
-	coreV1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -47,12 +47,12 @@ func NewAgentClusterInstallBuilder(
 	builder := AgentClusterInstallBuilder{
 		apiClient: apiClient,
 		Definition: &hiveextV1Beta1.AgentClusterInstall{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
 			Spec: hiveextV1Beta1.AgentClusterInstallSpec{
-				ClusterDeploymentRef: coreV1.LocalObjectReference{
+				ClusterDeploymentRef: corev1.LocalObjectReference{
 					Name: clusterDeployment,
 				},
 				Networking: network,
@@ -391,7 +391,7 @@ func (builder *AgentClusterInstallBuilder) WaitForConditionMessage(
 
 // WaitForConditionStatus waits the specified timeout for the given condition to report the specified status.
 func (builder *AgentClusterInstallBuilder) WaitForConditionStatus(
-	conditionType string, status coreV1.ConditionStatus, timeout time.Duration) error {
+	conditionType string, status corev1.ConditionStatus, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, false, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
@@ -490,7 +490,7 @@ func PullAgentClusterInstall(apiClient *clients.Settings, name, nsname string) (
 	builder := AgentClusterInstallBuilder{
 		apiClient: apiClient,
 		Definition: &hiveextV1Beta1.AgentClusterInstall{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},

@@ -9,7 +9,7 @@ import (
 
 	admregv1 "k8s.io/api/admissionregistration/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -34,7 +34,7 @@ func PullMutatingConfiguration(apiClient *clients.Settings, name string) (*Mutat
 	builder := MutatingConfigurationBuilder{
 		apiClient: apiClient,
 		Definition: &admregv1.MutatingWebhookConfiguration{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},

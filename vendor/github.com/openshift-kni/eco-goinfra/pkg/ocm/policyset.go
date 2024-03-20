@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -33,7 +33,7 @@ func PullPolicySet(apiClient *clients.Settings, name, nsname string) (*PolicySet
 	builder := PolicySetBuilder{
 		apiClient: apiClient,
 		Definition: &policiesv1beta1.PolicySet{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},

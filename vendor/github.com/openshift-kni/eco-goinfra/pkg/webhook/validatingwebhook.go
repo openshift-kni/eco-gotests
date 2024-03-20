@@ -9,7 +9,7 @@ import (
 
 	admregv1 "k8s.io/api/admissionregistration/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -35,7 +35,7 @@ func PullValidatingConfiguration(apiClient *clients.Settings, name string) (
 	builder := ValidatingConfigurationBuilder{
 		apiClient: apiClient,
 		Definition: &admregv1.ValidatingWebhookConfiguration{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},

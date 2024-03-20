@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	pkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // PackageManifestBuilder provides a struct for PackageManifest object from the cluster
@@ -33,7 +33,7 @@ func PullPackageManifest(apiClient *clients.Settings, name, nsname string) (*Pac
 	builder := &PackageManifestBuilder{
 		apiClient: apiClient,
 		Definition: &pkgManifestV1.PackageManifest{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -67,7 +67,7 @@ func PullPackageManifestByCatalog(apiClient *clients.Settings, name, nsname,
 	glog.V(100).Infof("Pulling existing PackageManifest name %s in namespace %s and from catalog %s",
 		name, nsname, catalog)
 
-	packageManifests, err := ListPackageManifest(apiClient, nsname, metaV1.ListOptions{
+	packageManifests, err := ListPackageManifest(apiClient, nsname, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("catalog=%s", catalog),
 		FieldSelector: fmt.Sprintf("metadata.name=%s", name),
 	})
@@ -105,7 +105,7 @@ func (builder *PackageManifestBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.PackageManifestInterface.PackageManifests(
-		builder.Definition.Namespace).Get(context.Background(), builder.Definition.Name, metaV1.GetOptions{})
+		builder.Definition.Namespace).Get(context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -124,7 +124,7 @@ func (builder *PackageManifestBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.PackageManifestInterface.PackageManifests(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metaV1.DeleteOptions{})
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
