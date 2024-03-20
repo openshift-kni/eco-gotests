@@ -12,8 +12,13 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("spk-all-suite"), func() {
 		Describe("On clean deployment", Label("spk-vanila-deployment"), func() {
-			It("Setups workload for SPK Ingress tests", Label("spk-setup-ingress-workload"),
-				spkcommon.SetupSPKBackendWorkload)
+			BeforeAll(func() {
+				spkcommon.SetupSPKBackendWorkload()
+			})
+
+			AfterEach(func(ctx SpecContext) {
+				spkcommon.ResetTMMReplicas(ctx)
+			})
 
 			It("Asserts workload reachable via IPv4 address", polarion.ID("64119"),
 				Label("spkingresstcp"), spkcommon.AssertIPv4WorkloadURL)
@@ -75,8 +80,13 @@ var _ = Describe(
 		})
 
 		Describe("Hard reboot", Label("spk-hard-reboot"), func() {
-			It("Setups workload for SPK Ingress tests", Label("spk-setup-ingress-workload"),
-				spkcommon.SetupSPKBackendWorkload)
+			BeforeAll(func() {
+				spkcommon.SetupSPKBackendWorkload()
+			})
+
+			AfterEach(func(ctx SpecContext) {
+				spkcommon.ResetTMMReplicas(ctx)
+			})
 
 			spkcommon.VerifyHardRebootSuite()
 
@@ -112,6 +122,14 @@ var _ = Describe(
 		})
 
 		Describe("Soft Reboot", Label("spk-soft-reboot"), func() {
+			BeforeAll(func() {
+				spkcommon.SetupSPKBackendWorkload()
+			})
+
+			AfterEach(func(ctx SpecContext) {
+				spkcommon.ResetTMMReplicas(ctx)
+			})
+
 			spkcommon.VerifyGracefulRebootSuite()
 
 			It("Asserts workload reachable via IPv4 address", polarion.ID("72198"),

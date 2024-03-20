@@ -488,3 +488,11 @@ func VerifyDNSResolutionAfterTMMPodIsDeletedNewDeploy(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
 	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
 }
+
+// ResetTMMReplicas sets TMM replica count to 1.
+func ResetTMMReplicas(ctx SpecContext) {
+	glog.V(spkparams.SPKLogLevel).Infof("*** Resetting TMM replicas to 1 ***")
+
+	scaleUpDeployment(SPKConfig.SPKDataTMMDeployName, SPKConfig.SPKDataNS, tmmLabel, 1)
+	scaleUpDeployment(SPKConfig.SPKDnsTMMDeployName, SPKConfig.SPKDnsNS, tmmLabel, 1)
+}
