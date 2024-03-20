@@ -121,7 +121,8 @@ The project uses a development method - forking workflow
 |------------------|--------------------------------------------|
 | Assisted ZTP     | [README](tests/assisted/ztp/README.md)     |
 | CNF Core Network | [README](tests/cnf/core/network/README.md) |
-| HW Accelerators  | [README](tests/hw-accel/README.md)
+| HW Accelerators  | [README](tests/hw-accel/README.md)         |
+| CNF vRAN         | [README](tests/cnf/ran/README.md)          |
 
 # eco-tests - Project structure
     .
