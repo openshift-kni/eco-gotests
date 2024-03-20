@@ -152,6 +152,9 @@ issues:
     - path: 'tests/cnf/core/network/internal/netinittools'
       linters:
         - gochecknoinits
+    - path: 'tests/cnf/ran/internal/raninittools'
+      linters:
+        - gochecknoinits
     - path: 'tests/assisted/ztp/internal/ztpinittools'
       linters:
         - gochecknoinits
