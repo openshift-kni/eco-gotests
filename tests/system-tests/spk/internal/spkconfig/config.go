@@ -23,7 +23,9 @@ type SPKConfig struct {
 	*systemtestsconfig.SystemTestsConfig
 	Namespace         string `yaml:"spk_workload_ns" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_NS"`
 	IngressTCPIPv4URL string `yaml:"spk_ingress_tcp_ipv4_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV4_URL"`
+	IngressUDPIPv4URL string `yaml:"spk_ingress_udp_ipv4_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_UDP_IPV4_URL"`
 	IngressTCPIPv6URL string `yaml:"spk_ingress_tcp_ipv6_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_TCP_IPV6_URL"`
+	IngressUDPIPv6URL string `yaml:"spk_ingress_udp_ipv6_url" envconfig:"ECO_SYSTEM_SPK_INGRESS_UDP_IPV6_URL"`
 	//nolint:lll
 	WorkloadDCIDeploymentName string      `yaml:"spk_dci_workload_deployment_name" envconfig:"ECO_SYSTEM_SPK_WORKLOAD_DCI_DEPLOYEMNT_NAME"`
 	NodesCredentialsMap       NodesBMCMap `yaml:"spk_nodes_bmc_map" envconfig:"ECO_SYSTEM_SPK_NODES_CREDENTIALS_MAP"`
@@ -42,6 +44,8 @@ type SPKConfig struct {
 	//nolint:lll
 	SPKDataIngressDeployName string `yaml:"spk_data_ingress_deploy_name" envconfig:"ECO_SYSTEM_SPK_DATA_INGRESS_DEPLOY_NAME"`
 	SPKDnsIngressDeployName  string `yaml:"spk_dns_ingress_deploy_name" envconfig:"ECO_SYSTEM_SPK_DNS_INGRESS_DEPLOY_NAME"`
+	//nolint:lll
+	BackendUDPContainerImage string `yaml:"spk_backend_udp_deployment_image" envconfig:"ECO_SYSTEM_SPK_BACKEND_UDP_DEPLOYMENT_IMAGE"`
 }
 
 // BMCDetails structure to hold BMC details.

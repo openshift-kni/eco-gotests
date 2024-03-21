@@ -349,6 +349,12 @@ func scaleUpDeployment(deployName, deployNS, deployLabel string, replicas int32)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get deployment %q in %q namespace",
 		deployName, deployNS))
 
+	if *deployData.Object.Spec.Replicas == replicas {
+		glog.V(spkparams.SPKLogLevel).Infof("Amount of replicas is the same, nothing to do here")
+
+		return
+	}
+
 	By(fmt.Sprintf("Setting replicas count to %d", replicas))
 
 	glog.V(spkparams.SPKLogLevel).Infof("Setting replicas count to %d for deployment %q in %q namespace",

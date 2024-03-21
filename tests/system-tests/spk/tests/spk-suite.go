@@ -13,6 +13,7 @@ var _ = Describe(
 	Label("spk-all-suite"), func() {
 		Describe("On clean deployment", Label("spk-vanila-deployment"), func() {
 			BeforeAll(func() {
+				spkcommon.SetupSPKBackendUDPWorkload()
 				spkcommon.SetupSPKBackendWorkload()
 			})
 
@@ -25,6 +26,14 @@ var _ = Describe(
 
 			It("Asserts workload reachable via IPv6 address", polarion.ID("65886"),
 				Label("spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
+
+			It("Asserts workload reachable via IPv4 UDP", polarion.ID("72777"), MustPassRepeatedly(3),
+				Label("spkingress-udp", "spkingress-udp-ipv4"),
+				spkcommon.VerifySPKIngressUDPviaIPv4)
+
+			It("Asserts workload reachable via IPv6 UDP", polarion.ID("72778"), MustPassRepeatedly(3),
+				Label("spkingress-udp", "spkingress-udp-ipv6"),
+				spkcommon.VerifySPKIngressUDPviaIPv6)
 
 			It("Asserts workload reachable via IPv4 address after application recreation", polarion.ID("72437"),
 				Label("spkingresstcp-app-recreate"), MustPassRepeatedly(3),
@@ -71,16 +80,25 @@ var _ = Describe(
 				Label("spk-ingress-delete-existing"), spkcommon.VerifyDNSResolutionAfterIngressPodIsDeleteNewDeploy)
 
 			It("Assert workload is reachable over IPv4 SPK ingress after pod was deleted", polarion.ID("72278"),
-				Label("spk-ingress-delete-ipv4"),
+				Label("spk-ingress-delete", "spk-ingress-tcp-delete-ipv4"),
 				spkcommon.AssertIPv4WorkloadURLAfterIngressPodDeleted)
 
 			It("Assert workload is reachable over IPv6 SPK ingress after pod was deleted", polarion.ID("72279"),
-				Label("spk-ingress-delete"),
+				Label("spk-ingress-delete", "spk-ingress-tcp-delete-ipv6"),
 				spkcommon.AssertIPv6WorkloadURLAfterIngressPodDeleted)
+
+			It("Assert workload is reachable over IPv4 SPK UDP ingress after pod was deleted", polarion.ID("72782"),
+				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv4"),
+				spkcommon.AssertIPv4UDPWorkloadURLAfterIngressPodDeleted)
+
+			It("Assert workload is reachable over IPv6 SPK UDP ingress after pod was deleted", polarion.ID("72783"),
+				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv6"),
+				spkcommon.AssertIPv6UDPWorkloadURLAfterIngressPodDeleted)
 		})
 
 		Describe("Hard reboot", Label("spk-hard-reboot"), func() {
 			BeforeAll(func() {
+				spkcommon.SetupSPKBackendUDPWorkload()
 				spkcommon.SetupSPKBackendWorkload()
 			})
 
@@ -99,6 +117,14 @@ var _ = Describe(
 
 			It("Asserts workload reachable via IPv6 address", polarion.ID("72194"),
 				Label("spk-post-hard-reboot", "spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
+
+			It("Asserts workload reachable via IPv4 UDP after hard reboot", polarion.ID("72785"),
+				Label("spkingress-udp", "spkingress-udp-ipv4"), MustPassRepeatedly(3),
+				spkcommon.VerifySPKIngressUDPviaIPv4)
+
+			It("Asserts workload reachable via IPv6 UDP after hard reboot", polarion.ID("72786"),
+				MustPassRepeatedly(3), Label("spkingress-udp", "spkingress-udp-ipv6"),
+				spkcommon.VerifySPKIngressUDPviaIPv6)
 
 			It("Asserts DNS resoulution from new deployment", polarion.ID("72196"),
 				Label("spk-post-hard-reboot", "spkdns46new"), spkcommon.VerifyDNSResolutionFromNewDeploy)
@@ -123,6 +149,7 @@ var _ = Describe(
 
 		Describe("Soft Reboot", Label("spk-soft-reboot"), func() {
 			BeforeAll(func() {
+				spkcommon.SetupSPKBackendUDPWorkload()
 				spkcommon.SetupSPKBackendWorkload()
 			})
 
@@ -137,6 +164,14 @@ var _ = Describe(
 
 			It("Asserts workload reachable via IPv6 address", polarion.ID("72199"),
 				Label("spk-post-soft-reboot", "spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
+
+			It("Asserts workload reachable via IPv4 UDP after soft reboot", polarion.ID("72787"),
+				Label("spkingress-udp", "spkingress-udp-ipv4"), MustPassRepeatedly(3),
+				spkcommon.VerifySPKIngressUDPviaIPv4)
+
+			It("Asserts workload reachable via IPv6 UDP after soft reboot", polarion.ID("72788"),
+				MustPassRepeatedly(3), Label("spkingress-udp", "spkingress-udp-ipv6"),
+				spkcommon.VerifySPKIngressUDPviaIPv6)
 
 			It("Asserts DNS resoulution from new deployment", polarion.ID("72200"),
 				Label("spk-post-soft-reboot", "spkdns46new"), spkcommon.VerifyDNSResolutionFromNewDeploy)
