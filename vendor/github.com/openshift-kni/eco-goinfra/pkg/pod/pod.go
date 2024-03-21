@@ -822,7 +822,7 @@ func (builder *Builder) WithSecondaryNetwork(network []*multus.NetworkSelectionE
 		return builder
 	}
 
-	builder.Definition.Annotations = map[string]string{"k8s.corev1.cni.cncf.io/networks": string(netAnnotation)}
+	builder.Definition.Annotations = map[string]string{"k8s.v1.cni.cncf.io/networks": string(netAnnotation)}
 
 	return builder
 }

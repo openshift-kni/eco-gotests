@@ -46,7 +46,7 @@ func List(apiClient *clients.Settings, options ...v1.ListOptions) ([]*Builder, e
 	for _, runningNode := range nodeList.Items {
 		copiedNode := runningNode
 		nodeBuilder := &Builder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.K8sClient,
 			Object:     &copiedNode,
 			Definition: &copiedNode,
 		}

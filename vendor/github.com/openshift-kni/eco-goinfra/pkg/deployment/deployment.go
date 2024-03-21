@@ -100,11 +100,11 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if name == "" {
-		builder.errorMsg = "deployment 'name' cannot be empty"
+		return nil, fmt.Errorf("deployment 'name' cannot be empty")
 	}
 
 	if nsname == "" {
-		builder.errorMsg = "deployment 'namespace' cannot be empty"
+		return nil, fmt.Errorf("deployment 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -157,17 +157,11 @@ func (builder *Builder) WithAdditionalContainerSpecs(specs []corev1.Container) *
 		glog.V(100).Infof("The container specs are empty")
 
 		builder.errorMsg = "cannot accept empty list as container specs"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
-	if builder.Definition.Spec.Template.Spec.Containers == nil {
-		builder.Definition.Spec.Template.Spec.Containers = specs
-	} else {
-		builder.Definition.Spec.Template.Spec.Containers = append(builder.Definition.Spec.Template.Spec.Containers, specs...)
-	}
+	builder.Definition.Spec.Template.Spec.Containers = append(builder.Definition.Spec.Template.Spec.Containers, specs...)
 
 	return builder
 }
@@ -182,20 +176,20 @@ func (builder *Builder) WithSecondaryNetwork(networks []*multus.NetworkSelection
 
 	if len(networks) == 0 {
 		builder.errorMsg = "can not apply empty networks list"
+
+		return builder
 	}
 
 	netAnnotation, err := json.Marshal(networks)
 
 	if err != nil {
 		builder.errorMsg = fmt.Sprintf("error to unmarshal networks annotation due to: %s", err.Error())
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
 	builder.Definition.Spec.Template.ObjectMeta.Annotations = map[string]string{
-		"k8s.appsv1.cni.cncf.io/networks": string(netAnnotation)}
+		"k8s.v1.cni.cncf.io/networks": string(netAnnotation)}
 
 	return builder
 }
@@ -209,30 +203,26 @@ func (builder *Builder) WithHugePages() *Builder {
 	glog.V(100).Infof("Applying hugePages configuration to all containers in deployment: %s",
 		builder.Definition.Name)
 
-	if builder.Definition.Spec.Template.Spec.Volumes != nil {
-		builder.Definition.Spec.Template.Spec.Volumes = append(builder.Definition.Spec.Template.Spec.Volumes, corev1.Volume{
-			Name: "hugepages", VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "HugePages"}}})
-	} else {
-		builder.Definition.Spec.Template.Spec.Volumes = []corev1.Volume{
-			{Name: "hugepages", VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "HugePages"}},
-			},
-		}
+	// If volumes are not defined, create an empty list of volumes.
+	if builder.Definition.Spec.Template.Spec.Volumes == nil {
+		builder.Definition.Spec.Template.Spec.Volumes = []corev1.Volume{}
 	}
 
+	// Append hugepages volume to the deployment.
+	builder.Definition.Spec.Template.Spec.Volumes = append(builder.Definition.Spec.Template.Spec.Volumes, corev1.Volume{
+		Name: "hugepages", VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "HugePages"}}})
+
 	for idx := range builder.Definition.Spec.Template.Spec.Containers {
-		if builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts != nil {
-			builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts = append(
-				builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts,
-				corev1.VolumeMount{Name: "hugepages", MountPath: "/mnt/huge"})
-		} else {
-			builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts = []corev1.VolumeMount{{
-				Name:      "hugepages",
-				MountPath: "/mnt/huge",
-			},
-			}
+		// If volumeMounts are not defined, create an empty list of volumeMounts.
+		if builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts == nil {
+			builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts = []corev1.VolumeMount{}
 		}
+
+		// Append hugepages volume mount to the deployment.
+		builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts = append(
+			builder.Definition.Spec.Template.Spec.Containers[idx].VolumeMounts,
+			corev1.VolumeMount{Name: "hugepages", MountPath: "/mnt/huge"})
 	}
 
 	return builder
@@ -251,9 +241,7 @@ func (builder *Builder) WithSecurityContext(securityContext *corev1.PodSecurityC
 		glog.V(100).Infof("The 'securityContext' of the deployment is empty")
 
 		builder.errorMsg = "'securityContext' parameter is empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -274,16 +262,12 @@ func (builder *Builder) WithLabel(labelKey, labelValue string) *Builder {
 		glog.V(100).Infof("The 'labelKey' of the deployment is empty")
 
 		builder.errorMsg = "can not apply empty labelKey"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
 	if builder.Definition.Spec.Template.Labels == nil {
-		builder.Definition.Spec.Template.Labels = map[string]string{labelKey: labelValue}
-
-		return builder
+		builder.Definition.Spec.Template.Labels = map[string]string{}
 	}
 
 	builder.Definition.Spec.Template.Labels[labelKey] = labelValue
@@ -304,9 +288,7 @@ func (builder *Builder) WithServiceAccountName(serviceAccountName string) *Build
 		glog.V(100).Infof("The 'serviceAccount' of the deployment is empty")
 
 		builder.errorMsg = "can not apply empty serviceAccount"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -325,9 +307,7 @@ func (builder *Builder) WithVolume(deployVolume corev1.Volume) *Builder {
 		glog.V(100).Infof("The volume's name cannot be empty")
 
 		builder.errorMsg = "The volume's name cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -614,6 +594,14 @@ func (builder *Builder) validate() (bool, error) {
 // WithToleration applies a toleration to the deployment's definition.
 func (builder *Builder) WithToleration(toleration corev1.Toleration) *Builder {
 	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if toleration == (corev1.Toleration{}) {
+		glog.V(100).Infof("The toleration cannot be empty")
+
+		builder.errorMsg = "The toleration cannot be empty"
+
 		return builder
 	}
 

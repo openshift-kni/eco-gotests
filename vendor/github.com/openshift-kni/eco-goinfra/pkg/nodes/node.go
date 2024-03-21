@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
@@ -27,7 +28,7 @@ const (
 type Builder struct {
 	Definition  *corev1.Node
 	Object      *corev1.Node
-	apiClient   *clients.Settings
+	apiClient   kubernetes.Interface
 	errorMsg    string
 	drainHelper *drain.Helper
 }
@@ -54,7 +55,7 @@ func (builder *Builder) SetDrainHelper(
 
 	builder.drainHelper = &drain.Helper{
 		Ctx:    context.TODO(),
-		Client: builder.apiClient.K8sClient,
+		Client: builder.apiClient,
 		// Delete pods that do not declare a controller.
 		Force: force,
 		// GracePeriodSeconds is how long to wait for a pod to terminate.
@@ -117,7 +118,7 @@ func Pull(apiClient *clients.Settings, nodeName string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing node object: %s", nodeName)
 
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.K8sClient,
 		Definition: &corev1.Node{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nodeName,
@@ -150,7 +151,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	builder.Definition.ResourceVersion = ""
 
 	var err error
-	builder.Object, err = builder.apiClient.CoreV1Interface.Nodes().Update(
+	builder.Object, err = builder.apiClient.CoreV1().Nodes().Update(
 		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
@@ -165,7 +166,7 @@ func (builder *Builder) Exists() bool {
 	glog.V(100).Infof("Checking if node %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.CoreV1Interface.Nodes().Get(
+	builder.Object, err = builder.apiClient.CoreV1().Nodes().Get(
 		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
@@ -183,7 +184,7 @@ func (builder *Builder) Delete() error {
 		return fmt.Errorf("node cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.CoreV1Interface.Nodes().Delete(
+	err := builder.apiClient.CoreV1().Nodes().Delete(
 		context.Background(),
 		builder.Definition.Name,
 		metav1.DeleteOptions{})
