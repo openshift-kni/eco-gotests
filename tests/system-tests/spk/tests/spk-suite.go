@@ -27,11 +27,11 @@ var _ = Describe(
 			It("Asserts workload reachable via IPv6 address", polarion.ID("65886"),
 				Label("spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
 
-			It("Asserts workload reachable via IPv4 UDP", polarion.ID("72777"), MustPassRepeatedly(3),
+			It("Asserts workload reachable via IPv4 UDP", polarion.ID("72777"), FlakeAttempts(5),
 				Label("spkingress-udp", "spkingress-udp-ipv4"),
 				spkcommon.VerifySPKIngressUDPviaIPv4)
 
-			It("Asserts workload reachable via IPv6 UDP", polarion.ID("72778"), MustPassRepeatedly(3),
+			It("Asserts workload reachable via IPv6 UDP", polarion.ID("72778"), FlakeAttempts(5),
 				Label("spkingress-udp", "spkingress-udp-ipv6"),
 				spkcommon.VerifySPKIngressUDPviaIPv6)
 
@@ -119,11 +119,11 @@ var _ = Describe(
 				Label("spk-post-hard-reboot", "spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
 
 			It("Asserts workload reachable via IPv4 UDP after hard reboot", polarion.ID("72785"),
-				Label("spkingress-udp", "spkingress-udp-ipv4"), MustPassRepeatedly(3),
+				Label("spkingress-udp", "spkingress-udp-ipv4"), FlakeAttempts(5),
 				spkcommon.VerifySPKIngressUDPviaIPv4)
 
 			It("Asserts workload reachable via IPv6 UDP after hard reboot", polarion.ID("72786"),
-				MustPassRepeatedly(3), Label("spkingress-udp", "spkingress-udp-ipv6"),
+				Label("spkingress-udp", "spkingress-udp-ipv6"), FlakeAttempts(5),
 				spkcommon.VerifySPKIngressUDPviaIPv6)
 
 			It("Asserts DNS resoulution from new deployment", polarion.ID("72196"),
@@ -166,11 +166,11 @@ var _ = Describe(
 				Label("spk-post-soft-reboot", "spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
 
 			It("Asserts workload reachable via IPv4 UDP after soft reboot", polarion.ID("72787"),
-				Label("spkingress-udp", "spkingress-udp-ipv4"), MustPassRepeatedly(3),
+				Label("spkingress-udp", "spkingress-udp-ipv4"), FlakeAttempts(5),
 				spkcommon.VerifySPKIngressUDPviaIPv4)
 
 			It("Asserts workload reachable via IPv6 UDP after soft reboot", polarion.ID("72788"),
-				MustPassRepeatedly(3), Label("spkingress-udp", "spkingress-udp-ipv6"),
+				Label("spkingress-udp", "spkingress-udp-ipv6"), FlakeAttempts(5),
 				spkcommon.VerifySPKIngressUDPviaIPv6)
 
 			It("Asserts DNS resoulution from new deployment", polarion.ID("72200"),
