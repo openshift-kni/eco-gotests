@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+      - 'release-\d.\d\d'
 
 jobs:
   build:
@@ -22,12 +23,24 @@ jobs:
         sudo podman run --rm --privileged quay.io/ocp-edge-qe/qemu-user-static --reset -p yes
       # uses: docker/setup-qemu-action@v3
 
+    - name: Set image tag
+      shell: bash
+      run: |
+        image_tag=latest
+        if [ ${{ github.ref }} != 'refs/heads/main' ]; then
+          branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          version_digits=$(echo ${branch} | tr -d -c 0-9)
+          image_tag=v$(echo ${version_digits} | cut -b 1).$(echo ${version_digits:1}).0
+        fi
+        echo "IMAGE_TAG=${image_tag}" >> $GITHUB_OUTPUT
+      id: set_image_tag
+
     - name: Build docker image
       id: build-image
       uses: redhat-actions/buildah-build@v2
       with:
         image: eco-gotests
-        tags: ${{ github.event_name == 'push' && 'latest' || github.ref_name }}
+        tags: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
         containerfiles: |
           ./Dockerfile
         archs: amd64, arm64
@@ -37,7 +50,7 @@ jobs:
       uses: redhat-actions/buildah-build@v2
       with:
         image: eco-gotests-ran-du
-        tags: ${{ github.event_name == 'push' && 'latest' || github.ref_name }}
+        tags: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
         containerfiles: |
           ./images/system-tests/ran-du/Dockerfile
         archs: amd64, arm64
