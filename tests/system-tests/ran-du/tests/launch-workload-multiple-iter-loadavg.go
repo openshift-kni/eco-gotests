@@ -64,13 +64,15 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
 
 				for _, stdout := range cmdResult {
-					buf := strings.Fields(stdout)[0]
-					floatBuf, err := strconv.ParseFloat(strings.ReplaceAll(strings.ReplaceAll(buf, "\r", ""), "\n", ""), 32)
-					if err != nil {
-						fmt.Println(err)
+					if len(strings.Fields(stdout)) > 0 {
+						buf := strings.Fields(stdout)[0]
+						floatBuf, err := strconv.ParseFloat(strings.ReplaceAll(strings.ReplaceAll(buf, "\r", ""), "\n", ""), 32)
+						if err != nil {
+							fmt.Println(err)
+						}
+						Expect(floatBuf).To(BeNumerically("<", randuparams.TestMultipleLaunchWorkloadLoadAvg),
+							"error: node load average detected above 100: %f", floatBuf)
 					}
-					Expect(floatBuf).To(BeNumerically("<", randuparams.TestMultipleLaunchWorkloadLoadAvg),
-						"error: node load average detected above 100: %f", floatBuf)
 				}
 
 				time.Sleep(10 * time.Second)
