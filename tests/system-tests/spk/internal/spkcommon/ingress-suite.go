@@ -358,7 +358,7 @@ func verifyUDPIngress(udpAddr string) {
 
 	By("Looking for UDP server pods")
 
-	udpPods := findPodWithSelector(SPKConfig.Namespace, "systemtest-app=spk-udp-server", "5s", "1m")
+	udpPods := findPodWithSelector(SPKConfig.Namespace, SPKBackendUDPSelector, "5s", "1m")
 
 	glog.V(spkparams.SPKLogLevel).Infof("Dialing to UDP endpoint %q", udpAddr)
 

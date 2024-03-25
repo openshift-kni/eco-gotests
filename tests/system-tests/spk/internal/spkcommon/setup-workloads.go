@@ -46,7 +46,7 @@ const (
 	// SPKBackendUDPSVCName name for service for UDP testing.
 	SPKBackendUDPSVCName = "f5-udp-svc"
 	// SPKBackendUDPSelector labels used by deployment and service.
-	SPKBackendUDPSelector = "systemtest-app=spk-udp-server"
+	SPKBackendUDPSelector = "systemtest-udp-app=qe-udp-server"
 	// SPKBackendUDPSVCPort service port.
 	SPKBackendUDPSVCPort = int32(8080)
 	// SPKBackendUDPSVCTargetPort service's target port.
