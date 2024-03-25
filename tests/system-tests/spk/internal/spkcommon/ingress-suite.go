@@ -92,7 +92,7 @@ func AssertIPv6WorkloadURLAfterAppRecreated(ctx SpecContext) {
 }
 
 // AssertIPv4WorkloadURLAfterIngressPodDeleted assert workoads are reachable over IPv4 SPK Ingress,
-// after SPK Ingress and TMM pods are deleted.
+// after SPK Ingress pods are deleted.
 func AssertIPv4WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	if SPKConfig.IngressTCPIPv4URL == "" {
 		Skip("IPv4 URL for SPK backed workload not defined. Skipping")
@@ -101,18 +101,14 @@ func AssertIPv4WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
 
-	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
-
-	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "3s", "60s")
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, ingressDataLabel, "3s", "60s")
 
 	for _, dPod := range dataPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
 
-	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
-
-	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "3s", "60s")
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, ingressDNSLabel, "3s", "60s")
 
 	for _, dPod := range dnsPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
@@ -126,7 +122,7 @@ func AssertIPv4WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 }
 
 // AssertIPv6WorkloadURLAfterIngressPodDeleted assert workoads are reachable over IPv6 SPK Ingress,
-// after SPK Ingress and TMM pods are deleted.
+// after SPK Ingress pods are deleted.
 func AssertIPv6WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	if SPKConfig.IngressTCPIPv6URL == "" {
 		Skip("IPv6 URL for SPK backed workload not defined. Skipping")
@@ -135,18 +131,14 @@ func AssertIPv6WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
 
-	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
-
-	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "3s", "60s")
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, ingressDataLabel, "3s", "60s")
 
 	for _, dPod := range dataPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
 
-	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
-
-	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "3s", "60s")
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, ingressDNSLabel, "3s", "60s")
 
 	for _, dPod := range dnsPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
@@ -160,7 +152,7 @@ func AssertIPv6WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 }
 
 // AssertIPv4UDPWorkloadURLAfterIngressPodDeleted assert workoads are reachable over IPv4 SPK Ingress,
-// after SPK Ingress and TMM pods are deleted.
+// after SPK Ingress pods are deleted.
 func AssertIPv4UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	if SPKConfig.IngressUDPIPv4URL == "" {
 		glog.V(spkparams.SPKLogLevel).Infof("IPv4 URL for SPK UDP backed workload not defined")
@@ -170,9 +162,7 @@ func AssertIPv4UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
 
-	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
-
-	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "5s", "60s")
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, ingressDataLabel, "5s", "60s")
 
 	for _, dPod := range dataPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
@@ -181,7 +171,7 @@ func AssertIPv4UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
 
-	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "5s", "60s")
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, ingressDNSLabel, "5s", "60s")
 
 	for _, dPod := range dnsPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
@@ -195,7 +185,7 @@ func AssertIPv4UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 }
 
 // AssertIPv6UDPWorkloadURLAfterIngressPodDeleted assert workoads are reachable over IPv6 SPK Ingress,
-// after SPK Ingress and TMM pods are deleted.
+// after SPK Ingress pods are deleted.
 func AssertIPv6UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	if SPKConfig.IngressUDPIPv6URL == "" {
 		Skip("IPv6 UDP URL for SPK backed workload not defined. Skipping")
@@ -204,9 +194,7 @@ func AssertIPv6UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
 
-	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
-
-	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "5s", "60s")
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, ingressDataLabel, "5s", "60s")
 
 	for _, dPod := range dataPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
@@ -215,7 +203,7 @@ func AssertIPv6UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
 
-	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "5s", "60s")
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, ingressDNSLabel, "5s", "60s")
 
 	for _, dPod := range dnsPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
@@ -399,4 +387,129 @@ func verifyUDPIngress(udpAddr string) {
 		glog.V(spkparams.SPKLogLevel).Infof("Checking logs in %q", udpPod.Definition.Name)
 		verifyMsgInPodLogs(udpPod, udpMSG, udpPod.Definition.Spec.Containers[0].Name, timeStart)
 	}
+}
+
+// AssertIPv4WorkloadURLAfterTMMPodDeleted assert connectivity to workload running on OCP cluster,
+// after TMM pods are deleted.
+func AssertIPv4WorkloadURLAfterTMMPodDeleted(ctx SpecContext) {
+	if SPKConfig.IngressTCPIPv4URL == "" {
+		Skip("IPv4 URL for SPK backed workload not defined. Skipping")
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
+
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "3s", "60s")
+
+	for _, dPod := range dataPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
+
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "3s", "60s")
+
+	for _, dPod := range dnsPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
+	time.Sleep(4 * time.Minute)
+
+	AssertIPv4WorkloadURL(ctx)
+}
+
+// AssertIPv6WorkloadURLAfterTMMPodDeleted assert workoads are reachable over IPv6 SPK Ingress,
+// after SPK TMM pods are deleted.
+func AssertIPv6WorkloadURLAfterTMMPodDeleted(ctx SpecContext) {
+	if SPKConfig.IngressTCPIPv6URL == "" {
+		Skip("IPv6 URL for SPK backed workload not defined. Skipping")
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
+
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "3s", "60s")
+
+	for _, dPod := range dataPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
+
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "3s", "60s")
+
+	for _, dPod := range dnsPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
+	time.Sleep(4 * time.Minute)
+
+	AssertIPv6WorkloadURL(ctx)
+}
+
+// AssertIPv4UDPWorkloadURLAfterTMMPodDeleted assert workoads are reachable over IPv4 SPK Ingress,
+// after SPK TMM pods are deleted.
+func AssertIPv4UDPWorkloadURLAfterTMMPodDeleted(ctx SpecContext) {
+	if SPKConfig.IngressUDPIPv4URL == "" {
+		glog.V(spkparams.SPKLogLevel).Infof("IPv4 URL for SPK UDP backed workload not defined")
+		Skip("IPv4 URL for SPK UDP backed workload not defined. Skipping")
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
+
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "5s", "60s")
+
+	for _, dPod := range dataPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
+
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "5s", "60s")
+
+	for _, dPod := range dnsPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
+	time.Sleep(4 * time.Minute)
+
+	VerifySPKIngressUDPviaIPv4()
+}
+
+// AssertIPv6UDPWorkloadURLAfterTMMPodDeleted assert workoads are reachable over IPv6 SPK Ingress,
+// after SPK TMM pods are deleted.
+func AssertIPv6UDPWorkloadURLAfterTMMPodDeleted(ctx SpecContext) {
+	if SPKConfig.IngressUDPIPv6URL == "" {
+		Skip("IPv6 UDP URL for SPK backed workload not defined. Skipping")
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
+
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, tmmLabel, "5s", "60s")
+
+	for _, dPod := range dataPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
+
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, tmmLabel, "5s", "60s")
+
+	for _, dPod := range dnsPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
+	time.Sleep(4 * time.Minute)
+
+	VerifySPKIngressUDPviaIPv6()
 }

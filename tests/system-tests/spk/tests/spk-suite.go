@@ -87,6 +87,14 @@ var _ = Describe(
 				Label("spk-ingress-delete", "spk-ingress-tcp-delete-ipv6"),
 				spkcommon.AssertIPv6WorkloadURLAfterIngressPodDeleted)
 
+			It("Assert workload is reachable over IPv4 SPK Ingress after TMM pod is deleted", polarion.ID("72825"),
+				Label("spk-ingress-tmm-delete", "spk-ingress-tcp-tmm-delete-ipv4"),
+				spkcommon.AssertIPv4WorkloadURLAfterTMMPodDeleted)
+
+			It("Assert workload is reachable over IPv6 SPK ingress after TMM pod was deleted", polarion.ID("72826"),
+				Label("spk-ingress-tmm-delete", "spk-ingress-tcp-tmm-delete-ipv6"),
+				spkcommon.AssertIPv6WorkloadURLAfterTMMPodDeleted)
+
 			It("Assert workload is reachable over IPv4 SPK UDP ingress after pod was deleted", polarion.ID("72782"),
 				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv4"),
 				spkcommon.AssertIPv4UDPWorkloadURLAfterIngressPodDeleted)
@@ -94,6 +102,14 @@ var _ = Describe(
 			It("Assert workload is reachable over IPv6 SPK UDP ingress after pod was deleted", polarion.ID("72783"),
 				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv6"),
 				spkcommon.AssertIPv6UDPWorkloadURLAfterIngressPodDeleted)
+
+			It("Assert workload is reachable over IPv4 SPK UDP ingress after TMM pod was deleted", polarion.ID("72827"),
+				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv4"),
+				spkcommon.AssertIPv4UDPWorkloadURLAfterTMMPodDeleted)
+
+			It("Assert workload is reachable over IPv6 SPK UDP ingress after TMM pod was deleted", polarion.ID("72828"),
+				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv6"),
+				spkcommon.AssertIPv6UDPWorkloadURLAfterTMMPodDeleted)
 		})
 
 		Describe("Hard reboot", Label("spk-hard-reboot"), func() {
