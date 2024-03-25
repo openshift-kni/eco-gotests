@@ -19,22 +19,23 @@ const (
 
 // GeneralConfig type keeps general configuration.
 type GeneralConfig struct {
-	ReportsDirAbsPath        string `yaml:"reports_dump_dir" envconfig:"ECO_REPORTS_DUMP_DIR"`
-	VerboseLevel             string `yaml:"verbose_level" envconfig:"ECO_VERBOSE_LEVEL"`
-	DumpFailedTests          bool   `yaml:"dump_failed_tests" envconfig:"ECO_DUMP_FAILED_TESTS"`
-	PolarionReport           bool   `yaml:"polarion_report" envconfig:"ECO_POLARION_REPORT"`
-	DryRun                   bool   `yaml:"dry_run" envconfig:"ECO_DRY_RUN"`
-	KubernetesRolePrefix     string `yaml:"kubernetes_role_prefix" envconfig:"ECO_KUBERNETES_ROLE_PREFIX"`
-	WorkerLabelEnvVar        string `yaml:"worker_label" envconfig:"ECO_WORKER_LABEL"`
-	WorkerLabel              string
-	ControlPlaneLabel        string `yaml:"control_plane_label" envconfig:"ECO_CONTROL_PLANE_LABEL"`
-	PolarionTCPrefix         string `yaml:"polarion_tc_prefix" envconfig:"ECO_POLARION_TC_PREFIX"`
-	MCONamespace             string `yaml:"mco_namespace" envconfig:"ECO_MCO_NAMESPACE"`
-	MCOConfigDaemonName      string `yaml:"mco_config_daemon_name" envconfig:"ECO_MCO_CONFIG_DAEMON_NAME"`
-	SriovOperatorNamespace   string `yaml:"sriov_operator_namespace" envconfig:"ECO_SRIOV_OPERATOR_NAMESPACE"`
-	NMStateOperatorNamespace string `yaml:"nmstate_operator_namespace" envconfig:"ECO_NMSTATE_OPERATOR_NAMESPACE"`
-	WorkerLabelMap           map[string]string
-	ControlPlaneLabelMap     map[string]string
+	ReportsDirAbsPath         string `yaml:"reports_dump_dir" envconfig:"ECO_REPORTS_DUMP_DIR"`
+	VerboseLevel              string `yaml:"verbose_level" envconfig:"ECO_VERBOSE_LEVEL"`
+	DumpFailedTests           bool   `yaml:"dump_failed_tests" envconfig:"ECO_DUMP_FAILED_TESTS"`
+	PolarionReport            bool   `yaml:"polarion_report" envconfig:"ECO_POLARION_REPORT"`
+	DryRun                    bool   `yaml:"dry_run" envconfig:"ECO_DRY_RUN"`
+	KubernetesRolePrefix      string `yaml:"kubernetes_role_prefix" envconfig:"ECO_KUBERNETES_ROLE_PREFIX"`
+	WorkerLabelEnvVar         string `yaml:"worker_label" envconfig:"ECO_WORKER_LABEL"`
+	WorkerLabel               string
+	ControlPlaneLabel         string `yaml:"control_plane_label" envconfig:"ECO_CONTROL_PLANE_LABEL"`
+	PolarionTCPrefix          string `yaml:"polarion_tc_prefix" envconfig:"ECO_POLARION_TC_PREFIX"`
+	MCONamespace              string `yaml:"mco_namespace" envconfig:"ECO_MCO_NAMESPACE"`
+	MCOConfigDaemonName       string `yaml:"mco_config_daemon_name" envconfig:"ECO_MCO_CONFIG_DAEMON_NAME"`
+	SriovOperatorNamespace    string `yaml:"sriov_operator_namespace" envconfig:"ECO_SRIOV_OPERATOR_NAMESPACE"`
+	NMStateOperatorNamespace  string `yaml:"nmstate_operator_namespace" envconfig:"ECO_NMSTATE_OPERATOR_NAMESPACE"`
+	SriovFecOperatorNamespace string `yaml:"sriov_fec_operator_namespace" envconfig:"ECO_SRIOV_FEC_OPERATOR_NAMESPACE"`
+	WorkerLabelMap            map[string]string
+	ControlPlaneLabelMap      map[string]string
 }
 
 // NewConfig returns instance of GeneralConfig config type.

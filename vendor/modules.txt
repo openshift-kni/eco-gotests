@@ -559,6 +559,8 @@ github.com/openshift-kni/eco-goinfra/pkg/secret
 github.com/openshift-kni/eco-goinfra/pkg/service
 github.com/openshift-kni/eco-goinfra/pkg/serviceaccount
 github.com/openshift-kni/eco-goinfra/pkg/sriov
+github.com/openshift-kni/eco-goinfra/pkg/sriov-fec
+github.com/openshift-kni/eco-goinfra/pkg/sriov-fec/sriovfectypes
 github.com/openshift-kni/eco-goinfra/pkg/statefulset
 github.com/openshift-kni/eco-goinfra/pkg/storage
 github.com/openshift-kni/eco-goinfra/pkg/webhook
