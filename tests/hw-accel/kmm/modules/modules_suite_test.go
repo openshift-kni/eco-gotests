@@ -66,9 +66,9 @@ var _ = BeforeSuite(func() {
 		glog.V(kmmparams.KmmLogLevel).Infof("Creating privileged deployment on node '%v'", node.Object.Name)
 
 		deploymentName := fmt.Sprintf("%s-%s", kmmparams.KmmTestHelperLabelName, node.Object.Name)
-		containerCfg, _ := pod.NewContainerBuilder("test", tsparams.DTKImage,
+		containerCfg, _ := pod.NewContainerBuilder("test", kmmparams.DTKImage,
 			[]string{"/bin/bash", "-c", "sleep INF"}).
-			WithSecurityContext(tsparams.PrivilegedSC).GetContainerCfg()
+			WithSecurityContext(kmmparams.PrivilegedSC).GetContainerCfg()
 
 		deploymentCfg := deployment.NewBuilder(APIClient, deploymentName, kmmparams.KmmOperatorNamespace,
 			map[string]string{kmmparams.KmmTestHelperLabelName: ""}, containerCfg)

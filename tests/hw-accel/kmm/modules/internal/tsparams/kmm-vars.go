@@ -4,7 +4,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/k8sreporter"
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -29,23 +28,5 @@ var (
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &moduleV1Beta1.ModuleList{}},
-	}
-
-	// DTKImage represents Driver Toolkit image in internal image registry.
-	DTKImage       = "image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit"
-	trueVar        = true
-	capabilityAll  = []corev1.Capability{"ALL"}
-	defaultGroupID = int64(3000)
-	defaultUserID  = int64(2000)
-
-	// PrivilegedSC represents a privileged security context definition.
-	PrivilegedSC = &corev1.SecurityContext{
-		Privileged:     &trueVar,
-		RunAsGroup:     &defaultGroupID,
-		RunAsUser:      &defaultUserID,
-		SeccompProfile: &corev1.SeccompProfile{Type: "RuntimeDefault"},
-		Capabilities: &corev1.Capabilities{
-			Add: capabilityAll,
-		},
 	}
 )
