@@ -6,7 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	typesGomega "github.com/onsi/gomega/types"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -140,6 +142,22 @@ func setupBgpAdvertisement(addressPool []string, prefixLen int32) *metallb.IPAdd
 	return ipAddressPool
 }
 
+func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
+	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
+		APIClient,
+		"l2address-pool",
+		NetConfig.MlbOperatorNamespace,
+		[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
+
+	_, err = metallb.
+		NewL2AdvertisementBuilder(APIClient, "l2advertisement", NetConfig.MlbOperatorNamespace).
+		WithIPAddressPools([]string{ipAddressPool.Definition.Name}).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
+
+	return ipAddressPool
+}
+
 func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
@@ -203,10 +221,10 @@ func setupMetalLbService(
 	Expect(err).ToNot(HaveOccurred(), "Failed to create MetalLB Service")
 }
 
-func setupNGNXPod() {
+func setupNGNXPod(nodeName string) {
 	_, err := pod.NewBuilder(
-		APIClient, "mlbnginxtpod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-		DefineOnNode(workerNodeList[0].Definition.Name).
+		APIClient, "mlbnginxtpod"+nodeName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		DefineOnNode(nodeName).
 		WithLabel("app", "nginx1").
 		RedefineDefaultCMD(cmd.DefineNGNXAndSleep()).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
@@ -249,4 +267,19 @@ func verifyMetricPresentInPrometheus(
 			prometheusPod, speakerPod.Definition.Name, metricsFromSpeaker).Should(
 			BeTrue(), "Failed to match metric in prometheus")
 	}
+}
+
+func metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
+	expectedCondition typesGomega.GomegaMatcher, errorMessage string) {
+	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
+
+	Eventually(func() int32 {
+		if metalLbDs.Exists() {
+			return metalLbDs.Object.Status.NumberAvailable
+		}
+
+		return 0
+	}, tsparams.DefaultTimeout, tsparams.DefaultRetryInterval).Should(expectedCondition, errorMessage)
+	Expect(metalLbDs.IsReady(120*time.Second)).To(BeTrue(), "MetalLb daemonSet is not Ready")
 }

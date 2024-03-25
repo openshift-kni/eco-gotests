@@ -9,9 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
-	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -254,7 +252,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				setupMetalLbService(ipStack, ipAddressPool, externalTrafficPolicy)
 
 				By("Creating nginx test pod on worker node")
-				setupNGNXPod()
+				setupNGNXPod(workerNodeList[0].Definition.Name)
 
 				By("Creating internal NAD")
 				masterBridgePlugin, err := nad.NewMasterBridgePlugin("internalnad", "br0").
@@ -390,11 +388,8 @@ func scaleDownMetalLbSpeakers() {
 	Expect(err).ToNot(HaveOccurred(), "Failed to update metallb object with the new MetalLb label")
 
 	By("Verifying that the MetalLb speakers are not running on nodes after label update")
-
-	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
 	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		metalLbDs, BeZero(), "Failed to scale down metalLb speaker pods to zero")
+		BeZero(), "Failed to scale down metalLb speaker pods to zero")
 }
 
 func testBFDFailOver() {
@@ -402,11 +397,8 @@ func testBFDFailOver() {
 	addNodeLabel(workerNodeList, tsparams.MetalLbSpeakerLabel)
 
 	By("Pulling metalLb speaker daemonset")
-
-	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
 	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		metalLbDs, Not(BeZero()), "Failed to run metalLb speakers on top of nodes with test label")
+		Not(BeZero()), "Failed to run metalLb speakers on top of nodes with test label")
 
 	frrPod, err := pod.Pull(APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull frr test pod")
@@ -424,7 +416,7 @@ func testBFDFailOver() {
 
 	By("Verifying that cluster has reduced the number of speakers by 1")
 	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		metalLbDs, BeEquivalentTo(len(workerNodeList)-1), "The number of running speaker pods is not expected")
+		BeEquivalentTo(len(workerNodeList)-1), "The number of running speaker pods is not expected")
 	By("Verifying that FRR pod still has BFD and BGP session UP with one of the MetalLb speakers")
 
 	secondWorkerNode, err := nodes.Pull(APIClient, workerNodeList[1].Object.Name)
@@ -464,10 +456,9 @@ func testBFDFailBack() {
 
 	frrPod, err := pod.Pull(APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull frr test pod")
-	metalLbDs, err := daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb speaker daemonSet")
+
 	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		metalLbDs, BeEquivalentTo(len(workerNodeList)), "The number of running speak pods is not expected")
+		BeEquivalentTo(len(workerNodeList)), "The number of running speaker pods is not expected")
 	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
 }
 
@@ -516,18 +507,6 @@ func verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrLi
 			WithArguments(frrPod, peerAddress, "up").
 			ShouldNot(HaveOccurred(), "Failed to receive BFD status UP")
 	}
-}
-
-func metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-	metalLbDs *daemonset.Builder, expectedCondition types.GomegaMatcher, errorMessage string) {
-	Eventually(func() int32 {
-		if metalLbDs.Exists() {
-			return metalLbDs.Object.Status.NumberAvailable
-		}
-
-		return 0
-	}, tsparams.DefaultTimeout, tsparams.DefaultRetryInterval).Should(expectedCondition, errorMessage)
-	Expect(metalLbDs.IsReady(120*time.Second)).To(BeTrue(), "MetalLb daemonSet is not Ready")
 }
 
 func mapFirstKeyValue(inputMap map[string]string) (string, string) {

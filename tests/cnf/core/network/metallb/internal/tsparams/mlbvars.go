@@ -66,6 +66,8 @@ var (
 	EBGPProtocol = "eBGP"
 	// IBPGPProtocol represents internal bgp protocol name.
 	IBPGPProtocol = "iBGP"
+	// TestLabel represents node label for testing.
+	TestLabel = map[string]string{"test": "label"}
 	// MetalLbBgpMetrics represents the list of expected metallb metrics.
 	MetalLbBgpMetrics = []string{"metallb_bgp_keepalives_sent", "metallb_bgp_keepalives_received",
 		"metallb_bgp_notifications_sent", "metallb_bgp_opens_received", "metallb_bgp_opens_sent",

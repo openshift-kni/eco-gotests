@@ -136,7 +136,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				setupMetalLbService(ipStack, ipAddressPool, "Cluster")
 
 				By("Creating nginx test pod on worker node")
-				setupNGNXPod()
+				setupNGNXPod(workerNodeList[0].Definition.Name)
 
 				By("Checking that BGP session is established and up")
 				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(nodeAddrList))
