@@ -43,6 +43,11 @@ require (
 require github.com/openshift/installer v0.0.0-00010101000000-000000000000
 
 require (
+	github.com/openshift-kni/lifecycle-agent v0.0.0-20240309022641-e2b836e0f2d3
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
+)
+
+require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Jeffail/gabs/v2 v2.7.0 // indirect
@@ -142,7 +147,6 @@ require (
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240227195723-b6e045729e4d // indirect
-	github.com/openshift-kni/lifecycle-agent v0.0.0-20240309022641-e2b836e0f2d3 // indirect
 	github.com/openshift/assisted-service v1.0.10-0.20230830164851-6573b5d7021d // indirect
 	github.com/openshift/client-go v0.0.1 // indirect
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
@@ -206,7 +210,6 @@ require (
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/kubectl v0.28.5 // indirect
 	k8s.io/kubelet v0.27.4 // indirect
-	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	open-cluster-management.io/governance-policy-propagator v0.12.0 // indirect
 	open-cluster-management.io/multicloud-operators-subscription v0.11.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

@@ -1,0 +1,87 @@
+package nodestate
+
+import (
+	"context"
+	"net"
+	"time"
+
+	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/lca"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/ibuparams"
+	"k8s.io/apimachinery/pkg/util/wait"
+)
+
+// WaitForNodeToBeUnreachable waits the specified timeout for the host to be unreachable on the provided TCP port.
+func WaitForNodeToBeUnreachable(host, port string, timeout time.Duration) (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second*3, timeout, true, func(ctx context.Context) (bool, error) {
+			glog.V(ibuparams.IBULogLevel).Infof("Waiting for node %s to become unreachable", host)
+
+			return !CheckIfNodeReachableOnPort(host, port), nil
+		},
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// WaitForNodeToBeReachable waits the specified timeout for the host to be reachable on the provided TCP port.
+func WaitForNodeToBeReachable(host, port string, timeout time.Duration) (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second*3, timeout, true, func(ctx context.Context) (bool, error) {
+			glog.V(ibuparams.IBULogLevel).Infof("Waiting for node %s to become reachable", host)
+
+			return CheckIfNodeReachableOnPort(host, port), nil
+		},
+	)
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CheckIfNodeReachableOnPort checks that the provided node is reachable on a specific TCP port.
+func CheckIfNodeReachableOnPort(host, port string) bool {
+	glog.V(ibuparams.IBULogLevel).Infof("Attempting to contact node %s on port %s", host, port)
+
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), time.Second*3)
+	if err != nil {
+		return false
+	}
+
+	if conn != nil {
+		defer conn.Close()
+
+		return true
+	}
+
+	return false
+}
+
+// WaitForIBUToBeAvailable waits the specified timeout for the ibu resource to be retrievable.
+func WaitForIBUToBeAvailable(
+	apiClient *clients.Settings,
+	timeout time.Duration) (*lca.ImageBasedUpgradeBuilder, error) {
+	var ibu *lca.ImageBasedUpgradeBuilder
+
+	err := wait.PollUntilContextTimeout(
+		context.Background(), time.Second*3, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+
+			ibu, err = lca.PullImageBasedUpgrade(apiClient, ibuparams.IBUName)
+			if err != nil {
+				return false, nil
+			}
+
+			return true, nil
+		},
+	)
+
+	return ibu, err
+}
