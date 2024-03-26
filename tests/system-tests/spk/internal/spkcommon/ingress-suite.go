@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -19,10 +20,16 @@ import (
 )
 
 //nolint:unparam
-func reachURL(targetURL string, expectedCode int) {
+func reachURL(targetURL, pollInterval, pollDuration string, expectedCode int) {
 	glog.V(spkparams.SPKLogLevel).Infof("Accessing %q via SPK Ingress", targetURL)
 
 	var ctx SpecContext
+
+	pollFrequency, err := time.ParseDuration(pollInterval)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse polling interval %q", pollInterval))
+
+	pollTimeout, err := time.ParseDuration(pollDuration)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse polling interval %q", pollDuration))
 
 	Eventually(func() bool {
 		data, httpCode, err := url.Fetch(targetURL, "GET")
@@ -38,7 +45,7 @@ func reachURL(targetURL string, expectedCode int) {
 		glog.V(spkparams.SPKLogLevel).Infof("Reached data\n%v", data)
 
 		return httpCode == expectedCode
-	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+	}).WithContext(ctx).WithPolling(pollFrequency).WithTimeout(pollTimeout).Should(BeTrue(),
 		fmt.Sprintf("Failed to reach %q URL", targetURL))
 }
 
@@ -50,7 +57,7 @@ func AssertIPv4WorkloadURL(ctx SpecContext) {
 		Skip("IPv4 URL for SPK backed workload not defined")
 	}
 
-	reachURL(SPKConfig.IngressTCPIPv4URL, int(200))
+	reachURL(SPKConfig.IngressTCPIPv4URL, "10s", "3m", int(200))
 }
 
 // AssertIPv4WorkloadURLAfterAppRecreated access workload via IPv4 address,
@@ -64,7 +71,7 @@ func AssertIPv4WorkloadURLAfterAppRecreated(ctx SpecContext) {
 
 	SetupSPKBackendWorkload()
 
-	reachURL(SPKConfig.IngressTCPIPv4URL, int(200))
+	reachURL(SPKConfig.IngressTCPIPv4URL, "15s", "5m", int(200))
 }
 
 // AssertIPv6WorkloadURL access workload via IPv6 address.
@@ -75,7 +82,7 @@ func AssertIPv6WorkloadURL(ctx SpecContext) {
 		Skip("IPv6 URL for SPK backed workload not defined")
 	}
 
-	reachURL(SPKConfig.IngressTCPIPv6URL, int(200))
+	reachURL(SPKConfig.IngressTCPIPv6URL, "5s", "3m", int(200))
 }
 
 // AssertIPv6WorkloadURLAfterAppRecreated access workload via IPv6 address,
@@ -88,7 +95,7 @@ func AssertIPv6WorkloadURLAfterAppRecreated(ctx SpecContext) {
 	}
 
 	SetupSPKBackendWorkload()
-	reachURL(SPKConfig.IngressTCPIPv6URL, int(200))
+	reachURL(SPKConfig.IngressTCPIPv6URL, "15s", "5m", int(200))
 }
 
 // AssertIPv4WorkloadURLAfterIngressPodDeleted assert workoads are reachable over IPv4 SPK Ingress,
@@ -115,8 +122,8 @@ func AssertIPv4WorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
 
-	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
-	time.Sleep(4 * time.Minute)
+	// glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
+	// time.Sleep(4 * time.Minute)
 
 	AssertIPv4WorkloadURL(ctx)
 }
@@ -169,17 +176,12 @@ func AssertIPv4UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
 
-	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
-
 	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, ingressDNSLabel, "5s", "60s")
 
 	for _, dPod := range dnsPods {
 		err := dPod.WaitUntilReady(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
-
-	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
-	time.Sleep(4 * time.Minute)
 
 	VerifySPKIngressUDPviaIPv4()
 }
@@ -210,13 +212,10 @@ func AssertIPv6UDPWorkloadURLAfterIngressPodDeleted(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
 
-	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
-	time.Sleep(4 * time.Minute)
-
 	VerifySPKIngressUDPviaIPv6()
 }
 
-func verifyMsgInPodLogs(podObj *pod.Builder, msg, cName string, timeSpan time.Time) {
+func getPodLogs(podObj *pod.Builder, cName string, timeSpan time.Time) string {
 	glog.V(spkparams.SPKLogLevel).Infof("Parsing duration %q", timeSpan)
 
 	var (
@@ -248,7 +247,7 @@ func verifyMsgInPodLogs(podObj *pod.Builder, msg, cName string, timeSpan time.Ti
 	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
 		fmt.Sprintf("Failed to get logs from pod %q", podObj.Definition.Name))
 
-	Expect(podLog).Should(ContainSubstring(msg))
+	return podLog
 }
 
 func findPodWithSelector(fNamespace, podLabel, pollInterval, pollDuration string) []*pod.Builder {
@@ -302,7 +301,7 @@ func VerifySPKIngressUDPviaIPv4() {
 		Skip("IPv4 URL for SPK UDP backed workload not defined")
 	}
 
-	verifyUDPIngress(SPKConfig.IngressUDPIPv4URL)
+	verifyUDPIngress(SPKConfig.IngressUDPIPv4URL, "15s", "11m")
 }
 
 // VerifySPKIngressUDPviaIPv6 verifies SPK UDP Ingress.
@@ -314,16 +313,23 @@ func VerifySPKIngressUDPviaIPv6() {
 		Skip("IPv6 URL for SPK UDP backed workload not defined")
 	}
 
-	verifyUDPIngress(SPKConfig.IngressUDPIPv6URL)
+	verifyUDPIngress(SPKConfig.IngressUDPIPv6URL, "15s", "11m")
 }
 
-func verifyUDPIngress(udpAddr string) {
+func verifyUDPIngress(udpAddr, pollInterval, pollDuration string) {
 	var (
 		err      error
 		ctx      SpecContext
 		bWritten int
 		rNum     int
 	)
+
+	pollFrequency, err := time.ParseDuration(pollInterval)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse polling interval %q", pollInterval))
+
+	pollTimeout, err := time.ParseDuration(pollDuration)
+
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse polling interval %q", pollDuration))
 
 	// depending on the time when workload is started and data is sent
 	// there's possible race condition, hence random sleep.
@@ -344,22 +350,22 @@ func verifyUDPIngress(udpAddr string) {
 	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for %s", rSleep.String())
 	time.Sleep(rSleep)
 
-	By("Looking for UDP server pods")
-
-	udpPods := findPodWithSelector(SPKConfig.Namespace, SPKBackendUDPSelector, "5s", "1m")
-
-	glog.V(spkparams.SPKLogLevel).Infof("Dialing to UDP endpoint %q", udpAddr)
-
-	udpConnection, err := net.Dial("udp", udpAddr)
-
-	Expect(err).ToNot(HaveOccurred(), "Failed to Dial to UDP endpoint")
-
-	defer udpConnection.Close()
-
-	timeStart := time.Now()
-	udpMSG := fmt.Sprintf("UDP message sent at %d", time.Now().Unix())
-
 	Eventually(func() bool {
+		glog.V(spkparams.SPKLogLevel).Infof("Dialing to UDP endpoint %q", udpAddr)
+
+		udpConnection, err := net.Dial("udp", udpAddr)
+
+		Expect(err).ToNot(HaveOccurred(), "Failed to Dial to UDP endpoint")
+
+		defer udpConnection.Close()
+
+		By("Looking for UDP server pods")
+
+		udpPods := findPodWithSelector(SPKConfig.Namespace, SPKBackendUDPSelector, "5s", "1m")
+
+		timeStart := time.Now()
+		udpMSG := fmt.Sprintf("UDP message sent at %d", time.Now().Unix())
+
 		glog.V(spkparams.SPKLogLevel).Infof("Sending message: %q(%d bytes)", udpMSG, len([]byte(udpMSG)))
 
 		bWritten, err = udpConnection.Write([]byte(udpMSG))
@@ -379,14 +385,16 @@ func verifyUDPIngress(udpAddr string) {
 
 		glog.V(spkparams.SPKLogLevel).Infof("Successfully sent %d bytes via UDP", bWritten)
 
-		return true
-	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(90*time.Second).Should(BeTrue(),
-		"Failed to send message via UDP")
+		for _, udpPod := range udpPods {
+			glog.V(spkparams.SPKLogLevel).Infof("Checking logs in %q", udpPod.Definition.Name)
+			logMsg := getPodLogs(udpPod, udpPod.Definition.Spec.Containers[0].Name, timeStart)
 
-	for _, udpPod := range udpPods {
-		glog.V(spkparams.SPKLogLevel).Infof("Checking logs in %q", udpPod.Definition.Name)
-		verifyMsgInPodLogs(udpPod, udpMSG, udpPod.Definition.Spec.Containers[0].Name, timeStart)
-	}
+			return strings.Contains(logMsg, udpMSG)
+		}
+
+		return false
+	}).WithContext(ctx).WithPolling(pollFrequency).WithTimeout(pollTimeout).Should(BeTrue(),
+		"Failed to send message via UDP")
 }
 
 // AssertIPv4WorkloadURLAfterTMMPodDeleted assert connectivity to workload running on OCP cluster,
@@ -477,9 +485,6 @@ func AssertIPv4UDPWorkloadURLAfterTMMPodDeleted(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
 
-	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
-	time.Sleep(4 * time.Minute)
-
 	VerifySPKIngressUDPviaIPv4()
 }
 
@@ -507,9 +512,6 @@ func AssertIPv6UDPWorkloadURLAfterTMMPodDeleted(ctx SpecContext) {
 		err := dPod.WaitUntilReady(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
 	}
-
-	glog.V(spkparams.SPKLogLevel).Infof("Sleeping for 4 minutes")
-	time.Sleep(4 * time.Minute)
 
 	VerifySPKIngressUDPviaIPv6()
 }

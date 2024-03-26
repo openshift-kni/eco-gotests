@@ -27,11 +27,11 @@ var _ = Describe(
 			It("Asserts workload reachable via IPv6 address", polarion.ID("65886"),
 				Label("spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
 
-			It("Asserts workload reachable via IPv4 UDP", polarion.ID("72777"), FlakeAttempts(5),
+			It("Asserts workload reachable via IPv4 UDP", polarion.ID("72777"), FlakeAttempts(2),
 				Label("spkingress-udp", "spkingress-udp-ipv4"),
 				spkcommon.VerifySPKIngressUDPviaIPv4)
 
-			It("Asserts workload reachable via IPv6 UDP", polarion.ID("72778"), FlakeAttempts(5),
+			It("Asserts workload reachable via IPv6 UDP", polarion.ID("72778"), FlakeAttempts(2),
 				Label("spkingress-udp", "spkingress-udp-ipv6"),
 				spkcommon.VerifySPKIngressUDPviaIPv6)
 
@@ -104,11 +104,11 @@ var _ = Describe(
 				spkcommon.AssertIPv6UDPWorkloadURLAfterIngressPodDeleted)
 
 			It("Assert workload is reachable over IPv4 SPK UDP ingress after TMM pod was deleted", polarion.ID("72827"),
-				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv4"),
+				Label("spk-ingress-delete", "spk-ingress-udp-delete-tmm-ipv4"),
 				spkcommon.AssertIPv4UDPWorkloadURLAfterTMMPodDeleted)
 
 			It("Assert workload is reachable over IPv6 SPK UDP ingress after TMM pod was deleted", polarion.ID("72828"),
-				Label("spk-ingress-delete", "spk-ingress-udp-delete-ipv6"),
+				Label("spk-ingress-delete", "spk-ingress-udp-delete-tmm-ipv6"),
 				spkcommon.AssertIPv6UDPWorkloadURLAfterTMMPodDeleted)
 		})
 
@@ -135,11 +135,11 @@ var _ = Describe(
 				Label("spk-post-hard-reboot", "spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
 
 			It("Asserts workload reachable via IPv4 UDP after hard reboot", polarion.ID("72785"),
-				Label("spkingress-udp", "spkingress-udp-ipv4"), FlakeAttempts(5),
+				Label("spkingress-udp", "spkingress-udp-ipv4"),
 				spkcommon.VerifySPKIngressUDPviaIPv4)
 
 			It("Asserts workload reachable via IPv6 UDP after hard reboot", polarion.ID("72786"),
-				Label("spkingress-udp", "spkingress-udp-ipv6"), FlakeAttempts(5),
+				Label("spkingress-udp", "spkingress-udp-ipv6"),
 				spkcommon.VerifySPKIngressUDPviaIPv6)
 
 			It("Asserts DNS resoulution from new deployment", polarion.ID("72196"),
@@ -182,11 +182,11 @@ var _ = Describe(
 				Label("spk-post-soft-reboot", "spkingresstcp"), spkcommon.AssertIPv6WorkloadURL)
 
 			It("Asserts workload reachable via IPv4 UDP after soft reboot", polarion.ID("72787"),
-				Label("spkingress-udp", "spkingress-udp-ipv4"), FlakeAttempts(5),
+				Label("spkingress-udp", "spkingress-udp-ipv4"),
 				spkcommon.VerifySPKIngressUDPviaIPv4)
 
 			It("Asserts workload reachable via IPv6 UDP after soft reboot", polarion.ID("72788"),
-				Label("spkingress-udp", "spkingress-udp-ipv6"), FlakeAttempts(5),
+				Label("spkingress-udp", "spkingress-udp-ipv6"),
 				spkcommon.VerifySPKIngressUDPviaIPv6)
 
 			It("Asserts DNS resoulution from new deployment", polarion.ID("72200"),
