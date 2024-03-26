@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240321142915-c6f7a269da23 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240326130108-ecce14f6cf8c // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -40,10 +40,9 @@ require (
 	sigs.k8s.io/controller-runtime v0.16.3
 )
 
-require github.com/openshift/installer v0.0.0-00010101000000-000000000000
-
 require (
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240309022641-e2b836e0f2d3
+	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 

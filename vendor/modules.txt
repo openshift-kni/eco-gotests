@@ -521,7 +521,7 @@ github.com/onsi/gomega/types
 ## explicit; go 1.20
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240321142915-c6f7a269da23
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240326130108-ecce14f6cf8c
 ## explicit; go 1.20
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmh
@@ -531,6 +531,7 @@ github.com/openshift-kni/eco-goinfra/pkg/clusterversion
 github.com/openshift-kni/eco-goinfra/pkg/configmap
 github.com/openshift-kni/eco-goinfra/pkg/daemonset
 github.com/openshift-kni/eco-goinfra/pkg/deployment
+github.com/openshift-kni/eco-goinfra/pkg/events
 github.com/openshift-kni/eco-goinfra/pkg/hive
 github.com/openshift-kni/eco-goinfra/pkg/infrastructure
 github.com/openshift-kni/eco-goinfra/pkg/ingress
@@ -1703,6 +1704,8 @@ sigs.k8s.io/controller-runtime/pkg/certwatcher/metrics
 sigs.k8s.io/controller-runtime/pkg/client
 sigs.k8s.io/controller-runtime/pkg/client/apiutil
 sigs.k8s.io/controller-runtime/pkg/client/config
+sigs.k8s.io/controller-runtime/pkg/client/fake
+sigs.k8s.io/controller-runtime/pkg/client/interceptor
 sigs.k8s.io/controller-runtime/pkg/cluster
 sigs.k8s.io/controller-runtime/pkg/config
 sigs.k8s.io/controller-runtime/pkg/config/v1alpha1
@@ -1717,6 +1720,7 @@ sigs.k8s.io/controller-runtime/pkg/internal/controller/metrics
 sigs.k8s.io/controller-runtime/pkg/internal/field/selector
 sigs.k8s.io/controller-runtime/pkg/internal/httpserver
 sigs.k8s.io/controller-runtime/pkg/internal/log
+sigs.k8s.io/controller-runtime/pkg/internal/objectutil
 sigs.k8s.io/controller-runtime/pkg/internal/recorder
 sigs.k8s.io/controller-runtime/pkg/internal/source
 sigs.k8s.io/controller-runtime/pkg/leaderelection

@@ -48,6 +48,7 @@ import (
 	lcasgv1alpha1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1alpha1"
 	lcav1alpha1 "github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
 	operatorV1 "github.com/openshift/api/operator/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
 	hiveV1 "github.com/openshift/hive/apis/hive/v1"
@@ -64,6 +65,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	k8sFakeClient "k8s.io/client-go/kubernetes/fake"
+	fakeRuntimeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
@@ -293,6 +295,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := routev1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -314,6 +320,8 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 	clientSet := &Settings{}
 
 	var k8sClientObjects []runtime.Object
+
+	var genericClientObjects []runtime.Object
 
 	//nolint:varnamelen
 	for _, v := range k8sMockObjects {
@@ -354,6 +362,9 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *storagev1.StorageClass:
 			k8sClientObjects = append(k8sClientObjects, v)
+		// Generic Client Objects
+		case *routev1.Route:
+			genericClientObjects = append(genericClientObjects, v)
 		}
 	}
 
@@ -363,6 +374,18 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 	clientSet.AppsV1Interface = clientSet.K8sClient.AppsV1()
 	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
 	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
+
+	// Update the generic client with schemes of generic resources
+	fakeClientScheme := runtime.NewScheme()
+
+	err := SetScheme(fakeClientScheme)
+	if err != nil {
+		return nil
+	}
+
+	// Add fake runtime client to clientSet runtime client
+	clientSet.Client = fakeRuntimeClient.NewClientBuilder().WithScheme(fakeClientScheme).
+		WithRuntimeObjects(genericClientObjects...).Build()
 
 	return clientSet
 }
