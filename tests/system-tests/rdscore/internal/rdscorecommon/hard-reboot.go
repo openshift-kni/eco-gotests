@@ -363,6 +363,12 @@ func VerifyHardRebootSuite() {
 
 				By("Creating a workload with CephFS PVC")
 				VerifyCephRBDPVC(ctx)
+
+				By("Creating SR-IOV workloads on the same node")
+				VerifySRIOVWorkloadsOnSameNode(ctx)
+
+				By("Creating SR-IOV workloads on different nodes")
+				VerifySRIOVWorkloadsOnDifferentNodes(ctx)
 			})
 
 			It("Verifies ungraceful cluster reboot",
