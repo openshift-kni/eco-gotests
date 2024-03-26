@@ -36,4 +36,9 @@ var (
 			Add: capabilityAll,
 		},
 	}
+
+	// ReasonBuildList represents expected events to be found for a successful build job.
+	ReasonBuildList = []string{ReasonBuildCreated, ReasonBuildStarted, ReasonBuildCompleted, ReasonBuildSucceeded}
+	// ReasonSignList represents expected events to be found for a successful sign job.
+	ReasonSignList = []string{ReasonSignCreated, ReasonBuildStarted, ReasonBuildCompleted, ReasonBuildSucceeded}
 )

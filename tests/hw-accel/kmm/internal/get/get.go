@@ -154,3 +154,19 @@ func PreflightReason(apiClient *clients.Settings, preflight, module, nsname stri
 
 	return "", err
 }
+
+// ModuleLoadedMessage returns message for a module loaded event.
+func ModuleLoadedMessage(module, nsname string) string {
+	message := fmt.Sprintf("Module %s/%s loaded into the kernel", nsname, module)
+	glog.V(kmmparams.KmmLogLevel).Infof("Return: '%s'", message)
+
+	return message
+}
+
+// ModuleUnloadedMessage returns message for a module unloaded event.
+func ModuleUnloadedMessage(module, nsname string) string {
+	message := fmt.Sprintf("Module %s/%s unloaded from the kernel", nsname, module)
+	glog.V(kmmparams.KmmLogLevel).Infof("Return: '%s'", message)
+
+	return message
+}

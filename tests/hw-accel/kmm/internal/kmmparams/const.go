@@ -207,4 +207,20 @@ const (
 	PreflightName = "preflight"
 	// ScannerTestNamespace represents test case namespace name.
 	ScannerTestNamespace = "kmm-scanner"
+	// ReasonBuildCompleted represents event reason for a build completed.
+	ReasonBuildCompleted = "BuildCompleted"
+	// ReasonBuildCreated represents event reason for a build created.
+	ReasonBuildCreated = "BuildCreated"
+	// ReasonBuildStarted represents event reason for a build started.
+	ReasonBuildStarted = "BuildStarted"
+	// ReasonBuildSucceeded represents event reason for a build succeeded.
+	ReasonBuildSucceeded = "BuildSucceeded"
+	// ReasonSignCreated represents event reason for a sign created.
+	ReasonSignCreated = "SignCreated"
+	// ReasonSignSucceeded represents event reason for a sign succeeded.
+	ReasonSignSucceeded = "SignSucceeded"
+	// ReasonModuleLoaded represents event reason for a module loaded.
+	ReasonModuleLoaded = "ModuleLoaded"
+	// ReasonModuleUnloaded represents event reason for a module unloaded.
+	ReasonModuleUnloaded = "ModuleUnloaded"
 )

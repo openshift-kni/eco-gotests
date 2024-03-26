@@ -2,11 +2,13 @@ package tests
 
 import (
 	"fmt"
-
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/events"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
@@ -150,6 +152,71 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			_, err = check.NodeLabel(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+		})
+
+		It("should generate event about build being created and completed", polarion.ID("68110"), func() {
+			By("Getting events from module's namespace")
+			eventList, err := events.List(APIClient, kmmparams.ModuleBuildAndSignNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
+
+			reasonBuildListLength := len(kmmparams.ReasonBuildList)
+			foundEvents := 0
+			for _, item := range kmmparams.ReasonBuildList {
+				glog.V(kmmparams.KmmLogLevel).Infof("Checking %s is present in events", item)
+				for _, event := range eventList {
+					if event.Object.Reason == item {
+						glog.V(kmmparams.KmmLogLevel).Infof("Found %s in events", item)
+						foundEvents++
+
+						break
+					}
+				}
+			}
+			Expect(reasonBuildListLength).To(Equal(foundEvents), "Expected number of events not found")
+		})
+
+		It("should generate event about sign being created and completed", polarion.ID("68108"), func() {
+			By("Getting events from module's namespace")
+			eventList, err := events.List(APIClient, kmmparams.ModuleBuildAndSignNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
+
+			reasonSignListLength := len(kmmparams.ReasonSignList)
+			foundEvents := 0
+			for _, item := range kmmparams.ReasonSignList {
+				glog.V(kmmparams.KmmLogLevel).Infof("Checking %s is present in events", item)
+				for _, event := range eventList {
+					if event.Object.Reason == item {
+						glog.V(kmmparams.KmmLogLevel).Infof("Found %s in events", item)
+						foundEvents++
+
+						break
+					}
+				}
+			}
+			Expect(reasonSignListLength).To(Equal(foundEvents), "Expected number of events not found")
+		})
+
+		It("should generate events on nodes when module is loaded", polarion.ID("68106"), func() {
+			By("Getting events from 'default' namespace")
+			eventList, err := events.List(APIClient, "default")
+			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
+
+			totalNodes, _ := get.NumberOfNodesForSelector(APIClient, GeneralConfig.WorkerLabelMap)
+
+			foundModuleLoadedEvents := 0
+			foundModuleUnloadedEvents := 0
+			for _, event := range eventList {
+				if event.Object.Reason == kmmparams.ReasonModuleLoaded &&
+					event.Object.Message == get.ModuleLoadedMessage(kmmparams.ModuleBuildAndSignNamespace, moduleName) {
+					foundModuleLoadedEvents++
+				}
+				if event.Object.Reason == kmmparams.ReasonModuleUnloaded &&
+					event.Object.Message == get.ModuleUnloadedMessage(kmmparams.ModuleBuildAndSignNamespace, moduleName) {
+					foundModuleUnloadedEvents++
+				}
+			}
+			Expect(totalNodes).To(Equal(foundModuleLoadedEvents), "ModuleLoaded events do not match")
+			Expect(totalNodes).To(Equal(foundModuleUnloadedEvents), "ModuleUnloaded events do not match")
 		})
 
 		It("should be able to run preflightvalidation with no push", polarion.ID("56329"), func() {
