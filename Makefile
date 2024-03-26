@@ -36,3 +36,13 @@ install: deps-update install-ginkgo
 run-tests:
 	@echo "Executing eco-gotests test-runner script"
 	scripts/test-runner.sh
+
+run-internal-pkg-unit-tests:
+	@echo "Executing eco-gotests internal package unit tests"
+	UNIT_TEST=true go test -v ./tests/internal/...
+
+# Note: To add more unit tests for more packages, add corresponding targets here
+test: run-internal-pkg-unit-tests
+	
+coverage-html: test
+	go tool cover -html cover.out

@@ -2,6 +2,7 @@ package inittools
 
 import (
 	"flag"
+	"os"
 
 	"github.com/golang/glog"
 	"github.com/onsi/ginkgo/v2"
@@ -23,6 +24,11 @@ var (
 func init() {
 	// Work around bug in glog lib
 	logf.SetLogger(zap.New(zap.WriteTo(ginkgo.GinkgoWriter), zap.UseDevMode(true)))
+
+	// Skip loading config if running unit tests
+	if os.Getenv("UNIT_TEST") == "true" {
+		return
+	}
 
 	if GeneralConfig = config.NewConfig(); GeneralConfig == nil {
 		glog.Fatalf("error to load general config")

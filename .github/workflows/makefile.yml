@@ -34,3 +34,6 @@ jobs:
         run: ginkgo run -vv -r --dry-run ./tests/
         env:
           ECO_DRY_RUN: true
+      
+      - name: Run unit tests
+        run: make test
