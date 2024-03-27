@@ -128,6 +128,11 @@ var _ = Describe(
 			It("Removes stuck SPK pods",
 				Label("spk-post-hard-reboot", "spk-cleanup-stuck-pods"), spkcommon.CleanupStuckContainerPods)
 
+			// NOTE: looks like an issue with pods using cached data,
+			// which requires pods restart to reload it.
+			It("Restart SPK Ingress pods after hard reboot",
+				Label("spk-post-hard-reboot", "spk-restart-ingress-pods"), spkcommon.RestartSPKIngressPods)
+
 			It("Asserts workload reachable via IPv4 address", polarion.ID("72193"),
 				Label("spk-post-hard-reboot", "spkingresstcp"), spkcommon.AssertIPv4WorkloadURL)
 
@@ -174,6 +179,11 @@ var _ = Describe(
 			})
 
 			spkcommon.VerifyGracefulRebootSuite()
+
+			// NOTE: looks like an issue with pods using cached data,
+			// which requires pods restart to reload it.
+			It("Restart SPK Ingress pods after soft reboot",
+				Label("spk-post-soft-reboot", "spk-restart-ingress-pods"), spkcommon.RestartSPKIngressPods)
 
 			It("Asserts workload reachable via IPv4 address", polarion.ID("72198"),
 				Label("spk-post-soft-reboot", "spkingresstcp"), spkcommon.AssertIPv4WorkloadURL)

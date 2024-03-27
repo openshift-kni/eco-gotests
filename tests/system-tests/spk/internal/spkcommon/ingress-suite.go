@@ -515,3 +515,23 @@ func AssertIPv6UDPWorkloadURLAfterTMMPodDeleted(ctx SpecContext) {
 
 	VerifySPKIngressUDPviaIPv6()
 }
+
+// RestartSPKIngressPods delete SPK Ingress pods.
+func RestartSPKIngressPods() {
+	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
+	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
+
+	dataPods := findPodWithSelector(SPKConfig.SPKDataNS, ingressDataLabel, "3s", "60s")
+
+	for _, dPod := range dataPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+
+	dnsPods := findPodWithSelector(SPKConfig.SPKDnsNS, ingressDNSLabel, "3s", "60s")
+
+	for _, dPod := range dnsPods {
+		err := dPod.WaitUntilReady(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q is not Ready", dPod.Definition.Name))
+	}
+}
