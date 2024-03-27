@@ -196,29 +196,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(reasonSignListLength).To(Equal(foundEvents), "Expected number of events not found")
 		})
 
-		It("should generate events on nodes when module is loaded", polarion.ID("68106"), func() {
-			By("Getting events from 'default' namespace")
-			eventList, err := events.List(APIClient, "default")
-			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
-
-			totalNodes, _ := get.NumberOfNodesForSelector(APIClient, GeneralConfig.WorkerLabelMap)
-
-			foundModuleLoadedEvents := 0
-			foundModuleUnloadedEvents := 0
-			for _, event := range eventList {
-				if event.Object.Reason == kmmparams.ReasonModuleLoaded &&
-					event.Object.Message == get.ModuleLoadedMessage(kmmparams.ModuleBuildAndSignNamespace, moduleName) {
-					foundModuleLoadedEvents++
-				}
-				if event.Object.Reason == kmmparams.ReasonModuleUnloaded &&
-					event.Object.Message == get.ModuleUnloadedMessage(kmmparams.ModuleBuildAndSignNamespace, moduleName) {
-					foundModuleUnloadedEvents++
-				}
-			}
-			Expect(totalNodes).To(Equal(foundModuleLoadedEvents), "ModuleLoaded events do not match")
-			Expect(totalNodes).To(Equal(foundModuleUnloadedEvents), "ModuleUnloaded events do not match")
-		})
-
 		It("should be able to run preflightvalidation with no push", polarion.ID("56329"), func() {
 			By("Detecting cluster architecture")
 

@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/events"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
@@ -18,6 +19,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
@@ -152,6 +154,29 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			log.Printf("error is: %v", err)
 			Expect(err).To(HaveOccurred(), "error while checking the module is loaded")
 
+		})
+
+		It("should generate events on nodes when module is loaded", polarion.ID("68106"), func() {
+			By("Getting events from 'default' namespace")
+			eventList, err := events.List(APIClient, "default")
+			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
+
+			totalNodes, _ := get.NumberOfNodesForSelector(APIClient, GeneralConfig.WorkerLabelMap)
+
+			foundModuleLoadedEvents := 0
+			foundModuleUnloadedEvents := 0
+			for _, event := range eventList {
+				if event.Object.Reason == kmmparams.ReasonModuleLoaded &&
+					event.Object.Message == get.ModuleLoadedMessage(localNsName, moduleName) {
+					foundModuleLoadedEvents++
+				}
+				if event.Object.Reason == kmmparams.ReasonModuleUnloaded &&
+					event.Object.Message == get.ModuleUnloadedMessage(localNsName, moduleName) {
+					foundModuleUnloadedEvents++
+				}
+			}
+			Expect(totalNodes).To(Equal(foundModuleLoadedEvents), "ModuleLoaded events do not match")
+			Expect(totalNodes).To(Equal(foundModuleUnloadedEvents), "ModuleUnloaded events do not match")
 		})
 
 		It("should deploy prebuild image", polarion.ID("53395"), func() {

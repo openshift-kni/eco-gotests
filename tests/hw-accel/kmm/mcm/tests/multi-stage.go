@@ -112,11 +112,11 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating module spec")
 
 			By("Create ManagedClusterModule")
-			selelector := map[string]string{"name": ModulesConfig.SpokeClusterName}
+			selector := map[string]string{"name": ModulesConfig.SpokeClusterName}
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, moduleName, tsparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
-				WithSelector(selelector).
+				WithSelector(selector).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating managedclustermodule")
 

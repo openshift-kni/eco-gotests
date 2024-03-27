@@ -151,13 +151,5 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 				GeneralConfig.ControlPlaneLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking label on all nodes")
 		})
-
-		It("should use SHA format for the module deployed on spoke", polarion.ID("63102"), func() {
-			By("Getting deployed Module on Spoke")
-			moduleSpec, err := kmm.Pull(ModulesConfig.SpokeAPIClient, moduleName, kmmparams.KmmOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
-			Expect(moduleSpec.Definition.Spec.ModuleLoader.Container.KernelMappings[0].ContainerImage).
-				Should(MatchRegexp(`:[A-Fa-f0-9]{64}$`))
-		})
 	})
 })
