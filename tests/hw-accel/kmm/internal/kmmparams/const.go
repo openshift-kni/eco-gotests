@@ -164,6 +164,12 @@ const (
 	KmmOperatorNamespace = "openshift-kmm"
 	// DeploymentName represents the name of the KMM operator deployment.
 	DeploymentName = "kmm-operator-controller"
+	// WebhookDeploymentName represents the name of the Webhook server deployment.
+	WebhookDeploymentName = "kmm-operator-webhook-server"
+	// HubDeploymentName represents the name of the KMM HUB deployment.
+	HubDeploymentName = "kmm-operator-hub-controller"
+	// HubWebhookDeploymentName represents the name of the HUB Webhook server deployment.
+	HubWebhookDeploymentName = "kmm-operator-hub-webhook-server"
 	// BuildArgName represents kmod key passed to kmm-ci example.
 	BuildArgName = "MY_MODULE"
 	// RelImgMustGather represents identifier for must-gather image in operator environment variables.
