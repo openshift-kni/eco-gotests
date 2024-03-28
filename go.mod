@@ -42,7 +42,9 @@ require (
 
 require (
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240309022641-e2b836e0f2d3
+	github.com/openshift/client-go v0.0.1
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
+	github.com/stretchr/testify v1.9.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 
@@ -147,7 +149,6 @@ require (
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240227195723-b6e045729e4d // indirect
 	github.com/openshift/assisted-service v1.0.10-0.20230830164851-6573b5d7021d // indirect
-	github.com/openshift/client-go v0.0.1 // indirect
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
 	github.com/openshift/library-go v0.0.0-20231027143522-b8cd45d2d2c8 // indirect
 	github.com/openshift/local-storage-operator v0.0.0-20240308014313-cc4f213cd7c8 // indirect
@@ -156,6 +157,7 @@ require (
 	github.com/operator-framework/operator-registry v1.35.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect

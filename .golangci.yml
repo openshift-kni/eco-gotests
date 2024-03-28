@@ -48,6 +48,7 @@ linters-settings:
         - "open-cluster-management.io/governance-policy-propagator/api"
         - "sigs.k8s.io/controller-runtime"
         - $gostd
+        - "github.com/stretchr/testify"
   wsl:
     strict-append: false
   gofmt:
@@ -83,6 +84,7 @@ linters-settings:
 
 linters:
   disable:
+    - ireturn
     - structcheck
   enable:
     - asciicheck
@@ -111,7 +113,6 @@ linters:
     - govet
     - importas
     - ineffassign
-    - ireturn
     - lll
     - makezero
     - misspell

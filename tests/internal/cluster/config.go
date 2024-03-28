@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/golang/glog"
@@ -84,7 +85,7 @@ func GetOCPPullSecret(clusterObj APIClientGetter) (*secret.Builder, error) {
 
 	_, ok := pullSecret.Object.Data[".dockerconfigjson"]
 	if !ok {
-		return nil, err
+		return nil, errors.New("pull-secret does not contain .dockerconfigjson")
 	}
 
 	return pullSecret, nil
