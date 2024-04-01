@@ -33,7 +33,8 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 
 	glog.V(100).Infof(logMessage)
 
-	networkList, err := apiClient.SriovNetworks(nsname).List(context.Background(), passedOptions)
+	networkList, err := apiClient.ClientSrIov.SriovnetworkV1().
+		SriovNetworks(nsname).List(context.Background(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list sriov networks in the namespace %s due to %s", nsname, err.Error())
@@ -46,7 +47,7 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 	for _, runningNetwork := range networkList.Items {
 		copiedNetwork := runningNetwork
 		networkBuilder := &NetworkBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.ClientSrIov,
 			Object:     &copiedNetwork,
 			Definition: &copiedNetwork,
 		}

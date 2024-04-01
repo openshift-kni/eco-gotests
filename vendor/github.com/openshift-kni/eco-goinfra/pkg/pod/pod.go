@@ -357,9 +357,6 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 		return bytes.Buffer{}, err
 	}
 
-	glog.V(100).Infof("Execute command %v in the pod",
-		command)
-
 	var (
 		buffer bytes.Buffer
 		cName  string
@@ -370,6 +367,9 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 	} else {
 		cName = builder.Definition.Spec.Containers[0].Name
 	}
+
+	glog.V(100).Infof("Execute command %v in the pod %s container %s in namespace %s",
+		command, builder.Object.Name, cName, builder.Object.Namespace)
 
 	req := builder.apiClient.CoreV1Interface.RESTClient().
 		Post().

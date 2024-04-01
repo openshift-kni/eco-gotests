@@ -33,7 +33,8 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.Li
 
 	glog.V(100).Infof(logMessage)
 
-	networkNodePoliciesList, err := apiClient.SriovNetworkNodePolicies(nsname).List(context.Background(), passedOptions)
+	networkNodePoliciesList, err := apiClient.ClientSrIov.SriovnetworkV1().
+		SriovNetworkNodePolicies(nsname).List(context.Background(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list SriovNetworkNodePolicies in the namespace %s due to %s",
@@ -47,7 +48,7 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.Li
 	for _, policy := range networkNodePoliciesList.Items {
 		copiedNetworkNodePolicy := policy
 		policyBuilder := &PolicyBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.ClientSrIov,
 			Object:     &copiedNetworkNodePolicy,
 			Definition: &copiedNetworkNodePolicy}
 

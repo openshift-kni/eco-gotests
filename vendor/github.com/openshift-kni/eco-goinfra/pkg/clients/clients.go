@@ -38,6 +38,8 @@ import (
 	clientNetAttDefV1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1"
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 
+	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
+	clientSrIovFake "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/fake"
 	clientSrIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1"
 
 	clientMachineConfigV1 "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1"
@@ -76,6 +78,10 @@ import (
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 	lsoV1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
 	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
+	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
+	veleroFakeClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/fake"
+	veleroV1Client "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/typed/velero/v1"
 	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
 	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
@@ -90,6 +96,7 @@ type Settings struct {
 	networkV1Client.NetworkingV1Interface
 	appsV1Client.AppsV1Interface
 	rbacV1Client.RbacV1Interface
+	ClientSrIov clientSrIov.Interface
 	clientSrIovV1.SriovnetworkV1Interface
 	Config *rest.Config
 	runtimeClient.Client
@@ -106,9 +113,13 @@ type Settings struct {
 	LocalVolumeInterface lsoV1alpha1.LocalVolumeSet
 	machinev1beta1client.MachineV1beta1Interface
 	storageV1Client.StorageV1Interface
+	VeleroClient veleroClient.Interface
+	veleroV1Client.VeleroV1Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
+//
+//nolint:funlen
 func New(kubeconfig string) *Settings {
 	var (
 		config *rest.Config
@@ -138,6 +149,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.ConfigV1Interface = clientConfigV1.NewForConfigOrDie(config)
 	clientSet.MachineconfigurationV1Interface = clientMachineConfigV1.NewForConfigOrDie(config)
 	clientSet.AppsV1Interface = appsV1Client.NewForConfigOrDie(config)
+	clientSet.ClientSrIov = clientSrIov.NewForConfigOrDie(config)
 	clientSet.SriovnetworkV1Interface = clientSrIovV1.NewForConfigOrDie(config)
 	clientSet.NetworkingV1Interface = networkV1Client.NewForConfigOrDie(config)
 	clientSet.PtpV1Interface = ptpV1.NewForConfigOrDie(config)
@@ -153,6 +165,8 @@ func New(kubeconfig string) *Settings {
 	clientSet.K8sCniCncfIoV1beta1Interface = multinetpolicyclientv1.NewForConfigOrDie(config)
 	clientSet.StorageV1Interface = storageV1Client.NewForConfigOrDie(config)
 	clientSet.K8sClient = kubernetes.NewForConfigOrDie(config)
+	clientSet.VeleroClient = veleroClient.NewForConfigOrDie(config)
+	clientSet.VeleroV1Interface = veleroV1Client.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	crScheme := runtime.NewScheme()
@@ -319,9 +333,7 @@ func (settings *Settings) GetAPIClient() (*Settings, error) {
 func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 	clientSet := &Settings{}
 
-	var k8sClientObjects []runtime.Object
-
-	var genericClientObjects []runtime.Object
+	var k8sClientObjects, genericClientObjects, srIovObjects, veleroClientObjects []runtime.Object
 
 	//nolint:varnamelen
 	for _, v := range k8sMockObjects {
@@ -365,6 +377,14 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 		// Generic Client Objects
 		case *routev1.Route:
 			genericClientObjects = append(genericClientObjects, v)
+		// Velero Client Objects
+		case *velerov1.Backup:
+			veleroClientObjects = append(veleroClientObjects, v)
+		case *velerov1.Restore:
+			veleroClientObjects = append(veleroClientObjects, v)
+		// SrIov Client Objects
+		case *srIovV1.SriovNetwork:
+			srIovObjects = append(srIovObjects, v)
 		}
 	}
 
@@ -374,6 +394,11 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 	clientSet.AppsV1Interface = clientSet.K8sClient.AppsV1()
 	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
 	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
+	clientSet.ClientSrIov = clientSrIovFake.NewSimpleClientset(srIovObjects...)
+
+	// Assign the fake velero clientset to the clientSet
+	clientSet.VeleroClient = veleroFakeClient.NewSimpleClientset(veleroClientObjects...)
+	clientSet.VeleroV1Interface = clientSet.VeleroClient.VeleroV1()
 
 	// Update the generic client with schemes of generic resources
 	fakeClientScheme := runtime.NewScheme()

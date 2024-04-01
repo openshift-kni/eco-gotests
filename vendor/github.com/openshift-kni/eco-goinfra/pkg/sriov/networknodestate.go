@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
+	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,7 +19,7 @@ type NetworkNodeStateBuilder struct {
 	// Dynamically discovered SriovNetworkNodeState object.
 	Objects *srIovV1.SriovNetworkNodeState
 	// apiClient opens api connection to the cluster.
-	apiClient *clients.Settings
+	apiClient clientSrIov.Interface
 	// nodeName defines on what node SriovNetworkNodeState resource should be queried.
 	nodeName string
 	// nsName defines SrIov operator namespace.
@@ -34,7 +35,7 @@ func NewNetworkNodeStateBuilder(apiClient *clients.Settings, nodeName, nsname st
 		nodeName, nsname)
 
 	builder := &NetworkNodeStateBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.ClientSrIov,
 		nodeName:  nodeName,
 		nsName:    nsname,
 	}
@@ -64,7 +65,7 @@ func (builder *NetworkNodeStateBuilder) Discover() error {
 		builder.nsName, builder.nodeName)
 
 	var err error
-	builder.Objects, err = builder.apiClient.SriovNetworkNodeStates(builder.nsName).Get(
+	builder.Objects, err = builder.apiClient.SriovnetworkV1().SriovNetworkNodeStates(builder.nsName).Get(
 		context.TODO(), builder.nodeName, v1.GetOptions{})
 
 	return err

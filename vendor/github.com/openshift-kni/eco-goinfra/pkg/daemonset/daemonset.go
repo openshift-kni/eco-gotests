@@ -138,6 +138,44 @@ func (builder *Builder) WithNodeSelector(selector map[string]string) *Builder {
 	return builder
 }
 
+// WithHostNetwork applies HostNetwork to daemonset definition.
+func (builder *Builder) WithHostNetwork() *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Enabling hostnetwork flag to daemonset %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.HostNetwork = true
+
+	return builder
+}
+
+// WithVolume defines Volume of daemonset under PodTemplateSpec.
+func (builder *Builder) WithVolume(dsVolume corev1.Volume) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if dsVolume.Name == "" {
+		glog.V(100).Infof("The Volume name parameter is empty")
+
+		builder.errorMsg = "Volume name parameter is empty"
+
+		return builder
+	}
+
+	glog.V(100).Infof("Adding volume %s for daemonset %s pod template in namespace %s",
+		dsVolume.Name, builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.Volumes = append(
+		builder.Definition.Spec.Template.Spec.Volumes,
+		dsVolume)
+
+	return builder
+}
+
 // WithAdditionalContainerSpecs appends a list of container specs to the daemonset definition.
 func (builder *Builder) WithAdditionalContainerSpecs(specs []corev1.Container) *Builder {
 	if valid, _ := builder.validate(); !valid {

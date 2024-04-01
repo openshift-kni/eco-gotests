@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
+	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +26,7 @@ type OperatorConfigBuilder struct {
 	// Created SriovOperatorConfig object.
 	Object *srIovV1.SriovOperatorConfig
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient clientSrIov.Interface
 	errorMsg  string
 }
 
@@ -35,7 +36,7 @@ func NewOperatorConfigBuilder(apiClient *clients.Settings, nsname string) *Opera
 		"Initializing new OperatorConfigBuilder structure with the following params: namespace: %s", nsname)
 
 	builder := &OperatorConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.ClientSrIov,
 		Definition: &srIovV1.SriovOperatorConfig{
 			ObjectMeta: metaV1.ObjectMeta{
 				Name:      sriovOperatorConfigName,
@@ -63,7 +64,7 @@ func (builder *OperatorConfigBuilder) Create() (*OperatorConfigBuilder, error) {
 
 	if !builder.Exists() {
 		var err error
-		builder.Object, err = builder.apiClient.SriovOperatorConfigs(builder.Definition.Namespace).Create(
+		builder.Object, err = builder.apiClient.SriovnetworkV1().SriovOperatorConfigs(builder.Definition.Namespace).Create(
 			context.TODO(), builder.Definition, metaV1.CreateOptions{},
 		)
 
@@ -82,7 +83,7 @@ func PullOperatorConfig(apiClient *clients.Settings, nsname string) (*OperatorCo
 	glog.V(100).Infof("Pulling existing default SriovOperatorConfig: %s", sriovOperatorConfigName)
 
 	builder := OperatorConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.ClientSrIov,
 		Definition: &srIovV1.SriovOperatorConfig{
 			ObjectMeta: metaV1.ObjectMeta{
 				Name:      sriovOperatorConfigName,
@@ -116,7 +117,7 @@ func (builder *OperatorConfigBuilder) Exists() bool {
 		"Checking if SriovOperatorConfig %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.SriovOperatorConfigs(builder.Definition.Namespace).
+	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovOperatorConfigs(builder.Definition.Namespace).
 		Get(context.TODO(), sriovOperatorConfigName, metaV1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
@@ -162,7 +163,9 @@ func (builder *OperatorConfigBuilder) Update() (*OperatorConfigBuilder, error) {
 		builder.Definition.Name,
 	)
 
-	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	var err error
+	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovOperatorConfigs(builder.Definition.Namespace).
+		Update(context.TODO(), builder.Definition, metaV1.UpdateOptions{})
 
 	return builder, err
 }
@@ -181,7 +184,8 @@ func (builder *OperatorConfigBuilder) Delete() (*OperatorConfigBuilder, error) {
 		return builder, fmt.Errorf("SriovOperatorConfig cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
+	err := builder.apiClient.SriovnetworkV1().SriovOperatorConfigs(builder.Definition.Namespace).
+		Delete(context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
 	if err != nil {
 		return builder, fmt.Errorf("can not delete SriovOperatorConfig: %w", err)
 	}

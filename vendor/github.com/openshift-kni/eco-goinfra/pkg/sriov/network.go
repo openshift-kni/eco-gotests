@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,7 +29,7 @@ type NetworkBuilder struct {
 	// object is created.
 	errorMsg string
 	// apiClient opens api connection to the cluster.
-	apiClient *clients.Settings
+	apiClient clientSrIov.Interface
 }
 
 // NetworkAdditionalOptions additional options for SriovNetwork object.
@@ -38,7 +39,7 @@ type NetworkAdditionalOptions func(builder *NetworkBuilder) (*NetworkBuilder, er
 func NewNetworkBuilder(
 	apiClient *clients.Settings, name, nsname, targetNsname, resName string) *NetworkBuilder {
 	builder := NetworkBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.ClientSrIov,
 		Definition: &srIovV1.SriovNetwork{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -245,8 +246,14 @@ func (builder *NetworkBuilder) WithOptions(options ...NetworkAdditionalOptions) 
 func PullNetwork(apiClient *clients.Settings, name, nsname string) (*NetworkBuilder, error) {
 	glog.V(100).Infof("Pulling existing sriovnetwork name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("sriovnetwork 'apiClient' cannot be empty")
+	}
+
 	builder := NetworkBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.ClientSrIov,
 		Definition: &srIovV1.SriovNetwork{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -258,13 +265,13 @@ func PullNetwork(apiClient *clients.Settings, name, nsname string) (*NetworkBuil
 	if name == "" {
 		glog.V(100).Infof("The name of the sriovnetwork is empty")
 
-		builder.errorMsg = "sriovnetwork 'name' cannot be empty"
+		return nil, fmt.Errorf("sriovnetwork 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the sriovnetwork is empty")
 
-		builder.errorMsg = "sriovnetwork 'namespace' cannot be empty"
+		return nil, fmt.Errorf("sriovnetwork 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -284,7 +291,7 @@ func (builder *NetworkBuilder) Create() (*NetworkBuilder, error) {
 
 	if !builder.Exists() {
 		var err error
-		builder.Object, err = builder.apiClient.SriovNetworks(builder.Definition.Namespace).Create(
+		builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).Create(
 			context.TODO(), builder.Definition, metav1.CreateOptions{},
 		)
 
@@ -306,7 +313,7 @@ func (builder *NetworkBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.SriovNetworks(builder.Definition.Namespace).Delete(
+	err := builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).Delete(
 		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
@@ -325,10 +332,45 @@ func (builder *NetworkBuilder) Exists() bool {
 	}
 
 	var err error
-	builder.Object, err = builder.apiClient.SriovNetworks(builder.Definition.Namespace).Get(
+	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).Get(
 		context.Background(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// Update renovates the existing SrIovNetwork object with the SrIovNetwork definition in builder.
+func (builder *NetworkBuilder) Update(force bool) (*NetworkBuilder, error) {
+	if valid, _ := builder.validate(); !valid {
+		return builder, nil
+	}
+
+	glog.V(100).Infof("Updating the SrIovNetwork object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace,
+	)
+
+	var err error
+	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).
+		Update(context.TODO(), builder.Definition, metav1.UpdateOptions{})
+
+	if err != nil {
+		if force {
+			glog.V(100).Infof(
+				msg.FailToUpdateNotification("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
+
+			err = builder.Delete()
+
+			if err != nil {
+				glog.V(100).Infof(
+					msg.FailToUpdateError("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
+
+				return nil, err
+			}
+
+			return builder.Create()
+		}
+	}
+
+	return builder, err
 }
 
 // GetSriovNetworksGVR returns SriovNetwork's GroupVersionResource which could be used for Clean function.
@@ -398,37 +440,4 @@ func (builder *NetworkBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-// Update renovates the existing SrIovNetwork object with the SrIovNetwork definition in builder.
-func (builder *NetworkBuilder) Update(force bool) (*NetworkBuilder, error) {
-	if valid, _ := builder.validate(); !valid {
-		return builder, nil
-	}
-
-	glog.V(100).Infof("Updating the SrIovNetwork object %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace,
-	)
-
-	err := builder.apiClient.Update(context.TODO(), builder.Definition)
-
-	if err != nil {
-		if force {
-			glog.V(100).Infof(
-				msg.FailToUpdateNotification("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
-
-			err = builder.Delete()
-
-			if err != nil {
-				glog.V(100).Infof(
-					msg.FailToUpdateError("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
-
-				return nil, err
-			}
-
-			return builder.Create()
-		}
-	}
-
-	return builder, err
 }
