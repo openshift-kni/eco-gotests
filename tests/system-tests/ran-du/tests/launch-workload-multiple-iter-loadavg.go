@@ -52,7 +52,7 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "error while waiting for statefulsets to become ready")
 
 				By("Waiting for all pods to become ready")
-				_, err = await.WaitUntilAllPodsReady(APIClient, RanDuTestConfig.TestWorkload.Namespace, 10*time.Second)
+				_, err = await.WaitUntilAllPodsReady(APIClient, RanDuTestConfig.TestWorkload.Namespace, randuparams.DefaultTimeout)
 				Expect(err).ToNot(HaveOccurred(), "pod not ready: %s", err)
 			}
 

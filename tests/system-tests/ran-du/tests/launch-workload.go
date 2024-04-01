@@ -1,8 +1,6 @@
 package ran_du_system_test
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -45,7 +43,7 @@ var _ = Describe(
 
 		})
 		It("Assert all pods are ready", polarion.ID("55465"), Label("launch-workload"), func() {
-			_, err := await.WaitUntilAllPodsReady(APIClient, RanDuTestConfig.TestWorkload.Namespace, 10*time.Second)
+			_, err := await.WaitUntilAllPodsReady(APIClient, RanDuTestConfig.TestWorkload.Namespace, randuparams.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "pod not ready: %s", err)
 
 		})
