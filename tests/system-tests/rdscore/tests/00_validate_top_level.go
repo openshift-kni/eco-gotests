@@ -11,6 +11,8 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
+		rdscorecommon.VerifyMACVLANSuite()
+
 		rdscorecommon.VerifySRIOVSuite()
 
 		rdscorecommon.VerifyNMStateSuite()

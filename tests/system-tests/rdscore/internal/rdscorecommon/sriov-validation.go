@@ -147,6 +147,7 @@ func deleteClusterRBAC(rbacName string) {
 	}
 }
 
+//nolint:unparam
 func createClusterRBAC(rbacName, clusterRole, saName, nsName string) {
 	By("Creating RBAC for SA")
 

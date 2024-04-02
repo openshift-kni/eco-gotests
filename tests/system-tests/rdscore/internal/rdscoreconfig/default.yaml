@@ -94,3 +94,68 @@ rdscore_wlkd_sriov_two_ns: rds-sriov-wlkd
 rdscore_wlkd_sriov_net_one: sriov-net-one
 rdscore_wlkd_sriov_net_two: sriov-net-two
 rdscore_tolerations_list: []
+rdscore_mcvlan_ns_one: rds-macvlan-wlkd
+rdscore_mcvlan_cm_data_one:
+  config.sh: |
+    #! /bin/bash
+    set -euo pipefail
+    vid=${1}
+    ip4=${2}
+    ip6=${3:-''}
+    ip link add dev bond0 type bond
+    ip link set dev net1 down
+    ip link set dev bond0 down
+    ip link set dev net1 master bond0
+
+    ip link add link bond0 name bond0.${vid} type vlan id ${vid}
+
+    ip link set dev net1 up
+    ip link set dev bond0 up
+
+    ip addr add ${ip4} dev bond0.${vid}
+
+    if [[ ${ip6} != '' ]]; then
+      ip addr add ${ip6} dev bond0.${vid}
+    fi
+
+    ip link set dev bond0.${vid} up
+
+    ip --br a s
+
+    set -x
+    sleep 1
+
+    nc -k -l 1111
+
+rdscore_mcvlan_deploy_img_one: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
+rdscore_mcvlan_deploy_1_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 493 10.46.125.70/26 2620:52:0:2e7d::45/122"
+rdscore_mcvlan_deploy_2_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 493 10.46.125.71/26 2620:52:0:2e7d::46/122"
+rdscore_mcvlan_nad_one_name: "pc-mm-ext"
+rdscore_mcvlan_1_node_selector:
+  kubernetes.io/hostname: openshift-worker-0.ecore.lab.eng.tlv2.redhat.com
+rdscore_mcvlan_2_node_selector:
+  kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com
+rdscore_macvlan_deploy_1_target: "10.46.125.71 1111"
+rdscore_macvlan_deploy_1_target_ipv6: "2620:52:0:2e7d::46 1111"
+
+rdscore_macvlan_deploy_2_target: "10.46.125.70 1111"
+rdscore_macvlan_deploy_2_target_ipv6: "2620:52:0:2e7d::45 1111"
+rdscore_mcvlan_deploy_3_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 493 10.46.125.72/26 2620:52:0:2e7d::47/122"
+rdscore_mcvlan_deploy_4_cmd:
+- "/bin/sh"
+- "-c"
+- "/opt/net/config.sh 493 10.46.125.73/26 2620:52:0:2e7d::48/122"
+rdscore_macvlan_deploy_3_target: "10.46.125.73 1111"
+rdscore_macvlan_deploy_3_target_ipv6: "2620:52:0:2e7d::48 1111"
+rdscore_macvlan_deploy_4_target: "10.46.125.72 1111"
+rdscore_macvlan_deploy_4_target_ipv6: "2620:52:0:2e7d::47 1111"
+

@@ -93,11 +93,21 @@ func (nad *NodesBMCMap) Decode(value string) error {
 // CoreConfig type keeps RDS Core configuration.
 type CoreConfig struct {
 	*config.GeneralConfig
-	WlkdSRIOVOneNS string `yaml:"rdscore_wlkd_sriov_one_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_NS"`
-	WlkdSRIOVTwoNS string `yaml:"rdscore_wlkd_sriov_two_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_NS"`
+	WlkdSRIOVOneNS       string   `yaml:"rdscore_wlkd_sriov_one_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_NS"`
+	WlkdSRIOVTwoNS       string   `yaml:"rdscore_wlkd_sriov_two_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_NS"`
+	MCVlanNSOne          string   `yaml:"rdscore_mcvlan_ns_one" envconfig:"ECO_RDSCORE_MCVLAN_NS_ONE"`
+	MCVlanNSTwo          string   `yaml:"rdscore_mcvlan_ns_two" envconfig:"ECO_RDSCORE_MCVLAN_NS_TWO"`
+	MCVlanDeployImageOne string   `yaml:"rdscore_mcvlan_deploy_img_one" envconfig:"ECO_SYSTEM_RDSCORE_DEPLOY_IMG_ONE"`
+	MCVlanDeplonOneCMD   []string `yaml:"rdscore_mcvlan_deploy_1_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_1_CMD"`
+	MCVlanDeplonTwoCMD   []string `yaml:"rdscore_mcvlan_deploy_2_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_2_CMD"`
+	MCVlanDeplon3CMD     []string `yaml:"rdscore_mcvlan_deploy_3_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_3_CMD"`
+	MCVlanDeplon4CMD     []string `yaml:"rdscore_mcvlan_deploy_4_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_4_CMD"`
+	MCVlanNADOneName     string   `yaml:"rdscore_mcvlan_nad_one_name" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_NAD_ONE_NAME"`
 	//nolint:lll
 	PerformanceProfileHTName string         `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
 	WlkdTolerationList       TolerationList `yaml:"rdscore_tolerations_list" envconfig:"ECO_RDSCORE_TOLERATIONS_LIST"`
+	//nolint:lll,nolintlint
+	MCVlanCMDataOne map[string]string `yaml:"rdscore_mcvlan_cm_data_one" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_CM_DATA_ONE"`
 	//nolint:lll
 	StorageODFWorkloadImage string      `yaml:"rdscore_storage_storage_wlkd_image" envconfig:"ECO_RDSCORE_STORAGE_WLKD_IMAGE"`
 	NodesCredentialsMap     NodesBMCMap `yaml:"rdscore_nodes_bmc_map" envconfig:"ECO_RDSCORE_NODES_CREDENTIALS_MAP"`
@@ -140,6 +150,26 @@ type CoreConfig struct {
 	WlkdSRIOVDeploy2TwoTargetAddress string `yaml:"rdscore_wlkd2_sriov_deploy_two_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_TWO_TARGET"`
 	//nolint:lll
 	WlkdSRIOVDeploy2TwoTargetAddressIPv6 string `yaml:"rdscore_wlkd2_sriov_deploy_two_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	MCVlanDeployNodeSelectorOne map[string]string `yaml:"rdscore_mcvlan_1_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_1_NODE_SELECTOR"`
+	//nolint:lll
+	MCVlanDeployNodeSelectorTwo map[string]string `yaml:"rdscore_mcvlan_2_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_2_NODE_SELECTOR"`
+	//nolint:lll
+	MCVlanDeploy1TargetAddress string `yaml:"rdscore_macvlan_deploy_1_target" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_ONE_TARGET"`
+	//nolint:lll
+	MCVlanDeploy1TargetAddressIPv6 string `yaml:"rdscore_macvlan_deploy_1_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
+	MCVlanDeploy2TargetAddress string `yaml:"rdscore_macvlan_deploy_2_target" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	MCVlanDeploy2TargetAddressIPv6 string `yaml:"rdscore_macvlan_deploy_2_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	MCVlanDeploy3TargetAddress string `yaml:"rdscore_macvlan_deploy_3_target" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_3_TARGET"`
+	//nolint:lll
+	MCVlanDeploy3TargetAddressIPv6 string `yaml:"rdscore_macvlan_deploy_3_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_3_TARGET_IPV6"`
+	//nolint:lll
+	MCVlanDeploy4TargetAddress string `yaml:"rdscore_macvlan_deploy_4_target" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_4_TARGET"`
+	//nolint:lll
+	MCVlanDeploy4TargetAddressIPv6 string `yaml:"rdscore_macvlan_deploy_4_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_4_TARGET_IPV6"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.

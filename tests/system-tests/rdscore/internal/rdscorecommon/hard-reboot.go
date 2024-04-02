@@ -369,6 +369,12 @@ func VerifyHardRebootSuite() {
 
 				By("Creating SR-IOV workloads on different nodes")
 				VerifySRIOVWorkloadsOnDifferentNodes(ctx)
+
+				By("Creating MACVLAN workloads on the same node")
+				VerifyMacVlanOnSameNode()
+
+				By("Creating MACVLAN workloads on different nodes")
+				VerifyMacVlanOnDifferentNodes()
 			})
 
 			It("Verifies ungraceful cluster reboot",
@@ -460,6 +466,14 @@ func VerifyHardRebootSuite() {
 			It("Verifies SR-IOV workloads on the same node post reboot",
 				Label("rds-core-hard-reboot-sriov-same-node"), polarion.ID("71951"),
 				VerifySRIOVConnectivityOnSameNode)
+
+			It("Verifies MACVLAN workloads on the same node post hard reboot",
+				Label("rds-core-post-hard-reboot-macvlan-same-node"), polarion.ID("72569"),
+				VerifyMACVLANConnectivityOnSameNode)
+
+			It("Verifies MACVLAN workloads on different nodes post hard reboot",
+				Label("rds-core-post-hard-reboot-macvlan-different-nodes"), polarion.ID("72568"),
+				VerifyMACVLANConnectivityOnSameNode)
 		})
 }
 
@@ -480,6 +494,12 @@ func VerifyGracefulRebootSuite() {
 
 				By("Verifying SR-IOV workloads on different nodes")
 				VerifySRIOVWorkloadsOnDifferentNodes(ctx)
+
+				By("Creating MACVLAN workloads on the same node")
+				VerifyMacVlanOnSameNode()
+
+				By("Creating MACVLAN workloads on different nodes")
+				VerifyMacVlanOnDifferentNodes()
 			})
 
 			It("Verifies graceful cluster reboot",
@@ -530,5 +550,13 @@ func VerifyGracefulRebootSuite() {
 			It("Verifies SR-IOV workloads deployable on different nodes after graceful reboot",
 				Label("rds-core-soft-reboot-sriov-different-node"), polarion.ID("72049"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnDifferentNodes)
+
+			It("Verifies MACVLAN workloads on the same node post soft reboot",
+				Label("rds-core-post-soft-reboot-macvlan-same-node"), polarion.ID("72571"),
+				VerifyMACVLANConnectivityOnSameNode)
+
+			It("Verifies MACVLAN workloads on different nodes post soft reboot",
+				Label("rds-core-post-soft-reboot-macvlan-different-nodes"), polarion.ID("72570"),
+				VerifyMACVLANConnectivityOnSameNode)
 		})
 }
