@@ -162,6 +162,8 @@ const (
 	LabelLongRun = "kmm-longrun"
 	// KmmOperatorNamespace represents the namespace where KMM is installed.
 	KmmOperatorNamespace = "openshift-kmm"
+	// KmmHubOperatorNamespace represents namespace of the operator.
+	KmmHubOperatorNamespace = "openshift-kmm-hub"
 	// DeploymentName represents the name of the KMM operator deployment.
 	DeploymentName = "kmm-operator-controller"
 	// WebhookDeploymentName represents the name of the Webhook server deployment.

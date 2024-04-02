@@ -12,7 +12,7 @@ var (
 
 	// ReporterNamespacesToDump configures reporter namespaces to dump.
 	ReporterNamespacesToDump = map[string]string{
-		KmmHubOperatorNamespace: "kmm-hub",
+		kmmparams.KmmHubOperatorNamespace: "kmm-hub",
 	}
 
 	// ReporterCRDsToDump configures the CRs to dump.

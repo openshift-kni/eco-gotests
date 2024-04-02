@@ -18,7 +18,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/mcm/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +31,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 		scanPod := "scan-checker"
 		// using a timestamp tag, since there is no support for deleting imagestreams
 		image := fmt.Sprintf("%s/%s/%s:%v",
-			kmmparams.LocalImageRegistry, tsparams.KmmHubOperatorNamespace, scanner, time.Now().Unix())
+			kmmparams.LocalImageRegistry, kmmparams.KmmHubOperatorNamespace, scanner, time.Now().Unix())
 		var containerImg []string
 		var dockerfileConfigMap *configmap.Builder
 
@@ -43,34 +42,34 @@ var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 			}
 
 			By("Create Namespace")
-			_, err := namespace.NewBuilder(APIClient, tsparams.KmmHubOperatorNamespace).Create()
+			_, err := namespace.NewBuilder(APIClient, kmmparams.KmmHubOperatorNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating namespace")
 
 			By("Create Configmap")
 			configmMapContents := define.KmmScannerConfigMapContents()
-			dockerfileConfigMap, err = configmap.NewBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).
+			dockerfileConfigMap, err = configmap.NewBuilder(APIClient, scanner, kmmparams.KmmHubOperatorNamespace).
 				WithData(configmMapContents).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 		})
 
 		AfterAll(func() {
 			By("Delete Configmap")
-			err := configmap.NewBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).Delete()
+			err := configmap.NewBuilder(APIClient, scanner, kmmparams.KmmHubOperatorNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 
 			By("Delete ManagedClusterModule")
-			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).Delete()
+			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, scanner, kmmparams.KmmHubOperatorNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting scanner module")
 
 			By("Delete pod pod from the scanner image")
-			scannerPod := pod.NewBuilder(APIClient, scanPod, tsparams.KmmHubOperatorNamespace, image)
+			scannerPod := pod.NewBuilder(APIClient, scanPod, kmmparams.KmmHubOperatorNamespace, image)
 			_, err = scannerPod.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting scanner pod")
 		})
 
 		It("should pass malware testing", polarion.ID("68376"), func() {
 			By("Obtain KMM images for test")
-			pods, _ := pod.List(APIClient, tsparams.KmmHubOperatorNamespace, v1.ListOptions{
+			pods, _ := pod.List(APIClient, kmmparams.KmmHubOperatorNamespace, v1.ListOptions{
 				FieldSelector: "status.phase=Running",
 			})
 
@@ -125,7 +124,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "Error creating moduleloadercontainer")
 
 			By("Build module Spec")
-			moduleSpec, err := kmm.NewModuleBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).
+			moduleSpec, err := kmm.NewModuleBuilder(APIClient, scanner, kmmparams.KmmHubOperatorNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap).
 				WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				BuildModuleSpec()
@@ -133,7 +132,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 
 			By("Create ManagedClusterModule")
 			selector := map[string]string{"name": ModulesConfig.SpokeClusterName}
-			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, scanner, tsparams.KmmHubOperatorNamespace).
+			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, scanner, kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(selector).
@@ -141,11 +140,11 @@ var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating managedclustermodule")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.KmmHubOperatorNamespace, 20*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.KmmHubOperatorNamespace, 20*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building scanner")
 
 			By("Run pod from the scanner image")
-			scannerPod := pod.NewBuilder(APIClient, scanPod, tsparams.KmmHubOperatorNamespace, image)
+			scannerPod := pod.NewBuilder(APIClient, scanPod, kmmparams.KmmHubOperatorNamespace, image)
 			_, err = scannerPod.CreateAndWaitUntilRunning(time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error running scanner image")
 

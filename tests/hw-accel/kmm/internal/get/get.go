@@ -4,12 +4,14 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-version"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/olm"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -169,4 +171,34 @@ func ModuleUnloadedMessage(module, nsname string) string {
 	glog.V(kmmparams.KmmLogLevel).Infof("Return: '%s'", message)
 
 	return message
+}
+
+// KmmOperatorVersion returns CSV version of the installed KMM operator.
+func KmmOperatorVersion(apiClient *clients.Settings) (ver *version.Version, err error) {
+	return operatorVersion(apiClient, "kernel", kmmparams.KmmOperatorNamespace)
+}
+
+// KmmHubOperatorVersion returns CSV version of the installed KMM-HUB operator.
+func KmmHubOperatorVersion(apiClient *clients.Settings) (ver *version.Version, err error) {
+	return operatorVersion(apiClient, "hub", kmmparams.KmmHubOperatorNamespace)
+}
+
+func operatorVersion(apiClient *clients.Settings, namePattern, namespace string) (ver *version.Version, err error) {
+	csv, err := olm.ListClusterServiceVersionWithNamePattern(apiClient, namePattern,
+		namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range csv {
+		glog.V(kmmparams.KmmLogLevel).Infof("CSV: %s, Version: %s, Status: %s",
+			c.Object.Spec.DisplayName, c.Object.Spec.Version, c.Object.Status.Phase)
+
+		csvVersion, _ := version.NewVersion(c.Object.Spec.Version.String())
+
+		return csvVersion, nil
+	}
+
+	return nil, err
 }

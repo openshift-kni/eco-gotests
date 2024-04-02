@@ -35,7 +35,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ManagedClusterModule")
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
@@ -59,7 +59,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Build Module")
 			moduleSpec, err := kmm.NewModuleBuilder(APIClient, "webhook-regexp-and-literal",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap).
 				WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				BuildModuleSpec()
@@ -67,7 +67,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ManagedClusterModule")
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
@@ -90,7 +90,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Build Module")
 			moduleSpec, err := kmm.NewModuleBuilder(APIClient, "webhook-regexp-and-literal",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap).
 				WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				BuildModuleSpec()
@@ -98,7 +98,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ManagedClusterModule")
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
@@ -120,7 +120,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Building Module")
 			moduleSpec, err := kmm.NewModuleBuilder(APIClient, "webhook-invalid-regexp",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithNodeSelector(GeneralConfig.WorkerLabelMap).
 				WithModuleLoaderContainer(moduleLoaderContainerCfg).
 				BuildModuleSpec()
@@ -128,7 +128,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ManagedClusterModule")
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "webhook-no-container-image",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(kmmparams.KmmHubSelector).Create()
@@ -160,7 +160,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ManagedClusterModule")
 			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "no-spoke-namespace",
-				tsparams.KmmHubOperatorNamespace).
+				kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSelector(kmmparams.KmmHubSelector).Create()
 			Expect(err.Error()).To(ContainSubstring("is invalid: spec.spokeNamespace: Required value"))

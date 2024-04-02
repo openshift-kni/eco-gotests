@@ -44,7 +44,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 		AfterAll(func() {
 			By("Delete ManagedClusterModule")
-			_, err := kmm.NewManagedClusterModuleBuilder(APIClient, moduleName, tsparams.KmmHubOperatorNamespace).Delete()
+			_, err := kmm.NewManagedClusterModuleBuilder(APIClient, moduleName, kmmparams.KmmHubOperatorNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting managedclustermodule")
 
 			By("Await module to be deleted")
@@ -54,7 +54,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Delete Hub Secret")
 			err = secret.NewBuilder(APIClient, secretName,
-				tsparams.KmmHubOperatorNamespace, corev1.SecretTypeDockerConfigJson).Delete()
+				kmmparams.KmmHubOperatorNamespace, corev1.SecretTypeDockerConfigJson).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting hub registry secret")
 
 			By("Delete Spoke Secret")
@@ -70,7 +70,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			secretContent := define.SecretContent(ModulesConfig.Registry, ModulesConfig.PullSecret)
 
 			_, err := secret.NewBuilder(APIClient, secretName,
-				tsparams.KmmHubOperatorNamespace, corev1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
+				kmmparams.KmmHubOperatorNamespace, corev1.SecretTypeDockerConfigJson).WithData(secretContent).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating secret on hub")
 
 			By("Creating registry secret on Spoke")
@@ -81,7 +81,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			By("Create ConfigMap")
 			configmapContents := define.LocalMultiStageConfigMapContent(moduleName)
 			dockerfileConfigMap, err := configmap.
-				NewBuilder(APIClient, moduleName, tsparams.KmmHubOperatorNamespace).
+				NewBuilder(APIClient, moduleName, kmmparams.KmmHubOperatorNamespace).
 				WithData(configmapContents).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
 
@@ -113,7 +113,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Create ManagedClusterModule")
 			selector := map[string]string{"name": ModulesConfig.SpokeClusterName}
-			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, moduleName, tsparams.KmmHubOperatorNamespace).
+			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, moduleName, kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSpokeNamespace(kmmparams.KmmOperatorNamespace).
 				WithSelector(selector).
@@ -121,7 +121,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating managedclustermodule")
 
 			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, tsparams.KmmHubOperatorNamespace, 5*time.Minute)
+			err = await.BuildPodCompleted(APIClient, kmmparams.KmmHubOperatorNamespace, 5*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment on Spoke")
