@@ -46,8 +46,6 @@ var (
 	ExternalMacVlanNADName = "external"
 	// SleepCMD represents shel sleep command.
 	SleepCMD = []string{"/bin/bash", "-c", "sleep INF"}
-	// VtySh represents default vtysh cmd prefix.
-	VtySh = []string{"vtysh", "-c"}
 	// FRRContainerName represents default FRR's container name.
 	FRRContainerName = "frr"
 	// FRRSecondContainerName represents second FRR's container name.

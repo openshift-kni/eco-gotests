@@ -8,17 +8,13 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 )
 
 type (
 	bgpDescription struct {
 		BGPState string `json:"bgpState"`
-	}
-
-	bfdDescription struct {
-		BFDStatus string `json:"status"`
-		BFDPeer   string `json:"peer"`
 	}
 
 	bgpStatus struct {
@@ -99,7 +95,7 @@ func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []strin
 func BGPNeighborshipHasState(frrPod *pod.Builder, neighborIPAddress string, state string) (bool, error) {
 	var result map[string]bgpDescription
 
-	bgpStateOut, err := frrPod.ExecCommand(append(tsparams.VtySh, "sh bgp neighbors json"))
+	bgpStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, "sh bgp neighbors json"))
 	if err != nil {
 		return false, err
 	}
@@ -110,29 +106,6 @@ func BGPNeighborshipHasState(frrPod *pod.Builder, neighborIPAddress string, stat
 	}
 
 	return result[neighborIPAddress].BGPState == state, nil
-}
-
-// BFDHasStatus verifies that BFD session on a pod has given status.
-func BFDHasStatus(frrPod *pod.Builder, bfdPeer string, status string) error {
-	bfdStatusOut, err := frrPod.ExecCommand(append(tsparams.VtySh, "sh bfd peers brief json"))
-	if err != nil {
-		return err
-	}
-
-	var result []bfdDescription
-
-	err = json.Unmarshal(bfdStatusOut.Bytes(), &result)
-	if err != nil {
-		return err
-	}
-
-	for _, peer := range result {
-		if peer.BFDPeer == bfdPeer && peer.BFDStatus != status {
-			return fmt.Errorf("%s bfd status is %s (expected %s)", peer.BFDPeer, peer.BFDStatus, status)
-		}
-	}
-
-	return nil
 }
 
 // IsProtocolConfigured verifies that given protocol is set in frr config.
@@ -226,7 +199,7 @@ func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bg
 
 	glog.V(90).Infof("Getting bgp status from container: %s of pod: %s", cName, frrPod.Definition.Name)
 
-	bgpStateOut, err := frrPod.ExecCommand(append(tsparams.VtySh, cmd))
+	bgpStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, cmd))
 
 	if err != nil {
 		return nil, err
@@ -249,7 +222,7 @@ func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bg
 }
 
 func runningConfig(frrPod *pod.Builder) (string, error) {
-	bgpStateOut, err := frrPod.ExecCommand(append(tsparams.VtySh, "sh run"), tsparams.FRRContainerName)
+	bgpStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, "sh run"), tsparams.FRRContainerName)
 	if err != nil {
 		return "", fmt.Errorf("error collecting frr running config from pod %s due to %w",
 			frrPod.Definition.Name, err)

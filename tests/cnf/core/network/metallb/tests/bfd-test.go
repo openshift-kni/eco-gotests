@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
@@ -430,7 +431,7 @@ func testBFDFailOver() {
 	bpgUp, err := frr.BGPNeighborshipHasState(frrPod, ipaddr.RemovePrefix(secondWorkerIP), "Established")
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp state from FRR router")
 	Expect(bpgUp).Should(BeTrue(), "BGP is not in expected established state")
-	Expect(frr.BFDHasStatus(frrPod, ipaddr.RemovePrefix(secondWorkerIP), "up")).Should(BeNil(),
+	Expect(netenv.BFDHasStatus(frrPod, ipaddr.RemovePrefix(secondWorkerIP), "up")).Should(BeNil(),
 		"BFD is not in expected up state")
 
 	By("Verifying that FRR pod lost BFD and BGP session with one of the MetalLb speakers")
@@ -440,7 +441,7 @@ func testBFDFailOver() {
 	bpgUp, err = frr.BGPNeighborshipHasState(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "Established")
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect BGP state")
 	Expect(bpgUp).Should(BeFalse(), "BGP is not in expected down state")
-	Expect(frr.BFDHasStatus(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "down")).
+	Expect(netenv.BFDHasStatus(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "down")).
 		ShouldNot(HaveOccurred(), "BFD is not in expected down state")
 }
 
@@ -502,7 +503,7 @@ func verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrLi
 			time.Minute*3, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
 			BeTrue(), "Failed to receive BGP status UP")
-		Eventually(frr.BFDHasStatus,
+		Eventually(netenv.BFDHasStatus,
 			time.Minute, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "up").
 			ShouldNot(HaveOccurred(), "Failed to receive BFD status UP")

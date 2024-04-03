@@ -1,6 +1,7 @@
 package netenv
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,6 +74,29 @@ func IsSriovDeployed(apiClient *clients.Settings, netConfig *netconfig.NetworkCo
 		if !sriovDaemonset.IsReady(30 * time.Second) {
 			return fmt.Errorf("error SR-IOV daemonset %s is not in ready/ready state",
 				sriovDaemonsetName)
+		}
+	}
+
+	return nil
+}
+
+// BFDHasStatus verifies that BFD session on a pod has given status.
+func BFDHasStatus(frrPod *pod.Builder, bfdPeer string, status string) error {
+	bfdStatusOut, err := frrPod.ExecCommand(append(netparam.VtySh, "sh bfd peers brief json"))
+	if err != nil {
+		return err
+	}
+
+	var result []netparam.BFDDescription
+
+	err = json.Unmarshal(bfdStatusOut.Bytes(), &result)
+	if err != nil {
+		return err
+	}
+
+	for _, peer := range result {
+		if peer.BFDPeer == bfdPeer && peer.BFDStatus != status {
+			return fmt.Errorf("%s bfd status is %s (expected %s)", peer.BFDPeer, peer.BFDStatus, status)
 		}
 	}
 
