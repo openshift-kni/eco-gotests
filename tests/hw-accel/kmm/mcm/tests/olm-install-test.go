@@ -53,7 +53,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 		It("HUB Webhook server be properly installed", polarion.ID("72718"), func() {
 			By("Checking if version is greater than 2.1.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
+			currentVersion, err := get.KmmHubOperatorVersion(APIClient)
 			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
 
 			featureFromVersion, _ := version.NewVersion("2.1.0")

@@ -28,7 +28,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 		moduleName := "intree"
 		secretName := "registry-secret"
-		plainImage := fmt.Sprintf("%s/%s:$KERNEL_FULL_VERSION-%v",
+		plainImage := fmt.Sprintf("%s/%s:$KERNEL_FULL_VERSION-%v-tree",
 			ModulesConfig.Registry, "multi-build", time.Now().Unix())
 		buildArgValue := fmt.Sprintf("%s.o", moduleName)
 		kmodToRemove := "ice"
