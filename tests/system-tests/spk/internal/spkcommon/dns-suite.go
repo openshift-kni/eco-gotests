@@ -130,13 +130,15 @@ func VerifyDNSResolutionFromNewDeploy(ctx SpecContext) {
 	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 		fmt.Sprintf("Failed to find pods matching label %q", wlkdDeployLabel))
 
-	verifyDNSResolution(deploy.Definition.Name, deploy.Definition.Namespace, wlkdDeployLabel, wlkdContainerName)
+	verifyDNSResolution(deploy.Definition.Name, deploy.Definition.Namespace, wlkdDeployLabel,
+		wlkdContainerName, "6m", "20s")
 }
 
 // VerifyDNSResolutionFromExistingDeploy verifies DNS resolution from existing deployment.
 func VerifyDNSResolutionFromExistingDeploy(ctx SpecContext) {
 	glog.V(spkparams.SPKLogLevel).Infof("*** VerifyDNSResolutionFromExistingDeploy ***")
-	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel,
+		wlkdDCIContainerName, "3m", "5s")
 }
 
 // VerifyDNSResolutionAfterTMMScaleUpDownExisting verifies DNS resolution from existing deployment
@@ -148,7 +150,8 @@ func VerifyDNSResolutionAfterTMMScaleUpDownExisting(ctx SpecContext) {
 	scaleUpDeployment(SPKConfig.SPKDataTMMDeployName, SPKConfig.SPKDataNS, tmmLabel, 1)
 	scaleDownDeployment(SPKConfig.SPKDnsTMMDeployName, SPKConfig.SPKDnsNS, tmmLabel)
 	scaleUpDeployment(SPKConfig.SPKDnsTMMDeployName, SPKConfig.SPKDnsNS, tmmLabel, 1)
-	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel,
+		wlkdDCIContainerName, "6m", "10s")
 }
 
 // VerifyDNSResolutionWithMultipleTMMsExisting verifies DNS resolution with multiple instances of TMM controller.
@@ -157,7 +160,8 @@ func VerifyDNSResolutionWithMultipleTMMsExisting(ctx SpecContext) {
 
 	scaleUpDeployment(SPKConfig.SPKDataTMMDeployName, SPKConfig.SPKDataNS, tmmLabel, 2)
 	scaleUpDeployment(SPKConfig.SPKDnsTMMDeployName, SPKConfig.SPKDnsNS, tmmLabel, 2)
-	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel,
+		wlkdDCIContainerName, "3m", "15s")
 }
 
 // VerifyIngressScaleDownUp verifies DNS resolution from existing deployment after Ingress scale down and up.
@@ -168,11 +172,12 @@ func VerifyIngressScaleDownUp(ctx SpecContext) {
 	scaleDownDeployment(SPKConfig.SPKDnsIngressDeployName, SPKConfig.SPKDnsNS, ingressDNSLabel)
 	scaleUpDeployment(SPKConfig.SPKDataIngressDeployName, SPKConfig.SPKDataNS, ingressDataLabel, 1)
 	scaleUpDeployment(SPKConfig.SPKDnsIngressDeployName, SPKConfig.SPKDnsNS, ingressDNSLabel, 1)
-	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel,
+		wlkdDCIContainerName, "7m", "15s")
 }
 
 //nolint:funlen
-func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string) {
+func verifyDNSResolution(deployName, deployNS, deployLabel, containerName, waitDuration, pollInterval string) {
 	By("Asserting deployment exists")
 
 	glog.V(spkparams.SPKLogLevel).Infof("Check deployment %q exists in %q namespace",
@@ -186,8 +191,6 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 			deployNS))
 	}
 
-	By("Finding pod backed by deployment")
-
 	var (
 		appPods  []*pod.Builder
 		err      error
@@ -197,7 +200,19 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 		ipRegexp = `(` + rGroup + `\.){3}` + rGroup
 	)
 
-	Expect(err).ToNot(HaveOccurred(), "Failed to find DCI pod(s) matching label")
+	By("Parsing timeout value")
+
+	retryDuration, err := time.ParseDuration(waitDuration)
+
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse duration: %q", waitDuration))
+
+	By("Parsing retry value")
+
+	pollDuration, err := time.ParseDuration(pollInterval)
+
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse duration: %q", waitDuration))
+
+	By("Finding pod backed by deployment")
 
 	Eventually(func() bool {
 		appPods, err = pod.List(APIClient, deployNS,
@@ -213,7 +228,7 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 			len(appPods), deployLabel)
 
 		return true
-	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+	}).WithContext(ctx).WithPolling(pollDuration).WithTimeout(retryDuration).Should(BeTrue(),
 		fmt.Sprintf("Failed to find pods matching label %q", deployLabel))
 
 	for _, _pod := range appPods {
@@ -245,7 +260,7 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 			glog.V(spkparams.SPKLogLevel).Infof("Command's Output:\n%v\n", output.String())
 
 			return true
-		}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(3*time.Minute).Should(BeTrue(),
+		}).WithContext(ctx).WithPolling(pollDuration).WithTimeout(retryDuration).Should(BeTrue(),
 			"Error performing DNS lookup from within pod")
 
 		By("Access outside URL")
@@ -272,7 +287,7 @@ func verifyDNSResolution(deployName, deployNS, deployLabel, containerName string
 			codesPattern := "200 404"
 
 			return strings.Contains(codesPattern, strings.Trim(output.String(), "'"))
-		}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(3*time.Minute).Should(BeTrue(),
+		}).WithContext(ctx).WithPolling(pollDuration).WithTimeout(retryDuration).Should(BeTrue(),
 			"Error fetching outside URL from within pod")
 	}
 }
@@ -468,7 +483,8 @@ func deletePodMatchingLabel(nsName, labelSelector, waitDuration string) {
 func VerifyDNSResolutionAfterIngressPodIsDeleteExistinDeploy(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDataNS, ingressDataLabel, "3m")
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, ingressDNSLabel, "3m")
-	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace,
+		wlkdDCILabel, wlkdDCIContainerName, "6m", "15s")
 }
 
 // VerifyDNSResolutionAfterIngressPodIsDeleteNewDeploy assert DNS resolution from new deployment,
@@ -484,7 +500,8 @@ func VerifyDNSResolutionAfterIngressPodIsDeleteNewDeploy(ctx SpecContext) {
 func VerifyDNSResolutionAfterTMMPodIsDeletedExistingDeploy(ctx SpecContext) {
 	deletePodMatchingLabel(SPKConfig.SPKDataNS, tmmLabel, "5m")
 	deletePodMatchingLabel(SPKConfig.SPKDnsNS, tmmLabel, "5m")
-	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace, wlkdDCILabel, wlkdDCIContainerName)
+	verifyDNSResolution(SPKConfig.WorkloadDCIDeploymentName, SPKConfig.Namespace,
+		wlkdDCILabel, wlkdDCIContainerName, "6m", "15s")
 }
 
 // VerifyDNSResolutionAfterTMMPodIsDeletedNewDeploy assert DNS resolution from new deployment,
