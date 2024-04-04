@@ -1,8 +1,10 @@
 package tsparams
 
-import "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
+import (
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+)
 
 var (
-	// HubAPIClient is the hub api client.
-	HubAPIClient = inittools.APIClient
+	// Labels represents the range of labels that can be used for test cases selection.
+	Labels = append(ranparam.Labels, LabelSuite)
 )
