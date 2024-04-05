@@ -608,6 +608,14 @@ func installSriovOperator(sriovNamespace *namespace.Builder,
 		sriovSubscription.Definition.Spec.Package)
 	_, err = sriovSub.Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create SR-IOV Subscription %s", sriovSub.Definition.Name))
+
+	By("Creating SR-IOV operator default configuration")
+
+	_, err = sriov.NewOperatorConfigBuilder(APIClient, sriovNamespace.Definition.Name).
+		WithOperatorWebhook(true).
+		WithInjector(true).
+		Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV operator config")
 }
 
 func getVfsUnderTest(busyVfs []string) []string {
