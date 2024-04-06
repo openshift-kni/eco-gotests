@@ -45,6 +45,7 @@ require (
 	github.com/openshift/client-go v0.0.1
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.9.0
+	github.com/vmware-tanzu/velero v1.12.1
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 
@@ -174,7 +175,6 @@ require (
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/thoas/go-funk v0.9.2 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
-	github.com/vmware-tanzu/velero v1.12.1 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.2 // indirect
 	go.opentelemetry.io/otel v1.21.0 // indirect

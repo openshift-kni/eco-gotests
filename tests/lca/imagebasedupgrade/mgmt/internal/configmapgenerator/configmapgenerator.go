@@ -1,7 +1,6 @@
 package configmapgenerator
 
 import (
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -9,8 +8,8 @@ import (
 )
 
 // DataFromDefinition returns a json string representation of the provided resource.
-func DataFromDefinition(apiClient *clients.Settings, obj goclient.Object, version schema.GroupVersion) (string, error) {
-	codec := serializer.NewCodecFactory(apiClient.Scheme()).LegacyCodec(version)
+func DataFromDefinition(scheme *runtime.Scheme, obj goclient.Object, version schema.GroupVersion) (string, error) {
+	codec := serializer.NewCodecFactory(scheme).LegacyCodec(version)
 	data, err := runtime.Encode(codec, obj)
 
 	if err != nil {

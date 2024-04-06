@@ -13,6 +13,15 @@ import (
 const (
 	// LCANamespace is the namespace used by the lifecycle-agent.
 	LCANamespace = "openshift-lifecycle-agent"
+
+	// LCAWorkloadName is the name used for creating resources needed to backup workload app.
+	LCAWorkloadName = "ibu-workload-app"
+
+	// LCAOADPNamespace is the namespace used by the OADP operator.
+	LCAOADPNamespace = "openshift-adp"
+
+	// LCAKlusterletNamespace is the namespace that contains the klusterlet.
+	LCAKlusterletNamespace = "open-cluster-management-agent"
 )
 
 var (
@@ -21,7 +30,9 @@ var (
 
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		LCANamespace: "lca",
+		LCANamespace:           "lca",
+		LCAWorkloadName:        "workload",
+		LCAKlusterletNamespace: "klusterlet",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

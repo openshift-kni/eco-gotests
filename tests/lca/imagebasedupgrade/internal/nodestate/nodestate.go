@@ -67,21 +67,23 @@ func CheckIfNodeReachableOnPort(host, port string) bool {
 // WaitForIBUToBeAvailable waits the specified timeout for the ibu resource to be retrievable.
 func WaitForIBUToBeAvailable(
 	apiClient *clients.Settings,
-	timeout time.Duration) (*lca.ImageBasedUpgradeBuilder, error) {
-	var ibu *lca.ImageBasedUpgradeBuilder
-
+	ibu *lca.ImageBasedUpgradeBuilder,
+	timeout time.Duration) error {
 	err := wait.PollUntilContextTimeout(
 		context.Background(), time.Second*3, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
 
-			ibu, err = lca.PullImageBasedUpgrade(apiClient, ibuparams.IBUName)
+			ibu.Object, err = ibu.Get()
+
 			if err != nil {
 				return false, nil
 			}
+
+			ibu.Definition = ibu.Object
 
 			return true, nil
 		},
 	)
 
-	return ibu, err
+	return err
 }

@@ -146,7 +146,7 @@ func ExecCmdWithStdout(
 				return nil, err
 			}
 
-			hostnameCmd := []string{"sh", "-c", "nsenter --mount=/proc/1/ns/mnt -- sh -c 'hostname'"}
+			hostnameCmd := []string{"sh", "-c", "nsenter --mount=/proc/1/ns/mnt -- sh -c 'printf $(hostname)'"}
 			hostnameBuf, err := mcPod.ExecCommand(hostnameCmd)
 
 			if err != nil {
