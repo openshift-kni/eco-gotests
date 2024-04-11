@@ -638,6 +638,8 @@ func configureSriovMlnxFirmwareOnWorkersAndWaitMCP(
 
 	err := sriovenv.ConfigureSriovMlnxFirmwareOnWorkers(workerNodes, sriovInterfaceName, enableSriov, numVfs)
 	Expect(err).ToNot(HaveOccurred(), "Failed to configure SR-IOV Mellanox firmware")
-	err = netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 5*time.Minute, NetConfig.CnfMcpLabel)
+
+	time.Sleep(10 * time.Second)
+	err = netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
 	Expect(err).ToNot(HaveOccurred(), "Machineconfigpool is not stable")
 }
