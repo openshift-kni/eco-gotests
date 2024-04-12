@@ -1,16 +1,16 @@
 ---
 rcore_nad_workload_ns_one: demo-ns-one
 rcore_nad_workload_ns_two: demo-ns-two
-rdscore_performance_profile_ht_name: ht100gb
+rdscore_performance_profile_ht_name: customcnf
 rdscore_node_selector_ht_nodes:
-  node-role.kubernetes.io/ht100gb: ""
-rdscore_storage_storage_wlkd_image: "registry.ecore.lab.eng.tlv2.redhat.com:5000/ocp-edge-qe/centos-tools:latest"
+  node-role.kubernetes.io/customcnf: ""
+rdscore_storage_storage_wlkd_image: ""
 rdscore_wlkd_odf_one_selector:
   kubernetes.io/hostname: openshift-worker-0.ecore.lab.eng.tlv2.redhat.com
 rdscore_wlkd_odf_two_selector:
   kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com
-rdscore_wlkd_sriov_one_image: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
-rdscore_wlkd_sriov_two_image: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
+rdscore_wlkd_sriov_one_image: ""
+rdscore_wlkd_sriov_two_image: ""
 rdscore_wlkd_sriov_one_cmd:
 - "/bin/sh"
 - "-c"
@@ -127,7 +127,7 @@ rdscore_mcvlan_cm_data_one:
 
     nc -k -l 1111
 
-rdscore_mcvlan_deploy_img_one: "registry.ecore.lab.eng.tlv2.redhat.com:5000/karampok/snife:latest"
+rdscore_mcvlan_deploy_img_one: ""
 rdscore_mcvlan_deploy_1_cmd:
 - "/bin/sh"
 - "-c"
@@ -136,7 +136,7 @@ rdscore_mcvlan_deploy_2_cmd:
 - "/bin/sh"
 - "-c"
 - "/opt/net/config.sh 493 10.46.125.71/26 2620:52:0:2e7d::46/122"
-rdscore_mcvlan_nad_one_name: "pc-mm-ext"
+rdscore_mcvlan_nad_one_name: "mc-vlan-one"
 rdscore_mcvlan_1_node_selector:
   kubernetes.io/hostname: openshift-worker-0.ecore.lab.eng.tlv2.redhat.com
 rdscore_mcvlan_2_node_selector:
