@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -13,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
@@ -25,7 +27,7 @@ import (
 	"k8s.io/utils/cpuset"
 )
 
-var _ = Describe("Per-core runtime tuning of power states - CRI-O", Ordered, func() {
+var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPowerSaveTestCases), Ordered, func() {
 	var (
 		nodeList                []*nodes.Builder
 		nodeName                string
@@ -159,7 +161,7 @@ var _ = Describe("Per-core runtime tuning of power states - CRI-O", Ordered, fun
 			Expect(err).ToNot(HaveOccurred(), "Failed to get cpuset")
 
 			By("Verify powersetting of cpus used by the pod")
-			trimmedOutput := strings.Trim(cpusetOutput.String(), "\r\n")
+			trimmedOutput := strings.Trim(cpusetOutput.String(), " \r\n")
 			cpusUsed, err := cpuset.Parse(trimmedOutput)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse cpuset output")
 
@@ -182,6 +184,59 @@ var _ = Describe("Per-core runtime tuning of power states - CRI-O", Ordered, fun
 			By("Verify after pod was deleted cpus assigned to container have default powersave settings")
 			checkCPUGovernorsAndResumeLatency(targetCpus, "0", "performance")
 		})
+
+	Context("Collect power usage metrics", Ordered, func() {
+		var (
+			samplingInterval time.Duration
+			powerState       string
+			ipmiPod          *pod.Builder
+		)
+
+		BeforeAll(func() {
+			ipmiPod, err = helper.GetIpmiPod(nodeName)
+			Expect(err).ToNot(HaveOccurred(), "Failed to start ipmi pod")
+
+			samplingInterval, err = time.ParseDuration(raninittools.RANConfig.MetricSamplingInterval)
+			Expect(err).ToNot(HaveOccurred(), "Failed to parse metric sampling interval")
+
+			// Determine power state to be used as a tag for the metric
+			powerState, err = helper.GetPowerState(perfProfile)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get power state for the performance profile")
+		})
+
+		AfterAll(func() {
+			_, err = ipmiPod.DeleteAndWait(tsparams.PowerSaveTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Failed to delete ipmi pod")
+		})
+
+		It("Checks power usage for 'noworkload' scenario", func() {
+			duration, err := time.ParseDuration(raninittools.RANConfig.NoWorkloadDuration)
+			Expect(err).ToNot(HaveOccurred(), "Failed to parse no workload duration")
+
+			compMap, err := helper.CollectPowerMetricsWithNoWorkload(
+				duration, samplingInterval, powerState, ipmiPod)
+			Expect(err).ToNot(HaveOccurred(), "Failed to collect power metrics with no workload")
+
+			// Persist power usage metric to ginkgo report for further processing in pipeline.
+			for metricName, metricValue := range compMap {
+				glog.V(tsparams.LogLevel).Infof("%s: %s", metricName, metricValue)
+			}
+		})
+
+		It("Checks power usage for 'steadyworkload' scenario", func() {
+			duration, err := time.ParseDuration(raninittools.RANConfig.WorkloadDuration)
+			Expect(err).ToNot(HaveOccurred(), "Failed to parse steady workload duration")
+
+			compMap, err := helper.CollectPowerMetricsWithSteadyWorkload(duration, samplingInterval,
+				powerState, perfProfile, ipmiPod, nodeName)
+			Expect(err).ToNot(HaveOccurred(), "Failed to collect power metrics with steady workload")
+
+			// Persist power usage metric to ginkgo report for further processing in pipeline.
+			for metricName, metricValue := range compMap {
+				glog.V(tsparams.LogLevel).Infof("%s: %s", metricName, metricValue)
+			}
+		})
+	})
 })
 
 // checkCPUGovernorsAndResumeLatency checks power and latency settings of the cpus.
