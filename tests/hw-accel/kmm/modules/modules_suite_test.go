@@ -12,11 +12,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -120,8 +120,8 @@ var _ = AfterSuite(func() {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(
-		report, GeneralConfig.GetPolarionReportPath(), GeneralConfig.PolarionTCPrefix)
+	reportxml.Create(
+		report, GeneralConfig.GetReportPath(), GeneralConfig.TCPrefix)
 })
 
 var _ = JustAfterEach(func() {

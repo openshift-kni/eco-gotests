@@ -8,8 +8,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwaparams"
@@ -30,7 +29,7 @@ var _ = Describe(
 			By("Verify NMO deployment is Ready")
 			Expect(nmoDeployment.IsReady(rhwaparams.DefaultTimeout)).To(BeTrue(), "NMO deployment is not Ready")
 		})
-		It("Verify Node Maintenance Operator pod is running", polarion.ID("46315"), func() {
+		It("Verify Node Maintenance Operator pod is running", reportxml.ID("46315"), func() {
 			_, err := pod.WaitForAllPodsInNamespaceRunning(
 				APIClient,
 				rhwaparams.RhwaOperatorNs,

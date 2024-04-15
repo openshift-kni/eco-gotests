@@ -13,13 +13,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -67,7 +67,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error deleting scanner pod")
 		})
 
-		It("should pass malware testing", polarion.ID("68376"), func() {
+		It("should pass malware testing", reportxml.ID("68376"), func() {
 			By("Obtain KMM images for test")
 			pods, _ := pod.List(APIClient, kmmparams.KmmHubOperatorNamespace, v1.ListOptions{
 				FieldSelector: "status.phase=Running",

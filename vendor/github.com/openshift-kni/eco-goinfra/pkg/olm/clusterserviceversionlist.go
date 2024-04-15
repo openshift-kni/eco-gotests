@@ -38,7 +38,7 @@ func ListClusterServiceVersion(
 	glog.V(100).Infof(logMessage)
 
 	csvList, err := apiClient.OperatorsV1alpha1Interface.ClusterServiceVersions(nsname).List(
-		context.Background(), passedOptions)
+		context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list clusterserviceversion in the nsname %s due to %s", nsname, err.Error())
@@ -120,7 +120,7 @@ func ListClusterServiceVersionInAllNamespaces(
 
 	glog.V(100).Infof(logMessage)
 
-	csvList, err := apiClient.ClusterServiceVersions("").List(context.Background(), passedOptions)
+	csvList, err := apiClient.ClusterServiceVersions("").List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list CSVs in all namespaces due to %s", err.Error())

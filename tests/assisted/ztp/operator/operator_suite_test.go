@@ -9,11 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/tests"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
 
@@ -41,8 +41,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(
-		report, ZTPConfig.GetPolarionReportPath(), ZTPConfig.PolarionTCPrefix)
+	reportxml.Create(report, ZTPConfig.GetReportPath(), ZTPConfig.TCPrefix)
 })
 
 var _ = JustAfterEach(func() {

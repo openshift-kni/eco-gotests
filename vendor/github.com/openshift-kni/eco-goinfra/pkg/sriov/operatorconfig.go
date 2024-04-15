@@ -82,6 +82,12 @@ func (builder *OperatorConfigBuilder) Create() (*OperatorConfigBuilder, error) {
 func PullOperatorConfig(apiClient *clients.Settings, nsname string) (*OperatorConfigBuilder, error) {
 	glog.V(100).Infof("Pulling existing default SriovOperatorConfig: %s", sriovOperatorConfigName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("SriovOperatorConfig 'apiClient' cannot be empty")
+	}
+
 	builder := OperatorConfigBuilder{
 		apiClient: apiClient.ClientSrIov,
 		Definition: &srIovV1.SriovOperatorConfig{
@@ -95,11 +101,12 @@ func PullOperatorConfig(apiClient *clients.Settings, nsname string) (*OperatorCo
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the SriovOperatorConfig is empty")
 
-		builder.errorMsg = "SriovOperatorConfig 'nsname' cannot be empty"
+		return nil, fmt.Errorf("SriovOperatorConfig 'nsname' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("SriovOperatorConfig object %s doesn't exist", sriovOperatorConfigName)
+		return nil, fmt.Errorf("SriovOperatorConfig object %s doesn't exist in namespace %s",
+			sriovOperatorConfigName, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -133,7 +140,7 @@ func (builder *OperatorConfigBuilder) WithInjector(enable bool) *OperatorConfigB
 		enable, builder.Definition.Name,
 	)
 
-	builder.Definition.Spec.EnableInjector = &enable
+	builder.Definition.Spec.EnableInjector = enable
 
 	return builder
 }
@@ -148,7 +155,7 @@ func (builder *OperatorConfigBuilder) WithOperatorWebhook(enable bool) *Operator
 		enable, builder.Definition.Name,
 	)
 
-	builder.Definition.Spec.EnableOperatorWebhook = &enable
+	builder.Definition.Spec.EnableOperatorWebhook = enable
 
 	return builder
 }
@@ -215,7 +222,13 @@ func (builder *OperatorConfigBuilder) validate() (bool, error) {
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		return false, fmt.Errorf(fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD))
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
+	}
+
+	if builder.errorMsg != "" {
+		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
+
+		return false, fmt.Errorf(builder.errorMsg)
 	}
 
 	return true, nil

@@ -20,9 +20,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -73,7 +73,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
 
-		It("should use internal image-stream", polarion.ID("53651"), func() {
+		It("should use internal image-stream", reportxml.ID("53651"), func() {
 
 			configmapContents := define.LocalMultiStageConfigMapContent(kmodName)
 
@@ -136,7 +136,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 
-		It("should sign an existing image and load the signed module", polarion.ID("53677"), func() {
+		It("should sign an existing image and load the signed module", reportxml.ID("53677"), func() {
 			By("Creating my-signing-key-pub")
 			signKey := get.SigningData("cert", kmmparams.SigningCertBase64)
 

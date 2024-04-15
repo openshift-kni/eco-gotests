@@ -69,10 +69,10 @@ In order to enable k8reporter the following needs to be done:
 
 * Generation Polarion XML reports
 
-We use polarion library for generating polarion compatible xml reports. 
+We use reportxml library for generating compatible xml reports. 
 The reporter is enabled by default and stores reports under REPORTS_DUMP_DIR directory.
-In oder to disable polarion reporter the following needs to be done:
-> export ECO_POLARION_REPORT=false
+In oder to disable reporterxml the following needs to be done:
+> export ECO_ENABLE_REPORT=false
 
 
 <!-- TODO Update this section with optional env vars for each test suite -->

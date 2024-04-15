@@ -98,7 +98,7 @@ func (builder *CatalogSourceBuilder) Create() (*CatalogSourceBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.CatalogSources(builder.Definition.Namespace).Create(context.Background(),
+		builder.Object, err = builder.apiClient.CatalogSources(builder.Definition.Namespace).Create(context.TODO(),
 			builder.Definition, metav1.CreateOptions{})
 	}
 
@@ -118,7 +118,7 @@ func (builder *CatalogSourceBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.OperatorsV1alpha1Interface.CatalogSources(
 		builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

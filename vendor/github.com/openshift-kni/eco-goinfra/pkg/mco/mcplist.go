@@ -30,7 +30,7 @@ func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCP
 
 	glog.V(100).Infof(logMessage)
 
-	mcpList, err := apiClient.MachineConfigPools().List(context.Background(), passedOptions)
+	mcpList, err := apiClient.MachineConfigPools().List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list MCP objects due to %s", err.Error())

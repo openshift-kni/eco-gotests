@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/events"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
@@ -24,7 +25,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -71,7 +71,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error unmarshal pull-secret")
 
 		})
-		It("should build and push image to quay", polarion.ID("53584"), func() {
+		It("should build and push image to quay", reportxml.ID("53584"), func() {
 
 			By("Create configmap")
 			configmapContent := define.SimpleKmodConfigMapContents()
@@ -137,7 +137,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		})
 
-		It("should delete simple-kmod module", polarion.ID("53413"), func() {
+		It("should delete simple-kmod module", reportxml.ID("53413"), func() {
 			By("Deleting the module")
 			_, err := module.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting the module")
@@ -157,7 +157,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		})
 
-		It("should generate events on nodes when module is loaded", polarion.ID("68106"), func() {
+		It("should generate events on nodes when module is loaded", reportxml.ID("68106"), func() {
 			By("Checking if version is greater than 2.0.0")
 			currentVersion, err := get.KmmOperatorVersion(APIClient)
 			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
@@ -188,7 +188,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(totalNodes).To(Equal(foundModuleUnloadedEvents), "ModuleUnloaded events do not match")
 		})
 
-		It("should deploy prebuild image", polarion.ID("53395"), func() {
+		It("should deploy prebuild image", reportxml.ID("53395"), func() {
 
 			By("Create kernel mapping")
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
@@ -229,7 +229,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 
-		It("should delete simple-kmod module", polarion.ID("53413"), func() {
+		It("should delete simple-kmod module", reportxml.ID("53413"), func() {
 			By("Deleting the module")
 			_, err := module.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting the module")
@@ -249,7 +249,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		})
 
-		It("should deploy prebuild image with global secret", polarion.ID("71694"), func() {
+		It("should deploy prebuild image with global secret", reportxml.ID("71694"), func() {
 
 			By("Update global pull-secret")
 			if secretMap["auths"][ModulesConfig.Registry] == nil {

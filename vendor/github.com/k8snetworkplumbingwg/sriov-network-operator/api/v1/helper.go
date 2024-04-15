@@ -10,17 +10,16 @@ import (
 	"strconv"
 	"strings"
 
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
+	intstrutil "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/consts"
 	"github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/render"
+	"github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/vars"
 )
 
 const (
@@ -35,7 +34,8 @@ const (
 	SriovCniStateAuto    = "auto"
 	SriovCniStateOff     = "off"
 	SriovCniStateOn      = "on"
-	SriovCniIpamEmpty    = "\"ipam\":{}"
+	SriovCniIpam         = "\"ipam\""
+	SriovCniIpamEmpty    = SriovCniIpam + ":{}"
 )
 
 const invalidVfIndex = -1
@@ -46,6 +46,8 @@ var log = logf.Log.WithName("sriovnetwork")
 // NicIDMap contains supported mapping of IDs with each in the format of:
 // Vendor ID, Physical Function Device ID, Virtual Function Device ID
 var NicIDMap = []string{}
+
+var InitialState SriovNetworkNodeState
 
 // NetFilterType Represents the NetFilter tags to be used
 type NetFilterType int
@@ -132,7 +134,7 @@ func IsVfSupportedModel(vendorID, deviceID string) bool {
 			return true
 		}
 	}
-	log.Info("IsVfSupportedModel():", "Unsupported VF model:", "vendorId:", vendorID, "deviceId:", deviceID)
+	log.Info("IsVfSupportedModel(): found unsupported VF model", "vendorId:", vendorID, "deviceId:", deviceID)
 	return false
 }
 
@@ -209,6 +211,101 @@ func GetVfDeviceID(deviceID string) string {
 		}
 	}
 	return ""
+}
+
+func IsSwitchdevModeSpec(spec SriovNetworkNodeStateSpec) bool {
+	for _, iface := range spec.Interfaces {
+		if iface.EswitchMode == ESwithModeSwitchDev {
+			return true
+		}
+	}
+	return false
+}
+
+func FindInterface(interfaces Interfaces, name string) (iface Interface, err error) {
+	for _, i := range interfaces {
+		if i.Name == name {
+			return i, nil
+		}
+	}
+	return Interface{}, fmt.Errorf("unable to find interface: %v", name)
+}
+
+// GetEswitchModeFromSpec returns ESwitchMode from the interface spec, returns legacy if not set
+func GetEswitchModeFromSpec(ifaceSpec *Interface) string {
+	if ifaceSpec.EswitchMode == "" {
+		return ESwithModeLegacy
+	}
+	return ifaceSpec.EswitchMode
+}
+
+// GetEswitchModeFromStatus returns ESwitchMode from the interface status, returns legacy if not set
+func GetEswitchModeFromStatus(ifaceStatus *InterfaceExt) string {
+	if ifaceStatus.EswitchMode == "" {
+		return ESwithModeLegacy
+	}
+	return ifaceStatus.EswitchMode
+}
+
+func NeedToUpdateSriov(ifaceSpec *Interface, ifaceStatus *InterfaceExt) bool {
+	if ifaceSpec.Mtu > 0 {
+		mtu := ifaceSpec.Mtu
+		if mtu != ifaceStatus.Mtu {
+			log.V(2).Info("NeedToUpdateSriov(): MTU needs update", "desired", mtu, "current", ifaceStatus.Mtu)
+			return true
+		}
+	}
+
+	if ifaceSpec.NumVfs != ifaceStatus.NumVfs {
+		log.V(2).Info("NeedToUpdateSriov(): NumVfs needs update", "desired", ifaceSpec.NumVfs, "current", ifaceStatus.NumVfs)
+		return true
+	}
+	if ifaceSpec.NumVfs > 0 {
+		for _, vfStatus := range ifaceStatus.VFs {
+			ingroup := false
+			for _, groupSpec := range ifaceSpec.VfGroups {
+				if IndexInRange(vfStatus.VfID, groupSpec.VfRange) {
+					ingroup = true
+					if vfStatus.Driver == "" {
+						log.V(2).Info("NeedToUpdateSriov(): Driver needs update - has no driver",
+							"desired", groupSpec.DeviceType)
+						return true
+					}
+					if groupSpec.DeviceType != "" && groupSpec.DeviceType != consts.DeviceTypeNetDevice {
+						if groupSpec.DeviceType != vfStatus.Driver {
+							log.V(2).Info("NeedToUpdateSriov(): Driver needs update",
+								"desired", groupSpec.DeviceType, "current", vfStatus.Driver)
+							return true
+						}
+					} else {
+						if StringInArray(vfStatus.Driver, vars.DpdkDrivers) {
+							log.V(2).Info("NeedToUpdateSriov(): Driver needs update",
+								"desired", groupSpec.DeviceType, "current", vfStatus.Driver)
+							return true
+						}
+						if vfStatus.Mtu != 0 && groupSpec.Mtu != 0 && vfStatus.Mtu != groupSpec.Mtu {
+							log.V(2).Info("NeedToUpdateSriov(): VF MTU needs update",
+								"vf", vfStatus.VfID, "desired", groupSpec.Mtu, "current", vfStatus.Mtu)
+							return true
+						}
+
+						// this is needed to be sure the admin mac address is configured as expected
+						if ifaceSpec.ExternallyManaged {
+							log.V(2).Info("NeedToUpdateSriov(): need to update the device as it's externally manage",
+								"device", ifaceStatus.PciAddress)
+							return true
+						}
+					}
+					break
+				}
+			}
+			if !ingroup && StringInArray(vfStatus.Driver, vars.DpdkDrivers) {
+				// VF which has DPDK driver loaded but not in any group, needs to be reset to default driver.
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type ByPriority []SriovNetworkNodePolicy
@@ -517,7 +614,7 @@ func (cr *SriovIBNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	}
 
 	if cr.Spec.IPAM != "" {
-		data.Data["SriovCniIpam"] = "\"ipam\":" + strings.Join(strings.Fields(cr.Spec.IPAM), "")
+		data.Data["SriovCniIpam"] = SriovCniIpam + ":" + strings.Join(strings.Fields(cr.Spec.IPAM), "")
 	} else {
 		data.Data["SriovCniIpam"] = SriovCniIpamEmpty
 	}
@@ -544,26 +641,9 @@ func (cr *SriovIBNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	return objs[0], nil
 }
 
-// DeleteNetAttDef deletes the generated net-att-def CR
-func (cr *SriovIBNetwork) DeleteNetAttDef(c client.Client) error {
-	// Fetch the NetworkAttachmentDefinition instance
-	instance := &netattdefv1.NetworkAttachmentDefinition{}
-	namespace := cr.GetNamespace()
-	if cr.Spec.NetworkNamespace != "" {
-		namespace = cr.Spec.NetworkNamespace
-	}
-	err := c.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: cr.GetName()}, instance)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	err = c.Delete(context.TODO(), instance)
-	if err != nil {
-		return err
-	}
-	return nil
+// NetworkNamespace returns target network namespace for the network
+func (cr *SriovIBNetwork) NetworkNamespace() string {
+	return cr.Spec.NetworkNamespace
 }
 
 // RenderNetAttDef renders a net-att-def for sriov CNI
@@ -652,7 +732,7 @@ func (cr *SriovNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	}
 
 	if cr.Spec.IPAM != "" {
-		data.Data["SriovCniIpam"] = "\"ipam\":" + strings.Join(strings.Fields(cr.Spec.IPAM), "")
+		data.Data["SriovCniIpam"] = SriovCniIpam + ":" + strings.Join(strings.Fields(cr.Spec.IPAM), "")
 	} else {
 		data.Data["SriovCniIpam"] = SriovCniIpamEmpty
 	}
@@ -679,26 +759,9 @@ func (cr *SriovNetwork) RenderNetAttDef() (*uns.Unstructured, error) {
 	return objs[0], nil
 }
 
-// DeleteNetAttDef deletes the generated net-att-def CR
-func (cr *SriovNetwork) DeleteNetAttDef(c client.Client) error {
-	// Fetch the NetworkAttachmentDefinition instance
-	instance := &netattdefv1.NetworkAttachmentDefinition{}
-	namespace := cr.GetNamespace()
-	if cr.Spec.NetworkNamespace != "" {
-		namespace = cr.Spec.NetworkNamespace
-	}
-	err := c.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: cr.GetName()}, instance)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	err = c.Delete(context.TODO(), instance)
-	if err != nil {
-		return err
-	}
-	return nil
+// NetworkNamespace returns target network namespace for the network
+func (cr *SriovNetwork) NetworkNamespace() string {
+	return cr.Spec.NetworkNamespace
 }
 
 // NetFilterMatch -- parse netFilter and check for a match
@@ -722,4 +785,40 @@ func NetFilterMatch(netFilter string, netValue string) (isMatch bool) {
 	}
 
 	return netFilterResult[0][1] == netValueResult[0][1] && netFilterResult[0][2] == netValueResult[0][2]
+}
+
+// MaxUnavailable calculate the max number of unavailable nodes to represent the number of nodes
+// we can drain in parallel
+func (s *SriovNetworkPoolConfig) MaxUnavailable(numOfNodes int) (int, error) {
+	// this means we want to drain all the nodes in parallel
+	if s.Spec.MaxUnavailable == nil {
+		return -1, nil
+	}
+	intOrPercent := *s.Spec.MaxUnavailable
+
+	if intOrPercent.Type == intstrutil.String {
+		if strings.HasSuffix(intOrPercent.StrVal, "%") {
+			i := strings.TrimSuffix(intOrPercent.StrVal, "%")
+			v, err := strconv.Atoi(i)
+			if err != nil {
+				return 0, fmt.Errorf("invalid value %q: %v", intOrPercent.StrVal, err)
+			}
+			if v > 100 || v < 1 {
+				return 0, fmt.Errorf("invalid value: percentage needs to be between 1 and 100")
+			}
+		} else {
+			return 0, fmt.Errorf("invalid type: strings needs to be a percentage")
+		}
+	}
+
+	maxunavail, err := intstrutil.GetScaledValueFromIntOrPercent(&intOrPercent, numOfNodes, false)
+	if err != nil {
+		return 0, err
+	}
+
+	if maxunavail < 0 {
+		return 0, fmt.Errorf("negative number is not allowed")
+	}
+
+	return maxunavail, nil
 }

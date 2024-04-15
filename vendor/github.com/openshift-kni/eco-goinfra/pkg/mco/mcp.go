@@ -141,7 +141,7 @@ func (builder *MCPBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.MachineConfigPools().Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -184,7 +184,7 @@ func (builder *MCPBuilder) WaitToBeInCondition(
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
-			mcp, err := builder.apiClient.MachineConfigPools().Get(context.Background(),
+			mcp, err := builder.apiClient.MachineConfigPools().Get(context.TODO(),
 				builder.Object.Name, metav1.GetOptions{})
 
 			if err != nil {
@@ -210,7 +210,7 @@ func (builder *MCPBuilder) WaitForUpdate(timeout time.Duration) error {
 	glog.V(100).Infof("WaitForUpdate waits up to specified time %v until updating"+
 		" machineConfigPool object is updated", timeout)
 
-	mcpUpdating, err := builder.apiClient.MachineConfigPools().Get(context.Background(),
+	mcpUpdating, err := builder.apiClient.MachineConfigPools().Get(context.TODO(),
 		builder.Object.Name, metav1.GetOptions{})
 
 	if err != nil {
@@ -221,7 +221,7 @@ func (builder *MCPBuilder) WaitForUpdate(timeout time.Duration) error {
 		if condition.Type == "Updating" && condition.Status == isTrue {
 			err := wait.PollUntilContextTimeout(
 				context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
-					mcpUpdated, err := builder.apiClient.MachineConfigPools().Get(context.Background(),
+					mcpUpdated, err := builder.apiClient.MachineConfigPools().Get(context.TODO(),
 						builder.Object.Name, metav1.GetOptions{})
 
 					if err != nil {

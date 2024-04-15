@@ -17,13 +17,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/url"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
 	"github.com/openshift/assisted-service/models"
@@ -216,46 +216,46 @@ var _ = Describe(
 				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to x86_64",
 					models.ClusterCPUArchitectureX8664,
 					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
-					polarion.ID("56183")),
+					reportxml.ID("56183")),
 
 				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to s390x",
 					models.ClusterCPUArchitectureS390x,
 					"https://s390x.ocp.releases.ci.openshift.org/graph",
-					polarion.ID("56184")),
+					reportxml.ID("56184")),
 
 				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to ppc64le",
 					models.ClusterCPUArchitecturePpc64le,
 					"https://ppc64le.ocp.releases.ci.openshift.org/graph",
-					polarion.ID("56185")),
+					reportxml.ID("56185")),
 
 				Entry("Assert valid ISO is created by InfraEnv with cpuArchitecture set to arm64",
 					models.ClusterCPUArchitectureArm64,
 					"https://arm64.ocp.releases.ci.openshift.org/graph",
-					polarion.ID("56186")),
+					reportxml.ID("56186")),
 
 				Entry("Assert the InfraEnv creation fails when the cpuArchitecture is mismatched with arm64 arch",
 					models.ClusterCPUArchitectureX8664,
 					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
 					models.ClusterCPUArchitectureArm64,
-					polarion.ID("56190")),
+					reportxml.ID("56190")),
 
 				Entry("Assert the InfraEnv creation fails when the cpuArchitecture is mismatched with ppc64le arch",
 					models.ClusterCPUArchitectureX8664,
 					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
 					models.ClusterCPUArchitecturePpc64le,
-					polarion.ID("56189")),
+					reportxml.ID("56189")),
 
 				Entry("Assert the InfraEnv creation fails when the cpuArchitecture is mismatched with s390x arch",
 					models.ClusterCPUArchitectureX8664,
 					"https://openshift-release.apps.ci.l2s4.p1.openshiftapps.com/graph",
 					models.ClusterCPUArchitectureS390x,
-					polarion.ID("56188")),
+					reportxml.ID("56188")),
 
 				Entry("Assert the InfraEnv creation fails when the cpuArchitecture is mismatched with x86_64 arch",
 					models.ClusterCPUArchitectureArm64,
 					"https://arm64.ocp.releases.ci.openshift.org/graph",
 					models.ClusterCPUArchitectureX8664,
-					polarion.ID("56187")),
+					reportxml.ID("56187")),
 			)
 		})
 

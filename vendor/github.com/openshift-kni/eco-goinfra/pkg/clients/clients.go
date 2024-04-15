@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
+
 	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -27,6 +29,7 @@ import (
 
 	apiExt "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	appsV1Client "k8s.io/client-go/kubernetes/typed/apps/v1"
 	networkV1Client "k8s.io/client-go/kubernetes/typed/networking/v1"
 	rbacV1Client "k8s.io/client-go/kubernetes/typed/rbac/v1"
@@ -41,6 +44,10 @@ import (
 	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
 	clientSrIovFake "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/fake"
 	clientSrIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1"
+
+	clientCgu "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned"
+	clientCguFake "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/fake"
+	clientCguV1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1"
 
 	clientMachineConfigV1 "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1"
 
@@ -82,6 +89,7 @@ import (
 	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
 	veleroFakeClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/fake"
 	veleroV1Client "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/typed/velero/v1"
+	dynamicFake "k8s.io/client-go/dynamic/fake"
 	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
 	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
@@ -115,6 +123,8 @@ type Settings struct {
 	storageV1Client.StorageV1Interface
 	VeleroClient veleroClient.Interface
 	veleroV1Client.VeleroV1Interface
+	ClientCgu clientCgu.Interface
+	clientCguV1.RanV1alpha1Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -167,6 +177,8 @@ func New(kubeconfig string) *Settings {
 	clientSet.K8sClient = kubernetes.NewForConfigOrDie(config)
 	clientSet.VeleroClient = veleroClient.NewForConfigOrDie(config)
 	clientSet.VeleroV1Interface = veleroV1Client.NewForConfigOrDie(config)
+	clientSet.ClientCgu = clientCgu.NewForConfigOrDie(config)
+	clientSet.RanV1alpha1Interface = clientCguV1.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	crScheme := runtime.NewScheme()
@@ -327,16 +339,24 @@ func (settings *Settings) GetAPIClient() (*Settings, error) {
 	return settings, nil
 }
 
+// TestClientParams provides the struct to store the parameters for the test client.
+type TestClientParams struct {
+	K8sMockObjects []runtime.Object
+	GVK            []schema.GroupVersionKind
+
+	// Note: Add more fields below if/when needed.
+}
+
 // GetTestClients returns a fake clientset for testing.
 //
-//nolint:funlen
-func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
+//nolint:funlen,gocyclo
+func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet := &Settings{}
 
-	var k8sClientObjects, genericClientObjects, srIovObjects, veleroClientObjects []runtime.Object
+	var k8sClientObjects, genericClientObjects, srIovObjects, veleroClientObjects, cguObjects []runtime.Object
 
 	//nolint:varnamelen
-	for _, v := range k8sMockObjects {
+	for _, v := range tcp.K8sMockObjects {
 		// Based on what type of object is, populate certain object slices
 		// with what is supported by a certain client.
 		// Add more items below if/when needed.
@@ -374,8 +394,18 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *storagev1.StorageClass:
 			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.ConfigMap:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.Event:
+			k8sClientObjects = append(k8sClientObjects, v)
 		// Generic Client Objects
 		case *routev1.Route:
+			genericClientObjects = append(genericClientObjects, v)
+		case *mlbtypes.IPAddressPool:
+			genericClientObjects = append(genericClientObjects, v)
+		case *mlbtypes.BFDProfile:
+			genericClientObjects = append(genericClientObjects, v)
+		case *mlbtypes.BGPPeer:
 			genericClientObjects = append(genericClientObjects, v)
 		// Velero Client Objects
 		case *velerov1.Backup:
@@ -384,6 +414,16 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 			veleroClientObjects = append(veleroClientObjects, v)
 		// SrIov Client Objects
 		case *srIovV1.SriovNetwork:
+			srIovObjects = append(srIovObjects, v)
+		case *srIovV1.SriovNetworkNodePolicy:
+			srIovObjects = append(srIovObjects, v)
+		case *srIovV1.SriovOperatorConfig:
+			srIovObjects = append(srIovObjects, v)
+		case *srIovV1.SriovNetworkNodeState:
+			srIovObjects = append(srIovObjects, v)
+		case *cguapiv1alpha1.ClusterGroupUpgrade:
+			cguObjects = append(cguObjects, v)
+		case *srIovV1.SriovNetworkPoolConfig:
 			srIovObjects = append(srIovObjects, v)
 		}
 	}
@@ -400,6 +440,8 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 	clientSet.VeleroClient = veleroFakeClient.NewSimpleClientset(veleroClientObjects...)
 	clientSet.VeleroV1Interface = clientSet.VeleroClient.VeleroV1()
 
+	clientSet.ClientCgu = clientCguFake.NewSimpleClientset(cguObjects...)
+
 	// Update the generic client with schemes of generic resources
 	fakeClientScheme := runtime.NewScheme()
 
@@ -408,6 +450,12 @@ func GetTestClients(k8sMockObjects []runtime.Object) *Settings {
 		return nil
 	}
 
+	if len(tcp.GVK) > 0 && len(genericClientObjects) > 0 {
+		fakeClientScheme.AddKnownTypeWithName(
+			tcp.GVK[0], genericClientObjects[0])
+	}
+
+	clientSet.Interface = dynamicFake.NewSimpleDynamicClient(fakeClientScheme, genericClientObjects...)
 	// Add fake runtime client to clientSet runtime client
 	clientSet.Client = fakeRuntimeClient.NewClientBuilder().WithScheme(fakeClientScheme).
 		WithRuntimeObjects(genericClientObjects...).Build()

@@ -10,9 +10,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 const (
@@ -67,7 +67,7 @@ var _ = Describe(
 			}
 		})
 
-		It("Node label appears on agents and spoke nodes with ZTP flow", polarion.ID("60399"), func() {
+		It("Node label appears on agents and spoke nodes with ZTP flow", reportxml.ID("60399"), func() {
 			if len(bmhLabelsList) == 0 {
 				Skip("no BMHs were used")
 			}
@@ -86,7 +86,7 @@ var _ = Describe(
 			}
 		})
 
-		It("Node label appears on agents and spoke nodes with boot-it-yourself flow", polarion.ID("60498"), func() {
+		It("Node label appears on agents and spoke nodes with boot-it-yourself flow", reportxml.ID("60498"), func() {
 			numNodes := 0
 			expectedNumNodes := len(agentLabelsList) - len(bmhLabelsList)
 			if expectedNumNodes == 0 {

@@ -4,17 +4,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/mcm/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 	Context("KMM-HUB", Label("mcm-webhook"), func() {
 
-		It("should fail if no container image is specified in the module", polarion.ID("62608"), func() {
+		It("should fail if no container image is specified in the module", reportxml.ID("62608"), func() {
 
 			By("Create KernelMapping")
 			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()
@@ -44,7 +44,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err.Error()).To(ContainSubstring(".containerImage"))
 		})
 
-		It("should fail if no regexp nor literal are set in a kernel mapping", polarion.ID("62596"), func() {
+		It("should fail if no regexp nor literal are set in a kernel mapping", reportxml.ID("62596"), func() {
 
 			By("Create KernelMapping")
 			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("willBeRemoved").BuildKernelMappingConfig()
@@ -75,7 +75,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err.Error()).To(ContainSubstring("regexp or literal must be set"))
 		})
 
-		It("should fail if both regexp and literal are set in a kernel mapping", polarion.ID("62597"), func() {
+		It("should fail if both regexp and literal are set in a kernel mapping", reportxml.ID("62597"), func() {
 
 			By("Create KernelMapping")
 			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()
@@ -106,7 +106,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err.Error()).To(ContainSubstring("regexp and literal are mutually exclusive properties"))
 		})
 
-		It("should fail if the regexp isn't valid in the module", polarion.ID("62609"), func() {
+		It("should fail if the regexp isn't valid in the module", reportxml.ID("62609"), func() {
 
 			By("Create KernelMapping")
 			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("*-invalid-regexp").BuildKernelMappingConfig()
@@ -139,7 +139,7 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 
 	Context("KMM-HUB", Label("mcm-crd"), func() {
 
-		It("should fail if no spokeNamespace is set in MCM", polarion.ID("71692"), func() {
+		It("should fail if no spokeNamespace is set in MCM", reportxml.ID("71692"), func() {
 
 			By("Create KernelMapping")
 			kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()

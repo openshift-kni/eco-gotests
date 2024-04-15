@@ -17,11 +17,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/cni/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 const (
@@ -104,7 +104,7 @@ var _ = Describe("", Ordered,
 		})
 
 		Context("two tap devices plus sysctl with", func() {
-			It("MAC-VLANs interfaces and IPv6 static IPAM", polarion.ID("63732"), func() {
+			It("MAC-VLANs interfaces and IPv6 static IPAM", reportxml.ID("63732"), func() {
 				By("Creating tap-one NetworkAttachmentDefinition")
 				tapOne := defineAndCreateTapNad(tapOneNadName, 0, 0, enabledSysctlFlags)
 
@@ -156,7 +156,7 @@ var _ = Describe("", Ordered,
 				doesMacVlanHasCorrectConfig(runningPod, interfaceBasedOnSecondTap, secondTapInterfaceName)
 			})
 
-			It("VLANs interfaces and dual-stack static IPAM", polarion.ID("63734"), func() {
+			It("VLANs interfaces and dual-stack static IPAM", reportxml.ID("63734"), func() {
 				By("Creating tap-one NetworkAttachmentDefinition")
 				tapOne := defineAndCreateTapNad(tapOneNadName, 0, 0, enabledSysctlFlags)
 
@@ -221,7 +221,7 @@ var _ = Describe("", Ordered,
 			})
 
 			It("two IP-VLAN and two VLAN interfaces, IPAM dual-stack whereabout, Pod restart using deployment",
-				polarion.ID("63735"), func() {
+				reportxml.ID("63735"), func() {
 					nadNamesInterfaceNamesMap := orderedMap.New[string, string]()
 
 					By("Creating tap-one NetworkAttachmentDefinition")
@@ -296,7 +296,7 @@ var _ = Describe("", Ordered,
 
 			It("MAC-VLAN and VLAN interfaces using ipv4 whereabout IPAM, deployment. "+
 				"Update sysctl, selinux config of Tap NAD",
-				polarion.ID("63765"), func() {
+				reportxml.ID("63765"), func() {
 					nadNamesInterfaceNamesMap := orderedMap.New[string, string]()
 					By("Creating tap-one NetworkAttachmentDefinition")
 					tapOne := defineAndCreateTapNad("tap-one", customUserID, customGroupID, enabledSysctlFlags)

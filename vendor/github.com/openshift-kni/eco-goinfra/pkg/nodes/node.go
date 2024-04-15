@@ -167,7 +167,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.CoreV1().Nodes().Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -185,7 +185,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.CoreV1().Nodes().Delete(
-		context.Background(),
+		context.TODO(),
 		builder.Definition.Name,
 		metav1.DeleteOptions{})
 

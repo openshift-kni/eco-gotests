@@ -25,7 +25,7 @@ type SeedGeneratorBuilder struct {
 	// Used in functions that define or mutate the seedgenerator definition.
 	// errorMsg is processed before the seedgenerator object is created
 	errorMsg  string
-	apiClient *clients.Settings
+	apiClient goclient.Client
 }
 
 // SeedGeneratorAdditionalOptions additional options for imagebasedupgrade object.
@@ -36,8 +36,14 @@ func NewSeedGeneratorBuilder(
 	apiClient *clients.Settings,
 	name string,
 ) *SeedGeneratorBuilder {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
 	builder := SeedGeneratorBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &lcasgv1alpha1.SeedGenerator{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -103,8 +109,14 @@ func (builder *SeedGeneratorBuilder) Create() (*SeedGeneratorBuilder, error) {
 func PullSeedGenerator(apiClient *clients.Settings, name string) (*SeedGeneratorBuilder, error) {
 	glog.V(100).Infof("Pulling existing seedgenerator name %s from cluster", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
 	builder := SeedGeneratorBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &lcasgv1alpha1.SeedGenerator{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,

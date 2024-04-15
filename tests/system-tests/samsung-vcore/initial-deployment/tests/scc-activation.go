@@ -5,8 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/scc"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
 )
@@ -16,7 +16,7 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(samsungparams.Label), func() {
-		It("Verify scc activation", polarion.ID("60042"),
+		It("Verify scc activation", reportxml.ID("60042"),
 			Label("samsungvcoredeployment"), func() {
 
 				By("Get available samsung-cnf nodes")

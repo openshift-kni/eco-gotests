@@ -5,10 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/diskencryption"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/models"
 	"golang.org/x/exp/slices"
 )
@@ -41,7 +41,7 @@ var _ = Describe(
 				tpmEncryptionEnabledOn = *ZTPConfig.SpokeAgentClusterInstall.Object.Spec.DiskEncryption.EnableOn
 			})
 
-			It("installs on all nodes", polarion.ID("47135"), func() {
+			It("installs on all nodes", reportxml.ID("47135"), func() {
 				if tpmEncryptionEnabledOn != models.DiskEncryptionEnableOnAll {
 					Skip("tpm disk encryption enabledOn not set to all")
 				}
@@ -50,7 +50,7 @@ var _ = Describe(
 				verifyTpmWorkerMachineConfig()
 			})
 
-			It("installs on master nodes", polarion.ID("47133"), func() {
+			It("installs on master nodes", reportxml.ID("47133"), func() {
 				if tpmEncryptionEnabledOn != models.DiskEncryptionEnableOnMasters {
 					Skip("tpm disk encryption enabledOn not set to masters")
 				}
@@ -58,7 +58,7 @@ var _ = Describe(
 				verifyTpmMasterMachineConfig()
 			})
 
-			It("installs on worker nodes", polarion.ID("47134"), func() {
+			It("installs on worker nodes", reportxml.ID("47134"), func() {
 				if tpmEncryptionEnabledOn != models.DiskEncryptionEnableOnWorkers {
 					Skip("tpm disk encryption enabledOn not set to workers")
 				}
@@ -66,7 +66,7 @@ var _ = Describe(
 				verifyTpmWorkerMachineConfig()
 			})
 
-			It("proper positive validation is returned", polarion.ID("48319"), func() {
+			It("proper positive validation is returned", reportxml.ID("48319"), func() {
 				if tpmEncryptionEnabledOn == models.DiskEncryptionEnableOnNone {
 					Skip("tpm disk encryption enabledOn set to none")
 				}

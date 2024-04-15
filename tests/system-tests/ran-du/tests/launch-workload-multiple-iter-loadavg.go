@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
@@ -23,7 +23,7 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label("LaunchWorkloadMultipleIterations"), func() {
-		It("Launch workload multiple times", polarion.ID("45698"), Label("LaunchWorkloadMultipleIterations"), func() {
+		It("Launch workload multiple times", reportxml.ID("45698"), Label("LaunchWorkloadMultipleIterations"), func() {
 
 			By("Launch workload")
 			for iter := 0; iter < RanDuTestConfig.LaunchWorkloadIterations; iter++ {

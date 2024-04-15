@@ -34,7 +34,7 @@ func List(apiClient *clients.Settings, options ...v1.ListOptions) ([]*Builder, e
 
 	glog.V(100).Infof(logMessage)
 
-	nodeList, err := apiClient.CoreV1Interface.Nodes().List(context.Background(), passedOptions)
+	nodeList, err := apiClient.CoreV1Interface.Nodes().List(context.TODO(), passedOptions)
 	if err != nil {
 		glog.V(100).Infof("Failed to list nodes due to %s", err.Error())
 

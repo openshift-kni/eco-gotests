@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
 	bmclib "github.com/bmc-toolbox/bmclib/v2"
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,6 +19,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -356,10 +355,10 @@ func VerifyHardRebootSuite() {
 		"Ungraceful reboot validation",
 		Label("spk-ungraceful-reboot"), func() {
 			It("Verifies ungraceful cluster reboot",
-				Label("spk-hard-reboot"), polarion.ID("30020"), VerifyUngracefulReboot)
+				Label("spk-hard-reboot"), reportxml.ID("30020"), VerifyUngracefulReboot)
 
 			It("Verifies all ClusterOperators are Available after ungraceful reboot",
-				Label("spk-hard-reboot"), polarion.ID("71868"), func() {
+				Label("spk-hard-reboot"), reportxml.ID("71868"), func() {
 					By("Checking all cluster operators")
 
 					glog.V(spkparams.SPKLogLevel).Infof("Waiting for all ClusterOperators to be Available")
@@ -423,7 +422,7 @@ func VerifyHardRebootSuite() {
 				})
 
 			It("Verifies all deploymentes are available",
-				Label("spk-hard-reboot"), polarion.ID("71872"), WaitAllDeploymentsAreAvailable)
+				Label("spk-hard-reboot"), reportxml.ID("71872"), WaitAllDeploymentsAreAvailable)
 		})
 }
 
@@ -433,10 +432,10 @@ func VerifyGracefulRebootSuite() {
 		"Graceful reboot validation",
 		Label("spk-graceful-reboot"), func() {
 			It("Verifies graceful cluster reboot",
-				Label("spk-soft-reboot"), polarion.ID("30021"), VerifySoftReboot)
+				Label("spk-soft-reboot"), reportxml.ID("30021"), VerifySoftReboot)
 
 			It("Verifies all ClusterOperators are Available after graceful reboot",
-				Label("spk-hard-reboot"), polarion.ID("72040"), func() {
+				Label("spk-hard-reboot"), reportxml.ID("72040"), func() {
 					By("Checking all cluster operators")
 
 					glog.V(spkparams.SPKLogLevel).Infof("Waiting for all ClusterOperators to be Available")
@@ -451,7 +450,7 @@ func VerifyGracefulRebootSuite() {
 				})
 
 			It("Verifies all deploymentes are available after graceful reboot",
-				Label("spk-hard-reboot"), polarion.ID("72041"), WaitAllDeploymentsAreAvailable)
+				Label("spk-hard-reboot"), reportxml.ID("72041"), WaitAllDeploymentsAreAvailable)
 		})
 }
 

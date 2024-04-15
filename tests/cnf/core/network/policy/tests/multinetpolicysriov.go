@@ -13,13 +13,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/networkpolicy"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/policy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -122,7 +122,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 				[]string{secondClientPodIP})
 		})
 
-		It("Ingress Default rule without PolicyType deny all", polarion.ID("53901"), func() {
+		It("Ingress Default rule without PolicyType deny all", reportxml.ID("53901"), func() {
 			_, err := networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
 				WithNetwork(srIovNet.Definition.Name).
@@ -155,7 +155,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 		// 53899
 		// The test fails due to OCPBUGS-974
-		It("Ingress Default rule without PolicyType allow all", polarion.ID("53899"), func() {
+		It("Ingress Default rule without PolicyType allow all", reportxml.ID("53899"), func() {
 			By("Apply MultiNetworkPolicy with ingress rule allow all without PolicyType field")
 
 			_, err := networkpolicy.NewMultiNetworkPolicyBuilder(
@@ -188,7 +188,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		})
 
 		// 53900
-		It("Egress TCP endPort allow specific pod", polarion.ID("53900"), func() {
+		It("Egress TCP endPort allow specific pod", reportxml.ID("53900"), func() {
 			By("Apply MultiNetworkPolicy with egress rule allow ports in range 5000-5002")
 
 			// Update egress rule with port range and delete port 5001 when the bug OCPBUGS-975 is fixed
@@ -245,7 +245,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		})
 
 		// 53898
-		It("Ingress and Egress allow IPv4 address", polarion.ID("53898"), func() {
+		It("Ingress and Egress allow IPv4 address", reportxml.ID("53898"), func() {
 			By("Apply MultiNetworkPolicy with ingress and egress rules allow specific IPv4 addresses")
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().WithPeerPodSelectorAndCIDR(
 				metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelSecondClientPod}},
@@ -299,7 +299,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 		})
 
 		// 55990
-		It("Disable multi-network policy", polarion.ID("55990"), func() {
+		It("Disable multi-network policy", reportxml.ID("55990"), func() {
 			By("Apply MultiNetworkPolicy with ingress rule deny all")
 			_, err := networkpolicy.NewMultiNetworkPolicyBuilder(
 				APIClient, multiNetworkPolicyName, tsparams.TestNamespaceName).
@@ -414,7 +414,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 					secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 		})
 
-		It("Ingress/Egress Allow access only to a specific port/protocol", polarion.ID("70040"), func() {
+		It("Ingress/Egress Allow access only to a specific port/protocol", reportxml.ID("70040"), func() {
 			ingressRule, err := networkpolicy.NewIngressRuleBuilder().WithPortAndProtocol(uint16(port5001), "SCTP").
 				WithPeerPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelFirstClientPod}}).
 				GetIngressRuleCfg()
@@ -465,7 +465,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 					serverPod.Definition.Name, secondClientPod.Definition.Name, port5001))
 		})
 
-		It("Ingress/Egress Allow access only to a specific subnet", polarion.ID("70041"), func() {
+		It("Ingress/Egress Allow access only to a specific subnet", reportxml.ID("70041"), func() {
 			ingressRule, err := networkpolicy.NewIngressRuleBuilder().
 				WithCIDR(ipaddr.RemovePrefix(secondClientPodIPv6) + "/" + "128").
 				GetIngressRuleCfg()
@@ -578,7 +578,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			testSCTPConnectivityWithoutPolicy(firstClientPod, secondClientPod, serverPod, serverPodIP, firstClientPodIP)
 		})
 
-		It("Ingress/Egress allow dual-stack subnet sctp", polarion.ID("70042"), func() {
+		It("Ingress/Egress allow dual-stack subnet sctp", reportxml.ID("70042"), func() {
 			ingressRule, err := networkpolicy.NewIngressRuleBuilder().
 				WithCIDR(ipaddr.RemovePrefix(secondClientPodIPv6) + "/128").
 				WithCIDR(ipaddr.RemovePrefix(secondClientPodIP) + "/32").

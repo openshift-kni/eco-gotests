@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/proxy"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var (
@@ -54,8 +54,8 @@ var _ = Describe(
 					validateProxyVar(operatorDeployProxy.Object.Status.NoProxy, "NO_PROXY")
 				}
 			},
-				Entry("in IPv4 environments", meets.HubSingleStackIPv4Requirement, polarion.ID("49223")),
-				Entry("in IPv6 environments", meets.HubSingleStackIPv6Requirement, polarion.ID("49226")),
+				Entry("in IPv4 environments", meets.HubSingleStackIPv4Requirement, reportxml.ID("49223")),
+				Entry("in IPv6 environments", meets.HubSingleStackIPv6Requirement, reportxml.ID("49226")),
 			)
 		})
 	})

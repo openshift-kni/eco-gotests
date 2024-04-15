@@ -121,7 +121,7 @@ func (builder *PVCBuilder) WithPVCCapacity(capacity string) (*PVCBuilder, error)
 			glog.V(100).Infof("Failed to parse %v", capacity)
 			builder.errorMsg = fmt.Sprintf("Failed to parse: %v", capacity)
 
-			return builder, fmt.Errorf(fmt.Sprintf("Failed to parse: %v", capacity))
+			return builder, fmt.Errorf("failed to parse: %v", capacity)
 		}
 
 		return builder, nil
@@ -271,7 +271,7 @@ func (builder *PVCBuilder) DeleteAndWait(timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -319,7 +319,7 @@ func (builder *PVCBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.PersistentVolumeClaims(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

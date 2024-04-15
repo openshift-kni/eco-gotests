@@ -13,7 +13,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
@@ -427,10 +427,10 @@ func VerifyMACVLANSuite() {
 	Describe(
 		"MACVLAN verification",
 		Label("macvlan-clean-cluster"), func() {
-			It("Verify MACVLAN", Label("validate-new-macvlan-different-nodes"), polarion.ID("72566"),
+			It("Verify MACVLAN", Label("validate-new-macvlan-different-nodes"), reportxml.ID("72566"),
 				VerifyMacVlanOnDifferentNodes)
 
-			It("Verify MACVLAN", Label("validate-new-macvlan-same-node"), polarion.ID("72567"),
+			It("Verify MACVLAN", Label("validate-new-macvlan-same-node"), reportxml.ID("72567"),
 				VerifyMacVlanOnSameNode)
 		})
 }

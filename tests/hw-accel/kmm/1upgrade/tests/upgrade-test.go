@@ -7,17 +7,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 	Context("Operator", Label("upgrade"), func() {
-		It("should upgrade successfully", polarion.ID("53609"), func() {
+		It("should upgrade successfully", reportxml.ID("53609"), func() {
 
 			if ModulesConfig.CatalogSourceName == "" {
 				Skip("No CatalogSourceName defined. Skipping test")

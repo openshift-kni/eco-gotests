@@ -11,6 +11,12 @@ import (
 
 // List returns sriov networks in the given namespace.
 func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*NetworkBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Infof("sriov network 'apiClient' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list sriov networks, 'apiClient' parameter is empty")
+	}
+
 	if nsname == "" {
 		glog.V(100).Infof("sriov network 'nsname' parameter can not be empty")
 
@@ -34,7 +40,7 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 	glog.V(100).Infof(logMessage)
 
 	networkList, err := apiClient.ClientSrIov.SriovnetworkV1().
-		SriovNetworks(nsname).List(context.Background(), passedOptions)
+		SriovNetworks(nsname).List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list sriov networks in the namespace %s due to %s", nsname, err.Error())

@@ -5,9 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 const (
@@ -38,7 +38,7 @@ var _ = Describe(
 			Expect(err).ToNot(HaveOccurred(), "error occurred when getting log")
 		})
 
-		It("Validates that converged flow is enabled by default", polarion.ID("62628"), func() {
+		It("Validates that converged flow is enabled by default", reportxml.ID("62628"), func() {
 
 			enabledInLog := strings.Contains(convergedFlowLog, "Converged flow enabled: true")
 			Expect(enabledInLog).To(BeTrue(), "environment variable not defined or not in log.")

@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/events"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
@@ -20,7 +21,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -68,7 +68,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		})
 
-		It("should use build and sign a module", polarion.ID("56252"), func() {
+		It("should use build and sign a module", reportxml.ID("56252"), func() {
 
 			By("Create Namespace")
 			testNamespace, err := namespace.NewBuilder(APIClient, kmmparams.ModuleBuildAndSignNamespace).Create()
@@ -155,7 +155,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 
-		It("should generate event about build being created and completed", polarion.ID("68110"), func() {
+		It("should generate event about build being created and completed", reportxml.ID("68110"), func() {
 			By("Checking if version is greater than 2.0.0")
 			currentVersion, err := get.KmmOperatorVersion(APIClient)
 			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
@@ -184,7 +184,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(reasonBuildListLength).To(Equal(foundEvents), "Expected number of events not found")
 		})
 
-		It("should generate event about sign being created and completed", polarion.ID("68108"), func() {
+		It("should generate event about sign being created and completed", reportxml.ID("68108"), func() {
 			By("Checking if version is greater than 2.0.0")
 			currentVersion, err := get.KmmOperatorVersion(APIClient)
 			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
@@ -213,7 +213,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(reasonSignListLength).To(Equal(foundEvents), "Expected number of events not found")
 		})
 
-		It("should be able to run preflightvalidation with no push", polarion.ID("56329"), func() {
+		It("should be able to run preflightvalidation with no push", reportxml.ID("56329"), func() {
 			By("Detecting cluster architecture")
 
 			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
@@ -250,7 +250,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
 		})
 
-		It("should be able to run preflightvalidation and push to registry", polarion.ID("56327"), func() {
+		It("should be able to run preflightvalidation and push to registry", reportxml.ID("56327"), func() {
 			By("Detecting cluster architecture")
 
 			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)

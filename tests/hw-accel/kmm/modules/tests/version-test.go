@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
@@ -17,7 +18,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -105,7 +105,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			}
 		})
 
-		It("should be able to use a version", polarion.ID("63112"), func() {
+		It("should be able to use a version", reportxml.ID("63112"), func() {
 
 			By("Create KernelMapping")
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
@@ -157,7 +157,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error while checking module is deployed")
 		})
 
-		It("should upgrade from a version to another", polarion.ID("63111"), func() {
+		It("should upgrade from a version to another", reportxml.ID("63111"), func() {
 
 			By("Create a new image by temporary creating a module")
 

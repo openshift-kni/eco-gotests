@@ -14,8 +14,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -40,7 +40,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		Context("KernelMapping", Label("webhook"), func() {
 
-			It("should fail if no container image is specified in the module", polarion.ID("62601"), func() {
+			It("should fail if no container image is specified in the module", reportxml.ID("62601"), func() {
 
 				By("Create KernelMapping")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()
@@ -62,7 +62,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				Expect(err.Error()).To(ContainSubstring(".containerImage"))
 			})
 
-			It("should fail if the regexp isn't valid in the module", polarion.ID("62602"), func() {
+			It("should fail if the regexp isn't valid in the module", reportxml.ID("62602"), func() {
 
 				By("Create KernelMapping")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("*-invalid-regexp").BuildKernelMappingConfig()
@@ -83,7 +83,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				Expect(err.Error()).To(ContainSubstring("invalid regexp"))
 			})
 
-			It("should fail if no regexp nor literal are set in a kernel mapping", polarion.ID("62603"), func() {
+			It("should fail if no regexp nor literal are set in a kernel mapping", reportxml.ID("62603"), func() {
 
 				By("Create KernelMapping")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("willBeRemoved").BuildKernelMappingConfig()
@@ -105,7 +105,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				Expect(err.Error()).To(ContainSubstring("regexp or literal must be set"))
 			})
 
-			It("should fail if both regexp and literal are set in a kernel mapping", polarion.ID("62604"), func() {
+			It("should fail if both regexp and literal are set in a kernel mapping", reportxml.ID("62604"), func() {
 
 				By("Create KernelMapping")
 				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").BuildKernelMappingConfig()
@@ -130,7 +130,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		Context("Modprobe", Label("webhook"), func() {
 
-			It("should fail if there are duplications in modulesLoaindOrder", polarion.ID("62742"), func() {
+			It("should fail if there are duplications in modulesLoaindOrder", reportxml.ID("62742"), func() {
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
@@ -156,7 +156,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				Expect(err.Error()).To(ContainSubstring("duplicate value in the loading order list"))
 			})
 
-			It("should fail if the 'main' kmod isn't the first one in modulesLoadingOrder", polarion.ID("64227"), func() {
+			It("should fail if the 'main' kmod isn't the first one in modulesLoadingOrder", reportxml.ID("64227"), func() {
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
@@ -182,7 +182,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				Expect(err.Error()).To(ContainSubstring("if a loading order is defined, the first element must be moduleName"))
 			})
 
-			It("should fail creating module with both moduleName and rawargs", polarion.ID("62600"), func() {
+			It("should fail creating module with both moduleName and rawargs", reportxml.ID("62600"), func() {
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
@@ -209,7 +209,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				Expect(err.Error()).To(ContainSubstring("rawArgs cannot be set when moduleName is set"))
 			})
 
-			It("should require rawargs when moduleName is not net", polarion.ID("62599"), func() {
+			It("should require rawargs when moduleName is not net", reportxml.ID("62599"), func() {
 
 				By("Preparing module")
 				module := &v1beta1.Module{

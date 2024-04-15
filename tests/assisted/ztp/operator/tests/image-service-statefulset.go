@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -60,7 +60,7 @@ var _ = Describe(
 				Expect(reqMet).To(BeTrue(), "error waiting for hub infrastructure operand to start running: %s", msg)
 			})
 			It("Assert assisted-image-service pvc is created according to imageStorage spec",
-				polarion.ID("49673"), func() {
+				reportxml.ID("49673"), func() {
 					By("Create AgentServiceConfig with default storage specs")
 					tempAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
 
@@ -93,7 +93,7 @@ var _ = Describe(
 				})
 
 			It("Assert assisted-image-service is healthy without imageStorage defined in AgentServiceConfig",
-				polarion.ID("49674"), func() {
+				reportxml.ID("49674"), func() {
 					By("Create an AgentServiceConfig without ImageStorage")
 					tempAgentServiceConfigBuilder = assisted.NewAgentServiceConfigBuilder(
 						HubAPIClient, databaseStorage, fileSystemStorage)
@@ -113,7 +113,7 @@ var _ = Describe(
 					Expect(tempAgentServiceConfigBuilder.Object.Spec.ImageStorage).To(BeNil())
 				})
 			It("Assert imageStorage can be defined after the agentServiceConfig is created",
-				polarion.ID("49675"), func() {
+				reportxml.ID("49675"), func() {
 					arbitraryStorageSize := "14Gi"
 
 					By("Create an AgentServiceConfig without ImageStorage")
@@ -181,7 +181,7 @@ var _ = Describe(
 				})
 
 			It("Assert respective PVC is released when imageStorage is removed from AgentServiceConfig",
-				polarion.ID("49676"), func() {
+				reportxml.ID("49676"), func() {
 					By("Create an AgentServiceConfig with default storage specs")
 					tempAgentServiceConfigBuilder = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
 

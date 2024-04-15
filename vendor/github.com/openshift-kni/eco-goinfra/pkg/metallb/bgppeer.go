@@ -304,7 +304,7 @@ func (builder *BGPPeerBuilder) WithBFDProfile(bfdProfile string) *BGPPeerBuilder
 	if bfdProfile == "" {
 		glog.V(100).Infof("The bfdProfile of the BGPPeer can not be empty string")
 
-		builder.errorMsg = "The bfdProfile is empty sting"
+		builder.errorMsg = "The bfdProfile is empty string"
 	}
 
 	if builder.errorMsg != "" {
@@ -426,7 +426,7 @@ func (builder *BGPPeerBuilder) WithPassword(password string) *BGPPeerBuilder {
 	if password == "" {
 		glog.V(100).Infof("Can not redefine BGPPeer with empty password")
 
-		builder.errorMsg = "password can not be empty sting"
+		builder.errorMsg = "password can not be empty string"
 	}
 
 	if builder.errorMsg != "" {

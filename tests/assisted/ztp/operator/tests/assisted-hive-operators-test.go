@@ -8,10 +8,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 const (
@@ -45,8 +45,8 @@ var _ = Describe(
 				Expect(err).NotTo(HaveOccurred(), "error occurred while waiting for hive pods to be in Running state")
 				Expect(running).To(BeTrue(), "some hive pods are not in Running state")
 			},
-				Entry("in an IPv4 environment is successful", meets.HubSingleStackIPv4Requirement, polarion.ID("41634")),
-				Entry("in an IPv6 environment is successful", meets.HubSingleStackIPv6Requirement, polarion.ID("41640")),
+				Entry("in an IPv4 environment is successful", meets.HubSingleStackIPv4Requirement, reportxml.ID("41634")),
+				Entry("in an IPv6 environment is successful", meets.HubSingleStackIPv6Requirement, reportxml.ID("41640")),
 			)
 
 			DescribeTable("by advanced cluster management operator", func(requirement func() (bool, string)) {
@@ -80,8 +80,8 @@ var _ = Describe(
 				Expect(err).NotTo(HaveOccurred(), "error occurred while waiting for rhacm pods to be in Running state")
 				Expect(running).To(BeTrue(), "some rhacm pods are not in Running state")
 			},
-				Entry("in an IPv4 environment is successful", meets.HubSingleStackIPv4Requirement, polarion.ID("42042")),
-				Entry("in an IPv6 environment is successful", meets.HubSingleStackIPv6Requirement, polarion.ID("42043")),
+				Entry("in an IPv4 environment is successful", meets.HubSingleStackIPv4Requirement, reportxml.ID("42042")),
+				Entry("in an IPv6 environment is successful", meets.HubSingleStackIPv6Requirement, reportxml.ID("42043")),
 			)
 		})
 	})

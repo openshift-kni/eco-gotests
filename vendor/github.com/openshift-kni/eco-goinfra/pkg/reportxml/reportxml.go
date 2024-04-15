@@ -1,24 +1,20 @@
-package polarion
+package reportxml
 
 import (
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 )
 
-const (
-	polarionTag      = "polarion-testcase-id"
-	testIDTag        = "test_id"
-	testParameterTag = "polarion-parameter"
-)
-
 type (
-	// TestSuite represents polarion formatted test suite.
+	// TestSuite represents formatted test suite.
 	TestSuite struct {
 		XMLName    xml.Name   `xml:"testsuite"`
 		Name       string     `xml:"name,attr"`
@@ -30,7 +26,7 @@ type (
 		TestCases  []TestCase `xml:"testcase"`
 	}
 
-	// TestCase represents polarion formatted test cast.
+	// TestCase represents formatted test case.
 	TestCase struct {
 		Name           string          `xml:"name,attr"`
 		Properties     Properties      `xml:"properties"`
@@ -39,32 +35,39 @@ type (
 		SystemOut      string          `xml:"system-out,omitempty"`
 	}
 
-	// FailureMessage represents polarion fail message.
+	// FailureMessage represents fail message.
 	FailureMessage struct {
 		Type    string `xml:"type,attr"`
 		Message string `xml:",chardata"`
 	}
 
-	// Skipped represents polarion skip message.
+	// Skipped represents skip message.
 	Skipped struct {
 		XMLName xml.Name `xml:"skipped"`
 		Message string   `xml:"message,attr,omitempty"`
 	}
 
-	// Properties structure represents polarion test case properties.
+	// Properties structure represents test case properties.
 	Properties struct {
 		Property []Property `xml:"property"`
 	}
 
-	// Property represents polarion test case property.
+	// Property represents test case property.
 	Property struct {
 		Name  string `xml:"name,attr"`
 		Value string `xml:"value,attr"`
 	}
+	settings struct {
+		IDTag        string `default:"test_id"`
+		CaseTag      string `default:"testcase-id" envconfig:"REPORT_CASE_TAG"`
+		ParameterTag string `default:"parameter" envconfig:"REPORT_PARAMETER_TAG"`
+	}
 )
 
-// CreateReport writes polarion report to a given xml file.
-func CreateReport(report ginkgo.Report, destFile, projectTag string) {
+var config *settings
+
+// Create writes report to a given xml file.
+func Create(report ginkgo.Report, destFile, projectTag string) {
 	if destFile == "" {
 		return
 	}
@@ -80,12 +83,12 @@ func CreateReport(report ginkgo.Report, destFile, projectTag string) {
 			Name: testCaseSpecReport.FullText(),
 		}
 
-		if polarionID := setPolarionID(testCaseSpecReport, projectTag); polarionID != nil {
-			testCase.Properties.Property = append(testCase.Properties.Property, *polarionID)
+		if testID := setTestID(testCaseSpecReport, projectTag); testID != nil {
+			testCase.Properties.Property = append(testCase.Properties.Property, *testID)
 		}
 
-		if polarionTCProperties := setProperty(testCaseSpecReport); polarionTCProperties != nil {
-			for _, property := range polarionTCProperties {
+		if testTCProperties := setProperty(testCaseSpecReport); testTCProperties != nil {
+			for _, property := range testTCProperties {
 				testCase.Properties.Property = append(testCase.Properties.Property, *property)
 			}
 		}
@@ -102,25 +105,57 @@ func CreateReport(report ginkgo.Report, destFile, projectTag string) {
 		testSuite.Tests++
 	}
 
-	generatePolarionXMLFile(destFile, testSuite)
+	generateReportXMLFile(destFile, testSuite)
 }
 
-// ID sets polarion id for a test case.
+// ID sets test id for a test case.
 func ID(tag string) ginkgo.Labels {
-	return ginkgo.Label(tag, fmt.Sprintf("%s:%s", testIDTag, tag))
+	return ginkgo.Label(tag, fmt.Sprintf("%s:%s", config.IDTag, tag))
 }
 
-// SetProperty sets polarion id for a test case.
+// SetProperty sets test id for a test case.
 func SetProperty(propertyKey, propertyValue string) ginkgo.Labels {
-	return ginkgo.Label(fmt.Sprintf("polarion-parameter-%s:%s", propertyKey, propertyValue))
+	return ginkgo.Label(fmt.Sprintf("%s-%s:%s", config.ParameterTag, propertyKey, propertyValue))
 }
 
-func setPolarionID(testReport types.SpecReport, projectTag string) *Property {
+func newConfig() (*settings, error) {
+	var setting settings
+
+	err := envconfig.Process("", &setting)
+	if err != nil {
+		return nil, err
+	}
+
+	setting.setDefaultTag()
+
+	return &setting, nil
+}
+
+func (set settings) setDefaultTag() {
+	typ := reflect.TypeOf(set)
+
+	if set.CaseTag == "" {
+		f, _ := typ.FieldByName("CaseTag")
+		set.CaseTag = f.Tag.Get("default")
+	}
+
+	if set.ParameterTag == "" {
+		f, _ := typ.FieldByName("ParameterTag")
+		set.ParameterTag = f.Tag.Get("default")
+	}
+
+	if set.IDTag == "" {
+		f, _ := typ.FieldByName("IDTag")
+		set.IDTag = f.Tag.Get("default")
+	}
+}
+
+func setTestID(testReport types.SpecReport, projectTag string) *Property {
 	if len(testReport.Labels()) > 0 {
 		for _, label := range testReport.Labels() {
-			if strings.Contains(label, testIDTag) {
+			if strings.Contains(label, config.IDTag) {
 				return &Property{
-					Name:  polarionTag,
+					Name:  config.CaseTag,
 					Value: fmt.Sprintf("%s%s", projectTag, strings.Split(label, ":")[1]),
 				}
 			}
@@ -135,7 +170,7 @@ func setProperty(testReport types.SpecReport) []*Property {
 		var tcProperties []*Property
 
 		for _, label := range testReport.Labels() {
-			if strings.Contains(label, testParameterTag) {
+			if strings.Contains(label, config.ParameterTag) {
 				tcProperties = append(tcProperties, &Property{
 					Name:  strings.Split(label, ":")[0],
 					Value: strings.Split(label, ":")[1],
@@ -187,7 +222,7 @@ func setTestSuite(report ginkgo.Report) *TestSuite {
 func createNewReportFile(outputFile string, testCases *TestSuite) {
 	file, err := os.Create(outputFile)
 	if err != nil {
-		panic(fmt.Errorf("failed to create Polarion report file: %s\n\t%w", outputFile, err))
+		panic(fmt.Errorf("failed to create report file: %s\n\t%w", outputFile, err))
 	}
 
 	defer func() {
@@ -200,14 +235,14 @@ func createNewReportFile(outputFile string, testCases *TestSuite) {
 	err = encoder.Encode(testCases)
 
 	if err != nil {
-		panic("failed to dump report to file")
+		panic(fmt.Errorf("failed to dump report to file: %w", err))
 	}
 }
 
 func appendToExistingReportFile(outputFile string, newReport *TestSuite) {
 	file, err := os.OpenFile(outputFile, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		panic(fmt.Errorf("failed to open Polarion report file: %s\n\t%w", outputFile, err))
+		panic(fmt.Errorf("failed to open report file: %s\n\t%w", outputFile, err))
 	}
 
 	defer func() {
@@ -217,26 +252,26 @@ func appendToExistingReportFile(outputFile string, newReport *TestSuite) {
 	existingTestSuiteByteFormat, err := os.ReadFile(outputFile)
 
 	if err != nil {
-		panic(fmt.Errorf("failed to read existing Polarion report file: %s\n\t%w", outputFile, err))
+		panic(fmt.Errorf("failed to read existing report file: %s\n\t%w", outputFile, err))
 	}
 
 	var reportTestSuite *TestSuite
 	err = xml.Unmarshal(existingTestSuiteByteFormat, &reportTestSuite)
 
 	if err != nil {
-		panic(fmt.Errorf("failed to unmarshal existing Polarion report file: %s\n\t%w", outputFile, err))
+		panic(fmt.Errorf("failed to unmarshal existing report file: %s\n\t%w", outputFile, err))
 	}
 
 	file, err = os.OpenFile(outputFile, os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
-		panic(fmt.Errorf("failed to open Polarion report file: %s\n\t%w", outputFile, err))
+		panic(fmt.Errorf("failed to open report file: %s\n\t%w", outputFile, err))
 	}
 
 	defer func() {
 		_ = file.Close()
 	}()
 
-	reportTestSuite.Name = "Polarion Aggregated Report"
+	reportTestSuite.Name = "Aggregated Report"
 	reportTestSuite.TestCases = append(reportTestSuite.TestCases, newReport.TestCases...)
 	reportTestSuite.Tests += newReport.Tests
 	reportTestSuite.Skipped += newReport.Skipped
@@ -249,11 +284,11 @@ func appendToExistingReportFile(outputFile string, newReport *TestSuite) {
 	err = encoder.Encode(reportTestSuite)
 
 	if err != nil {
-		panic(fmt.Errorf("failed to generate aggregated Polarion report\n\t%w", err))
+		panic(fmt.Errorf("failed to generate aggregated report\n\t%w", err))
 	}
 }
 
-func generatePolarionXMLFile(outputFile string, testCases *TestSuite) {
+func generateReportXMLFile(outputFile string, testCases *TestSuite) {
 	_, err := os.Stat(outputFile)
 	if errors.Is(err, os.ErrNotExist) {
 		createNewReportFile(outputFile, testCases)
@@ -263,6 +298,7 @@ func generatePolarionXMLFile(outputFile string, testCases *TestSuite) {
 }
 
 func failureTypeForState(state types.SpecState) string {
+	//nolint:exhaustive
 	switch state {
 	case types.SpecStateFailed:
 		return "Failure"
@@ -278,4 +314,14 @@ func failureTypeForState(state types.SpecState) string {
 func failureMessage(failure types.Failure) string {
 	return fmt.Sprintf(
 		"%s\n%s\n%s", failure.FailureNodeLocation.String(), failure.Message, failure.Location.String())
+}
+
+//nolint:gochecknoinits
+func init() {
+	var err error
+	config, err = newConfig()
+
+	if err != nil {
+		panic(fmt.Sprintf("Failed to init reportxml config. Error: %s", err.Error()))
+	}
 }

@@ -27,7 +27,7 @@ func List(apiClient *clients.Settings, options ...v1.ListOptions) ([]*Builder, e
 
 	glog.V(100).Infof(logMessage)
 
-	namespacesList, err := apiClient.CoreV1Interface.Namespaces().List(context.Background(), passedOptions)
+	namespacesList, err := apiClient.CoreV1Interface.Namespaces().List(context.TODO(), passedOptions)
 	if err != nil {
 		glog.V(100).Infof("Failed to list namespaces due to %s", err.Error())
 

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
@@ -42,7 +42,7 @@ var _ = Describe(
 			Expect(err).ToNot(HaveOccurred(), "error while waiting for statefulsets to become ready")
 
 		})
-		It("Assert all pods are ready", polarion.ID("55465"), Label("launch-workload"), func() {
+		It("Assert all pods are ready", reportxml.ID("55465"), Label("launch-workload"), func() {
 			_, err := await.WaitUntilAllPodsReady(APIClient, RanDuTestConfig.TestWorkload.Namespace, randuparams.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "pod not ready: %s", err)
 

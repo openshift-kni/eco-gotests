@@ -3,10 +3,10 @@ package spoke_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe(
@@ -41,7 +41,7 @@ var _ = Describe(
 				}
 			})
 
-			It("Assert Spoke cluster was deployed with FIPS", polarion.ID("65865"), func() {
+			It("Assert Spoke cluster was deployed with FIPS", reportxml.ID("65865"), func() {
 				By("Getting configmap")
 				Expect(ZTPConfig.SpokeInstallConfig.Object.Data["install-config"]).ToNot(BeEmpty(),
 					"error pulling install-config from spoke cluster")

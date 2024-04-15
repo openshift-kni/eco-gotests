@@ -33,7 +33,7 @@ func List(apiClient *clients.Settings, nsname string, options ...v1.ListOptions)
 
 	glog.V(100).Infof(logMessage)
 
-	podList, err := apiClient.Pods(nsname).List(context.Background(), passedOptions)
+	podList, err := apiClient.Pods(nsname).List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list pods in the nsname %s due to %s", nsname, err.Error())
@@ -75,7 +75,7 @@ func ListInAllNamespaces(apiClient *clients.Settings, options ...v1.ListOptions)
 
 	glog.V(100).Infof(logMessage)
 
-	podList, err := apiClient.Pods("").List(context.Background(), passedOptions)
+	podList, err := apiClient.Pods("").List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all pods due to %s", err.Error())
@@ -109,7 +109,7 @@ func ListByNamePattern(apiClient *clients.Settings, namePattern, nsname string) 
 		return nil, fmt.Errorf("failed to list pods, 'nsname' parameter is empty")
 	}
 
-	podList, err := apiClient.Pods(nsname).List(context.Background(), v1.ListOptions{})
+	podList, err := apiClient.Pods(nsname).List(context.TODO(), v1.ListOptions{})
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list pods filtered by the name pattern %s in the nsname %s due to %s",

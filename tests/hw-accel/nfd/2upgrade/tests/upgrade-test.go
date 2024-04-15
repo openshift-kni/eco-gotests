@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/2upgrade/internal/await"
@@ -15,7 +16,6 @@ import (
 	NfdConfig "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/nfdconfig"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("NFD", Ordered, Label(nfdparams.Label), func() {
@@ -46,7 +46,7 @@ var _ = Describe("NFD", Ordered, Label(nfdparams.Label), func() {
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in undeploy NFD %s", err))
 
 		})
-		It("should upgrade successfully", polarion.ID("54540"), func() {
+		It("should upgrade successfully", reportxml.ID("54540"), func() {
 
 			if nfdConfig.UpgradeTargetVersion == "" {
 				Skip("No UpgradeTargetVersion defined. Skipping test ")

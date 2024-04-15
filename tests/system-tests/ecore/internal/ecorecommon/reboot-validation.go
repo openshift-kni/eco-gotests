@@ -7,8 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
 	bmclib "github.com/bmc-toolbox/bmclib/v2"
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,6 +19,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -384,10 +383,10 @@ func VerifyHardRebootSuite() {
 			})
 
 			It("Verifies ungraceful cluster reboot",
-				Label("ecore-hard-reboot"), polarion.ID("30020"), VerifyUngracefulReboot)
+				Label("ecore-hard-reboot"), reportxml.ID("30020"), VerifyUngracefulReboot)
 
 			It("Verifies all ClusterOperators are Available after ungraceful reboot",
-				Label("ecore-hard-reboot"), polarion.ID("71868"), func() {
+				Label("ecore-hard-reboot"), reportxml.ID("71868"), func() {
 					By("Checking all cluster operators")
 
 					glog.V(ecoreparams.ECoreLogLevel).Infof("Waiting for all ClusterOperators to be Available")
@@ -451,63 +450,63 @@ func VerifyHardRebootSuite() {
 				})
 
 			It("Verifies all deploymentes are available",
-				Label("ecore-hard-reboot"), polarion.ID("71872"), WaitAllDeploymentsAreAvailable)
+				Label("ecore-hard-reboot"), reportxml.ID("71872"), WaitAllDeploymentsAreAvailable)
 
-			It("Verifies all policies are compliant", polarion.ID("72355"), Label("ecore-hard-reboot-validate-policies"),
+			It("Verifies all policies are compliant", reportxml.ID("72355"), Label("ecore-hard-reboot-validate-policies"),
 				ValidateAllPoliciesCompliant)
 
 			It("Verifies CephFS PVC is still accessible after hard rebot",
-				Label("ecore-hard-reboot-cephfs"), polarion.ID("71873"), VerifyDataOnCephFSPVC)
+				Label("ecore-hard-reboot-cephfs"), reportxml.ID("71873"), VerifyDataOnCephFSPVC)
 
 			It("Verifies CephRBD PVC is still accessible after hard reboot",
-				Label("ecore-hard-reboot-cephrbd"), polarion.ID("71990"), VerifyDataOnCephRBDPVC)
+				Label("ecore-hard-reboot-cephrbd"), reportxml.ID("71990"), VerifyDataOnCephRBDPVC)
 
 			It("Verifies CephFS workload is deployable after hard reboot",
-				Label("ecore-hard-reboot-odf-cephfs-pvc"), polarion.ID("71851"), MustPassRepeatedly(3),
+				Label("ecore-hard-reboot-odf-cephfs-pvc"), reportxml.ID("71851"), MustPassRepeatedly(3),
 				VerifyCephFSPVC)
 
 			It("Verifies CephRBD workload is deployable after hard reboot",
-				Label("ecore-hard-reboot-odf-cephrbd-pvc"), polarion.ID("71992"), MustPassRepeatedly(3),
+				Label("ecore-hard-reboot-odf-cephrbd-pvc"), reportxml.ID("71992"), MustPassRepeatedly(3),
 				VerifyCephRBDPVC)
 
 			It("Verifies SR-IOV workloads on different nodes post reboot",
-				Label("ecore-hard-reboot-sriov-different-node", "ecore-hard-reboot-sriov"), polarion.ID("71952"),
+				Label("ecore-hard-reboot-sriov-different-node", "ecore-hard-reboot-sriov"), reportxml.ID("71952"),
 				VerifySRIOVConnectivityBetweenDifferentNodesSameNet)
 
 			It("Verifies SR-IOV workloads on the same node post reboot",
-				Label("ecore-hard-reboot-sriov-same-node", "ecore-hard-reboot-sriov"), polarion.ID("71951"),
+				Label("ecore-hard-reboot-sriov-same-node", "ecore-hard-reboot-sriov"), reportxml.ID("71951"),
 				VerifySRIOVConnectivityOnSameNodeSameNet)
 
 			It("Verifies SR-IOV workloads on different nodes and different SR-IOV nets post reboot",
-				Label("ecore-hard-reboot-sriov-different-node", "ecore-hard-reboot-sriov"), polarion.ID("72254"),
+				Label("ecore-hard-reboot-sriov-different-node", "ecore-hard-reboot-sriov"), reportxml.ID("72254"),
 				VerifySRIOVConnectivityOnDifferentNodesDifferentNets)
 
 			It("Verifies SR-IOV workloads on the same node and different SR-IOV nets post reboot",
-				Label("ecore-hard-reboot-sriov-same-node", "ecore-hard-reboot-sriov"), polarion.ID("72255"),
+				Label("ecore-hard-reboot-sriov-same-node", "ecore-hard-reboot-sriov"), reportxml.ID("72255"),
 				VerifySRIOVConnectivityOnSameNodeDifferentNets)
 
 			It("Verifies SR-IOV workloads with same SR-IOV net on the same node are deployable after hard reboot",
-				Label("sriov-same-net-same-node"), polarion.ID("72262"), MustPassRepeatedly(3),
+				Label("sriov-same-net-same-node"), reportxml.ID("72262"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNode)
 
 			It("Verifies SR-IOV workloads with same SR-IOV net on different nodes are deployable after hard reboot",
-				Label("sriov-same-net-different-node"), polarion.ID("72263"), MustPassRepeatedly(3),
+				Label("sriov-same-net-different-node"), reportxml.ID("72263"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnDifferentNodes)
 
 			It("Verifies SR-IOV workloads on the different SR-IOV nets and same node",
-				Label("sriov-different-net-same-node"), polarion.ID("72264"), MustPassRepeatedly(3),
+				Label("sriov-different-net-same-node"), reportxml.ID("72264"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNodeDifferentNetworks)
 
 			It("Verifies SR-IOV workloads on different SR-IOV nets and different nodes",
-				Label("sriov-same-net-different-node"), polarion.ID("72265"), MustPassRepeatedly(3),
+				Label("sriov-same-net-different-node"), reportxml.ID("72265"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
 
 			It("Verifies MACVLAN workloads on the same net and different nodes after hard reboot",
-				Label("macvlan-same-net-different-nodes"), polarion.ID("72568"), MustPassRepeatedly(3),
+				Label("macvlan-same-net-different-nodes"), reportxml.ID("72568"), MustPassRepeatedly(3),
 				VerifyMACVLANConnectivityBetweenDifferentNodes)
 
 			It("Verifies MACVLAN workloads on the same net and the same node after hard reboot",
-				Label("macvlan-same-net-different-nodes"), polarion.ID("72569"), MustPassRepeatedly(3),
+				Label("macvlan-same-net-different-nodes"), reportxml.ID("72569"), MustPassRepeatedly(3),
 				VerifyMACVLANConnectivityOnSameNode)
 		})
 }
@@ -546,10 +545,10 @@ func VerifyGracefulRebootSuite() {
 			})
 
 			It("Verifies graceful cluster reboot",
-				Label("ecore-soft-reboot"), polarion.ID("30021"), VerifySoftReboot)
+				Label("ecore-soft-reboot"), reportxml.ID("30021"), VerifySoftReboot)
 
 			It("Verifies all ClusterOperators are Available after ungraceful reboot",
-				Label("ecore-soft-reboot-cluster-operators"), polarion.ID("72040"), func() {
+				Label("ecore-soft-reboot-cluster-operators"), reportxml.ID("72040"), func() {
 					By("Checking all cluster operators")
 
 					glog.V(ecoreparams.ECoreLogLevel).Infof("Waiting for all ClusterOperators to be Available")
@@ -564,63 +563,63 @@ func VerifyGracefulRebootSuite() {
 				})
 
 			It("Verifies all deploymentes are available",
-				Label("ecore-soft-reboot-all-deployments"), polarion.ID("72041"), WaitAllDeploymentsAreAvailable)
+				Label("ecore-soft-reboot-all-deployments"), reportxml.ID("72041"), WaitAllDeploymentsAreAvailable)
 
-			It("Verifies all policies are compliant", polarion.ID("72357"), Label("ecore-soft-reboot-validate-policies"),
+			It("Verifies all policies are compliant", reportxml.ID("72357"), Label("ecore-soft-reboot-validate-policies"),
 				ValidateAllPoliciesCompliant)
 
 			It("Verifies CephFS PVC is still accessible after graceful reboot",
-				Label("ecore-soft-reboot-cephfs"), polarion.ID("72042"), VerifyDataOnCephFSPVC)
+				Label("ecore-soft-reboot-cephfs"), reportxml.ID("72042"), VerifyDataOnCephFSPVC)
 
 			It("Verifies CephRBD PVC is still accessible after graceful reboot",
-				Label("ecore-soft-reboot-cephrbd"), polarion.ID("72044"), VerifyDataOnCephRBDPVC)
+				Label("ecore-soft-reboot-cephrbd"), reportxml.ID("72044"), VerifyDataOnCephRBDPVC)
 
 			It("Verifies CephFS workload is deployable after graceful reboot",
-				Label("ecore-soft-rebboot-odf-cephfs-pvc"), polarion.ID("72045"), MustPassRepeatedly(3),
+				Label("ecore-soft-rebboot-odf-cephfs-pvc"), reportxml.ID("72045"), MustPassRepeatedly(3),
 				VerifyCephFSPVC)
 
 			It("Verifies CephRBD workload is deployable after graceful reboot",
-				Label("ecore-soft-reboot-odf-cephrbd-pvc"), polarion.ID("72046"), MustPassRepeatedly(3),
+				Label("ecore-soft-reboot-odf-cephrbd-pvc"), reportxml.ID("72046"), MustPassRepeatedly(3),
 				VerifyCephRBDPVC)
 
 			It("Verifies SR-IOV workloads on different nodes post graceful reboot",
 				Label("ecore-soft-reboot-sriov-different-nodes-same-net", "ecore-soft-reboot-sriov"),
-				polarion.ID("72039"), VerifySRIOVConnectivityBetweenDifferentNodesSameNet)
+				reportxml.ID("72039"), VerifySRIOVConnectivityBetweenDifferentNodesSameNet)
 
 			It("Verifies SR-IOV workloads on the same node post graceful reboot",
 				Label("ecore-soft-reboot-sriov-same-node-same-net", "ecore-soft-reboot-sriov"),
-				polarion.ID("72038"), VerifySRIOVConnectivityOnSameNodeSameNet)
+				reportxml.ID("72038"), VerifySRIOVConnectivityOnSameNodeSameNet)
 
 			It("Verifies SR-IOV workloads on different nodes and different SR-IOV nets post reboot",
 				Label("ecore-soft-reboot-sriov-different-nodes-different-nets", "ecore-soft-reboot-sriov"),
-				polarion.ID("72256"), VerifySRIOVConnectivityOnDifferentNodesDifferentNets)
+				reportxml.ID("72256"), VerifySRIOVConnectivityOnDifferentNodesDifferentNets)
 
 			It("Verifies SR-IOV workloads on the same node and different SR-IOV nets post reboot",
 				Label("ecore-soft-reboot-sriov-same-node-different-nets", "ecore-soft-reboot-sriov"),
-				polarion.ID("72257"), VerifySRIOVConnectivityOnSameNodeDifferentNets)
+				reportxml.ID("72257"), VerifySRIOVConnectivityOnSameNodeDifferentNets)
 
 			It("Verifices SR-IOV workloads with same SR-IOV net on the same node",
 				Label("ecore-soft-reboot-sriov-same-net-same-node"), MustPassRepeatedly(3),
-				polarion.ID("72048"), VerifySRIOVWorkloadsOnSameNode)
+				reportxml.ID("72048"), VerifySRIOVWorkloadsOnSameNode)
 
 			It("Verifices SR-IOV workloads on same SR-IOV net and different nodes",
 				Label("ecore-soft-reboot-sriov-same-net-different-nodes"), MustPassRepeatedly(3),
-				polarion.ID("72049"), VerifySRIOVWorkloadsOnDifferentNodes)
+				reportxml.ID("72049"), VerifySRIOVWorkloadsOnDifferentNodes)
 
 			It("Verifies SR-IOV workloads on the different SR-IOV nets and different nodes",
 				Label("sriov-soft-reboot-different-nets-same-node"), MustPassRepeatedly(3),
-				polarion.ID("72260"), VerifySRIOVWorkloadsOnSameNodeDifferentNetworks)
+				reportxml.ID("72260"), VerifySRIOVWorkloadsOnSameNodeDifferentNetworks)
 
 			It("Verifies SR-IOV workloads on the same net and same node",
 				Label("sriov-same-net-different-node"), MustPassRepeatedly(3),
-				polarion.ID("72261"), VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
+				reportxml.ID("72261"), VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
 
 			It("Verifies MACVLAN workloads on the same net and different nodes after graceful reboot",
-				Label("macvlan-same-net-different-nodes"), polarion.ID("72570"), MustPassRepeatedly(3),
+				Label("macvlan-same-net-different-nodes"), reportxml.ID("72570"), MustPassRepeatedly(3),
 				VerifyMACVLANConnectivityBetweenDifferentNodes)
 
 			It("Verifies MACVLAN workloads on the same net and the same node after graceful reboot",
-				Label("macvlan-same-net-different-nodes"), polarion.ID("72571"), MustPassRepeatedly(3),
+				Label("macvlan-same-net-different-nodes"), reportxml.ID("72571"), MustPassRepeatedly(3),
 				VerifyMACVLANConnectivityOnSameNode)
 		})
 }

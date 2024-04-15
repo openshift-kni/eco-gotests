@@ -32,7 +32,7 @@ func ListPlacementrulesInAllNamespaces(apiClient *clients.Settings,
 
 	placementRuleList := &placementrulev1.PlacementRuleList{}
 
-	err := apiClient.Client.List(context.Background(), placementRuleList, &passedOptions)
+	err := apiClient.Client.List(context.TODO(), placementRuleList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all placementrules in all namespaces due to %s", err.Error())

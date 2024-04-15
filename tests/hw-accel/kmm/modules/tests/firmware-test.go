@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
@@ -17,8 +18,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
@@ -78,7 +77,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 
 		})
 
-		It("should properly build a module with firmware support", polarion.ID("56675"), func() {
+		It("should properly build a module with firmware support", reportxml.ID("56675"), func() {
 
 			By("Create Namespace")
 			testNamespace, err := namespace.NewBuilder(APIClient, kmmparams.FirmwareTestNamespace).Create()

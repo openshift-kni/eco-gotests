@@ -6,13 +6,13 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/mcm/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -64,7 +64,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 		})
 
-		It("should deploy image on Spoke cluster", polarion.ID("54004"), func() {
+		It("should deploy image on Spoke cluster", reportxml.ID("54004"), func() {
 
 			By("Creating registry secret on Hub")
 			secretContent := define.SecretContent(ModulesConfig.Registry, ModulesConfig.PullSecret)
@@ -135,7 +135,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while checking label on all nodes")
 		})
 
-		It("should use SHA format for the module deployed on spoke", polarion.ID("63102"), func() {
+		It("should use SHA format for the module deployed on spoke", reportxml.ID("63102"), func() {
 			By("Getting deployed Module on Spoke")
 			moduleSpec, err := kmm.Pull(ModulesConfig.SpokeAPIClient, moduleName, kmmparams.KmmOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")

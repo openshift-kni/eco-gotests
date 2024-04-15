@@ -7,11 +7,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/2upgrade/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/2upgrade/tests"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
 
@@ -26,8 +26,8 @@ func TestUpgrade(tt *testing.T) {
 }
 
 var _ = ReportAfterSuite(tsparams.NfdUpgradeLabel, func(report Report) {
-	polarion.CreateReport(
-		report, GeneralConfig.GetPolarionReportPath(), GeneralConfig.PolarionTCPrefix)
+	reportxml.Create(
+		report, GeneralConfig.GetReportPath(), GeneralConfig.TCPrefix)
 })
 
 var _ = JustAfterEach(func() {

@@ -34,7 +34,7 @@ func ListInstallPlan(
 
 	glog.V(100).Infof(logMessage)
 
-	installPlanList, err := apiClient.InstallPlans(nsname).List(context.Background(), passedOptions)
+	installPlanList, err := apiClient.InstallPlans(nsname).List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all installplan in namespace %s due to %s",

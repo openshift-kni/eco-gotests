@@ -17,14 +17,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
 	define "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
@@ -94,7 +93,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 
 		})
 
-		It("should properly build a module on Realtime Kernel", polarion.ID("53656"), func() {
+		It("should properly build a module on Realtime Kernel", reportxml.ID("53656"), func() {
 
 			By("Create Namespace")
 			testNamespace, err := namespace.NewBuilder(APIClient, kmmparams.RealtimeKernelNamespace).Create()

@@ -12,12 +12,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/url"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/setup"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 const (
@@ -107,8 +107,8 @@ var _ = Describe(
 
 				Expect(rootfsISOId).To(Equal(rootfsImgID), "error: iso and rootfs ids do not match")
 			},
-				Entry("in connected environments", meets.HubConnectedRequirement, polarion.ID("53721")),
-				Entry("in disconnected environments", meets.HubDisconnectedRequirement, polarion.ID("53722")),
+				Entry("in connected environments", meets.HubConnectedRequirement, reportxml.ID("53721")),
+				Entry("in disconnected environments", meets.HubDisconnectedRequirement, reportxml.ID("53722")),
 			)
 
 			AfterAll(func() {

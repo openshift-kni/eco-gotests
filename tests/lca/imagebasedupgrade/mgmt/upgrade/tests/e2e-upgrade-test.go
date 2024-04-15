@@ -24,7 +24,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/route"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-goinfra/pkg/velero"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/ibuparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/safeapirequest"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/configmapgenerator"
@@ -62,7 +61,7 @@ var _ = Describe(
 
 		BeforeAll(func() {
 			By("Pull the imagebasedupgrade from the cluster")
-			ibu, err = lca.PullImageBasedUpgrade(APIClient, ibuparams.IBUName)
+			ibu, err = lca.PullImageBasedUpgrade(APIClient)
 			Expect(err).NotTo(HaveOccurred(), "error pulling ibu resource from cluster")
 
 			By("Ensure that imagebasedupgrade values are empty")
@@ -150,7 +149,7 @@ var _ = Describe(
 		AfterAll(func() {
 			if !MGMTConfig.IdlePostUpgrade {
 				By("Revert IBU resource back to Idle stage")
-				ibu, err = lca.PullImageBasedUpgrade(APIClient, ibuparams.IBUName)
+				ibu, err = lca.PullImageBasedUpgrade(APIClient)
 				Expect(err).NotTo(HaveOccurred(), "error pulling imagebasedupgrade resource")
 
 				if ibu.Object.Spec.Stage == "Upgrade" {

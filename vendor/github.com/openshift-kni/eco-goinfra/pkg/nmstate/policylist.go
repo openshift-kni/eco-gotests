@@ -29,7 +29,7 @@ func ListPolicy(apiClient *clients.Settings, options ...goclient.ListOptions) ([
 	glog.V(100).Infof(logMessage)
 
 	policyList := &nmstateV1.NodeNetworkConfigurationPolicyList{}
-	err := apiClient.Client.List(context.Background(), policyList, &passedOptions)
+	err := apiClient.Client.List(context.TODO(), policyList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list NodeNetworkConfigurationPolicy due to %s", err.Error())

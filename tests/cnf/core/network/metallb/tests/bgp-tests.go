@@ -14,13 +14,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -102,7 +102,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 	})
 
 	Context("functionality", func() {
-		DescribeTable("Creating AddressPool with bgp-advertisement", polarion.ID("47174"),
+		DescribeTable("Creating AddressPool with bgp-advertisement", reportxml.ID("47174"),
 			func(ipStack string, prefixLen int) {
 
 				if ipStack == netparam.IPV6Family {
@@ -146,20 +146,20 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			},
 
 			Entry("", netparam.IPV4Family, 32,
-				polarion.SetProperty("IPStack", netparam.IPV4Family),
-				polarion.SetProperty("PrefixLenght", netparam.IPSubnet32)),
+				reportxml.SetProperty("IPStack", netparam.IPV4Family),
+				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet32)),
 			Entry("", netparam.IPV4Family, 28,
-				polarion.SetProperty("IPStack", netparam.IPV4Family),
-				polarion.SetProperty("PrefixLenght", netparam.IPSubnet28)),
+				reportxml.SetProperty("IPStack", netparam.IPV4Family),
+				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet28)),
 			Entry("", netparam.IPV6Family, 128,
-				polarion.SetProperty("IPStack", netparam.IPV6Family),
-				polarion.SetProperty("PrefixLenght", netparam.IPSubnet128)),
+				reportxml.SetProperty("IPStack", netparam.IPV6Family),
+				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet128)),
 			Entry("", netparam.IPV6Family, 64,
-				polarion.SetProperty("IPStack", netparam.IPV6Family),
-				polarion.SetProperty("PrefixLenght", netparam.IPSubnet64)),
+				reportxml.SetProperty("IPStack", netparam.IPV6Family),
+				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet64)),
 		)
 
-		It("provides Prometheus BGP metrics", polarion.ID("47202"), func() {
+		It("provides Prometheus BGP metrics", reportxml.ID("47202"), func() {
 			By("Creating static ip annotation")
 			staticIPAnnotation := pod.StaticIPAnnotation(
 				externalNad.Definition.Name, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})

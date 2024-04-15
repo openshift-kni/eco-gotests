@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe(
@@ -15,7 +15,7 @@ var _ = Describe(
 		When("on MCE 2.0 and above", func() {
 
 			It("Assert the invoker is set with the proper value",
-				polarion.ID("43613"), func() {
+				reportxml.ID("43613"), func() {
 					configMapName := "openshift-install-manifests"
 					nameSpaceName := "openshift-config"
 					expectedInvoker := "assisted-installer-operator"

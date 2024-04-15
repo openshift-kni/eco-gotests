@@ -9,10 +9,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +56,7 @@ var _ = Describe(
 				}
 			})
 
-			It("result in successfully created infraenv", polarion.ID("41937"), func() {
+			It("result in successfully created infraenv", reportxml.ID("41937"), func() {
 				By("Creating osimage-clusterimageset-test namespace")
 				osImageClusterImageSetNS, err = namespace.NewBuilder(HubAPIClient, osImageClusterImageSetName).Create()
 				Expect(err).ToNot(HaveOccurred(), "error occurred when creating namespace")

@@ -11,9 +11,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreparams"
 )
@@ -85,7 +85,7 @@ var _ = Describe(
 
 		})
 
-		It("Asserts CPU pinning on HT nodes", polarion.ID("67038"), func() {
+		It("Asserts CPU pinning on HT nodes", reportxml.ID("67038"), func() {
 			glog.V(ecoreparams.ECoreLogLevel).Infof("\t*** Assert CPU pinning")
 
 			By("Pulling in PerformanceProfile")
@@ -149,7 +149,7 @@ var _ = Describe(
 
 		})
 
-		It("Asserts HugePages configured on the HT nodes", polarion.ID("67039"),
+		It("Asserts HugePages configured on the HT nodes", reportxml.ID("67039"),
 			Label("ecore_performance_huge_pages"), func() {
 				glog.V(ecoreparams.ECoreLogLevel).Infof("\t*** Assert HugePages")
 

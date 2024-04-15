@@ -3,10 +3,10 @@ package spoke_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var (
@@ -24,7 +24,7 @@ var _ = Describe(
 				}
 				trustBundle = ZTPConfig.SpokeInfraEnv.Object.Spec.AdditionalTrustBundle
 			})
-			It("Assure trust bundle exists on all nodes", polarion.ID("67492"), func() {
+			It("Assure trust bundle exists on all nodes", reportxml.ID("67492"), func() {
 				shellCmd := "cat /etc/pki/ca-trust/source/anchors/openshift-config-user-ca-bundle.crt"
 				cmdResult, err := cluster.ExecCmdWithStdout(SpokeAPIClient, shellCmd)
 				Expect(err).

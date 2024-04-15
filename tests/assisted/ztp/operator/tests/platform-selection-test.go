@@ -10,11 +10,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -118,13 +118,13 @@ var _ = Describe(
 					}
 				},
 				Entry("that is SNO with VSphere platform", v1beta1.VSpherePlatformType, true, 1, 0,
-					"Single node cluster is not supported alongside vsphere platform", polarion.ID("56198")),
+					"Single node cluster is not supported alongside vsphere platform", reportxml.ID("56198")),
 				Entry("that is SNO with BareMetal platform", v1beta1.BareMetalPlatformType, false, 1, 0,
-					"UserManagedNetworking must be set to true with SNO", polarion.ID("56418")),
+					"UserManagedNetworking must be set to true with SNO", reportxml.ID("56418")),
 				Entry("that is BareMetal platform with user-managed-networking", v1beta1.BareMetalPlatformType, true, 3, 2,
-					"Can't set baremetal platform with user-managed-networking enabled", polarion.ID("56419")),
+					"Can't set baremetal platform with user-managed-networking enabled", reportxml.ID("56419")),
 				Entry("that is None platform without user-managed-networking", v1beta1.NonePlatformType, false, 3, 2,
-					"Can't set none platform with user-managed-networking disabled", polarion.ID("56420")),
+					"Can't set none platform with user-managed-networking disabled", reportxml.ID("56420")),
 			)
 
 			AfterEach(func() {

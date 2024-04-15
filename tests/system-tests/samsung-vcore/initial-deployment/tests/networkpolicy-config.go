@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/networkpolicy"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
 )
@@ -16,7 +16,7 @@ import (
 var _ = Describe(
 	"Verify networkpolicy could be configured according to the Samsung requirements",
 	Label(samsungparams.Label), func() {
-		It("Verify network policy configuration procedure", polarion.ID("60086"),
+		It("Verify network policy configuration procedure", reportxml.ID("60086"),
 			Label("samsungvcoredeployment"), func() {
 
 				for _, npNamespace := range samsungparams.NetworkPoliciesNamespaces {

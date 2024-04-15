@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 	systemtestsparams "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuparams"
@@ -56,6 +56,6 @@ var _ = JustAfterEach(func() {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(
-		report, GeneralConfig.GetPolarionReportPath(), GeneralConfig.PolarionTCPrefix)
+	reportxml.Create(
+		report, GeneralConfig.GetReportPath(), GeneralConfig.TCPrefix)
 })

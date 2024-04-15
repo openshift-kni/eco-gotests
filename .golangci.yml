@@ -187,13 +187,7 @@ issues:
     - path: 'tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools'
       linters:
         - gochecknoinits
-    - path: 'tests/internal/polarion'
-      linters:
-        - exhaustive
     - path: "tests/internal/inittools"
-      linters:
-        - depguard
-    - path: 'tests/internal/polarion'
       linters:
         - depguard
     - path: 'tests/internal/reporter'

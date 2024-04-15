@@ -10,11 +10,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -109,7 +109,7 @@ var _ = Describe(
 			})
 
 			It("Assert that assisted-image-service can download from an insecure HTTPS server",
-				polarion.ID("49577"), func() {
+				reportxml.ID("49577"), func() {
 					ok, msg := meets.HubInfrastructureOperandRunningRequirement()
 					Expect(ok).To(BeTrue(), msg)
 				})
@@ -164,7 +164,7 @@ var _ = Describe(
 				}
 			})
 
-			It("Assert that assisted-image-service can download from a secure HTTPS server", polarion.ID("48304"), func() {
+			It("Assert that assisted-image-service can download from a secure HTTPS server", reportxml.ID("48304"), func() {
 				ok, msg := meets.HubInfrastructureOperandRunningRequirement()
 				Expect(ok).To(BeTrue(), msg)
 			})

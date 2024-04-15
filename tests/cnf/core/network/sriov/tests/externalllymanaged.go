@@ -11,14 +11,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
-
-	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/webhook"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
@@ -28,7 +28,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/sriovenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 const sriovAndResourceNameExManagedTrue = "extmanaged"
@@ -131,7 +130,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 			})
 
-			DescribeTable("Verifying connectivity with different IP protocols", polarion.ID("63527"),
+			DescribeTable("Verifying connectivity with different IP protocols", reportxml.ID("63527"),
 				func(ipStack string) {
 					By("Defining test parameters")
 					clientIPs, serverIPs, err := defineIterationParams(ipStack)
@@ -142,12 +141,12 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 						sriovAndResourceNameExManagedTrue, "", "", clientIPs, serverIPs)
 				},
 
-				Entry("", netparam.IPV4Family, polarion.SetProperty("IPStack", netparam.IPV4Family)),
-				Entry("", netparam.IPV6Family, polarion.SetProperty("IPStack", netparam.IPV6Family)),
-				Entry("", netparam.DualIPFamily, polarion.SetProperty("IPStack", netparam.DualIPFamily)),
+				Entry("", netparam.IPV4Family, reportxml.SetProperty("IPStack", netparam.IPV4Family)),
+				Entry("", netparam.IPV6Family, reportxml.SetProperty("IPStack", netparam.IPV6Family)),
+				Entry("", netparam.DualIPFamily, reportxml.SetProperty("IPStack", netparam.DualIPFamily)),
 			)
 
-			It("Recreate VFs when SR-IOV policy is applied", polarion.ID("63533"), func() {
+			It("Recreate VFs when SR-IOV policy is applied", reportxml.ID("63533"), func() {
 				By("Creating test pods and checking connectivity")
 				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
 					sriovAndResourceNameExManagedTrue, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
@@ -187,7 +186,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 			})
 
-			It("SR-IOV network with options", polarion.ID("63534"), func() {
+			It("SR-IOV network with options", reportxml.ID("63534"), func() {
 				By("Collecting default MaxTxRate and Vlan values")
 				defaultMaxTxRate, defaultVlanID := getVlanIDAndMaxTxRateForVf(workerNodeList[0].Object.Name,
 					sriovInterfacesUnderTest[0])
@@ -254,7 +253,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				createSriovConfiguration(sriovAndResourceNameExManagedTrue, sriovInterfacesUnderTest[0], true)
 			})
 
-			It("SR-IOV operator removal", polarion.ID("63537"), func() {
+			It("SR-IOV operator removal", reportxml.ID("63537"), func() {
 				By("Creating test pods and checking connectivity")
 				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
 					sriovAndResourceNameExManagedTrue, "", "",
@@ -362,7 +361,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
 			})
 
-			It("Combination between SR-IOV and MACVLAN CNIs", polarion.ID("63536"), func() {
+			It("Combination between SR-IOV and MACVLAN CNIs", reportxml.ID("63536"), func() {
 				By("Creating a new bond interface with the VFs and vlan interface for this bond via nmstate operator")
 				bondPolicy := nmstate.NewPolicyBuilder(APIClient, secondBondInterfaceName, NetConfig.WorkerLabelMap).
 					WithBondInterface(vfsUnderTest, secondBondInterfaceName, "active-backup").

@@ -10,6 +10,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/day1day2env"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/tsparams"
@@ -17,7 +18,6 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/params"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
 
@@ -73,5 +73,5 @@ var _ = JustAfterEach(func() {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(report, NetConfig.GetPolarionReportPath(), NetConfig.PolarionTCPrefix)
+	reportxml.Create(report, NetConfig.GetReportPath(), NetConfig.TCPrefix)
 })

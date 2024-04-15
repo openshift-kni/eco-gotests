@@ -36,7 +36,7 @@ func ListPackageManifest(
 
 	glog.V(100).Infof(logMessage)
 
-	pkgManifestList, err := apiClient.PackageManifestInterface.PackageManifests(nsname).List(context.Background(),
+	pkgManifestList, err := apiClient.PackageManifestInterface.PackageManifests(nsname).List(context.TODO(),
 		passedOptions)
 
 	if err != nil {

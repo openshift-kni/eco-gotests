@@ -45,7 +45,7 @@ func List(apiClient *clients.Settings, nsname string, options ...goclient.ListOp
 	glog.V(100).Infof(logMessage)
 
 	var bmhList bmhv1alpha1.BareMetalHostList
-	err := apiClient.List(context.Background(), &bmhList, &passedOptions)
+	err := apiClient.List(context.TODO(), &bmhList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list bareMetalHosts in the nsname %s due to %s", nsname, err.Error())

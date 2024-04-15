@@ -15,10 +15,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	"github.com/openshift/cluster-node-tuning-operator/pkg/performanceprofile/controller/performanceprofile/components"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
@@ -75,7 +75,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 
 	// OCP-54571 - Install SNO node with standard DU profile that does not include WorkloadHints
 	It("Verifies expected kernel parameters with no workload hints specified in PerformanceProfile",
-		polarion.ID("54571"), func() {
+		reportxml.ID("54571"), func() {
 			workloadHints := perfProfile.Definition.Spec.WorkloadHints
 			if workloadHints != nil {
 				Skip("WorkloadHints already present in perfProfile.Spec")
@@ -104,7 +104,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		})
 
 	// OCP-54572 - Enable powersave at node level and then enable performance at node level
-	It("Enables powersave at node level and then enable performance at node level", polarion.ID("54572"), func() {
+	It("Enables powersave at node level and then enable performance at node level", reportxml.ID("54572"), func() {
 		By("Patching the performance profile with the workload hints")
 		err := helper.SetPowerModeAndWaitForMcpUpdate(perfProfile, *nodeList[0], true, false, true)
 		Expect(err).ToNot(HaveOccurred(), "Failed to set power mode")
@@ -120,7 +120,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 	// OCP-54574 - Telco_Case: Enable powersave at node level and then enable high performance
 	// at node level, check power consumption with no workload pods.
 	It("Enable powersave, and then enable high performance at node level, check power consumption with no workload pods.",
-		polarion.ID("54574"), func() {
+		reportxml.ID("54574"), func() {
 			testPodAnnotations := map[string]string{
 				"cpu-load-balancing.crio.io": "disable",
 				"cpu-quota.crio.io":          "disable",

@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreparams"
 )
@@ -19,7 +19,7 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(ecoreparams.LabelEcoreValidateSysReservedMemory), func() {
-		It("Asserts KubeletConfig for control-plane nodes", polarion.ID("67061"), func() {
+		It("Asserts KubeletConfig for control-plane nodes", reportxml.ID("67061"), func() {
 			glog.V(ecoreparams.ECoreLogLevel).Infof("\t*** Assert KubeletConfig for control-plane nodes")
 			glog.V(ecoreparams.ECoreLogLevel).Infof("Pulling %q KubeletConfig", ECoreConfig.KubeletConfigCPName)
 
@@ -33,7 +33,7 @@ var _ = Describe(
 
 		})
 
-		It("Asserts KubeletConfig for standard nodes", polarion.ID("67075"), func() {
+		It("Asserts KubeletConfig for standard nodes", reportxml.ID("67075"), func() {
 			glog.V(ecoreparams.ECoreLogLevel).Infof("\t*** Assert KubeletConfig for standard nodes")
 			glog.V(ecoreparams.ECoreLogLevel).Infof("Pulling %q KubeletConfig", ECoreConfig.KubeletConfigStandardName)
 

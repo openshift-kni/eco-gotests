@@ -7,11 +7,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 
-	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/gpudeploy/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/gpudeploy/tests"
+	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,8 +27,8 @@ func TestGPUDeploy(t *testing.T) {
 }
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(
-		report, GeneralConfig.GetPolarionReportPath(), GeneralConfig.PolarionTCPrefix)
+	reportxml.Create(
+		report, GeneralConfig.GetReportPath(), GeneralConfig.TCPrefix)
 })
 
 var _ = JustAfterEach(func() {

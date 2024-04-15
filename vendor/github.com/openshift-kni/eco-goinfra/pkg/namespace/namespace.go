@@ -184,7 +184,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			_, err := builder.apiClient.Namespaces().Get(context.Background(), builder.Definition.Name, metav1.GetOptions{})
+			_, err := builder.apiClient.Namespaces().Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -203,7 +203,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.Namespaces().Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -257,7 +257,7 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 			resource.Resource, builder.Definition.Name)
 
 		err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).DeleteCollection(
-			context.Background(), metav1.DeleteOptions{
+			context.TODO(), metav1.DeleteOptions{
 				GracePeriodSeconds: ptr.To(int64(0)),
 			}, metav1.ListOptions{})
 
@@ -271,7 +271,7 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 		err = wait.PollUntilContextTimeout(
 			context.TODO(), 3*time.Second, cleanTimeout, true, func(ctx context.Context) (bool, error) {
 				objList, err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).List(
-					context.Background(), metav1.ListOptions{})
+					context.TODO(), metav1.ListOptions{})
 
 				if err != nil || len(objList.Items) > 1 {
 					// avoid timeout due to default automatically created openshift

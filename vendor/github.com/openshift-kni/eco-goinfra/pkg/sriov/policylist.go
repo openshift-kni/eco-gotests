@@ -11,6 +11,12 @@ import (
 
 // ListPolicy returns SriovNetworkNodePolicies inventory in the given namespace.
 func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*PolicyBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Infof("SriovNetworkNodePolicies 'apiClient' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list SriovNetworkNodePolicies, 'apiClient' parameter is empty")
+	}
+
 	if nsname == "" {
 		glog.V(100).Infof("SriovNetworkNodePolicies 'nsname' parameter can not be empty")
 
@@ -34,7 +40,7 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.Li
 	glog.V(100).Infof(logMessage)
 
 	networkNodePoliciesList, err := apiClient.ClientSrIov.SriovnetworkV1().
-		SriovNetworkNodePolicies(nsname).List(context.Background(), passedOptions)
+		SriovNetworkNodePolicies(nsname).List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list SriovNetworkNodePolicies in the namespace %s due to %s",

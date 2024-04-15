@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
@@ -19,7 +20,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -55,7 +55,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			err = namespace.NewBuilder(APIClient, kmmparams.DevicePluginTestNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
 		})
-		It("should deploy module with a device plugin", polarion.ID("53678"), func() {
+		It("should deploy module with a device plugin", reportxml.ID("53678"), func() {
 			By("Create Namespace")
 			testNamespace, err := namespace.NewBuilder(APIClient, kmmparams.DevicePluginTestNamespace).Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")

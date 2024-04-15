@@ -5,10 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	installerTypes "github.com/openshift/installer/pkg/types"
 )
@@ -51,18 +51,18 @@ var _ = Describe(
 			}
 			Expect(spokeClusterPlatform.None).NotTo(BeNil(), "spoke does not contain a none platform key")
 		},
-			Entry("SNO install", 1, polarion.ID("56200")),
-			Entry("MNO install", 3, polarion.ID("56202")),
+			Entry("SNO install", 1, reportxml.ID("56200")),
+			Entry("MNO install", 3, reportxml.ID("56202")),
 		)
 
-		It("installs on BareMetal platform", polarion.ID("56203"), func() {
+		It("installs on BareMetal platform", reportxml.ID("56203"), func() {
 			if platformType != string(hiveextV1Beta1.BareMetalPlatformType) {
 				Skip(fmt.Sprintf("Platform type was not %s", string(hiveextV1Beta1.BareMetalPlatformType)))
 			}
 			Expect(spokeClusterPlatform.BareMetal).NotTo(BeNil(), "spoke does not contain a baremetal platform key")
 		})
 
-		It("installs on VSphere platform", polarion.ID("56201"), func() {
+		It("installs on VSphere platform", reportxml.ID("56201"), func() {
 			if platformType != string(hiveextV1Beta1.VSpherePlatformType) {
 				Skip(fmt.Sprintf("Platform type was not %s", string(hiveextV1Beta1.VSpherePlatformType)))
 			}

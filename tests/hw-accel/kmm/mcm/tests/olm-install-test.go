@@ -11,19 +11,18 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/mcm/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 	Context("MCM", Label("hub-check-install"), func() {
 
-		It("Operator should be properly installed", polarion.ID("56674"), func() {
+		It("Operator should be properly installed", reportxml.ID("56674"), func() {
 			if ModulesConfig.SubscriptionName == "" {
 				Skip("No subscription name defined. Skipping test")
 			}
@@ -51,7 +50,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			}
 		})
 
-		It("HUB Webhook server be properly installed", polarion.ID("72718"), func() {
+		It("HUB Webhook server be properly installed", reportxml.ID("72718"), func() {
 			By("Checking if version is greater than 2.1.0")
 			currentVersion, err := get.KmmHubOperatorVersion(APIClient)
 			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")

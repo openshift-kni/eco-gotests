@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/mdr-operator/internal/mdrparams"
@@ -31,6 +31,6 @@ var _ = JustAfterEach(func() {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(
-		report, RHWAConfig.GetPolarionReportPath(), RHWAConfig.PolarionTCPrefix)
+	reportxml.Create(
+		report, RHWAConfig.GetReportPath(), RHWAConfig.TCPrefix)
 })

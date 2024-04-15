@@ -87,7 +87,7 @@ func (builder *PolicySetBuilder) Get() (*policiesv1beta1.PolicySet, error) {
 
 	policySet := &policiesv1beta1.PolicySet{}
 
-	err := builder.apiClient.Get(context.Background(), runtimeclient.ObjectKey{
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
 		Name:      builder.Definition.Name,
 		Namespace: builder.Definition.Namespace,
 	}, policySet)

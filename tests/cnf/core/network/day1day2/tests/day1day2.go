@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/day1day2env"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/day1day2/internal/juniper"
@@ -20,7 +21,6 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -94,7 +94,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 
 	It("Day1: Validate cluster deployed via bond interface with 2 interface vlan VFs enslaved and fail-over",
-		polarion.ID("63928"), func() {
+		reportxml.ID("63928"), func() {
 			err := juniper.DumpInterfaceConfigs(juniperSession, switchInterfaces)
 			Expect(err).ToNot(HaveOccurred(), "Failed to save initial switch interfaces configs")
 
@@ -102,7 +102,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			testBondFailOver(juniperSession, switchInterfaces)
 		})
 
-	It("VF: change QOS configuration", polarion.ID("63926"), func() {
+	It("VF: change QOS configuration", reportxml.ID("63926"), func() {
 		By("Collecting information about test interfaces")
 		vfInterface, err := netnmstate.GetBaseVlanInterface(bondInterfaceVlanSlaves[0], workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get VF base interface")
@@ -151,7 +151,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
 	})
 
-	It("Day2 Bond: change miimon configuration", polarion.ID("63881"), func() {
+	It("Day2 Bond: change miimon configuration", reportxml.ID("63881"), func() {
 		By("Collecting information about test interfaces")
 		bondName, err := netnmstate.GetPrimaryInterfaceBond(workerNodeList[0].Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get Bond primary interface name")
@@ -227,7 +227,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			validateBondType("active-backup", bondName, workerNodeList[0].Object.Name)
 		})
 
-		It("Day2 Bond: change mode configuration", polarion.ID("63882"), func() {
+		It("Day2 Bond: change mode configuration", reportxml.ID("63882"), func() {
 			By("Creating NMState policy to change a bond mode")
 			nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, policyNameBondMode, NetConfig.WorkerLabelMap).
 				WithBondInterface(bondInterfaceVlanSlaves, bondName, "balance-rr").

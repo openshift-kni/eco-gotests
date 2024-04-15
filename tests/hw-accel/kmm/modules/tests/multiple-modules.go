@@ -15,9 +15,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -53,7 +53,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		Context("Modprobe", Label("multiple"), func() {
 
-			It("should fail if any of the modules is not present", polarion.ID("62743"), func() {
+			It("should fail if any of the modules is not present", reportxml.ID("62743"), func() {
 				configmapContents := define.LocalMultiStageConfigMapContent(kmodName)
 
 				By("Create ConfigMap")

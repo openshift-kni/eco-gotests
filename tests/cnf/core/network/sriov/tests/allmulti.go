@@ -11,13 +11,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -155,7 +155,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 
 	It("Validate a pod can receive non-member multicast IPv6 traffic over a secondary SRIOV interface"+
-		" when allmulti mode is enabled from a multicast source in the same PF", polarion.ID("67813"), func() {
+		" when allmulti mode is enabled from a multicast source in the same PF", reportxml.ID("67813"), func() {
 		multicastServer := createMulticastServer(srIovNetworkDefaultNode1, multicastServerIPv6Mac,
 			[]string{multicastServerIPv6}, multicastPingIPv6CMD, workerNodes[0].Definition.Name)
 
@@ -171,7 +171,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	It("Validate a pod can receive non-member multicast IPv4 traffic over a secondary SRIOV interface"+
 		" when allmulti mode is enabled from a multicast source is on a different node",
-		polarion.ID("67815"), func() {
+		reportxml.ID("67815"), func() {
 			multicastServer := createMulticastServer(srIovNetworkDefaultNode2,
 				multicastServerIPv4Mac, []string{multicastServerIPv4}, multicastPingIPv4CMD,
 				workerNodes[1].Definition.Name)
@@ -187,7 +187,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		})
 
 	It("Validate a pod can receive non-member multicast IPv6 traffic over a secondary SRIOV interface"+
-		" when allmulti mode is enabled from a multicast source on a different node", polarion.ID("67816"), func() {
+		" when allmulti mode is enabled from a multicast source on a different node", reportxml.ID("67816"), func() {
 		multicastServer := createMulticastServer(srIovNetworkDefaultNode2, multicastServerIPv6Mac,
 			[]string{multicastServerIPv6}, multicastPingIPv6CMD, workerNodes[1].Definition.Name)
 
@@ -203,7 +203,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	It("Validate a pod can receive non-member multicast traffic over a secondary dual stack SRIOV interface "+
 		"when allmulti mode is enabled from a multicast source in the same PF",
-		polarion.ID("67817"), func() {
+		reportxml.ID("67817"), func() {
 			multicastServer := createMulticastServer(srIovNetworkDefaultNode1, multicastServerIPv4Mac,
 				[]string{multicastServerIPv4, multicastServerIPv6}, multicastPingDualStackCMD, workerNodes[0].Definition.Name)
 
@@ -226,7 +226,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		})
 
 	It("Validate a pod can receive non-member multicast IPv4 traffic over a secondary bonded SRIOV interface when "+
-		"allmulti mode is enabled from a multicast source in the same PF", polarion.ID("67818"), func() {
+		"allmulti mode is enabled from a multicast source in the same PF", reportxml.ID("67818"), func() {
 		multicastServer := createMulticastServer(srIovNetworkDefaultNode1, multicastServerIPv4Mac,
 			[]string{multicastServerIPv4}, multicastPingIPv4CMD, workerNodes[0].Definition.Name)
 
@@ -245,7 +245,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 
 	It("Validate a pod can receive non-member multicast IPv6 traffic over a secondary bonded SRIOV interface when "+
-		"allmulti mode is enabled from a multicast source in the same PF", polarion.ID("67819"), func() {
+		"allmulti mode is enabled from a multicast source in the same PF", reportxml.ID("67819"), func() {
 		multicastServer := createMulticastServer(srIovNetworkDefaultNode1, multicastServerIPv6Mac,
 			[]string{multicastServerIPv6}, multicastPingIPv6CMD, workerNodes[0].Definition.Name)
 
@@ -265,7 +265,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	It("Validate a pod does not receive non-member multicast traffic over a third SRIOV dual stack interface "+
 		"when allmulti mode is enabled on the second SRIOV interface from a multicast source in the same PF",
-		polarion.ID("67820"), func() {
+		reportxml.ID("67820"), func() {
 			multicastServer := createMulticastServerWithMultiNets(srIovNetworkDefaultNode1, srIovNetworkDefaultNode1,
 				[]string{multicastServerIPv4, multicastServerIPv6, "192.168.101.20/24", "2001:101::20/64"},
 				multicastPingDualNet1Net2StackCMD, workerNodes[0].Definition.Name)

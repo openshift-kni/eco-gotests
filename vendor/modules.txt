@@ -406,15 +406,17 @@ github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/scheme
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
-# github.com/k8snetworkplumbingwg/sriov-network-operator v1.2.0 => github.com/openshift/sriov-network-operator v0.0.0-20240228013256-b13485442721
-## explicit; go 1.20
+# github.com/k8snetworkplumbingwg/sriov-network-operator v1.2.0 => github.com/openshift/sriov-network-operator v0.0.0-20240326091723-e9e3a8f7b2e0
+## explicit; go 1.21
 github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/fake
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/scheme
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1/fake
+github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/consts
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/render
+github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/vars
 # github.com/kdomanski/iso9660 v0.2.1
 ## explicit; go 1.14
 github.com/kdomanski/iso9660
@@ -524,7 +526,13 @@ github.com/onsi/gomega/types
 ## explicit; go 1.20
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240328191838-9aebbc11b334
+github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/applyconfiguration/clustergroupupgrades/v1alpha1
+github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned
+github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/fake
+github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
+github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
+github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240415171757-410f21074cfe
 ## explicit; go 1.20
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmh
@@ -559,6 +567,7 @@ github.com/openshift-kni/eco-goinfra/pkg/olm
 github.com/openshift-kni/eco-goinfra/pkg/pod
 github.com/openshift-kni/eco-goinfra/pkg/proxy
 github.com/openshift-kni/eco-goinfra/pkg/rbac
+github.com/openshift-kni/eco-goinfra/pkg/reportxml
 github.com/openshift-kni/eco-goinfra/pkg/route
 github.com/openshift-kni/eco-goinfra/pkg/scc
 github.com/openshift-kni/eco-goinfra/pkg/secret
@@ -1372,6 +1381,7 @@ k8s.io/client-go/discovery/cached/disk
 k8s.io/client-go/discovery/cached/memory
 k8s.io/client-go/discovery/fake
 k8s.io/client-go/dynamic
+k8s.io/client-go/dynamic/fake
 k8s.io/client-go/informers
 k8s.io/client-go/informers/admissionregistration
 k8s.io/client-go/informers/admissionregistration/v1
@@ -1872,7 +1882,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20240228013256-b13485442721
+# github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20240326091723-e9e3a8f7b2e0
 # github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20240228005710-4511c790cc60
 # github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20240222220008-d60e80f8658c

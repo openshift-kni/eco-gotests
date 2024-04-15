@@ -111,6 +111,12 @@ func (builder *BFDBuilder) Exists() bool {
 func PullBFDProfile(apiClient *clients.Settings, name, nsname string) (*BFDBuilder, error) {
 	glog.V(100).Infof("Pulling existing bfdprofile name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("bfdprofile 'apiClient' cannot be empty")
+	}
+
 	builder := BFDBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.BFDProfile{
@@ -124,13 +130,13 @@ func PullBFDProfile(apiClient *clients.Settings, name, nsname string) (*BFDBuild
 	if name == "" {
 		glog.V(100).Infof("The name of the bfdprofile is empty")
 
-		builder.errorMsg = "bfdprofile 'name' cannot be empty"
+		return nil, fmt.Errorf("bfdprofile 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the bfdprofile is empty")
 
-		builder.errorMsg = "bfdprofile 'namespace' cannot be empty"
+		return nil, fmt.Errorf("bfdprofile 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -258,8 +264,8 @@ func (builder *BFDBuilder) WithRcvInterval(rcvInterval uint32) *BFDBuilder {
 }
 
 // WithTransmitInterval defines the transmitInterval placed in the BFDProfile.
-func (builder *BFDBuilder) WithTransmitInterval(rcvInterval uint32) *BFDBuilder {
-	return builder.withInterval("transmitInterval", rcvInterval)
+func (builder *BFDBuilder) WithTransmitInterval(transmitInterval uint32) *BFDBuilder {
+	return builder.withInterval("transmitInterval", transmitInterval)
 }
 
 // WithEchoInterval defines the ecoInterval placed in the BFDProfile.
@@ -332,6 +338,13 @@ func (builder *BFDBuilder) WithOptions(options ...BFDAdditionalOptions) *BFDBuil
 	return builder
 }
 
+// GetBFDProfileGVR returns bfdprofile's GroupVersionResource which could be used for Clean function.
+func GetBFDProfileGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group: APIGroup, Version: APIVersion, Resource: "bfdprofiles",
+	}
+}
+
 func (builder *BFDBuilder) withBoolFlagFor(flagName string, flagValue bool) *BFDBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
@@ -374,13 +387,6 @@ func (builder *BFDBuilder) withInterval(intervalName string, interval uint32) *B
 	}
 
 	return builder
-}
-
-// GetBFDProfileGVR returns bfdprofile's GroupVersionResource which could be used for Clean function.
-func GetBFDProfileGVR() schema.GroupVersionResource {
-	return schema.GroupVersionResource{
-		Group: APIGroup, Version: APIVersion, Resource: "bfdprofiles",
-	}
 }
 
 // validate will check that the builder and builder definition are properly initialized before

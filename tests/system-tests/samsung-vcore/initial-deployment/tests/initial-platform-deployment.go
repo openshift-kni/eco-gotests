@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
 )
@@ -22,7 +22,7 @@ import (
 var _ = Describe(
 	"Initial Cluster Deployment Verification",
 	Label(samsungparams.Label), func() {
-		It("Verify healthy cluster status", polarion.ID("59441"),
+		It("Verify healthy cluster status", reportxml.ID("59441"),
 			Label(samsungparams.LabelSamsungVCoreDeployment), func() {
 				kubeConfigURL := os.Getenv("KUBECONFIG")
 
@@ -73,7 +73,7 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "Error waiting for all available clusteroperators: %s", err)
 			})
 
-		It("Asserts time sync was successfully applied for master nodes", polarion.ID("60028"),
+		It("Asserts time sync was successfully applied for master nodes", reportxml.ID("60028"),
 			Label(samsungparams.LabelSamsungVCoreDeployment), func() {
 				isChronyApplied := false
 
@@ -90,7 +90,7 @@ var _ = Describe(
 				Expect(isChronyApplied).To(BeTrue(), "Error assert time sync was applied")
 			})
 
-		It("Asserts time sync was successfully applied for worker nodes", polarion.ID("60029"),
+		It("Asserts time sync was successfully applied for worker nodes", reportxml.ID("60029"),
 			Label(samsungparams.LabelSamsungVCoreDeployment), func() {
 				isChronyApplied := false
 
@@ -107,7 +107,7 @@ var _ = Describe(
 				Expect(isChronyApplied).To(BeTrue(), "Error assert time sync was applied")
 			})
 
-		It("Asserts full set of ODF nodes was deployed", polarion.ID("59442"),
+		It("Asserts full set of ODF nodes was deployed", reportxml.ID("59442"),
 			Label("samsungvcoreodf"), func() {
 
 				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungOdfMcpName)
@@ -119,7 +119,7 @@ var _ = Describe(
 				Expect(len(nodesList)).ToNot(Equal(0), "ODF nodes list is empty")
 			})
 
-		It("Asserts samsung-cnf mcp found", polarion.ID("60049"),
+		It("Asserts samsung-cnf mcp found", reportxml.ID("60049"),
 			Label("samsungvcoredeployment"), func() {
 
 				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungCnfMcpName)
@@ -129,7 +129,7 @@ var _ = Describe(
 				Expect(mcp.IsInCondition("Updated")).To(BeTrue(), "samsung-cnf mcp failed to update")
 			})
 
-		It("Asserts full set of samsung-cnf nodes was deployed", polarion.ID("59505"),
+		It("Asserts full set of samsung-cnf nodes was deployed", reportxml.ID("59505"),
 			Label("samsungvcoredeployment"), func() {
 
 				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungCnfMcpName)
@@ -141,7 +141,7 @@ var _ = Describe(
 				Expect(len(nodesList)).ToNot(Equal(0), "samsung-cnf nodes list is empty")
 			})
 
-		It("Asserts samsung-pp mcp found", polarion.ID("60050"),
+		It("Asserts samsung-pp mcp found", reportxml.ID("60050"),
 			Label("samsungvcoredeployment"), func() {
 
 				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungPpMcpName)
@@ -151,7 +151,7 @@ var _ = Describe(
 				Expect(mcp.IsInCondition("Updated")).To(BeTrue(), "samsung-ppf mcp failed to update")
 			})
 
-		It("Asserts full set of samsung-pp nodes was deployed", polarion.ID("59506"),
+		It("Asserts full set of samsung-pp nodes was deployed", reportxml.ID("59506"),
 			Label("samsungvcoredeployment"), func() {
 
 				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungPpMcpName)

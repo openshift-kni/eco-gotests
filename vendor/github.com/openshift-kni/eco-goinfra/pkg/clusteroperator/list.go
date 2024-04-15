@@ -29,7 +29,7 @@ func List(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builde
 
 	glog.V(100).Infof(logMessage)
 
-	coList, err := apiClient.ClusterOperators().List(context.Background(), passedOptions)
+	coList, err := apiClient.ClusterOperators().List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list clusterOperators due to %s", err.Error())

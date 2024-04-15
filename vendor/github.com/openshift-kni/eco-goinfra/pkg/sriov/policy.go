@@ -68,6 +68,10 @@ func NewPolicyBuilder(
 		builder.errorMsg = "SriovNetworkNodePolicy 'nsname' cannot be empty"
 	}
 
+	if resName == "" {
+		builder.errorMsg = "SriovNetworkNodePolicy 'resName' cannot be empty"
+	}
+
 	if len(nicNames) == 0 {
 		builder.errorMsg = "SriovNetworkNodePolicy 'nicNames' cannot be empty list"
 	}
@@ -106,6 +110,10 @@ func (builder *PolicyBuilder) WithDevType(devType string) *PolicyBuilder {
 func (builder *PolicyBuilder) WithVFRange(firstVF, lastVF int) *PolicyBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
+	}
+
+	if firstVF < 0 || lastVF < 0 {
+		builder.errorMsg = "firstPF or lastVF can not be less than 0"
 	}
 
 	if firstVF > lastVF {
@@ -217,6 +225,12 @@ func (builder *PolicyBuilder) WithOptions(options ...PolicyAdditionalOptions) *P
 func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilder, error) {
 	glog.V(100).Infof("Pulling existing sriovnetworknodepolicy name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("sriovnetworknodepolicy 'apiClient' cannot be empty")
+	}
+
 	builder := PolicyBuilder{
 		apiClient: apiClient.ClientSrIov,
 		Definition: &srIovV1.SriovNetworkNodePolicy{
@@ -230,13 +244,13 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 	if name == "" {
 		glog.V(100).Infof("The name of the sriovnetworknodepolicy is empty")
 
-		builder.errorMsg = "sriovnetworknodepolicy 'name' cannot be empty"
+		return nil, fmt.Errorf("sriovnetworknodepolicy 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the sriovnetworknodepolicy is empty")
 
-		builder.errorMsg = "sriovnetworknodepolicy 'namespace' cannot be empty"
+		return nil, fmt.Errorf("sriovnetworknodepolicy 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -298,7 +312,7 @@ func (builder *PolicyBuilder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworkNodePolicies(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

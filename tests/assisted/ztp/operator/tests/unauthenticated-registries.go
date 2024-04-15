@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/v1beta1"
 )
 
@@ -60,7 +60,7 @@ var _ = Describe(
 				Expect(reqMet).To(BeTrue(), "error waiting for hub infrastructure operand to start running: %s", msg)
 			})
 			It("Assert AgentServiceConfig can be created without unauthenticatedRegistries in spec",
-				polarion.ID("56552"), func() {
+				reportxml.ID("56552"), func() {
 					By("Create AgentServiceConfig with default specs")
 					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
 
@@ -88,7 +88,7 @@ var _ = Describe(
 				})
 
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing a default entry",
-				polarion.ID("56553"), func() {
+				reportxml.ID("56553"), func() {
 					By("Create AgentServiceConfig with unauthenticatedRegistries containing a default entry")
 					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient).
 						WithUnauthenticatedRegistry(unAuthenticatedDefaultRegistriesList()[1])
@@ -117,7 +117,7 @@ var _ = Describe(
 				})
 
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing a specific entry",
-				polarion.ID("56554"), func() {
+				reportxml.ID("56554"), func() {
 					By("Create AgentServiceConfig with unauthenticatedRegistries containing a specific entry")
 					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient).
 						WithUnauthenticatedRegistry(unAuthenticatedNonDefaultRegistriesList()[0])
@@ -155,7 +155,7 @@ var _ = Describe(
 					unAuthenticatedRegistriesDefaultEntries(configMapBuilder)
 				})
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing multiple entries",
-				polarion.ID("56555"), func() {
+				reportxml.ID("56555"), func() {
 					By("Create AgentServiceConfig with unauthenticatedRegistries containing multiples entries")
 					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient)
 					for _, registry := range unAuthenticatedNonDefaultRegistriesList() {
@@ -196,7 +196,7 @@ var _ = Describe(
 					unAuthenticatedRegistriesDefaultEntries(configMapBuilder)
 				})
 			It("Assert AgentServiceConfig can be created with unauthenticatedRegistries containing an incorrect entry",
-				polarion.ID("56556"), func() {
+				reportxml.ID("56556"), func() {
 					By("Create AgentServiceConfig with unauthenticatedRegistries containing an incorrect entry")
 					incorrectRegistry := "register.redhat.io"
 					tempAgentServiceConfigBuilderUR = assisted.NewDefaultAgentServiceConfigBuilder(HubAPIClient).

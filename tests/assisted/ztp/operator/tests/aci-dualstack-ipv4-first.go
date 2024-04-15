@@ -10,11 +10,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -49,7 +49,7 @@ var _ = Describe(
 				}
 			})
 
-			It("Validates that ACI with dualstack expects IPv4 first", polarion.ID("44877"), func() {
+			It("Validates that ACI with dualstack expects IPv4 first", reportxml.ID("44877"), func() {
 				agentClusterInstallBuilder := createDualstackSpokeClusterResources()
 
 				By("Waiting for specific error message from SpecSynced condition")

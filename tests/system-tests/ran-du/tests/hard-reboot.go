@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/reboot"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
@@ -50,7 +50,7 @@ var _ = Describe(
 			Expect(err).ToNot(HaveOccurred(), "error while waiting for statefulsets to become ready")
 
 		})
-		It("Hard reboot nodes", polarion.ID("42736"), Label("HardReboot"), func() {
+		It("Hard reboot nodes", reportxml.ID("42736"), Label("HardReboot"), func() {
 			By("Retrieve nodes list")
 			nodeList, err := nodes.List(
 				APIClient,

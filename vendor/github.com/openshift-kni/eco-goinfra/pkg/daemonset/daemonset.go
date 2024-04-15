@@ -304,7 +304,7 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
 				return false, nil
@@ -343,7 +343,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -363,7 +363,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -386,7 +386,7 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 
 			var err error
 			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
 				return false, nil
@@ -396,7 +396,8 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 				return true, nil
 			}
 
-			if builder.Object.Status.NumberReady == builder.Object.Status.UpdatedNumberScheduled {
+			if builder.Object.Status.NumberReady == builder.Object.Status.UpdatedNumberScheduled &&
+				builder.Object.Status.UpdatedNumberScheduled != 0 {
 				return true, nil
 			}
 

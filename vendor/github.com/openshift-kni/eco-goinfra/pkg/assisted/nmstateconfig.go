@@ -139,7 +139,7 @@ func (builder *NmStateConfigBuilder) Delete() error {
 func ListNmStateConfigsInAllNamespaces(apiClient *clients.Settings) ([]*NmStateConfigBuilder, error) {
 	nmStateConfigList := &assistedv1beta1.NMStateConfigList{}
 
-	err := apiClient.List(context.Background(), nmStateConfigList, &goclient.ListOptions{})
+	err := apiClient.List(context.TODO(), nmStateConfigList, &goclient.ListOptions{})
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list nmStateConfigs across all namespaces due to %s", err.Error())
@@ -171,7 +171,7 @@ func ListNmStateConfigs(apiClient *clients.Settings, namespace string) ([]*NmSta
 		return nil, fmt.Errorf("namespace to list nmstateconfigs cannot be empty")
 	}
 
-	err := apiClient.List(context.Background(), nmStateConfigList, &goclient.ListOptions{Namespace: namespace})
+	err := apiClient.List(context.TODO(), nmStateConfigList, &goclient.ListOptions{Namespace: namespace})
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list nmStateConfigs in namespace: %s due to %s",

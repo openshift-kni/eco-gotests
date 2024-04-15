@@ -33,7 +33,7 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 
 	glog.V(100).Infof(logMessage)
 
-	deploymentList, err := apiClient.Deployments(nsname).List(context.Background(), passedOptions)
+	deploymentList, err := apiClient.Deployments(nsname).List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list deployments in the namespace %s due to %s", nsname, err.Error())
@@ -46,7 +46,7 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 	for _, runningDeployment := range deploymentList.Items {
 		copiedDeployment := runningDeployment
 		deploymentBuilder := &Builder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.AppsV1Interface,
 			Object:     &copiedDeployment,
 			Definition: &copiedDeployment,
 		}
@@ -75,7 +75,7 @@ func ListInAllNamespaces(apiClient *clients.Settings, options ...metav1.ListOpti
 
 	glog.V(100).Infof(logMessage)
 
-	deploymentList, err := apiClient.Deployments("").List(context.Background(), passedOptions)
+	deploymentList, err := apiClient.Deployments("").List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list deployments in all namespaces due to %s", err.Error())
@@ -88,7 +88,7 @@ func ListInAllNamespaces(apiClient *clients.Settings, options ...metav1.ListOpti
 	for _, runningDeployment := range deploymentList.Items {
 		copiedDeployment := runningDeployment
 		deploymentBuilder := &Builder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.AppsV1Interface,
 			Object:     &copiedDeployment,
 			Definition: &copiedDeployment,
 		}

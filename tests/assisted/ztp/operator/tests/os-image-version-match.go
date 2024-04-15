@@ -5,9 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
 )
 
@@ -58,7 +58,7 @@ var _ = Describe(
 		})
 
 		When("Test for os-version matches between the pod and the AgentServiceConfig", func() {
-			It("Tries to match versions", polarion.ID("41936"), func() {
+			It("Tries to match versions", reportxml.ID("41936"), func() {
 				for _, envOSVersion := range envOSVersions {
 					Expect(func() bool {
 						for _, envOSImage := range envOSImages {

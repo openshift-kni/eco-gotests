@@ -13,12 +13,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/installconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
 
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 const (
@@ -53,7 +53,7 @@ var _ = Describe(
 				fipsEnabledOnHub = installConfigData.FIPS
 			})
 
-			It("Testing assisted-service is FIPS ready", polarion.ID("65866"), func() {
+			It("Testing assisted-service is FIPS ready", reportxml.ID("65866"), func() {
 				By("Extracting the assisted-service binary")
 				Expect(extractBinaryFromPod(
 					ZTPConfig.HubAssistedServicePod(),
@@ -66,7 +66,7 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "error extracting assisted-service binary")
 				Expect(result).To(BeTrue(), "assisted service binary is compiled with CGO_ENABLED=1")
 			})
-			It("Testing assisted-image-service is FIPS ready", polarion.ID("65867"), func() {
+			It("Testing assisted-image-service is FIPS ready", reportxml.ID("65867"), func() {
 				By("Extracting the assisted-image-service binary")
 				Expect(extractBinaryFromPod(
 					ZTPConfig.HubAssistedImageServicePod(),
@@ -81,7 +81,7 @@ var _ = Describe(
 				Expect(result).To(BeTrue(), "assisted-image-service binary is not compiled with CGO_ENABLED=1")
 			})
 
-			It("Assert HUB cluster was deployed with FIPS", polarion.ID("65849"), func() {
+			It("Assert HUB cluster was deployed with FIPS", reportxml.ID("65849"), func() {
 				if !fipsEnabledOnHub {
 					Skip("hub is not installed with fips")
 				}

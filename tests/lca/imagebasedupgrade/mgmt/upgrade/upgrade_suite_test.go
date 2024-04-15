@@ -13,8 +13,8 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/internal/tsparams"
@@ -84,8 +84,8 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
-	polarion.CreateReport(
-		report, MGMTConfig.GetPolarionReportPath(), MGMTConfig.PolarionTCPrefix)
+	reportxml.Create(
+		report, MGMTConfig.GetReportPath(), MGMTConfig.TCPrefix)
 })
 
 var _ = JustAfterEach(func() {

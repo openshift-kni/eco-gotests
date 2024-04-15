@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
@@ -25,7 +26,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -98,13 +98,13 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			setLocalGWMode(false)
 		})
 
-		It("basic functionality should provide fast link failure detection", polarion.ID("47188"), func() {
+		It("basic functionality should provide fast link failure detection", reportxml.ID("47188"), func() {
 			scaleDownMetalLbSpeakers()
 			testBFDFailOver()
 			testBFDFailBack()
 		})
 
-		It("provides Prometheus BFD metrics", polarion.ID("47187"), func() {
+		It("provides Prometheus BFD metrics", reportxml.ID("47187"), func() {
 			mlbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(),
 				fmt.Sprintf("Failed to pull %s namespace", NetConfig.MlbOperatorNamespace))
@@ -209,7 +209,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 		})
 
-		DescribeTable("should provide fast link failure detection", polarion.ID("47186"),
+		DescribeTable("should provide fast link failure detection", reportxml.ID("47186"),
 			func(bgpProtocol, ipStack string, externalTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
 				createExternalNad()
 
@@ -322,21 +322,21 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			},
 
 			Entry("", tsparams.IBPGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeCluster,
-				polarion.SetProperty("BGPPeer", tsparams.IBPGPProtocol),
-				polarion.SetProperty("IPStack", netparam.IPV4Family),
-				polarion.SetProperty("TrafficPolicy", "Cluster")),
+				reportxml.SetProperty("BGPPeer", tsparams.IBPGPProtocol),
+				reportxml.SetProperty("IPStack", netparam.IPV4Family),
+				reportxml.SetProperty("TrafficPolicy", "Cluster")),
 			Entry("", tsparams.IBPGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeLocal,
-				polarion.SetProperty("BGPPeer", tsparams.IBPGPProtocol),
-				polarion.SetProperty("IPStack", netparam.IPV4Family),
-				polarion.SetProperty("TrafficPolicy", "Local")),
+				reportxml.SetProperty("BGPPeer", tsparams.IBPGPProtocol),
+				reportxml.SetProperty("IPStack", netparam.IPV4Family),
+				reportxml.SetProperty("TrafficPolicy", "Local")),
 			Entry("", tsparams.EBGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeCluster,
-				polarion.SetProperty("BGPPeer", tsparams.EBGPProtocol),
-				polarion.SetProperty("IPStack", netparam.IPV4Family),
-				polarion.SetProperty("TrafficPolicy", "Custer")),
+				reportxml.SetProperty("BGPPeer", tsparams.EBGPProtocol),
+				reportxml.SetProperty("IPStack", netparam.IPV4Family),
+				reportxml.SetProperty("TrafficPolicy", "Custer")),
 			Entry("", tsparams.EBGPProtocol, netparam.IPV4Family, corev1.ServiceExternalTrafficPolicyTypeLocal,
-				polarion.SetProperty("BGPPeer", tsparams.EBGPProtocol),
-				polarion.SetProperty("IPStack", netparam.IPV4Family),
-				polarion.SetProperty("TrafficPolicy", "Local")),
+				reportxml.SetProperty("BGPPeer", tsparams.EBGPProtocol),
+				reportxml.SetProperty("IPStack", netparam.IPV4Family),
+				reportxml.SetProperty("TrafficPolicy", "Local")),
 		)
 
 	})

@@ -119,7 +119,7 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	if !builder.Exists() {
 		builder.Object, err = builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).
-			Create(context.Background(), builder.Definition, metav1.CreateOptions{})
+			Create(context.TODO(), builder.Definition, metav1.CreateOptions{})
 		if err != nil {
 			return builder, fmt.Errorf("fail to create NAD object due to: " + err.Error())
 		}
@@ -144,7 +144,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Delete(
-		context.Background(), builder.Definition.Namespace, metav1.DeleteOptions{})
+		context.TODO(), builder.Definition.Namespace, metav1.DeleteOptions{})
 
 	if err != nil {
 		return fmt.Errorf("fail to delete NAD object due to: %w", err)
@@ -187,7 +187,7 @@ func (builder *Builder) Exists() bool {
 	glog.V(100).Infof("Checking if NetworkAttachmentDefinition %s exists in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	_, err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Get(context.Background(),
+	_, err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Get(context.TODO(),
 		builder.Definition.Name, metav1.GetOptions{})
 
 	return nil == err || !k8serrors.IsNotFound(err)

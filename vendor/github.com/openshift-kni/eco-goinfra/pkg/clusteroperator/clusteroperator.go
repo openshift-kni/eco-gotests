@@ -35,6 +35,28 @@ type Builder struct {
 	errorMsg string
 }
 
+// Pull loads an existing clusterOperator into Builder struct.
+func Pull(apiClient *clients.Settings, clusterOperatorName string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing clusterOperator: %s", clusterOperatorName)
+
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &v1.ClusterOperator{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: clusterOperatorName,
+			},
+		},
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("clusterOperator object %s doesn't exist", clusterOperatorName)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
+}
+
 // Exists checks whether the given clusterOperator exists.
 func (builder *Builder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -44,7 +66,7 @@ func (builder *Builder) Exists() bool {
 	glog.V(100).Infof("Checking if clusterOperator %s exists", builder.Definition.Name)
 
 	_, err := builder.apiClient.ClusterOperators().Get(
-		context.Background(),
+		context.TODO(),
 		builder.Definition.Name,
 		metav1.GetOptions{})
 
@@ -102,6 +124,26 @@ func (builder *Builder) IsProgressing() bool {
 	return false
 }
 
+// GetConditionReason returns the specific condition type's reason value or an empty string if it doesn't exist.
+func (builder *Builder) GetConditionReason(conditionType v1.ClusterStatusConditionType) string {
+	glog.V(100).Infof("Get %s clusterOperator %v condition reason if exists",
+		builder.Definition.Name, conditionType)
+
+	err := builder.WaitUntilConditionTrue(conditionType, time.Second)
+
+	if err != nil {
+		return ""
+	}
+
+	for _, condition := range builder.Object.Status.Conditions {
+		if condition.Type == conditionType {
+			return condition.Reason
+		}
+	}
+
+	return ""
+}
+
 // WaitUntilAvailable waits for timeout duration or until clusterOperator is Available.
 func (builder *Builder) WaitUntilAvailable(timeout time.Duration) error {
 	return builder.WaitUntilConditionTrue("Available", timeout)
@@ -127,7 +169,7 @@ func (builder *Builder) WaitUntilConditionTrue(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
 			builder.Object, err = builder.apiClient.ClusterOperators().Get(
-				context.Background(),
+				context.TODO(),
 				builder.Definition.Name,
 				metav1.GetOptions{})
 

@@ -18,9 +18,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
@@ -74,7 +74,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		})
 
-		It("should use DTK_AUTO parameter", polarion.ID("54283"), func() {
+		It("should use DTK_AUTO parameter", reportxml.ID("54283"), func() {
 
 			configmapContents := define.MultiStageConfigMapContent(kmodName)
 
@@ -137,7 +137,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
 		})
 
-		It("should be able to modify a kmod in a module", polarion.ID("53466"), func() {
+		It("should be able to modify a kmod in a module", reportxml.ID("53466"), func() {
 
 			const newKmod = "kmm_ci_a"
 
@@ -164,7 +164,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		})
 
-		It("should fail to update an existing module with something that is wrong", polarion.ID("62598"), func() {
+		It("should fail to update an existing module with something that is wrong", reportxml.ID("62598"), func() {
 			By("Getting the module")
 			moduleBuilder, err := kmm.Pull(APIClient, moduleName, moduleName)
 			Expect(err).ToNot(HaveOccurred(), "error getting the module")
@@ -187,7 +187,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err.Error()).To(ContainSubstring(".containerImage"))
 		})
 
-		It("should be able to run preflightvalidation with no push to registry", polarion.ID("56330"), func() {
+		It("should be able to run preflightvalidation with no push to registry", reportxml.ID("56330"), func() {
 			By("Detecting cluster architecture")
 
 			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
@@ -224,7 +224,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
 		})
 
-		It("should be able to run preflightvalidation and push to registry", polarion.ID("56328"), func() {
+		It("should be able to run preflightvalidation and push to registry", reportxml.ID("56328"), func() {
 			By("Detecting cluster architecture")
 
 			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)

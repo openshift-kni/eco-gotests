@@ -270,7 +270,7 @@ func (builder *Builder) WaitUntilInStatus(status corev1.PodPhase, timeout time.D
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-				context.Background(), builder.Object.Name, metav1.GetOptions{})
+				context.TODO(), builder.Object.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}
@@ -291,7 +291,7 @@ func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, false, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if err == nil {
 				glog.V(100).Infof("pod %s/%s still present", builder.Definition.Namespace, builder.Definition.Name)
 
@@ -336,7 +336,7 @@ func (builder *Builder) WaitUntilCondition(condition corev1.PodConditionType, ti
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-				context.Background(), builder.Object.Name, metav1.GetOptions{})
+				context.TODO(), builder.Object.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}
@@ -503,7 +503,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.Pods(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -1079,7 +1079,7 @@ func (builder *Builder) GetLog(logStartTime time.Duration, containerName string)
 	logStart := int64(logStartTime.Seconds())
 	req := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name, &corev1.PodLogOptions{
 		SinceSeconds: &logStart, Container: containerName})
-	log, err := req.Stream(context.Background())
+	log, err := req.Stream(context.TODO())
 
 	if err != nil {
 		return "", err
@@ -1106,7 +1106,7 @@ func (builder *Builder) GetFullLog(containerName string) (string, error) {
 	}
 
 	logStream, err := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name,
-		&corev1.PodLogOptions{Container: containerName}).Stream(context.Background())
+		&corev1.PodLogOptions{Container: containerName}).Stream(context.TODO())
 
 	if err != nil {
 		return "", err

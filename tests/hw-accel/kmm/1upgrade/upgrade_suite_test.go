@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/tests"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -27,8 +27,7 @@ func TestUpgrade(tt *testing.T) {
 }
 
 var _ = ReportAfterSuite("1upgrade", func(report Report) {
-	polarion.CreateReport(
-		report, GeneralConfig.GetPolarionReportPath(), GeneralConfig.PolarionTCPrefix)
+	reportxml.Create(report, GeneralConfig.GetReportPath(), GeneralConfig.TCPrefix)
 })
 
 var _ = JustAfterEach(func() {

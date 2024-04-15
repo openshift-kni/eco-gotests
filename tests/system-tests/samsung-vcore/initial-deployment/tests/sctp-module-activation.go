@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
 )
@@ -24,7 +24,7 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(samsungparams.Label), func() {
-		It("Verify sctp module activation", polarion.ID("60086"),
+		It("Verify sctp module activation", reportxml.ID("60086"),
 			Label("samsungvcoredeployment"), func() {
 
 				By("Get available samsung-cnf nodes")

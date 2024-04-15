@@ -120,6 +120,12 @@ func (builder *IPAddressPoolBuilder) Exists() bool {
 func PullAddressPool(apiClient *clients.Settings, name, nsname string) (*IPAddressPoolBuilder, error) {
 	glog.V(100).Infof("Pulling existing addresspool name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("addresspool 'apiClient' cannot be empty")
+	}
+
 	builder := IPAddressPoolBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.IPAddressPool{
@@ -133,13 +139,13 @@ func PullAddressPool(apiClient *clients.Settings, name, nsname string) (*IPAddre
 	if name == "" {
 		glog.V(100).Infof("The name of the addresspool is empty")
 
-		builder.errorMsg = "addresspool 'name' cannot be empty"
+		return nil, fmt.Errorf("addresspool 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the addresspool is empty")
 
-		builder.errorMsg = "addresspool 'namespace' cannot be empty"
+		return nil, fmt.Errorf("addresspool 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {

@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/diskencryption"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/models"
 	"golang.org/x/exp/slices"
 )
@@ -54,7 +54,7 @@ var _ = Describe(
 				Expect(err).NotTo(HaveOccurred(), "error getting tang servers from spoke agentclusterinstall")
 			})
 
-			It("installs on all nodes", polarion.ID("51218"), func() {
+			It("installs on all nodes", reportxml.ID("51218"), func() {
 				if tangEncryptionEnabledOn != models.DiskEncryptionEnableOnAll {
 					Skip("Tang disk encryption enabledOn not set to all")
 				}
@@ -63,7 +63,7 @@ var _ = Describe(
 				verifyWorkerMachineConfig()
 			})
 
-			It("installs on master nodes", polarion.ID("47136"), func() {
+			It("installs on master nodes", reportxml.ID("47136"), func() {
 				if tangEncryptionEnabledOn != models.DiskEncryptionEnableOnMasters {
 					Skip("Tang disk encryption enabledOn not set to masters")
 				}
@@ -71,7 +71,7 @@ var _ = Describe(
 				verifyMasterMachineConfig()
 			})
 
-			It("installs on worker nodes", polarion.ID("47137"), func() {
+			It("installs on worker nodes", reportxml.ID("47137"), func() {
 				if tangEncryptionEnabledOn != models.DiskEncryptionEnableOnWorkers {
 					Skip("Tang disk encryption enabledOn not set to workers")
 				}
@@ -79,7 +79,7 @@ var _ = Describe(
 				verifyWorkerMachineConfig()
 			})
 
-			It("proper positive validation is returned", polarion.ID("48320"), func() {
+			It("proper positive validation is returned", reportxml.ID("48320"), func() {
 				if tangEncryptionEnabledOn == models.DiskEncryptionEnableOnNone {
 					Skip("Tang disk encryption enabledOn set to none")
 				}
@@ -108,7 +108,7 @@ var _ = Describe(
 
 			})
 
-			It("propagates with multiple tang servers defined", polarion.ID("48329"), func() {
+			It("propagates with multiple tang servers defined", reportxml.ID("48329"), func() {
 				if len(tangServers) == 1 {
 					Skip("Only a single tang server used for installation")
 				}

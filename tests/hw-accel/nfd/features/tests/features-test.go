@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/machine"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/helpers"
@@ -23,7 +24,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/set"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/wait"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -62,12 +62,12 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 
-		It("Check pods state", polarion.ID("54548"), func() {
+		It("Check pods state", reportxml.ID("54548"), func() {
 			err := helpers.CheckPodStatus(APIClient)
 			Expect(err).NotTo(HaveOccurred())
 
 		})
-		It("Check CPU feature labels", polarion.ID("54222"), func() {
+		It("Check CPU feature labels", reportxml.ID("54222"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 
@@ -82,7 +82,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 
-		It("Check Kernel config", polarion.ID("54471"), func() {
+		It("Check Kernel config", reportxml.ID("54471"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 			Expect(err).NotTo(HaveOccurred())
@@ -95,7 +95,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 
-		It("Check topology", polarion.ID("54491"), func() {
+		It("Check topology", reportxml.ID("54491"), func() {
 			Skip("configuration issue")
 			skipIfConfigNotSet(nfdConfig)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
@@ -108,7 +108,7 @@ var _ = Describe("NFD", Ordered, func() {
 			}
 
 		})
-		It("Check Logs", polarion.ID("54549"), func() {
+		It("Check Logs", reportxml.ID("54549"), func() {
 			errorKeywords := []string{"error", "exception", "failed"}
 			skipIfConfigNotSet(nfdConfig)
 			listOptions := metav1.ListOptions{
@@ -135,7 +135,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 
-		It("Check Restart Count", polarion.ID("54538"), func() {
+		It("Check Restart Count", reportxml.ID("54538"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			listOptions := metav1.ListOptions{
 				AllowWatchBookmarks: false,
@@ -153,7 +153,7 @@ var _ = Describe("NFD", Ordered, func() {
 			}
 		})
 
-		It("Check if NUMA detected ", polarion.ID("54408"), func() {
+		It("Check if NUMA detected ", reportxml.ID("54408"), func() {
 			Skip("configuration issue")
 			skipIfConfigNotSet(nfdConfig)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
@@ -166,7 +166,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 
-		It("Verify Feature List not contains items from Blacklist ", polarion.ID("68298"), func() {
+		It("Verify Feature List not contains items from Blacklist ", reportxml.ID("68298"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			By("delete old instance")
 			err := nfdManager.DeleteNFDCR("nfd-instance")
@@ -199,7 +199,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 
-		It("Verify Feature List contains only Whitelist", polarion.ID("68300"), func() {
+		It("Verify Feature List contains only Whitelist", reportxml.ID("68300"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			By("delete old instance")
 			err := nfdManager.DeleteNFDCR("nfd-instance")
@@ -231,7 +231,7 @@ var _ = Describe("NFD", Ordered, func() {
 
 		})
 
-		It("Add day2 workers", polarion.ID("54539"), func() {
+		It("Add day2 workers", reportxml.ID("54539"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			if !nfdConfig.AwsTest {
 				Skip("This test works only on AWS cluster." +

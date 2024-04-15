@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/models"
 )
 
@@ -35,9 +35,9 @@ var _ = Describe(
 						"failed asserting 0 restarts for "+podName+" pod")
 				},
 				Entry("Assert the assisted-service pod wasn't restarted after creation",
-					"assisted-service", ZTPConfig.HubAssistedServicePod, polarion.ID("56584")),
+					"assisted-service", ZTPConfig.HubAssistedServicePod, reportxml.ID("56584")),
 				Entry("Assert the assisted-image-service pod wasn't restarted after creation",
-					"assisted-image-service", ZTPConfig.HubAssistedImageServicePod, polarion.ID("56583")),
+					"assisted-image-service", ZTPConfig.HubAssistedImageServicePod, reportxml.ID("56583")),
 			)
 
 		})

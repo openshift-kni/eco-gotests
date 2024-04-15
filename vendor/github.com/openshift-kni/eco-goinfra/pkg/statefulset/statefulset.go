@@ -200,7 +200,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.StatefulSets(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -222,7 +222,7 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
 			builder.Object, err = builder.apiClient.StatefulSets(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
 				return false, err

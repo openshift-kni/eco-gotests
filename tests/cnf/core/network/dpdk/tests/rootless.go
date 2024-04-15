@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/scc"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/link"
@@ -24,7 +25,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -209,7 +209,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				"Both vlans have the same ID. Please select different ID using ECO_CNF_CORE_NET_VLAN env variable")
 		})
 
-		It("single VF, multiple tap devices, multiple mac-vlans", polarion.ID("63806"), func() {
+		It("single VF, multiple tap devices, multiple mac-vlans", reportxml.ID("63806"), func() {
 			defineAndCreateSrIovNetworks(vlanID)
 			defineAndCreateTapNADs(nil, nil)
 
@@ -268,7 +268,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		})
 
 		It("multiple VFs, one tap plus MAC-VLAN, second tap plus 2 VLANs, filter untagged and tagged traffic",
-			polarion.ID("63818"), func() {
+			reportxml.ID("63818"), func() {
 				defineAndCreateSrIovNetworks(vlanID)
 				defineAndCreateTapNADs(nil, nil)
 
@@ -346,7 +346,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			})
 
 		It("multiple VFs, one tap plus IP-VLANs, second tap plus plus VLAN and sysctl, filter untagged and tagged"+
-			" traffic, add and remove routes", polarion.ID("63878"), func() {
+			" traffic, add and remove routes", reportxml.ID("63878"), func() {
 			defineAndCreateSrIovNetworks(vlanID)
 			defineAndCreateTapNADs(enabledSysctlFlags, disabledSysctlFlags)
 
@@ -411,7 +411,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		})
 
 		It("multiple VFs, one tap with VLAN plus sysctl, second tap with two mac-vlans plus sysctl, filter untagged "+
-			"and tagged traffic, add and remove routes, deployment restart", polarion.ID("63846"), func() {
+			"and tagged traffic, add and remove routes, deployment restart", reportxml.ID("63846"), func() {
 
 			defineAndCreateSrIovNetworks(vlanID)
 			defineAndCreateTapNADs(enabledSysctlFlags, disabledSysctlFlags)

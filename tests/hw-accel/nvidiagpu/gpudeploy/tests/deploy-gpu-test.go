@@ -21,6 +21,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/gpudeploy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nvidiagpu/internal/check"
@@ -33,7 +34,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var (
@@ -207,7 +207,7 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 		})
 
 		It("Deploy NVIDIA GPU Operator with DTK without cluster-wide entitlement",
-			polarion.ID("48452"), func() {
+			reportxml.ID("48452"), func() {
 
 				By("Check if NFD is installed %s")
 				nfdLabelDetected, err := check.AllNodeLabel(APIClient, nfdRhcosLabel, nfdRhcosLabelValue,

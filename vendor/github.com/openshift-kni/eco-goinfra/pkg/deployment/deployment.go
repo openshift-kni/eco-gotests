@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	appsv1Typed "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
 // Builder provides struct for deployment object containing connection to the cluster and the deployment definitions.
@@ -28,7 +29,7 @@ type Builder struct {
 	// Used in functions that define or mutate deployment definition. errorMsg is processed before the deployment
 	// object is created.
 	errorMsg  string
-	apiClient *clients.Settings
+	apiClient appsv1Typed.AppsV1Interface
 }
 
 // AdditionalOptions additional options for deployment object.
@@ -43,7 +44,7 @@ func NewBuilder(
 		name, nsname, labels, containerSpec)
 
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.AppsV1Interface,
 		Definition: &appsv1.Deployment{
 			Spec: appsv1.DeploymentSpec{
 				Selector: &metav1.LabelSelector{
@@ -87,10 +88,15 @@ func NewBuilder(
 
 // Pull loads an existing deployment into Builder struct.
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
+	// Safeguard against nil apiClient interfaces.
+	if apiClient == nil {
+		return nil, fmt.Errorf("apiClient cannot be nil")
+	}
+
 	glog.V(100).Infof("Pulling existing deployment name: %s under namespace: %s", name, nsname)
 
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.AppsV1Interface,
 		Definition: &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -410,6 +416,8 @@ func (builder *Builder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -464,7 +472,7 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
 			builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
 				return false, err
@@ -497,7 +505,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
 			}
@@ -517,7 +525,7 @@ func (builder *Builder) Exists() bool {
 
 	var err error
 	builder.Object, err = builder.apiClient.Deployments(builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -539,7 +547,7 @@ func (builder *Builder) WaitUntilCondition(condition appsv1.DeploymentConditionT
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			updateDeployment, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
-				context.Background(), builder.Definition.Name, metav1.GetOptions{})
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}

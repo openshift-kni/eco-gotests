@@ -34,7 +34,7 @@ func List(
 
 	glog.V(100).Infof(logMessage)
 
-	eventList, err := apiClient.Events(nsname).List(context.Background(), passedOptions)
+	eventList, err := apiClient.Events(nsname).List(context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list Events in the namespace %s due to %s", nsname, err.Error())
@@ -47,7 +47,7 @@ func List(
 	for _, event := range eventList.Items {
 		copiedEvent := event
 		stateBuilder := &Builder{
-			apiClient: apiClient,
+			apiClient: apiClient.Events(nsname),
 			Object:    &copiedEvent}
 		eventObjects = append(eventObjects, stateBuilder)
 	}

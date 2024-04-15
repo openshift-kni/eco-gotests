@@ -11,11 +11,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/bfd/internal/netbfdhelper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/bfd/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -93,7 +92,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelSuite), ContinueOnFailure, 
 
 	})
 
-	It("Should have BFD status up", polarion.ID("61337"), func() {
+	It("Should have BFD status up", reportxml.ID("61337"), func() {
 		Eventually(func() error {
 			return netbfdhelper.IsBFDStatusUp(masterNodePod, workerNodesAddresses)
 		},

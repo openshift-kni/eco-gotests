@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/reboot"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
@@ -19,7 +19,7 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label("KernelCrashKdump"), func() {
-		It("Trigger kernel crash to generate kdump vmcore", polarion.ID("56216"), Label("KernelCrashKdump"), func() {
+		It("Trigger kernel crash to generate kdump vmcore", reportxml.ID("56216"), Label("KernelCrashKdump"), func() {
 
 			By("Retrieve nodes list")
 			nodeList, err := nodes.List(

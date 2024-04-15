@@ -6,13 +6,13 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/mcm/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -65,7 +65,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 		})
 
-		It("should replace in-tree module", polarion.ID("62744"), func() {
+		It("should replace in-tree module", reportxml.ID("62744"), func() {
 
 			By("Creating registry secret on Hub")
 			secretContent := define.SecretContent(ModulesConfig.Registry, ModulesConfig.PullSecret)

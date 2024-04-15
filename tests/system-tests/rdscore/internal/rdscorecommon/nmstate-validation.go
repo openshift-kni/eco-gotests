@@ -13,9 +13,9 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
@@ -131,9 +131,9 @@ func VerifyNMStateSuite() {
 				Label("nmstate-ns"), VerifyNMStateNamespaceExists)
 
 			It("Verifies NMState instance exists",
-				Label("nmstate-instance"), polarion.ID("67027"), VerifyNMStateInstanceExists)
+				Label("nmstate-instance"), reportxml.ID("67027"), VerifyNMStateInstanceExists)
 
 			It("Verifies all NodeNetworkConfigurationPolicies are Available",
-				Label("nmstate-nncp"), polarion.ID("71846"), VerifyAllNNCPsAreOK)
+				Label("nmstate-nncp"), reportxml.ID("71846"), VerifyAllNNCPsAreOK)
 		})
 }

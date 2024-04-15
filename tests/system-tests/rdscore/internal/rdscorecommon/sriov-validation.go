@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
@@ -20,7 +21,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
@@ -924,11 +924,11 @@ func VerifySRIOVSuite() {
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("*******************************************")
 
 			It("Verifices SR-IOV workloads on the same node",
-				Label("sriov-same-node"), polarion.ID("71949"), MustPassRepeatedly(3),
+				Label("sriov-same-node"), reportxml.ID("71949"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNode)
 
 			It("Verifices SR-IOV workloads on different nodes",
-				Label("sriov-different-node"), polarion.ID("71950"), MustPassRepeatedly(3),
+				Label("sriov-different-node"), reportxml.ID("71950"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnDifferentNodes)
 		})
 }

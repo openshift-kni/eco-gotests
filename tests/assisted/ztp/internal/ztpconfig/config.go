@@ -83,6 +83,11 @@ func (ztpconfig *ZTPConfig) newHubConfig() {
 	}
 
 	ztpconfig.HubConfig.HubPullSecret, _ = cluster.GetOCPPullSecret(APIClient)
+
+	if ztpconfig.DryRun {
+		return
+	}
+
 	ztpconfig.HubConfig.HubInstallConfig, _ = configmap.Pull(APIClient, "cluster-config-v1", "kube-system")
 }
 

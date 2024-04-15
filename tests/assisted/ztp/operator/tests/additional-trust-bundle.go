@@ -8,10 +8,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentinstallv1beta1 "github.com/openshift/assisted-service/api/v1beta1"
 
@@ -117,7 +117,7 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
 			})
 
-			It("Validates that InfraEnv can be updated with additionalTrustedBundle", polarion.ID("65936"), func() {
+			It("Validates that InfraEnv can be updated with additionalTrustedBundle", reportxml.ID("65936"), func() {
 				By("Creating Infraenv")
 				infraenv := assisted.NewInfraEnvBuilder(
 					HubAPIClient,
@@ -144,7 +144,7 @@ var _ = Describe(
 
 			})
 
-			It("Validates invalid certificate throws proper status", polarion.ID("67490"), func() {
+			It("Validates invalid certificate throws proper status", reportxml.ID("67490"), func() {
 				By("Creating Infraenv")
 				infraenv := assisted.NewInfraEnvBuilder(
 					HubAPIClient,

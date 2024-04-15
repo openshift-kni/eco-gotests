@@ -7,14 +7,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/containernshide/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 )
 
 var _ = Describe("Container Namespace Hiding", Label(tsparams.LabelContainerNSHideTestCases), func() {
-	It("should not have kubelet and crio using the same inode as systemd", polarion.ID("53681"), func() {
+	It("should not have kubelet and crio using the same inode as systemd", reportxml.ID("53681"), func() {
 		By("Getting systemd inodes on cluster nodes")
 		systemdInodes, err := cluster.ExecCmdWithStdout(raninittools.APIClient, "readlink /proc/1/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check systemd inodes")

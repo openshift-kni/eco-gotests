@@ -6,8 +6,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwaparams"
@@ -28,7 +27,7 @@ var _ = Describe(
 			By("Verify MDR deployment is Ready")
 			Expect(mdrDeployment.IsReady(rhwaparams.DefaultTimeout)).To(BeTrue(), "MDR deployment is not Ready")
 		})
-		It("Verify Machine Deletion Remediation Operator pod is running", polarion.ID("65767"), func() {
+		It("Verify Machine Deletion Remediation Operator pod is running", reportxml.ID("65767"), func() {
 			_, err := pod.WaitForAllPodsInNamespaceRunning(
 				APIClient,
 				rhwaparams.RhwaOperatorNs,

@@ -37,7 +37,7 @@ func ListCatalogSources(
 	glog.V(100).Infof(logMessage)
 
 	catalogSourceList, err := apiClient.OperatorsV1alpha1Interface.CatalogSources(nsname).List(
-		context.Background(), passedOptions)
+		context.TODO(), passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list catalogsources in the namespace %s due to %s", nsname, err.Error())

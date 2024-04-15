@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/strings/slices"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Builder provides struct for route object containing connection to the cluster and the route definitions.
@@ -25,7 +25,7 @@ type Builder struct {
 	// Used in functions that define or mutate the route definition.
 	// errorMsg is processed before the route object is created
 	errorMsg  string
-	apiClient *clients.Settings
+	apiClient goclient.Client
 }
 
 // NewBuilder creates a new instance of Builder.
@@ -34,8 +34,14 @@ func NewBuilder(apiClient *clients.Settings, name, nsname, serviceName string) *
 		"Initializing new route structure with the following params: name: %s, namespace: %s, serviceName: %s",
 		name, nsname, serviceName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
+		return nil
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &routev1.Route{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -75,8 +81,14 @@ func NewBuilder(apiClient *clients.Settings, name, nsname, serviceName string) *
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing route name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &routev1.Route{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -205,7 +217,7 @@ func (builder *Builder) Get() (*routev1.Route, error) {
 
 	route := &routev1.Route{}
 
-	err := builder.apiClient.Get(context.Background(), client.ObjectKey{
+	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
 		Name:      builder.Definition.Name,
 		Namespace: builder.Definition.Namespace,
 	}, route)

@@ -8,8 +8,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/far-operator/internal/farparams"
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
@@ -32,7 +31,7 @@ var _ = Describe(
 			By("Verify FAR deployment is Ready")
 			Expect(farDeployment.IsReady(rhwaparams.DefaultTimeout)).To(BeTrue(), "FAR deployment is not Ready")
 		})
-		It("Verify Fence Agents Remediation Operator pod is running", polarion.ID("66026"), func() {
+		It("Verify Fence Agents Remediation Operator pod is running", reportxml.ID("66026"), func() {
 
 			listOptions := metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app.kubernetes.io/name=%s", farparams.OperatorControllerPodLabel),

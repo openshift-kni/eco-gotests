@@ -15,8 +15,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreparams"
 )
@@ -490,9 +490,9 @@ func VerifyPersistentStorageSuite() {
 		"Persistent storage validation",
 		Label("ecore-persistent-storage"), func() {
 			It("Verifies CephFS",
-				Label("odf-cephfs-pvc"), polarion.ID("71850"), MustPassRepeatedly(3), VerifyCephFSPVC)
+				Label("odf-cephfs-pvc"), reportxml.ID("71850"), MustPassRepeatedly(3), VerifyCephFSPVC)
 
 			It("Verifies CephRBD",
-				Label("odf-cephrbd-pvc"), polarion.ID("71989"), MustPassRepeatedly(3), VerifyCephRBDPVC)
+				Label("odf-cephrbd-pvc"), reportxml.ID("71989"), MustPassRepeatedly(3), VerifyCephRBDPVC)
 		})
 }

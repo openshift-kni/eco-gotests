@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
 )
@@ -33,7 +33,7 @@ var _ = Describe(
 				glog.V(100).Infof("%s folder already exists", samsungConfigsFolder)
 			}
 		})
-		It("Verify system reserved memory for masters", polarion.ID("60045"),
+		It("Verify system reserved memory for masters", reportxml.ID("60045"),
 			Label("samsungvcoredeployment"), func() {
 				kubeletConfigName := "set-sysreserved-master"
 				systemReservedBuilder := mco.NewKubeletConfigBuilder(APIClient, kubeletConfigName).

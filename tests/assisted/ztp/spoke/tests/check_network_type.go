@@ -9,10 +9,10 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/network"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/spoke/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	"github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	"github.com/openshift/assisted-service/models"
 	corev1 "k8s.io/api/core/v1"
@@ -36,7 +36,7 @@ var _ = Describe(
 
 			})
 			It("Assert IPv4 spoke cluster with OVNKubernetes set as NetworkType gets deployed",
-				polarion.ID("44899"), func() {
+				reportxml.ID("44899"), func() {
 
 					By("Check that spoke cluster is IPV4 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
@@ -54,7 +54,7 @@ var _ = Describe(
 
 				})
 			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OVNKubernetes",
-				polarion.ID("44900"), func() {
+				reportxml.ID("44900"), func() {
 
 					By("Check that spoke cluster is IPV4 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
@@ -77,7 +77,7 @@ var _ = Describe(
 						"error matching the network type in agentclusterinstall to the network type in the spoke")
 				})
 			It("Assert IPv6 spoke cluster with OVNKubernetes set as NetworkType gets deployed",
-				polarion.ID("44894"), func() {
+				reportxml.ID("44894"), func() {
 
 					By("Check that spoke cluster is IPV6 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv6Requirement()
@@ -95,7 +95,7 @@ var _ = Describe(
 
 				})
 			It("Assert the NetworkType in the IPV6 spoke matches ACI and is set to OVNKubernetes",
-				polarion.ID("44895"), func() {
+				reportxml.ID("44895"), func() {
 
 					By("Check that spoke cluster is IPV6 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv6Requirement()
@@ -118,7 +118,7 @@ var _ = Describe(
 						"error matching the network type in agentclusterinstall to the network type in the spoke")
 				})
 			It("Assert IPv4 spoke cluster with OpenShiftSDN set as NetworkType gets deployed",
-				polarion.ID("44896"), func() {
+				reportxml.ID("44896"), func() {
 
 					By("Check that spoke cluster is IPV4 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
@@ -136,7 +136,7 @@ var _ = Describe(
 
 				})
 			It("Assert the NetworkType in the IPV4 spoke matches ACI and is set to OpenShiftSDN",
-				polarion.ID("44897"), func() {
+				reportxml.ID("44897"), func() {
 
 					By("Check that spoke cluster is IPV4 Single Stack")
 					reqMet, msg := meets.SpokeSingleStackIPv4Requirement()
@@ -159,7 +159,7 @@ var _ = Describe(
 						"error matching the network type in agentclusterinstall to the network type in the spoke")
 				})
 			It("Assert the NetworkType if omitted in ACI is set to OVNKubernetes",
-				polarion.ID("49558"), func() {
+				reportxml.ID("49558"), func() {
 
 					By("Check the networktype is not set via install-config-overrides")
 					installConfigOverrides := ZTPConfig.SpokeAgentClusterInstall.

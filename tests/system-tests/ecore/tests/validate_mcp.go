@@ -5,8 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
-
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreparams"
 )
@@ -21,7 +20,7 @@ var _ = Describe(
 			_, err := mco.Pull(APIClient, mcpName)
 			Expect(err).ToNot(HaveOccurred(), "Error pulling MCP %q", mcpName)
 		},
-			Entry("Assert 'standard' MCP", ECoreConfig.MCPOneName, polarion.ID("67022")),
-			Entry("Assert 'ht100gb' MCP", ECoreConfig.MCPTwoName, polarion.ID("67023")),
+			Entry("Assert 'standard' MCP", ECoreConfig.MCPOneName, reportxml.ID("67022")),
+			Entry("Assert 'ht100gb' MCP", ECoreConfig.MCPTwoName, reportxml.ID("67023")),
 		)
 	})

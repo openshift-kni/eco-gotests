@@ -72,7 +72,7 @@ func (builder *ClusterServiceVersionBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.apiClient.OperatorsV1alpha1Interface.ClusterServiceVersions(
 		builder.Definition.Namespace).Get(
-		context.Background(), builder.Definition.Name, metav1.GetOptions{})
+		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

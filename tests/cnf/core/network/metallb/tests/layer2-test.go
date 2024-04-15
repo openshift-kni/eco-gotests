@@ -15,13 +15,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -116,7 +116,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 	})
 
-	It("Validate MetalLB Layer 2 functionality", polarion.ID("42936"), func() {
+	It("Validate MetalLB Layer 2 functionality", reportxml.ID("42936"), func() {
 		By("Creating nginx test pod on worker node")
 		setupNGNXPod(workerNodeList[0].Definition.Name)
 
@@ -127,7 +127,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		trafficTest(clientTestPod, announcingNodeName)
 	})
 
-	It("Failure of MetalLB announcing speaker node", polarion.ID("42751"), func() {
+	It("Failure of MetalLB announcing speaker node", reportxml.ID("42751"), func() {
 		By("Changing the label selector for Metallb and adding a label for Workers")
 		metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull metallb.io object")

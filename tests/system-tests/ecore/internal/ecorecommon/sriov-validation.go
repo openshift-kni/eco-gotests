@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
@@ -20,7 +21,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift-kni/eco-gotests/tests/internal/polarion"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreparams"
 )
@@ -1010,19 +1010,19 @@ func VerifySRIOVSuite() {
 			glog.V(ecoreparams.ECoreLogLevel).Infof("***************************************")
 
 			It("Verifies SR-IOV workloads on the same node",
-				Label("sriov-same-net-same-node"), polarion.ID("71949"), MustPassRepeatedly(3),
+				Label("sriov-same-net-same-node"), reportxml.ID("71949"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNode)
 
 			It("Verifies SR-IOV workloads on different nodes",
-				Label("sriov-same-net-different-node"), polarion.ID("71950"), MustPassRepeatedly(3),
+				Label("sriov-same-net-different-node"), reportxml.ID("71950"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnDifferentNodes)
 
 			It("Verifies SR-IOV workloads on the different SR-IOV nets and same node",
-				Label("sriov-different-net-same-node"), polarion.ID("72258"), MustPassRepeatedly(3),
+				Label("sriov-different-net-same-node"), reportxml.ID("72258"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsOnSameNodeDifferentNetworks)
 
 			It("Verifies SR-IOV workloads on different SR-IOV nets and different nodes",
-				Label("sriov-same-net-different-node"), polarion.ID("72259"), MustPassRepeatedly(3),
+				Label("sriov-same-net-different-node"), reportxml.ID("72259"), MustPassRepeatedly(3),
 				VerifySRIOVWorkloadsDifferentNodesDifferentNetworks)
 		})
 }
