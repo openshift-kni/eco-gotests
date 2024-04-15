@@ -60,6 +60,37 @@ func (tl *TolerationList) Decode(value string) error {
 	return nil
 }
 
+// EnvMapString holds a map[string]string parsed from environment variable.
+type EnvMapString map[string]string
+
+// Decode - method for envconfig package to parse environment variable.
+func (ems *EnvMapString) Decode(value string) error {
+	resultMap := make(map[string]string)
+
+	for _, record := range strings.Split(value, ";;") {
+		log.Printf("Processing record: %q", record)
+
+		key := strings.Split(record, "===")[0]
+		val := strings.Split(record, "===")[1]
+
+		multiLine := ""
+
+		if strings.Contains(val, `\n`) {
+			for _, line := range strings.Split(val, `\n`) {
+				multiLine += fmt.Sprintf("\n%s", line)
+			}
+		} else {
+			multiLine = val
+		}
+
+		resultMap[key] = multiLine
+	}
+
+	*ems = resultMap
+
+	return nil
+}
+
 // NodesBMCMap holds info about BMC connection for a specific node.
 type NodesBMCMap map[string]BMCDetails
 
@@ -117,23 +148,23 @@ type CoreConfig struct {
 	WlkdSRIOVDeploy2TwoCmd  []string    `yaml:"rdscore_wlkd2_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_2_TWO_CMD"`
 	WlkdSRIOVDeployOneImage string      `yaml:"rdscore_wlkd_sriov_one_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_IMG"`
 	WlkdSRIOVDeployTwoImage string      `yaml:"rdscore_wlkd_sriov_two_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_IMG"`
+	WlkdSRIOVNetOne         string      `yaml:"rdscore_wlkd_sriov_net_one" envconfig:"ECO_RDSCORE_WLKD_SRIOV_NET_ONE"`
+	WlkdSRIOVNetTwo         string      `yaml:"rdscore_wlkd_sriov_net_two" envconfig:"ECO_RDSCORE_WLKD_SRIOV_NET_TWO"`
+	WlkdSRIOVTwoSa          string      `yaml:"rdscore_wlkd_sriov_two_sa" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_SA"`
 	//nolint:lll
-	WlkdSRIOVConfigMapDataOne map[string]string `yaml:"rdscore_wlkd_sriov_cm_data_one" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_ONE"`
+	WlkdSRIOVConfigMapDataOne EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_one" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_ONE"`
 	//nolint:lll
-	WlkdSRIOVConfigMapDataTwo map[string]string `yaml:"rdscore_wlkd_sriov_cm_data_two" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_TWO"`
+	WlkdSRIOVConfigMapDataTwo EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_two" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_TWO"`
 	//nolint:lll
-	StorageODFDeployOneSelector map[string]string `yaml:"rdscore_wlkd_odf_one_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_ONE_SELECTOR"`
+	StorageODFDeployOneSelector EnvMapString `yaml:"rdscore_wlkd_odf_one_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_ONE_SELECTOR"`
 	//nolint:lll
-	StorageODFDeployTwoSelector map[string]string `yaml:"rdscore_wlkd_odf_two_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_TWO_SELECTOR"`
+	StorageODFDeployTwoSelector EnvMapString `yaml:"rdscore_wlkd_odf_two_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_TWO_SELECTOR"`
 	//nolint:lll
-	NodeSelectorHTNodes map[string]string `yaml:"rdscore_node_selector_ht_nodes" envconfig:"ECO_RDSCORE_NODE_SELECTOR_HT_NODES"`
-	WlkdSRIOVNetOne     string            `yaml:"rdscore_wlkd_sriov_net_one" envconfig:"ECO_RDSCORE_WLKD_SRIOV_NET_ONE"`
-	WlkdSRIOVNetTwo     string            `yaml:"rdscore_wlkd_sriov_net_two" envconfig:"ECO_RDSCORE_WLKD_SRIOV_NET_TWO"`
-	WlkdSRIOVTwoSa      string            `yaml:"rdscore_wlkd_sriov_two_sa" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_SA"`
+	WlkdSRIOVDeployOneSelector EnvMapString `yaml:"rdscore_wlkd_sriov_one_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_SELECTOR"`
 	//nolint:lll
-	WlkdSRIOVDeployOneSelector map[string]string `yaml:"rdscore_wlkd_sriov_one_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_SELECTOR"`
-	//nolint:lll
-	WlkdSRIOVDeployTwoSelector map[string]string `yaml:"rdscore_wlkd_sriov_two_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_SELECTOR"`
+	WlkdSRIOVDeployTwoSelector EnvMapString `yaml:"rdscore_wlkd_sriov_two_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_SELECTOR"`
+	//nolint:lll,nolintlint
+	NodeSelectorHTNodes EnvMapString `yaml:"rdscore_node_selector_ht_nodes" envconfig:"ECO_RDSCORE_NODE_SELECTOR_HT_NODES"`
 	//nolint:lll
 	WlkdSRIOVDeployOneTargetAddress string `yaml:"rdscore_wlkd_sriov_deploy_one_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_ONE_TARGET"`
 	//nolint:lll
@@ -151,9 +182,9 @@ type CoreConfig struct {
 	//nolint:lll
 	WlkdSRIOVDeploy2TwoTargetAddressIPv6 string `yaml:"rdscore_wlkd2_sriov_deploy_two_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_TWO_TARGET_IPV6"`
 	//nolint:lll
-	MCVlanDeployNodeSelectorOne map[string]string `yaml:"rdscore_mcvlan_1_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_1_NODE_SELECTOR"`
+	MCVlanDeployNodeSelectorOne EnvMapString `yaml:"rdscore_mcvlan_1_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_1_NODE_SELECTOR"`
 	//nolint:lll
-	MCVlanDeployNodeSelectorTwo map[string]string `yaml:"rdscore_mcvlan_2_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_2_NODE_SELECTOR"`
+	MCVlanDeployNodeSelectorTwo EnvMapString `yaml:"rdscore_mcvlan_2_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_2_NODE_SELECTOR"`
 	//nolint:lll
 	MCVlanDeploy1TargetAddress string `yaml:"rdscore_macvlan_deploy_1_target" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_ONE_TARGET"`
 	//nolint:lll

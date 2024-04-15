@@ -2,13 +2,10 @@
 rcore_nad_workload_ns_one: demo-ns-one
 rcore_nad_workload_ns_two: demo-ns-two
 rdscore_performance_profile_ht_name: customcnf
-rdscore_node_selector_ht_nodes:
-  node-role.kubernetes.io/customcnf: ""
+rdscore_node_selector_ht_nodes: {}
 rdscore_storage_storage_wlkd_image: ""
-rdscore_wlkd_odf_one_selector:
-  kubernetes.io/hostname: openshift-worker-0.ecore.lab.eng.tlv2.redhat.com
-rdscore_wlkd_odf_two_selector:
-  kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com
+rdscore_wlkd_odf_one_selector: {}
+rdscore_wlkd_odf_two_selector: {}
 rdscore_wlkd_sriov_one_image: ""
 rdscore_wlkd_sriov_two_image: ""
 rdscore_wlkd_sriov_one_cmd:
@@ -27,53 +24,8 @@ rdscore_wlkd2_sriov_two_cmd:
 - "/bin/sh"
 - "-c"
 - "/opt/net/config.sh 497 10.46.126.78/26 2620:52:0:2e7e::44/122"
-rdscore_wlkd_sriov_cm_data_one:
-  config.sh: |
-    #! /bin/bash
-    set -euo pipefail
-    vid=${1}
-    ip4=${2}
-    ip6=${3:-''}
-    ip link set dev net1 down
-    ip link add link net1 name net1.${vid} type vlan id ${vid}
-    ip addr add ${ip4} dev net1.${vid}
-
-    if [[ ${ip6} != '' ]]; then
-      ip addr add ${ip6} dev net1.${vid}
-    fi
-
-    ip link set dev net1 up
-    ip link set dev net1.${vid} up
-    ip --br a s
-
-    set -x
-    sleep 1
-
-    nc -k -l 1111
-rdscore_wlkd_sriov_cm_data_two:
-  config.sh: |
-    #! /bin/bash
-    set -euo pipefail
-    vid=${1}
-    ip4=${2}
-    ip6=${3:-''}
-    ip link set dev net1 down
-    ip link add link net1 name net1.${vid} type vlan id ${vid}
-    ip addr add ${ip4} dev net1.${vid}
-
-    if [[ ${ip6} != '' ]]; then
-      ip addr add ${ip6} dev net1.${vid}
-    fi
-
-    ip link set dev net1 up
-    ip link set dev net1.${vid} up
-    ip --br a s
-
-    set -x
-    sleep 1
-
-    nc -k -l 1111
-
+rdscore_wlkd_sriov_cm_data_one: {}
+rdscore_wlkd_sriov_cm_data_two: {}
 rdscore_wlkd_sriov_deploy_one_target: "10.46.126.77 1111"
 rdscore_wlkd_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::42 1111"
 rdscore_wlkd_sriov_deploy_two_target: "10.46.126.75 1111"
@@ -84,10 +36,8 @@ rdscore_wlkd2_sriov_deploy_two_target: "10.46.126.76 1111"
 rdscore_wlkd2_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::43 1111"
 ecore_wlkd_sriov_net_one: sriov-net-one
 ecore_wlkd_sriov_net_two: sriov-net-two
-rdscore_wlkd_sriov_one_selector:
-  kubernetes.io/hostname: openshift-worker-2.ecore.lab.eng.tlv2.redhat.com
-rdscore_wlkd_sriov_two_selector:
-  kubernetes.io/hostname: openshift-worker-3.ecore.lab.eng.tlv2.redhat.com
+rdscore_wlkd_sriov_one_selector: {}
+rdscore_wlkd_sriov_two_selector: {}
 rdscore_wlkd_sriov_two_sa: rdscore-telco-sa-two
 rdscore_wlkd_sriov_one_ns: rds-sriov-wlkd
 rdscore_wlkd_sriov_two_ns: rds-sriov-wlkd
@@ -137,10 +87,8 @@ rdscore_mcvlan_deploy_2_cmd:
 - "-c"
 - "/opt/net/config.sh 493 10.46.125.71/26 2620:52:0:2e7d::46/122"
 rdscore_mcvlan_nad_one_name: "mc-vlan-one"
-rdscore_mcvlan_1_node_selector:
-  kubernetes.io/hostname: openshift-worker-0.ecore.lab.eng.tlv2.redhat.com
-rdscore_mcvlan_2_node_selector:
-  kubernetes.io/hostname: openshift-worker-1.ecore.lab.eng.tlv2.redhat.com
+rdscore_mcvlan_1_node_selector: {}
+rdscore_mcvlan_2_node_selector: {}
 rdscore_macvlan_deploy_1_target: "10.46.125.71 1111"
 rdscore_macvlan_deploy_1_target_ipv6: "2620:52:0:2e7d::46 1111"
 
