@@ -22,7 +22,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -40,13 +40,13 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 
 		By("Getting external nodes ip addresses")
 		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
 		By("Selecting worker node for Layer-2 tests")
 		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
 		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			APIClient, metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
 
 		By("Creating a new instance of MetalLB Speakers on workers")
@@ -58,7 +58,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 
 		By("Listing master nodes")
 		masterNodeList, err = nodes.List(APIClient,
-			metaV1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
 		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
 			"Failed to detect master nodes")
@@ -212,7 +212,7 @@ func trafficTest(clientTestPod *pod.Builder, nodeName string) {
 // "announcing from node "helix13.lab.eng.tlv2.redhat.com".
 func getLBServiceAnnouncingNodeName() string {
 	serviceEvents, err := events.List(
-		APIClient, tsparams.TestNamespaceName, metaV1.ListOptions{FieldSelector: "reason=nodeAssigned"})
+		APIClient, tsparams.TestNamespaceName, metav1.ListOptions{FieldSelector: "reason=nodeAssigned"})
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get events in namespace %s", tsparams.TestNamespaceName))
 
 	var allEvents []string

@@ -6,7 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NetworkInfo structure to store pod network information.
@@ -23,7 +23,7 @@ func ListNetworksByDeviceType(
 	var devNetworks []string
 
 	operatornsname := "openshift-sriov-network-operator"
-	options := metaV1.ListOptions{}
+	options := metav1.ListOptions{}
 	sriovPolicies, err := sriov.ListPolicy(apiClient, operatornsname, options)
 
 	if err != nil {
