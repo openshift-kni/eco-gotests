@@ -70,7 +70,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreinittools
-      - github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools
       - github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools
       - github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools
@@ -175,7 +175,7 @@ issues:
     - path: 'tests/system-tests/ecore/internal/ecoreinittools'
       linters:
         - gochecknoinits
-    - path: 'tests/system-tests/samsung-vcore/internal/samsunginittools'
+    - path: 'tests/system-tests/vcore/internal/vcoreinittools'
       linters:
         - gochecknoinits
     - path: 'tests/hw-accel/kmm/internal/kmminittools'

@@ -9,17 +9,17 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/networkpolicy"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
 var _ = Describe(
-	"Verify networkpolicy could be configured according to the Samsung requirements",
-	Label(samsungparams.Label), func() {
+	"Verify networkpolicy could be configured according to the vCore requirements",
+	Label(vcoreparams.Label), func() {
 		It("Verify network policy configuration procedure", reportxml.ID("60086"),
-			Label("samsungvcoredeployment"), func() {
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 
-				for _, npNamespace := range samsungparams.NetworkPoliciesNamespaces {
+				for _, npNamespace := range vcoreparams.NetworkPoliciesNamespaces {
 					nsBuilder := namespace.NewBuilder(APIClient, npNamespace)
 
 					inNamespaceStr := fmt.Sprintf("in namespace %s", npNamespace)
@@ -30,32 +30,32 @@ var _ = Describe(
 						npNamespace)
 
 					glog.V(100).Infof("Create networkpolicy %s %s",
-						samsungparams.MonitoringNetworkPolicyName, inNamespaceStr)
+						vcoreparams.MonitoringNetworkPolicyName, inNamespaceStr)
 
 					npBuilder, err := networkpolicy.NewNetworkPolicyBuilder(APIClient,
-						samsungparams.MonitoringNetworkPolicyName, npNamespace).WithNamespaceIngressRule(
-						samsungparams.NetworkPolicyMonitoringNamespaceSelectorMatchLabels,
-						nil).WithPolicyType(samsungparams.NetworkPolicyType).Create()
+						vcoreparams.MonitoringNetworkPolicyName, npNamespace).WithNamespaceIngressRule(
+						vcoreparams.NetworkPolicyMonitoringNamespaceSelectorMatchLabels,
+						nil).WithPolicyType(vcoreparams.NetworkPolicyType).Create()
 					Expect(err).ToNot(HaveOccurred(), "failed to create networkpolicy %s %s",
-						samsungparams.MonitoringNetworkPolicyName, inNamespaceStr)
+						vcoreparams.MonitoringNetworkPolicyName, inNamespaceStr)
 
 					glog.V(100).Infof("Verify networkpolicy %s successfully created %s",
-						samsungparams.MonitoringNetworkPolicyName, inNamespaceStr)
+						vcoreparams.MonitoringNetworkPolicyName, inNamespaceStr)
 					Expect(npBuilder.Exists()).To(Equal(true), "networkpolicy %s not found %s",
-						samsungparams.MonitoringNetworkPolicyName, inNamespaceStr)
+						vcoreparams.MonitoringNetworkPolicyName, inNamespaceStr)
 
 					glog.V(100).Infof("Create networkpolicy %s %s",
-						samsungparams.AllowAllNetworkPolicyName, inNamespaceStr)
+						vcoreparams.AllowAllNetworkPolicyName, inNamespaceStr)
 					npBuilder, err = networkpolicy.NewNetworkPolicyBuilder(APIClient,
-						samsungparams.AllowAllNetworkPolicyName, npNamespace).
-						WithPolicyType(samsungparams.NetworkPolicyType).Create()
+						vcoreparams.AllowAllNetworkPolicyName, npNamespace).
+						WithPolicyType(vcoreparams.NetworkPolicyType).Create()
 					Expect(err).ToNot(HaveOccurred(), "failed to create networkpolicy %s objects %s",
-						samsungparams.AllowAllNetworkPolicyName, inNamespaceStr)
+						vcoreparams.AllowAllNetworkPolicyName, inNamespaceStr)
 
 					glog.V(100).Infof("Verify networkpolicy %s successfully created %s",
-						samsungparams.MonitoringNetworkPolicyName, inNamespaceStr)
+						vcoreparams.MonitoringNetworkPolicyName, inNamespaceStr)
 					Expect(npBuilder.Exists()).To(Equal(true), "networkpolicy %s not found %s",
-						samsungparams.AllowAllNetworkPolicyName, inNamespaceStr)
+						vcoreparams.AllowAllNetworkPolicyName, inNamespaceStr)
 
 				}
 			})

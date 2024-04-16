@@ -4,6 +4,7 @@ import (
 	"fmt"
 	apiUrl "net/url"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/golang/glog"
@@ -15,15 +16,15 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
 var _ = Describe(
 	"Initial Cluster Deployment Verification",
-	Label(samsungparams.Label), func() {
+	Label(vcoreparams.Label), func() {
 		It("Verify healthy cluster status", reportxml.ID("59441"),
-			Label(samsungparams.LabelSamsungVCoreDeployment), func() {
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 				kubeConfigURL := os.Getenv("KUBECONFIG")
 
 				By("Checking if API URL available")
@@ -32,18 +33,18 @@ var _ = Describe(
 
 				glog.V(100).Infof("Checking if all BareMetalHosts in good OperationalState")
 				var bmhList []*bmh.BmhBuilder
-				bmhList, err = bmh.List(APIClient, samsungparams.OpenshiftMachineAPINamespace)
+				bmhList, err = bmh.List(APIClient, vcoreparams.OpenshiftMachineAPINamespace)
 				Expect(err).ToNot(HaveOccurred(), "Error getting BareMetaHosts list: %s", err)
 				Expect(len(bmhList)).ToNot(Equal(0), "Empty bareMetalHosts list received")
 
 				_, err = bmh.WaitForAllBareMetalHostsInGoodOperationalState(APIClient,
-					samsungparams.OpenshiftMachineAPINamespace,
+					vcoreparams.OpenshiftMachineAPINamespace,
 					5*time.Second)
 				Expect(err).ToNot(HaveOccurred(), "Error waiting for all BareMetalHosts in good OperationalState: %s", err)
 
 				glog.V(100).Infof("Checking available control-plane nodes count")
 				var nodesList []*nodes.Builder
-				nodesList, err = nodes.List(APIClient, SamsungConfig.ControlPlaneLabelListOption)
+				nodesList, err = nodes.List(APIClient, VCoreConfig.ControlPlaneLabelListOption)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get master nodes list; %s", err)
 
 				masterNodesCount := len(nodesList)
@@ -55,7 +56,7 @@ var _ = Describe(
 				isReady, err = nodes.WaitForAllNodesAreReady(
 					APIClient,
 					5*time.Second,
-					SamsungConfig.ControlPlaneLabelListOption)
+					VCoreConfig.ControlPlaneLabelListOption)
 				Expect(err).ToNot(HaveOccurred(), "Error getting master nodes list: %s", err)
 				Expect(isReady).To(Equal(true), "Error in master nodes status, not all Master node are Ready; %s", isReady)
 
@@ -74,14 +75,18 @@ var _ = Describe(
 			})
 
 		It("Asserts time sync was successfully applied for master nodes", reportxml.ID("60028"),
-			Label(samsungparams.LabelSamsungVCoreDeployment), func() {
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 				isChronyApplied := false
 
-				mcp := mco.NewMCPBuilder(APIClient, samsungparams.MasterNodeRole)
+				chronyConfigNameRegex := "\\d+-master\\w*-*\\w*-chrony-conf\\w*"
+
+				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.MasterNodeRole)
 				Expect(mcp.Exists()).To(BeTrue(), "Error find master mcp")
 
 				for _, source := range mcp.Object.Status.Configuration.Source {
-					if source.Name == samsungparams.MasterChronyConfigName {
+					reg, _ := regexp.Compile(chronyConfigNameRegex)
+
+					if reg.MatchString(source.Name) {
 						isChronyApplied = true
 
 						break
@@ -91,14 +96,18 @@ var _ = Describe(
 			})
 
 		It("Asserts time sync was successfully applied for worker nodes", reportxml.ID("60029"),
-			Label(samsungparams.LabelSamsungVCoreDeployment), func() {
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 				isChronyApplied := false
 
-				mcp := mco.NewMCPBuilder(APIClient, samsungparams.WorkerNodeRole)
+				chronyConfigNameRegex := "\\d+-worker\\w*-*\\w*-chrony-conf\\w*"
+
+				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.WorkerNodeRole)
 				Expect(mcp.Exists()).To(BeTrue(), "Error find worker mcp")
 
 				for _, source := range mcp.Object.Status.Configuration.Source {
-					if source.Name == samsungparams.WorkerChronyConfigName {
+					reg, _ := regexp.Compile(chronyConfigNameRegex)
+
+					if reg.MatchString(source.Name) {
 						isChronyApplied = true
 
 						break
@@ -108,58 +117,58 @@ var _ = Describe(
 			})
 
 		It("Asserts full set of ODF nodes was deployed", reportxml.ID("59442"),
-			Label("samsungvcoreodf"), func() {
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 
-				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungOdfMcpName)
+				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.VCoreOdfMcpName)
 				Expect(mcp.Exists()).To(BeTrue(), "Error to find ODF mcp")
 
 				glog.V(100).Infof("Checking available ODF nodes count")
-				nodesList, err := nodes.List(APIClient, SamsungConfig.OdfLabelListOption)
+				nodesList, err := nodes.List(APIClient, VCoreConfig.OdfLabelListOption)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get ODF nodes list; %s", err)
 				Expect(len(nodesList)).ToNot(Equal(0), "ODF nodes list is empty")
 			})
 
-		It("Asserts samsung-cnf mcp found", reportxml.ID("60049"),
-			Label("samsungvcoredeployment"), func() {
+		It("Asserts control-plane-worker mcp found", reportxml.ID("60049"),
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 
-				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungCnfMcpName)
-				Expect(mcp.Exists()).To(BeTrue(), "Error to find samsung-cnf mcp")
+				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.VCoreCpMcpName)
+				Expect(mcp.Exists()).To(BeTrue(), "Error to find control-plane-worker mcp")
 
-				glog.V(100).Infof("Checking samsung-cnf mcp condition state")
-				Expect(mcp.IsInCondition("Updated")).To(BeTrue(), "samsung-cnf mcp failed to update")
+				glog.V(100).Infof("Checking control-plane-worker mcp condition state")
+				Expect(mcp.IsInCondition("Updated")).To(BeTrue(), "control-plane-worker mcp failed to update")
 			})
 
-		It("Asserts full set of samsung-cnf nodes was deployed", reportxml.ID("59505"),
-			Label("samsungvcoredeployment"), func() {
+		It("Asserts full set of control-plane-worker nodes was deployed", reportxml.ID("59505"),
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 
-				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungCnfMcpName)
-				Expect(mcp.Exists()).To(BeTrue(), "Error to find samsung-cnf mcp")
+				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.VCoreCpMcpName)
+				Expect(mcp.Exists()).To(BeTrue(), "Error to find control-plane-worker mcp")
 
-				glog.V(100).Infof("Checking available samsung-cnf nodes count")
-				nodesList, err := nodes.List(APIClient, SamsungConfig.SamsungCnfLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get samsung-cnf nodes list; %s", err)
-				Expect(len(nodesList)).ToNot(Equal(0), "samsung-cnf nodes list is empty")
+				glog.V(100).Infof("Checking available control-plane-worker nodes count")
+				nodesList, err := nodes.List(APIClient, VCoreConfig.VCoreCpLabelListOption)
+				Expect(err).ToNot(HaveOccurred(), "Failed to get control-plane-worker nodes list; %s", err)
+				Expect(len(nodesList)).ToNot(Equal(0), "control-plane-worker nodes list is empty")
 			})
 
-		It("Asserts samsung-pp mcp found", reportxml.ID("60050"),
-			Label("samsungvcoredeployment"), func() {
+		It("Asserts user-plane-worker mcp found", reportxml.ID("60050"),
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 
-				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungPpMcpName)
-				Expect(mcp.Exists()).To(BeTrue(), "Error to find samsung-pp mcp")
+				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.VCorePpMcpName)
+				Expect(mcp.Exists()).To(BeTrue(), "Error to find user-plane-worker mcp")
 
-				glog.V(100).Infof("Checking samsung-pp mcp condition state")
-				Expect(mcp.IsInCondition("Updated")).To(BeTrue(), "samsung-ppf mcp failed to update")
+				glog.V(100).Infof("Checking user-plane-worker mcp condition state")
+				Expect(mcp.IsInCondition("Updated")).To(BeTrue(), "user-plane-worker mcp failed to update")
 			})
 
-		It("Asserts full set of samsung-pp nodes was deployed", reportxml.ID("59506"),
-			Label("samsungvcoredeployment"), func() {
+		It("Asserts full set of user-plane-worker nodes was deployed", reportxml.ID("59506"),
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 
-				mcp := mco.NewMCPBuilder(APIClient, samsungparams.SamsungPpMcpName)
-				Expect(mcp.Exists()).To(BeTrue(), "Error to find samsung-pp mcp")
+				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.VCorePpMcpName)
+				Expect(mcp.Exists()).To(BeTrue(), "Error to find user-plane-worker mcp")
 
-				glog.V(100).Infof("Checking available samsung-pp nodes count")
-				nodesList, err := nodes.List(APIClient, SamsungConfig.SamsungPpLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get samsung-pp nodes list; %s", err)
-				Expect(len(nodesList)).ToNot(Equal(0), "samsung-pp nodes list is empty")
+				glog.V(100).Infof("Checking available user-plane-worker nodes count")
+				nodesList, err := nodes.List(APIClient, VCoreConfig.VCorePpLabelListOption)
+				Expect(err).ToNot(HaveOccurred(), "Failed to get user-plane-worker nodes list; %s", err)
+				Expect(len(nodesList)).ToNot(Equal(0), "user-plane-worker nodes list is empty")
 			})
 	})

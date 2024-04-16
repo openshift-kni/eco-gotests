@@ -15,24 +15,24 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
 var _ = Describe(
 	"Verify sctp module activation",
 	Ordered,
 	ContinueOnFailure,
-	Label(samsungparams.Label), func() {
+	Label(vcoreparams.Label), func() {
 		It("Verify sctp module activation", reportxml.ID("60086"),
-			Label("samsungvcoredeployment"), func() {
+			Label(vcoreparams.LabelVCoreDeployment), func() {
 
-				By("Get available samsung-cnf nodes")
-				nodesList, err := nodes.List(APIClient, SamsungConfig.SamsungCnfLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get samsung-cnf nodes list; %s", err)
-				Expect(len(nodesList)).ToNot(Equal(0), "samsung-cnf nodes list is empty")
+				By("Get available control-plane-worker nodes")
+				nodesList, err := nodes.List(APIClient, VCoreConfig.VCoreCpLabelListOption)
+				Expect(err).ToNot(HaveOccurred(), "Failed to get control-plane-worker nodes list; %s", err)
+				Expect(len(nodesList)).ToNot(Equal(0), "control-plane-worker nodes list is empty")
 
-				sctpBuilder := mco.NewMCBuilder(APIClient, samsungparams.SctpModuleName)
+				sctpBuilder := mco.NewMCBuilder(APIClient, vcoreparams.SctpModuleName)
 				if !sctpBuilder.Exists() {
 
 					By("Apply sctp config using shell method")
@@ -40,15 +40,15 @@ var _ = Describe(
 					sctpModuleTemplateName := "sctp-module.yaml"
 					varsToReplace := make(map[string]interface{})
 					varsToReplace["SctpModuleName"] = "load-sctp-module"
-					varsToReplace["McNodeRole"] = samsungparams.CnfMCSelector
+					varsToReplace["McNodeRole"] = vcoreparams.CpMCSelector
 					homeDir, err := os.UserHomeDir()
 					Expect(err).ToNot(HaveOccurred(), "user home directory not found; %s", err)
 
-					destinationDirectoryPath := filepath.Join(homeDir, samsungparams.ConfigurationFolderName)
+					destinationDirectoryPath := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
 
 					workingDir, err := os.Getwd()
 					Expect(err).ToNot(HaveOccurred(), err)
-					templateDir := filepath.Join(workingDir, samsungparams.TemplateFilesFolder)
+					templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
 
 					err = ocpcli.ApplyConfigFile(
 						templateDir,
@@ -64,7 +64,7 @@ var _ = Describe(
 					_, err = nodes.WaitForAllNodesToReboot(
 						APIClient,
 						20*time.Minute,
-						SamsungConfig.SamsungCnfLabelListOption)
+						VCoreConfig.VCoreCpLabelListOption)
 					Expect(err).ToNot(HaveOccurred(), "Nodes failed to reboot after applying %s config; %s",
 						sctpModuleTemplateName, err)
 
@@ -73,7 +73,7 @@ var _ = Describe(
 				_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
 				Expect(err).ToNot(HaveOccurred(), "Error waiting for all available clusteroperators: %s", err)
 
-				glog.V(100).Infof("Verify SCTP was activated on each %s node", SamsungConfig.SamsungCnfLabel)
+				glog.V(100).Infof("Verify SCTP was activated on each %s node", VCoreConfig.VCoreCpLabel)
 
 				for _, node := range nodesList {
 					checkCmd := "lsmod | grep sctp"

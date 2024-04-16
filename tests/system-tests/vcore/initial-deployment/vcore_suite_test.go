@@ -10,24 +10,24 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/initial-deployment/tests"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/initial-deployment/tests"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
 var _, currentFile, _, _ = runtime.Caller(0)
 
-func TestSamsungVCore(t *testing.T) {
+func TestVCore(t *testing.T) {
 	_, reporterConfig := GinkgoConfiguration()
 	reporterConfig.JUnitReport = GeneralConfig.GetJunitReportPath(currentFile)
 
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Samsung vCore SystemTests Suite", Label(samsungparams.Labels...), reporterConfig)
+	RunSpecs(t, "vCore SystemTests Suite", Label(vcoreparams.Labels...), reporterConfig)
 }
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, samsungparams.ReporterNamespacesToDump,
-		samsungparams.ReporterCRDsToDump, clients.SetScheme)
+		CurrentSpecReport(), currentFile, vcoreparams.ReporterNamespacesToDump,
+		vcoreparams.ReporterCRDsToDump, clients.SetScheme)
 })
 
 var _ = ReportAfterSuite("", func(report Report) {

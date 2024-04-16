@@ -7,24 +7,23 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/scc"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsunginittools"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/samsung-vcore/internal/samsungparams"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
 var _ = Describe(
 	"Verify scc activation succeeded",
 	Ordered,
 	ContinueOnFailure,
-	Label(samsungparams.Label), func() {
+	Label(vcoreparams.Label), func() {
 		It("Verify scc activation", reportxml.ID("60042"),
-			Label("samsungvcoredeployment"), func() {
+			Label(vcoreparams.LabelVCoreDeployment), func() {
+				By("Get available control-plane-worker nodes")
+				nodesList, err := nodes.List(APIClient, VCoreConfig.VCoreCpLabelListOption)
+				Expect(err).ToNot(HaveOccurred(), "Failed to get control-plane-worker nodes list; %s", err)
+				Expect(len(nodesList)).ToNot(Equal(0), "control-plane-worker nodes list is empty")
 
-				By("Get available samsung-cnf nodes")
-				nodesList, err := nodes.List(APIClient, SamsungConfig.SamsungCnfLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get samsung-cnf nodes list; %s", err)
-				Expect(len(nodesList)).ToNot(Equal(0), "samsung-cnf nodes list is empty")
-
-				sccBuilder := scc.NewBuilder(APIClient, samsungparams.SccName, "RunAsAny", "MustRunAs").
+				sccBuilder := scc.NewBuilder(APIClient, vcoreparams.SccName, "RunAsAny", "MustRunAs").
 					WithHostDirVolumePlugin(true).
 					WithHostIPC(false).
 					WithHostNetwork(false).
@@ -32,23 +31,23 @@ var _ = Describe(
 					WithHostPorts(false).
 					WithPrivilegedEscalation(true).
 					WithPrivilegedContainer(true).
-					WithAllowCapabilities(samsungparams.CnfSccAllowCapabilities).
+					WithAllowCapabilities(vcoreparams.CpSccAllowCapabilities).
 					WithFSGroup("MustRunAs").
 					WithFSGroupRange(1000, 1000).
-					WithGroups(samsungparams.CnfSccGroups).
+					WithGroups(vcoreparams.CpSccGroups).
 					WithPriority(nil).
 					WithReadOnlyRootFilesystem(false).
-					WithDropCapabilities(samsungparams.CnfSccDropCapabilities).
+					WithDropCapabilities(vcoreparams.CpSccDropCapabilities).
 					WithSupplementalGroups("RunAsAny").
-					WithVolumes(samsungparams.CnfSccVolumes)
+					WithVolumes(vcoreparams.CpSccVolumes)
 
 				if !sccBuilder.Exists() {
 					glog.V(100).Infof("Create securityContextConstraints instance")
 					scc, err := sccBuilder.Create()
 					Expect(err).ToNot(HaveOccurred(), "Failed to create %s scc instance; %s",
-						samsungparams.SccName, err)
+						vcoreparams.SccName, err)
 					Expect(scc.Exists()).To(Equal(true),
-						"Failed to create %s SCC", samsungparams.SccName)
+						"Failed to create %s SCC", vcoreparams.SccName)
 				}
 			})
 	})
