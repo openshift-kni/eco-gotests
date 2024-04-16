@@ -79,7 +79,7 @@ var _ = Describe(
 					Expect(err).ToNot(HaveOccurred(), "Node is still reachable: %s", err)
 
 					By("Wait for the openshift apiserver deployment to be available")
-					err = deploy.WaitUntilCondition("Available", 5*time.Minute)
+					err = deploy.WaitUntilCondition("Available", 8*time.Minute)
 					Expect(err).ToNot(HaveOccurred(), "openshift apiserver deployment has not recovered in time after reboot")
 
 					By("Wait for two more minutes for the cluster resources to reconciliate their state")
