@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -40,6 +41,10 @@ func (m *MockAPIClientGetter) SetFakeK8sClient(runtimeObjs []runtime.Object) {
 
 // GetAPIClient returns the fake k8s client settings struct.
 func (m *MockAPIClientGetter) GetAPIClient() (*clients.Settings, error) {
+	if m.testClients == nil {
+		return nil, fmt.Errorf("apiClient cannot be nil")
+	}
+
 	return m.testClients, nil
 }
 
@@ -56,6 +61,38 @@ func generateFakeClusterVersion(version string) runtime.Object {
 
 		Spec: configv1.ClusterVersionSpec{
 			ClusterID: "fake-cluster-id",
+		},
+	}
+}
+
+func generateFakeClusterVersionWithConnectionInfo(connected bool) runtime.Object {
+	if connected {
+		return &configv1.ClusterVersion{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "version",
+			},
+			Status: configv1.ClusterVersionStatus{
+				Conditions: []configv1.ClusterOperatorStatusCondition{
+					{
+						Type:   configv1.RetrievedUpdates,
+						Reason: "VersionNotFound",
+					},
+				},
+			},
+		}
+	}
+
+	return &configv1.ClusterVersion{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "version",
+		},
+		Status: configv1.ClusterVersionStatus{
+			Conditions: []configv1.ClusterOperatorStatusCondition{
+				{
+					Type:   configv1.RetrievedUpdates,
+					Reason: "RemoteFailed",
+				},
+			},
 		},
 	}
 }
@@ -241,6 +278,130 @@ func TestGetOCPProxy(t *testing.T) {
 			assert.Equal(t, "cluster", proxy.Object.Name)
 		} else {
 			assert.NotNil(t, err)
+		}
+	}
+}
+
+func TestConnected(t *testing.T) {
+	testCases := []struct {
+		versionExists bool
+		connected     bool
+		validAPI      bool
+	}{
+		{
+			versionExists: true,
+			connected:     true,
+			validAPI:      true,
+		},
+		{
+			versionExists: true,
+			connected:     false,
+			validAPI:      true,
+		},
+		{
+			versionExists: false,
+			connected:     false,
+			validAPI:      true,
+		},
+		{
+			versionExists: true,
+			connected:     true,
+			validAPI:      false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		var runtimeObjs []runtime.Object
+
+		if testCase.versionExists {
+			runtimeObjs = append(runtimeObjs, generateFakeClusterVersionWithConnectionInfo(testCase.connected))
+		}
+
+		mockAPIClient := NewMockAPIClientGetter()
+
+		if testCase.validAPI {
+			mockAPIClient.SetFakeOCPClient(runtimeObjs)
+		}
+
+		connectionResult, err := Connected(mockAPIClient)
+
+		if testCase.validAPI {
+			if testCase.versionExists {
+				assert.Nil(t, err)
+
+				if testCase.connected {
+					assert.True(t, connectionResult)
+				} else {
+					assert.False(t, connectionResult)
+				}
+			} else {
+				assert.NotNil(t, err)
+			}
+		} else {
+			assert.NotNil(t, err)
+			assert.Equal(t, err.Error(), "failed to get clusterversion from cluster: apiClient cannot be nil")
+		}
+	}
+}
+
+func TestDisconnected(t *testing.T) {
+	testCases := []struct {
+		versionExists bool
+		connected     bool
+		validAPI      bool
+	}{
+		{
+			versionExists: true,
+			connected:     true,
+			validAPI:      true,
+		},
+		{
+			versionExists: true,
+			connected:     false,
+			validAPI:      true,
+		},
+		{
+			versionExists: false,
+			connected:     false,
+			validAPI:      true,
+		},
+		{
+			versionExists: true,
+			connected:     true,
+			validAPI:      false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		var runtimeObjs []runtime.Object
+
+		if testCase.versionExists {
+			runtimeObjs = append(runtimeObjs, generateFakeClusterVersionWithConnectionInfo(testCase.connected))
+		}
+
+		mockAPIClient := NewMockAPIClientGetter()
+
+		if testCase.validAPI {
+			mockAPIClient.SetFakeOCPClient(runtimeObjs)
+		}
+
+		connectionResult, err := Disconnected(mockAPIClient)
+
+		if testCase.validAPI {
+			if testCase.versionExists {
+				assert.Nil(t, err)
+
+				if testCase.connected {
+					assert.False(t, connectionResult)
+				} else {
+					assert.True(t, connectionResult)
+				}
+			} else {
+				assert.NotNil(t, err)
+			}
+		} else {
+			assert.NotNil(t, err)
+			assert.Equal(t, err.Error(), "failed to get clusterversion from cluster: apiClient cannot be nil")
 		}
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/network"
 	"github.com/openshift-kni/eco-goinfra/pkg/proxy"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
+	configv1 "github.com/openshift/api/config/v1"
 )
 
 // APIClientGetter is an interface that returns an APIClient from a struct.
@@ -106,6 +107,48 @@ func GetOCPProxy(clusterObj APIClientGetter) (*proxy.Builder, error) {
 	}
 
 	return clusterProxy, err
+}
+
+// Connected checks that the OCP cluster of the provided client is connected.
+func Connected(clusterObj APIClientGetter) (bool, error) {
+	clusterVersion, err := GetOCPClusterVersion(clusterObj)
+	if err != nil {
+		return false, fmt.Errorf("failed to get clusterversion from cluster: %w", err)
+	}
+
+	for _, condition := range clusterVersion.Object.Status.Conditions {
+		if condition.Type == configv1.RetrievedUpdates {
+			if condition.Reason == "RemoteFailed" {
+				return false, nil
+			}
+
+			return true, nil
+		}
+	}
+
+	return false, fmt.Errorf("failed to determine if cluster is connected, "+
+		"could not find '%s' condition", configv1.RetrievedUpdates)
+}
+
+// Disconnected checks that the OCP cluster of the provided client is disconnected.
+func Disconnected(clusterObj APIClientGetter) (bool, error) {
+	clusterVersion, err := GetOCPClusterVersion(clusterObj)
+	if err != nil {
+		return false, fmt.Errorf("failed to get clusterversion from cluster: %w", err)
+	}
+
+	for _, condition := range clusterVersion.Object.Status.Conditions {
+		if condition.Type == configv1.RetrievedUpdates {
+			if condition.Reason == "RemoteFailed" {
+				return true, nil
+			}
+
+			return false, nil
+		}
+	}
+
+	return false, fmt.Errorf("failed to determine if cluster is disconnected, "+
+		"could not find '%s' condition", configv1.RetrievedUpdates)
 }
 
 // checkAPIClient determines if the APIClient returned is not nil.
