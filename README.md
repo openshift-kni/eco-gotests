@@ -67,7 +67,7 @@ In order to enable k8reporter the following needs to be done:
 2. Specify absolute path for logs directory like it appears below. By default /tmp/reports directory is used.
 > export ECO_REPORTS_DUMP_DIR=/tmp/logs_directory
 
-* Generation Polarion XML reports
+* Generation XML reports
 
 We use reportxml library for generating compatible xml reports. 
 The reporter is enabled by default and stores reports under REPORTS_DUMP_DIR directory.
