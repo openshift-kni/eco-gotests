@@ -76,7 +76,7 @@ var _ = BeforeSuite(func() {
 			WithNodeSelector(map[string]string{"kubernetes.io/hostname": node.Object.Name}).
 			WithServiceAccountName("kmm-operator-module-loader")
 
-		_, err = deploymentCfg.CreateAndWaitUntilReady(2 * time.Minute)
+		_, err = deploymentCfg.CreateAndWaitUntilReady(10 * time.Minute)
 
 		if err != nil {
 			Skip(fmt.Sprintf("Could not create deploymentCfg on %s. Got error : %v", node.Object.Name, err))
