@@ -90,11 +90,21 @@ func NewSPKConfig() *SPKConfig {
 	log.Print("Creating new SPKConfig struct")
 
 	var spkConf SPKConfig
+
 	spkConf.SystemTestsConfig = systemtestsconfig.NewSystemTestsConfig()
 
-	_, filename, _, _ := runtime.Caller(0)
-	baseDir := filepath.Dir(filename)
-	confFile := filepath.Join(baseDir, PathToDefaultSPKParamsFile)
+	var confFile string
+
+	if fileFromEnv, exists := os.LookupEnv("ECO_SYSTEM_SPK_CONFIG_FILE_PATH"); !exists {
+		_, filename, _, _ := runtime.Caller(0)
+		baseDir := filepath.Dir(filename)
+		confFile = filepath.Join(baseDir, PathToDefaultSPKParamsFile)
+	} else {
+		confFile = fileFromEnv
+	}
+
+	log.Printf("Open config file %s", confFile)
+
 	err := readFile(&spkConf, confFile)
 
 	if err != nil {
