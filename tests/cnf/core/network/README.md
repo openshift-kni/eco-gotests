@@ -2,17 +2,12 @@
 
 ## Overview
 Network tests are used for the testing of network operators and their features. Eco-gotests is a 
-downstream CNF test framework utilizing a container test image with auxiliary resources for network testing. The CNF Telco 
-Networking team is responsible for the maintenance and development of this repository. The test suite primary use is for
-new GA and zStream releases regression testing.  
-
-The Eco-gotest repo is in the process of replacing the [cnf-gotest](https://gitlab.cee.redhat.com/cnf/cnf-gotests) test cases. 
-Upstream test cases can be found at [cnf-tests](https://github.com/openshift-kni/cnf-features-deploy/tree/master/cnf-tests). 
+test framework utilizing a container test image with auxiliary resources for network testing.
 
 ### Prerequisites for running these tests:
 
 Eco-gotest suite is designed to test an OCP cluster version 4.13 and higher with the following pre-installed
-CNF components:
+components:
 
 * Machine config pool to define/collect configurations for labeled nodes
 * SR-IOV operator
@@ -52,9 +47,9 @@ Container images used for network test cases:
 
 ### Eco-goinfra pkgs
 
-The eco-goinfra project contains a collection of generic packages that can be used across various test projects. It was 
-developed for collaboration between the different QE and Development teams. Utilizing the expertise of each team and to 
-decrease the duplication of coding efforts.  Eco-infra project requires golang v1.19.x.
+The eco-goinfra project contains a collection of generic packages that can be used across various test projects.
+Utilizing the expertise of each team and to decrease the duplication of coding efforts.
+Eco-infra project requires golang v1.19.x.
 
 - [**README**](https://github.com/openshift-kni/eco-goinfra#readme)
 
@@ -77,10 +72,10 @@ All network environmental variables can be found 'tests/cnf/core/network/interna
 # export ECO_TEST_VERBOSE='true'
 # export ECO_VERBOSE_LEVEL=100
 # export ECO_CNF_CORE_NET_VLAN=VLAN_ID
-# export ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST=ens5f0,ens5f1
-# export ECO_CNF_CORE_NET_MLB_ADDR_LIST=LIST of ip addresses # example 10.46.186.88,10.46.186.89,10.46.186.90,2620:52:0:2e51::88,2620:52:0:2e51::89,2620:52:0:2e51::90
+# export ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST=List SR-IOV interfaces under test # example "eno1,eno2"
+# export ECO_CNF_CORE_NET_MLB_ADDR_LIST=LIST of ip addresses # example 10.66.66.88,10.66.66.89,10.66.66.90,2666:66:0:2e51::88,2666:66:0:2e51::89,2666:66:0:2e51::90
 # export ECO_CNF_CORE_NET_SWITCH_IP="switch_ip_address"
-# export ECO_CNF_CORE_NET_SWITCH_INTERFACES=et-1/0/22,et-1/0/23,et-1/0/28,et-1/0/29
+# export ECO_CNF_CORE_NET_SWITCH_INTERFACES=LIST of switch interfaces # example et-3/0/33,et-3/0/34,et-3/0/35,et-3/0/36
 # export ECO_CNF_CORE_NET_SWITCH_USER="username"
 # export ECO_CNF_CORE_NET_SWITCH_PASS='password'
 # make run-tests
@@ -92,7 +87,7 @@ All network environmental variables can be found 'tests/cnf/core/network/interna
 # export ECO_TEST_FEATURES=metallb
 # export ECO_TEST_VERBOSE=true
 # export ECO_VERBOSE_LEVEL=100
-# export ECO_CNF_CORE_NET_MLB_ADDR_LIST=10.46.186.80,10.46.186.81,10.46.186.82
+# export ECO_CNF_CORE_NET_MLB_ADDR_LIST=LIST of ip addresses # example 10.66.66.88,10.66.66.89,10.66.66.90,2666:66:0:2e51::88,2666:66:0:2e51::89,2666:66:0:2e51::90
 # make run-tests
 ```
 
@@ -100,24 +95,22 @@ All network environmental variables can be found 'tests/cnf/core/network/interna
 
 #### Lab Infrastructure:
 
-The CNF Telco QE networking team has dedicated lab infrastructure for the execution of this test suite. The lab contains
-multiple clusters with different types of SRIOV network cards and accelerators. The test cases are developed with this specific
-network environment in mind. For generic network test cases the upstream [cnf-test](https://github.com/openshift-kni/cnf-features-deploy/tree/master/cnf-tests)
-suite is used.
+The dedicated lab infrastructure needed for the execution of this test suite. The test cases are developed with this specific
+network environment in mind.
 
-Two SRIOV interfaces from each card are connected to a managed lab switch. All non tagged packets are tagged with the native-vlan-id
+Two SRIOV interfaces are connected to a managed lab switch. All non tagged packets are tagged with the native-vlan-id
 and two trunk VLANs. VLANs may change between clusters.
 
 * Switch configuration example
 ```
-interfaces et-0/0/18
-native-vlan-id 115;
+interfaces et-3/0/33
+native-vlan-id 333;
 mtu 9192;
 unit 0 {
 family ethernet-switching {
 interface-mode trunk;
 vlan {
-members [ vlan115 vlan116 vlan117 ];
+members [ vlan333 vlan334 vlan335 ];
 }
 ```
 

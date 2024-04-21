@@ -256,9 +256,9 @@ func arpingTest(client *pod.Builder, destIPAddr, nodeName string) {
 }
 
 // speakerNodeMac locates the MAC address of the node interface br-ex found in func GetLBServiceNodeName()
-// {"mode":"shared","interface-id":"br-ex_helix13.lab.eng.tlv2.redhat.com","mac-address":"34:48:ed:f3:88:c4",
-// "ip-addresses":["10.46.56.13/24"],"ip-address":"10.46.56.13/24","next-hops":["10.46.56.254"],"next-hop":
-// "10.46.56.254","node-port-enable":"true","vlan-id":"0"}.
+// {"mode":"shared","interface-id":"br-ex_testcluster.com","mac-address":"34:66:ed:f3:88:66",
+// "ip-addresses":["10.60.60.60/24"],"ip-address":"10.60.60.60/24","next-hops":["10.60.60.254"],"next-hop":
+// "10.60.60.254","node-port-enable":"true","vlan-id":"0"}.
 func speakerNodeMac(metallbNodeName string) string {
 	metallbNode, err := nodes.Pull(APIClient, metallbNodeName)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull the node %s", metallbNodeName))

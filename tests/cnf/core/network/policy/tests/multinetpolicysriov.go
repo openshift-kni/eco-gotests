@@ -153,8 +153,6 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 					secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 		})
 
-		// 53899
-		// The test fails due to OCPBUGS-974
 		It("Ingress Default rule without PolicyType allow all", reportxml.ID("53899"), func() {
 			By("Apply MultiNetworkPolicy with ingress rule allow all without PolicyType field")
 
@@ -187,13 +185,9 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 					secondClientPod.Definition.Name, firstClientPod.Definition.Name, port5001))
 		})
 
-		// 53900
 		It("Egress TCP endPort allow specific pod", reportxml.ID("53900"), func() {
 			By("Apply MultiNetworkPolicy with egress rule allow ports in range 5000-5002")
 
-			// Update egress rule with port range and delete port 5001 when the bug OCPBUGS-975 is fixed
-			//Port:     &policyPort5000,
-			//EndPort:  &policyPort5002,
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().WithPortAndProtocol(uint16(port5001), "TCP").
 				WithPeerPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"pod": labelServerPod}}).
 				GetEgressRuleCfg()
@@ -244,7 +238,6 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 					secondClientPod.Definition.Name, serverPod.Definition.Name, port5003))
 		})
 
-		// 53898
 		It("Ingress and Egress allow IPv4 address", reportxml.ID("53898"), func() {
 			By("Apply MultiNetworkPolicy with ingress and egress rules allow specific IPv4 addresses")
 			egressRule, err := networkpolicy.NewEgressRuleBuilder().WithPeerPodSelectorAndCIDR(
