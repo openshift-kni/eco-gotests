@@ -90,6 +90,8 @@ func NewBuilder(
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	// Safeguard against nil apiClient interfaces.
 	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
 		return nil, fmt.Errorf("apiClient cannot be nil")
 	}
 
@@ -106,10 +108,14 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if name == "" {
+		glog.V(100).Infof("The name of the deployment is empty")
+
 		return nil, fmt.Errorf("deployment 'name' cannot be empty")
 	}
 
 	if nsname == "" {
+		glog.V(100).Infof("The namespace of the deployment is empty")
+
 		return nil, fmt.Errorf("deployment 'namespace' cannot be empty")
 	}
 
@@ -443,6 +449,8 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if _, err := builder.Create(); err != nil {
+		glog.V(100).Infof("Failed to create deployment. Error is: '%s'", err.Error())
+
 		return nil, fmt.Errorf(err.Error())
 	}
 
@@ -475,7 +483,9 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
-				return false, err
+				glog.V(100).Infof("Failed to get deployment from cluster. Error is: '%s'", err.Error())
+
+				return false, fmt.Errorf(err.Error())
 			}
 
 			if builder.Object.Status.ReadyReplicas > 0 && builder.Object.Status.Replicas == builder.Object.Status.ReadyReplicas {
@@ -581,13 +591,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

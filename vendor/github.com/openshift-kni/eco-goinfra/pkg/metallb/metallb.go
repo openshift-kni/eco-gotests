@@ -32,10 +32,10 @@ type Builder struct {
 type AdditionalOptions func(builder *Builder) (*Builder, error)
 
 // NewBuilder creates a new instance of Builder.
-func NewBuilder(apiClient *clients.Settings, name, nsname string, label map[string]string) *Builder {
+func NewBuilder(apiClient *clients.Settings, name, nsname string, nodeSelector map[string]string) *Builder {
 	glog.V(100).Infof(
 		"Initializing new metallb structure with the following params: %s, %s, %v",
-		name, nsname, label)
+		name, nsname, nodeSelector)
 
 	builder := Builder{
 		apiClient: apiClient,
@@ -49,7 +49,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, label map[stri
 				Namespace: nsname,
 			},
 			Spec: mlbtypes.MetalLBSpec{
-				SpeakerNodeSelector: label,
+				SpeakerNodeSelector: nodeSelector,
 			},
 		},
 	}
@@ -66,6 +66,12 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, label map[stri
 		builder.errorMsg = "metallb 'nsname' cannot be empty"
 	}
 
+	if len(nodeSelector) < 1 {
+		glog.V(100).Infof("The SpeakerNodeSelector of the metallb is empty")
+
+		builder.errorMsg = "metallb 'nodeSelector' cannot be empty"
+	}
+
 	return &builder
 }
 
@@ -73,6 +79,12 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, label map[stri
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof(
 		"Pulling metallb.io object name:%s in namespace: %s", name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("metallb 'apiClient' cannot be empty")
+	}
 
 	builder := Builder{
 		apiClient: apiClient,
@@ -87,13 +99,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	if name == "" {
 		glog.V(100).Infof("The name of the metallb is empty")
 
-		builder.errorMsg = "metallb 'name' cannot be empty"
+		return nil, fmt.Errorf("metallb 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the metallb is empty")
 
-		builder.errorMsg = "metallb 'nsname' cannot be empty"
+		return nil, fmt.Errorf("metallb 'nsname' cannot be empty")
 	}
 
 	if !builder.Exists() {

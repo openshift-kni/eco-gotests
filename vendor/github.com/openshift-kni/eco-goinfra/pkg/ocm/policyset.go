@@ -26,9 +26,56 @@ type PolicySetBuilder struct {
 	errorMsg string
 }
 
+// NewPolicySetBuilder creates a new instance of PolicySetBuilder.
+func NewPolicySetBuilder(
+	apiClient *clients.Settings, name, nsname string, policy policiesv1beta1.NonEmptyString) *PolicySetBuilder {
+	glog.V(100).Infof(
+		"Initializing new policy set structure with the following params: name: %s, nsname: %s, policy: %v",
+		name, nsname, policy)
+
+	builder := PolicySetBuilder{
+		apiClient: apiClient,
+		Definition: &policiesv1beta1.PolicySet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+			Spec: policiesv1beta1.PolicySetSpec{
+				Policies: []policiesv1beta1.NonEmptyString{policy},
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Info("The name of the PolicySet is empty")
+
+		builder.errorMsg = "policyset's 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		glog.V(100).Info("The namespace of the PolicySet is empty")
+
+		builder.errorMsg = "policyset's 'nsname' cannot be empty"
+	}
+
+	if policy == "" {
+		glog.V(100).Info("The policy of the PolicySet is empty")
+
+		builder.errorMsg = "policyset's 'policy' cannot be empty"
+	}
+
+	return &builder
+}
+
 // PullPolicySet pulls existing policySet into Builder struct.
 func PullPolicySet(apiClient *clients.Settings, name, nsname string) (*PolicySetBuilder, error) {
 	glog.V(100).Infof("Pulling existing policySet name %s under namespace %s from cluster", name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("policyset's 'apiClient' cannot be empty")
+	}
 
 	builder := PolicySetBuilder{
 		apiClient: apiClient,
@@ -43,13 +90,13 @@ func PullPolicySet(apiClient *clients.Settings, name, nsname string) (*PolicySet
 	if name == "" {
 		glog.V(100).Infof("The name of the policyset is empty")
 
-		builder.errorMsg = "policyset's 'name' cannot be empty"
+		return nil, fmt.Errorf("policyset's 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the policyset is empty")
 
-		builder.errorMsg = "policyset's 'namespace' cannot be empty"
+		return nil, fmt.Errorf("policyset's 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -177,6 +224,28 @@ func (builder *PolicySetBuilder) Update(force bool) (*PolicySetBuilder, error) {
 	}
 
 	return builder, err
+}
+
+// WithAdditionalPolicy appends a policy to the policies list in the PolicySet definition.
+func (builder *PolicySetBuilder) WithAdditionalPolicy(policy policiesv1beta1.NonEmptyString) *PolicySetBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Adding Policy %v to PolicySet %s in namespace %s", policy, builder.Definition.Name, builder.Definition.Namespace)
+
+	if policy == "" {
+		glog.V(100).Info("The policy to be added to the PolicySet's Policies is empty")
+
+		builder.errorMsg = "policy in PolicySet Policies spec cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.Policies = append(builder.Definition.Spec.Policies, policy)
+
+	return builder
 }
 
 // validate will check that the builder and builder definition are properly initialized before

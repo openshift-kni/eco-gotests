@@ -26,9 +26,56 @@ type PolicyBuilder struct {
 	errorMsg string
 }
 
+// NewPolicyBuilder creates a new instance of PolicyBuilder.
+func NewPolicyBuilder(
+	apiClient *clients.Settings, name, nsname string, template *policiesv1.PolicyTemplate) *PolicyBuilder {
+	glog.V(100).Infof(
+		"Initializing new policy structure with the following params: name: %s, nsname: %s",
+		name, nsname)
+
+	builder := PolicyBuilder{
+		apiClient: apiClient,
+		Definition: &policiesv1.Policy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+			Spec: policiesv1.PolicySpec{
+				PolicyTemplates: []*policiesv1.PolicyTemplate{template},
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Info("The name of the Policy is empty")
+
+		builder.errorMsg = "policy 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		glog.V(100).Info("The namespace of the Policy is empty")
+
+		builder.errorMsg = "policy 'nsname' cannot be empty"
+	}
+
+	if template == nil {
+		glog.V(100).Info("The PolicyTemplate of the Policy is empty")
+
+		builder.errorMsg = "policy 'template' cannot be empty"
+	}
+
+	return &builder
+}
+
 // PullPolicy pulls existing policy into Builder struct.
 func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilder, error) {
 	glog.V(100).Infof("Pulling existing policy name %s under namespace %s from cluster", name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("policy 'apiClient' cannot be empty")
+	}
 
 	builder := PolicyBuilder{
 		apiClient: apiClient,
@@ -43,13 +90,13 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 	if name == "" {
 		glog.V(100).Infof("The name of the policy is empty")
 
-		builder.errorMsg = "policy's 'name' cannot be empty"
+		return nil, fmt.Errorf("policy's 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the policy is empty")
 
-		builder.errorMsg = "policy's 'namespace' cannot be empty"
+		return nil, fmt.Errorf("policy's 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -177,6 +224,49 @@ func (builder *PolicyBuilder) Update(force bool) (*PolicyBuilder, error) {
 	}
 
 	return builder, err
+}
+
+// WithRemediationAction sets a RemediationAction in the policy definition.
+func (builder *PolicyBuilder) WithRemediationAction(action policiesv1.RemediationAction) *PolicyBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting RemediationAction for policy %s to %v", builder.Definition.Name, action)
+
+	// Lowercase versions are allowed even if there's no constant for them in policiesv1.
+	if action != policiesv1.Inform && action != policiesv1.Enforce && action != "inform" && action != "enforce" {
+		glog.V(100).Info("The RemediationAction to be set in the Policy spec is neither 'Inform' nor 'Enforce'")
+
+		builder.errorMsg = "remediation action in policy spec must be either 'Inform' or 'Enforce'"
+
+		return builder
+	}
+
+	builder.Definition.Spec.RemediationAction = action
+
+	return builder
+}
+
+// WithAdditionalPolicyTemplate appends a PolicyTemplate to the PolicyTemplates in the policy definition.
+func (builder *PolicyBuilder) WithAdditionalPolicyTemplate(template *policiesv1.PolicyTemplate) *PolicyBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding PolicyTemplate to policy %s", builder.Definition.Name)
+
+	if template == nil {
+		glog.V(100).Info("The PolicyTemplate to be added to the Policy's PolicyTemplates is nil")
+
+		builder.errorMsg = "policy template in policy policytemplates cannot be nil"
+
+		return builder
+	}
+
+	builder.Definition.Spec.PolicyTemplates = append(builder.Definition.Spec.PolicyTemplates, template)
+
+	return builder
 }
 
 // validate will check that the builder and builder definition are properly initialized before

@@ -75,6 +75,10 @@ func (builder *Builder) Exists() bool {
 
 // IsAvailable check if the clusterOperator is available.
 func (builder *Builder) IsAvailable() bool {
+	if valid, _ := builder.validate(); !valid {
+		return false
+	}
+
 	glog.V(100).Infof("Verify the availability of %s clusterOperator", builder.Definition.Name)
 
 	if !builder.Exists() {
@@ -92,6 +96,10 @@ func (builder *Builder) IsAvailable() bool {
 
 // IsDegraded checks if the clusterOperator is degraded.
 func (builder *Builder) IsDegraded() bool {
+	if valid, _ := builder.validate(); !valid {
+		return false
+	}
+
 	glog.V(100).Infof("Check if %s clusterOperator is degraded", builder.Definition.Name)
 
 	if !builder.Exists() {
@@ -109,6 +117,10 @@ func (builder *Builder) IsDegraded() bool {
 
 // IsProgressing checks if the clusterOperator is progressing.
 func (builder *Builder) IsProgressing() bool {
+	if valid, _ := builder.validate(); !valid {
+		return false
+	}
+
 	glog.V(100).Infof("Check if %s clusterOperator is progressing", builder.Definition.Name)
 
 	if !builder.Exists() {
@@ -126,6 +138,10 @@ func (builder *Builder) IsProgressing() bool {
 
 // GetConditionReason returns the specific condition type's reason value or an empty string if it doesn't exist.
 func (builder *Builder) GetConditionReason(conditionType v1.ClusterStatusConditionType) string {
+	if valid, _ := builder.validate(); !valid {
+		return ""
+	}
+
 	glog.V(100).Infof("Get %s clusterOperator %v condition reason if exists",
 		builder.Definition.Name, conditionType)
 

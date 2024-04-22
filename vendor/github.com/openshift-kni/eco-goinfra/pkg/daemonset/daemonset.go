@@ -297,6 +297,8 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 
 	_, err := builder.Create()
 	if err != nil {
+		glog.V(100).Infof("Failed to create daemonset. Error is: '%s'", err.Error())
+
 		return nil, fmt.Errorf(err.Error())
 	}
 
@@ -389,6 +391,8 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
+				glog.V(100).Infof("Failed to get daemonset from cluster. Error is: '%s'", err.Error())
+
 				return false, nil
 			}
 

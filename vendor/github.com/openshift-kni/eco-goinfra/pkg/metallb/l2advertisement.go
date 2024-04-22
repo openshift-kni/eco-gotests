@@ -37,6 +37,12 @@ func NewL2AdvertisementBuilder(apiClient *clients.Settings, name, nsname string)
 		"Initializing new L2Advertisement structure with the following params: %s, %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil
+	}
+
 	builder := L2AdvertisementBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.L2Advertisement{
@@ -70,6 +76,12 @@ func NewL2AdvertisementBuilder(apiClient *clients.Settings, name, nsname string)
 func PullL2Advertisement(apiClient *clients.Settings, name, nsname string) (*L2AdvertisementBuilder, error) {
 	glog.V(100).Infof("Pulling existing L2Advertisement name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("l2Advertisement 'apiClient' cannot be empty")
+	}
+
 	builder := L2AdvertisementBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.L2Advertisement{
@@ -83,13 +95,13 @@ func PullL2Advertisement(apiClient *clients.Settings, name, nsname string) (*L2A
 	if name == "" {
 		glog.V(100).Infof("The name of the l2advertisement is empty")
 
-		builder.errorMsg = "l2advertisement 'name' cannot be empty"
+		return nil, fmt.Errorf("l2advertisement 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the l2advertisement is empty")
 
-		builder.errorMsg = "l2advertisement 'namespace' cannot be empty"
+		return nil, fmt.Errorf("l2advertisement 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {

@@ -10,6 +10,7 @@ import (
 	netv1 "k8s.io/api/networking/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	netv1Typed "k8s.io/client-go/kubernetes/typed/networking/v1"
 )
 
 // NetworkPolicyBuilder provides struct for networkPolicy object.
@@ -19,7 +20,7 @@ type NetworkPolicyBuilder struct {
 	// Created networkPolicy object on the cluster.
 	Object *netv1.NetworkPolicy
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient netv1Typed.NetworkingV1Interface
 	// errorMsg is processed before NetworkPolicy object is created.
 	errorMsg string
 }
@@ -30,7 +31,7 @@ func NewNetworkPolicyBuilder(apiClient *clients.Settings, name, nsname string) *
 		name, nsname)
 
 	builder := &NetworkPolicyBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.NetworkingV1Interface,
 		Definition: &netv1.NetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -43,12 +44,16 @@ func NewNetworkPolicyBuilder(apiClient *clients.Settings, name, nsname string) *
 		glog.V(100).Infof("The name of the networkPolicy is empty")
 
 		builder.errorMsg = "The networkPolicy 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the networkPolicy is empty")
 
 		builder.errorMsg = "The networkPolicy 'namespace' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -70,9 +75,7 @@ func (builder *NetworkPolicyBuilder) WithNamespaceIngressRule(
 		glog.V(100).Infof("At least one type of the selector for NetworkPolicy ingress rule should be defined")
 
 		builder.errorMsg = "Both namespaceIngressMatchLabels and podIngressMatchLabels parameters are empty maps"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -99,13 +102,12 @@ func (builder *NetworkPolicyBuilder) WithNamespaceIngressRule(
 	}
 
 	if builder.Definition.Spec.Ingress == nil {
-		builder.Definition.Spec.Ingress = make([]netv1.NetworkPolicyIngressRule, 1)
+		builder.Definition.Spec.Ingress = []netv1.NetworkPolicyIngressRule{}
 	}
 
-	ingressRule := netv1.NetworkPolicyIngressRule{}
-	ingressRule.From = append(ingressRule.From, peerRule)
-
-	builder.Definition.Spec.Ingress = append(builder.Definition.Spec.Ingress, ingressRule)
+	builder.Definition.Spec.Ingress = append(builder.Definition.Spec.Ingress, netv1.NetworkPolicyIngressRule{
+		From: []netv1.NetworkPolicyPeer{peerRule},
+	})
 
 	return builder
 }
@@ -124,16 +126,12 @@ func (builder *NetworkPolicyBuilder) WithPolicyType(policyType netv1.PolicyType)
 		glog.V(100).Infof("The policyType value has to be provided")
 
 		builder.errorMsg = "The policyType is an empty string"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
 	if builder.Definition.Spec.PolicyTypes == nil {
-		builder.Definition.Spec.PolicyTypes = []netv1.PolicyType{policyType}
-
-		return builder
+		builder.Definition.Spec.PolicyTypes = []netv1.PolicyType{}
 	}
 
 	builder.Definition.Spec.PolicyTypes = append(builder.Definition.Spec.PolicyTypes, policyType)
@@ -155,24 +153,27 @@ func (builder *NetworkPolicyBuilder) WithPodSelector(podSelectorMatchLabels map[
 		glog.V(100).Infof("The podSelector could not be empty")
 
 		builder.errorMsg = "The podSelector is an empty string"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
-	podSelector := metav1.LabelSelector{MatchLabels: podSelectorMatchLabels}
-	builder.Definition.Spec.PodSelector = podSelector
+	builder.Definition.Spec.PodSelector = metav1.LabelSelector{MatchLabels: podSelectorMatchLabels}
 
 	return builder
 }
 
 // Pull loads an existing networkPolicy into the Builder struct.
 func Pull(apiClient *clients.Settings, name, nsname string) (*NetworkPolicyBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
+		return nil, fmt.Errorf("apiClient cannot be nil")
+	}
+
 	glog.V(100).Infof("Pulling existing networkPolicy name: %s namespace:%s", name, nsname)
 
-	builder := NetworkPolicyBuilder{
-		apiClient: apiClient,
+	builder := &NetworkPolicyBuilder{
+		apiClient: apiClient.NetworkingV1Interface,
 		Definition: &netv1.NetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -184,18 +185,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*NetworkPolicyBuild
 	if name == "" {
 		glog.V(100).Infof("The name of the networkPolicy is empty")
 
-		builder.errorMsg = "networkPolicy 'name' cannot be empty"
+		return nil, fmt.Errorf("networkPolicy 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the networkPolicy is empty")
 
-		builder.errorMsg = "networkPolicy 'namespace' cannot be empty"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf("failed to pull networkPolicy object due to the following error: %s",
-			builder.errorMsg)
+		return nil, fmt.Errorf("networkPolicy 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -207,7 +203,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*NetworkPolicyBuild
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create makes a networkPolicy in cluster and stores the created object in struct.
@@ -254,19 +250,23 @@ func (builder *NetworkPolicyBuilder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return fmt.Errorf("networkPolicy cannot be deleted because it does not exist")
+		glog.V(100).Infof("The networkPolicy object %s doesn't exist in %s namespace")
+
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.NetworkPolicies(builder.Definition.Namespace).Delete(
 		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
-	if err != nil {
-		return fmt.Errorf("cannot delete MachineConfig: %w", err)
+	if err != nil && !k8serrors.IsNotFound(err) {
+		return fmt.Errorf("cannot delete networkPolicy: %w", err)
 	}
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update renovates the existing networkPolicy object with networkPolicy definition in builder.
@@ -299,13 +299,13 @@ func (builder *NetworkPolicyBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

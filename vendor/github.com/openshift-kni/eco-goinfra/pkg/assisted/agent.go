@@ -26,7 +26,7 @@ type agentBuilder struct {
 	Definition *agentInstallV1Beta1.Agent
 	Object     *agentInstallV1Beta1.Agent
 	errorMsg   string
-	apiClient  *clients.Settings
+	apiClient  goclient.Client
 }
 
 // AgentAdditionalOptions additional options for agent object.
@@ -34,7 +34,7 @@ type AgentAdditionalOptions func(builder *agentBuilder) (*agentBuilder, error)
 
 // newAgentBuilder creates a new instance of agentBuilder
 // Users cannot create agent resources themselves as they are generated from the operator.
-func newAgentBuilder(apiClient *clients.Settings, definition *agentInstallV1Beta1.Agent) *agentBuilder {
+func newAgentBuilder(apiClient goclient.Client, definition *agentInstallV1Beta1.Agent) *agentBuilder {
 	if definition == nil {
 		return nil
 	}
@@ -55,8 +55,14 @@ func newAgentBuilder(apiClient *clients.Settings, definition *agentInstallV1Beta
 func PullAgent(apiClient *clients.Settings, name, nsname string) (*agentBuilder, error) {
 	glog.V(100).Infof("Pulling existing agent name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
 	builder := agentBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.Agent{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,

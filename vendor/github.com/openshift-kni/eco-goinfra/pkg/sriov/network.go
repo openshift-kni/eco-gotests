@@ -90,6 +90,24 @@ func (builder *NetworkBuilder) WithVLAN(vlanID uint16) *NetworkBuilder {
 	return builder
 }
 
+// WithVlanProto sets the VLAN protocol for qinq tunneling protocol in the SrIovNetwork definition spec.
+func (builder *NetworkBuilder) WithVlanProto(vlanProtocol string) *NetworkBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting SriovNetwork vlanProtocol support for qinq")
+
+	allowedVlanProto := []string{"802.1q", "802.1Q", "802.1ad", "802.1AD"}
+	if !slices.Contains(allowedVlanProto, vlanProtocol) {
+		builder.errorMsg = "invalid 'vlanProtocol' parameters"
+	}
+
+	builder.Definition.Spec.VlanProto = vlanProtocol
+
+	return builder
+}
+
 // WithSpoof sets spoof flag based on the given argument in the SrIovNetwork definition spec.
 func (builder *NetworkBuilder) WithSpoof(enabled bool) *NetworkBuilder {
 	if valid, _ := builder.validate(); !valid {

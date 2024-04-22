@@ -111,6 +111,12 @@ func (builder *BGPAdvertisementBuilder) Get() (*mlbtypes.BGPAdvertisement, error
 func PullBGPAdvertisement(apiClient *clients.Settings, name, nsname string) (*BGPAdvertisementBuilder, error) {
 	glog.V(100).Infof("Pulling existing bgpadvertisement name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("bgpadvertisement 'apiClient' cannot be empty")
+	}
+
 	builder := BGPAdvertisementBuilder{
 		apiClient: apiClient,
 		Definition: &mlbtypes.BGPAdvertisement{
@@ -124,13 +130,13 @@ func PullBGPAdvertisement(apiClient *clients.Settings, name, nsname string) (*BG
 	if name == "" {
 		glog.V(100).Infof("The name of the bgpadvertisement is empty")
 
-		builder.errorMsg = "bgpadvertisement 'name' cannot be empty"
+		return nil, fmt.Errorf("bgpadvertisement 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the bgpadvertisement is empty")
 
-		builder.errorMsg = "bgpadvertisement 'namespace' cannot be empty"
+		return nil, fmt.Errorf("bgpadvertisement 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -297,7 +303,8 @@ func (builder *BGPAdvertisementBuilder) WithAggregationLength6(aggregationLength
 		"Creating BGPAdvertisement %s in namespace %s with aggregationLength6: %d",
 		builder.Definition.Name, builder.Definition.Namespace, aggregationLength)
 
-	if !(aggregationLength < 0 || aggregationLength > 128) {
+	if aggregationLength < 0 || aggregationLength > 128 {
+		fmt.Printf("%d", aggregationLength)
 		builder.errorMsg = fmt.Sprintf("AggregationLength %d is invalid, the value shoud be in range 0...128",
 			aggregationLength)
 	}
@@ -384,8 +391,7 @@ func (builder *BGPAdvertisementBuilder) WithIPAddressPoolsSelectors(
 		builder.Definition.Name, builder.Definition.Namespace, poolSelector)
 
 	if len(poolSelector) < 1 {
-		builder.errorMsg = "error: IPAddressPoolSelectors setting is empty list, " +
-			"the list should contain at least one element"
+		builder.errorMsg = "error: IPAddressPoolSelectors setting is empty list, the list should contain at least one element"
 	}
 
 	if builder.errorMsg != "" {

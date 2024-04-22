@@ -22,7 +22,7 @@ type NmStateConfigBuilder struct {
 	// Created NMStateConfig object on the cluster.
 	Object *assistedv1beta1.NMStateConfig
 	// API client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	// errorMsg is processed before NMStateConfig object is created.
 	errorMsg string
 }
@@ -31,8 +31,14 @@ type NmStateConfigBuilder struct {
 func NewNmStateConfigBuilder(apiClient *clients.Settings, name, namespace string) *NmStateConfigBuilder {
 	glog.V(100).Infof("Initializing new nmstateconfig structure with the name: %s in namespace: %s", name, namespace)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
 	builder := NmStateConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &assistedv1beta1.NMStateConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -139,6 +145,12 @@ func (builder *NmStateConfigBuilder) Delete() error {
 func ListNmStateConfigsInAllNamespaces(apiClient *clients.Settings) ([]*NmStateConfigBuilder, error) {
 	nmStateConfigList := &assistedv1beta1.NMStateConfigList{}
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
 	err := apiClient.List(context.TODO(), nmStateConfigList, &goclient.ListOptions{})
 
 	if err != nil {
@@ -152,7 +164,7 @@ func ListNmStateConfigsInAllNamespaces(apiClient *clients.Settings) ([]*NmStateC
 	for _, nmStateConfigObj := range nmStateConfigList.Items {
 		nmStateConf := nmStateConfigObj
 		nmStateConfBuilder := &NmStateConfigBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Definition: &nmStateConf,
 			Object:     &nmStateConf,
 		}
@@ -165,6 +177,12 @@ func ListNmStateConfigsInAllNamespaces(apiClient *clients.Settings) ([]*NmStateC
 
 // ListNmStateConfigs returns a NMStateConfig list in a given namespace.
 func ListNmStateConfigs(apiClient *clients.Settings, namespace string) ([]*NmStateConfigBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
 	nmStateConfigList := &assistedv1beta1.NMStateConfigList{}
 
 	if namespace == "" {
@@ -185,7 +203,7 @@ func ListNmStateConfigs(apiClient *clients.Settings, namespace string) ([]*NmSta
 	for _, nmStateConfigObj := range nmStateConfigList.Items {
 		nmStateConf := nmStateConfigObj
 		nmStateConfBuilder := &NmStateConfigBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Definition: &nmStateConf,
 			Object:     &nmStateConf,
 		}

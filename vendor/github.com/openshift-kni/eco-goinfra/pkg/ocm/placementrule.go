@@ -26,9 +26,46 @@ type PlacementRuleBuilder struct {
 	errorMsg string
 }
 
+// NewPlacementRuleBuilder creates a new instance of PlacementRuleBuilder.
+func NewPlacementRuleBuilder(apiClient *clients.Settings, name, nsname string) *PlacementRuleBuilder {
+	glog.V(100).Infof(
+		"Initializing new placement rule structure with the following params: name: %s, nsname: %s",
+		name, nsname)
+
+	builder := PlacementRuleBuilder{
+		apiClient: apiClient,
+		Definition: &placementrulev1.PlacementRule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Info("The name of the PlacementRule is empty")
+
+		builder.errorMsg = "placementrule's 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		glog.V(100).Info("The namespace of the PlacementRule is empty")
+
+		builder.errorMsg = "placementrule's 'nsname' cannot be empty"
+	}
+
+	return &builder
+}
+
 // PullPlacementRule pulls existing placementrule into Builder struct.
 func PullPlacementRule(apiClient *clients.Settings, name, nsname string) (*PlacementRuleBuilder, error) {
 	glog.V(100).Infof("Pulling existing placementrule name %s under namespace %s from cluster", name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("placementrule's 'apiClient' cannot be empty")
+	}
 
 	builder := PlacementRuleBuilder{
 		apiClient: apiClient,
@@ -43,13 +80,13 @@ func PullPlacementRule(apiClient *clients.Settings, name, nsname string) (*Place
 	if name == "" {
 		glog.V(100).Infof("The name of the placementrule is empty")
 
-		builder.errorMsg = "placementrule's 'name' cannot be empty"
+		return nil, fmt.Errorf("placementrule's 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the placementrule is empty")
 
-		builder.errorMsg = "placementrule's 'namespace' cannot be empty"
+		return nil, fmt.Errorf("placementrule's 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {

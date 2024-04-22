@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/utils/strings/slices"
+
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/golang/glog"
@@ -24,6 +26,7 @@ const (
 	isFalse    = "False"
 	isComplete = "Completed"
 	ibuName    = "upgrade"
+	idle       = "Idle"
 )
 
 // ImageBasedUpgradeBuilder provides struct for the imagebasedupgrade object containing connection to
@@ -365,7 +368,9 @@ func (builder *ImageBasedUpgradeBuilder) WithSeedImagePullSecretRef(
 }
 
 // WaitUntilStageComplete waits the specified timeout for the imagebasedupgrade to complete
-// actions for the provided stage .
+// actions for the provided stage.
+//
+//nolint:gocognit
 func (builder *ImageBasedUpgradeBuilder) WaitUntilStageComplete(stage string) (*ImageBasedUpgradeBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
@@ -379,6 +384,10 @@ func (builder *ImageBasedUpgradeBuilder) WaitUntilStageComplete(stage string) (*
 		glog.V(100).Infof("The imagebasedupgrade does not exist on the cluster")
 
 		return builder, fmt.Errorf(builder.errorMsg)
+	}
+
+	if !slices.Contains([]string{idle, "Prep", "Upgrade", "Rollback"}, stage) {
+		return builder, fmt.Errorf("wrong stage selected for imagebasedupgrade")
 	}
 
 	// Polls periodically to determine if imagebasedupgrade is in desired state.
@@ -395,8 +404,8 @@ func (builder *ImageBasedUpgradeBuilder) WaitUntilStageComplete(stage string) (*
 
 			for _, condition := range builder.Object.Status.Conditions {
 				switch stage {
-				case "Idle":
-					if condition.Status == isTrue && condition.Type == "Idle" {
+				case idle:
+					if condition.Status == isTrue && condition.Type == idle {
 						return true, nil
 					}
 

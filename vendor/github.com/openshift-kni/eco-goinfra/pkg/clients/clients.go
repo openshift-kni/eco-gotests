@@ -56,6 +56,7 @@ import (
 
 	lcasgv1alpha1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1alpha1"
 	lcav1alpha1 "github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
+	imageregistryV1 "github.com/openshift/api/imageregistry/v1"
 	operatorV1 "github.com/openshift/api/operator/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
@@ -70,6 +71,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -207,7 +209,7 @@ func New(kubeconfig string) *Settings {
 
 // SetScheme returns mutated apiClient's scheme.
 //
-//nolint:funlen
+//nolint:funlen, gocyclo
 func SetScheme(crScheme *runtime.Scheme) error {
 	if err := scheme.AddToScheme(crScheme); err != nil {
 		return err
@@ -238,6 +240,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := lcasgv1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := imageregistryV1.Install(crScheme); err != nil {
 		return err
 	}
 
@@ -398,6 +404,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *corev1.Event:
 			k8sClientObjects = append(k8sClientObjects, v)
+		case *netv1.NetworkPolicy:
+			k8sClientObjects = append(k8sClientObjects, v)
 		// Generic Client Objects
 		case *routev1.Route:
 			genericClientObjects = append(genericClientObjects, v)
@@ -406,6 +414,20 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *mlbtypes.BFDProfile:
 			genericClientObjects = append(genericClientObjects, v)
 		case *mlbtypes.BGPPeer:
+			genericClientObjects = append(genericClientObjects, v)
+		case *mlbtypes.BGPAdvertisement:
+			genericClientObjects = append(genericClientObjects, v)
+		case *mlbtypes.MetalLB:
+			genericClientObjects = append(genericClientObjects, v)
+		case *mlbtypes.L2Advertisement:
+			genericClientObjects = append(genericClientObjects, v)
+		case *policiesv1.Policy:
+			genericClientObjects = append(genericClientObjects, v)
+		case *policiesv1.PlacementBinding:
+			genericClientObjects = append(genericClientObjects, v)
+		case *placementrulev1.PlacementRule:
+			genericClientObjects = append(genericClientObjects, v)
+		case *policiesv1beta1.PolicySet:
 			genericClientObjects = append(genericClientObjects, v)
 		// Velero Client Objects
 		case *velerov1.Backup:

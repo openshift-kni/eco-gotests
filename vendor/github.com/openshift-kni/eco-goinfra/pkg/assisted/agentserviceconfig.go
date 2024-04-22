@@ -30,7 +30,7 @@ type AgentServiceConfigBuilder struct {
 	Definition *agentInstallV1Beta1.AgentServiceConfig
 	Object     *agentInstallV1Beta1.AgentServiceConfig
 	errorMsg   string
-	apiClient  *clients.Settings
+	apiClient  goclient.Client
 }
 
 // AgentServiceConfigAdditionalOptions additional options for AgentServiceConfig object.
@@ -46,8 +46,14 @@ func NewAgentServiceConfigBuilder(
 			"databaseStorageSpec: %v, filesystemStorageSpec: %v",
 		databaseStorageSpec, filesystemStorageSpec)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
 	builder := AgentServiceConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: agentServiceConfigName,
@@ -68,8 +74,14 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 	glog.V(100).Infof(
 		"Initializing new agentserviceconfig structure")
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
 	builder := AgentServiceConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: agentServiceConfigName,
@@ -274,8 +286,14 @@ func (builder *AgentServiceConfigBuilder) WaitUntilDeployed(timeout time.Duratio
 func PullAgentServiceConfig(apiClient *clients.Settings) (*AgentServiceConfigBuilder, error) {
 	glog.V(100).Infof("Pulling existing agentserviceconfig name: %s", agentServiceConfigName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
 	builder := AgentServiceConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: agentServiceConfigName,

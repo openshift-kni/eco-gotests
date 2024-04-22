@@ -29,7 +29,7 @@ type AgentClusterInstallBuilder struct {
 	Definition *hiveextV1Beta1.AgentClusterInstall
 	Object     *hiveextV1Beta1.AgentClusterInstall
 	errorMsg   string
-	apiClient  *clients.Settings
+	apiClient  goclient.Client
 }
 
 // AgentClusterInstallAdditionalOptions additional options for AgentClusterInstall object.
@@ -44,8 +44,14 @@ func NewAgentClusterInstallBuilder(
 	masterCount int,
 	workerCount int,
 	network hiveextV1Beta1.Networking) *AgentClusterInstallBuilder {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
 	builder := AgentClusterInstallBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &hiveextV1Beta1.AgentClusterInstall{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -487,8 +493,14 @@ func (builder *AgentClusterInstallBuilder) Get() (*hiveextV1Beta1.AgentClusterIn
 func PullAgentClusterInstall(apiClient *clients.Settings, name, nsname string) (*AgentClusterInstallBuilder, error) {
 	glog.V(100).Infof("Pulling existing agentclusterinstall name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
 	builder := AgentClusterInstallBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &hiveextV1Beta1.AgentClusterInstall{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,

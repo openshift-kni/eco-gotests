@@ -25,9 +25,57 @@ type PlacementBindingBuilder struct {
 	errorMsg string
 }
 
+// NewPlacementBindingBuilder creates a new instance of PlacementBindingBuilder.
+func NewPlacementBindingBuilder(
+	apiClient *clients.Settings,
+	name,
+	nsname string,
+	placementRef policiesv1.PlacementSubject,
+	subject policiesv1.Subject) *PlacementBindingBuilder {
+	glog.V(100).Infof(
+		"Initializing new placement binding structure with the following params: name: %s, nsname: %s",
+		name, nsname)
+
+	builder := PlacementBindingBuilder{
+		apiClient: apiClient,
+		Definition: &policiesv1.PlacementBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			},
+			PlacementRef: placementRef,
+			Subjects:     []policiesv1.Subject{subject},
+		},
+	}
+
+	if name == "" {
+		builder.errorMsg = "placementBinding's 'name' cannot be empty"
+	}
+
+	if nsname == "" {
+		builder.errorMsg = "placementBinding's 'nsname' cannot be empty"
+	}
+
+	if placementRefErr := validatePlacementRef(placementRef); placementRefErr != "" {
+		builder.errorMsg = placementRefErr
+	}
+
+	if subjectErr := validateSubject(subject); subjectErr != "" {
+		builder.errorMsg = subjectErr
+	}
+
+	return &builder
+}
+
 // PullPlacementBinding pulls existing placementBinding into Builder struct.
 func PullPlacementBinding(apiClient *clients.Settings, name, nsname string) (*PlacementBindingBuilder, error) {
 	glog.V(100).Infof("Pulling existing placementBinding name %s under namespace %s from cluster", name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient is empty")
+
+		return nil, fmt.Errorf("placementBinding's 'apiClient' cannot be empty")
+	}
 
 	builder := PlacementBindingBuilder{
 		apiClient: apiClient,
@@ -42,13 +90,13 @@ func PullPlacementBinding(apiClient *clients.Settings, name, nsname string) (*Pl
 	if name == "" {
 		glog.V(100).Infof("The name of the placementBinding is empty")
 
-		builder.errorMsg = "placementBinding's 'name' cannot be empty"
+		return nil, fmt.Errorf("placementBinding's 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the placementBinding is empty")
 
-		builder.errorMsg = "placementBinding's 'namespace' cannot be empty"
+		return nil, fmt.Errorf("placementBinding's 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -178,6 +226,75 @@ func (builder *PlacementBindingBuilder) Update(force bool) (*PlacementBindingBui
 	}
 
 	return builder, err
+}
+
+// WithAdditionalSubject appends a subject to the subjects list in the PlacementBinding definition.
+func (builder *PlacementBindingBuilder) WithAdditionalSubject(subject policiesv1.Subject) *PlacementBindingBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding Subject %s to PlacementBinding %s", subject.Name, builder.Definition.Name)
+
+	if err := validateSubject(subject); err != "" {
+		builder.errorMsg = err
+
+		return builder
+	}
+
+	builder.Definition.Subjects = append(builder.Definition.Subjects, subject)
+
+	return builder
+}
+
+// validatePlacementRef validates all the fields of the PlacementRef and returns an errorMsg based on the validation.
+// The errorMsg will be empty for valid Subjects.
+func validatePlacementRef(placementRef policiesv1.PlacementSubject) string {
+	apiGroup := placementRef.APIGroup
+	if apiGroup != "apps.open-cluster-management.io" && apiGroup != "cluster.open-cluster-management.io" {
+		glog.V(100).Info("The APIGroup of the PlacementRef of the PlacementBinding is invalid")
+
+		return "placementBinding's 'PlacementRef.APIGroup' must be a valid option"
+	}
+
+	kind := placementRef.Kind
+	if kind != "PlacementRule" && kind != "Placement" {
+		glog.V(100).Info("The Kind of the PlacementRef of the PlacementBinding is invalid")
+
+		return "placementBinding's 'PlacementRef.Kind' must be a valid option"
+	}
+
+	if placementRef.Name == "" {
+		glog.V(100).Info("The Name of the PlacementRef of the PlacementBinding is empty")
+
+		return "placementBinding's 'PlacementRef.Name' cannot be empty"
+	}
+
+	return ""
+}
+
+// validateSubject validates the fields of the Subject and returns an errorMsg based on the validation. The errorMsg
+// will be empty for valid Subjects.
+func validateSubject(subject policiesv1.Subject) string {
+	if subject.APIGroup != "policy.open-cluster-management.io" {
+		glog.V(100).Info("The APIGroup of the PlacementBinding subject is invalid")
+
+		return "placementBinding's 'Subject.APIGroup' must be 'policy.open-cluster-management.io'"
+	}
+
+	if subject.Kind != "Policy" && subject.Kind != "PolicySet" {
+		glog.V(100).Info("The Kind of the subject of the PlacementBinding is invalid")
+
+		return "placementBinding's 'Subject.Kind' must be a valid option"
+	}
+
+	if subject.Name == "" {
+		glog.V(100).Info("The Name of the subject of the PlacementBinding is empty")
+
+		return "placementBinding's 'Subject.Name' cannot be empty"
+	}
+
+	return ""
 }
 
 // validate will check that the builder and builder definition are properly initialized before

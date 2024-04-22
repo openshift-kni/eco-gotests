@@ -32,7 +32,7 @@ type InfraEnvBuilder struct {
 	Definition *agentInstallV1Beta1.InfraEnv
 	Object     *agentInstallV1Beta1.InfraEnv
 	errorMsg   string
-	apiClient  *clients.Settings
+	apiClient  goclient.Client
 }
 
 // InfraEnvAdditionalOptions additional options for InfraEnv object.
@@ -45,8 +45,14 @@ func NewInfraEnvBuilder(apiClient *clients.Settings, name, nsname, psName string
 			"name: %s, namespace: %s, pull-secret: %s",
 		name, nsname, psName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
 	builder := InfraEnvBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.InfraEnv{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -385,9 +391,18 @@ func (builder *InfraEnvBuilder) GetAgentByName(name string) (*agentBuilder, erro
 		return nil, fmt.Errorf("cannot get agents from non-existent infraenv")
 	}
 
-	agent, err := PullAgent(builder.apiClient, name, builder.Definition.Namespace)
-	if err != nil {
-		return nil, err
+	agent := &agentBuilder{
+		apiClient: builder.apiClient,
+		Definition: &agentInstallV1Beta1.Agent{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: builder.Definition.Namespace,
+			},
+		},
+	}
+
+	if !agent.Exists() {
+		return nil, fmt.Errorf("agent object %s doesn't exist in namespace %s", name, builder.Definition.Namespace)
 	}
 
 	return agent, nil
@@ -699,8 +714,14 @@ func (builder *InfraEnvBuilder) Get() (*agentInstallV1Beta1.InfraEnv, error) {
 func PullInfraEnvInstall(apiClient *clients.Settings, name, nsname string) (*InfraEnvBuilder, error) {
 	glog.V(100).Infof("Pulling existing infraenv name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
 	builder := InfraEnvBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.InfraEnv{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
