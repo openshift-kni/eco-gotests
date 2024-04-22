@@ -8,7 +8,7 @@ dry_run: false
 kubernetes_role_prefix: "node-role.kubernetes.io"
 worker_label: "worker"
 control_plane_label: "control-plane"
-tc_prefix: "OCP-"
+tc_prefix: "TC-"
 mco_namespace: "openshift-machine-config-operator"
 mco_config_daemon_name: "machine-config-daemon"
 sriov_operator_namespace: "openshift-sriov-network-operator"
