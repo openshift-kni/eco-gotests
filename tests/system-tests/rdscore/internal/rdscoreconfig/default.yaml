@@ -34,8 +34,6 @@ rdscore_wlkd2_sriov_deploy_one_target: "10.46.126.78 1111"
 rdscore_wlkd2_sriov_deploy_one_target_ipv6: "2620:52:0:2e7e::44 1111"
 rdscore_wlkd2_sriov_deploy_two_target: "10.46.126.76 1111"
 rdscore_wlkd2_sriov_deploy_two_target_ipv6: "2620:52:0:2e7e::43 1111"
-ecore_wlkd_sriov_net_one: sriov-net-one
-ecore_wlkd_sriov_net_two: sriov-net-two
 rdscore_wlkd_sriov_one_selector: {}
 rdscore_wlkd_sriov_two_selector: {}
 rdscore_wlkd_sriov_two_sa: rdscore-telco-sa-two
