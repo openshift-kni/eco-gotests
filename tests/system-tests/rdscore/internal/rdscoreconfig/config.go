@@ -91,6 +91,23 @@ func (ems *EnvMapString) Decode(value string) error {
 	return nil
 }
 
+// EnvSliceString holds a []string parsed from environment variable.
+type EnvSliceString []string
+
+// Decode - method for envconfig package to parse environment variable,
+// as a separator triple pipe '|||' is used.
+func (ess *EnvSliceString) Decode(value string) error {
+	resultSlice := []string{}
+
+	log.Printf("EnvSliceString: Processing record: %q", value)
+
+	resultSlice = append(resultSlice, strings.Split(value, "|||")...)
+
+	*ess = resultSlice
+
+	return nil
+}
+
 // NodesBMCMap holds info about BMC connection for a specific node.
 type NodesBMCMap map[string]BMCDetails
 
@@ -124,16 +141,12 @@ func (nad *NodesBMCMap) Decode(value string) error {
 // CoreConfig type keeps RDS Core configuration.
 type CoreConfig struct {
 	*config.GeneralConfig
-	WlkdSRIOVOneNS       string   `yaml:"rdscore_wlkd_sriov_one_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_NS"`
-	WlkdSRIOVTwoNS       string   `yaml:"rdscore_wlkd_sriov_two_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_NS"`
-	MCVlanNSOne          string   `yaml:"rdscore_mcvlan_ns_one" envconfig:"ECO_RDSCORE_MCVLAN_NS_ONE"`
-	MCVlanNSTwo          string   `yaml:"rdscore_mcvlan_ns_two" envconfig:"ECO_RDSCORE_MCVLAN_NS_TWO"`
-	MCVlanDeployImageOne string   `yaml:"rdscore_mcvlan_deploy_img_one" envconfig:"ECO_SYSTEM_RDSCORE_DEPLOY_IMG_ONE"`
-	MCVlanDeplonOneCMD   []string `yaml:"rdscore_mcvlan_deploy_1_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_1_CMD"`
-	MCVlanDeplonTwoCMD   []string `yaml:"rdscore_mcvlan_deploy_2_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_2_CMD"`
-	MCVlanDeplon3CMD     []string `yaml:"rdscore_mcvlan_deploy_3_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_3_CMD"`
-	MCVlanDeplon4CMD     []string `yaml:"rdscore_mcvlan_deploy_4_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_4_CMD"`
-	MCVlanNADOneName     string   `yaml:"rdscore_mcvlan_nad_one_name" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_NAD_ONE_NAME"`
+	WlkdSRIOVOneNS       string `yaml:"rdscore_wlkd_sriov_one_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_NS"`
+	WlkdSRIOVTwoNS       string `yaml:"rdscore_wlkd_sriov_two_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_NS"`
+	MCVlanNSOne          string `yaml:"rdscore_mcvlan_ns_one" envconfig:"ECO_RDSCORE_MCVLAN_NS_ONE"`
+	MCVlanNSTwo          string `yaml:"rdscore_mcvlan_ns_two" envconfig:"ECO_RDSCORE_MCVLAN_NS_TWO"`
+	MCVlanDeployImageOne string `yaml:"rdscore_mcvlan_deploy_img_one" envconfig:"ECO_SYSTEM_RDSCORE_DEPLOY_IMG_ONE"`
+	MCVlanNADOneName     string `yaml:"rdscore_mcvlan_nad_one_name" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_NAD_ONE_NAME"`
 	//nolint:lll
 	PerformanceProfileHTName string         `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
 	WlkdTolerationList       TolerationList `yaml:"rdscore_tolerations_list" envconfig:"ECO_RDSCORE_TOLERATIONS_LIST"`
@@ -142,10 +155,6 @@ type CoreConfig struct {
 	//nolint:lll
 	StorageODFWorkloadImage string      `yaml:"rdscore_storage_storage_wlkd_image" envconfig:"ECO_RDSCORE_STORAGE_WLKD_IMAGE"`
 	NodesCredentialsMap     NodesBMCMap `yaml:"rdscore_nodes_bmc_map" envconfig:"ECO_RDSCORE_NODES_CREDENTIALS_MAP"`
-	WlkdSRIOVDeployOneCmd   []string    `yaml:"rdscore_wlkd_sriov_one_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_CMD"`
-	WlkdSRIOVDeployTwoCmd   []string    `yaml:"rdscore_wlkd_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_CMD"`
-	WlkdSRIOVDeploy2OneCmd  []string    `yaml:"rdscore_wlkd2_sriov_one_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_2_ONE_CMD"`
-	WlkdSRIOVDeploy2TwoCmd  []string    `yaml:"rdscore_wlkd2_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_2_TWO_CMD"`
 	WlkdSRIOVDeployOneImage string      `yaml:"rdscore_wlkd_sriov_one_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_IMG"`
 	WlkdSRIOVDeployTwoImage string      `yaml:"rdscore_wlkd_sriov_two_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_IMG"`
 	WlkdSRIOVNetOne         string      `yaml:"rdscore_wlkd_sriov_net_one" envconfig:"ECO_RDSCORE_WLKD_SRIOV_NET_ONE"`
@@ -201,6 +210,22 @@ type CoreConfig struct {
 	MCVlanDeploy4TargetAddress string `yaml:"rdscore_macvlan_deploy_4_target" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_4_TARGET"`
 	//nolint:lll
 	MCVlanDeploy4TargetAddressIPv6 string `yaml:"rdscore_macvlan_deploy_4_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_4_TARGET_IPV6"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeployOneCmd EnvSliceString `yaml:"rdscore_wlkd_sriov_one_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_CMD"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeployTwoCmd EnvSliceString `yaml:"rdscore_wlkd_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_CMD"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeploy2OneCmd EnvSliceString `yaml:"rdscore_wlkd2_sriov_one_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_2_ONE_CMD"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeploy2TwoCmd EnvSliceString `yaml:"rdscore_wlkd2_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_2_TWO_CMD"`
+	//nolint:lll,nolintlint
+	MCVlanDeplonOneCMD EnvSliceString `yaml:"rdscore_mcvlan_deploy_1_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_1_CMD"`
+	//nolint:lll,nolintlint
+	MCVlanDeplonTwoCMD EnvSliceString `yaml:"rdscore_mcvlan_deploy_2_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_2_CMD"`
+	//nolint:lll,nolintlint
+	MCVlanDeplon3CMD EnvSliceString `yaml:"rdscore_mcvlan_deploy_3_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_3_CMD"`
+	//nolint:lll,nolintlint
+	MCVlanDeplon4CMD EnvSliceString `yaml:"rdscore_mcvlan_deploy_4_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_4_CMD"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
