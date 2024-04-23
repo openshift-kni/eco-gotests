@@ -70,7 +70,7 @@ func WaitForIBUToBeAvailable(
 	ibu *lca.ImageBasedUpgradeBuilder,
 	timeout time.Duration) error {
 	err := wait.PollUntilContextTimeout(
-		context.Background(), time.Second*3, timeout, true, func(ctx context.Context) (bool, error) {
+		context.TODO(), time.Second*3, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
 
 			ibu.Object, err = ibu.Get()

@@ -64,7 +64,7 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 			Container: containerName,
 		}
 
-		podLogs := apiClient.Pods(nsname).GetLogs(podWorker.Definition.Name, &con).Do(context.Background())
+		podLogs := apiClient.Pods(nsname).GetLogs(podWorker.Definition.Name, &con).Do(context.TODO())
 		_, err = podWorker.DeleteAndWait(5 * time.Minute)
 
 		if err != nil {

@@ -19,7 +19,7 @@ func PodLogs(apiClient *clients.Settings, nsname, podName string) (string, error
 		return "", err
 	}
 
-	podLogs := apiClient.Pods(nsname).GetLogs(podWorker.Definition.Name, &podLogOpts).Do(context.Background())
+	podLogs := apiClient.Pods(nsname).GetLogs(podWorker.Definition.Name, &podLogOpts).Do(context.TODO())
 
 	body, err := podLogs.Raw()
 	if err != nil {

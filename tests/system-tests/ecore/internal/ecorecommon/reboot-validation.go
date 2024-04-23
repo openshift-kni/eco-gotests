@@ -102,7 +102,7 @@ func VerifyUngracefulReboot(ctx SpecContext) {
 			glog.V(ecoreparams.ECoreLogLevel).Infof(
 				fmt.Sprintf("[%s] Setting timeout for context", nodeName))
 
-			bmcCtx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+			bmcCtx, cancel := context.WithTimeout(context.TODO(), 6*time.Minute)
 
 			defer cancel()
 
@@ -258,7 +258,7 @@ func VerifySoftReboot(ctx SpecContext) {
 		glog.V(ecoreparams.ECoreLogLevel).Infof(
 			fmt.Sprintf("[%s] Setting timeout for context", _node.Definition.Name))
 
-		bmcCtx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+		bmcCtx, cancel := context.WithTimeout(context.TODO(), 6*time.Minute)
 
 		defer cancel()
 
