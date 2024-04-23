@@ -73,7 +73,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for machineconfigpool to be updated")
 	})
 
-	// OCP-54571 - Install SNO node with standard DU profile that does not include WorkloadHints
+	// 54571 - Install SNO node with standard DU profile that does not include WorkloadHints
 	It("Verifies expected kernel parameters with no workload hints specified in PerformanceProfile",
 		reportxml.ID("54571"), func() {
 			workloadHints := perfProfile.Definition.Spec.WorkloadHints
@@ -103,7 +103,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			}
 		})
 
-	// OCP-54572 - Enable powersave at node level and then enable performance at node level
+	// 54572 - Enable powersave at node level and then enable performance at node level
 	It("Enables powersave at node level and then enable performance at node level", reportxml.ID("54572"), func() {
 		By("Patching the performance profile with the workload hints")
 		err := helper.SetPowerModeAndWaitForMcpUpdate(perfProfile, *nodeList[0], true, false, true)
@@ -117,8 +117,8 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			ToNot(ContainSubstring("intel_pstate=disable"), "Kernel parameter intel_pstate=disable found on /proc/cmdline")
 	})
 
-	// OCP-54574 - Telco_Case: Enable powersave at node level and then enable high performance
-	// at node level, check power consumption with no workload pods.
+	// 54574 - Enable powersave at node level and then enable high performance at node level, check power
+	// consumption with no workload pods.
 	It("Enable powersave, and then enable high performance at node level, check power consumption with no workload pods.",
 		reportxml.ID("54574"), func() {
 			testPodAnnotations := map[string]string{
