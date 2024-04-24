@@ -534,6 +534,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
 # github.com/openshift-kni/eco-goinfra v0.0.0-20240422160304-4d571cec37b7
 ## explicit; go 1.20
+github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmh
 github.com/openshift-kni/eco-goinfra/pkg/clients
@@ -544,6 +545,7 @@ github.com/openshift-kni/eco-goinfra/pkg/daemonset
 github.com/openshift-kni/eco-goinfra/pkg/deployment
 github.com/openshift-kni/eco-goinfra/pkg/events
 github.com/openshift-kni/eco-goinfra/pkg/hive
+github.com/openshift-kni/eco-goinfra/pkg/imageregistry
 github.com/openshift-kni/eco-goinfra/pkg/infrastructure
 github.com/openshift-kni/eco-goinfra/pkg/ingress
 github.com/openshift-kni/eco-goinfra/pkg/kmm

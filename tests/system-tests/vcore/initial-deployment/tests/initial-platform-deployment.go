@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/imageregistryconfig"
+
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
+	v1 "github.com/openshift/api/operator/v1"
 )
 
 var _ = Describe(
@@ -29,27 +32,28 @@ var _ = Describe(
 
 				By("Checking if API URL available")
 				_, err := apiUrl.Parse(kubeConfigURL)
-				Expect(err).ToNot(HaveOccurred(), "Error getting API URL: %s", err)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error getting API URL: %v", err))
 
 				glog.V(100).Infof("Checking if all BareMetalHosts in good OperationalState")
 				var bmhList []*bmh.BmhBuilder
 				bmhList, err = bmh.List(APIClient, vcoreparams.OpenshiftMachineAPINamespace)
-				Expect(err).ToNot(HaveOccurred(), "Error getting BareMetaHosts list: %s", err)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error getting BareMetaHosts list: %v", err))
 				Expect(len(bmhList)).ToNot(Equal(0), "Empty bareMetalHosts list received")
 
 				_, err = bmh.WaitForAllBareMetalHostsInGoodOperationalState(APIClient,
 					vcoreparams.OpenshiftMachineAPINamespace,
 					5*time.Second)
-				Expect(err).ToNot(HaveOccurred(), "Error waiting for all BareMetalHosts in good OperationalState: %s", err)
+				Expect(err).ToNot(HaveOccurred(),
+					fmt.Sprintf("Error waiting for all BareMetalHosts in good OperationalState: %v", err))
 
 				glog.V(100).Infof("Checking available control-plane nodes count")
 				var nodesList []*nodes.Builder
 				nodesList, err = nodes.List(APIClient, VCoreConfig.ControlPlaneLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get master nodes list; %s", err)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get master nodes list; %v", err))
 
 				masterNodesCount := len(nodesList)
 				Expect(masterNodesCount).To(Equal(3),
-					"Error in master nodes count; found master nodes count is %s", masterNodesCount)
+					fmt.Sprintf("Error in master nodes count; found master nodes count is %d", masterNodesCount))
 
 				glog.V(100).Infof("Checking all master nodes are Ready")
 				var isReady bool
@@ -57,21 +61,23 @@ var _ = Describe(
 					APIClient,
 					5*time.Second,
 					VCoreConfig.ControlPlaneLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Error getting master nodes list: %s", err)
-				Expect(isReady).To(Equal(true), "Error in master nodes status, not all Master node are Ready; %s", isReady)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error getting master nodes list: %v", err))
+				Expect(isReady).To(Equal(true),
+					fmt.Sprintf("Failed master nodes status, not all Master node are Ready; %v", isReady))
 
 				glog.V(100).Infof("Checking that the clusterversion is available")
 				_, err = clusterversion.Pull(APIClient)
-				Expect(err).ToNot(HaveOccurred(), "Error accessing csv: %s", err)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error accessing csv: %v", err))
 
 				glog.V(100).Infof("Asserting clusteroperators availability")
 				var coBuilder []*clusteroperator.Builder
 				coBuilder, err = clusteroperator.List(APIClient)
-				Expect(err).To(BeNil(), fmt.Sprintf("ClusterOperator List not found: %s", err))
+				Expect(err).To(BeNil(), fmt.Sprintf("ClusterOperator List not found: %v", err))
 				Expect(len(coBuilder)).ToNot(Equal(0), "Empty clusterOperators list received")
 
 				_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
-				Expect(err).ToNot(HaveOccurred(), "Error waiting for all available clusteroperators: %s", err)
+				Expect(err).ToNot(HaveOccurred(),
+					fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
 			})
 
 		It("Asserts time sync was successfully applied for master nodes", reportxml.ID("60028"),
@@ -79,7 +85,6 @@ var _ = Describe(
 				isChronyApplied := false
 
 				chronyConfigNameRegex := "\\d+-master\\w*-*\\w*-chrony-conf\\w*"
-
 				mcp := mco.NewMCPBuilder(APIClient, vcoreparams.MasterNodeRole)
 				Expect(mcp.Exists()).To(BeTrue(), "Error find master mcp")
 
@@ -124,7 +129,7 @@ var _ = Describe(
 
 				glog.V(100).Infof("Checking available ODF nodes count")
 				nodesList, err := nodes.List(APIClient, VCoreConfig.OdfLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get ODF nodes list; %s", err)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get ODF nodes list; %v", err))
 				Expect(len(nodesList)).ToNot(Equal(0), "ODF nodes list is empty")
 			})
 
@@ -146,7 +151,7 @@ var _ = Describe(
 
 				glog.V(100).Infof("Checking available control-plane-worker nodes count")
 				nodesList, err := nodes.List(APIClient, VCoreConfig.VCoreCpLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get control-plane-worker nodes list; %s", err)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get control-plane-worker nodes list; %v", err))
 				Expect(len(nodesList)).ToNot(Equal(0), "control-plane-worker nodes list is empty")
 			})
 
@@ -168,7 +173,21 @@ var _ = Describe(
 
 				glog.V(100).Infof("Checking available user-plane-worker nodes count")
 				nodesList, err := nodes.List(APIClient, VCoreConfig.VCorePpLabelListOption)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get user-plane-worker nodes list; %s", err)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get user-plane-worker nodes list; %v", err))
 				Expect(len(nodesList)).ToNot(Equal(0), "user-plane-worker nodes list is empty")
+			})
+
+		It("Asserts Image Registry management state is Enabled", reportxml.ID("72812"),
+			Label(vcoreparams.LabelVCoreDebug), func() {
+
+				glog.V(100).Infof("Enable local imageregistryconfig; change ManagementState to the Managed")
+
+				err := imageregistryconfig.SetManagementState(APIClient, v1.Managed)
+				Expect(err).ToNot(HaveOccurred(),
+					fmt.Sprintf("Failed to change imageRegistry state to the Managed; %v", err))
+
+				glog.V(100).Infof("Setup imageRegistry storage")
+				err = imageregistryconfig.SetStorageToTheEmptyDir(APIClient)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to setup imageRegistry storage; %v", err))
 			})
 	})

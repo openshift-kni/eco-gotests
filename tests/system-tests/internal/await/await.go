@@ -1,10 +1,13 @@
 package await
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -34,6 +37,50 @@ func WaitUntilAllDeploymentsReady(apiClient *clients.Settings, nsname string, ti
 	}
 
 	return true, nil
+}
+
+// WaitUntilDeploymentReady waits for the duration of the defined timeout or until specific deployment
+// in the namespace reach the Ready condition.
+func WaitUntilDeploymentReady(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(),
+		time.Second*2,
+		timeout,
+		true,
+		func(ctx context.Context) (bool, error) {
+			irDeployment, err := deployment.Pull(apiClient, name, nsname)
+
+			if err != nil {
+				return false, nil
+			}
+
+			isReady := irDeployment.IsReady(time.Second * 2)
+
+			if isReady {
+				return true, nil
+			}
+
+			return false, nil
+		})
+
+	if err != nil {
+		irDeployment, err := deployment.Pull(apiClient, name, nsname)
+
+		if err != nil {
+			glog.V(100).Infof("deployment %s in namespace %s not exists; %w", name, nsname, err)
+
+			return err
+		}
+
+		glog.V(100).Infof("deployment %s in namespace %s not ready in time. available replicas: %d",
+			irDeployment.Definition.Name,
+			irDeployment.Definition.Namespace,
+			irDeployment.Object.Status.AvailableReplicas)
+
+		return err
+	}
+
+	return nil
 }
 
 // WaitUntilAllStatefulSetsReady waits for the duration of the defined timeout or until all deployments
