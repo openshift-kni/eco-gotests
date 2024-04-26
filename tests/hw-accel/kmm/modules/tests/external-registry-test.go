@@ -36,9 +36,11 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 		kmodName := "simple-kmod"
 		localNsName := kmmparams.SimpleKmodModuleTestNamespace
 		serviceAccountName := "simple-kmod-manager"
-		secretName := "ocp-edge-qe-build-secret"
+		secretName := "test-build-secret"
 		image := fmt.Sprintf("%s/%s:$KERNEL_FULL_VERSION-%v",
 			ModulesConfig.Registry, moduleName, time.Now().Unix())
+		imageNotUniq := fmt.Sprintf("%s/%s:$KERNEL_FULL_VERSION",
+			ModulesConfig.Registry, moduleName)
 		buildArgValue := fmt.Sprintf("%s.o", kmodName)
 
 		var module *kmm.ModuleBuilder
@@ -302,6 +304,62 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			By("Check label is set on all nodes")
 			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
+		})
+
+		It("should build image without loading it", func() {
+
+			By("Create configmap")
+			configmapContent := define.SimpleKmodConfigMapContents()
+
+			dockerfileConfigMap, err := configmap.NewBuilder(APIClient, kmodName, localNsName).
+				WithData(configmapContent).Create()
+
+			Expect(err).ToNot(HaveOccurred(), "error creating configmap")
+
+			By("Create service account")
+			svcAccount, err = serviceaccount.NewBuilder(APIClient, serviceAccountName, localNsName).Create()
+
+			Expect(err).ToNot(HaveOccurred(), "error creating serviceaccount")
+
+			By("Create clusterrolebinding")
+			crb := define.ModuleCRB(*svcAccount, moduleName)
+
+			_, err = crb.Create()
+			Expect(err).ToNot(HaveOccurred(), "error creating clusterrolebinding")
+
+			By("Create kernel mapping")
+			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
+
+			kernelMapping.WithContainerImage(imageNotUniq).
+				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
+				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
+			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
+			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+			By("Create Module LoaderContainer")
+			moduleLoaderContainer := kmm.NewModLoaderContainerBuilder(moduleName)
+			moduleLoaderContainer.WithKernelMapping(kerMapOne)
+			moduleLoaderContainer.WithImagePullPolicy("Always")
+			moduleLoaderContainer.WithVersion("first")
+			moduleLoaderContainerCfg, err := moduleLoaderContainer.BuildModuleLoaderContainerCfg()
+			Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+			By("Create module")
+			module = kmm.NewModuleBuilder(APIClient, "build", localNsName).
+				WithNodeSelector(GeneralConfig.WorkerLabelMap)
+
+			module = module.WithImageRepoSecret(secretName)
+
+			module = module.WithModuleLoaderContainer(moduleLoaderContainerCfg).
+				WithLoadServiceAccount(svcAccount.Object.Name)
+			_, err = module.Create()
+			Expect(err).ToNot(HaveOccurred(), "error creating module")
+
+			By("Await build pod to complete build")
+			_ = await.BuildPodCompleted(APIClient, localNsName, 5*time.Minute)
+
+			_, err = module.Delete()
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
 		})
 
 		AfterAll(func() {

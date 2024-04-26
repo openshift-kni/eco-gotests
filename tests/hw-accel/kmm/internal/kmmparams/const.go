@@ -18,7 +18,7 @@ WORKDIR /build/kmm-kmod
 RUN cp kmm_ci_a.c {{.Module}}.c
 RUN make KVER=${KERNEL_VERSION}
 
-FROM registry.redhat.io/ubi8/ubi-minimal
+FROM registry.redhat.io/ubi9/ubi-minimal
 ARG KERNEL_VERSION
 ARG MY_MODULE
 RUN microdnf -y install kmod
@@ -28,7 +28,8 @@ COPY --from=builder /build/kmm-kmod/*.ko /opt/lib/modules/${KERNEL_VERSION}/
 RUN depmod -b /opt ${KERNEL_VERSION}
 `
 	// SimpleKmodContents represents the Dockerfile contents for simple-kmod build.
-	SimpleKmodContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit as builder
+	SimpleKmodContents = `ARG DTK_AUTO
+FROM ${DTK_AUTO} as builder
 ARG KERNEL_VERSION
 ARG KMODVER
 WORKDIR /build/
@@ -38,7 +39,7 @@ RUN git clone https://github.com/cdvultur/simple-kmod.git && \
     make all       KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
     make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER
 
-FROM registry.redhat.io/ubi8/ubi-minimal
+FROM registry.redhat.io/ubi9/ubi-minimal
 ARG KERNEL_VERSION
 ARG MY_MODULE
 RUN microdnf -y install kmod
@@ -61,7 +62,8 @@ RUN depmod -b /opt ${KERNEL_VERSION}
 }
 `
 	// SimpleKmodFirmwareContents represents the Dockerfile contents for simple-kmod-firmware build.
-	SimpleKmodFirmwareContents = `FROM image-registry.openshift-image-registry.svc:5000/openshift/driver-toolkit
+	SimpleKmodFirmwareContents = `ARG DTK_AUTO
+FROM ${DTK_AUTO} as builder
 ARG KVER
 ARG KERNEL_VERSION
 ARG KMODVER
@@ -87,7 +89,7 @@ WORKDIR /build/kmm-kmod
 RUN cp kmm_ci_a.c {{.Module}}.c
 RUN make
 
-FROM registry.redhat.io/ubi8/ubi-minimal
+FROM registry.redhat.io/ubi9/ubi-minimal
 ARG KERNEL_VERSION
 ARG MY_MODULE
 RUN microdnf -y install kmod
@@ -188,23 +190,23 @@ const (
 	// Will be moved in quay.io/organization/ocp-edge-qe once repository is set up.
 	DevicePluginImageTemplate = "quay.io/cvultur/device-plugin:latest-%s"
 	// UseDtkModuleTestNamespace represents test case namespace name.
-	UseDtkModuleTestNamespace = "ocp-54283-use-dtk"
+	UseDtkModuleTestNamespace = "54283-use-dtk"
 	// UseLocalMultiStageTestNamespace represents test case namespace name.
-	UseLocalMultiStageTestNamespace = "ocp-53651-multi-stage"
+	UseLocalMultiStageTestNamespace = "53651-multi-stage"
 	// WebhookModuleTestNamespace represents test case namespace name.
 	WebhookModuleTestNamespace = "webhook"
 	// SimpleKmodModuleTestNamespace represents test case namespace name.
 	SimpleKmodModuleTestNamespace = "simple-kmod"
 	// DevicePluginTestNamespace represents test case namespace name.
-	DevicePluginTestNamespace = "ocp-53678-devplug"
+	DevicePluginTestNamespace = "53678-devplug"
 	// RealtimeKernelNamespace represents test case namespace name.
-	RealtimeKernelNamespace = "ocp-53656-rtkernel"
+	RealtimeKernelNamespace = "53656-rtkernel"
 	// FirmwareTestNamespace represents test case namespace name.
 	FirmwareTestNamespace = "simple-kmod-firmware"
 	// ModuleBuildAndSignNamespace represents test case namespace name.
-	ModuleBuildAndSignNamespace = "ocp-56252"
+	ModuleBuildAndSignNamespace = "56252"
 	// InTreeReplacementNamespace represents test case namespace name.
-	InTreeReplacementNamespace = "ocp-62745"
+	InTreeReplacementNamespace = "62745"
 	// MultipleModuleTestNamespace represents test case namespace name.
 	MultipleModuleTestNamespace = "multiple-modules"
 	// VersionModuleTestNamespace represents test case namespace name.
