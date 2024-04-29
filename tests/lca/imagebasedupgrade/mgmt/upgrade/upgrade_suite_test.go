@@ -40,9 +40,24 @@ var _ = BeforeSuite(func() {
 		Expect(len(ibuNodes) > 0).To(BeTrue(), "error: no node resources were found")
 		seedImageNode := ibuNodes[0]
 
+		By("Pull cluster proxy configuration")
+		targetProxy, err := cluster.GetOCPProxy(APIClient)
+		Expect(err).NotTo(HaveOccurred(), "error pulling cluster proxy configuration")
+
+		var podmanPullCmd string
+		if len(targetProxy.Object.Spec.HTTPSProxy) != 0 {
+			podmanPullCmd =
+				fmt.Sprintf("sudo HTTPS_PROXY=%s podman pull %s", targetProxy.Object.Spec.HTTPSProxy, MGMTConfig.SeedImage)
+		} else if len(targetProxy.Object.Spec.HTTPProxy) != 0 {
+			podmanPullCmd =
+				fmt.Sprintf("sudo HTTP_PROXY=%s podman pull %s", targetProxy.Object.Spec.HTTPProxy, MGMTConfig.SeedImage)
+		} else {
+			podmanPullCmd = fmt.Sprintf("sudo podman pull %s", MGMTConfig.SeedImage)
+		}
+
 		By("Pull seed image onto node")
 		_, err = cluster.ExecCmdWithStdout(
-			APIClient, fmt.Sprintf("sudo podman pull %s", MGMTConfig.SeedImage), metav1.ListOptions{
+			APIClient, podmanPullCmd, metav1.ListOptions{
 				FieldSelector: fmt.Sprintf("metadata.name=%s", seedImageNode.Object.Name),
 			})
 		Expect(err).NotTo(HaveOccurred(), "error executing podman pull on %s", seedImageNode.Object.Name)
