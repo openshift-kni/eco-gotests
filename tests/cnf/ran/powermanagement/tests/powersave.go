@@ -47,9 +47,18 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 
 		originalPerfProfileSpec = perfProfile.Object.Spec
+
+		By("Creating the privileged pod namespace")
+		_, err = namespace.NewBuilder(raninittools.APIClient, tsparams.PrivPodNamespace).Create()
+		Expect(err).ToNot(HaveOccurred(), "Failed to create the privileged pod namespace")
 	})
 
 	AfterAll(func() {
+		By("Deleting the privileged pod namespace")
+		err = namespace.NewBuilder(raninittools.APIClient, tsparams.PrivPodNamespace).
+			DeleteAndWait(tsparams.PowerSaveTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Failed to delete priv pod namespace")
+
 		perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 
@@ -134,20 +143,13 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			memLimit := resource.MustParse("100Mi")
 
 			By("Define test pod")
-			ns := namespace.NewBuilder(raninittools.APIClient, tsparams.PrivPodNamespace)
 			testpod, err := helper.DefineQoSTestPod(
-				*ns, nodeName, cpuLimit.String(), cpuLimit.String(), memLimit.String(), memLimit.String())
+				tsparams.PrivPodNamespace, nodeName, cpuLimit.String(), cpuLimit.String(), memLimit.String(), memLimit.String())
 			Expect(err).ToNot(HaveOccurred(), "Failed to define test pod")
 
 			testpod.Definition.Annotations = testPodAnnotations
 			runtimeClass := fmt.Sprintf("%s-%s", components.ComponentNamePrefix, perfProfile.Definition.Name)
 			testpod.Definition.Spec.RuntimeClassName = &runtimeClass
-
-			By("Create test pod")
-			testpod, err = testpod.CreateAndWaitUntilRunning(tsparams.PowerSaveTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to create pod")
-			Expect(testpod.Object.Status.QOSClass).To(Equal(corev1.PodQOSGuaranteed),
-				"Test pod does not have QoS class of Guaranteed")
 
 			DeferCleanup(func() {
 				// Delete the test pod if it's still around when the function returns, like in a test case failure.
@@ -157,6 +159,12 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 					Expect(err).ToNot(HaveOccurred(), "Failed to delete test pod in case of failure")
 				}
 			})
+
+			By("Create test pod")
+			testpod, err = testpod.CreateAndWaitUntilRunning(tsparams.PowerSaveTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Failed to create pod")
+			Expect(testpod.Object.Status.QOSClass).To(Equal(corev1.PodQOSGuaranteed),
+				"Test pod does not have QoS class of Guaranteed")
 
 			cpusetOutput, err := testpod.ExecCommand([]string{"sh", `-c`, "taskset -c -p $$ | cut -d: -f2"})
 			Expect(err).ToNot(HaveOccurred(), "Failed to get cpuset")

@@ -12,7 +12,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -83,15 +82,11 @@ func SetPowerModeAndWaitForMcpUpdate(perfProfile *nto.Builder, node nodes.Builde
 }
 
 // DefineQoSTestPod defines test pod with given cpu and memory resources.
-func DefineQoSTestPod(
-	namespace namespace.Builder, nodeName, cpuReq, cpuLimit, memReq, memLimit string) (*pod.Builder, error) {
-	_, err := namespace.Create()
-	if err != nil {
-		return nil, err
-	}
+func DefineQoSTestPod(namespace, nodeName, cpuReq, cpuLimit, memReq, memLimit string) (*pod.Builder, error) {
+	var err error
 
 	pod := pod.NewBuilder(
-		raninittools.APIClient, "qos-test-pod", namespace.Definition.Name, raninittools.RANConfig.CnfTestImage,
+		raninittools.APIClient, "qos-test-pod", namespace, raninittools.RANConfig.CnfTestImage,
 	).DefineOnNode(nodeName)
 	pod, err = redefineContainerResources(pod, cpuReq, cpuLimit, memReq, memLimit)
 
