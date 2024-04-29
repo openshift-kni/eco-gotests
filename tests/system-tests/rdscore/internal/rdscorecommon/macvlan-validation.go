@@ -125,10 +125,10 @@ func VerifyMacVlanOnDifferentNodes() {
 	By("Defining container configuration")
 
 	mvOne := defineContainer(macvlanContainer1Name,
-		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplonOneCMD)
+		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplonOneCMD, map[string]string{}, map[string]string{})
 
 	mvTwo := defineContainer(macvlanContainer2Name,
-		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplonTwoCMD)
+		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplonTwoCMD, map[string]string{}, map[string]string{})
 
 	By("Obtaining container definition")
 
@@ -259,10 +259,10 @@ func VerifyMacVlanOnSameNode() {
 	By("Defining container configuration")
 
 	mvOne := defineContainer(macvlanContainer3Name,
-		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplon3CMD)
+		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplon3CMD, map[string]string{}, map[string]string{})
 
 	mvTwo := defineContainer(macvlanContainer4Name,
-		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplon4CMD)
+		RDSCoreConfig.MCVlanDeployImageOne, RDSCoreConfig.MCVlanDeplon4CMD, map[string]string{}, map[string]string{})
 
 	By("Obtaining container definition")
 

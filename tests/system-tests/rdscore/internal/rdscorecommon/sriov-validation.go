@@ -19,6 +19,7 @@ import (
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
@@ -287,7 +288,7 @@ func findPodWithSelector(fNamespace, podLabel string) []*pod.Builder {
 	return podMatchingSelector
 }
 
-func defineContainer(cName, cImage string, cCmd []string) *pod.ContainerBuilder {
+func defineContainer(cName, cImage string, cCmd []string, cRequests, cLimits map[string]string) *pod.ContainerBuilder {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Creating container %q", cName)
 	deployContainer := pod.NewContainerBuilder(cName, cImage, cCmd)
 
@@ -328,6 +329,34 @@ func defineContainer(cName, cImage string, cCmd []string) *pod.ContainerBuilder 
 	}
 
 	deployContainer = deployContainer.WithVolumeMount(volMount)
+
+	if len(cRequests) != 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing container's requests")
+
+		containerRequests := corev1.ResourceList{}
+
+		for key, val := range cRequests {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Parsing container's request: %q - %q", key, val)
+
+			containerRequests[corev1.ResourceName(key)] = resource.MustParse(val)
+		}
+
+		deployContainer = deployContainer.WithCustomResourcesRequests(containerRequests)
+	}
+
+	if len(cLimits) != 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing container's limits")
+
+		containerLimits := corev1.ResourceList{}
+
+		for key, val := range cLimits {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Parsing container's limit: %q - %q", key, val)
+
+			containerLimits[corev1.ResourceName(key)] = resource.MustParse(val)
+		}
+
+		deployContainer = deployContainer.WithCustomResourcesLimits(containerLimits)
+	}
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("%q container's  definition:\n%#v", cName, deployContainer)
 
@@ -563,10 +592,12 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 	By("Defining container configuration")
 
 	deployContainer := defineContainer(sriovContainerOneName, RDSCoreConfig.WlkdSRIOVDeployOneImage,
-		RDSCoreConfig.WlkdSRIOVDeployOneCmd)
+		RDSCoreConfig.WlkdSRIOVDeployOneCmd, RDSCoreConfig.WldkSRIOVDeployOneResRequests,
+		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
 
 	deployContainerTwo := defineContainer(sriovContainerTwoName, RDSCoreConfig.WlkdSRIOVDeployTwoImage,
-		RDSCoreConfig.WlkdSRIOVDeployTwoCmd)
+		RDSCoreConfig.WlkdSRIOVDeployTwoCmd, RDSCoreConfig.WldkSRIOVDeployOneResRequests,
+		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
 
 	By("Obtaining container definition")
 
@@ -724,10 +755,12 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 	By("Defining container configuration")
 
 	deployContainer := defineContainer(sriovContainerOneName, RDSCoreConfig.WlkdSRIOVDeployOneImage,
-		RDSCoreConfig.WlkdSRIOVDeploy2OneCmd)
+		RDSCoreConfig.WlkdSRIOVDeploy2OneCmd, RDSCoreConfig.WldkSRIOVDeployOneResRequests,
+		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
 
 	deployContainerTwo := defineContainer(sriovContainerTwoName, RDSCoreConfig.WlkdSRIOVDeployTwoImage,
-		RDSCoreConfig.WlkdSRIOVDeploy2TwoCmd)
+		RDSCoreConfig.WlkdSRIOVDeploy2TwoCmd, RDSCoreConfig.WldkSRIOVDeployOneResRequests,
+		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
 
 	By("Obtaining container definition")
 

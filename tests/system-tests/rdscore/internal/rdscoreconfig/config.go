@@ -172,6 +172,14 @@ type CoreConfig struct {
 	WlkdSRIOVDeployOneSelector EnvMapString `yaml:"rdscore_wlkd_sriov_one_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_SELECTOR"`
 	//nolint:lll
 	WlkdSRIOVDeployTwoSelector EnvMapString `yaml:"rdscore_wlkd_sriov_two_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_SELECTOR"`
+	//nolint:lll
+	WldkSRIOVDeployOneResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_one_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_RES_REQUESTS"`
+	//nolint:lll
+	WldkSRIOVDeployTwoResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_two_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_RES_REQUESTS"`
+	//nolint:lll
+	WldkSRIOVDeployOneResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_one_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_RES_LIMITS"`
+	//nolint:lll
+	WldkSRIOVDeployTwoResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_two_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_RES_LIMITS"`
 	//nolint:lll,nolintlint
 	NodeSelectorHTNodes EnvMapString `yaml:"rdscore_node_selector_ht_nodes" envconfig:"ECO_RDSCORE_NODE_SELECTOR_HT_NODES"`
 	//nolint:lll
