@@ -69,7 +69,7 @@ ARG KERNEL_VERSION
 ARG KMODVER
 
 WORKDIR /build/ 
-RUN GIT_SSL_NO_VERIFY=1 git clone https://gitlab.cee.redhat.com/cvultur/simple-kmod.git && \
+RUN git clone https://github.com/cdvultur/simple-kmod.git && \
    cd simple-kmod && \
    make all       KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
    make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
