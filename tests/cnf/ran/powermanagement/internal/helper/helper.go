@@ -18,7 +18,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -97,25 +96,6 @@ func DefineQoSTestPod(
 	pod, err = redefineContainerResources(pod, cpuReq, cpuLimit, memReq, memLimit)
 
 	return pod, err
-}
-
-// ExecCommandOnSNO executes a command on a single node cluster and returns the stdout.
-func ExecCommandOnSNO(shellCmd string) (string, error) {
-	outputs, err := cluster.ExecCmdWithStdout(raninittools.APIClient, shellCmd)
-	if err != nil {
-		return "", err
-	}
-
-	if len(outputs) != 1 {
-		return "", errors.New("expected results from only one node")
-	}
-
-	for _, output := range outputs {
-		return output, nil
-	}
-
-	// unreachable
-	return "", nil
 }
 
 // GetPowerState determines the power state from the workloadHints object of the PerformanceProfile.

@@ -26,6 +26,8 @@ type RANConfig struct {
 	WorkloadDuration       string `yaml:"workloadDuration" envconfig:"ECO_CNF_RAN_WORKLOAD_DURATION"`
 	StressngTestImage      string `yaml:"stressngTestImage" envconfig:"ECO_CNF_RAN_STRESSNG_TEST_IMAGE"`
 	CnfTestImage           string `yaml:"cnfTestImage" envconfig:"ECO_CNF_RAN_TEST_IMAGE"`
+	Spoke1Kubeconfig       string `yaml:"spoke1Kubeconfig" envconfig:"ECO_CNF_RAN_KUBECONFIG_SPOKE1"`
+	Spoke2Kubeconfig       string `yaml:"spoke2Kubeconfig" envconfig:"ECO_CNF_RAN_KUBECONFIG_SPOKE2"`
 }
 
 // NewRANConfig returns an instance of RANConfig.
