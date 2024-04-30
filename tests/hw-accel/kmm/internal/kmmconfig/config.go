@@ -14,6 +14,7 @@ import (
 type ModulesConfig struct {
 	PullSecret           string `envconfig:"ECO_HWACCEL_KMM_PULL_SECRET"`
 	Registry             string `envconfig:"ECO_HWACCEL_KMM_REGISTRY"`
+	DevicePluginImage    string `envconfig:"ECO_HWACCEL_KMM_DEVICE_PLUGIN_IMAGE"`
 	SubscriptionName     string `envconfig:"ECO_HWACCEL_KMM_SUBSCRIPTION_NAME"`
 	CatalogSourceName    string `envconfig:"ECO_HWACCEL_KMM_CATALOG_SOURCE_NAME"`
 	UpgradeTargetVersion string `envconfig:"ECO_HWACCEL_KMM_UPGRADE_TARGET_VERSION"`

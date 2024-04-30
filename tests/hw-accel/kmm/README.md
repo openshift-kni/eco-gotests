@@ -47,6 +47,7 @@ Notes:
 #### Modules related
 - `ECO_HWACCEL_KMM_PULL_SECRET`: External registry pull-secret 
 - `ECO_HWACCEL_KMM_REGISTRY`: External registry url (eg: quay.io/ocp-edge-qe )
+- `ECO_HWACCEL_KMM_DEVICE_PLUGIN_IMAGE`: Image used for the device-plugin test. If the image tag includes `%s` it will be replaced with the architecture ( amd64 / arm64 )
 
 #### Upgrade related
 - `ECO_HWACCEL_KMM_SUBSCRIPTION_NAME`: Name of subscription used to deploy the KMM operator
@@ -54,7 +55,8 @@ Notes:
 - `ECO_HWACCEL_KMM_UPGRADE_TARGET_VERSION`: Expected version of the operator after upgrade
 
 #### MCM related
-- TODO
+- `ECO_HWACCEL_KMM_SPOKE_KUBECONFIG`: Path for the spoke cluster kubeconfig
+- `ECO_HWACCEL_KMM_SPOKE_CLUSTER_NAME`: Spoke cluster name
 
 In case these inputs are not set, the tests are skiped.
 

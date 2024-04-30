@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -17,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
+	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
@@ -100,7 +100,12 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			if err != nil {
 				Skip("could not detect cluster architecture")
 			}
-			devicePluginImage := fmt.Sprintf(kmmparams.DevicePluginImageTemplate, arch)
+
+			if ModulesConfig.DevicePluginImage == "" {
+				Skip("ECO_HWACCEL_KMM_DEVICE_PLUGIN_IMAGE not configured. Skipping test.")
+			}
+
+			devicePluginImage := fmt.Sprintf(ModulesConfig.DevicePluginImage, arch)
 
 			devicePlugin := kmm.NewDevicePluginContainerBuilder(devicePluginImage)
 			devicePluginContainerCfd, err := devicePlugin.GetDevicePluginContainerConfig()
