@@ -25,6 +25,9 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verifies all policies are compliant", reportxml.ID("72355"), Label("validate-policies"),
+				rdscorecommon.ValidateAllPoliciesCompliant)
+
 			It("Verify MACVLAN", Label("macvlan", "validate-new-macvlan-different-nodes"), reportxml.ID("72566"),
 				rdscorecommon.VerifyMacVlanOnDifferentNodes)
 

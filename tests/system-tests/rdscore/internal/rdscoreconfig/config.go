@@ -141,6 +141,7 @@ func (nad *NodesBMCMap) Decode(value string) error {
 // CoreConfig type keeps RDS Core configuration.
 type CoreConfig struct {
 	*config.GeneralConfig
+	PolicyNS             string `yaml:"rdscore_policy_ns" envconfig:"ECO_RDSCORE_POLICY_NS"`
 	WlkdSRIOVOneNS       string `yaml:"rdscore_wlkd_sriov_one_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_NS"`
 	WlkdSRIOVTwoNS       string `yaml:"rdscore_wlkd_sriov_two_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_NS"`
 	MCVlanNSOne          string `yaml:"rdscore_mcvlan_ns_one" envconfig:"ECO_RDSCORE_MCVLAN_NS_ONE"`

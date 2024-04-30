@@ -108,4 +108,4 @@ rdscore_macvlan_deploy_3_target: "10.46.125.73 1111"
 rdscore_macvlan_deploy_3_target_ipv6: "2620:52:0:2e7d::48 1111"
 rdscore_macvlan_deploy_4_target: "10.46.125.72 1111"
 rdscore_macvlan_deploy_4_target_ipv6: "2620:52:0:2e7d::47 1111"
-
+rdscore_policy_ns: ""
