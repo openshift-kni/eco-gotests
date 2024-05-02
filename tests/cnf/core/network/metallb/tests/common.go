@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
@@ -54,9 +55,9 @@ func updateNodeLabel(workerNodeList []*nodes.Builder, nodeLabel map[string]strin
 		Expect(err).ToNot(HaveOccurred(), "Fail to pull latest worker %s object", worker.Definition.Name)
 
 		if removeLabel {
-			worker.RemoveLabel(mapFirstKeyValue(nodeLabel))
+			worker.RemoveLabel(netenv.MapFirstKeyValue(nodeLabel))
 		} else {
-			worker.WithNewLabel(mapFirstKeyValue(nodeLabel))
+			worker.WithNewLabel(netenv.MapFirstKeyValue(nodeLabel))
 		}
 
 		_, err = worker.Update()

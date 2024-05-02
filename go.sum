@@ -539,8 +539,8 @@ github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a
 github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a9/go.mod h1:kP51fbL8QBSY/mAkFicoF73x0QSraPrX4BjWIdzFPio=
 github.com/openshift/ptp-operator v0.0.0-20231220185604-29113b41981b h1:cLxjnAH6dC1e5iQpGkjpxjI/pProiBHMUwNv8Ewm/Ng=
 github.com/openshift/ptp-operator v0.0.0-20231220185604-29113b41981b/go.mod h1:JGaq44/mJ1zdu/MQXsdK9pKiNYHjuf0sK9MNOO/Mi+Y=
-github.com/openshift/sriov-network-operator v0.0.0-20240326091723-e9e3a8f7b2e0 h1:1SPDMEmotWYnil7gq8jmTX+hU+kdg7KUUDIZZNVXPQg=
-github.com/openshift/sriov-network-operator v0.0.0-20240326091723-e9e3a8f7b2e0/go.mod h1:Ip7O10Ama7l5dPHJrPDARNxs5x8z9nqPx6pA003jc2A=
+github.com/openshift/sriov-network-operator v0.0.0-20240411161022-e6d4576155f0 h1:N3RO/yaxkheGAgVt+NduKIEWomy+rNUzHpQsjD60FN4=
+github.com/openshift/sriov-network-operator v0.0.0-20240411161022-e6d4576155f0/go.mod h1:Ip7O10Ama7l5dPHJrPDARNxs5x8z9nqPx6pA003jc2A=
 github.com/operator-framework/api v0.22.0 h1:UZSn+iaQih4rCReezOnWTTJkMyawwV5iLnIItaOzytY=
 github.com/operator-framework/api v0.22.0/go.mod h1:p/7YDbr+n4fmESfZ47yLAV1SvkfE6NU2aX8KhcfI0GA=
 github.com/operator-framework/operator-lifecycle-manager v0.27.1-0.20240301195430-1d12f8f4de16 h1:XMoc0FpwjVNoKIKNRDyqsOiWClAI5QUuHAJ5BI7pSy0=

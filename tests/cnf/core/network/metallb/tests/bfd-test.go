@@ -412,7 +412,7 @@ func testBFDFailOver() {
 
 	firstWorkerNode, err := nodes.Pull(APIClient, workerNodeList[0].Object.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
-	_, err = firstWorkerNode.RemoveLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
+	_, err = firstWorkerNode.RemoveLabel(netenv.MapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 	Expect(err).ToNot(HaveOccurred(), "Failed to remove metalLb label from worker node")
 
 	By("Verifying that cluster has reduced the number of speakers by 1")
@@ -450,7 +450,7 @@ func testBFDFailBack() {
 
 	firstWorkerNode, err := nodes.Pull(APIClient, workerNodeList[0].Object.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
-	_, err = firstWorkerNode.WithNewLabel(mapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
+	_, err = firstWorkerNode.WithNewLabel(netenv.MapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
 	Expect(err).ToNot(HaveOccurred(), "Failed to append metalLb label to worker node")
 
 	By("Check if speakers daemonSet is UP and running")
@@ -508,14 +508,6 @@ func verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrLi
 			WithArguments(frrPod, peerAddress, "up").
 			ShouldNot(HaveOccurred(), "Failed to receive BFD status UP")
 	}
-}
-
-func mapFirstKeyValue(inputMap map[string]string) (string, string) {
-	for key, value := range inputMap {
-		return key, value
-	}
-
-	return "", ""
 }
 
 func buildRoutesMap(podList []*pod.Builder, nextHopList []string) (map[string]string, error) {

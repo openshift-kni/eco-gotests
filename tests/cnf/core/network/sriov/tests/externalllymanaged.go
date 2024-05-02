@@ -83,17 +83,9 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 			})
 
 			AfterAll(func() {
-				By("Remove all SR-IOV networks")
-				sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
-				err = sriovNs.CleanObjects(
-					netparam.DefaultTimeout,
-					sriov.GetSriovNetworksGVR())
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV networks from SR-IOV operator namespace")
-
-				By("Remove all SR-IOV policies")
-				err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+				By("Removing SR-IOV configuration")
+				err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 				By("Verifying that VFs still exist")
 				err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
@@ -137,8 +129,10 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					Expect(err).ToNot(HaveOccurred(), "Failed to define test parameters")
 
 					By("Creating test pods and checking connectivity")
-					createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
-						sriovAndResourceNameExManagedTrue, "", "", clientIPs, serverIPs)
+					err = sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
+						sriovAndResourceNameExManagedTrue, sriovAndResourceNameExManagedTrue, "", "",
+						clientIPs, serverIPs)
+					Expect(err).ToNot(HaveOccurred(), "Failed to test connectivity between test pods")
 				},
 
 				Entry("", netparam.IPV4Family, reportxml.SetProperty("IPStack", netparam.IPV4Family)),
@@ -148,15 +142,17 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 			It("Recreate VFs when SR-IOV policy is applied", reportxml.ID("63533"), func() {
 				By("Creating test pods and checking connectivity")
-				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					sriovAndResourceNameExManagedTrue, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+				err := sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					sriovAndResourceNameExManagedTrue, sriovAndResourceNameExManagedTrue,
+					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+				Expect(err).ToNot(HaveOccurred(), "Failed to test connectivity between test pods")
 
 				By("Removing created SR-IOV VFs via NMState")
 				nmstatePolicy := nmstate.NewPolicyBuilder(
 					APIClient, configureNMStatePolicyName, NetConfig.WorkerLabelMap).
 					WithInterfaceAndVFs(sriovInterfacesUnderTest[0], 0)
-				err := netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
+				err = netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 				Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
 
 				By("Verifying that VFs removed")
@@ -181,9 +177,11 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				Expect(err).ToNot(HaveOccurred(), "Expected number of VFs are not created")
 
 				By("Re-create test pods and verify connectivity after recreating the VFs")
-				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					sriovAndResourceNameExManagedTrue, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+				err = sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					sriovAndResourceNameExManagedTrue, sriovAndResourceNameExManagedTrue,
+					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+				Expect(err).ToNot(HaveOccurred(), "Failed to test connectivity between test pods")
 			})
 
 			It("SR-IOV network with options", reportxml.ID("63534"), func() {
@@ -201,9 +199,11 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				Expect(err).ToNot(HaveOccurred(), "Failed to update SR-IOV network with new configuration")
 
 				By("Creating test pods and checking connectivity")
-				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					sriovAndResourceNameExManagedTrue, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+				err = sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					sriovAndResourceNameExManagedTrue, sriovAndResourceNameExManagedTrue,
+					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+				Expect(err).ToNot(HaveOccurred(), "Failed to test connectivity between test pods")
 
 				By("Checking that VF configured with new VLAN and MaxTxRate values")
 				Eventually(func() []int {
@@ -230,15 +230,9 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					Should(Equal([]int{defaultMaxTxRate, defaultVlanID}),
 						"MaxTxRate and VlanId configuration have not been reverted to the initial one")
 
-				By("Remove all SR-IOV networks")
-				sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
-				err = sriovNs.CleanObjects(netparam.DefaultTimeout, sriov.GetSriovNetworksGVR())
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from SR-IOV operator namespace")
-
-				By("Remove all SR-IOV policies")
-				err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+				By("Removing SR-IOV configuration")
+				err = sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 				By("Checking that VF has initial configuration")
 				Eventually(func() []int {
@@ -255,9 +249,10 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 			It("SR-IOV operator removal", reportxml.ID("63537"), func() {
 				By("Creating test pods and checking connectivity")
-				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					sriovAndResourceNameExManagedTrue, "", "",
+				err := sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					sriovAndResourceNameExManagedTrue, sriovAndResourceNameExManagedTrue, "", "",
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+				Expect(err).ToNot(HaveOccurred(), "Failed to test connectivity between test pods")
 
 				By("Collecting info about installed SR-IOV operator")
 				sriovNamespace, sriovOperatorgroup, sriovSubscription := collectingInfoSriovOperator()
@@ -272,7 +267,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					ShouldNot(HaveOccurred(), "SR-IOV operator is not installed")
 
 				By("Verifying that VFs still exist after SR-IOV operator reinstallation")
-				err := netnmstate.AreVFsCreated(workerNodeList[0].Object.Name, sriovInterfacesUnderTest[0], 5)
+				err = netnmstate.AreVFsCreated(workerNodeList[0].Object.Name, sriovInterfacesUnderTest[0], 5)
 				Expect(err).ToNot(HaveOccurred(), "VFs were removed after SR-IOV operator reinstallation")
 
 				By("Configure SR-IOV with flag ExternallyManage true")
@@ -283,9 +278,10 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					netparam.DefaultTimeout, pod.GetGVR())
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove test pods")
 
-				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
-					sriovAndResourceNameExManagedTrue, "", "",
+				err = sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
+					sriovAndResourceNameExManagedTrue, sriovAndResourceNameExManagedTrue, "", "",
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+				Expect(err).ToNot(HaveOccurred(), "Failed to test connectivity between test pods")
 			})
 
 		})
@@ -333,17 +329,9 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				err = netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 				Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
 
-				By("Remove all SR-IOV networks")
-				sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to pull SR-IOV operator namespace")
-				err = sriovNs.CleanObjects(
-					netparam.DefaultTimeout,
-					sriov.GetSriovNetworksGVR())
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV networks from SR-IOV operator namespace")
-
-				By("Remove all SR-IOV policies")
-				err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+				By("Removing SR-IOV configuration")
+				err = sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 				By("Cleaning test namespace")
 				testNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
@@ -401,9 +389,11 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
 
 				By("Creating test pods and checking connectivity between test pods")
-				createPodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
-					bondNad.Definition.Name, tsparams.ClientMacAddress, tsparams.ServerMacAddress,
+				err = sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[1].Object.Name,
+					bondNad.Definition.Name, sriovAndResourceNameExManagedTrue,
+					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 					[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
+				Expect(err).ToNot(HaveOccurred(), "Failed to test connectivity between test pods")
 			})
 		})
 	})
@@ -441,76 +431,6 @@ func defineIterationParams(ipFamily string) (clientIPs, serverIPs []string, err 
 		ipFamily, netparam.IPV4Family, netparam.IPV6Family, netparam.DualIPFamily))
 }
 
-// createAndWaitTestPods creates test pods and waits until they are in the ready state.
-func createAndWaitTestPods(
-	clientNodeName string,
-	serverNodeName string,
-	sriovResNameClient string,
-	sriovResNameServer string,
-	clientMac string,
-	serverMac string,
-	clientIPs []string,
-	serverIPs []string) (client *pod.Builder, server *pod.Builder) {
-	By("Creating client test pod")
-
-	clientPod, err := createAndWaitTestPodWithSecondaryNetwork("client", clientNodeName,
-		sriovResNameClient, clientMac, clientIPs)
-	Expect(err).ToNot(HaveOccurred(), "Failed to create client pod")
-
-	By("Creating server test pod")
-
-	serverPod, err := createAndWaitTestPodWithSecondaryNetwork("server", serverNodeName,
-		sriovResNameServer, serverMac, serverIPs)
-	Expect(err).ToNot(HaveOccurred(), "Failed to create server pod")
-
-	return clientPod, serverPod
-}
-
-// createAndWaitTestPodWithSecondaryNetwork creates test pod with secondary network
-// and waits until it is in the ready state.
-func createAndWaitTestPodWithSecondaryNetwork(
-	podName string,
-	testNodeName string,
-	sriovResNameTest string,
-	testMac string,
-	testIPs []string) (*pod.Builder, error) {
-	By("Creating test pod")
-
-	secNetwork := pod.StaticIPAnnotationWithMacAddress(sriovResNameTest, testIPs, testMac)
-	testPod, err := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-		DefineOnNode(testNodeName).WithPrivilegedFlag().
-		WithSecondaryNetwork(secNetwork).CreateAndWaitUntilRunning(netparam.DefaultTimeout)
-
-	return testPod, err
-}
-
-// createPodsAndRunTraffic creates test pods and verifies connectivity between them.
-func createPodsAndRunTraffic(
-	clientNodeName string,
-	serverNodeName string,
-	sriovResNameClient string,
-	clientMac string,
-	serverMac string,
-	clientIPs []string,
-	serverIPs []string) {
-	By("Creating test pods")
-
-	clientPod, _ := createAndWaitTestPods(
-		clientNodeName,
-		serverNodeName,
-		sriovResNameClient,
-		sriovAndResourceNameExManagedTrue,
-		clientMac,
-		serverMac,
-		clientIPs,
-		serverIPs)
-
-	By("Checking connectivity between test pods")
-
-	err := cmd.ICMPConnectivityCheck(clientPod, serverIPs)
-	Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
-}
-
 func getVlanIDAndMaxTxRateForVf(nodeName, sriovInterfaceName string) (maxTxRate, vlanID int) {
 	nmstateState, err := nmstate.PullNodeNetworkState(APIClient, nodeName)
 	Expect(err).ToNot(HaveOccurred(), "Failed to discover NMState network state")
@@ -540,13 +460,8 @@ func collectingInfoSriovOperator() (
 func removeSriovOperator(sriovNamespace *namespace.Builder) {
 	By("Clean all SR-IOV policies and networks")
 
-	err := sriovNamespace.CleanObjects(
-		tsparams.DefaultTimeout,
-		sriov.GetSriovNetworksGVR())
-	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from SR-IOV operator namespace")
-
-	err = sriovenv.RemoveAllPoliciesAndWaitForSriovAndMCPStable()
-	Expect(err).ToNot(HaveOccurred(), "Failed to remove all SR-IOV policies")
+	err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 	By("Disabling SR-IOV webhooks")
 

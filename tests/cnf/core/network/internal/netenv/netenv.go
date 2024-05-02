@@ -102,3 +102,13 @@ func BFDHasStatus(frrPod *pod.Builder, bfdPeer string, status string) error {
 
 	return nil
 }
+
+// MapFirstKeyValue returns the first key-value pair found in the input map.
+// If the input map is empty, it returns empty strings.
+func MapFirstKeyValue(inputMap map[string]string) (string, string) {
+	for key, value := range inputMap {
+		return key, value
+	}
+
+	return "", ""
+}
