@@ -6,7 +6,6 @@ package v1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	appsv1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
 
 // RemediationAction describes weather to enforce or inform
@@ -93,11 +92,11 @@ type PlacementDecision struct {
 
 // Placement defines the placement results
 type Placement struct {
-	PlacementBinding string                     `json:"placementBinding,omitempty"`
-	PlacementRule    string                     `json:"placementRule,omitempty"`
-	Placement        string                     `json:"placement,omitempty"`
-	Decisions        []appsv1.PlacementDecision `json:"decisions,omitempty"`
-	PolicySet        string                     `json:"policySet,omitempty"`
+	PlacementBinding string              `json:"placementBinding,omitempty"`
+	PlacementRule    string              `json:"placementRule,omitempty"`
+	Placement        string              `json:"placement,omitempty"`
+	Decisions        []PlacementDecision `json:"decisions,omitempty"`
+	PolicySet        string              `json:"policySet,omitempty"`
 }
 
 // CompliancePerClusterStatus defines compliance per cluster status

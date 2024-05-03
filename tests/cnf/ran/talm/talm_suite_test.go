@@ -11,6 +11,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/tests"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
 
