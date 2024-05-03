@@ -20,7 +20,6 @@ const (
 // RANConfig contains configuration for the RAN directory.
 type RANConfig struct {
 	*cnfconfig.CNFConfig
-	IpmiToolImage          string `yaml:"ipmitoolImage" envconfig:"ECO_CNF_RAN_IPMITOOL_IMAGE"`
 	MetricSamplingInterval string `yaml:"metricSamplingInterval" envconfig:"ECO_CNF_RAN_METRIC_SAMPLING_INTERVAL"`
 	NoWorkloadDuration     string `yaml:"noWorkloadDuration" envconfig:"ECO_CNF_RAN_NO_WORKLOAD_DURATION"`
 	WorkloadDuration       string `yaml:"workloadDuration" envconfig:"ECO_CNF_RAN_WORKLOAD_DURATION"`
@@ -28,6 +27,9 @@ type RANConfig struct {
 	CnfTestImage           string `yaml:"cnfTestImage" envconfig:"ECO_CNF_RAN_TEST_IMAGE"`
 	Spoke1Kubeconfig       string `yaml:"spoke1Kubeconfig" envconfig:"ECO_CNF_RAN_KUBECONFIG_SPOKE1"`
 	Spoke2Kubeconfig       string `yaml:"spoke2Kubeconfig" envconfig:"ECO_CNF_RAN_KUBECONFIG_SPOKE2"`
+	BmcUsername            string `yaml:"bmcUsername" envconfig:"ECO_CNF_RAN_BMC_USERNAME"`
+	BmcPassword            string `yaml:"bmcPassword" envconfig:"ECO_CNF_RAN_BMC_PASSWORD"`
+	BmcHosts               string `yaml:"bmcHosts" envconfig:"ECO_CNF_RAN_BMC_HOSTS"`
 }
 
 // NewRANConfig returns an instance of RANConfig.

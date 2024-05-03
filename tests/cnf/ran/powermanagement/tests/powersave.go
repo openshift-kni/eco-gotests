@@ -14,15 +14,16 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/redfish"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	"github.com/openshift/cluster-node-tuning-operator/pkg/performanceprofile/controller/performanceprofile/components"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	"github.com/stmcginnis/gofish"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/cpuset"
@@ -198,12 +199,21 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		var (
 			samplingInterval time.Duration
 			powerState       string
-			ipmiPod          *pod.Builder
+			redfishClient    *gofish.APIClient
 		)
 
 		BeforeAll(func() {
-			ipmiPod, err = helper.GetIpmiPod(nodeName)
-			Expect(err).ToNot(HaveOccurred(), "Failed to start ipmi pod")
+			redfishClient, err = redfish.Connect()
+			Expect(err).ToNot(HaveOccurred(), "Failed to initialize redfish client")
+
+			vendor, err := redfish.GetVendor(redfishClient)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get vendor from redfish")
+
+			glog.V(tsparams.LogLevel).Infof("Got vendor %s from redfish client")
+
+			if vendor != "Dell" && vendor != "HPE" {
+				Skip("Collecting power usage metrics is only supported for Dell and HPE vendors")
+			}
 
 			samplingInterval, err = time.ParseDuration(raninittools.RANConfig.MetricSamplingInterval)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse metric sampling interval")
@@ -213,17 +223,11 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			Expect(err).ToNot(HaveOccurred(), "Failed to get power state for the performance profile")
 		})
 
-		AfterAll(func() {
-			_, err = ipmiPod.DeleteAndWait(tsparams.PowerSaveTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to delete ipmi pod")
-		})
-
 		It("Checks power usage for 'noworkload' scenario", func() {
 			duration, err := time.ParseDuration(raninittools.RANConfig.NoWorkloadDuration)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse no workload duration")
 
-			compMap, err := helper.CollectPowerMetricsWithNoWorkload(
-				duration, samplingInterval, powerState, ipmiPod)
+			compMap, err := helper.CollectPowerMetricsWithNoWorkload(duration, samplingInterval, powerState, redfishClient)
 			Expect(err).ToNot(HaveOccurred(), "Failed to collect power metrics with no workload")
 
 			// Persist power usage metric to ginkgo report for further processing in pipeline.
@@ -236,8 +240,8 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			duration, err := time.ParseDuration(raninittools.RANConfig.WorkloadDuration)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse steady workload duration")
 
-			compMap, err := helper.CollectPowerMetricsWithSteadyWorkload(duration, samplingInterval,
-				powerState, perfProfile, ipmiPod, nodeName)
+			compMap, err := helper.CollectPowerMetricsWithSteadyWorkload(
+				duration, samplingInterval, powerState, perfProfile, redfishClient, nodeName)
 			Expect(err).ToNot(HaveOccurred(), "Failed to collect power metrics with steady workload")
 
 			// Persist power usage metric to ginkgo report for further processing in pipeline.

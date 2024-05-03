@@ -51,6 +51,7 @@ linters-settings:
         - "sigs.k8s.io/controller-runtime"
         - $gostd
         - "github.com/stretchr/testify"
+        - "github.com/stmcginnis/gofish"
   wsl:
     strict-append: false
   gofmt:
