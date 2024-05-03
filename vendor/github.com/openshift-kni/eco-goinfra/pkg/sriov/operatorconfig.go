@@ -105,7 +105,7 @@ func PullOperatorConfig(apiClient *clients.Settings, nsname string) (*OperatorCo
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("SriovOperatorConfig object %s doesn't exist in namespace %s",
+		return nil, fmt.Errorf("SriovOperatorConfig object %s does not exist in namespace %s",
 			sriovOperatorConfigName, nsname)
 	}
 

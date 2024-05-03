@@ -98,7 +98,7 @@ func (builder *BGPAdvertisementBuilder) Get() (*mlbtypes.BGPAdvertisement, error
 
 	if err != nil {
 		glog.V(100).Infof(
-			"BGPAdvertisement object %s doesn't exist in namespace %s",
+			"BGPAdvertisement object %s does not exist in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		return nil, err
@@ -140,7 +140,7 @@ func PullBGPAdvertisement(apiClient *clients.Settings, name, nsname string) (*BG
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("bgpadvertisement object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("bgpadvertisement object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -228,11 +228,11 @@ func (builder *BGPAdvertisementBuilder) Update(force bool) (*BGPAdvertisementBui
 	if !builder.Exists() {
 		glog.V(100).Infof(
 			"Failed to update the BGPAdvertisement object %s in namespace %s. "+
-				"Resource doesn't exist",
+				"Resource does not exist",
 			builder.Definition.Name, builder.Definition.Namespace,
 		)
 
-		return nil, fmt.Errorf("failed to update BGPAdvertisement, resource doesn't exist")
+		return nil, fmt.Errorf("failed to update BGPAdvertisement, resource does not exist")
 	}
 
 	builder.Object.Spec = builder.Definition.Spec

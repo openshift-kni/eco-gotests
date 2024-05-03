@@ -93,7 +93,7 @@ func (builder *NmStateConfigBuilder) Get() (*assistedv1beta1.NMStateConfig, erro
 	}, nmStateConfig)
 
 	if err != nil {
-		glog.V(100).Infof("nmstateconfig object %s doesn't exist", builder.Definition.Name)
+		glog.V(100).Infof("nmstateconfig object %s does not exist", builder.Definition.Name)
 
 		return nil, err
 	}

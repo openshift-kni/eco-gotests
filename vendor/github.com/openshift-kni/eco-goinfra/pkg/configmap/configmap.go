@@ -57,7 +57,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		"Pulling configmap object name:%s in namespace: %s", name, nsname)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("configmap object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("configmap object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

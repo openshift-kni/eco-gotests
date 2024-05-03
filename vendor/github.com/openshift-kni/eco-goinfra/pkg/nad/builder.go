@@ -88,7 +88,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("networkattachmentdefinition object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("networkattachmentdefinition object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -129,7 +129,7 @@ func (builder *Builder) Create() (*Builder, error) {
 }
 
 // Delete removes NetworkAttachmentDefinition resource with the builder definition.
-// (If NAD doesn't exist, nothing is done) and a nil error is returned.
+// (If NAD does not exist, nothing is done) and a nil error is returned.
 // return value:    an error if any occurred.
 func (builder *Builder) Delete() error {
 	if valid, err := builder.validate(); !valid {
@@ -178,7 +178,7 @@ func (builder *Builder) Update() (*Builder, error) {
 // Exists checks if a NAD is exists in the builder.
 // return value:    true    - NAD exists.
 //
-//	false   - NAD doesn't exist.
+//	false   - NAD does not exist.
 func (builder *Builder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false

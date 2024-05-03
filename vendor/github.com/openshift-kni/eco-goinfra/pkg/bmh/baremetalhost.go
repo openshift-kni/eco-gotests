@@ -390,7 +390,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*BmhBuilder, error)
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("baremetalhost object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("baremetalhost object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

@@ -27,6 +27,7 @@ const (
 	isComplete = "Completed"
 	ibuName    = "upgrade"
 	idle       = "Idle"
+	disabled   = "Disabled"
 )
 
 // ImageBasedUpgradeBuilder provides struct for the imagebasedupgrade object containing connection to
@@ -91,7 +92,7 @@ func PullImageBasedUpgrade(apiClient *clients.Settings) (*ImageBasedUpgradeBuild
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("imagebasedupgrade object %s doesn't exist", ibuName)
+		return nil, fmt.Errorf("imagebasedupgrade object %s does not exist", ibuName)
 	}
 
 	builder.Definition = builder.Object
@@ -278,46 +279,54 @@ func (builder *ImageBasedUpgradeBuilder) AutoRollbackOnFailureInitMonitorTimeout
 
 // AutoRollbackOnFailureDisabledInitMonitor allows disabling the watchdog
 // triggering a rollback upon upgrade failure within the set timeout.
-// Set to false by default.
-func (builder *ImageBasedUpgradeBuilder) AutoRollbackOnFailureDisabledInitMonitor(
-	flag bool) *ImageBasedUpgradeBuilder {
+func (builder *ImageBasedUpgradeBuilder) AutoRollbackOnFailureDisabledInitMonitor() *ImageBasedUpgradeBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
 
-	glog.V(100).Infof("Setting the Init Monitor for Auto Rollback on failure to %b in imagebasedupgrade", !flag)
+	glog.V(100).Infof("Setting the Init Monitor for Auto Rollback on failure to Disabled in imagebasedupgrade")
 
-	builder.Definition.Spec.AutoRollbackOnFailure.DisabledInitMonitor = flag
+	if builder.Definition.Annotations == nil {
+		builder.Definition.Annotations = make(map[string]string)
+	}
+
+	builder.Definition.Annotations["auto-rollback-on-failure.lca.openshift.io/init-monitor"] = disabled
 
 	return builder
 }
 
 // AutoRollbackOnFailureDisableForPostReboot allows controlling
-// AutoRollback on failure for post reboot stage. Enabled by default.
-func (builder *ImageBasedUpgradeBuilder) AutoRollbackOnFailureDisableForPostReboot(
-	flag bool) *ImageBasedUpgradeBuilder {
+// AutoRollback on failure for post reboot stage.
+func (builder *ImageBasedUpgradeBuilder) AutoRollbackOnFailureDisableForPostReboot() *ImageBasedUpgradeBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
 
-	glog.V(100).Infof("Setting Auto Rollback on failure for post reboot to %b in imagebasedupgrade", !flag)
+	glog.V(100).Infof("Setting Auto Rollback on failure for post reboot to Disabled in imagebasedupgrade")
 
-	builder.Definition.Spec.AutoRollbackOnFailure.DisabledForPostRebootConfig = flag
+	if builder.Definition.Annotations == nil {
+		builder.Definition.Annotations = make(map[string]string)
+	}
+
+	builder.Definition.Annotations["auto-rollback-on-failure.lca.openshift.io/post-reboot-config"] = disabled
 
 	return builder
 }
 
 // AutoRollbackOnFailureDisableForUpgradeCompletion allows controlling
 // AutoRollback on failure for upgrade completion stage. Enabled by default.
-func (builder *ImageBasedUpgradeBuilder) AutoRollbackOnFailureDisableForUpgradeCompletion(
-	flag bool) *ImageBasedUpgradeBuilder {
+func (builder *ImageBasedUpgradeBuilder) AutoRollbackOnFailureDisableForUpgradeCompletion() *ImageBasedUpgradeBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
 
-	glog.V(100).Infof("Setting Auto Rollback on failure for upgrade completion to %b in imagebasedupgrade", !flag)
+	glog.V(100).Infof("Setting Auto Rollback on failure for upgrade completion to Disabled in imagebasedupgrade")
 
-	builder.Definition.Spec.AutoRollbackOnFailure.DisabledForUpgradeCompletion = flag
+	if builder.Definition.Annotations == nil {
+		builder.Definition.Annotations = make(map[string]string)
+	}
+
+	builder.Definition.Annotations["auto-rollback-on-failure.lca.openshift.io/upgrade-completion"] = disabled
 
 	return builder
 }

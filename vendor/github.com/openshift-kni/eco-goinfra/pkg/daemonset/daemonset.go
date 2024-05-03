@@ -106,7 +106,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("daemonset object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("daemonset object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

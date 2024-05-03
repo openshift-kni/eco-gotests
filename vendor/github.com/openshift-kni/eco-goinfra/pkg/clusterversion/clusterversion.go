@@ -40,7 +40,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterversion object %s doesn't exist", clusterVersionName)
+		return nil, fmt.Errorf("clusterversion object %s does not exist", clusterVersionName)
 	}
 
 	builder.Definition = builder.Object

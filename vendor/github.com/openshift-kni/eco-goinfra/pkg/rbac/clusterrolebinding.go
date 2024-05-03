@@ -150,7 +150,7 @@ func PullClusterRoleBinding(apiClient *clients.Settings, name string) (*ClusterR
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterrolebinding object %s doesn't exist", name)
+		return nil, fmt.Errorf("clusterrolebinding object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

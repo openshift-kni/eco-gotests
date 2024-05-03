@@ -117,10 +117,10 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		glog.V(100).Infof("Failed to pull pod object %s from namespace %s. Object doesn't exist",
+		glog.V(100).Infof("Failed to pull pod object %s from namespace %s. Object does not exist",
 			name, nsname)
 
-		return nil, fmt.Errorf("pod object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("pod object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

@@ -195,10 +195,10 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*NetworkPolicyBuild
 	}
 
 	if !builder.Exists() {
-		glog.V(100).Infof("Failed to pull networkPolicy object %s from namespace %s. Object doesn't exist",
+		glog.V(100).Infof("Failed to pull networkPolicy object %s from namespace %s. Object does not exist",
 			name, nsname)
 
-		return nil, fmt.Errorf("networkPolicy object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("networkPolicy object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -250,7 +250,7 @@ func (builder *NetworkPolicyBuilder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		glog.V(100).Infof("The networkPolicy object %s doesn't exist in %s namespace")
+		glog.V(100).Infof("The networkPolicy object %s does not exist in %s namespace")
 
 		builder.Object = nil
 

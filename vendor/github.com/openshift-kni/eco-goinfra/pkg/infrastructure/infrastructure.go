@@ -40,7 +40,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("infrastructure object %s doesn't exist", infrastructureName)
+		return nil, fmt.Errorf("infrastructure object %s does not exist", infrastructureName)
 	}
 
 	builder.Definition = builder.Object

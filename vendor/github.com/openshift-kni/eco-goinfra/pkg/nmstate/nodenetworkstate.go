@@ -67,7 +67,7 @@ func (builder *StateBuilder) Get() (*nmstateV1alpha1.NodeNetworkState, error) {
 	}, nodeNetworkState)
 
 	if err != nil {
-		glog.V(100).Infof("NodeNetworkState object %s doesn't exist", builder.Object.Name)
+		glog.V(100).Infof("NodeNetworkState object %s does not exist", builder.Object.Name)
 
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuild
 	}
 
 	if !stateBuilder.Exists() {
-		return nil, fmt.Errorf("NodeNetworkState object %s doesn't exist", name)
+		return nil, fmt.Errorf("NodeNetworkState object %s does not exist", name)
 	}
 
 	return &stateBuilder, nil

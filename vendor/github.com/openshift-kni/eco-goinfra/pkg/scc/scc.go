@@ -93,7 +93,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("SecurityContextConstraints object %s doesn't exist", name)
+		return nil, fmt.Errorf("SecurityContextConstraints object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

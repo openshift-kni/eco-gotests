@@ -100,7 +100,7 @@ func PullPolicySet(apiClient *clients.Settings, name, nsname string) (*PolicySet
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("policyset object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("policyset object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

@@ -76,7 +76,7 @@ func (builder *Builder) Get() (*nfdv1.NodeFeatureDiscovery, error) {
 	}, nodeFeatureDiscovery)
 
 	if err != nil {
-		glog.V(100).Infof("NodeFeatureDiscovery object %s doesn't exist in namespace %s",
+		glog.V(100).Infof("NodeFeatureDiscovery object %s does not exist in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		return nil, err
@@ -112,7 +112,7 @@ func Pull(apiClient *clients.Settings, name, namespace string) (*Builder, error)
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("NodeFeatureDiscovery object %s doesn't exist in namespace %s", name, namespace)
+		return nil, fmt.Errorf("NodeFeatureDiscovery object %s does not exist in namespace %s", name, namespace)
 	}
 
 	builder.Definition = builder.Object

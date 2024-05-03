@@ -90,7 +90,7 @@ func PullPlacementRule(apiClient *clients.Settings, name, nsname string) (*Place
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("placementrule object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("placementrule object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

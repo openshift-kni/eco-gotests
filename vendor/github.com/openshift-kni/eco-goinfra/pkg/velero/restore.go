@@ -88,7 +88,7 @@ func PullRestore(apiClient *clients.Settings, name, nsname string) (*RestoreBuil
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("restore object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("restore object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

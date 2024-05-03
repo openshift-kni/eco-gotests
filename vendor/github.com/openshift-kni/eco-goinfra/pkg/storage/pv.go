@@ -37,7 +37,7 @@ func PullPersistentVolume(apiClient *clients.Settings, persistentVolume string) 
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("PersistentVolume object %s doesn't exist", persistentVolume)
+		return nil, fmt.Errorf("PersistentVolume object %s does not exist", persistentVolume)
 	}
 
 	builder.Definition = builder.Object

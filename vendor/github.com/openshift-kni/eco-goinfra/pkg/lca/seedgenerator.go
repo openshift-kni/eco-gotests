@@ -131,7 +131,7 @@ func PullSeedGenerator(apiClient *clients.Settings, name string) (*SeedGenerator
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("seedgenerator object %s doesn't exist", name)
+		return nil, fmt.Errorf("seedgenerator object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

@@ -299,7 +299,7 @@ func PullPersistentVolumeClaim(
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("PersistentVolumeClaim object %s doesn't exist in namespace %s",
+		return nil, fmt.Errorf("PersistentVolumeClaim object %s does not exist in namespace %s",
 			persistentVolumeClaim, nsname)
 	}
 

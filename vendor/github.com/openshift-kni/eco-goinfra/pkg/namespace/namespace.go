@@ -226,7 +226,7 @@ func Pull(apiClient *clients.Settings, nsname string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("namespace object %s doesn't exist", nsname)
+		return nil, fmt.Errorf("namespace object %s does not exist", nsname)
 	}
 
 	builder.Definition = builder.Object

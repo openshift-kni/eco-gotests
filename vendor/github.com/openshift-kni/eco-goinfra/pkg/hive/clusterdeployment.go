@@ -204,7 +204,7 @@ func PullClusterDeployment(apiClient *clients.Settings, name, nsname string) (*C
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterdeployment object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("clusterdeployment object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

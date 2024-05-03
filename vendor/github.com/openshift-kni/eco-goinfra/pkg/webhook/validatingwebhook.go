@@ -48,7 +48,7 @@ func PullValidatingConfiguration(apiClient *clients.Settings, name string) (
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("ValidatingWebhookConfiguration object %s doesn't exist", name)
+		return nil, fmt.Errorf("ValidatingWebhookConfiguration object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

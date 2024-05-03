@@ -28,11 +28,14 @@ import (
 // +kubebuilder:printcolumn:name="Desired Stage",type="string",JSONPath=".spec.stage"
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.conditions[-1:].reason"
 // +kubebuilder:printcolumn:name="Details",type="string",JSONPath=".status.conditions[-1:].message"
-// +kubebuilder:validation:XValidation:message="can not change spec.seedImageRef while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.seedImageRef) && has(self.spec.seedImageRef) && oldSelf.spec.seedImageRef==self.spec.seedImageRef || !has(self.spec.seedImageRef) && !has(oldSelf.spec.seedImageRef)"
-// +kubebuilder:validation:XValidation:message="can not change spec.oadpContent while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.oadpContent) && has(self.spec.oadpContent) && oldSelf.spec.oadpContent==self.spec.oadpContent || !has(self.spec.oadpContent) && !has(oldSelf.spec.oadpContent)"
-// +kubebuilder:validation:XValidation:message="can not change spec.extraManifests while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.extraManifests) && has(self.spec.extraManifests) && oldSelf.spec.extraManifests==self.spec.extraManifests || !has(self.spec.extraManifests) && !has(oldSelf.spec.extraManifests)"
-// +kubebuilder:validation:XValidation:message="can not change spec.autoRollbackOnFailure while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || has(oldSelf.spec.autoRollbackOnFailure) && has(self.spec.autoRollbackOnFailure) && oldSelf.spec.autoRollbackOnFailure==self.spec.autoRollbackOnFailure || !has(self.spec.autoRollbackOnFailure) && !has(oldSelf.spec.autoRollbackOnFailure)"
+// +kubebuilder:validation:XValidation:message="ibu is a singleton, metadata.name must be 'upgrade'", rule="self.metadata.name == 'upgrade'"
+// +kubebuilder:validation:XValidation:message="can not change spec.seedImageRef while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || self.spec.stage=='Idle' || has(oldSelf.spec.seedImageRef) && has(self.spec.seedImageRef) && oldSelf.spec.seedImageRef==self.spec.seedImageRef || !has(self.spec.seedImageRef) && !has(oldSelf.spec.seedImageRef)"
+// +kubebuilder:validation:XValidation:message="can not change spec.oadpContent while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || self.spec.stage=='Idle' || has(oldSelf.spec.oadpContent) && has(self.spec.oadpContent) && oldSelf.spec.oadpContent==self.spec.oadpContent || !has(self.spec.oadpContent) && !has(oldSelf.spec.oadpContent)"
+// +kubebuilder:validation:XValidation:message="can not change spec.extraManifests while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || self.spec.stage=='Idle' || has(oldSelf.spec.extraManifests) && has(self.spec.extraManifests) && oldSelf.spec.extraManifests==self.spec.extraManifests || !has(self.spec.extraManifests) && !has(oldSelf.spec.extraManifests)"
+// +kubebuilder:validation:XValidation:message="can not change spec.autoRollbackOnFailure while ibu is in progress", rule="!has(oldSelf.status) || oldSelf.status.conditions.exists(c, c.type=='Idle' && c.status=='True') || self.spec.stage=='Idle' || has(oldSelf.spec.autoRollbackOnFailure) && has(self.spec.autoRollbackOnFailure) && oldSelf.spec.autoRollbackOnFailure==self.spec.autoRollbackOnFailure || !has(self.spec.autoRollbackOnFailure) && !has(oldSelf.spec.autoRollbackOnFailure)"
+// +kubebuilder:validation:XValidation:message="the stage transition is not permitted. Please refer to status.validNextStages for valid transitions. If status.validNextStages is not present, it indicates that no transitions are currently allowed", rule="!has(oldSelf.status) || has(oldSelf.status.validNextStages) && self.spec.stage in oldSelf.status.validNextStages || has(oldSelf.spec.stage) && has(self.spec.stage) && oldSelf.spec.stage==self.spec.stage"
 // +operator-sdk:csv:customresourcedefinitions:displayName="Image-based Cluster Upgrade",resources={{Namespace, v1},{Deployment,apps/v1}}
+
 // ImageBasedUpgrade is the Schema for the ImageBasedUpgrades API
 type ImageBasedUpgrade struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -65,11 +68,13 @@ type ImageBasedUpgradeSpec struct {
 	Stage ImageBasedUpgradeStage `json:"stage,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Seed Image Reference"
 	SeedImageRef SeedImageRef `json:"seedImageRef,omitempty"`
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Additional Images"
-	AdditionalImages ConfigMapRef `json:"additionalImages,omitempty"`
+	// OADPContent defines the list of ConfigMap resources that contain the OADP Backup and Restore CRs.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OADP Content"
 	OADPContent []ConfigMapRef `json:"oadpContent,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Extra Manifests"
+	// ExtraManifests defines the list of ConfigMap resources that contain the user-specific extra manifests to be
+	// applied during the upgrade post-pivot stage.
+	// Users can also add their custom catalog sources that may want to retain after the upgrade.
 	ExtraManifests []ConfigMapRef `json:"extraManifests,omitempty"`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Auto Rollback On Failure"
 	AutoRollbackOnFailure AutoRollbackOnFailure `json:"autoRollbackOnFailure,omitempty"`
@@ -77,21 +82,24 @@ type ImageBasedUpgradeSpec struct {
 
 // SeedImageRef defines the seed image and OCP version for the upgrade
 type SeedImageRef struct {
+	// Version defines the target platform version. The value must match the version of the seed image.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Version string `json:"version,omitempty"`
+	// Image defines the full pull-spec of the seed container image to use.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern="^([a-z0-9]+://)?[\\S]+$"
 	Image string `json:"image,omitempty"`
+	// PullSecretRef defines the reference to a secret with credentials to pull container images.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Pull Secret Reference"
 	PullSecretRef *PullSecretRef `json:"pullSecretRef,omitempty"`
 }
 
+// AutoRollbackOnFailure defines automatic rollback settings if the upgrade fails or if the upgrade does not
+// complete within the specified time limit.
 type AutoRollbackOnFailure struct {
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
-	DisabledForPostRebootConfig bool `json:"disabledForPostRebootConfig,omitempty"` // If true, disable auto-rollback for post-reboot config service-unit(s)
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
-	DisabledForUpgradeCompletion bool `json:"disabledForUpgradeCompletion,omitempty"` // If true, disable auto-rollback for Upgrade completion handler
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:booleanSwitch"}
-	DisabledInitMonitor bool `json:"disabledInitMonitor,omitempty"` // If true, disable LCA Init Monitor watchdog, which triggers auto-rollback if timeout occurs before upgrade completion
+	// InitMonitorTimeoutSeconds defines the time frame in seconds. If not defined or set to 0, the default value of
+	// 1800 seconds (30 minutes) is used.
 	// +kubebuilder:validation:Minimum=0
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:number"}
 	InitMonitorTimeoutSeconds int `json:"initMonitorTimeoutSeconds,omitempty"` // LCA Init Monitor watchdog timeout, in seconds. Value = 0 is treated as "use default" when writing config file in Prep stage
@@ -127,6 +135,9 @@ type ImageBasedUpgradeStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Valid Next Stage"
 	ValidNextStages []ImageBasedUpgradeStage `json:"validNextStages,omitempty"`
+	// RollbackAvailabilityExpiration reflects the point at which rolling back may require manual recovery from expired control plane certficates.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	RollbackAvailabilityExpiration metav1.Time `json:"rollbackAvailabilityExpiration,omitempty"`
 }
 
 // +kubebuilder:object:root=true

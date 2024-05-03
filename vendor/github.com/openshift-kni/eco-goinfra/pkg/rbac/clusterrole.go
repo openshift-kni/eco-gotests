@@ -146,7 +146,7 @@ func PullClusterRole(apiClient *clients.Settings, name string) (*ClusterRoleBuil
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterrole object %s doesn't exist", name)
+		return nil, fmt.Errorf("clusterrole object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

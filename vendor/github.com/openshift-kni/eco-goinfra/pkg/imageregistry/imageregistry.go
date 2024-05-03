@@ -55,7 +55,7 @@ func Pull(apiClient *clients.Settings, imageRegistryObjName string) (*Builder, e
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("imageRegistry object %s doesn't exist", imageRegistryObjName)
+		return nil, fmt.Errorf("imageRegistry object %s does not exist", imageRegistryObjName)
 	}
 
 	builder.Definition = builder.Object
@@ -77,7 +77,7 @@ func (builder *Builder) Get() (*imageregistryv1.Config, error) {
 	}, imageRegistry)
 
 	if err != nil {
-		glog.V(100).Infof("ImageRegistry object %s doesn't exist", builder.Definition.Name)
+		glog.V(100).Infof("ImageRegistry object %s does not exist", builder.Definition.Name)
 
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	glog.V(100).Infof("Updating the imageRegistry %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("imageRegistry object %s doesn't exist", builder.Definition.Name)
+		return nil, fmt.Errorf("imageRegistry object %s does not exist", builder.Definition.Name)
 	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
@@ -128,7 +128,7 @@ func (builder *Builder) GetManagementState() (*operatorv1.ManagementState, error
 	glog.V(100).Infof("Getting imageRegistry ManagementState configuration")
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("imageRegistry object doesn't exist")
+		return nil, fmt.Errorf("imageRegistry object does not exist")
 	}
 
 	return &builder.Object.Spec.ManagementState, nil
@@ -143,7 +143,7 @@ func (builder *Builder) GetStorageConfig() (*imageregistryv1.ImageRegistryConfig
 	glog.V(100).Infof("Getting imageRegistry Storage configuration")
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("imageRegistry object doesn't exist")
+		return nil, fmt.Errorf("imageRegistry object does not exist")
 	}
 
 	return &builder.Object.Spec.Storage, nil

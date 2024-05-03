@@ -402,7 +402,7 @@ func (builder *InfraEnvBuilder) GetAgentByName(name string) (*agentBuilder, erro
 	}
 
 	if !agent.Exists() {
-		return nil, fmt.Errorf("agent object %s doesn't exist in namespace %s", name, builder.Definition.Namespace)
+		return nil, fmt.Errorf("agent object %s does not exist in namespace %s", name, builder.Definition.Namespace)
 	}
 
 	return agent, nil
@@ -743,7 +743,7 @@ func PullInfraEnvInstall(apiClient *clients.Settings, name, nsname string) (*Inf
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("infraenv object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("infraenv object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

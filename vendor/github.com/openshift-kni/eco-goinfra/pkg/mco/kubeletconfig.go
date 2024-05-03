@@ -74,7 +74,7 @@ func PullKubeletConfig(apiClient *clients.Settings, name string) (*KubeletConfig
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("kubeletconfig object %s doesn't exist", name)
+		return nil, fmt.Errorf("kubeletconfig object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

@@ -76,7 +76,7 @@ func (builder *Builder) Get() (*nvidiagpuv1.ClusterPolicy, error) {
 
 	if err != nil {
 		glog.V(100).Infof(
-			"ClusterPolicy object %s doesn't exist", builder.Definition.Name)
+			"ClusterPolicy object %s does not exist", builder.Definition.Name)
 
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("ClusterPolicy object %s doesn't exist", name)
+		return nil, fmt.Errorf("ClusterPolicy object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

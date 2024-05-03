@@ -63,7 +63,7 @@ func Pull(apiClient *clients.Settings, clusterOperatorName string) (*Builder, er
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterOperator object %s doesn't exist", clusterOperatorName)
+		return nil, fmt.Errorf("clusterOperator object %s does not exist", clusterOperatorName)
 	}
 
 	builder.Definition = builder.Object
@@ -159,7 +159,7 @@ func (builder *Builder) IsProgressing() bool {
 	return false
 }
 
-// GetConditionReason returns the specific condition type's reason value or an empty string if it doesn't exist.
+// GetConditionReason returns the specific condition type's reason value or an empty string if it does not exist.
 func (builder *Builder) GetConditionReason(conditionType configv1.ClusterStatusConditionType) string {
 	if valid, _ := builder.validate(); !valid {
 		return ""

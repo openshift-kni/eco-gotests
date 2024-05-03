@@ -522,7 +522,7 @@ func PullAgentClusterInstall(apiClient *clients.Settings, name, nsname string) (
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("agentclusterinstall object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("agentclusterinstall object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -671,7 +671,7 @@ func (builder *AgentClusterInstallBuilder) getCondition(conditionType string) (*
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, time.Second*5, true, func(ctx context.Context) (bool, error) {
 			if !builder.Exists() {
-				return false, fmt.Errorf("agentclusterinstall object %s doesn't exist in namespace %s",
+				return false, fmt.Errorf("agentclusterinstall object %s does not exist in namespace %s",
 					builder.Definition.Name, builder.Definition.Namespace)
 			}
 

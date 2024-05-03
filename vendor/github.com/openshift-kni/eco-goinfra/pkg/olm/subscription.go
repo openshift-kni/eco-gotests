@@ -220,7 +220,7 @@ func (builder *SubscriptionBuilder) Update() (*SubscriptionBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("subscription named %s in namespace %s doesn't exist",
+		return nil, fmt.Errorf("subscription named %s in namespace %s does not exist",
 			builder.Definition.Name, builder.Definition.Namespace)
 	}
 
@@ -260,7 +260,7 @@ func PullSubscription(apiClient *clients.Settings, subName, subNamespace string)
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("subscription object named %s doesn't exist", subName)
+		return nil, fmt.Errorf("subscription object named %s does not exist", subName)
 	}
 
 	builder.Definition = builder.Object

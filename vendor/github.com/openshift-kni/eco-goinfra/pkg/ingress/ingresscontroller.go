@@ -105,7 +105,7 @@ func (builder *Builder) Update() (*Builder, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("ingresscontroller object %s doesn't exist in namespace %s",
+		return nil, fmt.Errorf("ingresscontroller object %s does not exist in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 	}
 

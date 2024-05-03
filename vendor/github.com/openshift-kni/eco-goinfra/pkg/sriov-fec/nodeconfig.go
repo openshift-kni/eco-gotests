@@ -99,7 +99,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*NodeConfigBuilder,
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("SriovFecNodeConfig object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("SriovFecNodeConfig object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -182,7 +182,7 @@ func (builder *NodeConfigBuilder) Get() (*sriovfectypes.SriovFecNodeConfig, erro
 
 	if err != nil {
 		glog.V(100).Infof(
-			"SriovFecNodeConfig object %s doesn't exist in namespace %s",
+			"SriovFecNodeConfig object %s does not exist in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		return nil, err
@@ -225,7 +225,7 @@ func (builder *NodeConfigBuilder) Update(force bool) (*NodeConfigBuilder, error)
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("failed to update SriovFecNodeConfig, object doesn't exist on cluster")
+		return nil, fmt.Errorf("failed to update SriovFecNodeConfig, object does not exist on cluster")
 	}
 
 	glog.V(100).Infof("Updating the SriovFecNodeConfig object %s in namespace %s",

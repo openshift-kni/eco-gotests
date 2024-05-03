@@ -105,7 +105,7 @@ func PullL2Advertisement(apiClient *clients.Settings, name, nsname string) (*L2A
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("l2advertisement object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("l2advertisement object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -145,7 +145,7 @@ func (builder *L2AdvertisementBuilder) Get() (*mlbtypes.L2Advertisement, error) 
 
 	if err != nil {
 		glog.V(100).Infof(
-			"L2Advertisement object %s doesn't exist in namespace %s",
+			"L2Advertisement object %s does not exist in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		return nil, err
@@ -234,11 +234,11 @@ func (builder *L2AdvertisementBuilder) Update(force bool) (*L2AdvertisementBuild
 	if !builder.Exists() {
 		glog.V(100).Infof(
 			"Failed to update the L2Advertisement object %s in namespace %s. "+
-				"Resource doesn't exist",
+				"Resource does not exist",
 			builder.Definition.Name, builder.Definition.Namespace,
 		)
 
-		return nil, fmt.Errorf("failed to update L2Advertisement, resource doesn't exist")
+		return nil, fmt.Errorf("failed to update L2Advertisement, resource does not exist")
 	}
 
 	builder.Object.Spec = builder.Definition.Spec

@@ -40,7 +40,7 @@ func PullConfig(apiClient *clients.Settings) (*ConfigBuilder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("network object %s doesn't exist", clusterNetworkName)
+		return nil, fmt.Errorf("network object %s does not exist", clusterNetworkName)
 	}
 
 	builder.Definition = builder.Object

@@ -11,7 +11,7 @@ func UndefinedCrdObjectErrString(crName string) string {
 func FailToUpdateNotification(crName, objName string, nsName ...string) string {
 	msg := fmt.Sprintf("Failed to update the %s object %s", crName, objName)
 	if len(nsName) > 0 {
-		msg += fmt.Sprintf("in namespace %s", nsName[0])
+		msg += fmt.Sprintf(" in namespace %s", nsName[0])
 	}
 
 	return msg + ". Note: Force flag set, executed delete/create methods instead"

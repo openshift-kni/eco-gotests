@@ -51,7 +51,7 @@ func PullOpenshiftAPIServer(apiClient *clients.Settings) (*OpenshiftAPIServerBui
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("openshiftAPIServer object %s doesn't found", openshiftAPIServerObjName)
+		return nil, fmt.Errorf("openshiftAPIServer object %s does not exist", openshiftAPIServerObjName)
 	}
 
 	builder.Definition = builder.Object
@@ -87,7 +87,7 @@ func (builder *OpenshiftAPIServerBuilder) Get() (*operatorV1.OpenShiftAPIServer,
 	}, openshiftAPIServer)
 
 	if err != nil {
-		glog.V(100).Infof("openshiftAPIServer object doesn't exist")
+		glog.V(100).Infof("openshiftAPIServer object does not exist")
 
 		return nil, err
 	}

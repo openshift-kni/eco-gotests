@@ -47,7 +47,7 @@ func PullMutatingConfiguration(apiClient *clients.Settings, name string) (*Mutat
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("MutatingWebhook object %s doesn't exist", name)
+		return nil, fmt.Errorf("MutatingWebhook object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

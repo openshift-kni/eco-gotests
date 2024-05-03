@@ -302,7 +302,7 @@ func PullAgentServiceConfig(apiClient *clients.Settings) (*AgentServiceConfigBui
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("agentserviceconfig object %s doesn't exist", agentServiceConfigName)
+		return nil, fmt.Errorf("agentserviceconfig object %s does not exist", agentServiceConfigName)
 	}
 
 	builder.Definition = builder.Object

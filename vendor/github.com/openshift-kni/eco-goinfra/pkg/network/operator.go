@@ -40,7 +40,7 @@ func PullOperator(apiClient *clients.Settings) (*OperatorBuilder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("network.operator object %s doesn't exist", clusterNetworkName)
+		return nil, fmt.Errorf("network.operator object %s does not exist", clusterNetworkName)
 	}
 
 	builder.Definition = builder.Object
@@ -187,7 +187,7 @@ func (builder *OperatorBuilder) WaitUntilInCondition(
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			if !builder.Exists() {
-				return false, fmt.Errorf("network.operator object doesn't exist")
+				return false, fmt.Errorf("network.operator object does not exist")
 			}
 
 			for _, c := range builder.Object.Status.OperatorStatus.Conditions {

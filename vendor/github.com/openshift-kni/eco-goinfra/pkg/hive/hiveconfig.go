@@ -93,7 +93,7 @@ func PullHiveConfig(apiClient *clients.Settings, name string) (*HiveConfigBuilde
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("hiveconfig object %s doesn't exist", name)
+		return nil, fmt.Errorf("hiveconfig object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

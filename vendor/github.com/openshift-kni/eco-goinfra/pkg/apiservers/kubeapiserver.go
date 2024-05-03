@@ -51,7 +51,7 @@ func PullKubeAPIServer(apiClient *clients.Settings) (*KubeAPIServerBuilder, erro
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("kubeAPIServer object %s doesn't found", kubeAPIServerObjName)
+		return nil, fmt.Errorf("kubeAPIServer object %s does not exist", kubeAPIServerObjName)
 	}
 
 	builder.Definition = builder.Object
@@ -87,7 +87,7 @@ func (builder *KubeAPIServerBuilder) Get() (*operatorV1.KubeAPIServer, error) {
 	}, kubeAPIServer)
 
 	if err != nil {
-		glog.V(100).Infof("kubeAPIServer object doesn't exist")
+		glog.V(100).Infof("kubeAPIServer object does not exist")
 
 		return nil, err
 	}

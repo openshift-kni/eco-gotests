@@ -293,7 +293,7 @@ func PullNetwork(apiClient *clients.Settings, name, nsname string) (*NetworkBuil
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("sriovnetwork object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("sriovnetwork object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

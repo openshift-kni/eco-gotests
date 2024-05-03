@@ -40,7 +40,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("proxy object %s doesn't exist", clusterProxyName)
+		return nil, fmt.Errorf("proxy object %s does not exist", clusterProxyName)
 	}
 
 	builder.Definition = builder.Object

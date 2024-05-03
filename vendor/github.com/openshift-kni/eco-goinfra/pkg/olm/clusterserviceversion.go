@@ -51,7 +51,7 @@ func PullClusterServiceVersion(apiClient *clients.Settings, name, namespace stri
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterserviceversion object %s doesn't exist in namespace %s", name, namespace)
+		return nil, fmt.Errorf("clusterserviceversion object %s does not exist in namespace %s", name, namespace)
 	}
 
 	builder.Definition = builder.Object

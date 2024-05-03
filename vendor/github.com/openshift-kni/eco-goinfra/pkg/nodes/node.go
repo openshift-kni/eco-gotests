@@ -127,7 +127,7 @@ func Pull(apiClient *clients.Settings, nodeName string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("node object %s doesn't exist", nodeName)
+		return nil, fmt.Errorf("node object %s does not exist", nodeName)
 	}
 
 	builder.Definition = builder.Object
@@ -144,7 +144,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	glog.V(100).Infof("Updating configuration of node %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
+		return nil, fmt.Errorf("node %s object does not exist", builder.Definition.Name)
 	}
 
 	builder.Definition.CreationTimestamp = metav1.Time{}
@@ -312,7 +312,7 @@ func (builder *Builder) IsReady() (bool, error) {
 	glog.V(100).Infof("Verify %s node availability", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return false, fmt.Errorf("%s node object doesn't exist", builder.Definition.Name)
+		return false, fmt.Errorf("%s node object does not exist", builder.Definition.Name)
 	}
 
 	for _, condition := range builder.Object.Status.Conditions {
@@ -334,7 +334,7 @@ func (builder *Builder) WaitUntilConditionTrue(
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			if !builder.Exists() {
-				return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
+				return false, fmt.Errorf("node %s object does not exist", builder.Definition.Name)
 			}
 
 			for _, condition := range builder.Object.Status.Conditions {
@@ -365,7 +365,7 @@ func (builder *Builder) WaitUntilConditionUnknown(
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			if !builder.Exists() {
-				return false, fmt.Errorf("node %s object doesn't exist", builder.Definition.Name)
+				return false, fmt.Errorf("node %s object does not exist", builder.Definition.Name)
 			}
 
 			for _, condition := range builder.Object.Status.Conditions {

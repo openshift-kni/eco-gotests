@@ -138,7 +138,7 @@ func PullSet(apiClient *clients.Settings, name, namespace string) (*SetBuilder, 
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("machineSet object %s doesn't exist in namespace %s", name, namespace)
+		return nil, fmt.Errorf("machineSet object %s does not exist in namespace %s", name, namespace)
 	}
 
 	builder.Definition = builder.Object

@@ -91,7 +91,7 @@ func (builder *PolicyBuilder) Get() (*nmstateV1.NodeNetworkConfigurationPolicy, 
 	}, nmstatePolicy)
 
 	if err != nil {
-		glog.V(100).Infof("NodeNetworkConfigurationPolicy object %s doesn't exist", builder.Definition.Name)
+		glog.V(100).Infof("NodeNetworkConfigurationPolicy object %s does not exist", builder.Definition.Name)
 
 		return nil, err
 	}

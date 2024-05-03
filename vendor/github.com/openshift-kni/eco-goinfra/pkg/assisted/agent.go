@@ -84,7 +84,7 @@ func PullAgent(apiClient *clients.Settings, name, nsname string) (*agentBuilder,
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("agent object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("agent object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

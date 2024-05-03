@@ -206,10 +206,10 @@ func PullMultiNetworkPolicy(apiClient *clients.Settings, name, nsname string) (*
 
 	if !builder.Exists() {
 		glog.V(100).Infof(
-			"Failed to pull MultiNetworkPolicy object %s from namespace %s. Object doesn't exist",
+			"Failed to pull MultiNetworkPolicy object %s from namespace %s. Object does not exist",
 			name, nsname)
 
-		return nil, fmt.Errorf("MultiNetworkPolicy object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("MultiNetworkPolicy object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

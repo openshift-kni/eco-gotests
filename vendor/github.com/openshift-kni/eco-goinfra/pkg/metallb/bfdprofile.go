@@ -82,7 +82,7 @@ func (builder *BFDBuilder) Get() (*mlbtypes.BFDProfile, error) {
 
 	if err != nil {
 		glog.V(100).Infof(
-			"BFDProfile object %s doesn't exist in namespace %s",
+			"BFDProfile object %s does not exist in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		return nil, err
@@ -140,7 +140,7 @@ func PullBFDProfile(apiClient *clients.Settings, name, nsname string) (*BFDBuild
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("bfdprofile object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("bfdprofile object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object

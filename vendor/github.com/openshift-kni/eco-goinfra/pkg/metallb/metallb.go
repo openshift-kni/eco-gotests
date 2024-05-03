@@ -109,7 +109,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("metallb object %s doesn't exist in namespace %s", name, nsname)
+		return nil, fmt.Errorf("metallb object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -152,7 +152,7 @@ func (builder *Builder) Get() (*mlbtypes.MetalLB, error) {
 
 	if err != nil {
 		glog.V(100).Infof(
-			"metallb object %s doesn't exist in namespace %s",
+			"metallb object %s does not exist in namespace %s",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		return nil, err
@@ -235,7 +235,7 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("failed to update metallb, object doesn't exist on cluster")
+		return nil, fmt.Errorf("failed to update metallb, object does not exist on cluster")
 	}
 
 	glog.V(100).Infof("Updating the metallb object %s in namespace %s",

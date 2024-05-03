@@ -81,7 +81,7 @@ func (builder *Builder) Get() (*nmstateV1.NMState, error) {
 	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{Name: builder.Definition.Name}, nmstate)
 
 	if err != nil {
-		glog.V(100).Infof("NMState object %s doesn't exist", builder.Definition.Name)
+		glog.V(100).Infof("NMState object %s does not exist", builder.Definition.Name)
 
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func PullNMstate(apiClient *clients.Settings, name string) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("NMState object %s doesn't exist", name)
+		return nil, fmt.Errorf("NMState object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object
