@@ -68,7 +68,7 @@ Please refer to the project README for a list of global inputs - [How to run](..
 ```
 # export ECO_TEST_FEATURES='1upgrade modules'
 # export ECO_TEST_LABELS=KMM
-# export ECO_HWACCEL_KMM_REGISTRY=quay.io/ocp-edge-qe
+# export ECO_HWACCEL_KMM_REGISTRY=quay.io/<your_org>
 # export ECO_HWACCEL_KMM_PULL_SECRET=<pullsecret>
 # export ECO_HWACCEL_KMM_SUBSCRIPTION_NAME='kernel-module-management-subscription'
 # export ECO_HWACCEL_KMM_UPGRADE_TARGET_VERSION='2.0.1'
