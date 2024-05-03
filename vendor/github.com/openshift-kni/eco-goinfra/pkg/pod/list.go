@@ -8,11 +8,11 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // List returns pod inventory in the given namespace.
-func List(apiClient *clients.Settings, nsname string, options ...v1.ListOptions) ([]*Builder, error) {
+func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*Builder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("pod 'nsname' parameter can not be empty")
 
@@ -20,7 +20,7 @@ func List(apiClient *clients.Settings, nsname string, options ...v1.ListOptions)
 	}
 
 	logMessage := fmt.Sprintf("Listing pods in the nsname %s", nsname)
-	passedOptions := v1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 
 	if len(options) == 1 {
 		passedOptions = options[0]
@@ -58,9 +58,9 @@ func List(apiClient *clients.Settings, nsname string, options ...v1.ListOptions)
 }
 
 // ListInAllNamespaces returns a cluster-wide pod inventory.
-func ListInAllNamespaces(apiClient *clients.Settings, options ...v1.ListOptions) ([]*Builder, error) {
+func ListInAllNamespaces(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builder, error) {
 	logMessage := "Listing all pods in all namespaces"
-	passedOptions := v1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")
@@ -109,7 +109,7 @@ func ListByNamePattern(apiClient *clients.Settings, namePattern, nsname string) 
 		return nil, fmt.Errorf("failed to list pods, 'nsname' parameter is empty")
 	}
 
-	podList, err := apiClient.Pods(nsname).List(context.TODO(), v1.ListOptions{})
+	podList, err := apiClient.Pods(nsname).List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list pods filtered by the name pattern %s in the nsname %s due to %s",
@@ -141,7 +141,7 @@ func WaitForAllPodsInNamespaceRunning(
 	apiClient *clients.Settings,
 	nsname string,
 	timeout time.Duration,
-	options ...v1.ListOptions) (bool, error) {
+	options ...metav1.ListOptions) (bool, error) {
 	if nsname == "" {
 		glog.V(100).Infof("'nsname' parameter can not be empty")
 
@@ -149,7 +149,7 @@ func WaitForAllPodsInNamespaceRunning(
 	}
 
 	logMessage := fmt.Sprintf("Waiting for all pods in %s namespace", nsname)
-	passedOptions := v1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")

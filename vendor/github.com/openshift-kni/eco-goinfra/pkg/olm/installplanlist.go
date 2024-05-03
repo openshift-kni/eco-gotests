@@ -6,19 +6,19 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListInstallPlan returns a list of installplans found for specific namespace.
 func ListInstallPlan(
-	apiClient *clients.Settings, nsname string, options ...v1.ListOptions) ([]*InstallPlanBuilder, error) {
+	apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*InstallPlanBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Info("The nsname of the installplan is empty")
 
 		return nil, fmt.Errorf("the nsname of the installplan is empty")
 	}
 
-	passedOptions := v1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 	logMessage := fmt.Sprintf("Listing InstallPlans in namespace %s", nsname)
 
 	if len(options) > 1 {

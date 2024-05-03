@@ -226,22 +226,6 @@ func (builder *ImageBasedUpgradeBuilder) WithSeedImage(
 	return builder
 }
 
-// WithAdditionalImages adds additionalImages to be used by the imagebasedupgrade.
-func (builder *ImageBasedUpgradeBuilder) WithAdditionalImages(
-	additionalImagesConfigMapName, additionalImagesConfigMapNamespace string) *ImageBasedUpgradeBuilder {
-	if valid, _ := builder.validate(); !valid {
-		return builder
-	}
-
-	glog.V(100).Infof("Setting additionalImages configmap name %s in namespace %s in the imagebasedupgrade",
-		additionalImagesConfigMapName, additionalImagesConfigMapNamespace)
-
-	builder.Definition.Spec.AdditionalImages =
-		lcav1alpha1.ConfigMapRef{Name: additionalImagesConfigMapName, Namespace: additionalImagesConfigMapNamespace}
-
-	return builder
-}
-
 // WithExtraManifests adds extraManifests to be used by the imagebasedupgrade.
 // This is used to create/configure resources during upgrade.
 func (builder *ImageBasedUpgradeBuilder) WithExtraManifests(

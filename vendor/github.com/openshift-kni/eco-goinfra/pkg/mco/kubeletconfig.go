@@ -147,7 +147,7 @@ func (builder *KubeletConfigBuilder) WithMCPoolSelector(key, value string) *Kube
 	glog.V(100).Infof("Labeling the kubeletconfig %s with %s=%s", builder.Definition.Name, key, value)
 
 	if key == "" {
-		glog.V(100).Infof("The key can't be empty")
+		glog.V(100).Infof("The key cannot be empty")
 
 		builder.errorMsg = "'key' cannot be empty"
 
@@ -177,13 +177,13 @@ func (builder *KubeletConfigBuilder) WithSystemReserved(cpu, memory string) *Kub
 		cpu, memory, builder.Definition.Name)
 
 	if cpu == "" {
-		glog.V(100).Infof("The cpu can't be empty")
+		glog.V(100).Infof("The cpu cannot be empty")
 
 		builder.errorMsg = "'cpu' cannot be empty"
 	}
 
 	if memory == "" {
-		glog.V(100).Infof("The memory can't be empty")
+		glog.V(100).Infof("The memory cannot be empty")
 
 		builder.errorMsg = "'memory' cannot be empty"
 	}

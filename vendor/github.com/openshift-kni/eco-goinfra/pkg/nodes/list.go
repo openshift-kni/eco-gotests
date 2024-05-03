@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/strings/slices"
 )
@@ -17,8 +17,8 @@ const (
 )
 
 // List returns node inventory.
-func List(apiClient *clients.Settings, options ...v1.ListOptions) ([]*Builder, error) {
-	passedOptions := v1.ListOptions{}
+func List(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builder, error) {
+	passedOptions := metav1.ListOptions{}
 	logMessage := "Listing all node resources"
 
 	if len(options) > 1 {
@@ -58,7 +58,7 @@ func List(apiClient *clients.Settings, options ...v1.ListOptions) ([]*Builder, e
 }
 
 // ListExternalIPv4Networks returns a list of node's external ipv4 addresses.
-func ListExternalIPv4Networks(apiClient *clients.Settings, options ...v1.ListOptions) ([]string, error) {
+func ListExternalIPv4Networks(apiClient *clients.Settings, options ...metav1.ListOptions) ([]string, error) {
 	glog.V(100).Infof("Collecting node's external ipv4 addresses")
 
 	var ipV4ExternalAddresses []string
@@ -85,7 +85,7 @@ func ListExternalIPv4Networks(apiClient *clients.Settings, options ...v1.ListOpt
 // WaitForAllNodesAreReady waits for all nodes to be Ready for a time duration up to the timeout.
 func WaitForAllNodesAreReady(apiClient *clients.Settings,
 	timeout time.Duration,
-	options ...v1.ListOptions) (bool, error) {
+	options ...metav1.ListOptions) (bool, error) {
 	glog.V(100).Infof("Waiting for all nodes to be in the Ready state for up to a duration of %v",
 		timeout)
 
@@ -133,7 +133,7 @@ func WaitForAllNodesAreReady(apiClient *clients.Settings,
 // WaitForAllNodesToReboot waits for all nodes to start and finish reboot up to the timeout.
 func WaitForAllNodesToReboot(apiClient *clients.Settings,
 	globalRebootTimeout time.Duration,
-	options ...v1.ListOptions) (bool, error) {
+	options ...metav1.ListOptions) (bool, error) {
 	glog.V(100).Infof("Waiting for all nodes in the list to reboot and return to the Ready condition")
 
 	nodesList, err := List(apiClient, options...)
@@ -155,18 +155,19 @@ func WaitForAllNodesToReboot(apiClient *clients.Settings,
 						return false, err
 					}
 
-					rebooted := slices.Contains(rebootedNodes, node.Object.Name)
-					if !ready && !rebooted {
-						glog.V(100).Infof("Node %s was rebooted and is starting to recover", node.Object.Name)
+					if slices.Contains(rebootedNodes, node.Object.Name) {
+						if ready && !slices.Contains(readyNodes, node.Object.Name) {
+							glog.V(100).Infof("Node %s was successfully rebooted after: %v",
+								node.Object.Name, time.Now().Unix()-globalStartTime)
 
-						rebootedNodes = append(rebootedNodes, node.Object.Name)
-					}
+							readyNodes = append(readyNodes, node.Object.Name)
+						}
+					} else {
+						if !ready {
+							glog.V(100).Infof("Node %s was rebooted and is starting to recover", node.Object.Name)
 
-					if ready && rebooted {
-						glog.V(100).Infof("Node %s was successfully rebooted after: %v",
-							time.Now().Unix()-globalStartTime)
-
-						readyNodes = append(readyNodes, node.Object.Name)
+							rebootedNodes = append(rebootedNodes, node.Object.Name)
+						}
 					}
 				}
 			}

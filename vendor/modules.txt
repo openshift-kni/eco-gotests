@@ -397,8 +397,13 @@ github.com/json-iterator/go
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta2
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/fake
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/scheme
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1/fake
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta2
+github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta2/fake
 # github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
 ## explicit; go 1.17
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
@@ -532,7 +537,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240429133617-6c7ace69b8f7
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240502192946-bfde5158d994
 ## explicit; go 1.20
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes

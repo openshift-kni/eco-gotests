@@ -43,7 +43,7 @@ func SetManagementState(apiClient *clients.Settings, expectedManagementState v1.
 		return err
 	}
 
-	if currentManagementState != expectedManagementState {
+	if currentManagementState != &expectedManagementState {
 		glog.V(100).Infof("The current imageRegistry %s ManagementState is %v; it needs to be changed to the %v",
 			irClusterOperator.Definition.Name, currentManagementState, expectedManagementState)
 
@@ -63,7 +63,7 @@ func SetManagementState(apiClient *clients.Settings, expectedManagementState v1.
 			return err
 		}
 
-		if newManagementState != expectedManagementState {
+		if newManagementState != &expectedManagementState {
 			return fmt.Errorf("failed to change imageRegistry operator managementState value;"+
 				"expected %v, current value is %v", expectedManagementState, newManagementState)
 		}
@@ -117,7 +117,7 @@ func SetStorageToTheEmptyDir(apiClient *clients.Settings) error {
 	glog.V(100).Info("Wait for the openshiftapiserver APIServerDeploymentProgressing ending, " +
 		"pods have to be updated to the latest generation")
 
-	oasBuilder, err := apiservers.PullOpenshiftAPIServerBuilder(apiClient)
+	oasBuilder, err := apiservers.PullOpenshiftAPIServer(apiClient)
 
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func SetStorageToTheEmptyDir(apiClient *clients.Settings) error {
 	glog.V(100).Info("Wait for the kubeapiserver NodeInstallerProgressing ending, " +
 		"nodes have to be updated to the latest revision")
 
-	kasBuilder, err := apiservers.PullKubeAPIServerBuilder(apiClient)
+	kasBuilder, err := apiservers.PullKubeAPIServer(apiClient)
 
 	if err != nil {
 		return err

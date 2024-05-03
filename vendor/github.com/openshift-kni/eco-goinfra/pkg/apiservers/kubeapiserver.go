@@ -31,24 +31,8 @@ type KubeAPIServerBuilder struct {
 
 var kubeAPIServerObjName = "cluster"
 
-// Exists checks whether the given kubeAPIServer exists.
-func (builder *KubeAPIServerBuilder) Exists() bool {
-	if valid, _ := builder.validate(); !valid {
-		return false
-	}
-
-	var err error
-	builder.Object, err = builder.Get()
-
-	if err != nil {
-		glog.V(100).Infof("Failed to collect kubeAPIServer object due to %s", err.Error())
-	}
-
-	return err == nil || !k8serrors.IsNotFound(err)
-}
-
-// PullKubeAPIServerBuilder pulls existing kubeApiServer from the cluster.
-func PullKubeAPIServerBuilder(apiClient *clients.Settings) (*KubeAPIServerBuilder, error) {
+// PullKubeAPIServer pulls existing kubeApiServer from the cluster.
+func PullKubeAPIServer(apiClient *clients.Settings) (*KubeAPIServerBuilder, error) {
 	glog.V(100).Infof("Pulling existing kubeApiServer from cluster")
 
 	if apiClient == nil {
@@ -75,6 +59,22 @@ func PullKubeAPIServerBuilder(apiClient *clients.Settings) (*KubeAPIServerBuilde
 	return &builder, nil
 }
 
+// Exists checks whether the given kubeAPIServer exists.
+func (builder *KubeAPIServerBuilder) Exists() bool {
+	if valid, _ := builder.validate(); !valid {
+		return false
+	}
+
+	var err error
+	builder.Object, err = builder.Get()
+
+	if err != nil {
+		glog.V(100).Infof("Failed to collect kubeAPIServer object due to %s", err.Error())
+	}
+
+	return err == nil || !k8serrors.IsNotFound(err)
+}
+
 // Get returns KubeAPIServer object if found.
 func (builder *KubeAPIServerBuilder) Get() (*operatorV1.KubeAPIServer, error) {
 	if valid, err := builder.validate(); !valid {
@@ -89,7 +89,7 @@ func (builder *KubeAPIServerBuilder) Get() (*operatorV1.KubeAPIServer, error) {
 	if err != nil {
 		glog.V(100).Infof("kubeAPIServer object doesn't exist")
 
-		return nil, fmt.Errorf("kubeAPIServer object doesn't exist")
+		return nil, err
 	}
 
 	return kubeAPIServer, err
@@ -102,6 +102,10 @@ func (builder *KubeAPIServerBuilder) GetCondition(conditionType string) (*operat
 	}
 
 	glog.V(100).Infof("Get %s kubeAPIServer %s condition", builder.Definition.Name, conditionType)
+
+	if conditionType == "" {
+		return nil, "", fmt.Errorf("kubeAPIServer 'conditionType' cannot be empty")
+	}
 
 	if !builder.Exists() {
 		return nil, "", fmt.Errorf("%s kubeAPIServer not found", builder.Definition.Name)
@@ -128,6 +132,10 @@ func (builder *KubeAPIServerBuilder) WaitUntilConditionTrue(
 	conditionType string, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err
+	}
+
+	if conditionType == "" {
+		return fmt.Errorf("kubeAPIServer 'conditionType' cannot be empty")
 	}
 
 	if !builder.Exists() {

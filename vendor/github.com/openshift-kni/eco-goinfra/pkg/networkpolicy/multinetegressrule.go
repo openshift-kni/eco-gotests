@@ -42,9 +42,7 @@ func (builder *EgressRuleBuilder) WithPortAndProtocol(port uint16, protocol core
 		glog.V(100).Infof("Port number can not be 0")
 
 		builder.errorMsg = "port number can not be 0"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -101,9 +99,7 @@ func (builder *EgressRuleBuilder) WithPeerPodSelectorAndCIDR(
 		glog.V(100).Infof("Invalid CIDR %s", cidr)
 
 		builder.errorMsg = fmt.Sprintf("Invalid CIDR argument %s", cidr)
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 

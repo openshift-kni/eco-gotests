@@ -564,7 +564,7 @@ type ResourceIgnoreDifferences struct {
 	JSONPointers      []string `json:"jsonPointers,omitempty" protobuf:"bytes,5,opt,name=jsonPointers"`
 	JQPathExpressions []string `json:"jqPathExpressions,omitempty" protobuf:"bytes,6,opt,name=jqPathExpressions"`
 	// ManagedFieldsManagers is a list of trusted managers. Fields mutated by those managers will take precedence over the
-	// desired state defined in the SCM and won't be displayed in diffs
+	// desired state defined in the SCM and will not be displayed in diffs
 	ManagedFieldsManagers []string `json:"managedFieldsManagers,omitempty" protobuf:"bytes,7,opt,name=managedFieldsManagers"`
 }
 

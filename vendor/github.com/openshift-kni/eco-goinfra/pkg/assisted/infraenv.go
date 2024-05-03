@@ -853,14 +853,14 @@ func (builder *InfraEnvBuilder) DeleteAndWait(timeout time.Duration) error {
 	}
 
 	glog.V(100).Infof(`Deleting InfraEnv %s and 
-	waiting for the defined period until it's removed`,
+	waiting for the defined period until it is removed`,
 		builder.Definition.Name)
 
 	if err := builder.Delete(); err != nil {
 		return err
 	}
 
-	// Polls the InfraEnv every second until it's removed.
+	// Polls the InfraEnv every second until it is removed.
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.Get()

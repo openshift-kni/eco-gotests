@@ -248,7 +248,7 @@ func (builder *PVCBuilder) Delete() error {
 	return err
 }
 
-// DeleteAndWait deletes PersistentVolumeClaim and waits until it's removed from the cluster.
+// DeleteAndWait deletes PersistentVolumeClaim and waits until it is removed from the cluster.
 func (builder *PVCBuilder) DeleteAndWait(timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		glog.V(100).Infof("PersistentVolumeClaim %s in %s namespace is invalid: %v",

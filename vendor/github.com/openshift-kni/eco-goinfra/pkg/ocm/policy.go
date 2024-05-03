@@ -3,12 +3,14 @@ package ocm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -267,6 +269,37 @@ func (builder *PolicyBuilder) WithAdditionalPolicyTemplate(template *policiesv1.
 	builder.Definition.Spec.PolicyTemplates = append(builder.Definition.Spec.PolicyTemplates, template)
 
 	return builder
+}
+
+// WaitUntilDeleted waits for the duration of the defined timeout or until the policy is deleted.
+func (builder *PolicyBuilder) WaitUntilDeleted(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof(
+		"Waiting for the defined period until policy %s in namespace %s is deleted",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.Get()
+			if err == nil {
+				glog.V(100).Infof("policy %s/%s still present", builder.Definition.Name, builder.Definition.Namespace)
+
+				return false, nil
+			}
+
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("policy %s/%s is gone", builder.Definition.Name, builder.Definition.Namespace)
+
+				return true, nil
+			}
+
+			glog.V(100).Infof("failed to get policy %s/%s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
+
+			return false, err
+		})
 }
 
 // validate will check that the builder and builder definition are properly initialized before

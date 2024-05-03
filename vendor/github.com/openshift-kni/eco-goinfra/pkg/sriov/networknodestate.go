@@ -9,7 +9,7 @@ import (
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -66,7 +66,7 @@ func (builder *NetworkNodeStateBuilder) Discover() error {
 
 	var err error
 	builder.Objects, err = builder.apiClient.SriovnetworkV1().SriovNetworkNodeStates(builder.nsName).Get(
-		context.TODO(), builder.nodeName, v1.GetOptions{})
+		context.TODO(), builder.nodeName, metav1.GetOptions{})
 
 	return err
 }
@@ -132,7 +132,7 @@ func (builder *NetworkNodeStateBuilder) WaitUntilSyncStatus(syncStatus string, t
 	if syncStatus == "" {
 		glog.V(100).Infof("The syncStatus parameter is empty")
 
-		return fmt.Errorf("syncStatus can't be empty")
+		return fmt.Errorf("syncStatus cannot be empty")
 	}
 
 	// Polls every retryInterval to determine if SriovNetworkNodeState is in desired syncStatus.

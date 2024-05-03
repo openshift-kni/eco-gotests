@@ -41,9 +41,7 @@ func (builder *IngressRuleBuilder) WithPortAndProtocol(port uint16, protocol cor
 		glog.V(100).Infof("Port number can not be 0")
 
 		builder.errorMsg = "port number can not be 0"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -102,14 +100,12 @@ func (builder *IngressRuleBuilder) WithCIDR(cidr string, except ...[]string) *In
 		glog.V(100).Infof("Invalid CIDR %s", cidr)
 
 		builder.errorMsg = fmt.Sprintf("Invalid CIDR argument %s", cidr)
+
+		return builder
 	}
 
 	if len(except) > 0 {
 		glog.V(100).Infof("Adding CIDR except %s to Ingress Rule", except[0])
-	}
-
-	if builder.errorMsg != "" {
-		return builder
 	}
 
 	builder.definition.From = append(builder.definition.From, v1beta1.MultiNetworkPolicyPeer{})

@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
+	multinetworkpolicyTyped "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +21,7 @@ type MultiNetworkPolicyBuilder struct {
 	// Created MultiNetworkPolicy object on the cluster.
 	Object *v1beta1.MultiNetworkPolicy
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient multinetworkpolicyTyped.K8sCniCncfIoV1beta1Interface
 	// errorMsg is processed before MultiNetworkPolicy object is created.
 	errorMsg string
 }
@@ -32,7 +33,7 @@ func NewMultiNetworkPolicyBuilder(apiClient *clients.Settings, name, nsname stri
 		name, nsname)
 
 	builder := &MultiNetworkPolicyBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.K8sCniCncfIoV1beta1Interface,
 		Definition: &v1beta1.MultiNetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -45,12 +46,16 @@ func NewMultiNetworkPolicyBuilder(apiClient *clients.Settings, name, nsname stri
 		glog.V(100).Infof("The name of the MultiNetworkPolicy is empty")
 
 		builder.errorMsg = "The MultiNetworkPolicy 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the MultiNetworkPolicy is empty")
 
 		builder.errorMsg = "The MultiNetworkPolicy 'namespace' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -89,9 +94,7 @@ func (builder *MultiNetworkPolicyBuilder) WithNetwork(networkName string) *Multi
 		glog.V(100).Infof("The networkName can not be empty string")
 
 		builder.errorMsg = "The networkName is an empty string"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -166,9 +169,7 @@ func (builder *MultiNetworkPolicyBuilder) WithPolicyType(
 		glog.V(100).Infof("The policy type can not be an empty string")
 
 		builder.errorMsg = "The policy Type is an empty string"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -182,7 +183,7 @@ func PullMultiNetworkPolicy(apiClient *clients.Settings, name, nsname string) (*
 	glog.V(100).Infof("Pulling existing MultiNetworkPolicy name: %s, namespace: %s", name, nsname)
 
 	builder := MultiNetworkPolicyBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.K8sCniCncfIoV1beta1Interface,
 		Definition: &v1beta1.MultiNetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -194,18 +195,13 @@ func PullMultiNetworkPolicy(apiClient *clients.Settings, name, nsname string) (*
 	if name == "" {
 		glog.V(100).Infof("The name of the MultiNetworkPolicy is empty")
 
-		builder.errorMsg = "MultiNetworkPolicy 'name' cannot be empty"
+		return nil, fmt.Errorf("MultiNetworkPolicy 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the MultiNetworkPolicy is empty")
 
-		builder.errorMsg = "MultiNetworkPolicy 'namespace' cannot be empty"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf("failed to pull MultiNetworkPolicy object due to the following error: %s",
-			builder.errorMsg)
+		return nil, fmt.Errorf("MultiNetworkPolicy 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -265,7 +261,9 @@ func (builder *MultiNetworkPolicyBuilder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return fmt.Errorf("multiNetworkPolicy cannot be deleted because it does not exist")
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.MultiNetworkPolicies(builder.Definition.Namespace).Delete(
@@ -277,7 +275,7 @@ func (builder *MultiNetworkPolicyBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update renovates the existing MultiNetworkPolicy object with MultiNetworkPolicy definition in builder.
@@ -315,13 +313,13 @@ func (builder *MultiNetworkPolicyBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

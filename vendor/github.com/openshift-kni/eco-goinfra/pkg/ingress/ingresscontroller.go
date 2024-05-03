@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "github.com/openshift/api/operator/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,10 +16,10 @@ import (
 // Builder provides a struct for an ingresscontroller object from the cluster and an ingresscontroller definition.
 type Builder struct {
 	// ingresscontroller definition, used to create the ingresscontroller object.
-	Definition *v1.IngressController
+	Definition *operatorv1.IngressController
 	// Created ingresscontroller object.
-	Object *v1.IngressController
-	// api client to interact with the cluster.
+	Object *operatorv1.IngressController
+	// api clients to interact with the cluster.
 	apiClient *clients.Settings
 }
 
@@ -27,14 +27,26 @@ type Builder struct {
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing ingresscontroller %s in namespace %s", name, nsname)
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
-		Definition: &v1.IngressController{
+		Definition: &operatorv1.IngressController{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
 		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("The ingresscontroller name is empty")
+
+		return nil, fmt.Errorf("ingresscontroller name cannot be empty")
+	}
+
+	if nsname == "" {
+		glog.V(100).Infof("The ingresscontroller namespace is empty")
+
+		return nil, fmt.Errorf("ingresscontroller namespace cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -43,11 +55,11 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get fetches existing ingresscontroller from cluster.
-func (builder *Builder) Get() (*v1.IngressController, error) {
+func (builder *Builder) Get() (*operatorv1.IngressController, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -55,7 +67,7 @@ func (builder *Builder) Get() (*v1.IngressController, error) {
 	glog.V(100).Infof("Fetching existing ingresscontroller with name %s under namespace %s from cluster",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	lvs := &v1.IngressController{}
+	lvs := &operatorv1.IngressController{}
 	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
 		Name:      builder.Definition.Name,
 		Namespace: builder.Definition.Namespace,
@@ -102,7 +114,11 @@ func (builder *Builder) Update() (*Builder, error) {
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
-	return builder, err
+	if err != nil {
+		return nil, fmt.Errorf("cannot update ingresscontroller: %w", err)
+	}
+
+	return builder, nil
 }
 
 // Create makes a ingresscontroller in cluster and stores the created object in struct.
@@ -136,7 +152,9 @@ func (builder *Builder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return fmt.Errorf("ingresscontroller cannot be deleted because it does not exist")
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
@@ -168,7 +186,7 @@ func (builder *Builder) validate() (bool, error) {
 	}
 
 	if builder.apiClient == nil {
-		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
+		glog.V(100).Infof("The %s builder apiClient is nil", resourceCRD)
 
 		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}

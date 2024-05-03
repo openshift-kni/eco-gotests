@@ -445,7 +445,7 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 		return builder, err
 	}
 
-	glog.V(100).Infof("Creating deployment %s in namespace %s and waiting for the defined period until it's ready",
+	glog.V(100).Infof("Creating deployment %s in namespace %s and waiting for the defined period until it is ready",
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if _, err := builder.Create(); err != nil {
@@ -504,14 +504,14 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 		return err
 	}
 
-	glog.V(100).Infof("Deleting deployment %s in namespace %s and waiting for the defined period until it's removed",
+	glog.V(100).Infof("Deleting deployment %s in namespace %s and waiting for the defined period until it is removed",
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if err := builder.Delete(); err != nil {
 		return err
 	}
 
-	// Polls the deployment every second until it's removed.
+	// Polls the deployment every second until it is removed.
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(

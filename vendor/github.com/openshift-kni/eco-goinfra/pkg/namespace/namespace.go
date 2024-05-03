@@ -65,7 +65,7 @@ func (builder *Builder) WithLabel(key string, value string) *Builder {
 	glog.V(100).Infof("Labeling the namespace %s with %s=%s", builder.Definition.Name, key, value)
 
 	if key == "" {
-		glog.V(100).Infof("The key can't be empty")
+		glog.V(100).Infof("The key cannot be empty")
 
 		builder.errorMsg = "'key' cannot be empty"
 
@@ -170,7 +170,7 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
-// DeleteAndWait deletes a namespace and waits until it's removed from the cluster.
+// DeleteAndWait deletes a namespace and waits until it is removed from the cluster.
 func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err

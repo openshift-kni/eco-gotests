@@ -159,7 +159,7 @@ func (builder *MCBuilder) WithLabel(key, value string) *MCBuilder {
 	glog.V(100).Infof("Labeling the machineconfig %s with %s=%s", builder.Definition.Name, key, value)
 
 	if key == "" {
-		glog.V(100).Infof("The key can't be empty")
+		glog.V(100).Infof("The key cannot be empty")
 
 		builder.errorMsg = "'key' cannot be empty"
 
@@ -207,7 +207,7 @@ func (builder *MCBuilder) WithKernelArguments(kernelArgs []string) *MCBuilder {
 	}
 
 	if len(kernelArgs) == 0 {
-		glog.V(100).Infof("The kernelArgs can't be empty")
+		glog.V(100).Infof("The kernelArgs cannot be empty")
 
 		builder.errorMsg = "'kernelArgs' cannot be empty"
 
@@ -228,7 +228,7 @@ func (builder *MCBuilder) WithExtensions(extensions []string) *MCBuilder {
 	}
 
 	if len(extensions) == 0 {
-		glog.V(100).Infof("The extensions can't be empty")
+		glog.V(100).Infof("The extensions cannot be empty")
 
 		builder.errorMsg = "'extensions' cannot be empty"
 
@@ -262,7 +262,7 @@ func (builder *MCBuilder) WithKernelType(kernelType string) *MCBuilder {
 	}
 
 	if kernelType == "" {
-		glog.V(100).Infof("The kernelType can't be empty")
+		glog.V(100).Infof("The kernelType cannot be empty")
 
 		builder.errorMsg = "'kernelType' cannot be empty"
 

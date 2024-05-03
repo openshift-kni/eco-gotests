@@ -59,7 +59,6 @@ import (
 	lcav1alpha1 "github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
 	configV1 "github.com/openshift/api/config/v1"
 	imageregistryV1 "github.com/openshift/api/imageregistry/v1"
-	operatorV1 "github.com/openshift/api/operator/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
@@ -70,6 +69,9 @@ import (
 	storageV1Client "k8s.io/client-go/kubernetes/typed/storage/v1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 
+	plumbingv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
+	fakeMultiNetPolicyClient "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/fake"
+
 	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -79,6 +81,8 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	k8sFakeClient "k8s.io/client-go/kubernetes/fake"
 	fakeRuntimeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	operatorv1 "github.com/openshift/api/operator/v1"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
@@ -118,6 +122,7 @@ type Settings struct {
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
 	olmv1.OperatorsV1Interface
+	MultiNetworkPolicyClient multinetpolicyclientv1.K8sCniCncfIoV1beta1Interface
 	multinetpolicyclientv1.K8sCniCncfIoV1beta1Interface
 	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
 	operatorv1alpha1.OperatorV1alpha1Interface
@@ -253,7 +258,7 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := operatorV1.Install(crScheme); err != nil {
+	if err := operatorv1.Install(crScheme); err != nil {
 		return err
 	}
 
@@ -365,7 +370,8 @@ type TestClientParams struct {
 func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet := &Settings{}
 
-	var k8sClientObjects, genericClientObjects, srIovObjects, veleroClientObjects, cguObjects []runtime.Object
+	var k8sClientObjects, genericClientObjects, plumbingObjects, srIovObjects,
+		veleroClientObjects, cguObjects []runtime.Object
 
 	//nolint:varnamelen
 	for _, v := range tcp.K8sMockObjects {
@@ -413,6 +419,10 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *netv1.NetworkPolicy:
 			k8sClientObjects = append(k8sClientObjects, v)
 		// Generic Client Objects
+		case *operatorv1.KubeAPIServer:
+			genericClientObjects = append(genericClientObjects, v)
+		case *operatorv1.OpenShiftAPIServer:
+			genericClientObjects = append(genericClientObjects, v)
 		case *routev1.Route:
 			genericClientObjects = append(genericClientObjects, v)
 		case *mlbtypes.IPAddressPool:
@@ -437,10 +447,21 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *configV1.Node:
 			genericClientObjects = append(genericClientObjects, v)
+		case *operatorv1.IngressController:
+			genericClientObjects = append(genericClientObjects, v)
+		case *imageregistryV1.Config:
+			genericClientObjects = append(genericClientObjects, v)
+		case *configV1.ClusterOperator:
+			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
 		case *argocdOperatorv1alpha1.ArgoCD:
 			genericClientObjects = append(genericClientObjects, v)
 		case *argocdtypes.Application:
+			genericClientObjects = append(genericClientObjects, v)
+		// LCA Client Objects
+		case *lcav1alpha1.ImageBasedUpgrade:
+			genericClientObjects = append(genericClientObjects, v)
+		case *lcasgv1alpha1.SeedGenerator:
 			genericClientObjects = append(genericClientObjects, v)
 		// Velero Client Objects
 		case *velerov1.Backup:
@@ -460,6 +481,9 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			cguObjects = append(cguObjects, v)
 		case *srIovV1.SriovNetworkPoolConfig:
 			srIovObjects = append(srIovObjects, v)
+		// MultiNetworkPolicy Client Objects
+		case *plumbingv1.MultiNetworkPolicy:
+			plumbingObjects = append(plumbingObjects, v)
 		}
 	}
 
@@ -470,6 +494,12 @@ func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
 	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
 	clientSet.ClientSrIov = clientSrIovFake.NewSimpleClientset(srIovObjects...)
+
+	// Assign the fake multi-networkpolicy clientset to the clientSet
+	// Note: We are not entirely sure that these functions actually work as expected.
+	multiClient := fakeMultiNetPolicyClient.NewSimpleClientset(plumbingObjects...)
+	clientSet.MultiNetworkPolicyClient = multiClient.K8sCniCncfIoV1beta1()
+	clientSet.K8sCniCncfIoV1beta1Interface = multiClient.K8sCniCncfIoV1beta1()
 
 	// Assign the fake velero clientset to the clientSet
 	clientSet.VeleroClient = veleroFakeClient.NewSimpleClientset(veleroClientObjects...)

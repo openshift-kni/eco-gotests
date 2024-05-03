@@ -42,7 +42,7 @@ func List(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builde
 	for _, clusterOperator := range coList.Items {
 		copiedCo := clusterOperator
 		coBuilder := &Builder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedCo,
 			Definition: &copiedCo,
 		}

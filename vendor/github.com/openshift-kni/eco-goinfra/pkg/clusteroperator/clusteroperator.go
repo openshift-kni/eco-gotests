@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"fmt"
@@ -13,7 +15,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -25,11 +27,11 @@ const (
 // Builder provides struct for clusterOperator object.
 type Builder struct {
 	// ClusterOperator definition. Used to create a clusterOperator object.
-	Definition *v1.ClusterOperator
+	Definition *configv1.ClusterOperator
 	// Created clusterOperator object.
-	Object *v1.ClusterOperator
+	Object *configv1.ClusterOperator
 	// apiClient opens api connection to the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	// Used in functions that define or mutate clusterOperator definition. errorMsg is processed before the
 	// ClusterOperator object is created.
 	errorMsg string
@@ -39,13 +41,25 @@ type Builder struct {
 func Pull(apiClient *clients.Settings, clusterOperatorName string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing clusterOperator: %s", clusterOperatorName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("clusterOperator 'apiClient' cannot be empty")
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
-		Definition: &v1.ClusterOperator{
+		apiClient: apiClient.Client,
+		Definition: &configv1.ClusterOperator{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterOperatorName,
 			},
 		},
+	}
+
+	if clusterOperatorName == "" {
+		glog.V(100).Infof("The name of the clusterOperator is empty")
+
+		return nil, fmt.Errorf("clusterOperator 'clusterOperatorName' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -57,6 +71,29 @@ func Pull(apiClient *clients.Settings, clusterOperatorName string) (*Builder, er
 	return &builder, nil
 }
 
+// Get fetches existing clusterOperator from cluster.
+func (builder *Builder) Get() (*configv1.ClusterOperator, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting existing clusterOperator with name %s from cluster", builder.Definition.Name)
+
+	clusterOperatorObj := &configv1.ClusterOperator{}
+	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
+		Name: builder.Definition.Name,
+	}, clusterOperatorObj)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to get clusterOperator object %s from cluster due to: %w",
+			builder.Definition.Name, err)
+
+		return nil, err
+	}
+
+	return clusterOperatorObj, nil
+}
+
 // Exists checks whether the given clusterOperator exists.
 func (builder *Builder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -65,25 +102,19 @@ func (builder *Builder) Exists() bool {
 
 	glog.V(100).Infof("Checking if clusterOperator %s exists", builder.Definition.Name)
 
-	_, err := builder.apiClient.ClusterOperators().Get(
-		context.TODO(),
-		builder.Definition.Name,
-		metav1.GetOptions{})
+	var err error
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
 // IsAvailable check if the clusterOperator is available.
 func (builder *Builder) IsAvailable() bool {
-	if valid, _ := builder.validate(); !valid {
+	if !builder.Exists() {
 		return false
 	}
 
 	glog.V(100).Infof("Verify the availability of %s clusterOperator", builder.Definition.Name)
-
-	if !builder.Exists() {
-		return false
-	}
 
 	for _, condition := range builder.Object.Status.Conditions {
 		if condition.Type == "Available" {
@@ -96,15 +127,11 @@ func (builder *Builder) IsAvailable() bool {
 
 // IsDegraded checks if the clusterOperator is degraded.
 func (builder *Builder) IsDegraded() bool {
-	if valid, _ := builder.validate(); !valid {
+	if !builder.Exists() {
 		return false
 	}
 
 	glog.V(100).Infof("Check if %s clusterOperator is degraded", builder.Definition.Name)
-
-	if !builder.Exists() {
-		return false
-	}
 
 	for _, condition := range builder.Object.Status.Conditions {
 		if condition.Type == "Degraded" {
@@ -117,15 +144,11 @@ func (builder *Builder) IsDegraded() bool {
 
 // IsProgressing checks if the clusterOperator is progressing.
 func (builder *Builder) IsProgressing() bool {
-	if valid, _ := builder.validate(); !valid {
+	if !builder.Exists() {
 		return false
 	}
 
 	glog.V(100).Infof("Check if %s clusterOperator is progressing", builder.Definition.Name)
-
-	if !builder.Exists() {
-		return false
-	}
 
 	for _, condition := range builder.Object.Status.Conditions {
 		if condition.Type == "Progressing" {
@@ -137,7 +160,7 @@ func (builder *Builder) IsProgressing() bool {
 }
 
 // GetConditionReason returns the specific condition type's reason value or an empty string if it doesn't exist.
-func (builder *Builder) GetConditionReason(conditionType v1.ClusterStatusConditionType) string {
+func (builder *Builder) GetConditionReason(conditionType configv1.ClusterStatusConditionType) string {
 	if valid, _ := builder.validate(); !valid {
 		return ""
 	}
@@ -172,7 +195,7 @@ func (builder *Builder) WaitUntilProgressing(timeout time.Duration) error {
 
 // WaitUntilConditionTrue waits for timeout duration or until clusterOperator gets to a specific status.
 func (builder *Builder) WaitUntilConditionTrue(
-	conditionType v1.ClusterStatusConditionType, timeout time.Duration) error {
+	conditionType configv1.ClusterStatusConditionType, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err
 	}
@@ -184,10 +207,7 @@ func (builder *Builder) WaitUntilConditionTrue(
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
-			builder.Object, err = builder.apiClient.ClusterOperators().Get(
-				context.TODO(),
-				builder.Definition.Name,
-				metav1.GetOptions{})
+			builder.Object, err = builder.Get()
 
 			if err != nil {
 				return false, nil

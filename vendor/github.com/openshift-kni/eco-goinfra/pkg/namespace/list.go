@@ -6,13 +6,13 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // List returns namespace inventory.
-func List(apiClient *clients.Settings, options ...v1.ListOptions) ([]*Builder, error) {
+func List(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builder, error) {
 	logMessage := "Listing all namespace resources"
-	passedOptions := v1.ListOptions{}
+	passedOptions := metav1.ListOptions{}
 
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")

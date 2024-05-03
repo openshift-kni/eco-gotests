@@ -518,7 +518,7 @@ func (builder *BmhBuilder) CreateAndWaitUntilProvisioned(timeout time.Duration) 
 	}
 
 	glog.V(100).Infof(`Creating the baremetalhost %s in namespace %s and 
-	waiting for the defined period until it's created`,
+	waiting for the defined period until it is created`,
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	builder, err := builder.Create()
@@ -581,7 +581,7 @@ func (builder *BmhBuilder) DeleteAndWaitUntilDeleted(timeout time.Duration) (*Bm
 	}
 
 	glog.V(100).Infof(`Deleting baremetalhost %s in namespace %s and 
-	waiting for the defined period until it's removed`,
+	waiting for the defined period until it is removed`,
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	builder, err := builder.Delete()
