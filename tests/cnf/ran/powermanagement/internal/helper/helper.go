@@ -26,7 +26,7 @@ import (
 
 // GetPerformanceProfileWithCPUSet returns the first performance profile found with reserved and isolated cpuset.
 func GetPerformanceProfileWithCPUSet() (*nto.Builder, error) {
-	profileBuilders, err := nto.ListProfiles(raninittools.APIClient)
+	profileBuilders, err := nto.ListProfiles(raninittools.Spoke1APIClient)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func SetPowerModeAndWaitForMcpUpdate(perfProfile *nto.Builder, node nodes.Builde
 		return err
 	}
 
-	mcp, err := mco.Pull(raninittools.APIClient, "master")
+	mcp, err := mco.Pull(raninittools.Spoke1APIClient, "master")
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func DefineQoSTestPod(namespace, nodeName, cpuReq, cpuLimit, memReq, memLimit st
 	var err error
 
 	pod := pod.NewBuilder(
-		raninittools.APIClient, "qos-test-pod", namespace, raninittools.RANConfig.CnfTestImage,
+		raninittools.Spoke1APIClient, "qos-test-pod", namespace, raninittools.RANConfig.CnfTestImage,
 	).DefineOnNode(nodeName)
 	pod, err = redefineContainerResources(pod, cpuReq, cpuLimit, memReq, memLimit)
 
@@ -265,7 +265,7 @@ func deployStressNgPods(stressNgCPUCount, stressngMaxPodCount int, nodeName stri
 // waitForPodsHealthy waits for given pods to appear and healthy.
 func waitForPodsHealthy(pods []*pod.Builder, timeout time.Duration) error {
 	for _, singlePod := range pods {
-		tempPod, err := pod.Pull(raninittools.APIClient, singlePod.Definition.Name,
+		tempPod, err := pod.Pull(raninittools.Spoke1APIClient, singlePod.Definition.Name,
 			singlePod.Object.Namespace)
 		if err != nil {
 			return err
@@ -294,7 +294,7 @@ func defineStressPod(nodeName string, cpus int, guaranteed bool, name string) *p
 		memoryLimit = "200M"
 	}
 
-	stressPod := pod.NewBuilder(raninittools.APIClient, name, tsparams.TestingNamespace, stressngImage)
+	stressPod := pod.NewBuilder(raninittools.Spoke1APIClient, name, tsparams.TestingNamespace, stressngImage)
 	stressPod = stressPod.DefineOnNode(nodeName)
 	stressPod.RedefineDefaultContainer(corev1.Container{
 		Name:            "stress-ng",

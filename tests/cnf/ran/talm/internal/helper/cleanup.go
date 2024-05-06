@@ -85,7 +85,7 @@ func CleanupTestResourcesOnSpokes(clusters []*clients.Settings, suffix string) [
 
 // DeleteTalmTestNamespace deletes the TALM test namespace.
 func DeleteTalmTestNamespace() error {
-	clusters := []*clients.Settings{raninittools.APIClient, raninittools.Spoke1APIClient, raninittools.Spoke2APIClient}
+	clusters := []*clients.Settings{raninittools.Spoke1APIClient, raninittools.HubAPIClient, raninittools.Spoke2APIClient}
 
 	for _, client := range clusters {
 		if client != nil {

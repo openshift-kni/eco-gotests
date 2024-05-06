@@ -5,10 +5,6 @@ import "github.com/golang/glog"
 const (
 	// Label represents the label for the ran test cases.
 	Label string = "ran"
-	// HubKubeEnvKey is the hub's kubeconfig env var.
-	HubKubeEnvKey string = "KUBECONFIG"
-	//  SpokeKubeEnvKey is the spoke's kubeconfig env var.
-	SpokeKubeEnvKey string = "KUBECONFIG_SPOKE1"
 	// AcmOperatorName operator name of ACM.
 	AcmOperatorName string = "advanced-cluster-management"
 	// AcmOperatorNamespace ACM's namespace.

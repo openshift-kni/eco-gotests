@@ -40,13 +40,11 @@ Please refer to the project README for a list of global inputs - [How to run](..
 ### Running the RAN test suites
 
 ```
-# export KUBECONFIG=</path/to/hub/kubeconfig>
+# export KUBECONFIG=</path/to/spoke/kubeconfig>
 # export ECO_TEST_FEATURES=ran
 # export ECO_TEST_VERBOSE=true
 # export ECO_VERBOSE_LEVEL=100
 # make run-tests
 ```
-
-For the `containernshide` suite, `KUBECONFIG` should be a spoke kubeconfig.
 
 ### Additional Information

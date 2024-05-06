@@ -34,37 +34,37 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 	When("there is a single spoke", func() {
 		BeforeEach(func() {
 			By("checking that the hub and spoke 1 are present")
-			Expect([]*clients.Settings{raninittools.APIClient, raninittools.Spoke1APIClient}).
+			Expect([]*clients.Settings{raninittools.Spoke1APIClient, raninittools.HubAPIClient}).
 				ToNot(ContainElement(BeNil()), "Failed due to missing API client")
 		})
 
 		AfterEach(func() {
 			By("cleaning up resources on hub")
-			errorList := helper.CleanupTestResourcesOnHub(raninittools.APIClient, tsparams.TestNamespace, "")
+			errorList := helper.CleanupTestResourcesOnHub(raninittools.Spoke1APIClient, tsparams.TestNamespace, "")
 			Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on hub")
 
 			By("cleaning up resources on spoke 1")
-			errorList = helper.CleanupTestResourcesOnSpokes([]*clients.Settings{raninittools.Spoke1APIClient}, "")
+			errorList = helper.CleanupTestResourcesOnSpokes([]*clients.Settings{raninittools.HubAPIClient}, "")
 			Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on spoke 1")
 		})
 
 		Context("with full disk for spoke1", func() {
 			BeforeEach(func() {
 				By("setting up filesystem to simulate low space")
-				loopbackDevicePath, err = helper.PrepareEnvWithSmallMountPoint(raninittools.Spoke1APIClient)
+				loopbackDevicePath, err = helper.PrepareEnvWithSmallMountPoint(raninittools.HubAPIClient)
 				Expect(err).ToNot(HaveOccurred(), "Failed to prepare mount point")
 			})
 
 			AfterEach(func() {
 				By("starting disk-full env clean up")
-				err = helper.DiskFullEnvCleanup(raninittools.Spoke1APIClient, loopbackDevicePath)
+				err = helper.DiskFullEnvCleanup(raninittools.HubAPIClient, loopbackDevicePath)
 				Expect(err).ToNot(HaveOccurred(), "Failed to clean up mount point")
 			})
 
 			// 50835 - Insufficient Backup Partition Size
 			It("should have a failed cgu for single spoke", reportxml.ID("50835"), func() {
 				By("applying all the required CRs for backup")
-				cguBuilder := cgu.NewCguBuilder(raninittools.APIClient, tsparams.CguName, tsparams.TestNamespace, 1).
+				cguBuilder := cgu.NewCguBuilder(raninittools.Spoke1APIClient, tsparams.CguName, tsparams.TestNamespace, 1).
 					WithCluster(tsparams.Spoke1Name).
 					WithManagedPolicy(tsparams.PolicyName)
 				cguBuilder.Definition.Spec.Backup = true
@@ -91,7 +91,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 			// 54294 - Cluster Backup and Precaching in a Disabled CGU
 			It("verifies backup begins and succeeds after CGU is enabled", reportxml.ID("54294"), func() {
 				By("creating a disabled cgu with backup enabled")
-				cguBuilder := cgu.NewCguBuilder(raninittools.APIClient, tsparams.CguName, tsparams.TestNamespace, 1).
+				cguBuilder := cgu.NewCguBuilder(raninittools.Spoke1APIClient, tsparams.CguName, tsparams.TestNamespace, 1).
 					WithCluster(tsparams.Spoke1Name).
 					WithManagedPolicy(tsparams.PolicyName)
 				cguBuilder.Definition.Spec.Backup = true
@@ -125,33 +125,33 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 	When("there are two spokes", func() {
 		BeforeEach(func() {
 			By("checking that hub and two spokes are present")
-			Expect([]*clients.Settings{raninittools.APIClient, raninittools.Spoke1APIClient, raninittools.Spoke2APIClient}).
+			Expect([]*clients.Settings{raninittools.Spoke1APIClient, raninittools.HubAPIClient, raninittools.Spoke2APIClient}).
 				ToNot(ContainElement(BeNil()), "Failed due to missing API client")
 
 			By("setting up filesystem to simulate low space")
-			loopbackDevicePath, err = helper.PrepareEnvWithSmallMountPoint(raninittools.Spoke1APIClient)
+			loopbackDevicePath, err = helper.PrepareEnvWithSmallMountPoint(raninittools.HubAPIClient)
 			Expect(err).ToNot(HaveOccurred(), "Failed to prepare mount point")
 		})
 
 		AfterEach(func() {
 			By("cleaning up resources on hub")
-			errorList := helper.CleanupTestResourcesOnHub(raninittools.APIClient, tsparams.TestNamespace, "")
+			errorList := helper.CleanupTestResourcesOnHub(raninittools.Spoke1APIClient, tsparams.TestNamespace, "")
 			Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on hub")
 
 			By("starting disk-full env clean up")
-			err = helper.DiskFullEnvCleanup(raninittools.Spoke1APIClient, loopbackDevicePath)
+			err = helper.DiskFullEnvCleanup(raninittools.HubAPIClient, loopbackDevicePath)
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean up mount point")
 
 			By("cleaning up resources on spokes")
 			errorList = helper.CleanupTestResourcesOnSpokes(
-				[]*clients.Settings{raninittools.Spoke1APIClient, raninittools.Spoke2APIClient}, "")
+				[]*clients.Settings{raninittools.HubAPIClient, raninittools.Spoke2APIClient}, "")
 			Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on spokes")
 		})
 
 		It("should not affect backup on second spoke in same batch", func() {
 			By("applying all the required CRs for backup")
 			// max concurrency of 2 so both spokes are in the same batch
-			cguBuilder := cgu.NewCguBuilder(raninittools.APIClient, tsparams.CguName, tsparams.TestNamespace, 2).
+			cguBuilder := cgu.NewCguBuilder(raninittools.Spoke1APIClient, tsparams.CguName, tsparams.TestNamespace, 2).
 				WithCluster(tsparams.Spoke1Name).
 				WithCluster(tsparams.Spoke2Name).
 				WithManagedPolicy(tsparams.PolicyName)
@@ -173,7 +173,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 // assertBackupStatus asserts that the cgu backup status becomes expected within 10 minutes.
 func assertBackupStatus(spokeName, expected string) {
 	Eventually(func() string {
-		cguBuilder, err := cgu.Pull(raninittools.APIClient, tsparams.CguName, tsparams.TestNamespace)
+		cguBuilder, err := cgu.Pull(raninittools.Spoke1APIClient, tsparams.CguName, tsparams.TestNamespace)
 		Expect(err).ToNot(HaveOccurred(),
 			"Failed to pull cgu %s in namespace %s", tsparams.CguName, tsparams.TestNamespace)
 

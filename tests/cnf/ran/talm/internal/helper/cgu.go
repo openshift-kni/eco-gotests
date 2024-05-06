@@ -13,17 +13,17 @@ import (
 // cguBuilder.
 func SetupCguWithNamespace(cguBuilder *cgu.CguBuilder, suffix string) (*cgu.CguBuilder, error) {
 	// The client doesn't matter since we only want the definition. Kind and APIVersion are necessary for TALM.
-	tempNs := namespace.NewBuilder(raninittools.APIClient, tsparams.TemporaryNamespace+suffix)
+	tempNs := namespace.NewBuilder(raninittools.Spoke1APIClient, tsparams.TemporaryNamespace+suffix)
 	tempNs.Definition.Kind = "Namespace"
 	tempNs.Definition.APIVersion = corev1.SchemeGroupVersion.Version
 
-	_, err := CreatePolicy(raninittools.APIClient, tempNs.Definition, suffix)
+	_, err := CreatePolicy(raninittools.Spoke1APIClient, tempNs.Definition, suffix)
 	if err != nil {
 		return nil, err
 	}
 
 	err = CreatePolicyComponents(
-		raninittools.APIClient, suffix, cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
+		raninittools.Spoke1APIClient, suffix, cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
 	if err != nil {
 		return nil, err
 	}

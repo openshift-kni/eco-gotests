@@ -16,13 +16,13 @@ import (
 
 // CreateTalmTestNamespace creates the test namespace on the hub and the spokes, if present.
 func CreateTalmTestNamespace() error {
-	_, err := namespace.NewBuilder(raninittools.APIClient, tsparams.TestNamespace).Create()
+	_, err := namespace.NewBuilder(raninittools.Spoke1APIClient, tsparams.TestNamespace).Create()
 	if err != nil {
 		return err
 	}
 
-	if raninittools.Spoke1APIClient != nil {
-		_, err := namespace.NewBuilder(raninittools.Spoke1APIClient, tsparams.TestNamespace).Create()
+	if raninittools.HubAPIClient != nil {
+		_, err := namespace.NewBuilder(raninittools.HubAPIClient, tsparams.TestNamespace).Create()
 		if err != nil {
 			return err
 		}
@@ -44,15 +44,15 @@ func InitializeVariables() error {
 	var err error
 
 	tsparams.TalmVersion, err = getOperatorVersionFromCsv(
-		raninittools.APIClient, tsparams.OperatorHubTalmNamespace, tsparams.OpenshiftOperatorNamespace)
+		raninittools.Spoke1APIClient, tsparams.OperatorHubTalmNamespace, tsparams.OpenshiftOperatorNamespace)
 	if err != nil {
 		return err
 	}
 
 	glog.V(tsparams.LogLevel).Infof("hub cluster has TALM version '%s'", tsparams.TalmVersion)
 
-	if raninittools.RANConfig.Spoke1Kubeconfig != "" {
-		tsparams.Spoke1Name, err = getClusterName(raninittools.RANConfig.Spoke1Kubeconfig)
+	if raninittools.RANConfig.HubKubeconfig != "" {
+		tsparams.Spoke1Name, err = getClusterName(raninittools.RANConfig.HubKubeconfig)
 		if err != nil {
 			return err
 		}

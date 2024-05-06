@@ -26,7 +26,7 @@ func TestPowerSave(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// Cleanup and create test namespace
-	testNamespace := namespace.NewBuilder(APIClient, tsparams.TestingNamespace)
+	testNamespace := namespace.NewBuilder(Spoke1APIClient, tsparams.TestingNamespace)
 
 	glog.V(ranparam.LogLevel).Infof("Deleting test namespace ", tsparams.TestingNamespace)
 	err := testNamespace.DeleteAndWait(tsparams.PowerSaveTimeout)
@@ -38,7 +38,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	testNamespace := namespace.NewBuilder(APIClient, tsparams.TestingNamespace)
+	testNamespace := namespace.NewBuilder(Spoke1APIClient, tsparams.TestingNamespace)
 
 	glog.V(ranparam.LogLevel).Infof("Deleting test namespace", tsparams.TestingNamespace)
 	err := testNamespace.DeleteAndWait(tsparams.PowerSaveTimeout)

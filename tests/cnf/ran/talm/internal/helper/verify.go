@@ -69,7 +69,7 @@ func IsVersionStringInRange(version, minimum, maximum string) (bool, error) {
 func VerifyTalmIsInstalled() error {
 	// Check for talm pods
 	talmPods, err := pod.List(
-		raninittools.APIClient,
+		raninittools.Spoke1APIClient,
 		tsparams.OpenshiftOperatorNamespace,
 		metav1.ListOptions{LabelSelector: tsparams.TalmPodLabelSelector})
 	if err != nil {

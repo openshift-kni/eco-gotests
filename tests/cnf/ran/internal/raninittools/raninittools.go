@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	// APIClient provides API access to cluster.
-	APIClient *clients.Settings
-	// Spoke1APIClient provides API access to the first spoke cluster.
+	// HubAPIClient provides API access to the first spoke cluster.
+	HubAPIClient *clients.Settings
+	// Spoke1APIClient provides API access to cluster.
 	Spoke1APIClient *clients.Settings
 	// Spoke2APIClient provides API access to the second spoke cluster.
 	Spoke2APIClient *clients.Settings
@@ -18,11 +18,11 @@ var (
 )
 
 func init() {
-	APIClient = inittools.APIClient
+	Spoke1APIClient = inittools.APIClient
 	RANConfig = ranconfig.NewRANConfig()
 
-	if RANConfig.Spoke1Kubeconfig != "" {
-		Spoke1APIClient = clients.New(RANConfig.Spoke1Kubeconfig)
+	if RANConfig.HubKubeconfig != "" {
+		HubAPIClient = clients.New(RANConfig.HubKubeconfig)
 	}
 
 	if RANConfig.Spoke2Kubeconfig != "" {
