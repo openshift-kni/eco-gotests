@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
@@ -43,19 +44,19 @@ func CreateTalmTestNamespace() error {
 func InitializeVariables() error {
 	var err error
 
-	tsparams.TalmVersion, err = getOperatorVersionFromCsv(
-		raninittools.Spoke1APIClient, tsparams.OperatorHubTalmNamespace, tsparams.OpenshiftOperatorNamespace)
+	tsparams.Spoke1Name, err = getClusterName(os.Getenv("KUBECONFIG"))
 	if err != nil {
 		return err
 	}
 
-	glog.V(tsparams.LogLevel).Infof("hub cluster has TALM version '%s'", tsparams.TalmVersion)
-
 	if raninittools.RANConfig.HubKubeconfig != "" {
-		tsparams.Spoke1Name, err = getClusterName(raninittools.RANConfig.HubKubeconfig)
+		tsparams.TalmVersion, err = getOperatorVersionFromCsv(
+			raninittools.HubAPIClient, tsparams.OperatorHubTalmNamespace, tsparams.OpenshiftOperatorNamespace)
 		if err != nil {
 			return err
 		}
+
+		glog.V(tsparams.LogLevel).Infof("hub cluster has TALM version '%s'", tsparams.TalmVersion)
 	}
 
 	if raninittools.RANConfig.Spoke2Kubeconfig != "" {

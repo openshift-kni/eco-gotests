@@ -1,6 +1,8 @@
 package tsparams
 
 import (
+	"fmt"
+
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
 	v1 "k8s.io/api/core/v1"
@@ -19,6 +21,12 @@ var (
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &v1.PodList{}},
 	}
+
+	// TalmNonExistentClusterMessage is the condition message for when a cluster is non-existent.
+	TalmNonExistentClusterMessage = fmt.Sprintf(
+		"Unable to select clusters: cluster %s is not a ManagedCluster", NonExistentClusterName)
+	// TalmNonExistentPolicyMessage is the condition message for when a policy is non-existent.
+	TalmNonExistentPolicyMessage = fmt.Sprintf("Missing managed policies: [%s]", NonExistentPolicyName)
 
 	// Spoke1Name is the name of the first spoke cluster.
 	Spoke1Name string
