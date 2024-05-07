@@ -44,10 +44,7 @@ var (
 		"feature.node.kubernetes.io/pci-10de.present": "true",
 	}
 
-	gpuBurnImageName = map[string]string{
-		"amd64": "quay.io/wabouham/gpu_burn_amd64:ubi9",
-		"arm64": "quay.io/wabouham/gpu_burn_arm64:ubi9",
-	}
+	gpuBurnImageName = "undefined"
 
 	machineSetNamespace         = "openshift-machine-api"
 	replicas              int32 = 1
@@ -92,7 +89,16 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 		nvidiaGPUConfig = nvidiagpuconfig.NewNvidiaGPUConfig()
 
 		BeforeAll(func() {
-			// if gpuinittools.NvidiaGPUConfig.InstanceType == "" {
+			if nvidiaGPUConfig.GPUBurnImage == "" {
+				glog.V(gpuparams.GpuLogLevel).Infof("env variable ECO_HWACCEL_NVIDIAGPU_GPUBURN_IMAGE" +
+					" is not set, skipping test")
+				Skip("No GPU Burn image found in environment variables, Skipping test")
+			} else {
+				gpuBurnImageName = nvidiaGPUConfig.GPUBurnImage
+				glog.V(gpuparams.GpuLogLevel).Infof("GPU burn image is now set to env variable "+
+					"ECO_HWACCEL_NVIDIAGPU_GPUBURN_IMAGE value '%s'", gpuBurnImageName)
+			}
+
 			if nvidiaGPUConfig.InstanceType == "" {
 				glog.V(gpuparams.GpuLogLevel).Infof("env variable ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE" +
 					" is not set, skipping test")
@@ -230,7 +236,7 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				glog.V(gpuparams.GpuLogLevel).Infof("The check for Nvidia GPU label returned: %v", gpuNodeFound)
 
 				if !gpuNodeFound {
-					By("Expand the OCP cluster using instanceType from the env variable " +
+					By("Expand the cluster using instanceType from the env variable " +
 						"ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE")
 
 					var instanceType = nvidiaGPUConfig.InstanceType
@@ -578,10 +584,10 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 				By("Deploy gpu-burn pod in test-gpu-burn namespace")
 				glog.V(gpuparams.GpuLogLevel).Infof("gpu-burn pod image name is: '%s', in namespace '%s'",
-					gpuBurnImageName[clusterArch])
+					gpuBurnImageName)
 
 				gpuBurnPod, err := gpuburn.CreateGPUBurnPod(APIClient, gpuBurnPodName, gpuBurnNamespace,
-					gpuBurnImageName[(clusterArch)], 5*time.Minute)
+					gpuBurnImageName, 5*time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Error creating gpu burn pod: %v", err)
 
 				glog.V(gpuparams.GpuLogLevel).Infof("Creating gpu-burn pod '%s' in namespace '%s'",

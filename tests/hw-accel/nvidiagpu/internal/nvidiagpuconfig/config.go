@@ -10,6 +10,7 @@ import (
 type NvidiaGPUConfig struct {
 	InstanceType  string `envconfig:"ECO_HWACCEL_NVIDIAGPU_INSTANCE_TYPE"`
 	CatalogSource string `envconfig:"ECO_HWACCEL_NVIDIAGPU_CATALOGSOURCE"`
+	GPUBurnImage  string `envconfig:"ECO_HWACCEL_NVIDIAGPU_GPUBURN_IMAGE"`
 }
 
 // NewNvidiaGPUConfig returns instance of NvidiaGPUConfig type.
