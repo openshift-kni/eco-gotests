@@ -15,6 +15,8 @@ const (
 	LabelBatchingTestCases = "batching"
 	// LabelBlockingCRTestCases is the label for a particular test file.
 	LabelBlockingCRTestCases = "blockingcr"
+	// LabelCanaryTestCases is the label for a particular test file.
+	LabelCanaryTestCases = "canary"
 	// LabelMissingSpokeTestCases is the label for a set of batching test cases.
 	LabelMissingSpokeTestCases = "missingspoke"
 	// LabelMissingPolicyTestCases is the label for a set of batching test cases.

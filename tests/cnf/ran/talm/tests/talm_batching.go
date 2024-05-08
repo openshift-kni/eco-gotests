@@ -118,7 +118,9 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			cguBuilder, err = helper.SetupCguWithCatSrc(cguBuilder)
 			Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
 
-			cguBuilder = waitToEnableCgu(cguBuilder)
+			By("waiting to enable the CGU")
+			cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
 			err = helper.WaitForCguTimeout(cguBuilder, 11*time.Minute)
@@ -177,7 +179,9 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			cguBuilder, err = helper.SetupCguWithCatSrc(cguBuilder)
 			Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
 
-			cguBuilder = waitToEnableCgu(cguBuilder)
+			By("waiting to enable the CGU")
+			cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
 			err = helper.WaitForCguTimeout(cguBuilder, 16*time.Minute)
@@ -215,7 +219,9 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			cguBuilder, err = helper.SetupCguWithCatSrc(cguBuilder)
 			Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
 
-			cguBuilder = waitToEnableCgu(cguBuilder)
+			By("waiting to enable the CGU")
+			cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
 			err = helper.WaitForCguTimeout(cguBuilder, 16*time.Minute)
@@ -257,7 +263,9 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 				cguBuilder, err = helper.SetupCguWithCatSrc(cguBuilder)
 				Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
 
-				cguBuilder = waitToEnableCgu(cguBuilder)
+				By("waiting to enable the CGU")
+				cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
+				Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 				By("waiting for the CGU to timeout")
 				err = helper.WaitForCguTimeout(cguBuilder, 21*time.Minute)
@@ -312,7 +320,9 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			cguBuilder, err = helper.SetupCguWithCatSrc(cguBuilder)
 			Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
 
-			cguBuilder = waitToEnableCgu(cguBuilder)
+			By("waiting to enable the CGU")
+			cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
 			err = helper.WaitForCguTimeout(cguBuilder, 11*time.Minute)
@@ -394,7 +404,9 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			cguBuilder, err = cguBuilder.Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create CGU")
 
-			cguBuilder = waitToEnableCgu(cguBuilder)
+			By("waiting to enable the CGU")
+			cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to finish successfully")
 			err = helper.WaitForCguSuccessfulFinish(cguBuilder, 21*time.Minute)
@@ -417,18 +429,3 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 		})
 	})
 })
-
-func waitToEnableCgu(cguBuilder *cgu.CguBuilder) *cgu.CguBuilder {
-	var err error
-
-	By("waiting for the system to settle")
-	time.Sleep(tsparams.TalmSystemStablizationTime)
-
-	By("enabling the CGU")
-
-	cguBuilder.Definition.Spec.Enable = ptr.To(true)
-	cguBuilder, err = cguBuilder.Update(true)
-	Expect(err).ToNot(HaveOccurred(), "Failed to enable CGU")
-
-	return cguBuilder
-}

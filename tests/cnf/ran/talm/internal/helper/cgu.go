@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/ptr"
 )
 
 // WaitForCguInCondition waits up to timeout until the provided cguBuilder matches the expected status. Only the Type,
@@ -132,6 +134,33 @@ func WaitForCguBlocked(cguBuilder *cgu.CguBuilder, message string) error {
 		6*time.Minute)
 }
 
+// IsClusterInCguInProgress checks if the current batch remediation progress for the provided cluster is InProgress.
+func IsClusterInCguInProgress(cguBuilder *cgu.CguBuilder, cluster string) (bool, error) {
+	if !cguBuilder.Exists() {
+		return false, errors.New("provided CGU does not exist on client")
+	}
+
+	status, ok := cguBuilder.Object.Status.Status.CurrentBatchRemediationProgress[cluster]
+	if !ok {
+		glog.V(tsparams.LogLevel).Infof(
+			"cluster %s not found in batch remediation progress for cgu %s in namespace %s",
+			cluster, cguBuilder.Definition.Name, cguBuilder.Definition.Namespace)
+
+		return false, nil
+	}
+
+	return status.State == "InProgress", nil
+}
+
+// WaitForClusterInCguInProgress waits up to timeout for the current batch remediation progress for the provided cluster
+// to show InProgress.
+func WaitForClusterInCguInProgress(cguBuilder *cgu.CguBuilder, cluster string, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 15*time.Second, timeout, true, func(context.Context) (bool, error) {
+			return IsClusterInCguInProgress(cguBuilder, cluster)
+		})
+}
+
 // SetupCguWithNamespace creates the policy with a namespace and its components for a cguBuilder then creates the
 // cguBuilder.
 func SetupCguWithNamespace(cguBuilder *cgu.CguBuilder, suffix string) (*cgu.CguBuilder, error) {
@@ -177,4 +206,13 @@ func SetupCguWithCatSrc(cguBuilder *cgu.CguBuilder) (*cgu.CguBuilder, error) {
 	}
 
 	return cguBuilder.Create()
+}
+
+// WaitToEnableCgu waits for the TalmSystemStablizationTime before enabling the CGU.
+func WaitToEnableCgu(cguBuilder *cgu.CguBuilder) (*cgu.CguBuilder, error) {
+	time.Sleep(tsparams.TalmSystemStablizationTime)
+
+	cguBuilder.Definition.Spec.Enable = ptr.To(true)
+
+	return cguBuilder.Update(true)
 }
