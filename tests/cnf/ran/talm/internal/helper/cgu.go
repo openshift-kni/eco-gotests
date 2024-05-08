@@ -65,44 +65,71 @@ func WaitForCguInCondition(
 
 // WaitForCguTimeout waits up to timeout until the provided cguBuilder matches the condition for a timeout.
 func WaitForCguTimeout(cguBuilder *cgu.CguBuilder, timeout time.Duration) error {
-	conditionType := tsparams.SucceededType
-	conditionReason := "TimedOut"
-
-	return WaitForCguInCondition(cguBuilder, metav1.Condition{Type: conditionType, Reason: conditionReason}, timeout)
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:   tsparams.SucceededType,
+			Reason: tsparams.TimedOutReason,
+		},
+		timeout)
 }
 
 // WaitForCguTimeoutMessage waits up to timeout until the provided cguBuilder matches the condition for a timeout.
 func WaitForCguTimeoutMessage(cguBuilder *cgu.CguBuilder, timeout time.Duration) error {
-	conditionType := tsparams.SucceededType
-	conditionMessage := tsparams.TalmTimeoutMessage
-
-	return WaitForCguInCondition(cguBuilder, metav1.Condition{Type: conditionType, Message: conditionMessage}, timeout)
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:    tsparams.SucceededType,
+			Message: tsparams.TalmTimeoutMessage,
+		},
+		timeout)
 }
 
 // WaitForCguTimeoutCanary waits up to timeout until the provided cguBuilder matches the condition for a timeout due to
 // canary clusters.
 func WaitForCguTimeoutCanary(cguBuilder *cgu.CguBuilder, timeout time.Duration) error {
-	conditionType := tsparams.SucceededType
-	conditionMessage := "Policy remediation took too long on canary clusters"
-
-	return WaitForCguInCondition(cguBuilder, metav1.Condition{Type: conditionType, Message: conditionMessage}, timeout)
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:    tsparams.SucceededType,
+			Message: tsparams.TalmCanaryTimeoutMessage,
+		},
+		timeout)
 }
 
 // WaitForCguSuccessfulFinish waits up to the timeout until the provided cguBuilder matches the condition for a
 // successful finish.
 func WaitForCguSuccessfulFinish(cguBuilder *cgu.CguBuilder, timeout time.Duration) error {
-	conditionType := tsparams.SucceededType
-	conditionReason := tsparams.CompletedReason
-
-	return WaitForCguInCondition(cguBuilder, metav1.Condition{Type: conditionType, Reason: conditionReason}, timeout)
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:   tsparams.SucceededType,
+			Reason: tsparams.CompletedReason,
+		},
+		timeout)
 }
 
 // WaitForCguSucceeded waits for up to the timeout until the provided cguBuilder matches the condition for a success.
 func WaitForCguSucceeded(cguBuilder *cgu.CguBuilder, timeout time.Duration) error {
-	conditionType := tsparams.SucceededType
-	conditionStatus := metav1.ConditionTrue
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:   tsparams.SucceededType,
+			Status: metav1.ConditionTrue,
+		},
+		timeout)
+}
 
-	return WaitForCguInCondition(cguBuilder, metav1.Condition{Type: conditionType, Status: conditionStatus}, timeout)
+// WaitForCguBlocked waits up to the timeout until the provided cguBuilder matches the condition for being blocked.
+func WaitForCguBlocked(cguBuilder *cgu.CguBuilder, message string) error {
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:    tsparams.ProgressingType,
+			Status:  metav1.ConditionFalse,
+			Message: message,
+		},
+		6*time.Minute)
 }
 
 // SetupCguWithNamespace creates the policy with a namespace and its components for a cguBuilder then creates the

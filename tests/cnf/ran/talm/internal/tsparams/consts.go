@@ -13,6 +13,8 @@ const (
 	LabelBackupTestCases = "backup"
 	// LabelBatchingTestCases is the label for a particular test file.
 	LabelBatchingTestCases = "batching"
+	// LabelBlockingCRTestCases is the label for a particular test file.
+	LabelBlockingCRTestCases = "blockingcr"
 	// LabelMissingSpokeTestCases is the label for a set of batching test cases.
 	LabelMissingSpokeTestCases = "missingspoke"
 	// LabelMissingPolicyTestCases is the label for a set of batching test cases.
@@ -76,10 +78,18 @@ const (
 	ProgressingType = "Progressing"
 	// CompletedReason is the reason for a CGU condition.
 	CompletedReason = "Completed"
+	// TimedOutReason is the reason for a CGU condition.
+	TimedOutReason = "TimedOut"
 	// UpgradeCompletedReason is the reason for a CGU condition.
 	UpgradeCompletedReason = "UpgradeCompleted"
 	// TalmTimeoutMessage is the message for a CGU condition.
 	TalmTimeoutMessage = "Policy remediation took too long"
+	// TalmCanaryTimeoutMessage is the message for a CGU condition.
+	TalmCanaryTimeoutMessage = "Policy remediation took too long on canary clusters"
+	// TalmBlockedMessage is the message for a CGU condition.
+	TalmBlockedMessage = "Blocking CRs that are not completed: [%s]"
+	// TalmMissingCRMessage is the message for a CGU condition.
+	TalmMissingCRMessage = "Missing blocking CRs: [%s]"
 
 	// PreCacheContainerName is the name of the pre cache container.
 	PreCacheContainerName = "pre-cache-container"
