@@ -53,7 +53,6 @@ var _ = Describe("NFD", Ordered, func() {
 
 			By("Creating nfd")
 			runNodeDiscoveryAndTestLabelExistence(nfdManager, true)
-			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace)
 
 			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
 			if !labelExist || labelsError != nil {
@@ -69,6 +68,11 @@ var _ = Describe("NFD", Ordered, func() {
 		})
 		It("Check CPU feature labels", reportxml.ID("54222"), func() {
 			skipIfConfigNotSet(nfdConfig)
+
+			if nfdConfig.CPUFlagsHelperImage == "" {
+				Skip("CPUFlagsHelperImage is not set.")
+			}
+			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace, nfdConfig.CPUFlagsHelperImage)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -201,6 +205,10 @@ var _ = Describe("NFD", Ordered, func() {
 
 		It("Verify Feature List contains only Whitelist", reportxml.ID("68300"), func() {
 			skipIfConfigNotSet(nfdConfig)
+
+			if nfdConfig.CPUFlagsHelperImage == "" {
+				Skip("CPUFlagsHelperImage is not set.")
+			}
 			By("delete old instance")
 			err := nfdManager.DeleteNFDCR("nfd-instance")
 			Expect(err).NotTo(HaveOccurred())
@@ -220,7 +228,7 @@ var _ = Describe("NFD", Ordered, func() {
 			if !labelExist || labelsError != nil {
 				glog.Error("feature labels was not found in the given time error=%v", labelsError)
 			}
-
+			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace, nfdConfig.CPUFlagsHelperImage)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 			Expect(err).NotTo(HaveOccurred())
 			By("Check if features exists")
@@ -238,6 +246,9 @@ var _ = Describe("NFD", Ordered, func() {
 					"Set ECO_HWACCEL_NFD_AWS_TESTS=true when running NFD tests against AWS cluster. ")
 			}
 
+			if nfdConfig.CPUFlagsHelperImage == "" {
+				Skip("CPUFlagsHelperImage is not set.")
+			}
 			By("Creating machine set")
 			msBuilder := machine.NewSetBuilderFromCopy(APIClient, ts.MachineSetNamespace, ts.InstanceType,
 				ts.WorkerMachineSetLabel, ts.Replicas)
@@ -275,7 +286,7 @@ var _ = Describe("NFD", Ordered, func() {
 			Expect(isNodeReady).To(BeTrue(), "the new node is not ready for use")
 
 			By("Check if features exists")
-			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace)
+			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace, nfdConfig.CPUFlagsHelperImage)
 			for nodeName := range nodelabels {
 				glog.V(ts.LogLevel).Infof("checking labels in %v", nodeName)
 				err = helpers.CheckLabelsExist(nodelabels, cpuFlags[nodeName], nil, nodeName)

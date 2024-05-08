@@ -94,12 +94,12 @@ func CPUInfo(apiClient *clients.Settings, name, nsname, containerName, image str
 }
 
 // CPUFlags returns cpu flags list.
-func CPUFlags(apiClient *clients.Settings, nsName string) map[string][]string {
+func CPUFlags(apiClient *clients.Settings, nsName string, workerImage string) map[string][]string {
 	nodeCPUFlagmap := CPUInfo(apiClient,
 		nfdhelpersparams.PodName,
 		nsName,
 		nfdhelpersparams.ContainerName,
-		nfdhelpersparams.CPUImage)
+		workerImage)
 
 	nodeCPUFlagsMap := make(map[string][]string)
 

@@ -14,6 +14,7 @@ type NfdConfig struct {
 	CustomCatalogSource  string `envconfig:"ECO_HWACCEL_NFD_CUSTOM_NFD_CATALOG_SOURCE"`
 	AwsTest              bool   `envconfig:"ECO_HWACCEL_NFD_AWS_TESTS"`
 	UpgradeTargetVersion string `envconfig:"ECO_HWACCEL_NFD_UPGRADE_TARGET_VERSION"`
+	CPUFlagsHelperImage  string `envconfig:"ECO_HWACCEL_NFD_CPU_FLAGS_HELPER_IMAGE"`
 }
 
 // NewNfdConfig returns instance of NfdConfig type.
