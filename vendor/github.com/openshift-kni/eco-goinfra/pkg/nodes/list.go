@@ -152,7 +152,7 @@ func WaitForAllNodesToReboot(apiClient *clients.Settings,
 				if !slices.Contains(readyNodes, node.Object.Name) {
 					ready, err := node.IsReady()
 					if err != nil {
-						return false, err
+						return false, nil
 					}
 
 					if slices.Contains(rebootedNodes, node.Object.Name) {

@@ -15,6 +15,10 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	seedImageName = "seedimage"
+)
+
 // SeedGeneratorBuilder provides struct for the seedgenerator object containing connection to
 // the cluster and the seedgenerator definitions.
 type SeedGeneratorBuilder struct {
@@ -51,10 +55,10 @@ func NewSeedGeneratorBuilder(
 		},
 	}
 
-	if name == "" {
-		glog.V(100).Infof("The name of the seedgenerator is empty")
+	if name != seedImageName {
+		glog.V(100).Infof("The name of the seedgenerator must be " + seedImageName)
 
-		builder.errorMsg = "SeedGenerator name cannot be empty"
+		builder.errorMsg = "SeedGenerator name must be " + seedImageName
 	}
 
 	return &builder

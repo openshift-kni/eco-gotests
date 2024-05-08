@@ -58,7 +58,7 @@ func List(apiClient *clients.Settings, nsname string, options ...goclient.ListOp
 	for _, baremetalhost := range bmhList.Items {
 		copiedBmh := baremetalhost
 		bmhBuilder := &BmhBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedBmh,
 			Definition: &copiedBmh,
 		}

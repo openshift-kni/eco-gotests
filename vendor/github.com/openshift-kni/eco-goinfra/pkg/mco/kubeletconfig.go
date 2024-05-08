@@ -198,8 +198,8 @@ func (builder *KubeletConfigBuilder) WithSystemReserved(cpu, memory string) *Kub
 
 	systemReservedKubeletConfiguration := &kubeletconfigv1beta1.KubeletConfiguration{
 		SystemReserved: map[string]string{
-			cpu:    cpu,
-			memory: memory,
+			"cpu":    cpu,
+			"memory": memory,
 		},
 	}
 

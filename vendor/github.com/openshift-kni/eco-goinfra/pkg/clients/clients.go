@@ -92,6 +92,7 @@ import (
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
 	lsoV1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
+	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
@@ -342,6 +343,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := ocsoperatorv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -419,6 +424,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *netv1.NetworkPolicy:
 			k8sClientObjects = append(k8sClientObjects, v)
 		// Generic Client Objects
+		case *bmhv1alpha1.BareMetalHost:
+			genericClientObjects = append(genericClientObjects, v)
 		case *operatorv1.KubeAPIServer:
 			genericClientObjects = append(genericClientObjects, v)
 		case *operatorv1.OpenShiftAPIServer:
@@ -456,6 +463,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *configV1.ClusterOperator:
 			genericClientObjects = append(genericClientObjects, v)
 		case *cguapiv1alpha1.PreCachingConfig:
+			genericClientObjects = append(genericClientObjects, v)
+		case *ocsoperatorv1.StorageCluster:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
 		case *argocdOperatorv1alpha1.ArgoCD:

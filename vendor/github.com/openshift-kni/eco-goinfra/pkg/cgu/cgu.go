@@ -250,7 +250,9 @@ func (builder *CguBuilder) Update(force bool) (*CguBuilder, error) {
 			glog.V(100).Infof(
 				msg.FailToUpdateNotification("cgu", builder.Definition.Name))
 
-			builder, err := builder.Delete()
+			// Deleting the cgu may take time, so wait for it to be deleted before recreating. Otherwise,
+			// the create happens before the delete finishes and this update results in just deletion.
+			builder, err := builder.DeleteAndWait(time.Minute)
 
 			if err != nil {
 				glog.V(100).Infof(
@@ -268,6 +270,57 @@ func (builder *CguBuilder) Update(force bool) (*CguBuilder, error) {
 	}
 
 	return builder, err
+}
+
+// DeleteAndWait deletes the cgu object and waits until the cgu is deleted.
+func (builder *CguBuilder) DeleteAndWait(timeout time.Duration) (*CguBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Deleting cgu %s in namespace %s and waiting for the defined period until it is removed",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	builder, err := builder.Delete()
+	if err != nil {
+		return builder, err
+	}
+
+	err = builder.WaitUntilDeleted(timeout)
+
+	return builder, err
+}
+
+// WaitUntilDeleted waits for the duration of the defined timeout or until the cgu is deleted.
+func (builder *CguBuilder) WaitUntilDeleted(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof(
+		"Waiting for the defined period until cgu %s in namespace %s is deleted",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
+				Update(context.TODO(), builder.Definition, metav1.UpdateOptions{})
+			if err == nil {
+				glog.V(100).Infof("cgu %s/%s still present", builder.Definition.Name, builder.Definition.Namespace)
+
+				return false, nil
+			}
+
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("cgu %s/%s is gone", builder.Definition.Name, builder.Definition.Namespace)
+
+				return true, nil
+			}
+
+			glog.V(100).Infof("failed to get cgu %s/%s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
+
+			return false, err
+		})
 }
 
 // validate will check that the builder and builder definition are properly initialized before
