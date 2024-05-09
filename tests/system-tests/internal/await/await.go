@@ -7,6 +7,9 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -185,4 +188,41 @@ func WaitUntilNodeIsUnreachable(hostname string, timeout time.Duration) error {
 		// Wait for a second
 		time.Sleep(time.Second)
 	}
+}
+
+// WaitUntilNewMetalLbDaemonSetIsRunning waits until the new metalLb daemonset is in Ready state.
+func WaitUntilNewMetalLbDaemonSetIsRunning(apiClient *clients.Settings, timeout time.Duration) error {
+	glog.V(90).Infof("Verifying if metalLb daemonset %s is running in namespace %s",
+		systemtestsparams.MetalLbDaemonSetName, systemtestsparams.MetalLbOperatorNamespace)
+
+	var metalLbDs *daemonset.Builder
+
+	var err error
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			metalLbDs, err = daemonset.Pull(apiClient,
+				systemtestsparams.MetalLbDaemonSetName,
+				systemtestsparams.MetalLbOperatorNamespace)
+			if err != nil {
+				glog.V(90).Infof("Error to pull daemonset %s namespace %s, retry",
+					systemtestsparams.MetalLbDaemonSetName, systemtestsparams.MetalLbOperatorNamespace)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return err
+	}
+
+	glog.V(90).Infof("Waiting until the new metalLb daemonset is in Ready state.")
+
+	if metalLbDs.IsReady(timeout) {
+		return nil
+	}
+
+	return fmt.Errorf("metallb daemonSet is not ready")
 }

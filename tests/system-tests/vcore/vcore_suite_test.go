@@ -1,4 +1,4 @@
-package initialdeployment
+package vcore_system_test
 
 import (
 	"runtime"
@@ -10,8 +10,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/initial-deployment/tests"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/tests"
 )
 
 var _, currentFile, _, _ = runtime.Caller(0)

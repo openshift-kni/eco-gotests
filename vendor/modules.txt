@@ -621,6 +621,7 @@ github.com/openshift-kni/eco-goinfra/pkg/infrastructure
 github.com/openshift-kni/eco-goinfra/pkg/ingress
 github.com/openshift-kni/eco-goinfra/pkg/kmm
 github.com/openshift-kni/eco-goinfra/pkg/lca
+github.com/openshift-kni/eco-goinfra/pkg/lso
 github.com/openshift-kni/eco-goinfra/pkg/machine
 github.com/openshift-kni/eco-goinfra/pkg/mco
 github.com/openshift-kni/eco-goinfra/pkg/metallb
@@ -633,6 +634,7 @@ github.com/openshift-kni/eco-goinfra/pkg/networkpolicy
 github.com/openshift-kni/eco-goinfra/pkg/nfd
 github.com/openshift-kni/eco-goinfra/pkg/nmstate
 github.com/openshift-kni/eco-goinfra/pkg/nodes
+github.com/openshift-kni/eco-goinfra/pkg/nodesconfig
 github.com/openshift-kni/eco-goinfra/pkg/nto
 github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu
 github.com/openshift-kni/eco-goinfra/pkg/ocm
@@ -1985,6 +1987,7 @@ sigs.k8s.io/yaml/goyaml.v2
 # github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20240222220008-d60e80f8658c
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.1
 # github.com/openshift/installer => github.com/openshift/installer v0.9.0-master.0.20230306121016-3485fddca1c3
+# github.com/portworx/sched-ops => github.com/portworx/sched-ops v0.20.4-openstorage-rc3
 # k8s.io/api => k8s.io/api v0.28.7
 # k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.28.7
 # k8s.io/apimachinery => k8s.io/apimachinery v0.28.7

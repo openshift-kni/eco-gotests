@@ -64,6 +64,9 @@ const (
 	// RegistryRepository local registry repository to mirror images to.
 	RegistryRepository = "openshift"
 
+	// OperatorsNamespace is a operator's deployment namespace.
+	OperatorsNamespace = "openshift-marketplace"
+
 	// SccName scc name.
 	SccName = "vcore-control-plane-worker-scc"
 
@@ -72,4 +75,34 @@ const (
 
 	// SystemReservedMemory systemreserved memory value.
 	SystemReservedMemory = "27Gi"
+
+	// NMStateInstanceName is a name of the NMState instance.
+	NMStateInstanceName = "nmstate"
+
+	// NMStateOperatorName is a name of the NMState operator.
+	NMStateOperatorName = "kubernetes-nmstate-operator"
+
+	// MetalLBOperatorNamespace is a metallb operator namespace.
+	MetalLBOperatorNamespace = "metallb-system"
+
+	// MetalLBOperatorName is a metallb operator name.
+	MetalLBOperatorName = "metallb-operator"
+
+	// MetalLBOperatorDeploymentName is a metallb operator deployment name.
+	MetalLBOperatorDeploymentName = "metallb-operator-controller-manager"
+
+	// MetalLBInstanceName is a metallb operator namespace.
+	MetalLBInstanceName = "metallb"
+
+	// LSONamespace is a local storage operator namespace.
+	LSONamespace = "openshift-local-storage"
+
+	// LSOInstanceNamePattern is a local storage operator instance name pattern.
+	LSOInstanceNamePattern = "local-storage-operator"
+
+	// ODFNamespace is an odf namespace.
+	ODFNamespace = "openshift-storage"
+
+	// StorageClassName is a storage class name.
+	StorageClassName = "ocs-storagecluster-cephfs"
 )
