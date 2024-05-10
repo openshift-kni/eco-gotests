@@ -284,6 +284,9 @@ github.com/go-task/slim-sprig
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
+# github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
+## explicit
+github.com/golang-collections/collections/set
 # github.com/golang/glog v1.1.2
 ## explicit; go 1.19
 github.com/golang/glog
@@ -601,7 +604,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240508140716-4c097250fb58
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240510155354-7ccb3fe15c7f
 ## explicit; go 1.20
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
@@ -795,6 +798,12 @@ github.com/openshift/client-go/security/applyconfigurations/internal
 github.com/openshift/client-go/security/applyconfigurations/security/v1
 github.com/openshift/client-go/security/clientset/versioned/scheme
 github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
+# github.com/openshift/cluster-logging-operator v0.0.0-20240220162552-cbb65f2dca2b
+## explicit; go 1.20
+github.com/openshift/cluster-logging-operator/apis/logging/v1
+github.com/openshift/cluster-logging-operator/internal/constants
+github.com/openshift/cluster-logging-operator/internal/status
+github.com/openshift/cluster-logging-operator/internal/utils/sets
 # github.com/openshift/cluster-nfd-operator v0.0.0-20231206145954-f49a827bf617
 ## explicit; go 1.20
 github.com/openshift/cluster-nfd-operator/api/v1
@@ -806,6 +815,9 @@ github.com/openshift/cluster-node-tuning-operator/pkg/performanceprofile/control
 # github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87
 ## explicit; go 1.12
 github.com/openshift/custom-resource-status/conditions/v1
+# github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298
+## explicit; go 1.17
+github.com/openshift/elasticsearch-operator/apis/logging/v1
 # github.com/openshift/hive/apis v0.0.0-20220707210052-4804c09ccc5a
 ## explicit; go 1.18
 github.com/openshift/hive/apis/hive/v1
@@ -1407,6 +1419,8 @@ k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
 # k8s.io/apiserver v0.28.7 => k8s.io/apiserver v0.28.7
 ## explicit; go 1.20
+k8s.io/apiserver/pkg/apis/audit
+k8s.io/apiserver/pkg/apis/audit/v1
 k8s.io/apiserver/pkg/authentication/user
 # k8s.io/cli-runtime v0.28.7 => k8s.io/cli-runtime v0.28.7
 ## explicit; go 1.20

@@ -304,7 +304,7 @@ func (builder *CguBuilder) WaitUntilDeleted(timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
-				Update(context.TODO(), builder.Definition, metav1.UpdateOptions{})
+				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if err == nil {
 				glog.V(100).Infof("cgu %s/%s still present", builder.Definition.Name, builder.Definition.Namespace)
 

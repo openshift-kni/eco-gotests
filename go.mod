@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240508140716-4c097250fb58 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240510155354-7ccb3fe15c7f // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -51,6 +51,12 @@ require (
 	open-cluster-management.io/config-policy-controller v0.13.0
 	open-cluster-management.io/governance-policy-propagator v0.13.0
 	open-cluster-management.io/multicloud-operators-subscription v0.13.0
+)
+
+require (
+	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
+	github.com/openshift/cluster-logging-operator v0.0.0-20240220162552-cbb65f2dca2b // indirect
+	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
 )
 
 require (

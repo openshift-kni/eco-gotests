@@ -302,6 +302,31 @@ func (builder *PolicyBuilder) WaitUntilDeleted(timeout time.Duration) error {
 		})
 }
 
+// WaitUntilComplianceState waits for the duration of the defined timeout or until the policy is in the provided
+// compliance state.
+func (builder *PolicyBuilder) WaitUntilComplianceState(state policiesv1.ComplianceState, timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof(
+		"Waiting for the defined period until policy %s in namespace %s is in compliance state %v",
+		builder.Definition.Name, builder.Definition.Namespace, state)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			updatedPolicy, err := builder.Get()
+			if err != nil {
+				glog.V(100).Infof(
+					"error getting policy %s in namespace %s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
+
+				return false, nil
+			}
+
+			return updatedPolicy.Status.ComplianceState == state, nil
+		})
+}
+
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *PolicyBuilder) validate() (bool, error) {
