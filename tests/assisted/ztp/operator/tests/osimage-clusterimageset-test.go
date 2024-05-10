@@ -75,7 +75,7 @@ var _ = Describe(
 					osImageClusterImageSetName,
 					osImageClusterImageSetName,
 					osImageClusterImageSetName,
-					"qe.lab.redhat.com",
+					"assisted.test.com",
 					osImageClusterImageSetName,
 					metav1.LabelSelector{
 						MatchLabels: map[string]string{

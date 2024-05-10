@@ -95,7 +95,7 @@ func createDualstackSpokeClusterResources() *assisted.AgentClusterInstallBuilder
 		dualstackTestSpoke,
 		dualstackTestSpoke,
 		dualstackTestSpoke,
-		"qe.lab.redhat.com",
+		"assisted.test.com",
 		dualstackTestSpoke,
 		metav1.LabelSelector{
 			MatchLabels: map[string]string{

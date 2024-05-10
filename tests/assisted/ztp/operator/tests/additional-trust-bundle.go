@@ -86,7 +86,7 @@ var _ = Describe(
 					trustBundleTestNS+"clusterdeployment",
 					testNS.Definition.Name,
 					trustBundleTestNS,
-					"qe.lab.redhat.com",
+					"assisted.test.com",
 					trustBundleTestNS,
 					metav1.LabelSelector{
 						MatchLabels: map[string]string{

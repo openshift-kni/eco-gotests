@@ -317,7 +317,7 @@ func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...stri
 		infraenvTestSpoke,
 		infraenvTestSpoke,
 		infraenvTestSpoke,
-		"qe.lab.redhat.com",
+		"assisted.test.com",
 		infraenvTestSpoke,
 		metav1.LabelSelector{
 			MatchLabels: map[string]string{

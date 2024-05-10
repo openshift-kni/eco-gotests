@@ -65,7 +65,7 @@ var _ = Describe(
 					platformtypeSpoke,
 					testNS.Definition.Name,
 					platformtypeSpoke,
-					"qe.lab.redhat.com",
+					"assisted.test.com",
 					platformtypeSpoke,
 					metav1.LabelSelector{
 						MatchLabels: map[string]string{

@@ -77,7 +77,7 @@ func (spoke *SpokeClusterResources) WithDefaultClusterDeployment() *SpokeCluster
 		spoke.Name,
 		spoke.Name,
 		spoke.Name,
-		"qe.lab.redhat.com",
+		"assisted.test.com",
 		spoke.Name,
 		metav1.LabelSelector{
 			MatchLabels: map[string]string{
