@@ -1,6 +1,6 @@
 module github.com/openshift-kni/eco-gotests
 
-go 1.20
+go 1.22
 
 require (
 	github.com/Juniper/go-netconf v0.3.0
