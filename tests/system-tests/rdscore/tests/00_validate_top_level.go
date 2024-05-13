@@ -25,6 +25,9 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verifies NUMA-aware workload is deployable", reportxml.ID("73677"), Label("nrop"),
+				rdscorecommon.VerifyNROPWorkload)
+
 			It("Verifies all policies are compliant", reportxml.ID("72355"), Label("validate-policies"),
 				rdscorecommon.ValidateAllPoliciesCompliant)
 
@@ -82,6 +85,9 @@ var _ = Describe(
 
 				By("Creating MACVLAN workloads on different nodes")
 				rdscorecommon.VerifyMacVlanOnDifferentNodes()
+
+				By("Creating NUMA aware workload")
+				rdscorecommon.VerifyNROPWorkload(ctx)
 			})
 
 			It("Verifies ungraceful cluster reboot",
@@ -156,6 +162,10 @@ var _ = Describe(
 				Label("verify-deployments"), reportxml.ID("71872"),
 				rdscorecommon.WaitAllDeploymentsAreAvailable)
 
+			It("Verifies NUMA-aware workload is available after ungraceful reboot",
+				Label("nrop"), reportxml.ID("73727"),
+				rdscorecommon.VerifyNROPWorkloadAvailable)
+
 			It("Verifies CephFS PVC is still accessible",
 				Label("persistent-storage", "verify-cephfs"), reportxml.ID("71873"),
 				rdscorecommon.VerifyDataOnCephFSPVC)
@@ -208,6 +218,9 @@ var _ = Describe(
 
 				By("Creating MACVLAN workloads on different nodes")
 				rdscorecommon.VerifyMacVlanOnDifferentNodes()
+
+				By("Creating NUMA aware workload")
+				rdscorecommon.VerifyNROPWorkload(ctx)
 			})
 
 			It("Verifies graceful cluster reboot",
@@ -231,6 +244,10 @@ var _ = Describe(
 			It("Verifies all deploymentes are available",
 				Label("verify-deployments"), reportxml.ID("72041"),
 				rdscorecommon.WaitAllDeploymentsAreAvailable)
+
+			It("Verifies NUMA-aware workload is available after soft reboot",
+				Label("nrop"), reportxml.ID("73726"),
+				rdscorecommon.VerifyNROPWorkloadAvailable)
 
 			It("Verifies CephFS PVC is still accessible",
 				Label("persistent-storage", "verify-cephfs"), reportxml.ID("72042"),

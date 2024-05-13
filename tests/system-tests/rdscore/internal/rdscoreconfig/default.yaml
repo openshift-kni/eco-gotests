@@ -109,3 +109,17 @@ rdscore_macvlan_deploy_3_target_ipv6: "2620:52:0:2e7d::48 1111"
 rdscore_macvlan_deploy_4_target: "10.46.125.72 1111"
 rdscore_macvlan_deploy_4_target_ipv6: "2620:52:0:2e7d::47 1111"
 rdscore_policy_ns: ""
+rdscore_wlkd_nrop_one_ns: rds-nrop-wlkd
+rdscore_wlkd_nrop_one_image: ""
+rdscore_wlkd_nrop_one_cmd:
+- "/bin/sh"
+- "-c"
+- "sleep INFINITY"
+rdscore_wlkd_nrop_one_res_requests:
+  cpu: 8
+  memory: "500M"
+rdscore_wlkd_nrop_one_res_limits:
+  cpu: 8
+  memory: "500M"
+rdscore_nrop_scheduler_name: topo-aware-scheduler
+rdscore_wlkd_nrop_one_selector: {}
