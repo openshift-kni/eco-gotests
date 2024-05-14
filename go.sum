@@ -1502,8 +1502,8 @@ github.com/opencontainers/runtime-spec v1.1.0 h1:HHUyrt9mwHUjtasSbXSMvs4cyFxh+Bl
 github.com/opencontainers/runtime-spec v1.1.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240227195723-b6e045729e4d h1:JsYQI7mtdh+x+Z/J3zfkLcK4eGtcWivikdxyYMWrjos=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240227195723-b6e045729e4d/go.mod h1:zs70lcNtrMh1On3+e48IDg/bvoJER/IygEgo0bSnUuo=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240510161647-22d9a87ad6d1 h1:8lroF5wamiUZM1bkWCHNqFi5rl5uROytK3LbgfucqLQ=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240510161647-22d9a87ad6d1/go.mod h1:h0HGH7EFqL1BPA3im2AoRjRBFrIrQpqZaxcNJzI8Xns=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240514160437-9bfc7a860710 h1:sU8pnfb0slag7NlqW/9HqhuMAQlA1WNYW/ECzmxwlvA=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240514160437-9bfc7a860710/go.mod h1:7oUb1HodagM9AjxzNtbK4+3swh1HmDTIjF4RPsZBi84=
 github.com/openshift-kni/k8sreporter v1.0.5 h1:1GYBc/BTZyVoXilHef43v9A8BSzw700zAPZ6zsZvo6Y=
 github.com/openshift-kni/k8sreporter v1.0.5/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20240503112747-fd03bc5fd6b7 h1:Svt1ZW7t+psj2xXqhIzmEueXMZXT69pjQXfODFCJ8mQ=
@@ -2792,6 +2792,8 @@ modernc.org/strutil v1.1.3/go.mod h1:MEHNA7PdEnEwLvspRMtWTNnp2nnyvMfkimT1NKNAGbw
 modernc.org/tcl v1.13.1/go.mod h1:XOLfOwzhkljL4itZkK6T72ckMgvj0BDsnKNdZVUOecw=
 modernc.org/token v1.0.0/go.mod h1:UGzOrNV1mAFSEB63lOFHIpNRUVMvYTc6yu1SMY/XTDM=
 modernc.org/z v1.5.1/go.mod h1:eWFB510QWW5Th9YGZT81s+LwvaAs3Q2yr4sP0rmLkv8=
+open-cluster-management.io/api v0.12.0 h1:sNkj4k2XyWA/GLsTiFg82bLIZ7JDZKkLLLyZjJUlJMs=
+open-cluster-management.io/api v0.12.0/go.mod h1:/CZhelEH+30/pX7vXGSZOzLMX0zvjthYOkT/5ZTzVTQ=
 open-cluster-management.io/config-policy-controller v0.13.0 h1:rmrjlWRZbPnSuaAzVdXn1uPe4W0UcqakH+4T+GqTpWE=
 open-cluster-management.io/config-policy-controller v0.13.0/go.mod h1:56YiZdUHKqv4eKMzmamVuWkeyRrzTiI+Dgnukoy3/3w=
 open-cluster-management.io/governance-policy-propagator v0.13.0 h1:nVCNZyE/1gR00YU/IBSqo6znZ+6OI3kpB4pyy0LAxak=

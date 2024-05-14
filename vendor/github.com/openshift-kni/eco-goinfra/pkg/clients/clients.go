@@ -16,6 +16,7 @@ import (
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	clov1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
+	eskv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	v1security "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
@@ -72,6 +73,11 @@ import (
 
 	plumbingv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	fakeMultiNetPolicyClient "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/fake"
+
+	clusterClient "open-cluster-management.io/api/client/cluster/clientset/versioned"
+	clusterClientFake "open-cluster-management.io/api/client/cluster/clientset/versioned/fake"
+	clusterV1Client "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
+	clusterv1 "open-cluster-management.io/api/cluster/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
@@ -136,6 +142,8 @@ type Settings struct {
 	veleroV1Client.VeleroV1Interface
 	ClientCgu clientCgu.Interface
 	clientCguV1.RanV1alpha1Interface
+	ClusterClient clusterClient.Interface
+	clusterV1Client.ClusterV1Interface
 }
 
 // New returns a *Settings with the given kubeconfig.
@@ -190,6 +198,8 @@ func New(kubeconfig string) *Settings {
 	clientSet.VeleroV1Interface = veleroV1Client.NewForConfigOrDie(config)
 	clientSet.ClientCgu = clientCgu.NewForConfigOrDie(config)
 	clientSet.RanV1alpha1Interface = clientCguV1.NewForConfigOrDie(config)
+	clientSet.ClusterClient = clusterClient.NewForConfigOrDie(config)
+	clientSet.ClusterV1Interface = clusterV1Client.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	crScheme := runtime.NewScheme()
@@ -352,6 +362,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := eskv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -381,7 +395,7 @@ func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet := &Settings{}
 
 	var k8sClientObjects, genericClientObjects, plumbingObjects, srIovObjects,
-		veleroClientObjects, cguObjects []runtime.Object
+		veleroClientObjects, cguObjects, ocmObjects []runtime.Object
 
 	//nolint:varnamelen
 	for _, v := range tcp.K8sMockObjects {
@@ -473,6 +487,10 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *clov1.ClusterLogging:
 			genericClientObjects = append(genericClientObjects, v)
+		case *clov1.ClusterLogForwarder:
+			genericClientObjects = append(genericClientObjects, v)
+		case *eskv1.Elasticsearch:
+			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
 		case *argocdOperatorv1alpha1.ArgoCD:
 			genericClientObjects = append(genericClientObjects, v)
@@ -504,6 +522,9 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		// MultiNetworkPolicy Client Objects
 		case *plumbingv1.MultiNetworkPolicy:
 			plumbingObjects = append(plumbingObjects, v)
+		// OCM Cluster Client Objects
+		case *clusterv1.ManagedCluster:
+			ocmObjects = append(ocmObjects, v)
 		}
 	}
 
@@ -514,6 +535,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
 	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
 	clientSet.ClientSrIov = clientSrIovFake.NewSimpleClientset(srIovObjects...)
+	clientSet.ClusterClient = clusterClientFake.NewSimpleClientset(ocmObjects...)
+	clientSet.ClusterV1Interface = clientSet.ClusterClient.ClusterV1()
 
 	// Assign the fake multi-networkpolicy clientset to the clientSet
 	// Note: We are not entirely sure that these functions actually work as expected.

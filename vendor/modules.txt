@@ -604,8 +604,8 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240510161647-22d9a87ad6d1
-## explicit; go 1.20
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240514160437-9bfc7a860710
+## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
 github.com/openshift-kni/eco-goinfra/pkg/assisted
@@ -1827,6 +1827,23 @@ k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
+# open-cluster-management.io/api v0.12.0
+## explicit; go 1.19
+open-cluster-management.io/api/client/cluster/clientset/versioned
+open-cluster-management.io/api/client/cluster/clientset/versioned/fake
+open-cluster-management.io/api/client/cluster/clientset/versioned/scheme
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1/fake
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1/fake
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1/fake
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta2
+open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta2/fake
+open-cluster-management.io/api/cluster/v1
+open-cluster-management.io/api/cluster/v1alpha1
+open-cluster-management.io/api/cluster/v1beta1
+open-cluster-management.io/api/cluster/v1beta2
 # open-cluster-management.io/config-policy-controller v0.13.0
 ## explicit; go 1.21
 open-cluster-management.io/config-policy-controller/api/v1

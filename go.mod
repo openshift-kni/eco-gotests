@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240510161647-22d9a87ad6d1 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240514160437-9bfc7a860710 // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -57,6 +57,7 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
 	github.com/openshift/cluster-logging-operator v0.0.0-20240220162552-cbb65f2dca2b // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
+	open-cluster-management.io/api v0.12.0 // indirect
 )
 
 require (
@@ -189,7 +190,7 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/red-hat-storage/ocs-operator v0.4.13 // indirect
+	github.com/red-hat-storage/ocs-operator v0.4.13
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/rook/rook/pkg/apis v0.0.0-20231215165123-32de0fb5f69b // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

@@ -39,8 +39,7 @@ func NewCguBuilder(apiClient *clients.Settings, name, nsname string, maxConcurre
 		"Initializing new CGU structure with the following params: name: %s, nsname: %s, maxConcurrency: %d",
 		name, nsname, maxConcurrency)
 
-	builder := CguBuilder{
-		apiClient: apiClient.ClientCgu,
+	builder := &CguBuilder{
 		Definition: &v1alpha1.ClusterGroupUpgrade{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -54,25 +53,41 @@ func NewCguBuilder(apiClient *clients.Settings, name, nsname string, maxConcurre
 		},
 	}
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient for the CGU is nil")
+
+		builder.errorMsg = "CGU 'apiClient' cannot be nil"
+
+		return builder
+	}
+
+	builder.apiClient = apiClient.ClientCgu
+
 	if name == "" {
 		glog.V(100).Infof("The name of the CGU is empty")
 
 		builder.errorMsg = "CGU 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the CGU is empty")
 
 		builder.errorMsg = "CGU 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	if maxConcurrency < 1 {
 		glog.V(100).Infof("The maxConcurrency of the CGU has a minimum of 1")
 
 		builder.errorMsg = "CGU 'maxConcurrency' cannot be less than 1"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithCluster appends a cluster to the clusters list in the CGU definition.
