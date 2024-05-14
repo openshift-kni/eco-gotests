@@ -21,4 +21,6 @@ var _ = Describe(
 		vcorecommon.VerifyMetaLBSuite()
 
 		vcorecommon.VerifyLSOSuite()
+
+		vcorecommon.VerifyODFSuite()
 	})

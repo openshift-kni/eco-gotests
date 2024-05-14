@@ -163,6 +163,11 @@ func verifyNodesInMCP(nodesRole string) {
 		fmt.Sprintf("%s MCP failed to update", nodesRole))
 }
 
+// VerifyODFMCPAvailability assert odf MCP was deployed.
+func VerifyODFMCPAvailability(ctx SpecContext) {
+	verifyNodesInMCP(vcoreparams.VCoreOdfMcpName)
+} // func VerifyODFMCPAvailability (ctx SpecContext)
+
 // VerifyODFNodesAvailability assert full set of ODF nodes was deployed.
 func VerifyODFNodesAvailability(ctx SpecContext) {
 	verifyNodesAvailability(vcoreparams.VCoreOdfMcpName, VCoreConfig.OdfLabelListOption)
@@ -259,6 +264,9 @@ func VerifyInitialDeploymentConfig() {
 			It("Asserts time sync was successfully applied for workers nodes",
 				Label("chrony"), reportxml.ID("60029"), VerifyEtcChronyWorkers)
 
+			It("Verifies odf MCP was deployed",
+				Label("odf"), reportxml.ID("73673"), VerifyODFMCPAvailability)
+
 			It("Verifies full set of ODF nodes was deployed",
 				Label("odf"), reportxml.ID("59442"), VerifyODFNodesAvailability)
 
@@ -275,10 +283,10 @@ func VerifyInitialDeploymentConfig() {
 				Label("pp-nodes"), reportxml.ID("59506"), VerifyUserPlaneWorkerNodesAvailability)
 
 			It("Verifies cgroupv2 is a default for the cluster deployment",
-				Label("cgroupv"), reportxml.ID("73370"), VerifyCGroupV2IsADefault)
+				Label("cgroupv2"), reportxml.ID("73370"), VerifyCGroupV2IsADefault)
 
 			It("Verifies that the cluster can be moved to the cgroupv1 and back",
-				Label("debug"), reportxml.ID("73371"), VerifySwitchBetweenCGroupVersions)
+				Label("cgroupv2"), reportxml.ID("73371"), VerifySwitchBetweenCGroupVersions)
 
 			AfterAll(func() {
 				By("Restore cgroupv2 cluster configuration")
