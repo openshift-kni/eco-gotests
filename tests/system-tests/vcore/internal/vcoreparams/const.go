@@ -105,4 +105,22 @@ const (
 
 	// StorageClassName is a storage class name.
 	StorageClassName = "ocs-storagecluster-cephfs"
+
+	// ESKOperatorName is an elasticsearch operator name.
+	ESKOperatorName = "elasticsearch-operator"
+
+	// ESKNamespace is an elasticsearch operator namespace.
+	ESKNamespace = "openshift-operators-redhat"
+
+	// ESKInstanceName is an elasticsearch instance name.
+	ESKInstanceName = "instance"
+
+	// CLOOperatorName is a clusterlogging operator name.
+	CLOOperatorName = "cluster-logging"
+
+	// CLONamespace is a clusterlogging operator namespace.
+	CLONamespace = "openshift-logging"
+
+	// CLOInstanceName is a clusterlogging instance name.
+	CLOInstanceName = "instance"
 )

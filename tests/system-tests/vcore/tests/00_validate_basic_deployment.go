@@ -23,4 +23,6 @@ var _ = Describe(
 		vcorecommon.VerifyLSOSuite()
 
 		vcorecommon.VerifyODFSuite()
+
+		vcorecommon.VerifyESKAndCLOSuite()
 	})
