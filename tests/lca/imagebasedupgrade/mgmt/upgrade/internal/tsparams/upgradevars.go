@@ -3,7 +3,7 @@ package tsparams
 import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtparams"
 	"github.com/openshift-kni/k8sreporter"
-	lcav1alpha1 "github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
+	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	v1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -42,7 +42,7 @@ var (
 		{Cr: &corev1.ConfigMapList{}},
 		{Cr: &appsv1.DeploymentList{}},
 		{Cr: &corev1.ServiceList{}},
-		{Cr: &lcav1alpha1.ImageBasedUpgradeList{}},
+		{Cr: &lcav1.ImageBasedUpgradeList{}},
 		{Cr: &v1.ClusterOperatorList{}},
 	}
 )

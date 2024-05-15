@@ -14,7 +14,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	lcav1alpha1 "github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
+	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,10 +34,10 @@ const (
 // the cluster and the imagebasedupgrade definitions.
 type ImageBasedUpgradeBuilder struct {
 	// ImageBasedUpgrade definition. Used to store the imagebasedupgrade object.
-	Definition *lcav1alpha1.ImageBasedUpgrade
+	Definition *lcav1.ImageBasedUpgrade
 
 	// Created imagebasedupgrade object.
-	Object *lcav1alpha1.ImageBasedUpgrade
+	Object *lcav1.ImageBasedUpgrade
 	// Used in functions that define or mutate the imagebasedupgrade definition.
 	// errorMsg is processed before the imagebasedupgrade object is created
 	errorMsg  string
@@ -84,7 +84,7 @@ func PullImageBasedUpgrade(apiClient *clients.Settings) (*ImageBasedUpgradeBuild
 
 	builder := ImageBasedUpgradeBuilder{
 		apiClient: apiClient.Client,
-		Definition: &lcav1alpha1.ImageBasedUpgrade{
+		Definition: &lcav1.ImageBasedUpgrade{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: ibuName,
 			},
@@ -178,7 +178,7 @@ func (builder *ImageBasedUpgradeBuilder) Delete() (*ImageBasedUpgradeBuilder, er
 }
 
 // Get returns imagebasedupgrade object if found.
-func (builder *ImageBasedUpgradeBuilder) Get() (*lcav1alpha1.ImageBasedUpgrade, error) {
+func (builder *ImageBasedUpgradeBuilder) Get() (*lcav1.ImageBasedUpgrade, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (builder *ImageBasedUpgradeBuilder) Get() (*lcav1alpha1.ImageBasedUpgrade, 
 	glog.V(100).Infof("Getting imagebasedupgrade %s",
 		builder.Definition.Name)
 
-	imagebasedupgrade := &lcav1alpha1.ImageBasedUpgrade{}
+	imagebasedupgrade := &lcav1.ImageBasedUpgrade{}
 	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
 		Name: builder.Definition.Name,
 	}, imagebasedupgrade)
@@ -239,7 +239,7 @@ func (builder *ImageBasedUpgradeBuilder) WithExtraManifests(
 		extraManifestsConfigMapName, extraManifestsConfigMapNamespace)
 
 	builder.Definition.Spec.ExtraManifests = append(builder.Definition.Spec.ExtraManifests,
-		lcav1alpha1.ConfigMapRef{Name: extraManifestsConfigMapName, Namespace: extraManifestsConfigMapNamespace})
+		lcav1.ConfigMapRef{Name: extraManifestsConfigMapName, Namespace: extraManifestsConfigMapNamespace})
 
 	return builder
 }
@@ -256,7 +256,7 @@ func (builder *ImageBasedUpgradeBuilder) WithOadpContent(
 		oadpContentConfigMapName, oadpContentConfigMapNamespace)
 
 	builder.Definition.Spec.OADPContent = append(builder.Definition.Spec.OADPContent,
-		lcav1alpha1.ConfigMapRef{Name: oadpContentConfigMapName, Namespace: oadpContentConfigMapNamespace})
+		lcav1.ConfigMapRef{Name: oadpContentConfigMapName, Namespace: oadpContentConfigMapNamespace})
 
 	return builder
 }
@@ -355,7 +355,7 @@ func (builder *ImageBasedUpgradeBuilder) WithSeedImagePullSecretRef(
 
 	glog.V(100).Infof("Setting pull-secret %s in imagebasedupgrade for pulling the seed image", pullSecretName)
 
-	builder.Definition.Spec.SeedImageRef.PullSecretRef = &lcav1alpha1.PullSecretRef{Name: pullSecretName}
+	builder.Definition.Spec.SeedImageRef.PullSecretRef = &lcav1.PullSecretRef{Name: pullSecretName}
 
 	return builder
 }
@@ -442,7 +442,7 @@ func (builder *ImageBasedUpgradeBuilder) WithStage(
 	}
 
 	glog.V(100).Infof("Setting stage %s in imagebasedupgrade", stage)
-	builder.Definition.Spec.Stage = lcav1alpha1.ImageBasedUpgradeStage(stage)
+	builder.Definition.Spec.Stage = lcav1.ImageBasedUpgradeStage(stage)
 
 	return builder
 }

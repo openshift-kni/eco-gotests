@@ -32,7 +32,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/url"
-	"github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
+	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroScheme "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/scheme"
@@ -74,8 +74,8 @@ var _ = Describe(
 			Expect(err).NotTo(HaveOccurred(), "error pulling ibu resource from cluster")
 
 			By("Ensure that imagebasedupgrade values are empty")
-			ibu.Definition.Spec.ExtraManifests = []v1alpha1.ConfigMapRef{}
-			ibu.Definition.Spec.OADPContent = []v1alpha1.ConfigMapRef{}
+			ibu.Definition.Spec.ExtraManifests = []lcav1.ConfigMapRef{}
+			ibu.Definition.Spec.OADPContent = []lcav1.ConfigMapRef{}
 			ibu, err := ibu.Update()
 			Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with empty values")
 

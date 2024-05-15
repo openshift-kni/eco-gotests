@@ -8,7 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	lcasgv1alpha1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1alpha1"
+	lcasgv1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -23,9 +23,9 @@ const (
 // the cluster and the seedgenerator definitions.
 type SeedGeneratorBuilder struct {
 	// SeedGenerator definition. Used to store the seedgenerator object.
-	Definition *lcasgv1alpha1.SeedGenerator
+	Definition *lcasgv1.SeedGenerator
 	// Created seedgenerator object.
-	Object *lcasgv1alpha1.SeedGenerator
+	Object *lcasgv1.SeedGenerator
 	// Used in functions that define or mutate the seedgenerator definition.
 	// errorMsg is processed before the seedgenerator object is created
 	errorMsg  string
@@ -48,7 +48,7 @@ func NewSeedGeneratorBuilder(
 
 	builder := SeedGeneratorBuilder{
 		apiClient: apiClient.Client,
-		Definition: &lcasgv1alpha1.SeedGenerator{
+		Definition: &lcasgv1.SeedGenerator{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
@@ -121,7 +121,7 @@ func PullSeedGenerator(apiClient *clients.Settings, name string) (*SeedGenerator
 
 	builder := SeedGeneratorBuilder{
 		apiClient: apiClient.Client,
-		Definition: &lcasgv1alpha1.SeedGenerator{
+		Definition: &lcasgv1.SeedGenerator{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
@@ -168,7 +168,7 @@ func (builder *SeedGeneratorBuilder) Delete() (*SeedGeneratorBuilder, error) {
 }
 
 // Get returns seedgenerator object if found.
-func (builder *SeedGeneratorBuilder) Get() (*lcasgv1alpha1.SeedGenerator, error) {
+func (builder *SeedGeneratorBuilder) Get() (*lcasgv1.SeedGenerator, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (builder *SeedGeneratorBuilder) Get() (*lcasgv1alpha1.SeedGenerator, error)
 	glog.V(100).Infof("Getting seedgenerator %s",
 		builder.Definition.Name)
 
-	seedgenerator := &lcasgv1alpha1.SeedGenerator{}
+	seedgenerator := &lcasgv1.SeedGenerator{}
 	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
 		Name: builder.Definition.Name,
 	}, seedgenerator)

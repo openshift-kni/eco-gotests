@@ -57,8 +57,8 @@ import (
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
 	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
 
-	lcasgv1alpha1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1alpha1"
-	lcav1alpha1 "github.com/openshift-kni/lifecycle-agent/api/v1alpha1"
+	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
+	lcasgv1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1"
 	configV1 "github.com/openshift/api/config/v1"
 	imageregistryV1 "github.com/openshift/api/imageregistry/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -90,6 +90,8 @@ import (
 	fakeRuntimeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
+	istiov1 "maistra.io/api/core/v1"
+	istiov2 "maistra.io/api/core/v2"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
@@ -258,11 +260,11 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := lcav1alpha1.AddToScheme(crScheme); err != nil {
+	if err := lcav1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
-	if err := lcasgv1alpha1.AddToScheme(crScheme); err != nil {
+	if err := lcasgv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -363,6 +365,14 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := eskv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := istiov1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := istiov2.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -485,6 +495,10 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *ocsoperatorv1.StorageCluster:
 			genericClientObjects = append(genericClientObjects, v)
+		case *istiov1.ServiceMeshMemberRoll:
+			genericClientObjects = append(genericClientObjects, v)
+		case *istiov2.ServiceMeshControlPlane:
+			genericClientObjects = append(genericClientObjects, v)
 		case *clov1.ClusterLogging:
 			genericClientObjects = append(genericClientObjects, v)
 		case *clov1.ClusterLogForwarder:
@@ -497,9 +511,9 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *argocdtypes.Application:
 			genericClientObjects = append(genericClientObjects, v)
 		// LCA Client Objects
-		case *lcav1alpha1.ImageBasedUpgrade:
+		case *lcav1.ImageBasedUpgrade:
 			genericClientObjects = append(genericClientObjects, v)
-		case *lcasgv1alpha1.SeedGenerator:
+		case *lcasgv1.SeedGenerator:
 			genericClientObjects = append(genericClientObjects, v)
 		// Velero Client Objects
 		case *velerov1.Backup:
