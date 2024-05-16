@@ -88,6 +88,9 @@ const (
 	// MetalLBOperatorName is a metallb operator name.
 	MetalLBOperatorName = "metallb-operator"
 
+	// MetalLBSubscriptionName is a metallb operator subscription name.
+	MetalLBSubscriptionName = "metallb-operator-subscription"
+
 	// MetalLBOperatorDeploymentName is a metallb operator deployment name.
 	MetalLBOperatorDeploymentName = "metallb-operator-controller-manager"
 

@@ -68,7 +68,7 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 		vcoreparams.MetalLBOperatorNamespace)
 
 	metalLBCSVName, err := csv.GetCurrentCSVNameFromSubscription(APIClient,
-		vcoreparams.MetalLBOperatorName,
+		vcoreparams.MetalLBSubscriptionName,
 		vcoreparams.MetalLBOperatorNamespace)
 
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get metalLB %s csv name from the %s namespace",
@@ -91,28 +91,32 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 	glog.V(100).Infof("Create a single instance of a metalLB custom resource in %s namespace",
 		vcoreparams.MetalLBOperatorNamespace)
 
-	metallbInstance, err := metallb.NewBuilder(APIClient,
+	metallbInstance := metallb.NewBuilder(APIClient,
 		vcoreparams.MetalLBInstanceName,
 		vcoreparams.MetalLBOperatorNamespace,
-		VCoreConfig.WorkerLabelMap).Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create custom %s metallb instance in %s namespace; "+
-		"%v", vcoreparams.MetalLBInstanceName, vcoreparams.MetalLBOperatorNamespace, err))
+		VCoreConfig.WorkerLabelMap)
 
-	glog.V(100).Infof("Confirm that %s deployment for the MetalLB operator is running in %s namespace",
-		vcoreparams.MetalLBOperatorDeploymentName, vcoreparams.MetalLBOperatorNamespace)
+	if !metallbInstance.Exists() {
+		metallbInstance, err = metallbInstance.Create()
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create custom %s metallb instance in %s namespace; "+
+			"%v", vcoreparams.MetalLBInstanceName, vcoreparams.MetalLBOperatorNamespace, err))
 
-	err = await.WaitUntilDeploymentReady(APIClient,
-		vcoreparams.MetalLBOperatorDeploymentName,
-		vcoreparams.MetalLBOperatorNamespace,
-		5*time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("%s deployment not found in %s namespace; %v",
-		vcoreparams.MetalLBOperatorDeploymentName, vcoreparams.MetalLBOperatorNamespace, err))
-	Expect(metallbInstance.Exists()).To(Equal(true), fmt.Sprintf("Failed to create custom %s metallb "+
-		"instance in %s namespace",
-		vcoreparams.MetalLBInstanceName, vcoreparams.MetalLBOperatorNamespace))
+		glog.V(100).Infof("Confirm that %s deployment for the MetalLB operator is running in %s namespace",
+			vcoreparams.MetalLBOperatorDeploymentName, vcoreparams.MetalLBOperatorNamespace)
 
-	glog.V(100).Info("Check that the daemon set for the speaker is running")
-	time.Sleep(5 * time.Second)
+		err = await.WaitUntilDeploymentReady(APIClient,
+			vcoreparams.MetalLBOperatorDeploymentName,
+			vcoreparams.MetalLBOperatorNamespace,
+			5*time.Second)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("%s deployment not found in %s namespace; %v",
+			vcoreparams.MetalLBOperatorDeploymentName, vcoreparams.MetalLBOperatorNamespace, err))
+		Expect(metallbInstance.Exists()).To(Equal(true), fmt.Sprintf("Failed to create custom %s metallb "+
+			"instance in %s namespace",
+			vcoreparams.MetalLBInstanceName, vcoreparams.MetalLBOperatorNamespace))
+
+		glog.V(100).Info("Check that the daemon set for the speaker is running")
+		time.Sleep(5 * time.Second)
+	}
 
 	err = await.WaitUntilNewMetalLbDaemonSetIsRunning(APIClient, 5*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("daemonset for %s deployment speaker not found in %s namespace; %v",
