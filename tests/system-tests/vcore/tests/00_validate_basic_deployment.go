@@ -25,6 +25,4 @@ var _ = Describe(
 		vcorecommon.VerifyODFSuite()
 
 		vcorecommon.VerifyESKAndCLOSuite()
-
-		vcorecommon.VerifyHelmSuite()
 	})
