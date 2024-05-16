@@ -72,7 +72,6 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools
-      - github.com/openshift-kni/eco-gotests/tests/system-tests/ecore/internal/ecoreinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools
       - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools
       - github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools
@@ -176,9 +175,6 @@ issues:
     - path: 'tests/system-tests/spk/internal/spkinittools'
       linters:
         - gochecknoinits
-    - path: 'tests/system-tests/ecore/internal/ecoreinittools'
-      linters:
-        - gochecknoinits
     - path: 'tests/system-tests/vcore/internal/vcoreinittools'
       linters:
         - gochecknoinits
@@ -213,9 +209,6 @@ issues:
       linters:
         - depguard
     - path: "tests/system-tests/spk/internal/.*"
-      linters:
-        - depguard
-    - path: "tests/system-tests/ecore/internal/.*"
       linters:
         - depguard
     - path: "tests/system-tests/vcore/internal/.*"
