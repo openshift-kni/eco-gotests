@@ -124,7 +124,6 @@ var _ = Describe(
 
 			spkcommon.VerifyHardRebootSuite()
 
-			// https://issues.redhat.com/browse/OCPBUGS-30170
 			It("Removes stuck SPK pods",
 				Label("spk-post-hard-reboot", "spk-cleanup-stuck-pods"), spkcommon.CleanupStuckContainerPods)
 
