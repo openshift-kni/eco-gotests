@@ -184,6 +184,7 @@ require (
 	github.com/openshift/ptp-operator v0.0.0-20231220185604-29113b41981b // indirect
 	github.com/operator-framework/operator-lifecycle-manager v0.27.1-0.20240301195430-1d12f8f4de16 // indirect
 	github.com/operator-framework/operator-registry v1.35.0 // indirect
+	github.com/otiai10/copy v1.14.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -196,6 +197,7 @@ require (
 	github.com/rook/rook/pkg/apis v0.0.0-20231215165123-32de0fb5f69b // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
+	github.com/samber/lo v1.39.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect

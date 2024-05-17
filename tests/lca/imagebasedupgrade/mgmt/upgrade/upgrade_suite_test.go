@@ -1,9 +1,6 @@
 package upgrade_test
 
 import (
-	"encoding/json"
-	"fmt"
-	"regexp"
 	"testing"
 
 	"runtime"
@@ -12,14 +9,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/seedimage"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/tests"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _, currentFile, _, _ = runtime.Caller(0)
@@ -34,67 +29,10 @@ func TestUpgrade(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	if MGMTConfig.SeedImageVersion == "" {
-		By("Find node for pulling seed image")
-		ibuNodes, err := nodes.List(APIClient)
-		Expect(err).NotTo(HaveOccurred(), "error pulling nodes")
-		Expect(len(ibuNodes) > 0).To(BeTrue(), "error: no node resources were found")
-		seedImageNode := ibuNodes[0]
+		seedInfo, err := seedimage.GetContent(APIClient, MGMTConfig.SeedImage)
+		Expect(err).NotTo(HaveOccurred(), "error getting seed image info")
 
-		By("Pull cluster proxy configuration")
-		targetProxy, err := cluster.GetOCPProxy(APIClient)
-		Expect(err).NotTo(HaveOccurred(), "error pulling cluster proxy configuration")
-
-		var podmanPullCmd string
-		if len(targetProxy.Object.Spec.HTTPSProxy) != 0 {
-			podmanPullCmd =
-				fmt.Sprintf("sudo HTTPS_PROXY=%s podman pull %s", targetProxy.Object.Spec.HTTPSProxy, MGMTConfig.SeedImage)
-		} else if len(targetProxy.Object.Spec.HTTPProxy) != 0 {
-			podmanPullCmd =
-				fmt.Sprintf("sudo HTTP_PROXY=%s podman pull %s", targetProxy.Object.Spec.HTTPProxy, MGMTConfig.SeedImage)
-		} else {
-			podmanPullCmd = fmt.Sprintf("sudo podman pull %s", MGMTConfig.SeedImage)
-		}
-
-		By("Pull seed image onto node")
-		_, err = cluster.ExecCmdWithStdout(
-			APIClient, podmanPullCmd, metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", seedImageNode.Object.Name),
-			})
-		Expect(err).NotTo(HaveOccurred(), "error executing podman pull on %s", seedImageNode.Object.Name)
-
-		By("Mount seed image on node")
-		mountedFilePathOutput, err := cluster.ExecCmdWithStdout(
-			APIClient, fmt.Sprintf("sudo podman image mount %s", MGMTConfig.SeedImage), metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", seedImageNode.Object.Name),
-			})
-		Expect(err).NotTo(HaveOccurred(), "error executing podman image mount on %s", seedImageNode.Object.Name)
-
-		mountedFilePath := regexp.MustCompile(`\n`).ReplaceAllString(mountedFilePathOutput[seedImageNode.Object.Name], "")
-
-		By("Read manifest.json from mounted image")
-		manifestJSONOutput, err := cluster.ExecCmdWithStdout(
-			APIClient, fmt.Sprintf("sudo cat %s/manifest.json", mountedFilePath), metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", seedImageNode.Object.Name),
-			})
-		Expect(err).NotTo(HaveOccurred(), "error reading manifest.json on %s", seedImageNode.Object.Name)
-
-		manifestJSON := manifestJSONOutput[seedImageNode.Object.Name]
-
-		var manifestJSONReader struct {
-			OCPVersion string `json:"seed_cluster_ocp_version"`
-		}
-
-		err = json.Unmarshal([]byte(manifestJSON), &manifestJSONReader)
-		Expect(err).NotTo(HaveOccurred(), "error unmarshalling manifest.json to struct on %s", seedImageNode.Object.Name)
-
-		MGMTConfig.SeedImageVersion = manifestJSONReader.OCPVersion
-
-		By("Unmount seed image")
-		_, err = cluster.ExecCmdWithStdout(
-			APIClient, fmt.Sprintf("sudo podman image unmount %s", MGMTConfig.SeedImage), metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", seedImageNode.Object.Name),
-			})
-		Expect(err).NotTo(HaveOccurred(), "error executing podman image unmount on %s", seedImageNode.Object.Name)
+		MGMTConfig.SeedImageVersion = seedInfo.SeedClusterOCPVersion
 	}
 })
 
