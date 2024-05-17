@@ -93,7 +93,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			}
 
 			By("Checking for expected kernel parameters")
-			cmdline, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, "cat /proc/cmdline")
+			cmdline, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, "cat /proc/cmdline")
 			Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
 
 			// Expected default set of kernel parameters when no WorkloadHints are specified in PerformanceProfile
@@ -120,7 +120,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		err := helper.SetPowerModeAndWaitForMcpUpdate(perfProfile, *nodeList[0], true, false, true)
 		Expect(err).ToNot(HaveOccurred(), "Failed to set power mode")
 
-		cmdline, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, "cat /proc/cmdline")
+		cmdline, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, "cat /proc/cmdline")
 		Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
 		Expect(cmdline).
 			To(ContainSubstring("intel_pstate=passive"), "Kernel parameter intel_pstate=passive missing from /proc/cmdline")
@@ -259,7 +259,7 @@ func checkCPUGovernorsAndResumeLatency(cpus []int, pmQos, governor string) {
 
 		var output string
 		for len(output) == 0 {
-			value, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, command)
+			value, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, command)
 			Expect(err).ToNot(HaveOccurred(), "Error executing command %s", command)
 
 			output = strings.Trim(value, "\r\n")
@@ -270,7 +270,7 @@ func checkCPUGovernorsAndResumeLatency(cpus []int, pmQos, governor string) {
 
 		output = ""
 		for len(output) == 0 {
-			value, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, command)
+			value, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, command)
 			Expect(err).ToNot(HaveOccurred(), "Error executing command %s", command)
 
 			output = strings.Trim(value, "\r\n")
