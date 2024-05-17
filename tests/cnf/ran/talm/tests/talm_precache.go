@@ -104,7 +104,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 			})
 		})
 
-		Context("precache OCP with image", Ordered, func() {
+		Context("precache OCP with image", func() {
 			BeforeEach(func() {
 				By("wiping any existing images from spoke 1 master")
 				_ = cluster.ExecCmd(raninittools.Spoke1APIClient, 3, tsparams.MasterNodeSelector, tsparams.SpokeImageDeleteCommand)
@@ -345,7 +345,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 		})
 	})
 
-	When("there are multiple spokes and one turns off", Ordered, func() {
+	When("there are multiple spokes and one turns off", Ordered, ContinueOnFailure, func() {
 		var (
 			redfishClient     *gofish.APIClient
 			talmCompleteLabel = "talmcomplete"
