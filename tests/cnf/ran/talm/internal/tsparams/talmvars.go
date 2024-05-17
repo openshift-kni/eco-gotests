@@ -28,6 +28,14 @@ var (
 	// TalmNonExistentPolicyMessage is the condition message for when a policy is non-existent.
 	TalmNonExistentPolicyMessage = fmt.Sprintf("Missing managed policies: [%s]", NonExistentPolicyName)
 
+	// SpokeImageListCommand is the command to generate a list of cached images on the spoke cluster.
+	SpokeImageListCommand = fmt.Sprintf(`podman images  --noheading --filter "label=name=%s"`, PreCacheExcludedImage)
+
+	// SpokeImageDeleteCommand is the command to delete PreCacheExcludedImage.
+	SpokeImageDeleteCommand = fmt.Sprintf(
+		`podman images --noheading  --filter "label=name=%s" --format {{.ID}}|xargs podman rmi --force`,
+		PreCacheExcludedImage)
+
 	// Spoke1Name is the name of the first spoke cluster.
 	Spoke1Name string
 	// Spoke2Name is the name of the second spoke cluster.

@@ -62,11 +62,19 @@ func PrepareEnvWithSmallMountPoint(client *clients.Settings) (string, error) {
 
 // DiskFullEnvCleanup clean all the resources created for single cluster backup fail.
 func DiskFullEnvCleanup(client *clients.Settings, loopbackDevicePath string) error {
-	// retrieve all mounts for backup dir
-	output, err := cluster.ExecCommandOnSNO(
-		client, 3, fmt.Sprintf("findmnt -n -o SOURCE --target %s", tsparams.BackupPath))
-	if err != nil {
-		return err
+	var (
+		output string
+		err    error
+	)
+
+	// findmnt outputs a blank string sometimes so retry until successful
+	for len(output) == 0 {
+		// retrieve all mounts for backup dir
+		output, err = cluster.ExecCommandOnSNO(
+			client, 3, fmt.Sprintf("findmnt -n -o SOURCE --target %s", tsparams.BackupPath))
+		if err != nil {
+			return err
+		}
 	}
 
 	glog.V(tsparams.LogLevel).Infof("findmnt output: `%s`", output)

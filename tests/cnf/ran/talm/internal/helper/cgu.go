@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
+	configv1 "github.com/openshift/api/config/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,6 +135,33 @@ func WaitForCguBlocked(cguBuilder *cgu.CguBuilder, message string) error {
 		6*time.Minute)
 }
 
+// WaitForCguPreCacheValid waits up to the timeout until the provided cguBuilder matches the condition for valid
+// precaching.
+func WaitForCguPreCacheValid(cguBuilder *cgu.CguBuilder, timeout time.Duration) error {
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:    tsparams.PreCacheValidType,
+			Status:  metav1.ConditionTrue,
+			Message: tsparams.PreCacheValidMessage,
+		},
+		timeout)
+}
+
+// WaitForCguPreCachePartiallyDone waits up to the timeout until the provided cguBuilder matches the condition for
+// precaching being partially done.
+func WaitForCguPreCachePartiallyDone(cguBuilder *cgu.CguBuilder, timeout time.Duration) error {
+	return WaitForCguInCondition(
+		cguBuilder,
+		metav1.Condition{
+			Type:    tsparams.PreCacheSucceededType,
+			Status:  metav1.ConditionTrue,
+			Message: tsparams.PreCachePartialFailMessage,
+			Reason:  tsparams.PartiallyDoneReason,
+		},
+		timeout)
+}
+
 // IsClusterInCguInProgress checks if the current batch remediation progress for the provided cluster is InProgress.
 func IsClusterInCguInProgress(cguBuilder *cgu.CguBuilder, cluster string) (bool, error) {
 	if !cguBuilder.Exists() {
@@ -152,12 +180,39 @@ func IsClusterInCguInProgress(cguBuilder *cgu.CguBuilder, cluster string) (bool,
 	return status.State == "InProgress", nil
 }
 
+// isClusterInCguCompleted checks if the current batch remediation progress for the provided cluster is Completed.
+func isClusterInCguCompleted(cguBuilder *cgu.CguBuilder, cluster string) (bool, error) {
+	if !cguBuilder.Exists() {
+		return false, errors.New("provided CGU does not exist on client")
+	}
+
+	status, ok := cguBuilder.Object.Status.Status.CurrentBatchRemediationProgress[cluster]
+	if !ok {
+		glog.V(tsparams.LogLevel).Infof(
+			"cluster %s not found in batch remediation progress for cgu %s in namespace %s",
+			cluster, cguBuilder.Definition.Name, cguBuilder.Definition.Namespace)
+
+		return false, nil
+	}
+
+	return status.State == "Completed", nil
+}
+
 // WaitForClusterInCguInProgress waits up to timeout for the current batch remediation progress for the provided cluster
 // to show InProgress.
 func WaitForClusterInCguInProgress(cguBuilder *cgu.CguBuilder, cluster string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), 15*time.Second, timeout, true, func(context.Context) (bool, error) {
 			return IsClusterInCguInProgress(cguBuilder, cluster)
+		})
+}
+
+// WaitForClusterInCguCompleted waits up to timeout for the current batch remediation progress for the provided cluster
+// to show Completed.
+func WaitForClusterInCguCompleted(cguBuilder *cgu.CguBuilder, cluster string, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 15*time.Second, timeout, true, func(context.Context) (bool, error) {
+			return isClusterInCguCompleted(cguBuilder, cluster)
 		})
 }
 
@@ -215,4 +270,22 @@ func WaitToEnableCgu(cguBuilder *cgu.CguBuilder) (*cgu.CguBuilder, error) {
 	cguBuilder.Definition.Spec.Enable = ptr.To(true)
 
 	return cguBuilder.Update(true)
+}
+
+// SetupCguWithClusterVersion creates the policy with the provided clustrer version and its components for a cguBuilder
+// then creates the cguBuilder.
+func SetupCguWithClusterVersion(
+	cguBuilder *cgu.CguBuilder, clusterVersion *configv1.ClusterVersion) (*cgu.CguBuilder, error) {
+	_, err := CreatePolicy(raninittools.HubAPIClient, clusterVersion, "")
+	if err != nil {
+		return nil, err
+	}
+
+	err = CreatePolicyComponents(
+		raninittools.HubAPIClient, "", cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
+	if err != nil {
+		return nil, err
+	}
+
+	return cguBuilder.Create()
 }

@@ -17,6 +17,8 @@ const (
 	LabelBlockingCRTestCases = "blockingcr"
 	// LabelCanaryTestCases is the label for a particular test file.
 	LabelCanaryTestCases = "canary"
+	// LabelPreCacheTestCases is the label for a particular test file.
+	LabelPreCacheTestCases = "precache"
 	// LabelMissingSpokeTestCases is the label for a set of batching test cases.
 	LabelMissingSpokeTestCases = "missingspoke"
 	// LabelMissingPolicyTestCases is the label for a set of batching test cases.
@@ -53,6 +55,8 @@ const (
 	TalmPodLabelSelector = "pod-template-hash"
 	// TalmContainerName is the name of the container in the talm pod.
 	TalmContainerName = "manager"
+	// TalmCompleteLabel is the label applied during talm after completion.
+	TalmCompleteLabel = "talmcomplete"
 
 	// OperatorHubTalmNamespace talm namespace.
 	OperatorHubTalmNamespace = "topology-aware-lifecycle-manager"
@@ -72,6 +76,10 @@ const (
 	ClustersSelectedType = "ClustersSelected"
 	// ValidatedType is the type for a CGU condition.
 	ValidatedType = "Validated"
+	// PreCacheValidType is the type for a CGU condition.
+	PreCacheValidType = "PrecacheSpecValid"
+	// PreCacheSucceededType is the type for a CGU condition.
+	PreCacheSucceededType = "PrecachingSuceeded"
 	// ReadyType is the type for a CGU condition.
 	ReadyType = "Ready"
 	// SucceededType is the type for a CGU condition.
@@ -84,6 +92,8 @@ const (
 	TimedOutReason = "TimedOut"
 	// UpgradeCompletedReason is the reason for a CGU condition.
 	UpgradeCompletedReason = "UpgradeCompleted"
+	// PartiallyDoneReason is the reason for a CGU condition.
+	PartiallyDoneReason = "PartiallyDone"
 	// TalmTimeoutMessage is the message for a CGU condition.
 	TalmTimeoutMessage = "Policy remediation took too long"
 	// TalmCanaryTimeoutMessage is the message for a CGU condition.
@@ -92,6 +102,10 @@ const (
 	TalmBlockedMessage = "Blocking CRs that are not completed: [%s]"
 	// TalmMissingCRMessage is the message for a CGU condition.
 	TalmMissingCRMessage = "Missing blocking CRs: [%s]"
+	// PreCacheValidMessage is the message for a CGU condition.
+	PreCacheValidMessage = "Precaching spec is valid and consistent"
+	// PreCachePartialFailMessage  is the message for a CGU condition.
+	PreCachePartialFailMessage = "Precaching failed for 1 clusters"
 
 	// PreCacheContainerName is the name of the pre cache container.
 	PreCacheContainerName = "pre-cache-container"
@@ -101,6 +115,11 @@ const (
 	PreCacheSpokeNS = "openshift-talo-pre-cache"
 	// PreCacheOverrideName is the name of the config map for excluding images from precaching.
 	PreCacheOverrideName = "cluster-group-upgrade-overrides"
+	// PreCacheExcludedImage is the name of the image to be excluded from pre caching.
+	PreCacheExcludedImage = "openshift/ose-prometheus"
+	// PreCacheInvalidImage is a nonexistent image to use for pre caching tests.
+	PreCacheInvalidImage = `quay.io/openshift-release-dev/ocp-v4.0-art-dev@` +
+		`sha256:0000000000000000000000000000000000000000000000000000000000000000`
 
 	// MasterNodeSelector when used in a label selector finds all master nodes.
 	MasterNodeSelector = "node-role.kubernetes.io/master="

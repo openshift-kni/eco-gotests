@@ -15,7 +15,7 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-var _ = Describe("TALM Canary Tests", Ordered, Label(tsparams.LabelCanaryTestCases), func() {
+var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func() {
 	var err error
 
 	BeforeEach(func() {

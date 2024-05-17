@@ -20,16 +20,19 @@ const (
 // RANConfig contains configuration for the RAN directory.
 type RANConfig struct {
 	*cnfconfig.CNFConfig
-	MetricSamplingInterval string `yaml:"metricSamplingInterval" envconfig:"ECO_CNF_RAN_METRIC_SAMPLING_INTERVAL"`
-	NoWorkloadDuration     string `yaml:"noWorkloadDuration" envconfig:"ECO_CNF_RAN_NO_WORKLOAD_DURATION"`
-	WorkloadDuration       string `yaml:"workloadDuration" envconfig:"ECO_CNF_RAN_WORKLOAD_DURATION"`
-	StressngTestImage      string `yaml:"stressngTestImage" envconfig:"ECO_CNF_RAN_STRESSNG_TEST_IMAGE"`
-	CnfTestImage           string `yaml:"cnfTestImage" envconfig:"ECO_CNF_RAN_TEST_IMAGE"`
-	HubKubeconfig          string `envconfig:"ECO_CNF_RAN_KUBECONFIG_HUB"`
-	Spoke2Kubeconfig       string `envconfig:"ECO_CNF_RAN_KUBECONFIG_SPOKE2"`
-	BmcUsername            string `yaml:"bmcUsername" envconfig:"ECO_CNF_RAN_BMC_USERNAME"`
-	BmcPassword            string `yaml:"bmcPassword" envconfig:"ECO_CNF_RAN_BMC_PASSWORD"`
-	BmcHosts               string `yaml:"bmcHosts" envconfig:"ECO_CNF_RAN_BMC_HOSTS"`
+	MetricSamplingInterval string   `yaml:"metricSamplingInterval" envconfig:"ECO_CNF_RAN_METRIC_SAMPLING_INTERVAL"`
+	NoWorkloadDuration     string   `yaml:"noWorkloadDuration" envconfig:"ECO_CNF_RAN_NO_WORKLOAD_DURATION"`
+	WorkloadDuration       string   `yaml:"workloadDuration" envconfig:"ECO_CNF_RAN_WORKLOAD_DURATION"`
+	StressngTestImage      string   `yaml:"stressngTestImage" envconfig:"ECO_CNF_RAN_STRESSNG_TEST_IMAGE"`
+	CnfTestImage           string   `yaml:"cnfTestImage" envconfig:"ECO_CNF_RAN_TEST_IMAGE"`
+	HubKubeconfig          string   `envconfig:"ECO_CNF_RAN_KUBECONFIG_HUB"`
+	Spoke2Kubeconfig       string   `envconfig:"ECO_CNF_RAN_KUBECONFIG_SPOKE2"`
+	BmcUsername            string   `yaml:"bmcUsername" envconfig:"ECO_CNF_RAN_BMC_USERNAME"`
+	BmcPassword            string   `yaml:"bmcPassword" envconfig:"ECO_CNF_RAN_BMC_PASSWORD"`
+	BmcHosts               string   `yaml:"bmcHosts" envconfig:"ECO_CNF_RAN_BMC_HOSTS"`
+	OcpUpgradeUpstreamURL  string   `yaml:"ocpUpgradeUpstreamUrl" envconfig:"ECO_CNF_RAN_OCP_UPGRADE_UPSTREAM_URL"`
+	PtpOperatorNamespace   string   `yaml:"ptpOperatorNamespace" envconfig:"ECO_CNF_RAN_PTP_OPERATOR_NAMESPACE"`
+	TalmPreCachePolicies   []string `yaml:"talmPreCachePolicies" envconfig:"ECO_CNF_RAN_TALM_PRECACHE_POLICIES"`
 }
 
 // NewRANConfig returns an instance of RANConfig.
