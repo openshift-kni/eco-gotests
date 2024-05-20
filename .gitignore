@@ -4,9 +4,15 @@
 *.dll
 *.so
 *.dylib
+**/*.swp
 
 # Test binary, built with `go test -c`
 *.test
+
+# Eclipse files
+**/.asciidoctorconfig.adoc
+**/.project
+**/.pydevproject
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

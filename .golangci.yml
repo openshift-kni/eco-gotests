@@ -69,6 +69,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/internal/inittools
       - github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools
       - github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/ipsec/internal/ipsecinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools
@@ -161,6 +162,9 @@ issues:
       linters:
         - gochecknoinits
     - path: 'tests/assisted/ztp/internal/ztpinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/ipsec/internal/ipsecinittools'
       linters:
         - gochecknoinits
     - path: 'tests/system-tests/ran-du/internal/randuinittools'
