@@ -1,12 +1,15 @@
 package tests
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -29,6 +32,7 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 			sriovInterfacesUnderTest []string
 			workerNodeList           []*nodes.Builder
 			err                      error
+			poolConfigName           = "pool1"
 		)
 
 		BeforeAll(func() {
@@ -56,12 +60,18 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
 				[]string{tsparams.ClientIPv4IPAddress}, []string{tsparams.ServerIPv4IPAddress})
 			Expect(err).ToNot(HaveOccurred(), "Connectivity check between test pods failed")
+
+			By("Adding pods with terminationGracePeriodSeconds on each worker node")
+			createPodWithVFOnEachWorker(workerNodeList)
 		})
 
 		AfterEach(func() {
 			By("Removing SR-IOV configuration")
 			err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+
+			err = sriov.CleanAllNonDefaultPoolConfigs(APIClient, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove SriovNetworkPoolConfigs")
 
 			By("Cleaning test namespace")
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
@@ -75,6 +85,46 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 
 			By("Validating that nodes are drained one by one")
 			Eventually(isDrainingRunningAsExpected, time.Minute, tsparams.RetryInterval).WithArguments(1).
+				Should(BeTrue(), "draining runs not as expected")
+
+			err = netenv.WaitForSriovStable(APIClient, tsparams.MCOWaitTimeout, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait for stable cluster.")
+		})
+
+		It("without maxUnavailable field", reportxml.ID("68661"), func() {
+			By("Creating SriovNetworkPoolConfig without maxUnavailable field")
+			_, err = sriov.NewPoolConfigBuilder(APIClient, poolConfigName, NetConfig.SriovOperatorNamespace).
+				WithNodeSelector(NetConfig.WorkerLabelMap).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create SriovNetworkPoolConfig without maxUnavailable field.")
+
+			By("Removing test configuration to call draining mechanism")
+			removeTestConfiguration()
+
+			By("Validating that nodes are drained all together")
+			Eventually(isDrainingRunningAsExpected, time.Minute, tsparams.RetryInterval).WithArguments(len(workerNodeList)).
+				Should(BeTrue(), "draining runs not as expected")
+
+			err = netenv.WaitForSriovStable(APIClient, tsparams.MCOWaitTimeout, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait for stable cluster.")
+		})
+
+		It("1 SriovNetworkPoolconfig: maxUnavailable value is 2", reportxml.ID("68662"), func() {
+			By("Validating that the cluster has more 2 worker nodes")
+			if len(workerNodeList) < 3 {
+				Skip(fmt.Sprintf("The cluster has less than 3 workers: %d", len(workerNodeList)))
+			}
+
+			By("Creating SriovNetworkPoolConfig with maxUnavailable 2")
+			_, err = sriov.NewPoolConfigBuilder(APIClient, poolConfigName, NetConfig.SriovOperatorNamespace).
+				WithMaxUnavailable(intstr.FromInt32(2)).
+				WithNodeSelector(NetConfig.WorkerLabelMap).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create SriovNetworkPoolConfig with maxUnavailable 2.")
+
+			By("Removing test configuration to call draining mechanism")
+			removeTestConfiguration()
+
+			By("Validating that nodes are drained by 2")
+			Eventually(isDrainingRunningAsExpected, time.Minute, tsparams.RetryInterval).WithArguments(2).
 				Should(BeTrue(), "draining runs not as expected")
 
 			err = netenv.WaitForSriovStable(APIClient, tsparams.MCOWaitTimeout, NetConfig.SriovOperatorNamespace)
@@ -105,10 +155,7 @@ func createSriovConfigurationParallelDrain(sriovInterfaceName string) {
 }
 
 func removeTestConfiguration() {
-	err := namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-		netparam.DefaultTimeout, pod.GetGVR())
-	Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
-	err = sriovenv.RemoveAllSriovNetworks()
+	err := sriovenv.RemoveAllSriovNetworks()
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean all SR-IOV Networks")
 	err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean all SR-IOV policies")
@@ -121,14 +168,27 @@ func isDrainingRunningAsExpected(expectedConcurrentDrains int) bool {
 
 	var inProgressWithDrainingCompleteCount int
 
-	// This check may be unreliable; we need to find a more stable solution.
 	for _, sriovNodeState := range sriovNodeStateList {
 		// Check if syncStatus is "InProgress" and CurrentSyncState is "DrainComplete"
 		if sriovNodeState.Objects.Status.SyncStatus == "InProgress" &&
-			sriovNodeState.Objects.Annotations["sriovnetwork.openshift.io/current-state"] == "DrainComplete" {
+			sriovNodeState.Objects.Annotations["sriovnetwork.openshift.io/current-state"] == "Draining" {
 			inProgressWithDrainingCompleteCount++
 		}
 	}
 
 	return inProgressWithDrainingCompleteCount == expectedConcurrentDrains
+}
+
+func createPodWithVFOnEachWorker(workerList []*nodes.Builder) {
+	for i, worker := range workerList {
+		// 192.168.0.1 and 192.168.0.2 addresses are busy by client and server pods
+		ipaddress := "192.168.0." + strconv.Itoa(i+3) + "/24"
+		secNetwork := pod.StaticIPAnnotation(sriovAndResourceNameParallelDrain, []string{ipaddress})
+		_, err := pod.NewBuilder(
+			APIClient, "testpod"+worker.Object.Name, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+			DefineOnNode(worker.Object.Name).WithSecondaryNetwork(secNetwork).
+			WithTerminationGracePeriodSeconds(5).
+			CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create a pod %s", "testpod-"+worker.Object.Name))
+	}
 }
