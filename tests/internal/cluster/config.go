@@ -3,10 +3,12 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
+	"github.com/openshift-kni/eco-goinfra/pkg/infrastructure"
 	"github.com/openshift-kni/eco-goinfra/pkg/network"
 	"github.com/openshift-kni/eco-goinfra/pkg/proxy"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
@@ -167,4 +169,24 @@ func checkAPIClient(clusterObj APIClientGetter) (*clients.Settings, error) {
 	}
 
 	return apiClient, nil
+}
+
+// GetOCPClusterName retrieves the OCP cluster name from an arbitrary cluster.
+func GetOCPClusterName(clusterObj APIClientGetter) (string, error) {
+	apiClient, err := checkAPIClient(clusterObj)
+	if err != nil {
+		return "", err
+	}
+
+	glog.V(90).Infof("Gathering OCP cluster name from infrastructure at %s", apiClient.KubeconfigPath)
+
+	infraConfig, err := infrastructure.Pull(apiClient)
+	if err != nil {
+		return "", err
+	}
+
+	// The cluster name is the infrastructure name without the last part, e.g. "kni-qe-12-p746q" -> "kni-qe-12"
+	parts := strings.Split(infraConfig.Object.Status.InfrastructureName, "-")
+
+	return strings.Join(parts[:len(parts)-1], "-"), nil
 }

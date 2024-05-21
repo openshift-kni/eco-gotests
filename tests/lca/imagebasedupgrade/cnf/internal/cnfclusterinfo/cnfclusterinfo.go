@@ -3,13 +3,12 @@ package cnfclusterinfo
 import (
 	"errors"
 
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfparams"
-
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfparams"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -17,6 +16,7 @@ import (
 type ClusterStruct struct {
 	Version   string
 	ID        string
+	Name      string
 	Operators []string
 	NodeName  string
 }
@@ -27,6 +27,14 @@ func (upgradeVar *ClusterStruct) SaveClusterInfo() error {
 
 	if err != nil {
 		glog.V(cnfparams.CNFLogLevel).Infof("Could not retrieve cluster version")
+
+		return err
+	}
+
+	targetSnoClusterName, err := cluster.GetOCPClusterName(cnfinittools.TargetSNOAPIClient)
+
+	if err != nil {
+		glog.V(cnfparams.CNFLogLevel).Infof("Could not retrieve target sno cluster name")
 
 		return err
 	}
@@ -61,6 +69,7 @@ func (upgradeVar *ClusterStruct) SaveClusterInfo() error {
 
 	upgradeVar.Version = clusterVersion.Object.Status.Desired.Version
 	upgradeVar.ID = string(clusterVersion.Object.Spec.ClusterID)
+	upgradeVar.Name = targetSnoClusterName
 	upgradeVar.Operators = installedCSV
 	upgradeVar.NodeName = node[0].Object.Name
 

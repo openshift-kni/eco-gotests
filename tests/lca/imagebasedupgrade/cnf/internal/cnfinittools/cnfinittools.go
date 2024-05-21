@@ -1,47 +1,29 @@
 package cnfinittools
 
 import (
-	"os"
-
-	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfparams"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfconfig"
 )
 
 var (
-	// TargetHubAPIClient is the api client to the hub cluster.
+	// TargetHubAPIClient is the api client to the target hub cluster.
 	TargetHubAPIClient *clients.Settings
-	// TargetSNOAPIClient is the api client to the target SNO cluster.
+	// TargetSNOAPIClient is the api client to the target sno cluster.
 	TargetSNOAPIClient *clients.Settings
+	// CNFConfig provides access to general configuration parameters.
+	CNFConfig *cnfconfig.CNFConfig
 )
 
 // init loads all variables automatically when this package is imported. Once package is imported a user has full
 // access to all vars within init function. It is recommended to import this package using dot import.
 func init() {
-	TargetHubAPIClient = DefineAPIClient(cnfparams.TargetHubKubeEnvKey)
-	TargetSNOAPIClient = DefineAPIClient(cnfparams.TargetSNOKubeEnvKey)
-}
+	CNFConfig = cnfconfig.NewCNFConfig()
 
-// DefineAPIClient creates new api client instance connected to given cluster.
-func DefineAPIClient(kubeconfigEnvVar string) *clients.Settings {
-	kubeFilePath, present := os.LookupEnv(kubeconfigEnvVar)
-
-	glog.V(cnfparams.CNFLogLevel).Infof("checking api client access")
-
-	if !present {
-		glog.V(cnfparams.CNFLogLevel).Infof("can not load api client. Please check %s env var", kubeconfigEnvVar)
-
-		return nil
+	if CNFConfig.TargetHubKubeConfig != "" {
+		TargetHubAPIClient = clients.New(CNFConfig.TargetHubKubeConfig)
 	}
 
-	glog.V(cnfparams.CNFLogLevel).Infof("checking whether client is set or not")
-
-	client := clients.New(kubeFilePath)
-	if client == nil {
-		glog.V(cnfparams.CNFLogLevel).Infof("client is not set please check %s env variable", kubeconfigEnvVar)
-
-		return nil
+	if CNFConfig.TargetSNOKubeConfig != "" {
+		TargetSNOAPIClient = clients.New(CNFConfig.TargetSNOKubeConfig)
 	}
-
-	return client
 }
