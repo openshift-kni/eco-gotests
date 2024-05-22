@@ -5,15 +5,14 @@ import (
 	"net"
 	"strings"
 
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 )
 
 // ICMPConnectivityCheck checks ping against provided IPs from the client pod.
-func ICMPConnectivityCheck(clientPod *pod.Builder, destIPAddresses []string) error {
+func ICMPConnectivityCheck(clientPod *pod.Builder, destIPAddresses []string, ifName ...string) error {
 	glog.V(90).Infof("Checking ping against %v from the client pod %s",
 		destIPAddresses, clientPod.Definition.Name)
 
@@ -24,8 +23,15 @@ func ICMPConnectivityCheck(clientPod *pod.Builder, destIPAddresses []string) err
 		}
 
 		TestCmdIcmpCommand := fmt.Sprintf("ping %s -c 5", ipAddress.String())
+		if ifName != nil {
+			TestCmdIcmpCommand = fmt.Sprintf("ping -I %s %s -c 5", ifName[0], ipAddress.String())
+		}
+
 		if ipAddress.To4() == nil {
 			TestCmdIcmpCommand = fmt.Sprintf("ping -6 %s -c 5", ipAddress.String())
+			if ifName != nil {
+				TestCmdIcmpCommand = fmt.Sprintf("ping -6 -I %s %s -c 5", ifName[0], ipAddress.String())
+			}
 		}
 
 		output, err := clientPod.ExecCommand([]string{"bash", "-c", TestCmdIcmpCommand})

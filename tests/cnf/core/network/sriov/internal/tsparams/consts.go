@@ -9,4 +9,6 @@ const (
 	LabelExternallyManagedTestCases = "externallymanaged"
 	// LabelParallelDrainingTestCases represents parallel draining label that can be used for test cases selection.
 	LabelParallelDrainingTestCases = "paralleldraining"
+	// LabelQinQTestCases represents ExternallyManaged label that can be used for test cases selection.
+	LabelQinQTestCases = "qinq"
 )
