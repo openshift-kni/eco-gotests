@@ -232,7 +232,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 
 			// Persist power usage metric to ginkgo report for further processing in pipeline.
 			for metricName, metricValue := range compMap {
-				glog.V(tsparams.LogLevel).Infof("%s: %s", metricName, metricValue)
+				GinkgoWriter.Printf("%s: %s\n", metricName, metricValue)
 			}
 		})
 
@@ -246,7 +246,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 
 			// Persist power usage metric to ginkgo report for further processing in pipeline.
 			for metricName, metricValue := range compMap {
-				glog.V(tsparams.LogLevel).Infof("%s: %s", metricName, metricValue)
+				GinkgoWriter.Printf("%s: %s\n", metricName, metricValue)
 			}
 		})
 	})
