@@ -33,6 +33,10 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 			workerNodeList           []*nodes.Builder
 			err                      error
 			poolConfigName           = "pool1"
+			poolConfig2Name          = "pool2"
+			testKey                  = "test"
+			testLabel1               = map[string]string{testKey: "label1"}
+			testLabel2               = map[string]string{testKey: "label2"}
 		)
 
 		BeforeAll(func() {
@@ -66,11 +70,13 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 		})
 
 		AfterEach(func() {
+			removeLabelFromWorkersIfExists(workerNodeList, testLabel1)
+
 			By("Removing SR-IOV configuration")
 			err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
-			err = sriov.CleanAllNonDefaultPoolConfigs(APIClient, NetConfig.SriovOperatorNamespace)
+			err = sriov.CleanAllPoolConfigs(APIClient, NetConfig.SriovOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SriovNetworkPoolConfigs")
 
 			By("Cleaning test namespace")
@@ -108,7 +114,7 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for stable cluster.")
 		})
 
-		It("1 SriovNetworkPoolconfig: maxUnavailable value is 2", reportxml.ID("68662"), func() {
+		It("1 SriovNetworkPoolConfig: maxUnavailable value is 2", reportxml.ID("68662"), func() {
 			By("Validating that the cluster has more 2 worker nodes")
 			if len(workerNodeList) < 3 {
 				Skip(fmt.Sprintf("The cluster has less than 3 workers: %d", len(workerNodeList)))
@@ -129,6 +135,98 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 
 			err = netenv.WaitForSriovStable(APIClient, tsparams.MCOWaitTimeout, NetConfig.SriovOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for stable cluster.")
+		})
+
+		It("2 SriovNetworkPoolConfigs", reportxml.ID("68663"), func() {
+			By("Validating that the cluster has more 2 worker nodes")
+			if len(workerNodeList) < 3 {
+				Skip(fmt.Sprintf("The cluster has less than 3 workers: %d", len(workerNodeList)))
+			}
+
+			By("Labeling workers under test with the specified test label")
+			_, err = workerNodeList[0].WithNewLabel(netenv.MapFirstKeyValue(testLabel1)).Update()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to label worker %s with the test label %v",
+				workerNodeList[0].Object.Name, testLabel1))
+			_, err = workerNodeList[1].WithNewLabel(netenv.MapFirstKeyValue(testLabel1)).Update()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to label worker %s with the test label %v",
+				workerNodeList[1].Object.Name, testLabel1))
+			_, err = workerNodeList[2].WithNewLabel(netenv.MapFirstKeyValue(testLabel2)).Update()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to label worker %s with the test label %v",
+				workerNodeList[2].Object.Name, testLabel2))
+
+			By("Creating SriovNetworkPoolConfig with maxUnavailable 2")
+			_, err = sriov.NewPoolConfigBuilder(APIClient, poolConfigName, NetConfig.SriovOperatorNamespace).
+				WithMaxUnavailable(intstr.FromInt32(2)).
+				WithNodeSelector(testLabel1).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create SriovNetworkPoolConfig with maxUnavailable 2")
+
+			By("Creating SriovNetworkPoolConfig with maxUnavailable 0")
+			poolConfig2, err := sriov.NewPoolConfigBuilder(APIClient, poolConfig2Name, NetConfig.SriovOperatorNamespace).
+				WithMaxUnavailable(intstr.FromInt32(0)).
+				WithNodeSelector(testLabel2).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create SriovNetworkPoolConfig with maxUnavailable 0")
+
+			By("Removing test configuration to call draining mechanism")
+			removeTestConfiguration()
+
+			By("Verifying that two workers are draining, and the third worker remains in an idle state permanently")
+			Eventually(isDrainingRunningAsExpected, time.Minute, tsparams.RetryInterval).WithArguments(2).
+				Should(BeTrue(), "draining runs not as expected")
+
+			sriovNodeStateList, err := sriov.ListNetworkNodeState(APIClient, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to collect all SriovNetworkNodeStates")
+
+			Consistently(func() bool {
+				err = sriovNodeStateList[2].Discover()
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to discover the worker %s",
+					sriovNodeStateList[2].Objects.Name))
+
+				return sriovNodeStateList[2].Objects.Annotations["sriovnetwork.openshift.io/current-state"] == "Idle" &&
+					sriovNodeStateList[2].Objects.Status.SyncStatus == "InProgress"
+			}, 2*time.Minute, tsparams.RetryInterval).Should(BeTrue(),
+				fmt.Sprintf("The third worker is not in an idle and InProgress states forever. His state is: %s,%s",
+					sriovNodeStateList[2].Objects.Status.SyncStatus,
+					sriovNodeStateList[2].Objects.Annotations["sriovnetwork.openshift.io/current-state"]))
+
+			By("Removing the test labels from the workers")
+			removeLabelFromWorkersIfExists(workerNodeList, testLabel1)
+
+			By("Removing SriovNetworkPoolConfig with maxUnavailable set to 0 and waiting for all workers to drain")
+			err = poolConfig2.Delete()
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove SriovNetworkPoolConfig")
+
+			err = netenv.WaitForSriovStable(APIClient, tsparams.MCOWaitTimeout, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait for stable cluster.")
+		})
+
+		It("Draining does not remove non SR-IOV pod", reportxml.ID("68664"), func() {
+			By("Creating non SR-IOV pod on the first worker")
+			nonSriovPod, err := pod.NewBuilder(
+				APIClient, "nonsriov", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+				DefineOnNode(workerNodeList[0].Object.Name).
+				CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Failed to create the non SR-IOV test pod")
+
+			By("Creating SriovNetworkPoolConfig with 100% maxUnavailable field")
+			_, err = sriov.NewPoolConfigBuilder(APIClient, poolConfigName, NetConfig.SriovOperatorNamespace).
+				WithMaxUnavailable(intstr.FromString("100%")).
+				WithNodeSelector(NetConfig.WorkerLabelMap).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create SriovNetworkPoolConfig with 100% maxUnavailable field")
+
+			By("Removing test configuration to call draining mechanism")
+			removeTestConfiguration()
+
+			By("Validating that all workers are drained simultaneously")
+			Eventually(isDrainingRunningAsExpected, time.Minute, tsparams.RetryInterval).WithArguments(len(workerNodeList)).
+				Should(BeTrue(), "draining runs not as expected")
+
+			err = netenv.WaitForSriovStable(APIClient, tsparams.MCOWaitTimeout, NetConfig.SriovOperatorNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait for stable cluster.")
+
+			By("Checking that non SR-IOV pod is still on the first worker")
+			if !nonSriovPod.Exists() {
+				Fail("Non SR-IOV pod has been removed after the draining process")
+			}
 		})
 	})
 
@@ -190,5 +288,16 @@ func createPodWithVFOnEachWorker(workerList []*nodes.Builder) {
 			WithTerminationGracePeriodSeconds(5).
 			CreateAndWaitUntilRunning(netparam.DefaultTimeout)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create a pod %s", "testpod-"+worker.Object.Name))
+	}
+}
+
+func removeLabelFromWorkersIfExists(workerList []*nodes.Builder, label map[string]string) {
+	key, value := netenv.MapFirstKeyValue(label)
+	for _, worker := range workerList {
+		if _, ok := worker.Object.Labels[key]; ok {
+			By(fmt.Sprintf("Removing label with key %s from worker %s", key, worker.Object.Name))
+			_, err := worker.RemoveLabel(key, value).Update()
+			Expect(err).ToNot(HaveOccurred(), "Failed to delete test label")
+		}
 	}
 }

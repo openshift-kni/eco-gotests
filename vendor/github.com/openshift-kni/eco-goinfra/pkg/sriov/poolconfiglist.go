@@ -45,8 +45,8 @@ func ListPoolConfigs(apiClient *clients.Settings, namespace string) ([]*PoolConf
 	return poolConfigBuilderObjects, nil
 }
 
-// CleanAllNonDefaultPoolConfigs removes all sriovNetworkPoolConfigs that are not set as default.
-func CleanAllNonDefaultPoolConfigs(
+// CleanAllPoolConfigs removes all sriovNetworkPoolConfigs.
+func CleanAllPoolConfigs(
 	apiClient *clients.Settings, operatornsname string) error {
 	glog.V(100).Infof("Cleaning up SriovNetworkPoolConfigs in the %s namespace", operatornsname)
 
@@ -65,15 +65,12 @@ func CleanAllNonDefaultPoolConfigs(
 	}
 
 	for _, poolConfig := range poolConfigs {
-		// The "default" sriovNetworkPoolConfig is both mandatory and the default option.
-		if poolConfig.Object.Name != "default" {
-			err = poolConfig.Delete()
+		err = poolConfig.Delete()
 
-			if err != nil {
-				glog.V(100).Infof("Failed to delete SriovNetworkPoolConfigs: %s", poolConfig.Object.Name)
+		if err != nil {
+			glog.V(100).Infof("Failed to delete SriovNetworkPoolConfigs: %s", poolConfig.Object.Name)
 
-				return err
-			}
+			return err
 		}
 	}
 
