@@ -132,7 +132,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 			versionOfFeature, _ := version.NewVersion("4.14.0-0.nightly-2023-01-01-184526")
 
 			if ocpVersion.GreaterThanOrEqual(versionOfFeature) {
-				By("Waiting revert to cgroups v1 due to OCPBUGS-16976 on 4.14 and greater")
+				By("Waiting revert to cgroups v1 on 4.14 and greater")
 				mcp, err := mco.Pull(APIClient, "master")
 				Expect(err).ToNot(HaveOccurred(), "error while pulling master machineconfigpool")
 
