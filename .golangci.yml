@@ -218,3 +218,6 @@ issues:
     - path: "tests/system-tests/vcore/internal/.*"
       linters:
         - depguard
+    - path: "tests/lca/imagebasedupgrade/cnf/internal/validations"
+      linters:
+        - depguard

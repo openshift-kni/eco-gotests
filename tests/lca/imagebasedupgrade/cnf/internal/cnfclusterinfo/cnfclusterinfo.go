@@ -12,6 +12,14 @@ import (
 	"k8s.io/utils/strings/slices"
 )
 
+var (
+	// PreUpgradeClusterInfo holds the cluster info pre upgrade.
+	PreUpgradeClusterInfo = ClusterStruct{}
+
+	// PostUpgradeClusterInfo holds the cluster info post upgrade.
+	PostUpgradeClusterInfo = ClusterStruct{}
+)
+
 // ClusterStruct is a struct that holds the cluster version and id.
 type ClusterStruct struct {
 	Version   string

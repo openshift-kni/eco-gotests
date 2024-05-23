@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/utils/ptr"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
@@ -15,12 +13,15 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfclusterinfo"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfhelper"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
+	cnfibuvalidations "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/validations"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/upgrade-talm/internal/tsparams"
+	"k8s.io/utils/ptr"
 )
 
 var _ = Describe(
 	"Performing happy path image based upgrade",
 	Ordered,
+	ContinueOnFailure,
 	Label(tsparams.LabelEndToEndUpgrade), func() {
 
 		var (
@@ -38,11 +39,11 @@ var _ = Describe(
 			}
 
 			By("Saving target sno cluster info before upgrade", func() {
-				collectClusterInfoBeforeUpgrade := &cnfclusterinfo.ClusterStruct{}
-				err := collectClusterInfoBeforeUpgrade.SaveClusterInfo()
+				err := cnfclusterinfo.PreUpgradeClusterInfo.SaveClusterInfo()
 				Expect(err).ToNot(HaveOccurred(), "Failed to collect and save target sno cluster info before upgrade")
 
-				tsparams.TargetSnoClusterName = collectClusterInfoBeforeUpgrade.Name
+				tsparams.TargetSnoClusterName = cnfclusterinfo.PreUpgradeClusterInfo.Name
+
 			})
 		})
 
@@ -112,5 +113,14 @@ var _ = Describe(
 				_, err = upgradeCguBuilder.WaitUntilComplete(25 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Upgrade CGU did not complete in time.")
 			})
+
+			By("Saving target sno cluster info after upgrade", func() {
+				err := cnfclusterinfo.PostUpgradeClusterInfo.SaveClusterInfo()
+				Expect(err).ToNot(HaveOccurred(), "Failed to collect and save target sno cluster info after upgrade")
+			})
+
 		})
+
+		cnfibuvalidations.PostUpgradeValidations()
+
 	})
