@@ -210,6 +210,12 @@ func (builder *SeedGeneratorBuilder) WithSeedImage(
 		return builder
 	}
 
+	if seedImage == "" {
+		glog.V(100).Infof("The name of the seedImage is empty")
+
+		builder.errorMsg = "seedImage 'name' cannot be empty"
+	}
+
 	glog.V(100).Infof("Setting seed image %s in seedgenerator", seedImage)
 
 	builder.Definition.Spec.SeedImage = seedImage

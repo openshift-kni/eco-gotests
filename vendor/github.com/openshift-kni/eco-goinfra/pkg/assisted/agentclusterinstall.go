@@ -23,6 +23,10 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	eventsTransport http.RoundTripper
+)
+
 // AgentClusterInstallBuilder provides struct for the agentclusterinstall object containing connection to
 // the cluster and the agentclusterinstall definitions.
 type AgentClusterInstallBuilder struct {
@@ -204,6 +208,10 @@ func (builder *AgentClusterInstallBuilder) WithControlPlaneAgents(agentCount int
 		return builder
 	}
 
+	if agentCount <= 0 {
+		builder.errorMsg = "agentclusterinstall controlplane agents must be greater than 0"
+	}
+
 	builder.Definition.Spec.ProvisionRequirements.ControlPlaneAgents = agentCount
 
 	return builder
@@ -213,6 +221,10 @@ func (builder *AgentClusterInstallBuilder) WithControlPlaneAgents(agentCount int
 func (builder *AgentClusterInstallBuilder) WithWorkerAgents(agentCount int) *AgentClusterInstallBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
+	}
+
+	if agentCount < 0 {
+		builder.errorMsg = "agentclusterinstall worker agents cannot be less that 0"
 	}
 
 	builder.Definition.Spec.ProvisionRequirements.WorkerAgents = agentCount
@@ -264,7 +276,13 @@ func (builder *AgentClusterInstallBuilder) WithAdditionalClusterNetwork(
 	if _, _, err := net.ParseCIDR(cidr); err != nil {
 		glog.V(100).Infof("The agentclusterinstall passed invalid clusterNetwork cidr: %s", cidr)
 
-		builder.errorMsg = "Got invalid cidr for clusternetwork"
+		builder.errorMsg = "agentclusterinstall contains invalid clusterNetwork cidr"
+	}
+
+	if prefix <= 0 {
+		glog.V(100).Infof("Agentclusterinstall passed invalid clusterNetwork prefix: %s", cidr)
+
+		builder.errorMsg = "agentclusterinstall contains invalid clusterNetwork prefix"
 	}
 
 	if builder.errorMsg != "" {
@@ -287,7 +305,7 @@ func (builder *AgentClusterInstallBuilder) WithAdditionalServiceNetwork(cidr str
 	if _, _, err := net.ParseCIDR(cidr); err != nil {
 		glog.V(100).Infof("The agentclusterinstall passed invalid serviceNetwork cidr: %s", cidr)
 
-		builder.errorMsg = "Got invalid cidr for servicenetwork"
+		builder.errorMsg = "agentclusterinstall contains invalid serviceNetwork cidr"
 	}
 
 	if builder.errorMsg != "" {
@@ -385,7 +403,7 @@ func (builder *AgentClusterInstallBuilder) WithOptions(
 func (builder *AgentClusterInstallBuilder) WaitForConditionMessage(
 	conditionType, message string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
-		context.TODO(), retryInterval, timeout, false, func(ctx context.Context) (bool, error) {
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
 			if err != nil {
 				return false, err
@@ -399,7 +417,7 @@ func (builder *AgentClusterInstallBuilder) WaitForConditionMessage(
 func (builder *AgentClusterInstallBuilder) WaitForConditionStatus(
 	conditionType string, status corev1.ConditionStatus, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
-		context.TODO(), retryInterval, timeout, false, func(ctx context.Context) (bool, error) {
+		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
 			if err != nil {
 				return false, err
@@ -436,9 +454,13 @@ func (builder *AgentClusterInstallBuilder) GetEvents(skipCertVerify bool) (model
 		return nil, fmt.Errorf("cannot get events from non-existent agentclusterinstall")
 	}
 
-	client := http.Client{Transport: &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: skipCertVerify}}}
+	if eventsTransport == nil {
+		eventsTransport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: skipCertVerify}}
+	}
+
+	client := http.Client{Transport: eventsTransport}
 
 	glog.V(100).Infof("Getting events from url: %s", builder.Object.Status.DebugInfo.EventsURL)
 
@@ -512,13 +534,13 @@ func PullAgentClusterInstall(apiClient *clients.Settings, name, nsname string) (
 	if name == "" {
 		glog.V(100).Infof("The name of the agentclusterinstall is empty")
 
-		builder.errorMsg = "agentclusterinstall 'name' cannot be empty"
+		return nil, fmt.Errorf("agentclusterinstall 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the agentclusterinstall is empty")
 
-		builder.errorMsg = "agentclusterinstall 'namespace' cannot be empty"
+		return nil, fmt.Errorf("agentclusterinstall 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -560,11 +582,7 @@ func (builder *AgentClusterInstallBuilder) Update(force bool) (*AgentClusterInst
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		builder.errorMsg = "Cannot update non-existent agentclusterinstall"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("cannot update non-existent agentclusterinstall")
 	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)

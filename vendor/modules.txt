@@ -604,7 +604,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240516183725-1be12d634b7a
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240523184224-ca98df498d60
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
@@ -819,6 +819,8 @@ github.com/openshift/cluster-nfd-operator/api/v1
 ## explicit; go 1.21
 github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v1
 github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2
+github.com/openshift/cluster-node-tuning-operator/pkg/apis/tuned
+github.com/openshift/cluster-node-tuning-operator/pkg/apis/tuned/v1
 github.com/openshift/cluster-node-tuning-operator/pkg/performanceprofile/controller/performanceprofile/components
 # github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87
 ## explicit; go 1.12
