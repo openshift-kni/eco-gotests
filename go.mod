@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240528144153-af44fee1dfd6 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240529153310-d31edc8f7f87 // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -44,7 +44,6 @@ require (
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240514130907-854cbc8fe101
 	github.com/openshift/client-go v0.0.1
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
-	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/velero v1.12.1
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661
@@ -57,6 +56,7 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
 	github.com/openshift/cluster-logging-operator v0.0.0-20240220162552-cbb65f2dca2b // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
+	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
 	maistra.io/api v0.0.0-20230704084350-dfc96815fb16 // indirect
 	open-cluster-management.io/api v0.12.0 // indirect
 )

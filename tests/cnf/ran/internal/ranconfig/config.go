@@ -30,6 +30,7 @@ type RANConfig struct {
 	BmcUsername            string   `yaml:"bmcUsername" envconfig:"ECO_CNF_RAN_BMC_USERNAME"`
 	BmcPassword            string   `yaml:"bmcPassword" envconfig:"ECO_CNF_RAN_BMC_PASSWORD"`
 	BmcHosts               string   `yaml:"bmcHosts" envconfig:"ECO_CNF_RAN_BMC_HOSTS"`
+	BmcTimeout             string   `yaml:"bmcTimeout" envconfig:"ECO_CNF_RAN_BMC_TIMEOUT"`
 	OcpUpgradeUpstreamURL  string   `yaml:"ocpUpgradeUpstreamUrl" envconfig:"ECO_CNF_RAN_OCP_UPGRADE_UPSTREAM_URL"`
 	PtpOperatorNamespace   string   `yaml:"ptpOperatorNamespace" envconfig:"ECO_CNF_RAN_PTP_OPERATOR_NAMESPACE"`
 	TalmPreCachePolicies   []string `yaml:"talmPreCachePolicies" envconfig:"ECO_CNF_RAN_TALM_PRECACHE_POLICIES"`

@@ -604,11 +604,12 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240528144153-af44fee1dfd6
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240529153310-d31edc8f7f87
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
 github.com/openshift-kni/eco-goinfra/pkg/assisted
+github.com/openshift-kni/eco-goinfra/pkg/bmc
 github.com/openshift-kni/eco-goinfra/pkg/bmh
 github.com/openshift-kni/eco-goinfra/pkg/cgu
 github.com/openshift-kni/eco-goinfra/pkg/clients

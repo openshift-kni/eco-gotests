@@ -21,11 +21,9 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/redfish"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	subscriptionsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"github.com/stmcginnis/gofish"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -347,7 +345,6 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 	When("there are multiple spokes and one turns off", Ordered, ContinueOnFailure, func() {
 		var (
-			redfishClient     *gofish.APIClient
 			talmCompleteLabel = "talmcomplete"
 		)
 
@@ -361,26 +358,18 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				}
 			}
 
-			if raninittools.RANConfig.BmcHosts == "" ||
-				raninittools.RANConfig.BmcUsername == "" ||
-				raninittools.RANConfig.BmcPassword == "" {
-				Skip("Powering off one spoke requires BMC configuration set")
+			if raninittools.BMCClient == nil {
+				Skip("Tests where one spoke is powered off require the BMC configuration be set.")
 			}
 
-			var err error
-
-			By("initializing redfish client")
-			redfishClient, err = redfish.Connect()
-			Expect(err).ToNot(HaveOccurred(), "Failed to initialize redfish client")
-
 			By("powering off spoke 1")
-			err = redfish.PowerOff(redfishClient)
+			err := raninittools.BMCClient.SystemGracefulShutdown()
 			Expect(err).ToNot(HaveOccurred(), "Failed to power off spoke 1")
 		})
 
 		AfterAll(func() {
 			By("powering on spoke 1")
-			err := redfish.PowerOn(redfishClient)
+			err := raninittools.BMCClient.SystemPowerOn()
 			Expect(err).ToNot(HaveOccurred(), "Failed to power on spoke 1")
 
 			By("waiting until all spoke 1 pods are ready")

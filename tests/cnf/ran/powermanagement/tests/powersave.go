@@ -17,13 +17,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/redfish"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	"github.com/openshift/cluster-node-tuning-operator/pkg/performanceprofile/controller/performanceprofile/components"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
-	"github.com/stmcginnis/gofish"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/cpuset"
@@ -199,20 +197,11 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		var (
 			samplingInterval time.Duration
 			powerState       string
-			redfishClient    *gofish.APIClient
 		)
 
 		BeforeAll(func() {
-			redfishClient, err = redfish.Connect()
-			Expect(err).ToNot(HaveOccurred(), "Failed to initialize redfish client")
-
-			vendor, err := redfish.GetVendor(redfishClient)
-			Expect(err).ToNot(HaveOccurred(), "Failed to get vendor from redfish")
-
-			glog.V(tsparams.LogLevel).Infof("Got vendor %s from redfish client")
-
-			if vendor != "Dell" && vendor != "HPE" {
-				Skip("Collecting power usage metrics is only supported for Dell and HPE vendors")
+			if raninittools.BMCClient == nil {
+				Skip("Collecting power usage metrics requires the BMC configuration be set.")
 			}
 
 			samplingInterval, err = time.ParseDuration(raninittools.RANConfig.MetricSamplingInterval)
@@ -227,7 +216,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			duration, err := time.ParseDuration(raninittools.RANConfig.NoWorkloadDuration)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse no workload duration")
 
-			compMap, err := helper.CollectPowerMetricsWithNoWorkload(duration, samplingInterval, powerState, redfishClient)
+			compMap, err := helper.CollectPowerMetricsWithNoWorkload(duration, samplingInterval, powerState)
 			Expect(err).ToNot(HaveOccurred(), "Failed to collect power metrics with no workload")
 
 			// Persist power usage metric to ginkgo report for further processing in pipeline.
@@ -241,7 +230,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse steady workload duration")
 
 			compMap, err := helper.CollectPowerMetricsWithSteadyWorkload(
-				duration, samplingInterval, powerState, perfProfile, redfishClient, nodeName)
+				duration, samplingInterval, powerState, perfProfile, nodeName)
 			Expect(err).ToNot(HaveOccurred(), "Failed to collect power metrics with steady workload")
 
 			// Persist power usage metric to ginkgo report for further processing in pipeline.

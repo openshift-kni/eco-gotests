@@ -13,11 +13,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/redfish"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
-	"github.com/stmcginnis/gofish"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/cpuset"
@@ -117,21 +115,15 @@ func GetPowerState(perfProfile *nto.Builder) (string, error) {
 }
 
 // CollectPowerMetricsWithNoWorkload collects metrics with no workload.
-func CollectPowerMetricsWithNoWorkload(
-	duration, samplingInterval time.Duration, tag string, redfishClient *gofish.APIClient) (map[string]string, error) {
-	glog.V(tsparams.LogLevel).Infof("Wait for %s for noworkload scenario\n", duration.String())
+func CollectPowerMetricsWithNoWorkload(duration, interval time.Duration, tag string) (map[string]string, error) {
+	glog.V(tsparams.LogLevel).Infof("Wait for %s for noworkload scenario", duration)
 
-	return collectPowerUsageMetrics(duration, samplingInterval, "noworkload", tag, redfishClient)
+	return collectPowerUsageMetrics(duration, interval, "noworkload", tag)
 }
 
 // CollectPowerMetricsWithSteadyWorkload collects power metrics with steady workload scenario.
 func CollectPowerMetricsWithSteadyWorkload(
-	duration,
-	samplingInterval time.Duration,
-	tag string,
-	perfProfile *nto.Builder,
-	redfishClient *gofish.APIClient,
-	nodeName string) (map[string]string, error) {
+	duration, interval time.Duration, tag string, perfProfile *nto.Builder, nodeName string) (map[string]string, error) {
 	// stressNg cpu count is roughly 75% of total isolated cores.
 	// 1 cpu will be used by other consumer pods, such as process-exporter, cnf-ran-gotests-priv.
 	isolatedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Isolated))
@@ -152,7 +144,7 @@ func CollectPowerMetricsWithSteadyWorkload(
 	}
 
 	glog.V(tsparams.LogLevel).Infof("Wait for %s for steadyworkload scenario\n", duration.String())
-	result, collectErr := collectPowerUsageMetrics(duration, samplingInterval, "steadyworkload", tag, redfishClient)
+	result, collectErr := collectPowerUsageMetrics(duration, interval, "steadyworkload", tag)
 
 	// Delete stress-ng pods regardless of whether collectPowerUsageMetrics failed.
 	for _, stressPod := range stressNgPods {
@@ -197,26 +189,21 @@ func redefineContainerResources(
 }
 
 // collectPowerUsageMetrics collects power usage metrics.
-func collectPowerUsageMetrics(
-	duration,
-	samplingInterval time.Duration,
-	scenario,
-	tag string,
-	redfishClient *gofish.APIClient) (map[string]string, error) {
+func collectPowerUsageMetrics(duration, interval time.Duration, scenario, tag string) (map[string]string, error) {
 	var powerMeasurements []float64
 
 	endTime := time.Now().Add(duration)
 	for time.Now().Before(endTime) {
-		power, err := redfish.GetPowerUsage(redfishClient)
+		power, err := raninittools.BMCClient.PowerUsage()
 		if err != nil {
 			glog.V(tsparams.LogLevel).Infof("error getting power usage: %w", err)
 
 			continue
 		}
 
-		powerMeasurements = append(powerMeasurements, power)
+		powerMeasurements = append(powerMeasurements, float64(power))
 
-		time.Sleep(samplingInterval)
+		time.Sleep(interval)
 	}
 
 	glog.V(tsparams.LogLevel).Info("Finished collecting power usage, waiting for results")
@@ -226,7 +213,7 @@ func collectPowerUsageMetrics(
 	}
 
 	// Compute power metrics.
-	return computePowerUsageStatistics(powerMeasurements, samplingInterval, scenario, tag)
+	return computePowerUsageStatistics(powerMeasurements, interval, scenario, tag)
 }
 
 // deployStressNgPods deploys the stress-ng workload pods.

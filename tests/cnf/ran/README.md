@@ -57,6 +57,7 @@ Only the powermanagement and TALM pre-cache tests need BMC credentials.
 - `ECO_CNF_RAN_BMC_USERNAME`: Username used for the Redfish API.
 - `ECO_CNF_RAN_BMC_PASSWORD`: Password used for the Redfish API.
 - `ECO_CNF_RAN_BMC_HOSTS`: IP address (without the leading `https://`) used for the Redfish API. Can be comma separated, but only the first host IP will be used.
+- `ECO_CNF_RAN_BMC_TIMEOUT`: Timeout in the form of a Go duration string to use when connecting to the Redfish API. Defaults to 15s which should usually be plenty.
 
 #### Power management inputs
 
