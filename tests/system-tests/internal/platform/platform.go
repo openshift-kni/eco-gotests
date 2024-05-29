@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/go-version"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/infrastructure"
@@ -170,4 +172,58 @@ func getMirrorRegistryMap(apiClient *clients.Settings) (map[string]interface{}, 
 	}
 
 	return registryMap, nil
+}
+
+// CompareOCPVersionWithCurrent compares current OCP versions with the provided value.
+func CompareOCPVersionWithCurrent(apiClient *clients.Settings,
+	referenceOCPVersion string,
+	isGreater, orEqual bool) (bool, error) {
+	if apiClient == nil {
+		return false, fmt.Errorf("'apiClient' cannot be empty")
+	}
+
+	if referenceOCPVersion == "" {
+		return false, fmt.Errorf("'referenceOCPVersion' cannot be empty")
+	}
+
+	currentOCPVersion, err := GetOCPVersion(apiClient)
+	if err != nil {
+		return false, err
+	}
+
+	glog.V(100).Infof("The apiClient is empty")
+
+	currentVersion, err := version.NewVersion(currentOCPVersion)
+	if err != nil {
+		return false, err
+	}
+
+	referenceVersion, err := version.NewVersion(referenceOCPVersion)
+	if err != nil {
+		return false, err
+	}
+
+	if isGreater {
+		if orEqual {
+			if currentVersion.GreaterThanOrEqual(referenceVersion) {
+				return true, nil
+			}
+		} else {
+			if currentVersion.GreaterThan(referenceVersion) {
+				return true, nil
+			}
+		}
+	}
+
+	if orEqual {
+		if currentVersion.LessThanOrEqual(referenceVersion) {
+			return true, nil
+		}
+	}
+
+	if currentVersion.LessThan(referenceVersion) {
+		return true, nil
+	}
+
+	return false, nil
 }

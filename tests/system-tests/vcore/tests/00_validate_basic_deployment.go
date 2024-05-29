@@ -14,6 +14,8 @@ var _ = Describe(
 	Label(vcoreparams.Label), func() {
 		vcorecommon.VerifyInitialDeploymentConfig()
 
+		vcorecommon.VerifyCGroupDefault()
+
 		vcorecommon.VerifyPostDeploymentConfig()
 
 		vcorecommon.VerifyNMStateSuite()

@@ -11,19 +11,14 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cgroup"
-	configv1 "github.com/openshift/api/config/v1"
-
+	"github.com/golang/glog"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodesconfig"
-
-	"github.com/golang/glog"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
@@ -193,68 +188,11 @@ func VerifyUserPlaneWorkerNodesAvailability(ctx SpecContext) {
 	verifyNodesAvailability(vcoreparams.VCorePpMcpName, VCoreConfig.VCorePpLabelListOption)
 } // func VerifyUserPlaneWorkerNodesAvailability (ctx SpecContext)
 
-// VerifyCGroupV2IsADefault assert cGroupV2 is a default for the cluster deployment.
-func VerifyCGroupV2IsADefault(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify cgroupv2 is a default for the cluster deployment")
-
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Get current cgroup mode configured for the cluster")
-
-	nodesConfigObj, err := nodesconfig.Pull(APIClient, "cluster")
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get nodes.config 'cluster' object due to %v", err))
-
-	cgroupMode, err := nodesConfigObj.GetCGroupMode()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get cluster cgroup mode due to %v", err))
-	Expect(cgroupMode).ToNot(Equal(configv1.CgroupModeV1), "wrong cgroup mode default found, v1 instead of v2")
-
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify actual cgroup version configured for the nodes")
-
-	nodesList, err := nodes.List(APIClient)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get cluster nodes list due to %v", err))
-
-	for _, node := range nodesList {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Verify actual cgroup version configured for node %s",
-			node.Definition.Name)
-
-		currentCgroupMode, err := cgroup.GetNodeLinuxCGroupVersion(APIClient, node.Definition.Name)
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("failed to get cgroup mode value for the node %s due to %v",
-				node.Definition.Name, err))
-		Expect(currentCgroupMode).To(Equal(configv1.CgroupModeV2), fmt.Sprintf("wrong cgroup mode default "+
-			"found configured for the node %s; expected cgroupMode is %v, found cgroupMode is %v",
-			node.Definition.Name, configv1.CgroupModeV2, currentCgroupMode))
-	}
-} // func VerifyCGroupV2IsADefault (ctx SpecContext)
-
-// VerifySwitchBetweenCGroupVersions assert that the cluster can be moved to the cgroupv1 and back.
-func VerifySwitchBetweenCGroupVersions(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify that the cluster can be moved to the cgroupv1 and back")
-
-	err := cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV1)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-		configv1.CgroupModeV1, err))
-
-	glog.V(vcoreparams.VCoreLogLevel).Infof("The short sleep to update new values before the following change.")
-
-	time.Sleep(2 * time.Minute)
-
-	err = cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-		configv1.CgroupModeV2, err))
-} // func VerifySwitchBetweenCGroupVersions (ctx SpecContext)
-
 // VerifyInitialDeploymentConfig container that contains tests for initial cluster deployment verification.
 func VerifyInitialDeploymentConfig() {
 	Describe(
 		"Initial deployment config validation",
 		Label(vcoreparams.LabelVCoreDeployment), func() {
-			BeforeAll(func() {
-				By("Insure cgroupv2 configured for the cluster")
-
-				err := cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-					configv1.CgroupModeV2, err))
-			})
-
 			It("Verifies healthy cluster status",
 				Label("healthy-cluster"), reportxml.ID("59441"), VerifyHealthyClusterStatus)
 
@@ -281,19 +219,5 @@ func VerifyInitialDeploymentConfig() {
 
 			It("Verifies user-plane-worker nodes availability",
 				Label("pp-nodes"), reportxml.ID("59506"), VerifyUserPlaneWorkerNodesAvailability)
-
-			It("Verifies cgroupv2 is a default for the cluster deployment",
-				Label("cgroupv2"), reportxml.ID("73370"), VerifyCGroupV2IsADefault)
-
-			It("Verifies that the cluster can be moved to the cgroupv1 and back",
-				Label("cgroupv2"), reportxml.ID("73371"), VerifySwitchBetweenCGroupVersions)
-
-			AfterAll(func() {
-				By("Restore cgroupv2 cluster configuration")
-
-				err := cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-					configv1.CgroupModeV2, err))
-			})
 		})
 }
