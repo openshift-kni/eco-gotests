@@ -5,7 +5,6 @@ go 1.22
 require (
 	github.com/Juniper/go-netconf v0.3.0
 	github.com/NVIDIA/gpu-operator v1.11.1
-	github.com/bmc-toolbox/bmclib/v2 v2.2.1
 	github.com/cavaliergopher/cpio v1.0.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
 	github.com/golang/glog v1.1.2
@@ -63,17 +62,13 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/Jeffail/gabs/v2 v2.7.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/PaesslerAG/jsonpath v0.1.1 // indirect
-	github.com/VictorLowther/simplexml v0.0.0-20180716164440-0bff93621230 // indirect
-	github.com/VictorLowther/soap v0.0.0-20150314151524-8e36fca84b22 // indirect
 	github.com/ajeddeloh/go-json v0.0.0-20200220154158-5ae607161559 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230305170008-8188dc5388df // indirect
 	github.com/argoproj-labs/argocd-operator v0.8.0 // indirect
@@ -83,7 +78,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
-	github.com/bmc-toolbox/common v0.0.0-20230717121556-5eb9915a8a5a // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -150,8 +144,6 @@ require (
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jacobweinstock/iamt v0.0.0-20230502042727-d7cdbe67d9ef // indirect
-	github.com/jacobweinstock/registrar v0.4.7 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -199,7 +191,6 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/samber/lo v1.39.0 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
@@ -210,8 +201,6 @@ require (
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.2 // indirect
-	go.opentelemetry.io/otel v1.21.0 // indirect
-	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.starlark.net v0.0.0-20231016134836-22325403fcb3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
