@@ -1,24 +1,21 @@
 package vcorecommon
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/csv"
 
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
@@ -27,24 +24,9 @@ import (
 
 // VerifyMetalLBNamespaceExists asserts namespace for NMState operator exists.
 func VerifyMetalLBNamespaceExists(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify namespace %q exists",
-		vcoreparams.MetalLBOperatorNamespace)
-
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true,
-		func(ctx context.Context) (bool, error) {
-			_, pullErr := namespace.Pull(APIClient, vcoreparams.MetalLBOperatorNamespace)
-			if pullErr != nil {
-				glog.V(vcoreparams.VCoreLogLevel).Infof(
-					fmt.Sprintf("Failed to pull in namespace %q - %v",
-						vcoreparams.MetalLBOperatorNamespace, pullErr))
-
-				return false, pullErr
-			}
-
-			return true, nil
-		})
-
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.MetalLBOperatorNamespace))
+	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.MetalLBOperatorNamespace, time.Second)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to pull %q namespace", vcoreparams.MetalLBOperatorNamespace))
 } // func VerifyMetalLBNamespaceExists (ctx SpecContext)
 
 // VerifyMetalLBOperatorDeployment asserts MetalLB operator successfully installed.

@@ -516,6 +516,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *tunedv1.Tuned:
 			genericClientObjects = append(genericClientObjects, v)
+		case *agentInstallV1Beta1.AgentServiceConfig:
+			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
 		case *argocdOperatorv1alpha1.ArgoCD:
 			genericClientObjects = append(genericClientObjects, v)
@@ -525,6 +527,9 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *lcav1.ImageBasedUpgrade:
 			genericClientObjects = append(genericClientObjects, v)
 		case *lcasgv1.SeedGenerator:
+			genericClientObjects = append(genericClientObjects, v)
+		// Hive Client Objects
+		case *hiveV1.HiveConfig:
 			genericClientObjects = append(genericClientObjects, v)
 		// Velero Client Objects
 		case *velerov1.Backup:

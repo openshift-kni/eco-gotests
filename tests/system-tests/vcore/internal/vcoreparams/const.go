@@ -82,6 +82,9 @@ const (
 	// NMStateOperatorName is a name of the NMState operator.
 	NMStateOperatorName = "kubernetes-nmstate-operator"
 
+	// NMStateDeploymentName is the NMState operator deployment name.
+	NMStateDeploymentName = "nmstate-operator"
+
 	// MetalLBOperatorNamespace is a metallb operator namespace.
 	MetalLBOperatorNamespace = "metallb-system"
 
@@ -100,8 +103,8 @@ const (
 	// LSONamespace is a local storage operator namespace.
 	LSONamespace = "openshift-local-storage"
 
-	// LSOInstanceNamePattern is a local storage operator instance name pattern.
-	LSOInstanceNamePattern = "local-storage-operator"
+	// LSOName is a local storage operator instance name pattern.
+	LSOName = "local-storage-operator"
 
 	// ODFNamespace is an odf namespace.
 	ODFNamespace = "openshift-storage"
@@ -118,12 +121,45 @@ const (
 	// ESKInstanceName is an elasticsearch instance name.
 	ESKInstanceName = "instance"
 
-	// CLOOperatorName is a clusterlogging operator name.
-	CLOOperatorName = "cluster-logging"
+	// CLOName is a clusterlogging operator name.
+	CLOName = "cluster-logging"
 
 	// CLONamespace is a clusterlogging operator namespace.
 	CLONamespace = "openshift-logging"
 
+	// CLODeploymentName is a clusterlogging operator deployment name.
+	CLODeploymentName = "cluster-logging-operator"
+
 	// CLOInstanceName is a clusterlogging instance name.
 	CLOInstanceName = "instance"
+
+	// DTPONamespace is a distributed tracing platform operator namespace.
+	DTPONamespace = "openshift-distributed-tracing"
+
+	// DTPOperatorSubscriptionName is a distributed tracing platform operator subscription name.
+	DTPOperatorSubscriptionName = "jaeger-product"
+
+	// DTPOperatorDeploymentName is a distributed tracing platform operator deployment name.
+	DTPOperatorDeploymentName = "jaeger-operator"
+
+	// KialiNamespace is a kiali operator namespace.
+	KialiNamespace = "openshift-operators"
+
+	// KialiOperatorSubscriptionName is a kiali operator subscription name.
+	KialiOperatorSubscriptionName = "kiali-ossm"
+
+	// KialiOperatorDeploymentName is a kiali operator deployment name.
+	KialiOperatorDeploymentName = "kiali-operator"
+
+	// SMONamespace is a service mesh operator namespace.
+	SMONamespace = "openshift-operators"
+
+	// SMOSubscriptionName is a service mesh operator subscription name.
+	SMOSubscriptionName = "servicemeshoperator"
+
+	// SMODeploymentName is a service mesh operator deployment name.
+	SMODeploymentName = "istio-operator"
+
+	// IstioNamespace is an istio operator namespace.
+	IstioNamespace = "istio-system"
 )

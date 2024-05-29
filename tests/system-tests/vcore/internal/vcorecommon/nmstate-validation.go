@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/olm"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/csv"
-
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -25,50 +22,21 @@ import (
 
 // VerifyNMStateNamespaceExists asserts namespace for NMState operator exists.
 func VerifyNMStateNamespaceExists(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify namespace %q exists",
-		VCoreConfig.NMStateOperatorNamespace)
-
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true,
-		func(ctx context.Context) (bool, error) {
-			_, pullErr := namespace.Pull(APIClient, VCoreConfig.NMStateOperatorNamespace)
-			if pullErr != nil {
-				glog.V(vcoreparams.VCoreLogLevel).Infof(
-					fmt.Sprintf("Failed to pull in namespace %q - %v",
-						VCoreConfig.NMStateOperatorNamespace, pullErr))
-
-				return false, pullErr
-			}
-
-			return true, nil
-		})
-
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", VCoreConfig.NMStateOperatorNamespace))
+	err := apiobjectshelper.VerifyNamespaceExists(APIClient, VCoreConfig.NMStateOperatorNamespace, time.Second)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to pull %q namespace", VCoreConfig.NMStateOperatorNamespace))
 } // func VerifyNMStateNamespaceExists (ctx SpecContext)
 
 // VerifyNMStateCSVConditionSucceeded assert that NMState operator deployment succeeded.
 func VerifyNMStateCSVConditionSucceeded(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify NMState operator deployment succeeded")
-
-	nmstateCSVName, err := csv.GetCurrentCSVNameFromSubscription(APIClient,
+	err := apiobjectshelper.VerifyOperatorDeployment(APIClient,
 		vcoreparams.NMStateOperatorName,
-		VCoreConfig.NMStateOperatorNamespace)
-
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get nmstate %s csv name from the %s namespace",
-		vcoreparams.NMStateOperatorName, VCoreConfig.NMStateOperatorNamespace))
-
-	nmstateCSVObj, err := olm.PullClusterServiceVersion(APIClient, nmstateCSVName, VCoreConfig.NMStateOperatorNamespace)
-
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q csv from the %s namespace",
-		nmstateCSVName, VCoreConfig.NMStateOperatorNamespace))
-
-	isSuccessful, err := nmstateCSVObj.IsSuccessful()
-
+		vcoreparams.NMStateDeploymentName,
+		VCoreConfig.NMStateOperatorNamespace,
+		time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to verify nmstate csv %s in the namespace %s status",
-			nmstateCSVName, VCoreConfig.NMStateOperatorNamespace))
-	Expect(isSuccessful).To(Equal(true),
-		fmt.Sprintf("Failed to deploy nmstate operator; the csv %s in the namespace %s status %v",
-			nmstateCSVName, VCoreConfig.NMStateOperatorNamespace, isSuccessful))
+		fmt.Sprintf("NMState operator deployment %s failure in the namespace %s; %v",
+			vcoreparams.NMStateOperatorName, VCoreConfig.NMStateOperatorNamespace, err))
 } // func VerifyNMStateCSVConditionSucceeded (ctx SpecContext)
 
 // VerifyNMStateInstanceExists assert that NMState instance exists.

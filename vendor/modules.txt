@@ -604,7 +604,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240523184224-ca98df498d60
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240528144153-af44fee1dfd6
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
@@ -653,6 +653,7 @@ github.com/openshift-kni/eco-goinfra/pkg/scc
 github.com/openshift-kni/eco-goinfra/pkg/secret
 github.com/openshift-kni/eco-goinfra/pkg/service
 github.com/openshift-kni/eco-goinfra/pkg/serviceaccount
+github.com/openshift-kni/eco-goinfra/pkg/servicemesh
 github.com/openshift-kni/eco-goinfra/pkg/sriov
 github.com/openshift-kni/eco-goinfra/pkg/sriov-fec
 github.com/openshift-kni/eco-goinfra/pkg/sriov-fec/sriovfectypes

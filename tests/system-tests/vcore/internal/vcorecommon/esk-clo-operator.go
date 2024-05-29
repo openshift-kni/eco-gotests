@@ -1,28 +1,23 @@
 package vcorecommon
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/csv"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
-
-	clusterlogging "github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	clusterlogging "github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
@@ -39,103 +34,38 @@ var (
 
 // VerifyESKNamespaceExists asserts namespace for ElasticSearch Operator exists.
 func VerifyESKNamespaceExists(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify namespace %q exists",
-		vcoreparams.ESKNamespace)
-
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true,
-		func(ctx context.Context) (bool, error) {
-			_, pullErr := namespace.Pull(APIClient, vcoreparams.ESKNamespace)
-			if pullErr != nil {
-				glog.V(vcoreparams.VCoreLogLevel).Infof(
-					fmt.Sprintf("Failed to pull in namespace %q - %v",
-						vcoreparams.ESKNamespace, pullErr))
-
-				return false, pullErr
-			}
-
-			return true, nil
-		})
-
+	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.ESKNamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.ESKNamespace))
 } // func VerifyESKNamespaceExists (ctx SpecContext)
 
 // VerifyCLONamespaceExists asserts namespace for ClusterLogging Operator exists.
 func VerifyCLONamespaceExists(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify namespace %q exists",
-		vcoreparams.CLONamespace)
-
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true,
-		func(ctx context.Context) (bool, error) {
-			_, pullErr := namespace.Pull(APIClient, vcoreparams.CLONamespace)
-			if pullErr != nil {
-				glog.V(vcoreparams.VCoreLogLevel).Infof(
-					fmt.Sprintf("Failed to pull in namespace %q - %v",
-						vcoreparams.CLONamespace, pullErr))
-
-				return false, pullErr
-			}
-
-			return true, nil
-		})
+	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.CLONamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.CLONamespace))
 } // func VerifyCLONamespaceExists (ctx SpecContext)
 
 // VerifyESKDeployment asserts ElasticSearch Operator successfully installed.
 func VerifyESKDeployment(ctx SpecContext) {
-	glog.V(100).Infof("Confirm that ElasticSearch operator %s csv was deployed and running in %s namespace",
-		vcoreparams.ESKOperatorName, vcoreparams.ESKNamespace)
-
-	eskCSVName, err := csv.GetCurrentCSVNameFromSubscription(APIClient,
+	err := apiobjectshelper.VerifyOperatorDeployment(APIClient,
 		vcoreparams.ESKOperatorName,
-		vcoreparams.ESKNamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get ElasticSearch %s csv name from the %s namespace",
-		vcoreparams.ESKOperatorName, vcoreparams.ESKNamespace))
-
-	eskBCSVObj, err := olm.PullClusterServiceVersion(APIClient, eskCSVName, vcoreparams.ESKNamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q csv from the %s namespace",
-		eskCSVName, vcoreparams.ESKNamespace))
-
-	isSuccessful, err := eskBCSVObj.IsSuccessful()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to verify ElasticSearch csv %s in the namespace %s status",
-			eskCSVName, vcoreparams.ESKNamespace))
-	Expect(isSuccessful).To(Equal(true),
-		fmt.Sprintf("Failed to deploy ElasticSearch operator; the csv %s in the namespace %s status %v",
-			eskCSVName, vcoreparams.ESKNamespace, isSuccessful))
-
-	glog.V(100).Infof("Confirm that %s deployment for the ElasticSearch operator is running in %s namespace",
-		vcoreparams.ESKOperatorName, vcoreparams.CLONamespace)
-
-	err = await.WaitUntilDeploymentReady(APIClient,
 		vcoreparams.ESKOperatorName,
 		vcoreparams.ESKNamespace,
-		5*time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("%s deployment not found in %s namespace; %v",
-		vcoreparams.ESKOperatorName, vcoreparams.ESKNamespace, err))
+		time.Minute)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("ElasticSearch operator deployment %s failure in the namespace %s; %v",
+			vcoreparams.ESKOperatorName, vcoreparams.ESKNamespace, err))
 } // func VerifyESKDeployment (ctx SpecContext)
 
 // VerifyCLODeployment asserts ClusterLogging Operator successfully installed.
 func VerifyCLODeployment(ctx SpecContext) {
-	glog.V(100).Infof("Confirm that ClusterLogging operator %s csv was deployed and running in %s namespace",
-		vcoreparams.CLOOperatorName, vcoreparams.CLONamespace)
-
-	cloCSVName, err := csv.GetCurrentCSVNameFromSubscription(APIClient,
-		vcoreparams.CLOOperatorName,
-		vcoreparams.CLONamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get ClusterLogging %s csv name from the %s namespace",
-		vcoreparams.CLOOperatorName, vcoreparams.CLONamespace))
-
-	cloBCSVObj, err := olm.PullClusterServiceVersion(APIClient, cloCSVName, vcoreparams.CLONamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q csv from the %s namespace",
-		cloCSVName, vcoreparams.CLONamespace))
-
-	isSuccessful, err := cloBCSVObj.IsSuccessful()
+	err := apiobjectshelper.VerifyOperatorDeployment(APIClient,
+		vcoreparams.CLOName,
+		vcoreparams.CLODeploymentName,
+		vcoreparams.CLONamespace,
+		time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to verify ClusterLogging csv %s in the namespace %s status",
-			cloCSVName, vcoreparams.CLONamespace))
-	Expect(isSuccessful).To(Equal(true),
-		fmt.Sprintf("Failed to deploy ClusterLogging operator; the csv %s in the namespace %s status %v",
-			cloCSVName, vcoreparams.CLONamespace, isSuccessful))
+		fmt.Sprintf("operator deployment %s failure in the namespace %s; %v",
+			vcoreparams.CLOName, vcoreparams.CLONamespace, err))
 } // func VerifyCLODeployment (ctx SpecContext)
 
 // CreateCLOInstance asserts ClusterLogging instance can be created and running.
@@ -184,23 +114,13 @@ func CreateCLOInstance(ctx SpecContext) {
 		fmt.Sprintf("failed to create ClusterLogging %s in namespace %s",
 			vcoreparams.CLOInstanceName, vcoreparams.CLONamespace))
 
-	glog.V(100).Infof("Confirm that %s deployment for the ClusterLogging operator is running in %s namespace",
-		vcoreparams.CLOOperatorName, vcoreparams.CLONamespace)
-
-	err = await.WaitUntilDeploymentReady(APIClient,
-		vcoreparams.CLOOperatorName,
-		vcoreparams.CLONamespace,
-		5*time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("%s deployment not found in %s namespace; %v",
-		vcoreparams.CLOOperatorName, vcoreparams.CLONamespace, err))
-
 	glog.V(100).Infof("Check clusterLogging pods")
 
-	podsList, err := pod.ListByNamePattern(APIClient, vcoreparams.CLOOperatorName, vcoreparams.CLONamespace)
+	podsList, err := pod.ListByNamePattern(APIClient, vcoreparams.CLOName, vcoreparams.CLONamespace)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s not found in namespace %s; %v",
-		vcoreparams.CLOOperatorName, vcoreparams.CLONamespace, err))
+		vcoreparams.CLOName, vcoreparams.CLONamespace, err))
 	Expect(len(podsList)).To(Equal(1), fmt.Sprintf("pod %s not found in namespace %s",
-		vcoreparams.CLOOperatorName, vcoreparams.CLONamespace))
+		vcoreparams.CLOName, vcoreparams.CLONamespace))
 
 	err = podsList[0].WaitUntilReady(time.Second)
 	Expect(err).ToNot(HaveOccurred(), "pod %s in namespace %s is not ready",
@@ -276,7 +196,7 @@ func CreateCLOInstance(ctx SpecContext) {
 
 	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))
-} // func VerifyCLODeployment (ctx SpecContext)
+} // func CreateCLOInstance (ctx SpecContext)
 
 // VerifyESKAndCLOSuite container that contains tests for ElasticSearch and ClusterLogging verification.
 func VerifyESKAndCLOSuite() {
@@ -291,6 +211,10 @@ func VerifyESKAndCLOSuite() {
 
 			It("Verify ElasticSearch Operator successfully installed",
 				Label("clo"), reportxml.ID("59493"), VerifyESKDeployment)
+
+			It(fmt.Sprintf("Verify Cluster Logging instance %s is running in namespace %s",
+				vcoreparams.CLOInstanceName, vcoreparams.CLONamespace),
+				Label("clo"), reportxml.ID("59494"), CreateCLOInstance)
 
 			It("Verify ClusterLogging Operator successfully installed",
 				Label("clo"), reportxml.ID("73678"), VerifyCLODeployment)

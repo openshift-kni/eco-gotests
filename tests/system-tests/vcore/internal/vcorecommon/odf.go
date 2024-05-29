@@ -1,22 +1,20 @@
 package vcorecommon
 
 import (
-	"context"
 	"fmt"
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/strings/slices"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -38,23 +36,7 @@ var (
 
 // VerifyODFNamespaceExists asserts namespace for ODF exists.
 func VerifyODFNamespaceExists(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof(fmt.Sprintf("Verify namespace %q exists",
-		vcoreparams.ODFNamespace))
-
-	err := wait.PollUntilContextTimeout(ctx, 5*time.Second, 1*time.Minute, true,
-		func(ctx context.Context) (bool, error) {
-			_, pullErr := namespace.Pull(APIClient, vcoreparams.ODFNamespace)
-			if pullErr != nil {
-				glog.V(vcoreparams.VCoreLogLevel).Infof(
-					fmt.Sprintf("Failed to pull in namespace %q - %v",
-						vcoreparams.ODFNamespace, pullErr))
-
-				return false, pullErr
-			}
-
-			return true, nil
-		})
-
+	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.ODFNamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.ODFNamespace))
 } // func VerifyODFNamespaceExists (ctx SpecContext)
 

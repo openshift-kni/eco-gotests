@@ -57,24 +57,32 @@ func NewBuilder(
 		glog.V(100).Infof("The name of the PerformanceProfile is empty")
 
 		builder.errorMsg = "PerformanceProfile's name is empty"
+
+		return builder
 	}
 
 	if cpuIsolated == "" {
 		glog.V(100).Infof("Isolated CPU of the PerformanceProfile is empty")
 
 		builder.errorMsg = "PerformanceProfile's 'cpuIsolated' is empty"
+
+		return builder
 	}
 
 	if cpuReserved == "" {
 		glog.V(100).Infof("Reserved CPU of the PerformanceProfile is empty")
 
 		builder.errorMsg = "PerformanceProfile's 'cpuReserved' is empty"
+
+		return builder
 	}
 
 	if len(nodeSelector) == 0 {
 		glog.V(100).Infof("NodeSelector of the PerformanceProfile is empty")
 
 		builder.errorMsg = "PerformanceProfile's 'nodeSelector' is empty"
+
+		return builder
 	}
 
 	return builder
@@ -83,6 +91,12 @@ func NewBuilder(
 // Pull pulls existing PerformanceProfile from cluster.
 func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing PerformanceProfile name %s from cluster", name)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("performanceProfile 'apiClient' cannot be empty")
+	}
 
 	builder := Builder{
 		apiClient: apiClient,
@@ -96,7 +110,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	if name == "" {
 		glog.V(100).Infof("The name of the PerformanceProfile is empty")
 
-		builder.errorMsg = "PerformanceProfile 'name' cannot be empty"
+		return nil, fmt.Errorf("performanceProfile 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -117,18 +131,26 @@ func (builder *Builder) WithHugePages(hugePageSize string, hugePages []v2.HugePa
 		return builder
 	}
 
+	if hugePageSize == "" {
+		glog.V(100).Infof("The hugePageSize is empty")
+
+		builder.errorMsg = "'hugePageSize' argument cannot be empty"
+
+		return builder
+	}
+
 	allowedHugePageSize := []string{"2M", "1G"}
 	if !slices.Contains(allowedHugePageSize, hugePageSize) {
 		glog.V(100).Infof("'hugePageSize' has invalid parameter %s. Allowed parameters %v",
 			hugePageSize, allowedHugePageSize)
 
-		builder.errorMsg = fmt.Sprintf("'hugePageSize' argument is not in allowed list %v", allowedHugePageSize)
+		builder.errorMsg = fmt.Sprintf("'hugePageSize' argument is not in allowed list: %v", allowedHugePageSize)
 	}
 
 	if len(hugePages) == 0 {
 		glog.V(100).Infof("'hugePages' argument cannot be empty")
 
-		builder.errorMsg = "'hugePageSize' argument cannot be empty"
+		builder.errorMsg = "'hugePages' argument cannot be empty"
 	}
 
 	if builder.errorMsg != "" {
@@ -176,12 +198,42 @@ func (builder *Builder) WithMachineConfigPoolSelector(machineConfigPoolSelector 
 	return builder
 }
 
+// WithNodeSelector defines the nodeSelector in the PerformanceProfile.
+func (builder *Builder) WithNodeSelector(nodeSelector map[string]string) *Builder {
+	glog.V(100).Infof("Adding nodeSelector %v to PerformanceProfile %s",
+		nodeSelector, builder.Definition.Name)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if len(nodeSelector) == 0 {
+		glog.V(100).Infof("'nodeSelector' argument cannot be empty")
+
+		builder.errorMsg = "'nodeSelector' argument cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.NodeSelector = nodeSelector
+
+	return builder
+}
+
 // WithNumaTopology defines the NumaTopologyPolicy in the PerformanceProfile.
 func (builder *Builder) WithNumaTopology(topologyPolicy string) *Builder {
 	glog.V(100).Infof("Adding NumaTopologyPolicy %s to PerformanceProfile %s",
 		topologyPolicy, builder.Definition.Name)
 
 	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if topologyPolicy == "" {
+		glog.V(100).Infof("The topologyPolicy is empty")
+
+		builder.errorMsg = "'topologyPolicy' argument cannot be empty"
+
 		return builder
 	}
 
@@ -198,7 +250,7 @@ func (builder *Builder) WithNumaTopology(topologyPolicy string) *Builder {
 		return builder
 	}
 
-	builder.Definition.Spec.NUMA.TopologyPolicy = &topologyPolicy
+	builder.Definition.Spec.NUMA = &v2.NUMA{TopologyPolicy: &topologyPolicy}
 
 	return builder
 }
@@ -213,6 +265,21 @@ func (builder *Builder) WithRTKernel() *Builder {
 
 	trueFlag := true
 	builder.Definition.Spec.RealTimeKernel = &v2.RealTimeKernel{Enabled: &trueFlag}
+
+	return builder
+}
+
+// WithGloballyDisableIrqLoadBalancing defines the globallyDisableIrqLoadBalancing in the PerformanceProfile.
+func (builder *Builder) WithGloballyDisableIrqLoadBalancing() *Builder {
+	glog.V(100).Infof("Adding globallyDisableIrqLoadBalancing flag to PerformanceProfile %s",
+		builder.Definition.Name)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	trueFlag := true
+	builder.Definition.Spec.GloballyDisableIrqLoadBalancing = &trueFlag
 
 	return builder
 }
@@ -298,7 +365,7 @@ func (builder *Builder) Get() (*v2.PerformanceProfile, error) {
 		return nil, err
 	}
 
-	return module, err
+	return module, nil
 }
 
 // Delete removes the PerformanceProfile.
@@ -310,7 +377,12 @@ func (builder *Builder) Delete() (*Builder, error) {
 	glog.V(100).Infof("Deleting PerformanceProfile %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("PerformanceProfile cannot be deleted because it does not exist")
+		glog.V(100).Infof("performanceprofile %s cannot be deleted because it does not exist",
+			builder.Definition.Name)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
@@ -321,7 +393,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 
 	builder.Object = nil
 
-	return builder, err
+	return builder, nil
 }
 
 // Update renovates the existing PerformanceProfile object with the PerformanceProfile definition in builder.

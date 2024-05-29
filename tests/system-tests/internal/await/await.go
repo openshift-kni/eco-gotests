@@ -226,3 +226,47 @@ func WaitUntilNewMetalLbDaemonSetIsRunning(apiClient *clients.Settings, timeout 
 
 	return fmt.Errorf("metallb daemonSet is not ready")
 }
+
+// WaitForThePodReplicasCountInNamespace waiting for the specific pod replicas count in
+// the namespace that match options.
+func WaitForThePodReplicasCountInNamespace(
+	apiClient *clients.Settings,
+	nsname string,
+	options metav1.ListOptions,
+	replicasCount int,
+	timeout time.Duration,
+) (bool, error) {
+	glog.V(100).Infof("Waiting for %d pod replicas count in namespace %s with options %v"+
+		" are in running state", replicasCount, nsname, options)
+
+	if nsname == "" {
+		glog.V(100).Infof("'nsname' parameter can not be empty")
+
+		return false, fmt.Errorf("failed to list pods, 'nsname' parameter is empty")
+	}
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			podsList, err := pod.List(apiClient, nsname, options)
+			if err != nil {
+				glog.V(100).Infof("Failed to list all pods due to %s", err.Error())
+
+				return false, nil
+			}
+
+			if len(podsList) != replicasCount {
+				glog.V(100).Infof("pod replicas count not equal to the expected: "+
+					"current %d, expected: %d", len(podsList), replicasCount)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}

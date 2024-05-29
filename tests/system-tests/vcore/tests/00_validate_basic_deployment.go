@@ -26,5 +26,7 @@ var _ = Describe(
 
 		vcorecommon.VerifyESKAndCLOSuite()
 
+		vcorecommon.VerifyServiceMeshSuite()
+
 		vcorecommon.VerifyHelmSuite()
 	})

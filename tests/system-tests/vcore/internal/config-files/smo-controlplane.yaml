@@ -1,0 +1,160 @@
+apiVersion: maistra.io/v2
+kind: ServiceMeshControlPlane
+metadata:
+  name: "{{ .ControlPlaneName }}"
+  namespace: "{{ .ControlPlaneNamespace }}"
+spec:
+  addons:
+    grafana:
+      enabled: false
+    jaeger:
+      install:
+        ingress:
+          enabled: false
+    kiali:
+      enabled: false
+    prometheus:
+      enabled: false
+  gateways:
+    additionalIngress:
+      amfmme1-istio-ingressgateway:
+        enabled: true
+        namespace: amfmme1
+        runtime:
+          container:
+            resources:
+              requests:
+                cpu: "1"
+                memory: 128Mi
+          deployment:
+            autoScaling:
+              enabled: false
+            replicas: 3
+        service:
+          metadata:
+            labels:
+              amfmme1: ingressgateway
+      nrf1-istio-ingressgateway:
+        enabled: true
+        namespace: nrf1
+        runtime:
+          container:
+            resources:
+              requests:
+                cpu: "1"
+                memory: 128Mi
+          deployment:
+            autoScaling:
+              enabled: false
+            replicas: 3
+        service:
+          metadata:
+            labels:
+              nrf1: ingressgateway
+      smf1-istio-ingressgateway:
+        enabled: true
+        namespace: smf1
+        runtime:
+          container:
+            resources:
+              requests:
+                cpu: "1"
+                memory: 128Mi
+          deployment:
+            autoScaling:
+              enabled: false
+            replicas: 3
+        service:
+          metadata:
+            labels:
+              smf1: ingressgateway
+      upf1-istio-ingressgateway:
+        enabled: true
+        namespace: upf1
+        runtime:
+          container:
+            resources:
+              requests:
+                cpu: "1"
+                memory: 128Mi
+          deployment:
+            autoScaling:
+              enabled: false
+            replicas: 3
+        service:
+          metadata:
+            labels:
+              upf1: ingressgateway
+      nssf1-istio-ingressgateway:
+        enabled: true
+        namespace: nssf1
+        runtime:
+          container:
+            resources:
+              requests:
+                cpu: "1"
+                memory: 128Mi
+          deployment:
+            autoScaling:
+              enabled: false
+            replicas: 3
+        service:
+          metadata:
+            labels:
+              nssf1: ingressgateway
+    egress:
+      enabled: false
+      service: {}
+    enabled: true
+    ingress:
+      enabled: true
+      ingress: false
+      runtime:
+        container:
+          resources:
+            requests:
+              cpu: "1"
+              memory: 128Mi
+        deployment:
+          autoScaling:
+            enabled: false
+          replicas: 1
+      service: {}
+    openshiftRoute:
+      enabled: false
+  techPreview:
+    sidecarInjectorWebhook:
+      injectPodRedirectAnnot: true
+    wasmExtensions:
+      enabled: true
+  profiles:
+  - default
+  proxy:
+    concurrency: 0
+    networking:
+      trafficControl:
+        inbound: {}
+        outbound:
+          includedIPRanges:
+          - fd02::/112
+    runtime:
+      container:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+  runtime:
+    components:
+      pilot:
+        deployment:
+          replicas: 3
+  security:
+    controlPlane:
+      mtls: false
+    dataPlane:
+      automtls: false
+      mtls: false
+  telemetry:
+    type: Istiod
+  tracing: {}
+  version: v2.5

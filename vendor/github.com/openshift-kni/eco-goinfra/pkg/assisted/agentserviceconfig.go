@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/strings/slices"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -22,6 +23,10 @@ const (
 	defaultDatabaseStorageSize   = "10Gi"
 	defaultFilesystemStorageSize = "20Gi"
 	defaultImageStoreStorageSize = "10Gi"
+)
+
+var (
+	validIPXEOptions = []string{"enabled", "disabled"}
 )
 
 // AgentServiceConfigBuilder provides struct for the agentserviceconfig object containing connection to
@@ -180,6 +185,14 @@ func (builder *AgentServiceConfigBuilder) WithUnauthenticatedRegistry(registry s
 
 	glog.V(100).Infof("Adding unauthenticatedRegistry %s to agentserviceconfig %s", registry, builder.Definition.Name)
 
+	if registry == "" {
+		glog.V(100).Infof("AgentServiceConfig UnauthenticatedRegistry supplied empty registry")
+
+		builder.errorMsg = "agentserviceconfig cannot have empty unauthenticated registry"
+
+		return builder
+	}
+
 	builder.Definition.Spec.UnauthenticatedRegistries = append(builder.Definition.Spec.UnauthenticatedRegistries, registry)
 
 	return builder
@@ -192,6 +205,15 @@ func (builder *AgentServiceConfigBuilder) WithIPXEHTTPRoute(route string) *Agent
 	}
 
 	glog.V(100).Infof("Adding IPXEHTTPRout %s to agentserviceconfig %s", route, builder.Definition.Name)
+
+	if !slices.Contains(validIPXEOptions, route) {
+		glog.V(100).Infof("Receieved incorrect IPXEHTTPRoute option: %s, valid options: %v", route, validIPXEOptions)
+
+		builder.errorMsg =
+			fmt.Sprintf("agentserviceconfig passed invalid ipxeroute: %s, valid options: %v", route, validIPXEOptions)
+
+		return builder
+	}
 
 	builder.Definition.Spec.IPXEHTTPRoute = route
 
@@ -232,20 +254,10 @@ func (builder *AgentServiceConfigBuilder) WaitUntilDeployed(timeout time.Duratio
 
 	glog.V(100).Infof("Waiting for agetserviceconfig %s to be deployed", builder.Definition.Name)
 
-	if builder.Definition == nil {
-		glog.V(100).Infof("The agentserviceconfig is undefined")
-
-		builder.errorMsg = msg.UndefinedCrdObjectErrString("AgentServiceConfig")
-	}
-
 	if !builder.Exists() {
 		glog.V(100).Infof("The agentserviceconfig does not exist on the cluster")
 
-		builder.errorMsg = "cannot wait for non-existent agentserviceconfig to be deployed"
-	}
-
-	if builder.errorMsg != "" {
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("cannot wait for non-existent agentserviceconfig to be deployed")
 	}
 
 	// Polls every retryInterval to determine if agentserviceconfig is in desired state.
@@ -365,11 +377,7 @@ func (builder *AgentServiceConfigBuilder) Update(force bool) (*AgentServiceConfi
 		glog.V(100).Infof("agentserviceconfig %s does not exist",
 			builder.Definition.Name)
 
-		builder.errorMsg = "Cannot update non-existent agentserviceconfig"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("cannot update non-existent agentserviceconfig")
 	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
@@ -411,7 +419,7 @@ func (builder *AgentServiceConfigBuilder) Delete() error {
 		builder.Definition.Name)
 
 	if !builder.Exists() {
-		return fmt.Errorf("agentserviceconfig cannot be deleted because it does not exist")
+		return nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
