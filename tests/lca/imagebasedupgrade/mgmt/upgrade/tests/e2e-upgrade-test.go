@@ -176,7 +176,7 @@ var _ = Describe(
 		})
 
 		AfterAll(func() {
-			if !MGMTConfig.IdlePostUpgrade {
+			if !MGMTConfig.IdlePostUpgrade && MGMTConfig.RollbackAfterUpgrade {
 				By("Revert IBU resource back to Idle stage")
 				ibu, err = lca.PullImageBasedUpgrade(APIClient)
 				Expect(err).NotTo(HaveOccurred(), "error pulling imagebasedupgrade resource")
@@ -409,7 +409,7 @@ func upgrade() {
 		}
 	}
 
-	if MGMTConfig.IdlePostUpgrade {
+	if MGMTConfig.IdlePostUpgrade && !MGMTConfig.RollbackAfterUpgrade {
 		By("Set the IBU stage to Idle")
 
 		_, err = ibu.WithStage("Idle").Update()
