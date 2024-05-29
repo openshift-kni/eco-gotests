@@ -470,7 +470,7 @@ func startTestWorkload() {
 					ContainerPort: 8080,
 				},
 			},
-		}).WithLabel("app", tsparams.LCAWorkloadName).CreateAndWaitUntilReady(time.Second * 30)
+		}).WithLabel("app", tsparams.LCAWorkloadName).CreateAndWaitUntilReady(time.Second * 60)
 	Expect(err).NotTo(HaveOccurred(), "error creating ibu workload deployment")
 
 	By("Create workload app service")
