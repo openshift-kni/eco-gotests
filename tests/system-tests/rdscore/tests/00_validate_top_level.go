@@ -162,6 +162,10 @@ var _ = Describe(
 				Label("verify-deployments"), reportxml.ID("71872"),
 				rdscorecommon.WaitAllDeploymentsAreAvailable)
 
+			It("Verifies all statefulsets are in Ready state after ungraceful reboot",
+				Label("statefulset-ready"), reportxml.ID("73972"),
+				rdscorecommon.WaitAllStatefulsetsReady)
+
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
 				rdscorecommon.VerifyNROPWorkloadAvailable)
@@ -244,6 +248,10 @@ var _ = Describe(
 			It("Verifies all deploymentes are available",
 				Label("verify-deployments"), reportxml.ID("72041"),
 				rdscorecommon.WaitAllDeploymentsAreAvailable)
+
+			It("Verifies all statefulsets are in Ready state after soft reboot",
+				Label("statefulset-ready"), reportxml.ID("73973"),
+				rdscorecommon.WaitAllStatefulsetsReady)
 
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),
