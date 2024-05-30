@@ -129,10 +129,11 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 
 			ocpVersion, _ := version.NewVersion(clusterVersion.Definition.Status.Desired.Version)
 			glog.V(kmmparams.KmmLogLevel).Infof("Cluster Version: %s", ocpVersion)
-			versionOfFeature, _ := version.NewVersion("4.14.0-0.nightly-2023-01-01-184526")
+			minVersion, _ := version.NewVersion("4.14.0-0.nightly-2023-01-01-184526")
+			maxVersion, _ := version.NewVersion("4.16.0-0.nightly")
 
-			if ocpVersion.GreaterThanOrEqual(versionOfFeature) {
-				By("Waiting revert to cgroups v1 on 4.14 and greater")
+			if ocpVersion.GreaterThanOrEqual(minVersion) && ocpVersion.LessThanOrEqual(maxVersion) {
+				By("Waiting revert to cgroups v1 on 4.14 and 4.15")
 				mcp, err := mco.Pull(APIClient, "master")
 				Expect(err).ToNot(HaveOccurred(), "error while pulling master machineconfigpool")
 
