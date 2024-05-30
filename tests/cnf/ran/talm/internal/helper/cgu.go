@@ -8,7 +8,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
@@ -235,6 +237,11 @@ func SetupCguWithNamespace(cguBuilder *cgu.CguBuilder, suffix string) (*cgu.CguB
 		return nil, err
 	}
 
+	err = waitForPolicyComponentsExist(raninittools.HubAPIClient, suffix)
+	if err != nil {
+		return nil, err
+	}
+
 	return cguBuilder.Create()
 }
 
@@ -256,6 +263,11 @@ func SetupCguWithCatSrc(cguBuilder *cgu.CguBuilder) (*cgu.CguBuilder, error) {
 
 	err = CreatePolicyComponents(
 		raninittools.HubAPIClient, "", cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
+	if err != nil {
+		return nil, err
+	}
+
+	err = waitForPolicyComponentsExist(raninittools.HubAPIClient, "")
 	if err != nil {
 		return nil, err
 	}
@@ -287,5 +299,41 @@ func SetupCguWithClusterVersion(
 		return nil, err
 	}
 
+	err = waitForPolicyComponentsExist(raninittools.HubAPIClient, "")
+	if err != nil {
+		return nil, err
+	}
+
 	return cguBuilder.Create()
+}
+
+// waitForPolicyComponentsExist waits until all the policy components exist on the provided client.
+func waitForPolicyComponentsExist(client *clients.Settings, suffix string) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 15*time.Second, 5*time.Minute, false, func(ctx context.Context) (bool, error) {
+			// Check for definitions being nil too since sometimes the err is nil when the resource does not
+			// exist on the cluster.
+			policy, err := ocm.PullPolicy(client, tsparams.PolicyName+suffix, tsparams.TestNamespace)
+			if err != nil || policy.Definition == nil {
+				return false, nil
+			}
+
+			policySet, err := ocm.PullPolicySet(client, tsparams.PolicySetName+suffix, tsparams.TestNamespace)
+			if err != nil || policySet.Definition == nil {
+				return false, nil
+			}
+
+			placementRule, err := ocm.PullPlacementRule(client, tsparams.PlacementRuleName+suffix, tsparams.TestNamespace)
+			if err != nil || placementRule.Definition == nil {
+				return false, nil
+			}
+
+			placementBinding, err := ocm.PullPlacementBinding(
+				client, tsparams.PlacementBindingName+suffix, tsparams.TestNamespace)
+			if err != nil || placementBinding.Definition == nil {
+				return false, nil
+			}
+
+			return true, nil
+		})
 }
