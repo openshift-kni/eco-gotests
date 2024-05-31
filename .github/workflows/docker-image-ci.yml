@@ -58,7 +58,7 @@ jobs:
     - name: Log in to Registry
       uses: redhat-actions/podman-login@v1
       with:
-        registry: registry.redhat.io
+        registry: quay.io/ocp-edge-qe/eco-gotests
         username: ${{ secrets.OCP_EDGE_QE_QUAY_USER }}
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
 
