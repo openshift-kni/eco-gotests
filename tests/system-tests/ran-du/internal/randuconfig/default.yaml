@@ -1,0 +1,6 @@
+---
+# System Tests RAN DU default configurations.
+randu_test_workload:
+    namespace: 'test'
+    create_method: 'shell'
+    create_shell_cmd: '/opt/vdu-workload-emulator/add_test-deployments.sh'
