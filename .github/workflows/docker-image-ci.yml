@@ -71,9 +71,6 @@ jobs:
         containerfiles: |
           ./images/system-tests/ran-du/Dockerfile
         archs: amd64, arm64
-        registry: quay.io/ocp-edge-qe
-        username: ${{ secrets.OCP_EDGE_QE_QUAY_USER }}
-        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
 
     - name: Push To quay.io eco-gotests-ran-du image
       id: push-to-quay-eco-gotests-ran-du
