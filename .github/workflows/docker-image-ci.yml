@@ -49,11 +49,18 @@ jobs:
         image: ${{ steps.build-image.outputs.image }}
         tags: ${{ steps.build-image.outputs.tags }}
         registry: quay.io/ocp-edge-qe
-        username: ocp-edge-qe+ocp_edge_qe_robot
+        username: ${{ secrets.OCP_EDGE_QE_QUAY_USER }}
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
 
     - name: Print image url
       run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
+
+    - name: Log in to Registry
+      uses: redhat-actions/podman-login@v1
+      with:
+        registry: registry.redhat.io
+        username: ${{ secrets.OCP_EDGE_QE_QUAY_USER }}
+        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
 
     - name: Build docker eco-gotests-ran-du image
       id: build-image-system
@@ -65,7 +72,7 @@ jobs:
           ./images/system-tests/ran-du/Dockerfile
         archs: amd64, arm64
         registry: quay.io/ocp-edge-qe
-        username: ocp-edge-qe+ocp_edge_qe_robot
+        username: ${{ secrets.OCP_EDGE_QE_QUAY_USER }}
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
 
     - name: Push To quay.io eco-gotests-ran-du image
@@ -75,7 +82,7 @@ jobs:
         image: ${{ steps.build-image-system.outputs.image }}
         tags: ${{ steps.build-image-system.outputs.tags }}
         registry: quay.io/ocp-edge-qe
-        username: ocp-edge-qe+ocp_edge_qe_robot
+        username: ${{ secrets.OCP_EDGE_QE_QUAY_USER }}
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
 
     - name: Print image url eco-gotests-ran-du
