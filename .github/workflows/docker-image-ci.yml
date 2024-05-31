@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     name: Build and push docker image
-    runs-on: [self-hosted, linux, X64] #ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
