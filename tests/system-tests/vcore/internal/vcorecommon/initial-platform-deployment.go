@@ -160,32 +160,32 @@ func verifyNodesInMCP(nodesRole string) {
 
 // VerifyODFMCPAvailability assert odf MCP was deployed.
 func VerifyODFMCPAvailability(ctx SpecContext) {
-	verifyNodesInMCP(vcoreparams.VCoreOdfMcpName)
+	verifyNodesInMCP(VCoreConfig.OdfMCPName)
 } // func VerifyODFMCPAvailability (ctx SpecContext)
 
 // VerifyODFNodesAvailability assert full set of ODF nodes was deployed.
 func VerifyODFNodesAvailability(ctx SpecContext) {
-	verifyNodesAvailability(vcoreparams.VCoreOdfMcpName, VCoreConfig.OdfLabelListOption)
+	verifyNodesAvailability(VCoreConfig.OdfMCPName, VCoreConfig.OdfLabelListOption)
 } // func VerifyODFNodesAvailability (ctx SpecContext)
 
 // VerifyControlPlaneWorkerMCPAvailability assert control-plane-worker MCP was deployed.
 func VerifyControlPlaneWorkerMCPAvailability(ctx SpecContext) {
-	verifyNodesInMCP(vcoreparams.VCoreCpMcpName)
+	verifyNodesInMCP(VCoreConfig.VCoreCpMCPName)
 } // func VerifyControlPlaneWorkerMCPAvailability (ctx SpecContext)
 
 // VerifyControlPlaneWorkerNodesAvailability assert control-plane-worker nodes availability.
 func VerifyControlPlaneWorkerNodesAvailability(ctx SpecContext) {
-	verifyNodesAvailability(vcoreparams.VCoreCpMcpName, VCoreConfig.VCoreCpLabelListOption)
+	verifyNodesAvailability(VCoreConfig.VCoreCpMCPName, VCoreConfig.VCoreCpLabelListOption)
 } // func VerifyControlPlaneWorkerNodesAvailability (ctx SpecContext)
 
 // VerifyUserPlaneWorkerMCPAvailability assert user-plane-worker MCP was deployed.
 func VerifyUserPlaneWorkerMCPAvailability(ctx SpecContext) {
-	verifyNodesInMCP(vcoreparams.VCorePpMcpName)
+	verifyNodesInMCP(VCoreConfig.VCorePpMCPName)
 } // func VerifyUserPlaneWorkerMCPAvailability (ctx SpecContext)
 
 // VerifyUserPlaneWorkerNodesAvailability assert user-plane-worker nodes availability.
 func VerifyUserPlaneWorkerNodesAvailability(ctx SpecContext) {
-	verifyNodesAvailability(vcoreparams.VCorePpMcpName, VCoreConfig.VCorePpLabelListOption)
+	verifyNodesAvailability(VCoreConfig.VCorePpMCPName, VCoreConfig.VCorePpLabelListOption)
 } // func VerifyUserPlaneWorkerNodesAvailability (ctx SpecContext)
 
 // VerifyInitialDeploymentConfig container that contains tests for initial cluster deployment verification.

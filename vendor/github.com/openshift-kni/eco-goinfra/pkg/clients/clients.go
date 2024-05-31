@@ -531,6 +531,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		// Hive Client Objects
 		case *hiveV1.HiveConfig:
 			genericClientObjects = append(genericClientObjects, v)
+		case *hiveV1.ClusterImageSet:
+			genericClientObjects = append(genericClientObjects, v)
 		// Velero Client Objects
 		case *velerov1.Backup:
 			veleroClientObjects = append(veleroClientObjects, v)

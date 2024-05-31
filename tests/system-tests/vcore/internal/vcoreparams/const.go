@@ -25,23 +25,14 @@ const (
 	// WorkerNodeRole master node role.
 	WorkerNodeRole = "worker"
 
-	// ExpectedVCorePPNodesCnt expected user-plane-worker nodes count.
-	ExpectedVCorePPNodesCnt = 2
+	// HugePagesSize hugepages size.
+	HugePagesSize = "2M"
 
-	// ExpectedVCoreCpNodesCnt expected control-plane-worker nodes count.
-	ExpectedVCoreCpNodesCnt = 2
+	// ExpectedHugePagesResource hugepages resource size.
+	ExpectedHugePagesResource = "64Gi"
 
-	// ExpectedOdfNodesCnt expected odf nodes count.
-	ExpectedOdfNodesCnt = 3
-
-	// VCorePpMcpName user-plane-worker workers mcp name.
-	VCorePpMcpName = "user-plane-worker"
-
-	// VCoreCpMcpName control-plane-worker workers mcp name.
-	VCoreCpMcpName = "control-plane-worker"
-
-	// VCoreOdfMcpName odf workers mcp name.
-	VCoreOdfMcpName = "odf"
+	// TopologyConfig performanceprofile topology config.
+	TopologyConfig = "single-numa-node"
 
 	// OpenshiftMachineAPINamespace openshift machine-api namespace.
 	OpenshiftMachineAPINamespace = "openshift-machine-api"
@@ -162,4 +153,10 @@ const (
 
 	// IstioNamespace is an istio operator namespace.
 	IstioNamespace = "istio-system"
+
+	// NTONamespace is a node tuning operator namespace.
+	NTONamespace = "openshift-cluster-node-tuning-operator"
+
+	// NTODeploymentName is a node tuning operator deployment name.
+	NTODeploymentName = "cluster-node-tuning-operator"
 )

@@ -311,6 +311,54 @@ func (builder *Builder) WithWorkloadHints(rtHint, perPodPowerMgmtHint, highPower
 	return builder
 }
 
+// WithAnnotations defines the annotations in the PerformanceProfile.
+func (builder *Builder) WithAnnotations(annotations map[string]string) *Builder {
+	glog.V(100).Infof("Adding annotations %v to the PerformanceProfile %s",
+		annotations, builder.Definition.Name)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if len(annotations) == 0 {
+		glog.V(100).Infof("'annotations' argument cannot be empty")
+
+		builder.errorMsg = "'annotations' argument cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.ObjectMeta.Annotations = annotations
+
+	return builder
+}
+
+// WithNet defines the net in the PerformanceProfile.
+func (builder *Builder) WithNet(userLevelNetworking bool, devices []v2.Device) *Builder {
+	glog.V(100).Infof("Adding net field to the PerformanceProfile %s", builder.Definition.Name)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if len(devices) == 0 {
+		glog.V(100).Infof("'devices' argument cannot be empty")
+
+		builder.errorMsg = "'devices' argument cannot be empty"
+
+		return builder
+	}
+
+	netField := v2.Net{
+		UserLevelNetworking: &userLevelNetworking,
+		Devices:             devices,
+	}
+
+	builder.Definition.Spec.Net = &netField
+
+	return builder
+}
+
 // Create the PerformanceProfile in the cluster and store the created object in Object.
 func (builder *Builder) Create() (*Builder, error) {
 	if valid, err := builder.validate(); !valid {

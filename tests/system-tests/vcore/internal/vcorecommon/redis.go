@@ -181,7 +181,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			fmt.Sprintf("redis is not properly configured: %s", string(result)))
 	}
 
-	odfMcp := mco.NewMCPBuilder(APIClient, vcoreparams.VCoreOdfMcpName)
+	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfMCPName)
 	if odfMcp.Exists() {
 		glog.V(vcoreparams.VCoreLogLevel).Info("Wait for the statefulset ready")
 

@@ -33,4 +33,6 @@ var _ = Describe(
 		vcorecommon.VerifyHelmSuite()
 
 		vcorecommon.VerifyRedisSuite()
+
+		vcorecommon.VerifyNTOSuite()
 	})

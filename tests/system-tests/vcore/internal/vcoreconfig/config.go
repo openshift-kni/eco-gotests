@@ -23,9 +23,9 @@ const (
 type VCoreConfig struct {
 	*systemtestsconfig.SystemTestsConfig
 	Namespace                   string `yaml:"vcore_default_ns" envconfig:"ECO_SYSTEM_VCORE_NS"`
-	OdfLabel                    string `yaml:"odf_label" envconfig:"ECO_SYSTEM_VCORE_ODF_LABEL"`
-	VCorePpLabel                string `yaml:"vcore_pp_label" envconfig:"ECO_SYSTEM_VCORE_PP_LABEL"`
-	VCoreCpLabel                string `yaml:"vcore_cp_label" envconfig:"ECO_SYSTEM_VCORE_CP_LABEL"`
+	OdfMCPName                  string `yaml:"odf_mcp" envconfig:"ECO_SYSTEM_VCORE_ODF_MCP"`
+	VCorePpMCPName              string `yaml:"vcore_pp_mcp" envconfig:"ECO_SYSTEM_VCORE_PP_MCP"`
+	VCoreCpMCPName              string `yaml:"vcore_cp_mcp" envconfig:"ECO_SYSTEM_VCORE_CP_MCP"`
 	Host                        string `yaml:"host" envconfig:"ECO_SYSTEM_VCORE_HOST"`
 	User                        string `yaml:"user" envconfig:"ECO_SYSTEM_VCORE_USER"`
 	Pass                        string `yaml:"pass" envconfig:"ECO_SYSTEM_VCORE_PASS"`
@@ -34,10 +34,18 @@ type VCoreConfig struct {
 	CombinedPullSecretFile      string `yaml:"combined_pull_secret" envconfig:"ECO_SYSTEM_VCORE_COMBINED_PULL_SECRET"`
 	PrivateKey                  string `yaml:"private_key" envconfig:"ECO_SYSTEM_VCORE_PRIVATE_KEY"`
 	RegistryRepository          string `yaml:"registry_repository" envconfig:"ECO_SYSTEM_VCORE_REGISTRY_REPOSITORY"`
+	CPUIsolated                 string `yaml:"cpu_isolated" envconfig:"ECO_SYSTEM_VCORE_CPU_ISOLATED"`
+	CPUReserved                 string `yaml:"cpu_reserved" envconfig:"ECO_SYSTEM_VCORE_CPU_RESERVED"`
+	OdfLabel                    string
+	VCorePpLabel                string
+	VCoreCpLabel                string
 	ControlPlaneLabelListOption metav1.ListOptions
 	OdfLabelListOption          metav1.ListOptions
 	VCorePpLabelListOption      metav1.ListOptions
 	VCoreCpLabelListOption      metav1.ListOptions
+	OdfLabelMap                 map[string]string
+	VCorePpLabelMap             map[string]string
+	VCoreCpLabelMap             map[string]string
 }
 
 // NewVCoreConfig returns instance of VCoreConfig config type.
@@ -95,13 +103,16 @@ func readEnv(vcoreConfig *VCoreConfig) error {
 		return err
 	}
 
-	vcoreConfig.OdfLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.OdfLabel)
-	vcoreConfig.VCorePpLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.VCorePpLabel)
-	vcoreConfig.VCoreCpLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.VCoreCpLabel)
+	vcoreConfig.OdfLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.OdfMCPName)
+	vcoreConfig.VCorePpLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.VCorePpMCPName)
+	vcoreConfig.VCoreCpLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.VCoreCpMCPName)
 	vcoreConfig.ControlPlaneLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.ControlPlaneLabel}
 	vcoreConfig.OdfLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.OdfLabel}
 	vcoreConfig.VCorePpLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.VCorePpLabel}
 	vcoreConfig.VCoreCpLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.VCoreCpLabel}
+	vcoreConfig.OdfLabelMap = map[string]string{vcoreConfig.OdfLabel: ""}
+	vcoreConfig.VCorePpLabelMap = map[string]string{vcoreConfig.VCorePpLabel: ""}
+	vcoreConfig.VCoreCpLabelMap = map[string]string{vcoreConfig.VCoreCpLabel: ""}
 
 	return nil
 }

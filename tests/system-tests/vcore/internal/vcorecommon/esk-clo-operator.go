@@ -130,7 +130,7 @@ func CreateCLOInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s failed to run; %v",
 		podsList[0].Definition.Name, vcoreparams.CLONamespace, err))
 
-	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfLabel)
+	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfMCPName)
 	if odfMcp.IsInCondition("Updated") {
 		podsList, err := pod.ListByNamePattern(APIClient, eskCdmPodNamePattern, vcoreparams.CLONamespace)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s not found in namespace %s; %v",

@@ -31,6 +31,12 @@ func NewClusterImageSetBuilder(apiClient *clients.Settings, name, releaseImage s
 		`Initializing new clusterimageset structure with the following params: name: %s, releaseImage: %s`,
 		name, releaseImage)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
 	builder := ClusterImageSetBuilder{
 		apiClient: apiClient,
 		Definition: &hiveV1.ClusterImageSet{
@@ -41,12 +47,6 @@ func NewClusterImageSetBuilder(apiClient *clients.Settings, name, releaseImage s
 				ReleaseImage: releaseImage,
 			},
 		},
-	}
-
-	if apiClient == nil {
-		glog.V(100).Infof("The apiClient is nil")
-
-		builder.errorMsg = "clusterimageset cannot have nil apiClient"
 	}
 
 	if name == "" {
@@ -64,59 +64,15 @@ func NewClusterImageSetBuilder(apiClient *clients.Settings, name, releaseImage s
 	return &builder
 }
 
-// WithReleaseImage sets the releaseImage for the clusterimageset.
-func (builder *ClusterImageSetBuilder) WithReleaseImage(image string) *ClusterImageSetBuilder {
-	if valid, _ := builder.validate(); !valid {
-		return builder
-	}
-
-	glog.V(100).Infof("Setting clusterimageset %s releaseImage to %s",
-		builder.Definition.Name, image)
-
-	if image == "" {
-		glog.V(100).Infof("The clusterimageset releaseImage is empty")
-
-		builder.errorMsg = "cannot set releaseImage to empty string"
-	}
-
-	if builder.errorMsg != "" {
-		return builder
-	}
-
-	builder.Definition.Spec.ReleaseImage = image
-
-	return builder
-}
-
-// WithOptions creates ClusterDeployment with generic mutation options.
-func (builder *ClusterImageSetBuilder) WithOptions(
-	options ...ClusterImageSetAdditionalOptions) *ClusterImageSetBuilder {
-	if valid, _ := builder.validate(); !valid {
-		return builder
-	}
-
-	glog.V(100).Infof("Setting ClusterImageSet additional options")
-
-	for _, option := range options {
-		if option != nil {
-			builder, err := option(builder)
-
-			if err != nil {
-				glog.V(100).Infof("Error occurred in mutation function")
-
-				builder.errorMsg = err.Error()
-
-				return builder
-			}
-		}
-	}
-
-	return builder
-}
-
 // PullClusterImageSet loads an existing clusterimageset into ClusterImageSetBuilder struct.
 func PullClusterImageSet(apiClient *clients.Settings, name string) (*ClusterImageSetBuilder, error) {
 	glog.V(100).Infof("Pulling existing clusterimageset name: %s", name)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("clusterImageSet 'apiClient' cannot be empty")
+	}
 
 	builder := ClusterImageSetBuilder{
 		apiClient: apiClient,
@@ -128,7 +84,9 @@ func PullClusterImageSet(apiClient *clients.Settings, name string) (*ClusterImag
 	}
 
 	if name == "" {
-		builder.errorMsg = "clusterimageset 'name' cannot be empty"
+		glog.V(100).Infof("The name of the clusterimageset is empty")
+
+		return nil, fmt.Errorf("clusterimageset 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -223,7 +181,11 @@ func (builder *ClusterImageSetBuilder) Delete() error {
 	glog.V(100).Infof("Deleting the clusterimageset %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return fmt.Errorf("clusterimageset cannot be deleted because it does not exist")
+		glog.V(100).Infof("clusterimageset cannot be deleted because it does not exist")
+
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
@@ -251,6 +213,56 @@ func (builder *ClusterImageSetBuilder) Exists() bool {
 	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// WithReleaseImage sets the releaseImage for the clusterimageset.
+func (builder *ClusterImageSetBuilder) WithReleaseImage(image string) *ClusterImageSetBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting clusterimageset %s releaseImage to %s",
+		builder.Definition.Name, image)
+
+	if image == "" {
+		glog.V(100).Infof("The clusterimageset releaseImage is empty")
+
+		builder.errorMsg = "cannot set releaseImage to empty string"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.ReleaseImage = image
+
+	return builder
+}
+
+// WithOptions creates ClusterDeployment with generic mutation options.
+func (builder *ClusterImageSetBuilder) WithOptions(
+	options ...ClusterImageSetAdditionalOptions) *ClusterImageSetBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting ClusterImageSet additional options")
+
+	for _, option := range options {
+		if option != nil {
+			builder, err := option(builder)
+
+			if err != nil {
+				glog.V(100).Infof("Error occurred in mutation function")
+
+				builder.errorMsg = err.Error()
+
+				return builder
+			}
+		}
+	}
+
+	return builder
 }
 
 // validate will check that the builder and builder definition are properly initialized before

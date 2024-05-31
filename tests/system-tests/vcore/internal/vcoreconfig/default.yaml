@@ -1,8 +1,8 @@
 ---
 vcore_default_ns: 'vcore-test'
-odf_label: "odf"
-vcore_pp_label: "user-plane-worker"
-vcore_cp_label: "control-plane-worker"
+odf_mcp: "odf"
+vcore_pp_mcp: "user-plane-worker"
+vcore_cp_mcp: "control-plane-worker"
 host: ""
 user: "kni"
 pass: ""
@@ -11,3 +11,5 @@ registry_repository: "openshift"
 private_key: ".ssh/id_rsa"
 mirror_registry_user: "ocp-edge"
 mirror_registry_pass: "ocp-edge-pass"
+cpu_isolated: "2-27,30-55"
+cpu_reserved: "0-1,28-29"
