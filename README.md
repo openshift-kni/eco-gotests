@@ -15,7 +15,7 @@ The  [eco-gotests](https://github.com/openshift-kni/eco-gotests) is designed to 
 
 ### Mandatory setup requirements:
 * OCP cluster installed with version >=4.13
-
+TEST
 #### Optional:
 * PTP operator
 * SR-IOV operator
