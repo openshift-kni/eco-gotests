@@ -3,7 +3,10 @@ package seedimage
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
@@ -17,6 +20,8 @@ const (
 )
 
 // GetContent returns the structured contents of a seed image as SeedImageContent.
+//
+//nolint:funlen
 func GetContent(apiClient *clients.Settings, seedImageLocation string) (*SeedImageContent, error) {
 	if apiClient == nil {
 		return nil, fmt.Errorf("nil apiclient passed to seed image function")
@@ -86,5 +91,86 @@ func GetContent(apiClient *clients.Settings, seedImageLocation string) (*SeedIma
 		return nil, err
 	}
 
+	if seedInfo.HasProxy {
+		podmanPullCmd := fmt.Sprintf("%s podman pull %s", connectionString, seedImageLocation)
+
+		_, err = cluster.ExecCmdWithStdout(
+			apiClient, podmanPullCmd, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode),
+			})
+
+		if err != nil {
+			return nil, err
+		}
+
+		mountedFilePathOutput, err := cluster.ExecCmdWithStdout(
+			apiClient, fmt.Sprintf("sudo podman image mount %s", seedImageLocation), metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode),
+			})
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer func() {
+			_, err := cluster.ExecCmdWithStdout(
+				apiClient, fmt.Sprintf("sudo podman image unmount %s", seedImageLocation), metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode),
+				})
+
+			if err != nil {
+				glog.V(100).Info("Error occurred while unmounting image")
+			}
+		}()
+
+		mountedFilePath := regexp.MustCompile(`\n`).ReplaceAllString(mountedFilePathOutput[seedNode], "")
+
+		proxyEnvOutput, err := cluster.ExecCmdWithStdout(
+			apiClient, fmt.Sprintf("sudo tar xzf %s/etc.tgz -O etc/mco/proxy.env", mountedFilePath), metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode),
+			})
+
+		if err != nil {
+			return nil, err
+		}
+
+		proxyEnv := proxyEnvOutput[seedNode]
+
+		seedInfo.ParseProxyEnv(proxyEnv)
+	}
+
 	return seedInfo, nil
+}
+
+// ParseProxyEnv reads a proxy.env config and sets SeedImageContent.Proxy values accordingly.
+func (s *SeedImageContent) ParseProxyEnv(config string) {
+	httpProxyRE := regexp.MustCompile(`HTTP_PROXY=(.+)`)
+	httpProxyResult := httpProxyRE.FindString(config)
+
+	if len(httpProxyResult) > 0 {
+		httpProxyKeyVal := strings.Split(httpProxyResult, "=")
+		if len(httpProxyKeyVal) == 2 {
+			s.Proxy.HTTPProxy = httpProxyKeyVal[1]
+		}
+	}
+
+	httpsProxyRE := regexp.MustCompile(`HTTPS_PROXY=(.+)`)
+	httpsProxyResult := httpsProxyRE.FindString(config)
+
+	if len(httpsProxyResult) > 0 {
+		httpsKeyVal := strings.Split(httpsProxyResult, "=")
+		if len(httpsKeyVal) == 2 {
+			s.Proxy.HTTPSProxy = httpsKeyVal[1]
+		}
+	}
+
+	noProxyRE := regexp.MustCompile(`NO_PROXY=(.*)`)
+	noProxyResult := noProxyRE.FindString(config)
+
+	if len(noProxyResult) > 0 {
+		noProxyKeyVal := strings.Split(noProxyResult, "=")
+		if len(noProxyKeyVal) == 2 {
+			s.Proxy.NOProxy = noProxyKeyVal[1]
+		}
+	}
 }

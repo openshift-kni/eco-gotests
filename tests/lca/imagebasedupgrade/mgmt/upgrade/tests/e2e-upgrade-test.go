@@ -21,6 +21,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/proxy"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/route"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
@@ -67,8 +68,15 @@ var _ = Describe(
 	"Performing image based upgrade",
 	Ordered,
 	Label(tsparams.LabelEndToEndUpgrade), func() {
+		var (
+			originalTargetProxy *proxy.Builder
+		)
 
 		BeforeAll(func() {
+			By("Get target cluster proxy configuration")
+			originalTargetProxy, err = proxy.Pull(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling target cluster proxy")
+
 			By("Pull the imagebasedupgrade from the cluster")
 			ibu, err = lca.PullImageBasedUpgrade(APIClient)
 			Expect(err).NotTo(HaveOccurred(), "error pulling ibu resource from cluster")
@@ -285,13 +293,60 @@ var _ = Describe(
 			Expect(extraConfigmap.Object.Data["hello"]).To(Equal("world"),
 				"error: extra manifest configmap has incorrect content")
 		})
+
+		It("contains same proxy configuration as seed after upgrade", reportxml.ID("73103"), func() {
+			if originalTargetProxy.Object.Spec.HTTPProxy == "" &&
+				originalTargetProxy.Object.Spec.HTTPSProxy == "" &&
+				originalTargetProxy.Object.Spec.NoProxy == "" {
+				Skip("Target was not installed with proxy")
+			}
+
+			if originalTargetProxy.Object.Spec.HTTPProxy != MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy ||
+				originalTargetProxy.Object.Spec.HTTPSProxy != MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy ||
+				originalTargetProxy.Object.Spec.NoProxy != MGMTConfig.SeedClusterInfo.Proxy.NOProxy {
+				Skip("Target was not installed with the same proxy as seed")
+			}
+
+			targetProxyPostUpgrade, err := proxy.Pull(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling target proxy")
+			Expect(originalTargetProxy.Object.Spec.HTTPProxy).To(Equal(targetProxyPostUpgrade.Object.Spec.HTTPProxy),
+				"HTTP_PROXY postupgrade config does not match pre upgrade config")
+			Expect(originalTargetProxy.Object.Spec.HTTPSProxy).To(Equal(targetProxyPostUpgrade.Object.Spec.HTTPSProxy),
+				"HTTPS_PROXY postupgrade config does not match pre upgrade config")
+			Expect(originalTargetProxy.Object.Spec.NoProxy).To(Equal(targetProxyPostUpgrade.Object.Spec.NoProxy),
+				"NO_PROXY postupgrade config does not match pre upgrade config")
+		})
+
+		It("contains different proxy configuration than seed after upgrade", reportxml.ID("73369"), func() {
+			if originalTargetProxy.Object.Spec.HTTPProxy == "" &&
+				originalTargetProxy.Object.Spec.HTTPSProxy == "" &&
+				originalTargetProxy.Object.Spec.NoProxy == "" {
+				Skip("Target was not installed with proxy")
+			}
+
+			if originalTargetProxy.Object.Spec.HTTPProxy == MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy &&
+				originalTargetProxy.Object.Spec.HTTPSProxy == MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy &&
+				originalTargetProxy.Object.Spec.NoProxy == MGMTConfig.SeedClusterInfo.Proxy.NOProxy {
+				Skip("Target was installed with the same proxy as seed")
+			}
+
+			targetProxyPostUpgrade, err := proxy.Pull(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling target proxy")
+			Expect(originalTargetProxy.Object.Spec.HTTPProxy).To(Equal(targetProxyPostUpgrade.Object.Spec.HTTPProxy),
+				"HTTP_PROXY postupgrade config does not match pre upgrade config")
+			Expect(originalTargetProxy.Object.Spec.HTTPSProxy).To(Equal(targetProxyPostUpgrade.Object.Spec.HTTPSProxy),
+				"HTTPS_PROXY postupgrade config does not match pre upgrade config")
+			Expect(originalTargetProxy.Object.Spec.NoProxy).To(Equal(targetProxyPostUpgrade.Object.Spec.NoProxy),
+				"NO_PROXY postupgrade config does not match pre upgrade config")
+		})
 	})
 
 //nolint:funlen
 func upgrade() {
 	By("Updating the seed image reference")
 
-	ibu, err = ibu.WithSeedImage(MGMTConfig.SeedImage).WithSeedImageVersion(MGMTConfig.SeedImageVersion).Update()
+	ibu, err = ibu.WithSeedImage(MGMTConfig.SeedImage).
+		WithSeedImageVersion(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion).Update()
 	Expect(err).NotTo(HaveOccurred(), "error updating ibu with image and version")
 
 	By("Updating the oadpContent")
@@ -360,7 +415,7 @@ func upgrade() {
 
 	clusterVersion, err := clusterversion.Pull(APIClient)
 	Expect(err).NotTo(HaveOccurred(), "error pulling clusterversion")
-	Expect(MGMTConfig.SeedImageVersion).To(
+	Expect(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion).To(
 		Equal(clusterVersion.Object.Status.Desired.Version), "error: clusterversion does not match seedimageversion")
 
 	By("Check that no cluster operators are progressing")

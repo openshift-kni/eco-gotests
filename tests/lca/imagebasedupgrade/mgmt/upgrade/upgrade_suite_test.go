@@ -28,12 +28,11 @@ func TestUpgrade(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	if MGMTConfig.SeedImageVersion == "" {
-		seedInfo, err := seedimage.GetContent(APIClient, MGMTConfig.SeedImage)
-		Expect(err).NotTo(HaveOccurred(), "error getting seed image info")
+	var err error
+	seedClusterInfo, err := seedimage.GetContent(APIClient, MGMTConfig.SeedImage)
+	Expect(err).NotTo(HaveOccurred(), "error getting seed image info")
 
-		MGMTConfig.SeedImageVersion = seedInfo.SeedClusterOCPVersion
-	}
+	MGMTConfig.SeedClusterInfo = seedClusterInfo
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
