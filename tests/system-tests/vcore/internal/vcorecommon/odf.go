@@ -43,7 +43,7 @@ func VerifyODFNamespaceExists(ctx SpecContext) {
 // VerifyODFDeployment asserts ODF successfully installed.
 func VerifyODFDeployment(ctx SpecContext) {
 	for _, operatorPod := range odfOperatorDeployments {
-		glog.V(100).Infof("Confirm that odf %s pod was deployed and running in %s namespace",
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that odf %s pod was deployed and running in %s namespace",
 			operatorPod, vcoreparams.ODFNamespace)
 
 		odfPods, err := pod.ListByNamePattern(APIClient, operatorPod, vcoreparams.ODFNamespace)
@@ -64,8 +64,8 @@ func VerifyODFDeployment(ctx SpecContext) {
 	}
 
 	for _, operatorDeployment := range odfOperatorDeployments {
-		glog.V(100).Infof(fmt.Sprintf("Confirm that %s deployment is running in %s namespace",
-			operatorDeployment, vcoreparams.ODFNamespace))
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that %s deployment is running in %s namespace",
+			operatorDeployment, vcoreparams.ODFNamespace)
 
 		odfDeployment, err := deployment.Pull(APIClient, operatorDeployment, vcoreparams.ODFNamespace)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("%s deployment not found in %s namespace; %v",
@@ -78,7 +78,7 @@ func VerifyODFDeployment(ctx SpecContext) {
 
 // VerifyODFConfig asserts ODF successfully configured.
 func VerifyODFConfig(ctx SpecContext) {
-	glog.V(100).Infof("Enable odf-console")
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Enable odf-console")
 
 	consoleOperatorObj, err := console.PullConsoleOperator(APIClient, "cluster")
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("consoleOperator 'cluster' not found; %v", err))
@@ -94,7 +94,7 @@ func VerifyODFConfig(ctx SpecContext) {
 		fmt.Sprintf("Failed to add new plugin %s to the consoleOperator plugins list: %v",
 			odfConsolePlugin, newPluginsList))
 
-	glog.V(100).Infof("Start to configure ODF StorageCluster")
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageCluster")
 
 	managedResources := ocsoperatorv1.ManagedResourcesSpec{
 		CephBlockPools: ocsoperatorv1.ManageCephBlockPools{

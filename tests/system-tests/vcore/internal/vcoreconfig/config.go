@@ -29,6 +29,11 @@ type VCoreConfig struct {
 	Host                        string `yaml:"host" envconfig:"ECO_SYSTEM_VCORE_HOST"`
 	User                        string `yaml:"user" envconfig:"ECO_SYSTEM_VCORE_USER"`
 	Pass                        string `yaml:"pass" envconfig:"ECO_SYSTEM_VCORE_PASS"`
+	MirrorRegistryUser          string `yaml:"mirror_registry_user" envconfig:"ECO_SYSTEM_VCORE_MIRROR_REGISTRY_USER"`
+	MirrorRegistryPass          string `yaml:"mirror_registry_pass" envconfig:"ECO_SYSTEM_VCORE_MIRROR_REGISTRY_PASSWORD"`
+	CombinedPullSecretFile      string `yaml:"combined_pull_secret" envconfig:"ECO_SYSTEM_VCORE_COMBINED_PULL_SECRET"`
+	PrivateKey                  string `yaml:"private_key" envconfig:"ECO_SYSTEM_VCORE_PRIVATE_KEY"`
+	RegistryRepository          string `yaml:"registry_repository" envconfig:"ECO_SYSTEM_VCORE_REGISTRY_REPOSITORY"`
 	ControlPlaneLabelListOption metav1.ListOptions
 	OdfLabelListOption          metav1.ListOptions
 	VCorePpLabelListOption      metav1.ListOptions

@@ -1,0 +1,64 @@
+image:
+  repository: {{ .ImageRepository }}
+  tag: {{ .ImageTag }}
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: "{{ .RedisSecret }}"
+
+## replicas number for each component
+replicas: 3
+haproxy:
+  enabled: false
+
+## Redis specific configuration options
+redis:
+  port: 6379
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 300m
+    limits:
+      memory: 1Gi
+
+## Sentinel specific configuration options
+sentinel:
+  port: 26379
+  quorum: 2
+  config:
+    down-after-milliseconds: 1000
+    failover-timeout: 180000
+    parallel-syncs: 5
+    maxclients: 10000
+ 
+  resources:
+    requests:
+      memory: 200Mi
+      cpu: 100m
+    limits:
+      memory: 200Mi
+hardAntiAffinity: true
+persistentVolume:
+  enabled: true
+  storageClass: {{ .StorageClass }}
+  accessMode:
+    - ReadWriteOnce
+  size: 5Gi
+
+tolerations:
+- effect: NoSchedule
+  key: node-role.kubernetes.io/master
+  operator: Exists
+
+additionalAffinities:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+
+securityContext:
+  runAsUser: {{ .RunAsUser }}
+  fsGroup: {{ .FsGroup }}
+  runAsNonRoot: true

@@ -28,19 +28,19 @@ func VerifyHelmDeploymentProcedure(ctx SpecContext) {
 	helmScriptName := "get_helm.sh"
 	helmScriptLocalPath := filepath.Join(vcoreConfigsFolder, helmScriptName)
 
-	glog.V(100).Infof("Download %s script", helmScriptName)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Download %s script", helmScriptName)
 	err = files.DownloadFile(helmScriptURL, helmScriptName, vcoreConfigsFolder)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to download %s file locally from the %s due to %v",
 		helmScriptName, helmScriptURL, err))
 
-	glog.V(100).Infof("Make %s script executable", helmScriptName)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Make %s script executable", helmScriptName)
 
 	chmodCmd := fmt.Sprintf("chmod 700 %s", helmScriptLocalPath)
 	_, err = shell.ExecuteCmd(chmodCmd)
 	Expect(err).ToNot(HaveOccurred(), "failed to make %s script executable due to %w",
 		helmScriptLocalPath, err)
 
-	glog.V(100).Info("Install Helm")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Install Helm")
 
 	os.Setenv("VERIFY_CHECKSUM", "false")
 
@@ -48,7 +48,7 @@ func VerifyHelmDeploymentProcedure(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 		helmScriptLocalPath, err))
 
-	glog.V(100).Info("Check HELM working properly")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Check HELM working properly")
 
 	cmd := "helm version"
 	result, err := shell.ExecuteCmd(cmd)
@@ -70,10 +70,10 @@ func VerifyHelmSuite() {
 
 				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
 
-				glog.V(100).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
+				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
 
 				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(100).Infof("%s folder already exists", vcoreConfigsFolder)
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
 				}
 			})
 

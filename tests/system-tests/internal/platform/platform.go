@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/infrastructure"
 	"github.com/openshift-kni/eco-goinfra/pkg/ingress"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools"
 	configv1 "github.com/openshift/api/config/v1"
 )
 
@@ -84,6 +85,10 @@ func GetOCPIngressDomain(apiClient *clients.Settings) (string, error) {
 
 // GetLocalMirrorRegistryURL retrieves the OCP local mirror registry url from an arbitrary cluster.
 func GetLocalMirrorRegistryURL(apiClient *clients.Settings) (string, error) {
+	if SystemTestsTestConfig.DestinationRegistryURL != "" {
+		return SystemTestsTestConfig.DestinationRegistryURL, nil
+	}
+
 	mirrorRegistryMap, err := getMirrorRegistryMap(apiClient)
 	if err != nil {
 		return "", err

@@ -44,6 +44,7 @@ linters-settings:
         - "github.com/argoproj-labs/argocd-operator/api"
         - "github.com/golang/glog"
         - "github.com/rh-ecosystem-edge/kernel-module-management"
+        - "github.com/povsister/scp"
         - "maistra.io/api"
         - "open-cluster-management.io/governance-policy-propagator/api"
         - "open-cluster-management.io/config-policy-controller/api"

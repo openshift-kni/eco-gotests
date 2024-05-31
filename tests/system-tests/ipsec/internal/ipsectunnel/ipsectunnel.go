@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cmd"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ipsec/internal/ipsecparams"
 )
 
@@ -23,7 +23,7 @@ func TunnelConnected(nodeName string) error {
 	glog.V(ipsecparams.IpsecLogLevel).Infof("Checking IPSec tunnel connection status. Exec cmd: %v",
 		ipsecparams.IpsecCmdShow)
 
-	ipsecShowStr, err := cmd.ExecCmdOnNode(ipsecparams.IpsecCmdShow, nodeName)
+	ipsecShowStr, err := remote.ExecCmdOnNode(ipsecparams.IpsecCmdShow, nodeName)
 	if err != nil {
 		glog.V(ipsecparams.IpsecLogLevel).Infof("error could not execute command: %s", err)
 
@@ -50,7 +50,7 @@ func TunnelPackets(nodeName string) *IpsecTunnelPackets {
 	glog.V(ipsecparams.IpsecLogLevel).Infof("Checking IPSec tunnel traffic status. Exec cmd: %v",
 		ipsecparams.IpsecCmdTrafficStatus)
 
-	ipsecOutput, err := cmd.ExecCmdOnNode(ipsecparams.IpsecCmdTrafficStatus, nodeName)
+	ipsecOutput, err := remote.ExecCmdOnNode(ipsecparams.IpsecCmdTrafficStatus, nodeName)
 	if err != nil {
 		glog.V(ipsecparams.IpsecLogLevel).Infof("error could not execute command: %s", err)
 

@@ -4,11 +4,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/reboot"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +40,7 @@ var _ = Describe(
 				By("Assert vmcore dump was generated")
 				cmdToExec := []string{"chroot", "/rootfs", "ls", "/var/crash"}
 
-				coreDumps, err := cmd.ExecCmdOnNode(cmdToExec, node.Definition.Name)
+				coreDumps, err := remote.ExecCmdOnNode(cmdToExec, node.Definition.Name)
 				Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
 
 				Expect(len(strings.Fields(coreDumps))).To(BeNumerically(">=", 1), "error: vmcore dump was not generated")

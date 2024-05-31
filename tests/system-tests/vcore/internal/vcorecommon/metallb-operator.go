@@ -31,14 +31,18 @@ func VerifyMetalLBNamespaceExists(ctx SpecContext) {
 
 // VerifyMetalLBOperatorDeployment asserts MetalLB operator successfully installed.
 func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
-	glog.V(100).Infof("Confirm that the %s operator is available", vcoreparams.MetalLBOperatorName)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that the %s operator is available",
+		vcoreparams.MetalLBOperatorName)
+
 	_, err := olm.PullPackageManifest(APIClient,
 		vcoreparams.MetalLBOperatorName,
 		vcoreparams.OperatorsNamespace)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("%s operator not found deployed in %s namespace; %v",
 		vcoreparams.MetalLBOperatorName, vcoreparams.OperatorsNamespace, err))
 
-	glog.V(100).Infof("Confirm the install plan is in the %s namespace", vcoreparams.MetalLBOperatorNamespace)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm the install plan is in the %s namespace",
+		vcoreparams.MetalLBOperatorNamespace)
+
 	installPlanList, err := olm.ListInstallPlan(APIClient, vcoreparams.MetalLBOperatorNamespace)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("metalLB installPlan not found in %s namespace; %v",
 		vcoreparams.MetalLBOperatorNamespace, err))
@@ -46,7 +50,8 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 		fmt.Sprintf("metalLB installPlan not found in %s namespace; found: %v",
 			vcoreparams.MetalLBOperatorNamespace, installPlanList))
 
-	glog.V(100).Infof("Confirm that the deployment for the metalLB operator is running in %s namespace",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that the deployment for the metalLB operator "+
+		"is running in %s namespace",
 		vcoreparams.MetalLBOperatorNamespace)
 
 	metalLBCSVName, err := csv.GetCurrentCSVNameFromSubscription(APIClient,
@@ -70,7 +75,7 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 		fmt.Sprintf("Failed to deploy metalLB operator; the csv %s in the namespace %s status %v",
 			metalLBCSVName, vcoreparams.MetalLBOperatorNamespace, isSuccessful))
 
-	glog.V(100).Infof("Create a single instance of a metalLB custom resource in %s namespace",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create a single instance of a metalLB custom resource in %s namespace",
 		vcoreparams.MetalLBOperatorNamespace)
 
 	metallbInstance := metallb.NewBuilder(APIClient,
@@ -83,7 +88,8 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create custom %s metallb instance in %s namespace; "+
 			"%v", vcoreparams.MetalLBInstanceName, vcoreparams.MetalLBOperatorNamespace, err))
 
-		glog.V(100).Infof("Confirm that %s deployment for the MetalLB operator is running in %s namespace",
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that %s deployment for the MetalLB operator "+
+			"is running in %s namespace",
 			vcoreparams.MetalLBOperatorDeploymentName, vcoreparams.MetalLBOperatorNamespace)
 
 		err = await.WaitUntilDeploymentReady(APIClient,
@@ -96,7 +102,7 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 			"instance in %s namespace",
 			vcoreparams.MetalLBInstanceName, vcoreparams.MetalLBOperatorNamespace))
 
-		glog.V(100).Info("Check that the daemon set for the speaker is running")
+		glog.V(vcoreparams.VCoreLogLevel).Info("Check that the daemon set for the speaker is running")
 		time.Sleep(5 * time.Second)
 	}
 
@@ -118,10 +124,8 @@ func VerifyMetaLBSuite() {
 
 				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
 
-				glog.V(100).Infof("samsungConfigsFolder: %s", vcoreConfigsFolder)
-
 				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(100).Infof("%s folder already exists", vcoreConfigsFolder)
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
 				}
 			})
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.MetalLBOperatorNamespace),

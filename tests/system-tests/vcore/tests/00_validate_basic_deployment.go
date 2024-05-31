@@ -31,4 +31,6 @@ var _ = Describe(
 		vcorecommon.VerifyServiceMeshSuite()
 
 		vcorecommon.VerifyHelmSuite()
+
+		vcorecommon.VerifyRedisSuite()
 	})

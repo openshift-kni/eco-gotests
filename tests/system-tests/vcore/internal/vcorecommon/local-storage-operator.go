@@ -57,13 +57,13 @@ func VerifyLSODeployment(ctx SpecContext) {
 			lsoPodName, vcoreparams.LSONamespace, lsoPodLog)
 	}
 
-	glog.V(100).Info("Verify auto-discover CRD is created")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Verify auto-discover CRD is created")
 
 	lvdInstance := lso.NewLocalVolumeDiscoveryBuilder(APIClient, lvdName, vcoreparams.LSONamespace)
 	Expect(lvdInstance.Exists()).To(Equal(true), fmt.Sprintf("%s auto-discover-devices not found "+
 		"in %s namespace", lvdName, vcoreparams.LSONamespace))
 
-	glog.V(100).Info("Verify localvolumeset CRD is created")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Verify localvolumeset CRD is created")
 
 	lvsInstance := lso.NewLocalVolumeSetBuilder(APIClient, lvsName, vcoreparams.LSONamespace)
 	Expect(lvsInstance.Exists()).To(Equal(true), fmt.Sprintf("%s localvolumeset not found in %s namespace",

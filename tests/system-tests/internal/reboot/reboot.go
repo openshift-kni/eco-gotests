@@ -3,10 +3,11 @@ package reboot
 import (
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cmd"
 	systemtestsscc "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/scc"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools"
 	systemtestsparams "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
@@ -99,7 +100,7 @@ func KernelCrashKdump(nodeName string) error {
 
 	cmdToExec := []string{"chroot", "/rootfs", "/bin/sh", "-c", "rm -rf /var/crash/*"}
 	glog.V(90).Infof("Remove any existing crash dumps. Exec cmd %v", cmdToExec)
-	_, err = cmd.ExecCmdOnNode(cmdToExec, nodeName)
+	_, err = remote.ExecCmdOnNode(cmdToExec, nodeName)
 
 	if err != nil {
 		return err
@@ -108,7 +109,7 @@ func KernelCrashKdump(nodeName string) error {
 	cmdToExec = []string{"/bin/sh", "-c", "echo c > /proc/sysrq-trigger"}
 
 	glog.V(90).Infof("Trigerring kernel crash. Exec cmd %v", cmdToExec)
-	_, err = cmd.ExecCmdOnNode(cmdToExec, nodeName)
+	_, err = remote.ExecCmdOnNode(cmdToExec, nodeName)
 
 	if err != nil {
 		return err
@@ -128,7 +129,7 @@ func KernelCrashKdump(nodeName string) error {
 func SoftRebootNode(nodeName string) error {
 	cmdToExec := []string{"chroot", "/rootfs", "systemctl", "reboot"}
 
-	_, err := cmd.ExecCmdOnNode(cmdToExec, nodeName)
+	_, err := remote.ExecCmdOnNode(cmdToExec, nodeName)
 
 	if err != nil {
 		return err

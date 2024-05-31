@@ -44,6 +44,7 @@ require (
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240514130907-854cbc8fe101
 	github.com/openshift/client-go v0.0.1
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
+	github.com/povsister/scp v0.0.0-20210427074412-33febfd9f13e
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/velero v1.12.1
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661

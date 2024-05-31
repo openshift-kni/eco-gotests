@@ -47,9 +47,8 @@ func VerifyNMStateInstanceExists(ctx SpecContext) {
 		func(ctx context.Context) (bool, error) {
 			_, pullErr := nmstate.PullNMstate(APIClient, vcoreparams.NMStateInstanceName)
 			if pullErr != nil {
-				glog.V(vcoreparams.VCoreLogLevel).Infof(
-					fmt.Sprintf("Failed to pull in NMState instance %q - %v",
-						vcoreparams.NMStateInstanceName, pullErr))
+				glog.V(vcoreparams.VCoreLogLevel).Infof("Failed to pull in NMState instance %q - %v",
+					vcoreparams.NMStateInstanceName, pullErr)
 
 				return false, pullErr
 			}
@@ -76,8 +75,8 @@ func VerifyAllNNCPsAreOK(ctx SpecContext) {
 	degradedNNCP := make(map[string]string)
 
 	for _, nncp := range nncps {
-		glog.V(vcoreparams.VCoreLogLevel).Infof(
-			fmt.Sprintf("\t Processing %s NodeNetworkConfigurationPolicy", nncp.Definition.Name))
+		glog.V(vcoreparams.VCoreLogLevel).Infof("\t Processing %s NodeNetworkConfigurationPolicy",
+			nncp.Definition.Name)
 
 		for _, condition := range nncp.Object.Status.Conditions {
 			//nolint:nolintlint
@@ -86,29 +85,27 @@ func VerifyAllNNCPsAreOK(ctx SpecContext) {
 			case "Available":
 				if condition.Status != ConditionTypeTrue {
 					nonAvailableNNCP[nncp.Definition.Name] = condition.Message
-					glog.V(vcoreparams.VCoreLogLevel).Infof(
-						fmt.Sprintf("\t%s NNCP is not Available: %s\n", nncp.Definition.Name, condition.Message))
+					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is not Available: %s\n",
+						nncp.Definition.Name, condition.Message)
 				} else {
-					glog.V(vcoreparams.VCoreLogLevel).Infof(
-						fmt.Sprintf("\t%s NNCP is Available: %s\n", nncp.Definition.Name, condition.Message))
+					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Available: %s\n",
+						nncp.Definition.Name, condition.Message)
 				}
 			case "Degraded":
 				if condition.Status == ConditionTypeTrue {
 					degradedNNCP[nncp.Definition.Name] = condition.Message
-					glog.V(vcoreparams.VCoreLogLevel).Infof(
-						fmt.Sprintf("\t%s NNCP is Degraded: %s\n", nncp.Definition.Name, condition.Message))
+					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Degraded: %s\n",
+						nncp.Definition.Name, condition.Message)
 				} else {
-					glog.V(vcoreparams.VCoreLogLevel).Infof(
-						fmt.Sprintf("\t%s NNCP is Not-Degraded\n", nncp.Definition.Name))
+					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Not-Degraded\n", nncp.Definition.Name)
 				}
 			case "Progressing":
 				if condition.Status == ConditionTypeTrue {
 					progressingNNCP[nncp.Definition.Name] = condition.Message
-					glog.V(vcoreparams.VCoreLogLevel).Infof(
-						fmt.Sprintf("\t%s NNCP is Progressing: %s\n", nncp.Definition.Name, condition.Message))
+					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Progressing: %s\n",
+						nncp.Definition.Name, condition.Message)
 				} else {
-					glog.V(vcoreparams.VCoreLogLevel).Infof(
-						fmt.Sprintf("\t%s NNCP is Not-Progressing\n", nncp.Definition.Name))
+					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Not-Progressing\n", nncp.Definition.Name)
 				}
 			}
 		}

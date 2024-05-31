@@ -72,7 +72,7 @@ func VerifyCLODeployment(ctx SpecContext) {
 //
 //nolint:funlen
 func CreateCLOInstance(ctx SpecContext) {
-	glog.V(100).Infof("Verify Cluster Logging instance %s is running in namespace %s",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify Cluster Logging instance %s is running in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
 	cloInstance := clusterlogging.NewBuilder(APIClient, vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
@@ -83,7 +83,7 @@ func CreateCLOInstance(ctx SpecContext) {
 			vcoreparams.CLOInstanceName, vcoreparams.CLONamespace))
 	}
 
-	glog.V(100).Infof("Create new Cluster Logging instance %s in namespace %s",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new Cluster Logging instance %s in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
 	homeDir, err := os.UserHomeDir()
@@ -179,7 +179,7 @@ func CreateCLOInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s failed to run; %v",
 		podsList[0].Definition.Name, vcoreparams.CLONamespace, err))
 
-	glog.V(100).Infof("Enable logging-view-plugin")
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Enable logging-view-plugin")
 
 	consoleoperatorObj, err := console.PullConsoleOperator(APIClient, "cluster")
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("consoleoperator is unavailable: %v", err))
