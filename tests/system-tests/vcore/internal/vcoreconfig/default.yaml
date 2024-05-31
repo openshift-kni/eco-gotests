@@ -1,0 +1,8 @@
+---
+vcore_default_ns: 'vcore-test'
+odf_label: "odf"
+vcore_pp_label: "user-plane-worker"
+vcore_cp_label: "control-plane-worker"
+host: ""
+user: "kni"
+pass: ""
