@@ -42,6 +42,19 @@ jobs:
           ./Dockerfile
         archs: amd64, arm64
 
+    - name: Push To quay.io
+      id: push-to-quay
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.build-image.outputs.image }}
+        tags: ${{ steps.build-image.outputs.tags }}
+        registry: quay.io/ocp-edge-qe
+        username: ocp-edge-qe+ocp_edge_qe_robot
+        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
+
+    - name: Print image url
+      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
+
     - name: Build docker eco-gotests-ran-du image
       id: build-image-system
       uses: redhat-actions/buildah-build@v2
@@ -51,13 +64,6 @@ jobs:
         containerfiles: |
           ./images/system-tests/ran-du/Dockerfile
         archs: amd64, arm64
-
-    - name: Push To quay.io
-      id: push-to-quay
-      uses: redhat-actions/push-to-registry@v2
-      with:
-        image: ${{ steps.build-image.outputs.image }}
-        tags: ${{ steps.build-image.outputs.tags }}
         registry: quay.io/ocp-edge-qe
         username: ocp-edge-qe+ocp_edge_qe_robot
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
@@ -71,9 +77,6 @@ jobs:
         registry: quay.io/ocp-edge-qe
         username: ocp-edge-qe+ocp_edge_qe_robot
         password: ${{ secrets.OCP_EDGE_QE_QUAY }}
-
-    - name: Print image url
-      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
 
     - name: Print image url eco-gotests-ran-du
       run: echo "Image pushed to ${{ steps.push-to-quay-eco-gotests-ran-du.outputs.registry-paths }}"
