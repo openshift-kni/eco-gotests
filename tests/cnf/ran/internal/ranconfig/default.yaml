@@ -1,0 +1,18 @@
+---
+# General configurations
+acmOperatorName: "advanced-cluster-management"
+acmOperatorNamespace: "rhacm"
+openshiftGitops: "openshift-gitops"
+openshiftGitopsRepoServer: "openshift-gitops-repo-server"
+metricSamplingInterval: "30s"
+noWorkloadDuration: "5m"
+workloadDuration: "10m"
+stressngTestImage: "quay.io/container-perf-tools/stress-ng:latest"
+cnfTestImage: "quay.io/openshift-kni/cnf-tests:4.8"
+bmcTimeout: "15s"
+ocpUpgradeUpstreamUrl: "https://api.openshift.com/api/upgrades_info/v1/graph"
+ptpOperatorNamespace: "openshift-ptp"
+talmPreCachePolicies:
+  - "common-config-policy"
+  - "common-subscriptions-policy"
+...

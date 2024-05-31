@@ -1,0 +1,10 @@
+---
+# System Tests RAN DU default configurations.
+randu_test_workload:
+    namespace: 'test'
+    create_method: 'shell'
+    create_shell_cmd: '/opt/vdu-workload-emulator/add_test-deployments.sh'
+    delete_shell_cmd: '/opt/vdu-workload-emulator/delete_test-deployments.sh'
+launch_workload_iterations: 5
+soft_reboot_iterations: 5
+hard_reboot_iterations: 5

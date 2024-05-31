@@ -1,0 +1,224 @@
+run:
+  timeout: 15m0s
+  skip-dirs-use-default: true
+  fast: false
+#  modules-download-mode: readonly
+
+linters-settings:
+  revive:
+    rules:
+      - name: indent-error-flow
+      - name: var-naming
+      - name: increment-decrement
+      - name: exported
+        arguments:
+          - disableStutteringCheck
+  depguard:
+#    list-type: blacklist
+#    include-go-root: false
+#    packages:
+#      - "github.com/onsi**"
+    rules:
+      main:
+        deny:
+        - pkg: "github.com/onsi**"
+        allow:
+        - "k8s.io/apimachinery"
+        - "k8s.io/api"
+        - "k8s.io/kubelet"
+        - "k8s.io/utils"
+        - "k8s.io/client-go"
+        - "github.com/kelseyhightower"
+        - "github.com/Juniper/go-netconf"
+        - "github.com/openshift"
+        - "github.com/nmstate/kubernetes-nmstate"
+        - "github.com/hashicorp/go-version"
+        - "github.com/cavaliergopher/grab/v3"
+        - "github.com/k8snetworkplumbingwg"
+        - "github.com/metallb/metallb-operator"
+        - "github.com/metal3-io/baremetal-operator"
+        - "github.com/operator-framework/operator-lifecycle-manager"
+        - "github.com/grafana-operator/grafana-operator"
+        - "github.com/NVIDIA/gpu-operator"
+        - "github.com/operator-framework/api"
+        - "github.com/argoproj-labs/argocd-operator/api"
+        - "github.com/golang/glog"
+        - "github.com/rh-ecosystem-edge/kernel-module-management"
+        - "github.com/povsister/scp"
+        - "maistra.io/api"
+        - "open-cluster-management.io/governance-policy-propagator/api"
+        - "open-cluster-management.io/config-policy-controller/api"
+        - "open-cluster-management.io/multicloud-operators-subscription/pkg/apis"
+        - "sigs.k8s.io/controller-runtime"
+        - $gostd
+        - "github.com/stretchr/testify"
+        - "github.com/stmcginnis/gofish"
+  wsl:
+    strict-append: false
+  gofmt:
+    simplify: true
+  funlen:
+    lines: 90
+    statements: 40
+  unused:
+    check-exported: true
+    go: "1.22"
+  stylecheck:
+    dot-import-whitelist:
+      - github.com/onsi/gomega
+      - github.com/onsi/ginkgo/v2
+      - github.com/openshift-kni/eco-gotests/tests/internal/inittools
+      - github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools
+      - github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/ipsec/internal/ipsecinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools
+      - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools
+      - github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools
+      - github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools
+      - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools
+    # Select the Go version to target. The default is '1.13'.
+    go: "1.22"
+    # https://staticcheck.io/docs/options#checks
+    checks:
+      - all
+      - ST1001
+
+linters:
+  disable:
+    - ireturn
+    - structcheck
+  enable:
+    - asciicheck
+    - bidichk
+    - depguard
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - funlen
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - gofmt
+    - goheader
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - gosimple
+    - govet
+    - importas
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - nakedret
+    - nilnil
+    - nolintlint
+    - predeclared
+    - promlinter
+    - revive
+    - staticcheck
+    - stylecheck
+    - tenv
+    - thelper
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varnamelen
+    - wsl
+    - nlreturn
+
+output:
+  format: colored-line-number
+issues:
+  exclude:
+    - "can't run linter goanalysis_metalinter: inspect: failed to load"
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+  include:
+    - EXC0002 # disable excluding of issues about comments from golint
+    - EXC0012  # EXC0012 revive: Annoying issue about not having a comment. The rare codebase has such comments
+    - EXC0014  # EXC0014 revive: Annoying issue about not having a comment. The rare codebase has such comments
+  exclude-rules:
+    #- # Exclude some linters from running on tests files.
+    - path: 'tests/internal/inittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/cnf/core/network/internal/netinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/cnf/ran/internal/raninittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/assisted/ztp/internal/ztpinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/ipsec/internal/ipsecinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/ran-du/internal/randuinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/rdscore/internal/rdscoreinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/internal/systemtestsinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/spk/internal/spkinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/vcore/internal/vcoreinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/lca/imagebasedupgrade/cnf/internal/cnfinittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/hw-accel/kmm/internal/kmminittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/rhwa/internal/rhwainittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools'
+      linters:
+        - gochecknoinits
+    - path: "tests/internal/inittools"
+      linters:
+        - depguard
+    - path: 'tests/internal/reporter'
+      linters:
+        - depguard
+    - path: 'tests/system-tests/internal/ocpcli'
+      linters:
+        - depguard
+    - path: "tests/.*/tests/.*"
+      linters:
+        - depguard
+    - path: "tests/.*/.*suite_test.go"
+      linters:
+        - depguard
+    - path: "tests/system-tests/rdscore/internal/.*"
+      linters:
+        - depguard
+    - path: "tests/system-tests/spk/internal/.*"
+      linters:
+        - depguard
+    - path: "tests/system-tests/vcore/internal/.*"
+      linters:
+        - depguard
+    - path: "tests/lca/imagebasedupgrade/cnf/internal/validations"
+      linters:
+        - depguard

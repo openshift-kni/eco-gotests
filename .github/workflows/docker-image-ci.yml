@@ -1,0 +1,82 @@
+name: Build Docker Image - CI
+
+on:
+  release:
+    types:
+      - published
+  push:
+    branches:
+      - main
+      - 'release-\d.\d\d'
+
+jobs:
+  build:
+    name: Build and push docker image
+    runs-on: [self-hosted, linux, X64] #ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up QEMU
+      run: |
+        sudo setenforce 0
+        sudo podman run --rm --privileged quay.io/ocp-edge-qe/qemu-user-static --reset -p yes
+      # uses: docker/setup-qemu-action@v3
+
+    - name: Set image tag
+      shell: bash
+      run: |
+        image_tag=latest
+        if [ ${{ github.ref }} != 'refs/heads/main' ]; then
+          branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          version_digits=$(echo ${branch} | tr -d -c 0-9)
+          image_tag=v$(echo ${version_digits} | cut -b 1).$(echo ${version_digits:1}).0
+        fi
+        echo "IMAGE_TAG=${image_tag}" >> $GITHUB_OUTPUT
+      id: set_image_tag
+
+    - name: Build docker image
+      id: build-image
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: eco-gotests
+        tags: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
+        containerfiles: |
+          ./Dockerfile
+        archs: amd64, arm64
+
+    - name: Build docker eco-gotests-ran-du image
+      id: build-image-system
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: eco-gotests-ran-du
+        tags: ${{ steps.set_image_tag.outputs.IMAGE_TAG }}
+        containerfiles: |
+          ./images/system-tests/ran-du/Dockerfile
+        archs: amd64, arm64
+
+    - name: Push To quay.io
+      id: push-to-quay
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.build-image.outputs.image }}
+        tags: ${{ steps.build-image.outputs.tags }}
+        registry: quay.io/ocp-edge-qe
+        username: ocp-edge-qe+ocp_edge_qe_robot
+        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
+
+    - name: Push To quay.io eco-gotests-ran-du image
+      id: push-to-quay-eco-gotests-ran-du
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.build-image-system.outputs.image }}
+        tags: ${{ steps.build-image-system.outputs.tags }}
+        registry: quay.io/ocp-edge-qe
+        username: ocp-edge-qe+ocp_edge_qe_robot
+        password: ${{ secrets.OCP_EDGE_QE_QUAY }}
+
+    - name: Print image url
+      run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
+
+    - name: Print image url eco-gotests-ran-du
+      run: echo "Image pushed to ${{ steps.push-to-quay-eco-gotests-ran-du.outputs.registry-paths }}"

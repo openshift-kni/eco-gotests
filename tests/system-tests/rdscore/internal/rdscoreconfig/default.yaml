@@ -1,0 +1,70 @@
+---
+rcore_nad_workload_ns_one: demo-ns-one
+rcore_nad_workload_ns_two: demo-ns-two
+rdscore_performance_profile_ht_name: customcnf
+rdscore_node_selector_ht_nodes: {}
+rdscore_storage_storage_wlkd_image: ""
+rdscore_wlkd_odf_one_selector: {}
+rdscore_wlkd_odf_two_selector: {}
+rdscore_wlkd_sriov_one_image: ""
+rdscore_wlkd_sriov_two_image: ""
+rdscore_wlkd_sriov_one_cmd: []
+rdscore_wlkd_sriov_two_cmd: []
+rdscore_wlkd2_sriov_one_cmd: []
+rdscore_wlkd2_sriov_two_cmd: []
+rdscore_wlkd_sriov_cm_data_one: {}
+rdscore_wlkd_sriov_cm_data_two: {}
+rdscore_wlkd_sriov_deploy_one_target: ""
+rdscore_wlkd_sriov_deploy_one_target_ipv6: ""
+rdscore_wlkd_sriov_deploy_two_target: ""
+rdscore_wlkd_sriov_deploy_two_target_ipv6: ""
+rdscore_wlkd2_sriov_deploy_one_target: ""
+rdscore_wlkd2_sriov_deploy_one_target_ipv6: ""
+rdscore_wlkd2_sriov_deploy_two_target: ""
+rdscore_wlkd2_sriov_deploy_two_target_ipv6: ""
+rdscore_wlkd_sriov_one_selector: {}
+rdscore_wlkd_sriov_two_selector: {}
+rdscore_wlkd_sriov_one_res_requests: {}
+rdscore_wlkd_sriov_two_res_requests: {}
+rdscore_wlkd_sriov_one_res_limits: {}
+rdscore_wlkd_sriov_two_res_limits: {}
+rdscore_wlkd_sriov_two_sa: rdscore-telco-sa-two
+rdscore_wlkd_sriov_one_ns: rds-sriov-wlkd
+rdscore_wlkd_sriov_two_ns: rds-sriov-wlkd
+rdscore_wlkd_sriov_net_one: sriov-net-one
+rdscore_wlkd_sriov_net_two: sriov-net-two
+rdscore_tolerations_list: []
+rdscore_mcvlan_ns_one: rds-macvlan-wlkd
+rdscore_mcvlan_cm_data_one: {}
+rdscore_mcvlan_deploy_img_one: ""
+rdscore_mcvlan_deploy_1_cmd: []
+rdscore_mcvlan_deploy_2_cmd: []
+rdscore_mcvlan_nad_one_name: "mc-vlan-one"
+rdscore_mcvlan_1_node_selector: {}
+rdscore_mcvlan_2_node_selector: {}
+rdscore_macvlan_deploy_1_target: ""
+rdscore_macvlan_deploy_1_target_ipv6: ""
+
+rdscore_macvlan_deploy_2_target: ""
+rdscore_macvlan_deploy_2_target_ipv6: ""
+rdscore_mcvlan_deploy_3_cmd: []
+rdscore_mcvlan_deploy_4_cmd: []
+rdscore_macvlan_deploy_3_target: ""
+rdscore_macvlan_deploy_3_target_ipv6: ""
+rdscore_macvlan_deploy_4_target: ""
+rdscore_macvlan_deploy_4_target_ipv6: ""
+rdscore_policy_ns: ""
+rdscore_wlkd_nrop_one_ns: rds-nrop-wlkd
+rdscore_wlkd_nrop_one_image: ""
+rdscore_wlkd_nrop_one_cmd:
+- "/bin/sh"
+- "-c"
+- "sleep INFINITY"
+rdscore_wlkd_nrop_one_res_requests:
+  cpu: 8
+  memory: "500M"
+rdscore_wlkd_nrop_one_res_limits:
+  cpu: 8
+  memory: "500M"
+rdscore_nrop_scheduler_name: topo-aware-scheduler
+rdscore_wlkd_nrop_one_selector: {}
