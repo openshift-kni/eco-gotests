@@ -296,8 +296,7 @@ var _ = Describe(
 			}
 
 			if originalTargetProxy.Object.Spec.HTTPProxy != MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy ||
-				originalTargetProxy.Object.Spec.HTTPSProxy != MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy ||
-				originalTargetProxy.Object.Spec.NoProxy != MGMTConfig.SeedClusterInfo.Proxy.NOProxy {
+				originalTargetProxy.Object.Spec.HTTPSProxy != MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy {
 				Skip("Target was not installed with the same proxy as seed")
 			}
 
@@ -319,8 +318,7 @@ var _ = Describe(
 			}
 
 			if originalTargetProxy.Object.Spec.HTTPProxy == MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy &&
-				originalTargetProxy.Object.Spec.HTTPSProxy == MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy &&
-				originalTargetProxy.Object.Spec.NoProxy == MGMTConfig.SeedClusterInfo.Proxy.NOProxy {
+				originalTargetProxy.Object.Spec.HTTPSProxy == MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy {
 				Skip("Target was installed with the same proxy as seed")
 			}
 
