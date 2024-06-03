@@ -19,7 +19,8 @@ func CleanupTestResourcesOnHub(client *clients.Settings, namespace, suffix strin
 	// Only errors that come from deletions are kept since an error pulling usually means it doesn't exist.
 	cgu, err := cgu.Pull(client, tsparams.CguName+suffix, namespace)
 	if err == nil {
-		_, err = cgu.Delete()
+		// CGUs often take a few seconds to delete, so make sure it is actually gone before moving on.
+		_, err = cgu.DeleteAndWait(5 * time.Minute)
 		if err != nil {
 			errorList = append(errorList, err)
 		}
