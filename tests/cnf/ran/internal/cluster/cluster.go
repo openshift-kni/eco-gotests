@@ -76,5 +76,6 @@ func isErrorExecuting(err error) bool {
 		return false
 	}
 
-	return strings.Contains(err.Error(), "error executing command in container")
+	return strings.Contains(err.Error(), "error executing command in container") ||
+		strings.Contains(err.Error(), "container not found")
 }
