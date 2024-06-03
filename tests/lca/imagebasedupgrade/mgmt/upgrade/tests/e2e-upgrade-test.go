@@ -95,9 +95,6 @@ var _ = Describe(
 				extraNamespace := namespace.NewBuilder(APIClient, extraManifestNamespace)
 				extraNamespace.Definition.Annotations = make(map[string]string)
 				extraNamespace.Definition.Annotations["lca.openshift.io/apply-wave"] = "1"
-				// Workaround: should be removed once bug is resolved
-				_, err := extraNamespace.Create()
-				Expect(err).NotTo(HaveOccurred(), "error creating %s namespace", extraManifestNamespace)
 
 				By("Create configmap for extra manifests namespace")
 				extraNamespaceString, err := configmapgenerator.DataFromDefinition(
@@ -116,9 +113,6 @@ var _ = Describe(
 				})
 				extraConfigmap.Definition.Annotations = make(map[string]string)
 				extraConfigmap.Definition.Annotations["lca.openshift.io/apply-wave"] = "2"
-				// Workaround: should be removed once bug is resolved
-				_, err = extraConfigmap.Create()
-				Expect(err).NotTo(HaveOccurred(), "error creating %s configmap", extraConfigmap)
 
 				By("Create configmap for extramanifests configmap")
 				extraConfigmapString, err := configmapgenerator.DataFromDefinition(
