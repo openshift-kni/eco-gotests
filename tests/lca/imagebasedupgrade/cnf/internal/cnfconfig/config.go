@@ -20,9 +20,16 @@ const (
 // CNFConfig type contains cnf configuration.
 type CNFConfig struct {
 	*ibuconfig.IBUConfig
-	IBUWorkloadImage    string `yaml:"ibu_workload_image" envconfig:"ECO_LCA_IBU_CNF_WORKLOAD_IMAGE"`
-	TargetHubKubeConfig string `envconfig:"ECO_LCA_IBU_CNF_KUBECONFIG_TARGET_HUB"`
-	TargetSNOKubeConfig string `envconfig:"ECO_LCA_IBU_CNF_KUBECONFIG_TARGET_SNO"`
+	IBUWorkloadImage      string `yaml:"ibu_workload_image" envconfig:"ECO_LCA_IBU_CNF_WORKLOAD_IMAGE"`
+	TargetHubKubeConfig   string `envconfig:"ECO_LCA_IBU_CNF_KUBECONFIG_TARGET_HUB"`
+	TargetSNOKubeConfig   string `envconfig:"ECO_LCA_IBU_CNF_KUBECONFIG_TARGET_SNO"`
+	IbuWorkloadNS         string `yaml:"ibu_workload_validation_ns" envconfig:"ECO_LCA_IBU_CNF_WORKLOAD_NS"`
+	IbuWorkloadPVNS       string `yaml:"ibu_workload_validation_pv_ns" envconfig:"ECO_LCA_IBU_CNF_WORKLOAD_PV_NS"`
+	IbuWorkloadPVPod      string `yaml:"ibu_workload_validation_pv_pod_name" envconfig:"ECO_LCA_IBU_CNF_WORKLOAD_PV_POD"`
+	IbuWorkloadPVFilePath string `yaml:"ibu_workload_validation_pv_file_path" envconfig:"ECO_LCA_IBU_CNF_WORKLOAD_PV_FILE"`
+	IbuKcatImage          string `yaml:"ibu_kcat_image" envconfig:"ECO_LCA_IBU_CNF_KCAT_IMAGE"`
+	IbuKcatBroker         string `yaml:"ibu_kcat_broker" envconfig:"ECO_LCA_IBU_CNF_KCAT_BROKER"`
+	IbuKcatTopic          string `yaml:"ibu_kcat_topic" envconfig:"ECO_LCA_IBU_CNF_KCAT_TOPIC"`
 }
 
 // NewCNFConfig returns instance of CNFConfig type.
