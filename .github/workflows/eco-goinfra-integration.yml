@@ -1,0 +1,50 @@
+name: eco-goinfra integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - 'release-\d.\d\d'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      SHELL: /bin/bash
+      ECO_GOINFRA_PATH: goinfra
+      ECO_GOINFRA_REPO: openshift-kni/eco-goinfra
+
+    steps:
+      - name: Set up Go 1.22
+        if: ${{ !contains(github.event.*.labels.*.name, 'ignore-dep-check') }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22.3
+
+      - name: Check out the eco-goinfra code
+        if: ${{ !contains(github.event.*.labels.*.name, 'ignore-dep-check') }}
+        uses: actions/checkout@v4
+
+      - name: Check out the eco-goinfra code
+        if: ${{ !contains(github.event.*.labels.*.name, 'ignore-dep-check') }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ECO_GOINFRA_REPO }}
+          # check out the branch name that is targeted by the PR
+          ref:  ${{ github.base_ref }}
+          path: ${{ env.ECO_GOINFRA_PATH }}
+
+      # Update the go.mod file in eco-goinfra to include the current eco-gotests code
+      - name: Update go.mod in eco-goinfra
+        if: ${{ !contains(github.event.*.labels.*.name, 'ignore-dep-check') }}
+        run: |
+          go mod edit -replace github.com/openshift-kni/eco-gotests=${{ github.workspace }}
+          go mod tidy
+          go mod vendor
+        working-directory: ${{ env.ECO_GOINFRA_PATH }}
+
+      - name: eco-goinfra go vet
+        if: ${{ !contains(github.event.*.labels.*.name, 'ignore-dep-check') }}
+        run: make vet
+        working-directory: ${{ env.ECO_GOINFRA_PATH }}
