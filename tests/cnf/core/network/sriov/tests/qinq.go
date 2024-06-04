@@ -44,13 +44,23 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		serverNameDot1q             = "server-1q"
 		clientNameDot1ad            = "client-1ad"
 		clientNameDot1q             = "client-1q"
-		nadCVLAN                    = "nadcvlan"
+		nadCVLAN100                 = "nadcvlan100"
+		nadCVLAN101                 = "nadcvlan101"
+		intNet1                     = "net1"
+		intNet2                     = "net2"
+		intNet3                     = "net3"
 		intelDeviceIDE810           = "1593"
 		mlxDevice                   = "1017"
+		testCmdNet2                 = []string{"bash", "-c", "sleep 5; testcmd -interface net2 -protocol tcp " +
+			"-port 4444 -listen"}
+		testCmdNet2Net3 = []string{"bash", "-c", "sleep 5; testcmd -interface net2 -protocol tcp " +
+			"-port 4444 -listen & testcmd -interface net3 -protocol tcp -port 4444 -listen"}
 		tcpDumpNet1CMD              = []string{"bash", "-c", "tcpdump -i net1 -e > /tmp/tcpdump"}
 		tcpDumpReadFileCMD          = []string{"bash", "-c", "tail -20 /tmp/tcpdump"}
 		tcpDumpDot1ADOutput         = "(ethertype 802\\.1Q-QinQ \\(0x88a8\\)).*?(ethertype 802\\.1Q, vlan 100)"
 		tcpDumpDot1QOutput          = "(ethertype 802\\.1Q \\(0x8100\\)).*?(ethertype 802\\.1Q, vlan 100)"
+		tcpDumpDot1ADCVLAN101Output = "(ethertype 802\\.1Q-QinQ \\(0x88a8\\)).*?(ethertype 802\\.1Q, vlan 101)"
+		tcpDumpDot1QCVLAN101QOutput = "(ethertype 802\\.1Q \\(0x8100\\)).*?(ethertype 802\\.1Q, vlan 101)"
 		workerNodeList              = []*nodes.Builder{}
 		promiscVFCommand            string
 		srIovInterfacesUnderTest    []string
@@ -58,10 +68,15 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		switchCredentials           *sriovenv.SwitchCredentials
 		switchConfig                *netconfig.NetworkConfig
 		switchInterfaces            []string
+		serverIPV4IP, _, _          = net.ParseCIDR(tsparams.ServerIPv4IPAddress)
+		serverIPV6IP, _, _          = net.ParseCIDR(tsparams.ServerIPv6IPAddress)
+		serverIPV4IP2, _, _         = net.ParseCIDR(tsparams.ServerIPv4IPAddress2)
+		serverIPV6IP2, _, _         = net.ParseCIDR(tsparams.ServerIPv6IPAddress2)
+		serverIPAddressesNet2       = []string{serverIPV4IP.String(), serverIPV6IP.String()}
+		serverIPAddressesNet3       = []string{serverIPV4IP2.String(), serverIPV6IP2.String()}
+		clientIPAddressesNet2       = []string{tsparams.ClientIPv4IPAddress, tsparams.ClientIPv6IPAddress}
+		clientIPAddressesNet3       = []string{tsparams.ClientIPv6IPAddress2, tsparams.ClientIPv6IPAddress2}
 	)
-
-	serverIPV4IP, _, _ := net.ParseCIDR(tsparams.ServerIPv4IPAddress)
-	serverIPV6IP, _, _ := net.ParseCIDR(tsparams.ServerIPv6IPAddress)
 
 	BeforeAll(func() {
 		By("Discover worker nodes")
@@ -74,10 +89,16 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
 		By("Define and create a network attachment definition with a C-VLAN 100")
-		_, err = define.VlanNad(APIClient, nadCVLAN, tsparams.TestNamespaceName, "net1", 100,
+		_, err = define.VlanNad(APIClient, nadCVLAN100, tsparams.TestNamespaceName, "net1", 100,
 			nad.IPAMStatic())
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to create Network-Attachment-Definition %s",
-			nadCVLAN))
+			nadCVLAN100))
+
+		By("Define and create a network attachment definition with a C-VLAN 101")
+		_, err = define.VlanNad(APIClient, nadCVLAN101, tsparams.TestNamespaceName, intNet1, 101,
+			nad.IPAMStatic())
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to create Network-Attachment-Definition %s",
+			nadCVLAN101))
 
 		By("Define and create sriov network policy using worker node label")
 		_, err = sriov.NewPolicyBuilder(
@@ -116,8 +137,8 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		}
 
 		By(fmt.Sprintf("Enable VF promiscuous support on %s", srIovInterfacesUnderTest[0]))
-		output, err := cmd.RunCommandOnHostNetworkPod(workerNodeList[0].Definition.Name, NetConfig.SriovOperatorNamespace,
-			promiscVFCommand)
+		output, err := cmd.RunCommandOnHostNetworkPod(workerNodeList[0].Definition.Name,
+			NetConfig.SriovOperatorNamespace, promiscVFCommand)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to run command on node %s", output))
 
 		By("Configure lab switch interface to support VLAN double tagging")
@@ -145,6 +166,10 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			Expect(err).ToNot(HaveOccurred(), "Failed to convert VLAN value")
 			defineAndCreateSrIovNetworkWithQinQ(srIovNetworkDot1AD, srIovPolicyResNameNetDevice, dot1ad,
 				uint16(vlan))
+
+			By("Define and create sriov-network with 802.1q S-VLAN")
+			defineAndCreateSrIovNetworkWithQinQ(srIovNetworkDot1Q, srIovPolicyResNameNetDevice, dot1q,
+				uint16(vlan))
 		})
 
 		It("Verify network traffic over a 802.1ad QinQ tunnel between two SRIOV pods on the same PF",
@@ -154,25 +179,21 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 					tcpDumpNet1CMD)
 
 				By("Define and create a server container")
-				serverPod := createServerTestPod(serverNameDot1ad, srIovNetworkDot1AD, nadCVLAN,
-					workerNodeList[0].Definition.Name, []string{tsparams.ServerIPv4IPAddress,
-						tsparams.ServerIPv6IPAddress})
+				serverAnnotation := defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, true)
+				serverPod := createServerTestPod(serverNameDot1ad, workerNodeList[0].Definition.Name, testCmdNet2,
+					serverAnnotation)
 
-				By("Define and create a client container")
-				clientPod := createClientTestPod(clientNameDot1ad, srIovNetworkDot1AD, nadCVLAN,
-					workerNodeList[0].Definition.Name, []string{tsparams.ClientIPv4IPAddress, tsparams.ClientIPv6IPAddress})
+				By("Define and create a 802.1AD client container")
+				clientAnnotation := defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, false)
+				clientPod := createClientTestPod(clientNameDot1ad, workerNodeList[0].Definition.Name, clientAnnotation)
 
 				By("Validate IPv4 and IPv6 connectivity between the containers over the qinq tunnel.")
-				err = cmd.ICMPConnectivityCheck(serverPod,
-					[]string{tsparams.ClientIPv4IPAddress, tsparams.ClientIPv6IPAddress}, "net2")
+				err = cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet2, intNet2)
 				Expect(err).ToNot(HaveOccurred(),
 					"Failed to ping the client container over the 802.1AD connection")
 
-				By("Validate IPv4 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV4IP.String())
-
-				By("Validate IPv6 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV6IP.String())
+				By("Validate IPv4 and IPv6 tcp traffic and dot1ad encapsulation from the client to server")
+				validateTCPTraffic(clientPod, intNet2, serverIPAddressesNet2)
 
 				By("Validate that the TCP traffic is double tagged")
 				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1ADOutput)
@@ -185,27 +206,128 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 					tcpDumpNet1CMD)
 
 				By("Define and create a server container")
-				serverPod := createServerTestPod(serverNameDot1ad, srIovNetworkDot1AD, nadCVLAN,
-					workerNodeList[1].Definition.Name, []string{tsparams.ServerIPv4IPAddress, tsparams.ServerIPv6IPAddress})
+				annotation := defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, true)
+				serverPod := createServerTestPod(serverNameDot1ad, workerNodeList[1].Definition.Name, testCmdNet2,
+					annotation)
 
-				By("Define and create a client container")
-				clientPod := createClientTestPod(clientNameDot1ad, srIovNetworkDot1AD, nadCVLAN,
-					workerNodeList[0].Definition.Name, []string{tsparams.ClientIPv4IPAddress, tsparams.ClientIPv6IPAddress})
+				By("Define and create a 802.1AD client container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, false)
+				clientPod := createClientTestPod(clientNameDot1ad, workerNodeList[0].Definition.Name, annotation)
 
 				By("Validate IPv4 and IPv6 connectivity between the containers over the qinq tunnel.")
-				err := cmd.ICMPConnectivityCheck(serverPod, []string{tsparams.ClientIPv4IPAddress,
-					tsparams.ClientIPv6IPAddress}, "net2")
+				err := cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet2, intNet2)
 				Expect(err).ToNot(HaveOccurred(),
 					"Failed to ping the client container over the 802.1ad connection")
 
-				By("Validate IPv4 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV4IP.String())
-
-				By("Validate IPv6 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV6IP.String())
+				By("Validate IPv4 and IPv6 tcp traffic and dot1q encapsulation from the client to server")
+				validateTCPTraffic(clientPod, intNet2, serverIPAddressesNet2)
 
 				By("Validate that the TCP traffic is double tagged")
 				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1ADOutput)
+			})
+
+		It("Verify network traffic over an 802.1ad Q-in-Q tunnel with multiple C-VLANs using the same S-VLAN",
+			reportxml.ID("71682"), func() {
+				By("Define and create a container in promiscuous mode")
+				tcpDumpContainer := createPromiscuousClient(workerNodeList[0].Definition.Name,
+					tcpDumpNet1CMD)
+
+				By("Define and create a server container")
+				annotation := defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, true, nadCVLAN101)
+				serverPod := createServerTestPod(serverNameDot1ad, workerNodeList[0].Definition.Name, testCmdNet2Net3,
+					annotation)
+
+				By("Define and create a 802.1AD client container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, false, nadCVLAN101)
+				clientPod := createClientTestPod(clientNameDot1ad, workerNodeList[0].Definition.Name, annotation)
+
+				By("Validate IPv4 and IPv6 connectivity between the containers using CVLAN100.")
+				err := cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet2, "net2")
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to ping the client container over cvlan100")
+
+				By("Validate IPv4 and IPv6 connectivity between the containers using CVLAN101.")
+				err = cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet3, "net3")
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to ping the client container over CVLAN101")
+
+				By("Validate IPv4 and IPv6 tcp traffic and dot1ad encapsulation from the client to server " +
+					"with CVLAN100.")
+				validateTCPTraffic(clientPod, intNet2, serverIPAddressesNet2)
+
+				By("Validate that the TCP traffic is double tagged with CVLAN100 ")
+				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1ADOutput)
+
+				By("Validate IPv4 and IPv6 tcp traffic and dot1ad encapsulation from the client to server " +
+					"with CVLAN101.")
+				validateTCPTraffic(clientPod, intNet3, serverIPAddressesNet3)
+
+				By("Validate that the TCP traffic is double tagged with CVLAN101 ")
+				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1ADCVLAN101Output)
+			})
+
+		It("Verify a negative test with an 802.1ad to 802.1q tunnel between two SRIOV containers",
+			reportxml.ID("71680"), func() {
+				By("Define and create a server container")
+				annotation := defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN100, true)
+				serverPod := createServerTestPod(serverNameDot1q, workerNodeList[0].Definition.Name, testCmdNet2,
+					annotation)
+
+				By("Define and create a 802.1AD client container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, false)
+				_ = createClientTestPod(clientNameDot1q, workerNodeList[0].Definition.Name, annotation)
+
+				By("Validate IPv4 and IPv6 connectivity between the containers over the qinq tunnel.")
+				err := cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet2, intNet2)
+				Expect(err).To(HaveOccurred(),
+					"Ping was successful and expected to fail")
+			})
+
+		It("Verify simultaneous network traffic over an 802.1ad and 802.1q Q-in-Q tunneling between two clients "+
+			"SRIOV containers",
+			reportxml.ID("73105"), func() {
+				By("Define and create a container in promiscuous mode")
+				tcpDumpContainer := createPromiscuousClient(workerNodeList[0].Definition.Name,
+					tcpDumpNet1CMD)
+
+				By("Define and create a 802.1AD server container")
+				annotation := defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, true)
+				serverDotADPod := createServerTestPod(serverNameDot1ad, workerNodeList[0].Definition.Name, testCmdNet2,
+					annotation)
+
+				By("Define and create a 802.1AD  client container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1AD, nadCVLAN100, false)
+				clientDotADPod := createClientTestPod(clientNameDot1ad, workerNodeList[0].Definition.Name, annotation)
+
+				By("Define and create a 802.1Q server container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN101, true)
+				serverDotQPod := createServerTestPod(serverNameDot1q, workerNodeList[0].Definition.Name, testCmdNet2,
+					annotation)
+				By("Define and create a 802.1Q client container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN101, false)
+				clientDotQPod := createClientTestPod(clientNameDot1q, workerNodeList[0].Definition.Name, annotation)
+
+				By("Validate IPv4 and IPv6 connectivity between the 802.1AD containers using CVLAN100.")
+				err := cmd.ICMPConnectivityCheck(serverDotADPod, clientIPAddressesNet2, intNet2)
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to ping the client container over cvlan100")
+
+				By("Validate IPv4 and IPv6 connectivity between the 802.1Q containers using CVLAN101.")
+				err = cmd.ICMPConnectivityCheck(serverDotQPod, clientIPAddressesNet2, intNet2)
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to ping the client container over cvlan101")
+
+				By("Validate IPv4 and IPv6 tcp traffic and dot1ad encapsulation from the client to server")
+				validateTCPTraffic(clientDotADPod, intNet2, serverIPAddressesNet2)
+
+				By("Validate that the 802.1AD TCP traffic is double tagged")
+				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1ADOutput)
+
+				By("Validate IPv4 and IPv6 tcp traffic and dot1q encapsulation from the client to server")
+				validateTCPTraffic(clientDotQPod, intNet2, serverIPAddressesNet2)
+
+				By("Validate that the 802.1Q TCP traffic is double tagged")
+				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1QCVLAN101QOutput)
 			})
 	})
 
@@ -225,23 +347,20 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 					tcpDumpNet1CMD)
 
 				By("Define and create a server container")
-				serverPod := createServerTestPod(serverNameDot1q, srIovNetworkDot1Q, nadCVLAN,
-					workerNodeList[0].Definition.Name, []string{tsparams.ServerIPv4IPAddress, tsparams.ServerIPv6IPAddress})
-				By("Define and create a client container")
-				clientPod := createClientTestPod(clientNameDot1q, srIovNetworkDot1Q, nadCVLAN,
-					workerNodeList[0].Definition.Name, []string{tsparams.ClientIPv4IPAddress, tsparams.ClientIPv6IPAddress})
+				serverAnnotation := defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN100, true)
+				serverPod := createServerTestPod(serverNameDot1q, workerNodeList[0].Definition.Name, testCmdNet2,
+					serverAnnotation)
+				By("Define and create a 802.1Q client container")
+				clientAnnotation := defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN100, false)
+				clientPod := createClientTestPod(clientNameDot1q, workerNodeList[0].Definition.Name, clientAnnotation)
 
 				By("Validate IPv4 and IPv6 connectivity between the containers over the qinq tunnel.")
-				err := cmd.ICMPConnectivityCheck(serverPod, []string{tsparams.ClientIPv4IPAddress,
-					tsparams.ClientIPv6IPAddress}, "net2")
+				err := cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet2, intNet2)
 				Expect(err).ToNot(HaveOccurred(),
 					"Failed to ping the client container over the 802.1q connection")
 
-				By("Validate IPv4 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV4IP.String())
-
-				By("Validate IPv6 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV6IP.String())
+				By("Validate IPv4 and IPv6 tcp traffic and dot1q encapsulation from the client to server")
+				validateTCPTraffic(clientPod, intNet2, serverIPAddressesNet2)
 
 				By("Validate that the TCP traffic is double tagged")
 				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1QOutput)
@@ -254,27 +373,64 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 					tcpDumpNet1CMD)
 
 				By("Define and create a server container")
-				serverPod := createServerTestPod(serverNameDot1q, srIovNetworkDot1Q, nadCVLAN,
-					workerNodeList[1].Definition.Name, []string{tsparams.ServerIPv4IPAddress, tsparams.ServerIPv6IPAddress})
+				annotation := defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN100, true)
+				serverPod := createServerTestPod(serverNameDot1q, workerNodeList[1].Definition.Name, testCmdNet2,
+					annotation)
 
-				By("Define and create a client container")
-				clientPod := createClientTestPod(clientNameDot1q, srIovNetworkDot1Q, nadCVLAN,
-					workerNodeList[0].Definition.Name, []string{tsparams.ClientIPv4IPAddress, tsparams.ClientIPv6IPAddress})
+				By("Define and create a 802.1Q client container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN100, false)
+				clientPod := createClientTestPod(clientNameDot1q, workerNodeList[0].Definition.Name, annotation)
 
 				By("Validate IPv4 and IPv6 connectivity between the containers over the qinq tunnel.")
-				err := cmd.ICMPConnectivityCheck(serverPod, []string{tsparams.ClientIPv4IPAddress,
-					tsparams.ClientIPv6IPAddress}, "net2")
+				err := cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet2, intNet2)
 				Expect(err).ToNot(HaveOccurred(),
 					"Failed to ping the client container over the 802.1q connection.")
 
-				By("Validate IPv4 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV4IP.String())
-
-				By("Validate IPv6 tcp traffic and dot1ad encapsulation from the client to server.")
-				validateTCPTraffic(clientPod, serverIPV6IP.String())
+				By("Validate IPv4 and IPv6 tcp traffic and dot1q encapsulation from the client to server")
+				validateTCPTraffic(clientPod, intNet2, serverIPAddressesNet2)
 
 				By("Validate that the TCP traffic is double tagged")
 				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1QOutput)
+			})
+
+		It("Verify network traffic over a double tagged 802.1Q tunnel with multiple C-VLANs using the same S-VLAN",
+			reportxml.ID("71683"), func() {
+				By("Define and create a container in promiscuous mode")
+				tcpDumpContainer := createPromiscuousClient(workerNodeList[0].Definition.Name,
+					tcpDumpNet1CMD)
+
+				By("Define and create a server container")
+				annotation := defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN100, true, nadCVLAN101)
+				serverPod := createServerTestPod(serverNameDot1q, workerNodeList[0].Definition.Name, testCmdNet2Net3,
+					annotation)
+
+				By("Define and create a 802.1Q client container")
+				annotation = defineNetworkAnnotation(srIovNetworkDot1Q, nadCVLAN100, false, nadCVLAN101)
+				clientPod := createClientTestPod(clientNameDot1q, workerNodeList[0].Definition.Name, annotation)
+
+				By("Validate IPv4 and IPv6 connectivity between the containers using CVLAN100 over the qinq tunnel.")
+				err := cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet2, intNet2)
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to ping the client container over cvlan100")
+
+				By("Validate IPv4 and IPv6 connectivity between the containers using CVLAN101 over the qinq tunnel.")
+				err = cmd.ICMPConnectivityCheck(serverPod, clientIPAddressesNet3, intNet3)
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to ping the client container over CVLAN101")
+
+				By("Validate IPv4 and IPv6 tcp traffic and dot1q encapsulation from the client to server " +
+					"using CVLAN100")
+				validateTCPTraffic(clientPod, intNet2, serverIPAddressesNet2)
+
+				By("Validate that the TCP traffic is double tagged with CVLAN100 ")
+				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1QOutput)
+
+				By("Validate IPv4 and IPv6 tcp traffic and dot1q encapsulation from the client to server " +
+					"using CVLAN101")
+				validateTCPTraffic(clientPod, intNet3, serverIPAddressesNet3)
+
+				By("Validate that the TCP traffic is double tagged with CVLAN101 ")
+				readAndValidateTCPDump(tcpDumpContainer, tcpDumpReadFileCMD, tcpDumpDot1QCVLAN101QOutput)
 			})
 	})
 
@@ -304,8 +460,8 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		}
 
 		By(fmt.Sprintf("Disable VF promiscuous support on %s", srIovInterfacesUnderTest[0]))
-		output, err := cmd.RunCommandOnHostNetworkPod(workerNodeList[0].Definition.Name, NetConfig.SriovOperatorNamespace,
-			promiscVFCommand)
+		output, err := cmd.RunCommandOnHostNetworkPod(workerNodeList[0].Definition.Name,
+			NetConfig.SriovOperatorNamespace, promiscVFCommand)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to run command on node %s", output))
 
 		By("Removing all SR-IOV Policy")
@@ -334,7 +490,8 @@ func defineAndCreateSrIovNetworkWithQinQ(srIovNetwork, resName, vlanProtocol str
 		_, err := nad.Pull(APIClient, srIovNetworkObject.Object.Name, tsparams.TestNamespaceName)
 
 		return err == nil
-	}, tsparams.WaitTimeout, tsparams.RetryInterval).Should(BeTrue(), "Fail to pull NetworkAttachmentDefinition")
+	}, tsparams.WaitTimeout, tsparams.RetryInterval).Should(BeTrue(),
+		"Fail to pull NetworkAttachmentDefinition")
 }
 
 func createPromiscuousClient(nodeName string, tcpDumpCMD []string) *pod.Builder {
@@ -348,40 +505,57 @@ func createPromiscuousClient(nodeName string, tcpDumpCMD []string) *pod.Builder 
 	return clientDefault
 }
 
-func createServerTestPod(name, sVlan, cVlan, nodeName string, ipAddress []string) *pod.Builder {
+func createServerTestPod(name, nodeName string, command []string,
+	networkAnnotation []*multus.NetworkSelectionElement) *pod.Builder {
 	By(fmt.Sprintf("Define and run test pod  %s", name))
-
-	annotation := defineNetworkAnnotation(sVlan, cVlan, ipAddress)
-
-	serverCmd := []string{"bash", "-c", "sleep 5; testcmd -interface net2 -protocol tcp -port 4444 -listen"}
 	serverBuild, err := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName,
-		NetConfig.CnfNetTestContainer).DefineOnNode(nodeName).WithSecondaryNetwork(annotation).
-		RedefineDefaultCMD(serverCmd).WithPrivilegedFlag().CreateAndWaitUntilRunning(netparam.DefaultTimeout)
-	Expect(err).ToNot(HaveOccurred(), "Failed to define and run server container")
+		NetConfig.CnfNetTestContainer).DefineOnNode(nodeName).WithSecondaryNetwork(networkAnnotation).
+		RedefineDefaultCMD(command).WithPrivilegedFlag().CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+	Expect(err).ToNot(HaveOccurred(), "Failed to define and run default client")
 
 	return serverBuild
 }
 
-func createClientTestPod(name, sVlan, cVlan, nodeName string, ipAddress []string) *pod.Builder {
+func createClientTestPod(name, nodeName string, networkAnnotation []*multus.NetworkSelectionElement) *pod.Builder {
 	By(fmt.Sprintf("Define and run test pod  %s", name))
 
-	annotation := defineNetworkAnnotation(sVlan, cVlan, ipAddress)
-
 	clientBuild, err := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName,
-		NetConfig.CnfNetTestContainer).DefineOnNode(nodeName).WithSecondaryNetwork(annotation).
+		NetConfig.CnfNetTestContainer).DefineOnNode(nodeName).WithSecondaryNetwork(networkAnnotation).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(netparam.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to define and run default client")
 
 	return clientBuild
 }
 
-func defineNetworkAnnotation(sVlan, cVlan string, ipAddress []string) []*multus.NetworkSelectionElement {
+func defineNetworkAnnotation(sVlan, cVlan string, server bool, cVlan2 ...string) []*multus.NetworkSelectionElement {
 	annotation := []*multus.NetworkSelectionElement{}
 	svlanAnnotation := pod.StaticAnnotation(sVlan)
-	cvlanAnnotation := pod.StaticIPAnnotation(cVlan, ipAddress)
-	annotation = append(annotation, svlanAnnotation, cvlanAnnotation[0])
 
-	return annotation
+	if server {
+		cvlanAnnotation := pod.StaticIPAnnotation(cVlan, []string{tsparams.ServerIPv4IPAddress,
+			tsparams.ServerIPv6IPAddress})
+
+		if len(cVlan2) != 0 {
+			cvlanAnnotation2 := pod.StaticIPAnnotation(cVlan2[0], []string{tsparams.ServerIPv4IPAddress2,
+				tsparams.ServerIPv6IPAddress2})
+
+			return append(annotation, svlanAnnotation, cvlanAnnotation[0], cvlanAnnotation2[0])
+		}
+
+		return append(annotation, svlanAnnotation, cvlanAnnotation[0])
+	}
+
+	cvlanAnnotation := pod.StaticIPAnnotation(cVlan, []string{tsparams.ClientIPv4IPAddress,
+		tsparams.ClientIPv6IPAddress})
+
+	if len(cVlan2) != 0 {
+		cvlanAnnotation2 := pod.StaticIPAnnotation(cVlan2[0], []string{tsparams.ClientIPv4IPAddress2,
+			tsparams.ClientIPv6IPAddress2})
+
+		return append(annotation, svlanAnnotation, cvlanAnnotation[0], cvlanAnnotation2[0])
+	}
+
+	return append(annotation, svlanAnnotation, cvlanAnnotation[0])
 }
 
 func discoverInterfaceUnderTestDeviceID(srIovInterfaceUnderTest, workerNodeName string) string {
@@ -399,20 +573,22 @@ func discoverInterfaceUnderTestDeviceID(srIovInterfaceUnderTest, workerNodeName 
 	return ""
 }
 
-func validateTCPTraffic(clientPod *pod.Builder, destIPAddr string) {
-	command := []string{
-		"testcmd",
-		fmt.Sprintf("--interface=%s", "net2"),
-		fmt.Sprintf("--server=%s", destIPAddr),
-		"--protocol=tcp",
-		"--mtu=100",
-		"--port=4444",
-	}
+func validateTCPTraffic(clientPod *pod.Builder, interfaceName string, destIPAddrs []string) {
+	for _, destIPAddr := range destIPAddrs {
+		command := []string{
+			"testcmd",
+			fmt.Sprintf("--interface=%s", interfaceName),
+			fmt.Sprintf("--server=%s", destIPAddr),
+			"--protocol=tcp",
+			"--mtu=100",
+			"--port=4444",
+		}
 
-	outPut, err := clientPod.ExecCommand(
-		command)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to run testcmd on %s command output: %s",
-		clientPod.Definition.Name, outPut.String()))
+		outPut, err := clientPod.ExecCommand(
+			command)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to run testcmd on %s command output: %s",
+			clientPod.Definition.Name, outPut.String()))
+	}
 }
 
 // readAndValidateTCPDump checks that the inner C-VLAN is present verifying that the packet was double tagged.
