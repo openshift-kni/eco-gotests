@@ -5,6 +5,8 @@ const (
 	LabelSuite = "upgrade"
 	// LabelEndToEndUpgrade represents e2e label that can be used for test cases selection.
 	LabelEndToEndUpgrade = "e2e"
+	// LabelPrepAbortFlow represents prep-abort label that can be used for test cases selection.
+	LabelPrepAbortFlow = "ibu-prep-abort"
 
 	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
 	IbuCguNamespace = "default"
