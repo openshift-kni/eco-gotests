@@ -501,6 +501,9 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 
 	glog.V(90).Infof("Waiting until all NMState resources are Ready.")
 
+	// Workaround to skip failure "nmstate handler daemonset is not ready"
+	time.Sleep(10 * time.Second)
+
 	if !nmstateHandlerDs.IsReady(timeout) {
 		return fmt.Errorf("nmstate handler daemonset is not ready")
 	}
