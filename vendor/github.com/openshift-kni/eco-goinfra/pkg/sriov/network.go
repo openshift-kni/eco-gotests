@@ -3,6 +3,7 @@ package sriov
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
@@ -10,6 +11,7 @@ import (
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -341,6 +343,55 @@ func (builder *NetworkBuilder) Delete() error {
 	builder.Object = nil
 
 	return err
+}
+
+// DeleteAndWait deletes the SrIovNetwork resource and waits until it is deleted.
+func (builder *NetworkBuilder) DeleteAndWait(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Deleting SrIovNetwork %s in namespace %s and waiting for the defined period until it is removed",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	err := builder.Delete()
+	if err != nil {
+		return err
+	}
+
+	return builder.WaitUntilDeleted(timeout)
+}
+
+// WaitUntilDeleted waits for the duration of the defined timeout or until the SrIovNetwork is deleted.
+func (builder *NetworkBuilder) WaitUntilDeleted(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof(
+		"Waiting for the defined period until SrIovNetwork %s in namespace %s is deleted",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).
+				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			if err == nil {
+				glog.V(100).Infof("SrIovNetwork %s/%s still present", builder.Definition.Name, builder.Definition.Namespace)
+
+				return false, nil
+			}
+
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("SrIovNetwork %s/%s is gone", builder.Definition.Name, builder.Definition.Namespace)
+
+				return true, nil
+			}
+
+			glog.V(100).Infof("Failed to get SrIovNetwork %s/%s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
+
+			return false, err
+		})
 }
 
 // Exists checks whether the given SrIovNetwork object exists in a cluster.
