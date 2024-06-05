@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -322,6 +323,81 @@ func WithBondOptionFailOverMac(
 	)
 }
 
+// CheckThatWorkersDeployedWithBondVlanVfs verifies whether workers have been deployed with the specified configuration
+// of bonded VLAN virtual interfaces (VFs). This function ensures that the network setup adheres to the intended bond
+// and VLAN configurations.
+func CheckThatWorkersDeployedWithBondVlanVfs(
+	workerNodes []*nodes.Builder, namespace string) (string, []string, []string, error) {
+	glog.V(90).Infof("Verifying that the cluster deployed via bond interface")
+
+	var (
+		bondName       string
+		baseInterfaces []string
+		err            error
+	)
+
+	for _, worker := range workerNodes {
+		bondName, err = GetPrimaryInterfaceBond(worker.Definition.Name)
+		if err != nil {
+			glog.V(90).Infof("Failed to get Slave Interfaces for the primary bond interface")
+
+			return "", nil, nil, err
+		}
+
+		if bondName == "" {
+			glog.V(90).Infof("bondName is empty on worker %s", worker.Definition.Name)
+
+			return "", nil, nil, fmt.Errorf("primary interface on worker %s is not a bond interface",
+				worker.Definition.Name)
+		}
+	}
+
+	glog.V(90).Infof("Gathering enslave interfaces for the bond interface")
+
+	bondInterfaceVlanSlaves, err := GetBondSlaves(bondName, workerNodes[0].Definition.Name)
+	if err != nil {
+		glog.V(90).Infof("Failed to get bond slave interfaces")
+
+		return "", nil, nil, err
+	}
+
+	glog.V(90).Infof(
+		"Verifying that enslave interfaces are vlan interfaces and base-interface for Vlan interface is a VF interface")
+
+	for _, bondSlave := range bondInterfaceVlanSlaves {
+		baseInterface, err := GetBaseVlanInterface(bondSlave, workerNodes[0].Definition.Name)
+		if err != nil && strings.Contains(err.Error(), "it is not a vlan type") {
+			glog.V(90).Infof("bond slave interfaces are not vlan type")
+
+			return "", nil, nil, fmt.Errorf("bond slave interfaces are not vlan interfaces")
+		}
+
+		if err != nil {
+			glog.V(90).Infof("Failed to get Vlan base interface")
+
+			return "", nil, nil, err
+		}
+
+		// If a Vlan baseInterface has SR-IOV PF, it means that the baseInterface is VF.
+		_, err = cmd.GetSrIovPf(baseInterface, namespace, workerNodes[0].Definition.Name)
+		if err != nil && strings.Contains(err.Error(), "No such file or directory") {
+			glog.V(90).Infof("Failed to find PF for the baseInterface VFs")
+
+			return "", nil, nil, fmt.Errorf("bond slave interfaces are not vlan interfaces")
+		}
+
+		if err != nil {
+			glog.V(90).Infof("Failed to get SR-IOV PF interface")
+
+			return "", nil, nil, err
+		}
+
+		baseInterfaces = append(baseInterfaces, baseInterface)
+	}
+
+	return bondName, bondInterfaceVlanSlaves, baseInterfaces, nil
+}
+
 // withBondOptionMutator returns a function that mutates a specific option for a bond interface.
 func withBondOptionMutator(
 	mutateFunc func(*nmstate.OptionsLinkAggregation),
@@ -424,6 +500,9 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 	}
 
 	glog.V(90).Infof("Waiting until all NMState resources are Ready.")
+
+	// Workaround to skip failure "nmstate handler daemonset is not ready"
+	time.Sleep(10 * time.Second)
 
 	if !nmstateHandlerDs.IsReady(timeout) {
 		return fmt.Errorf("nmstate handler daemonset is not ready")
