@@ -541,3 +541,4 @@ func (plugin *MasterBondPlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
 
 	return plugin.masterPlugin, nil
 }
+

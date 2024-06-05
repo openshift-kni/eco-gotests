@@ -142,6 +142,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 			It("Recreate VFs when SR-IOV policy is applied", reportxml.ID("63533"), func() {
 				By("Creating test pods and checking connectivity")
+				time.Sleep(100 * time.Minute)
 				err := sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
 					sriovAndResourceNameExManagedTrue, sriovAndResourceNameExManagedTrue,
 					tsparams.ClientMacAddress, tsparams.ServerMacAddress,
