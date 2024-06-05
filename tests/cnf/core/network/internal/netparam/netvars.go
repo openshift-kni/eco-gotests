@@ -21,6 +21,8 @@ var (
 	OperatorSriovDaemonsets = []string{OperatorConfigDaemon, OperatorWebhook, OperatorResourceInjector}
 	// DefaultTimeout represents the default timeout for most of Eventually/PollImmediate functions.
 	DefaultTimeout = 300 * time.Second
+	// MCOWaitTimeout represent timeout for mco operations.
+	MCOWaitTimeout = 60 * time.Minute
 	// VtySh represents default vtysh cmd prefix.
 	VtySh = []string{"vtysh", "-c"}
 )
