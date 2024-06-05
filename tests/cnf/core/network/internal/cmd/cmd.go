@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
@@ -59,4 +60,17 @@ func RunCommandOnHostNetworkPod(nodeName, namespace, command string) (string, er
 	}
 
 	return output.String(), nil
+}
+
+// GetSrIovPf returns SR-IOV PF name for given SR-IOV VF.
+func GetSrIovPf(vfInterfaceName, namespace, nodeName string) (string, error) {
+	glog.V(90).Infof("Getting PF interface name for VF %s on node %s", vfInterfaceName, nodeName)
+
+	pfName, err := RunCommandOnHostNetworkPod(nodeName, namespace,
+		fmt.Sprintf("ls /sys/class/net/%s/device/physfn/net/", vfInterfaceName))
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimRight(pfName, "\r\n"), nil
 }

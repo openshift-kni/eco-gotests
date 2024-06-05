@@ -5,4 +5,6 @@ const (
 	LabelSuite = "sriov"
 	// TestNamespaceName sriov namespace where all test cases are performed.
 	TestNamespaceName = "sriov-tests"
+	// LabelExternallyManagedTestCases represents ExternallyManaged label that can be used for test cases selection.
+	LabelExternallyManagedTestCases = "externallymanaged"
 )
