@@ -1,0 +1,50 @@
+package negative_test
+
+import (
+	"runtime"
+	"testing"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
+	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/negative/internal/tsparams"
+
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/seedimage"
+	_ "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/negative/tests"
+)
+
+var _, currentFile, _, _ = runtime.Caller(0)
+
+func TestNegative(t *testing.T) {
+	_, reporterConfig := GinkgoConfiguration()
+	reporterConfig.JUnitReport = MGMTConfig.GetJunitReportPath(currentFile)
+
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Negative Suite", Label(tsparams.Labels...), reporterConfig)
+}
+
+var _ = BeforeSuite(func() {
+	var err error
+	seedClusterInfo, err := seedimage.GetContent(APIClient, MGMTConfig.SeedImage)
+	Expect(err).NotTo(HaveOccurred(), "error getting seed image info")
+
+	MGMTConfig.SeedClusterInfo = seedClusterInfo
+})
+
+var _ = ReportAfterSuite("", func(report Report) {
+	reportxml.Create(
+		report, MGMTConfig.GetReportPath(), MGMTConfig.TCPrefix)
+})
+
+var _ = JustAfterEach(func() {
+	reporter.ReportIfFailed(
+		CurrentSpecReport(),
+		currentFile,
+		tsparams.ReporterNamespacesToDump,
+		tsparams.ReporterCRDsToDump,
+		clients.SetScheme)
+})
