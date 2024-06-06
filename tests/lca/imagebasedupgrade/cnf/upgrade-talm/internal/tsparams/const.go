@@ -7,6 +7,8 @@ const (
 	LabelEndToEndUpgrade = "e2e"
 	// LabelPrepAbortFlow represents prep-abort label that can be used for test cases selection.
 	LabelPrepAbortFlow = "ibu-prep-abort"
+	// LabelUpgradeAbortFlow represents upgrade-abort label that can be used for test cases selection.
+	LabelUpgradeAbortFlow = "ibu-upgrade-abort"
 
 	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
 	IbuCguNamespace = "default"
@@ -30,4 +32,7 @@ const (
 	FinalizeCguName = "cgu-ibu-finalize"
 	// FinalizePolicyName is the name of managed policy for ibu idle stage validation.
 	FinalizePolicyName = "group-ibu-finalize-stage-policy"
+
+	// IbuPolicyNamespace is the namespace where IBU policies created on target hub.
+	IbuPolicyNamespace = "ztp-group"
 )
