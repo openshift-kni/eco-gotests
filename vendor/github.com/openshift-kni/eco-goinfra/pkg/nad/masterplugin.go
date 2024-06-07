@@ -518,6 +518,21 @@ func (plugin *MasterBondPlugin) WithIPAM(ipam *IPAM) *MasterBondPlugin {
 	return plugin
 }
 
+// WithVLANInContainer defines a VLAN ID configuration to MasterBondPlugin.
+func (plugin *MasterBondPlugin) WithVLANInContainer(vlan uint16) *MasterBondPlugin {
+	glog.V(100).Infof("Adding vlan %d to MasterBoundPlugin", vlan)
+
+	if vlan > 4095 {
+		glog.V(100).Infof("error adding incorrect vlan id %d to MasterBondPlugin", vlan)
+
+		plugin.errorMsg = "error adding incorrect vlan to MasterBondPlugin"
+	}
+
+	plugin.masterPlugin.VlanID = vlan
+
+	return plugin
+}
+
 // GetMasterPluginConfig returns master plugin if error is not occur.
 func (plugin *MasterBondPlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
 	if plugin.errorMsg != "" {

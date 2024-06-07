@@ -4,18 +4,25 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"strings"
+
+	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/openshift-kni/lifecycle-agent/api/seedreconfig"
 	"github.com/openshift-kni/lifecycle-agent/internal/common"
 	ocp_config_v1 "github.com/openshift/api/config/v1"
+	mcv1 "github.com/openshift/api/machineconfiguration/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
-	"github.com/samber/lo"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -76,6 +83,7 @@ type ClusterInfo struct {
 	MirrorRegistryConfigured bool
 	ClusterNetworks          []string
 	ServiceNetworks          []string
+	MachineNetwork           string
 }
 
 func GetClusterInfo(ctx context.Context, client runtimeclient.Client) (*ClusterInfo, error) {
@@ -102,6 +110,11 @@ func GetClusterInfo(ctx context.Context, client runtimeclient.Client) (*ClusterI
 	if err != nil {
 		return nil, err
 	}
+	machineNetwork, err := getMachineNetwork(ctx, client, ip)
+	if err != nil {
+		return nil, err
+	}
+
 	hostname, err := getNodeHostname(*node)
 	if err != nil {
 		return nil, err
@@ -132,6 +145,7 @@ func GetClusterInfo(ctx context.Context, client runtimeclient.Client) (*ClusterI
 		MirrorRegistryConfigured: len(mirrorRegistrySources) > 0,
 		ClusterNetworks:          clusterNetworks,
 		ServiceNetworks:          serviceNetworks,
+		MachineNetwork:           machineNetwork,
 	}, nil
 }
 
@@ -143,6 +157,31 @@ func getNodeInternalIP(node corev1.Node) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("failed to find node internal ip address")
+}
+
+func getMachineNetwork(ctx context.Context, client runtimeclient.Client, nodeIp string) (string, error) {
+	installConfig, err := getInstallConfig(ctx, client)
+	if err != nil {
+		return "", fmt.Errorf("failed to get install config: %w", err)
+	}
+
+	for _, mn := range installConfig.Networking.MachineNetwork {
+		if _, _, err := net.ParseCIDR(mn.CIDR); err != nil {
+			return "", fmt.Errorf("machineNetwork has an invalid CIDR: %s", mn.CIDR)
+		}
+		if _, ipnet, err := net.ParseCIDR(mn.CIDR); err == nil && ipnet.Contains(net.ParseIP(nodeIp)) {
+			return mn.CIDR, nil
+		}
+	}
+
+	log.Warnf("failed to find machine network in <%s> for node ip: %s. Returning empty string",
+		installConfig.Networking.MachineNetwork, nodeIp)
+
+	// retuning empty string if no match found in order to be backward compatible as there is a possibility that
+	// that we upgrade cluster that was previously upgraded with lca-agent version that didn't set new machineNetwork
+	// in install config (or full install config)
+	// in all other cases we should find the match
+	return "", nil
 }
 
 func getNodeHostname(node corev1.Node) (string, error) {
@@ -158,9 +197,18 @@ type installConfigMetadata struct {
 	Name string `json:"name"`
 }
 
+type machineNetworkEntry struct {
+	// CIDR is the IP block address pool for machines within the cluster.
+	CIDR string `json:"cidr"`
+}
+
 type basicInstallConfig struct {
 	BaseDomain string                `json:"baseDomain"`
 	Metadata   installConfigMetadata `json:"metadata"`
+	Networking struct {
+		MachineCIDR    string                `json:"machineCIDR"`
+		MachineNetwork []machineNetworkEntry `json:"machineNetwork,omitempty"`
+	} `json:"networking"`
 }
 
 func getInstallConfig(ctx context.Context, client runtimeclient.Client) (*basicInstallConfig, error) {
@@ -262,6 +310,91 @@ func HasProxy(ctx context.Context, client runtimeclient.Client) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func HasFIPS(ctx context.Context, client runtimeclient.Client) (bool, error) {
+	nodes := &corev1.NodeList{}
+	if err := client.List(ctx, nodes); err != nil {
+		return false, fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	if len(nodes.Items) != 1 {
+		return false, fmt.Errorf("expected exactly one node, got %d", len(nodes.Items))
+	}
+	node := nodes.Items[0]
+
+	currentConfig := node.Annotations["machineconfiguration.openshift.io/currentConfig"]
+	if currentConfig == "" {
+		return false, fmt.Errorf("failed to get currentConfig annotation")
+	}
+
+	machineConfig := &mcv1.MachineConfig{}
+	if err := client.Get(ctx, types.NamespacedName{Name: currentConfig}, machineConfig); err != nil {
+		return false, fmt.Errorf("failed to get machineConfig %s: %w", currentConfig, err)
+	}
+
+	return machineConfig.Spec.FIPS, nil
+}
+
+func GetAdditionalTrustBundleFromConfigmap(ctx context.Context, client client.Client, configmapName string) (string, error) {
+	userCaBundleConfigmap := corev1.ConfigMap{}
+	if err := client.Get(ctx, types.NamespacedName{Name: configmapName,
+		Namespace: common.OpenshiftConfigNamespace}, &userCaBundleConfigmap); err != nil {
+		if errors.IsNotFound(err) {
+			return "", nil
+		}
+
+		return "", fmt.Errorf("failed to get %s/%s configmap: %w", common.OpenshiftConfigNamespace, configmapName, err)
+	}
+
+	if userCaBundleConfigmap.Data == nil {
+		return "", nil
+	}
+
+	if userCaBundleConfigmap.Data[common.CaBundleDataKey] == "" {
+		return "", nil
+	}
+
+	return userCaBundleConfigmap.Data[common.CaBundleDataKey], nil
+}
+
+func GetClusterAdditionalTrustBundleState(ctx context.Context, client client.Client) (bool, string, error) {
+	clusterAdditionalTrustBundle, err := GetAdditionalTrustBundleFromConfigmap(ctx, client, common.ClusterAdditionalTrustBundleName)
+	if err != nil {
+		return false, "", fmt.Errorf("failed to get additional trust bundle from configmap: %w", err)
+	}
+
+	hasUserCaBundle := clusterAdditionalTrustBundle != ""
+
+	proxy := ocp_config_v1.Proxy{}
+	if err := client.Get(ctx, types.NamespacedName{Name: common.OpenshiftProxyCRName}, &proxy); err != nil {
+		return false, "", fmt.Errorf("failed to get proxy: %w", err)
+	}
+
+	proxyCaBundle := ""
+	switch proxy.Spec.TrustedCA.Name {
+	case common.ClusterAdditionalTrustBundleName:
+		proxyCaBundle = clusterAdditionalTrustBundle
+	case "":
+		// No proxy trustedCA configmap is set, do nothing
+	default:
+		proxyCaBundle, err = GetAdditionalTrustBundleFromConfigmap(ctx, client, proxy.Spec.TrustedCA.Name)
+		if err != nil {
+			return false, "", fmt.Errorf("failed to get additional trust bundle from configmap: %w", err)
+		}
+
+		if proxyCaBundle == "" {
+			// This is a very weird but probably valid OCP configuration that we prefer to not support in LCA
+			return false, "", fmt.Errorf("proxy trustedCA configmap %s/%s exists but is empty", common.OpenshiftConfigNamespace, proxy.Spec.TrustedCA.Name)
+		}
+	}
+
+	proxyConfigmapName := ""
+	if proxyCaBundle != "" {
+		proxyConfigmapName = proxy.Spec.TrustedCA.Name
+	}
+
+	return hasUserCaBundle, proxyConfigmapName, nil
 }
 
 func ShouldOverrideSeedRegistry(ctx context.Context, client runtimeclient.Client, mirrorRegistryConfigured bool, releaseRegistry string) (bool, error) {

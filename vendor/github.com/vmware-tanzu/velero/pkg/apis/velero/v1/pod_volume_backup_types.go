@@ -51,6 +51,12 @@ type PodVolumeBackupSpec struct {
 	// volume backup as tags.
 	// +optional
 	Tags map[string]string `json:"tags,omitempty"`
+
+	// UploaderSettings are a map of key-value pairs that should be applied to the
+	// uploader configuration.
+	// +optional
+	// +nullable
+	UploaderSettings map[string]string `json:"uploaderSettings,omitempty"`
 }
 
 // PodVolumeBackupPhase represents the lifecycle phase of a PodVolumeBackup.
@@ -114,7 +120,6 @@ type PodVolumeBackupStatus struct {
 // +kubebuilder:printcolumn:name="Namespace",type="string",JSONPath=".spec.pod.namespace",description="Namespace of the pod containing the volume to be backed up"
 // +kubebuilder:printcolumn:name="Pod",type="string",JSONPath=".spec.pod.name",description="Name of the pod containing the volume to be backed up"
 // +kubebuilder:printcolumn:name="Volume",type="string",JSONPath=".spec.volume",description="Name of the volume to be backed up"
-// +kubebuilder:printcolumn:name="Repository ID",type="string",JSONPath=".spec.repoIdentifier",description="Backup repository identifier for this backup"
 // +kubebuilder:printcolumn:name="Uploader Type",type="string",JSONPath=".spec.uploaderType",description="The type of the uploader to handle data transfer"
 // +kubebuilder:printcolumn:name="Storage Location",type="string",JSONPath=".spec.backupStorageLocation",description="Name of the Backup Storage Location where this backup should be stored"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"

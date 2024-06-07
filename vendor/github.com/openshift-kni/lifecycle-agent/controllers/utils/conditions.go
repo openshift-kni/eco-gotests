@@ -7,8 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/openshift-kni/lifecycle-agent/internal/common"
-
 	ibuv1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -474,11 +472,7 @@ func UpdateIBUStatus(ctx context.Context, c client.Client, ibu *ibuv1.ImageBased
 		}
 	}
 
-	err := common.RetryOnRetriable(common.RetryBackoffTwoMinutes, func() error {
-		return c.Status().Update(ctx, ibu) //nolint:wrapcheck
-	})
-
-	if err != nil {
+	if err := c.Status().Update(ctx, ibu); err != nil {
 		return fmt.Errorf("failed to update IBU status: %w", err)
 	}
 

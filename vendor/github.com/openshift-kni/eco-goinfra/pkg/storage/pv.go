@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -10,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // PVBuilder provides struct for persistentvolume object containing connection
@@ -27,6 +29,12 @@ type PVBuilder struct {
 func PullPersistentVolume(apiClient *clients.Settings, persistentVolume string) (*PVBuilder, error) {
 	glog.V(100).Infof("Pulling existing PersistentVolume object: %s", persistentVolume)
 
+	if apiClient == nil {
+		glog.V(100).Info("The PersistentVolume apiClient is nil")
+
+		return nil, fmt.Errorf("persistentVolume 'apiClient' cannot be empty")
+	}
+
 	builder := PVBuilder{
 		apiClient: apiClient,
 		Definition: &corev1.PersistentVolume{
@@ -34,6 +42,12 @@ func PullPersistentVolume(apiClient *clients.Settings, persistentVolume string) 
 				Name: persistentVolume,
 			},
 		},
+	}
+
+	if persistentVolume == "" {
+		glog.V(100).Info("The name of the PersistentVolume is empty")
+
+		return nil, fmt.Errorf("persistentVolume 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -58,6 +72,78 @@ func (builder *PVBuilder) Exists() bool {
 		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// Delete removes a PersistentVolume from the apiClient if it exists.
+func (builder *PVBuilder) Delete() error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Deleting the PersistentVolume %s", builder.Definition.Name)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("PersistentVolume %s cannot be deleted because it does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
+		return nil
+	}
+
+	err := builder.apiClient.PersistentVolumes().Delete(context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
+	builder.Object = nil
+
+	return nil
+}
+
+// DeleteAndWait deletes the PersistentVolume and waits up to timeout until it has been removed.
+func (builder *PVBuilder) DeleteAndWait(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof(
+		"Deleting PersistentVolume %s and waiting up to %s until it is removed", timeout, builder.Definition.Name)
+
+	err := builder.Delete()
+	if err != nil {
+		return err
+	}
+
+	return builder.WaitUntilDeleted(timeout)
+}
+
+// WaitUntilDeleted waits for the duration of timeout or until the PersistentVolume has been deleted.
+func (builder *PVBuilder) WaitUntilDeleted(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Waiting up to %s until PersistentVolume %s is deleted", timeout, builder.Definition.Name)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.PersistentVolumes().Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			if err == nil {
+				glog.V(100).Infof("PersistentVolume %s still present", builder.Definition.Name)
+
+				return false, nil
+			}
+
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("PersistentVolume %s is gone", builder.Definition.Name)
+
+				return true, nil
+			}
+
+			glog.V(100).Infof("failed to get PersistentVolume %s", builder.Definition.Name)
+
+			return false, err
+		})
 }
 
 // validate will check that the builder and builder definition are properly initialized before

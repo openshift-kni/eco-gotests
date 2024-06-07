@@ -56,7 +56,7 @@ type DataDownloadSpec struct {
 	OperationTimeout metav1.Duration `json:"operationTimeout"`
 }
 
-// TargetPVCSpec is the specification for a target PVC.
+// TargetVolumeSpec is the specification for a target PVC.
 type TargetVolumeSpec struct {
 	// PVC is the name of the target PVC that is created by Velero restore
 	PVC string `json:"pvc"`
@@ -131,6 +131,7 @@ type DataDownloadStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since this DataDownload was created"
 // +kubebuilder:printcolumn:name="Node",type="string",JSONPath=".status.node",description="Name of the node where the DataDownload is processed"
 
+// DataDownload acts as the protocol between data mover plugins and data mover controller for the datamover restore operation
 type DataDownload struct {
 	metav1.TypeMeta `json:",inline"`
 

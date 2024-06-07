@@ -131,7 +131,7 @@ func PullSeedGenerator(apiClient *clients.Settings, name string) (*SeedGenerator
 	if name == "" {
 		glog.V(100).Infof("The name of the seedgenerator is empty")
 
-		builder.errorMsg = "seedgenerator 'name' cannot be empty"
+		return nil, fmt.Errorf("seedgenerator 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -153,7 +153,9 @@ func (builder *SeedGeneratorBuilder) Delete() (*SeedGeneratorBuilder, error) {
 		builder.Definition.Name)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("seedgenerator cannot be deleted because it does not exist")
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
@@ -230,6 +232,14 @@ func (builder *SeedGeneratorBuilder) WithRecertImage(
 		return builder
 	}
 
+	if recertImage == "" {
+		glog.V(100).Infof("The name of the recertImage is empty")
+
+		builder.errorMsg = "recertImage 'name' cannot be empty"
+
+		return builder
+	}
+
 	glog.V(100).Infof("Setting recert image %s in seedgenerator", recertImage)
 
 	builder.Definition.Spec.RecertImage = recertImage
@@ -270,7 +280,7 @@ func (builder *SeedGeneratorBuilder) WaitUntilComplete(timeout time.Duration) (*
 				}
 			}
 
-			return false, nil
+			return false, fmt.Errorf("seedgenerator did not complete")
 		})
 
 	if err == nil {

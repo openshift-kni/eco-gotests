@@ -464,7 +464,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 				By("updating CGU to add afterCompletion action")
 				cguBuilder.Definition.Spec.Actions = v1alpha1.Actions{
-					AfterCompletion: v1alpha1.AfterCompletion{
+					AfterCompletion: &v1alpha1.AfterCompletion{
 						AddClusterLabels: map[string]string{talmCompleteLabel: ""},
 					},
 				}
