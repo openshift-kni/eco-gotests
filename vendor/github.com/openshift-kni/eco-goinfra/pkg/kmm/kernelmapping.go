@@ -272,7 +272,7 @@ func (builder *KernelMappingBuilder) WithInTreeModuleToRemove(existingModule str
 		return builder
 	}
 
-	builder.definition.InTreeModuleToRemove = existingModule
+	builder.definition.InTreeModulesToRemove = []string{existingModule}
 
 	return builder
 }

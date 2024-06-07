@@ -74,9 +74,33 @@ type SeedClusterInfo struct {
 
 	// The service network CIDR of the seed cluster that was used to create this seed
 	ServiceNetworks []string `json:"service_network_cidr,omitempty"`
+
+	// Whether the seed has a proxy configured or not. Seed clusters without
+	// FIPS cannot be used to upgrade or install clusters with FIPS. So whether
+	// or not the seed has a proxy configured is important for LCA to know so
+	// it can optionally deny the upgrade or installation of clusters with FIPS
+	// from seeds that don't have one. Similarly, installing a cluster without
+	// FIPS from a seed with FIPS is also not supported.
+	HasFIPS bool `json:"has_fips"`
+
+	AdditionalTrustBundle *AdditionalTrustBundle `json:"additionalTrustBundle"`
 }
 
-func NewFromClusterInfo(clusterInfo *utils.ClusterInfo, seedImagePullSpec string, hasProxy bool) *SeedClusterInfo {
+type AdditionalTrustBundle struct {
+	// Whether the "user-ca-bundle" configmap in the "openshift-config"
+	// namespace has a value or not
+	HasUserCaBundle bool `json:"hasUserCaBundle"`
+
+	// The Proxy CR trustedCA configmap name
+	ProxyConfigmapName string `json:"proxyConfigmapName"`
+}
+
+func NewFromClusterInfo(clusterInfo *utils.ClusterInfo,
+	seedImagePullSpec string,
+	hasProxy,
+	hasFIPS bool,
+	additionalTrustBundle *AdditionalTrustBundle,
+) *SeedClusterInfo {
 	return &SeedClusterInfo{
 		SeedClusterOCPVersion:    clusterInfo.OCPVersion,
 		BaseDomain:               clusterInfo.BaseDomain,
@@ -87,6 +111,8 @@ func NewFromClusterInfo(clusterInfo *utils.ClusterInfo, seedImagePullSpec string
 		MirrorRegistryConfigured: clusterInfo.MirrorRegistryConfigured,
 		RecertImagePullSpec:      seedImagePullSpec,
 		HasProxy:                 hasProxy,
+		HasFIPS:                  hasFIPS,
+		AdditionalTrustBundle:    additionalTrustBundle,
 	}
 }
 

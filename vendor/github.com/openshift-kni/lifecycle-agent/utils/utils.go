@@ -16,6 +16,7 @@ import (
 
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -24,7 +25,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 	k8syaml "sigs.k8s.io/yaml"
@@ -63,36 +63,16 @@ func MarshalToYamlFile(data any, filePath string) error {
 	return nil
 }
 
-// TypeMetaForObject returns the given object's TypeMeta or an error otherwise.
-func TypeMetaForObject(scheme *runtime.Scheme, o runtime.Object) (*metav1.TypeMeta, error) {
-	gvks, unversioned, err := scheme.ObjectKinds(o)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get ObjectKinds: %w", err)
-	}
-	if unversioned || len(gvks) == 0 {
-		return nil, fmt.Errorf("unable to find API version for object")
-	}
-	// if there are multiple assume the last is the most recent
-	gvk := gvks[len(gvks)-1]
-	return &metav1.TypeMeta{
-		APIVersion: gvk.GroupVersion().String(),
-		Kind:       gvk.Kind,
-	}, nil
-}
-
-// RenderTemplateFile render template file
-func RenderTemplateFile(templateData string, params any, dest string, perm os.FileMode) error {
+// RenderTemplate render template
+func RenderTemplate(templateData string, params any) ([]byte, error) {
 	tmpl := template.New("template")
 	tmpl = template.Must(tmpl.Parse(templateData))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, params); err != nil {
-		return fmt.Errorf("failed to render controller template: %w", err)
+		return nil, fmt.Errorf("failed to render template: %w", err)
 	}
 
-	if err := os.WriteFile(dest, buf.Bytes(), perm); err != nil {
-		return fmt.Errorf("error occurred while trying to write rendered data to %s: %w", dest, err)
-	}
-	return nil
+	return buf.Bytes(), nil
 }
 
 func GetSNOMasterNode(ctx context.Context, client runtimeclient.Client) (*corev1.Node, error) {
@@ -292,11 +272,13 @@ func InitIBU(ctx context.Context, c client.Client, log *logr.Logger) error {
 					Stage: ibuv1.Stages.Idle,
 				},
 			}
-			if err := common.RetryOnConflictOrRetriable(retry.DefaultBackoff, func() error {
-				return client.IgnoreAlreadyExists(c.Create(ctx, ibu)) //nolint:wrapcheck
-			}); err != nil {
-				return fmt.Errorf("failed to create IBU during init: %w", err)
+
+			if err := c.Create(ctx, ibu); err != nil {
+				if !k8serrors.IsAlreadyExists(err) {
+					return fmt.Errorf("failed to create IBU during init: %w", err)
+				}
 			}
+
 			log.Info("Initial IBU created")
 			return nil
 		}
@@ -307,27 +289,23 @@ func InitIBU(ctx context.Context, c client.Client, log *logr.Logger) error {
 	ibu.SetResourceVersion("")
 
 	log.Info("Saved IBU CR found, restoring ...")
-	if err := common.RetryOnConflictOrRetriable(retry.DefaultBackoff, func() error {
-		return client.IgnoreNotFound(c.Delete(ctx, ibu)) //nolint:wrapcheck
-	}); err != nil {
-		return fmt.Errorf("failed to delete IBU during restore: %w", err)
+	if err := c.Delete(ctx, ibu); err != nil {
+		if !k8serrors.IsAlreadyExists(err) {
+			return fmt.Errorf("failed to delete IBU during restore: %w", err)
+		}
 	}
 
 	// Save status as the ibu structure gets over-written by the create call
 	// with the result which has no status
 	status := ibu.Status
-	if err := common.RetryOnConflictOrRetriable(retry.DefaultBackoff, func() error {
-		return c.Create(ctx, ibu) //nolint:wrapcheck
-	}); err != nil {
+	if err := c.Create(ctx, ibu); err != nil {
 		return fmt.Errorf("failed to create IBU to restore: %w", err)
 	}
 
 	// Put the saved status into the newly create ibu with the right resource
 	// version which is required for the update call to work
 	ibu.Status = status
-	if err := common.RetryOnConflictOrRetriable(retry.DefaultBackoff, func() error {
-		return c.Status().Update(ctx, ibu) //nolint:wrapcheck
-	}); err != nil {
+	if err := c.Status().Update(ctx, ibu); err != nil {
 		return fmt.Errorf("failed to update IBU during restore: %w", err)
 	}
 
@@ -349,15 +327,6 @@ func ConvertToRawExtension(config any) (runtime.RawExtension, error) {
 	}, nil
 }
 
-func MoveFileIfExists(source, dest string) error {
-	if _, err := os.Stat(source); err == nil {
-		if err := os.Rename(source, dest); err != nil {
-			return fmt.Errorf("failed to move %s to %s, err :%w", source, dest, err)
-		}
-	}
-	return nil
-}
-
 func UpdatePullSecretFromDockerConfig(ctx context.Context, c client.Client, dockerConfigJSON []byte) (*corev1.Secret, error) {
 	newPullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -370,9 +339,7 @@ func UpdatePullSecretFromDockerConfig(ctx context.Context, c client.Client, dock
 		Type: corev1.SecretTypeDockerConfigJson,
 	}
 
-	if err := common.RetryOnConflictOrRetriable(retry.DefaultBackoff, func() error {
-		return c.Update(ctx, newPullSecret) //nolint:wrapcheck
-	}); err != nil {
+	if err := c.Update(ctx, newPullSecret); err != nil {
 		return nil, fmt.Errorf("failed to update pull-secret resource: %w", err)
 	}
 
@@ -386,7 +353,7 @@ func AppendToListIfNotExists(list []string, value string) []string {
 	return append(list, value)
 }
 
-func CreateDynamicClient(kubeconfig string, isTestEnvAllowed bool, log *logr.Logger) (dynamic.Interface, error) {
+func CreateDynamicClient(kubeconfig string, isTestEnvAllowed bool, log logr.Logger) (dynamic.Interface, error) {
 	// Read kubeconfig
 	var config *rest.Config
 	if _, err := os.Stat(kubeconfig); err != nil {
@@ -402,6 +369,7 @@ func CreateDynamicClient(kubeconfig string, isTestEnvAllowed bool, log *logr.Log
 			return nil, fmt.Errorf("unable to read kubeconfig: %w", err)
 		}
 	}
+	config.Wrap(RetryMiddleware(log)) // allow all client calls to be retriable
 
 	// Create dynamic client
 	dynamicClient, err := dynamic.NewForConfig(config)
@@ -409,6 +377,7 @@ func CreateDynamicClient(kubeconfig string, isTestEnvAllowed bool, log *logr.Log
 		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
+	log.Info("Successfully created dynamic client")
 	return dynamicClient, nil
 }
 

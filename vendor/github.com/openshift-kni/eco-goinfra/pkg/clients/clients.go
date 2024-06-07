@@ -13,8 +13,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
+	kedav1alpha1 "github.com/kedacore/keda-olm-operator/apis/keda/v1alpha1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
-	clov1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	clov1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	tunedv1 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/tuned/v1"
 	eskv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
@@ -381,6 +382,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := kedav1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -438,6 +443,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *appsv1.Deployment:
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *appsv1.StatefulSet:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *appsv1.ReplicaSet:
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *corev1.ResourceQuota:
 			k8sClientObjects = append(k8sClientObjects, v)
@@ -516,6 +523,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *tunedv1.Tuned:
 			genericClientObjects = append(genericClientObjects, v)
+		case *kedav1alpha1.KedaController:
+			genericClientObjects = append(genericClientObjects, v)
 		case *agentInstallV1Beta1.AgentServiceConfig:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
@@ -537,6 +546,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *velerov1.Backup:
 			veleroClientObjects = append(veleroClientObjects, v)
 		case *velerov1.Restore:
+			veleroClientObjects = append(veleroClientObjects, v)
+		case *velerov1.BackupStorageLocation:
 			veleroClientObjects = append(veleroClientObjects, v)
 		// SrIov Client Objects
 		case *srIovV1.SriovNetwork:

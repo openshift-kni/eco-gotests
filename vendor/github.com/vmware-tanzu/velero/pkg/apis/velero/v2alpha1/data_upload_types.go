@@ -51,7 +51,7 @@ type DataUploadSpec struct {
 	// DataMoverConfig is for data-mover-specific configuration fields.
 	// +optional
 	// +nullable
-	DataMoverConfig *map[string]string `json:"dataMoverConfig,omitempty"`
+	DataMoverConfig map[string]string `json:"dataMoverConfig,omitempty"`
 
 	// Cancel indicates request to cancel the ongoing DataUpload. It can be set
 	// when the DataUpload is in InProgress phase
@@ -161,6 +161,7 @@ type DataUploadStatus struct {
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since this DataUpload was created"
 // +kubebuilder:printcolumn:name="Node",type="string",JSONPath=".status.node",description="Name of the node where the DataUpload is processed"
 
+// DataUpload acts as the protocol between data mover plugins and data mover controller for the datamover backup operation
 type DataUpload struct {
 	metav1.TypeMeta `json:",inline"`
 

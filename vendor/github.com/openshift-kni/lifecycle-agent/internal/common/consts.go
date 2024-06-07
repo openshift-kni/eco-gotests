@@ -46,7 +46,10 @@ const (
 	OvnIcEtcFolder = "/var/lib/ovn-ic/etc"
 	OvnNodeCerts   = OvnIcEtcFolder + "/ovnkube-node-certs"
 
-	MultusCerts = "/etc/cni/multus/certs"
+	MultusCerts  = "/etc/cni/multus/certs"
+	ChronyConfig = "/etc/chrony.conf"
+
+	SSHServerKeysDirectory = "/etc/ssh"
 
 	MCDCurrentConfig = "/etc/machine-config-daemon/currentconfig"
 
@@ -62,7 +65,7 @@ const (
 	EtcdContainerName                 = "recert_etcd"
 	LvmConfigDir                      = "lvm-configuration"
 	LvmDevicesPath                    = "/etc/lvm/devices/system.devices"
-	CABundleFilePath                  = "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+	CABundleFilePath                  = "/etc/pki/ca-trust/source/anchors/openshift-config-user-ca-bundle.crt"
 
 	LCAConfigDir                                    = "/var/lib/lca"
 	IBUAutoRollbackConfigFile                       = LCAConfigDir + "/autorollback_config.json"
@@ -110,6 +113,11 @@ const (
 
 	NMConnectionFolder = "/etc/NetworkManager/system-connections"
 	NetworkDir         = "network-configuration"
+
+	CaBundleDataKey                  = "ca-bundle.crt"
+	ClusterAdditionalTrustBundleName = "user-ca-bundle"
+
+	IBIPSFile = "/var/tmp/pull-secret.json"
 )
 
 // Annotation names and values related to extra manifest

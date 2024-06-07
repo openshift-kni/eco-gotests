@@ -130,7 +130,7 @@ func (builder *PVCBuilder) WithPVCCapacity(capacity string) (*PVCBuilder, error)
 	capMap := make(map[corev1.ResourceName]resource.Quantity)
 	capMap[corev1.ResourceStorage] = resource.MustParse(capacity)
 
-	builder.Definition.Spec.Resources = corev1.ResourceRequirements{Requests: capMap}
+	builder.Definition.Spec.Resources = corev1.VolumeResourceRequirements{Requests: capMap}
 
 	return builder, nil
 }
