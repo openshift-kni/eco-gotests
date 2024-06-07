@@ -51,7 +51,7 @@ var _ = Describe(
 	"MultiArchitectureImage",
 	Ordered,
 	ContinueOnFailure,
-	Label(tsparams.LabelMultiArchitectureImageTestCases), func() {
+	Label(tsparams.LabelMultiArchitectureImageTestCases), Label("disruptive"), func() {
 		When("on MCE 2.2 and above", func() {
 			BeforeAll(func() {
 				By("Check the hub cluster is connected")

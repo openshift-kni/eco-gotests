@@ -31,7 +31,7 @@ var _ = Describe(
 	"UnauthenticatedRegistries",
 	Ordered,
 	ContinueOnFailure,
-	Label(tsparams.LabelUnauthenticatedRegistriesTestCases), func() {
+	Label(tsparams.LabelUnauthenticatedRegistriesTestCases), Label("disruptive"), func() {
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 				By("Initialize osImage variable for the test from the original AgentServiceConfig")
