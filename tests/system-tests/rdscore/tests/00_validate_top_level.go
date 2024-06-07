@@ -69,10 +69,10 @@ var _ = Describe(
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephFSPVC(ctx)
+				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
 
-				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephRBDPVC(ctx)
+				By("Creating a workload with CephRBD PVC")
+				rdscorecommon.DeployWorkloadCephRBDPVC(ctx)
 
 				By("Creating SR-IOV workloads on the same node")
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)
@@ -206,10 +206,10 @@ var _ = Describe(
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephFSPVC(ctx)
+				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
 
-				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephRBDPVC(ctx)
+				By("Creating a workload with CephRBD PVC")
+				rdscorecommon.DeployWorkloadCephRBDPVC(ctx)
 
 				By("Creating SR-IOV worklods that run on same node")
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)

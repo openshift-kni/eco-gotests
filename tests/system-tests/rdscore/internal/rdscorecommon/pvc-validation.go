@@ -68,7 +68,7 @@ func createPVC(fPVCName, fNamespace, fStorageClass, fVolumeMode, fCapacity strin
 	return myPVC
 }
 
-//nolint:funlen
+//nolint:funlen,unparam
 func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName string, fVolumeMode string) {
 	var (
 		ctx               SpecContext
@@ -208,7 +208,7 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 
 	By("Creating a deployment")
 
-	deploy, err = deploy.CreateAndWaitUntilReady(5 * time.Minute)
+	deploy, err = deploy.CreateAndWaitUntilReady(15 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create deployment %s: %v", wlkdODFDeployName, err))
 
 	By("Getting pods backed by deployment")
@@ -217,7 +217,10 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 		LabelSelector: labelsWlkdOneString,
 	}
 
-	var podOneList []*pod.Builder
+	var (
+		podOneList   []*pod.Builder
+		podOneResult bytes.Buffer
+	)
 
 	Eventually(func() bool {
 		podOneList, err = pod.List(APIClient, fNamespace, podOneSelector)
@@ -257,10 +260,54 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 	writeDataOneCmd := []string{"/bin/bash", "-c",
 		fmt.Sprintf("echo '%s' > /opt/cephfs-pvc/demo-data-file", msgOne)}
 
-	podOneResult, err := podOne.ExecCommand(writeDataOneCmd, "one")
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
+	Eventually(func() bool {
+		podOneResult, err = podOne.ExecCommand(writeDataOneCmd, "one")
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to execute command: %v", err)
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
+
+		return true
+	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+		"Failed to store data in the persistent storage")
+}
+
+//nolint:funlen
+func rescheduleWorkloadWithPVC(fNamespace, fPodLabel string, fNodeSelector map[string]string) {
+	var (
+		ctx               SpecContext
+		err               error
+		deploy            *deployment.Builder
+		podOneList        []*pod.Builder
+		wlkdODFDeployName = "rds-core-wlkd"
+	)
+
+	By("Checking deployment exist")
+
+	Eventually(func() bool {
+		deploy, err = deployment.Pull(APIClient, wlkdODFDeployName, fNamespace)
+		switch {
+		case deploy != nil && err == nil:
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q found in %q namespace",
+				deploy.Definition.Name, fNamespace)
+
+			return true
+		case deploy == nil && err != nil:
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q not found in %q namespace. Skipping...",
+				wlkdODFDeployName, fNamespace)
+
+			Skip(fmt.Sprintf("Deployment %q not found in %q namespace", wlkdODFDeployName, fNamespace))
+		default:
+			return false
+		}
+
+		return false
+	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+		fmt.Sprintf("Deployment %q not found in %q namespace", wlkdODFDeployName, fNamespace))
 
 	By("Scaling down deployment")
 
@@ -286,29 +333,56 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 		return len(oldPods) == 0
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label(s) still present")
 
-	By("Resetting NodeSelector on the deployment")
+	Eventually(func() bool {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Updating deployment %q in %q namespace",
+			deploy.Definition.Name, deploy.Definition.Namespace)
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Updating nodeSelector for deployment %q",
-		deploy.Definition.Name)
+		deploy, err = deployment.Pull(APIClient, wlkdODFDeployName, fNamespace)
 
-	deploy = deploy.WithNodeSelector(RDSCoreConfig.StorageODFDeployTwoSelector)
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("failed to pull in deployment %q in %q namespace",
+				deploy.Definition.Name, deploy.Definition.Namespace)
 
-	By("Scaling up deployment")
+			return false
+		}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Scaling up deployment %q in %q namespace",
-		deploy.Definition.Name, deploy.Definition.Namespace)
+		By("Scaling up deployment")
 
-	deploy = deploy.WithReplicas(int32(1))
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Scaling up deployment %q in %q namespace",
+			deploy.Definition.Name, deploy.Definition.Namespace)
 
-	deploy, err = deploy.Update()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to scale up deployment %s in %s namespace",
-			deploy.Definition.Name, deploy.Definition.Namespace))
+		deploy = deploy.WithReplicas(int32(1))
+
+		By("Resetting NodeSelector on the deployment")
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Updating nodeSelector for deployment %q",
+			deploy.Definition.Name)
+
+		deploy = deploy.WithNodeSelector(fNodeSelector)
+
+		deploy, err = deploy.Update()
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to update deployment %q in %q namespace: %v",
+				deploy.Definition.Name, deploy.Definition.Namespace, err)
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Updated deployment %q in %q namespace",
+			deploy.Definition.Name, deploy.Definition.Namespace)
+
+		return true
+	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(90*time.Second).Should(BeTrue(),
+		"Failed to update deployment")
 
 	By("Asserting new pods from deployments are present")
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check pods from deployment %q in are present",
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check pods from deployment %q are present",
 		deploy.Definition.Name)
+
+	podOneSelector := metav1.ListOptions{
+		LabelSelector: fPodLabel,
+	}
 
 	Eventually(func() bool {
 		podOneList, err = pod.List(APIClient, fNamespace, podOneSelector)
@@ -330,49 +404,22 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 		fmt.Sprintf("Failed to find pod matching label %q in %q namespace", labelsWlkdOneString, fNamespace))
 
-	podOne = podOneList[0]
+	podOne := podOneList[0]
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one is %v on node %s",
 		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
 
 	By("Waiting until pod is running")
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Waiting 5 minutes for pod %q to be Ready",
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Waiting 10 minutes for pod %q to be Ready",
 		podOne.Definition.Name)
 
-	err = podOne.WaitUntilReady(5 * time.Minute)
+	err = podOne.WaitUntilReady(10 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Pod %s in %s namespace isn't running after 5 minutes",
+		fmt.Sprintf("Pod %s in %s namespace isn't running after 10 minutes",
 			podOne.Definition.Name, podOne.Definition.Namespace))
-
-	By("Reading data from CephFS backed storage")
-
-	readDataOneCmd := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Resetting command's output buffer")
-	podOneResult.Reset()
-
-	Eventually(func() bool {
-		podOneResult, err = podOne.ExecCommand(readDataOneCmd, "one")
-
-		if err != nil {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command on pod %s - %v",
-				podOne.Definition.Name, err)
-
-			return false
-		}
-
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(fmt.Sprintf("Command's result:\n\t%s",
-			&podOneResult))
-
-		return true
-	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
-		fmt.Sprintf("Failed to run command in pod %q", podOne.Definition.Name))
-
-	verificationRegex := `Deployment[[:space:]]+[[:alnum:]-_]+;Pod[[:space:]]+[[:alnum:]-_]+` +
-		`\([[:alnum:]-._]+\);Timestamp[[:space:]]+[[:digit:]]+`
-	Expect(podOneResult.String()).Should(MatchRegexp(verificationRegex), "Command's output doesn't match regex")
 }
 
+//nolint:unparam
 func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []string) {
 	By(fmt.Sprintf("Getting pod(s) matching selector %q", podLabel))
 
@@ -422,7 +469,7 @@ func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []
 				podOne.Definition.Name, podOne.Definition.Namespace))
 	}
 
-	By("Reading data from CephFS backed storage")
+	By("Reading data from persistent storage")
 
 	for _, podOne := range podMatchingSelector {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Reading data from within pod %q in %q namespace",
@@ -452,14 +499,56 @@ func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []
 	}
 }
 
+// DeployWorkflowCephFSPVC Verify workload with CephFS PVC.
+func DeployWorkflowCephFSPVC(ctx SpecContext) {
+	createWorkloadWithPVC("rds-cephfs-ns", "ocs-external-storagecluster-cephfs", "rds-cephfs-fs", "Filesystem")
+
+	verificationRegex := regexPartOne + regexPartTwo
+
+	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
+
+	verifyDataOnPVC("rds-cephfs-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
+}
+
 // VerifyCephFSPVC Verify workload with CephFS PVC.
 func VerifyCephFSPVC(ctx SpecContext) {
 	createWorkloadWithPVC("rds-cephfs-ns", "ocs-external-storagecluster-cephfs", "rds-cephfs-fs", "Filesystem")
+
+	verificationRegex := regexPartOne + regexPartTwo
+
+	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
+
+	verifyDataOnPVC("rds-cephfs-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
+
+	rescheduleWorkloadWithPVC("rds-cephfs-ns", labelsWlkdOneString, RDSCoreConfig.StorageODFDeployTwoSelector)
+
+	verifyDataOnPVC("rds-cephfs-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
+}
+
+// DeployWorkloadCephRBDPVC Verify workload with CephRBD PVC.
+func DeployWorkloadCephRBDPVC(ctx SpecContext) {
+	createWorkloadWithPVC("rds-cephrbd-ns", "ocs-external-storagecluster-ceph-rbd", "rds-cephrbd-fs", "Filesystem")
+
+	verificationRegex := regexPartOne + regexPartTwo
+
+	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
+
+	verifyDataOnPVC("rds-cephrbd-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
 }
 
 // VerifyCephRBDPVC Verify workload with CephRBD PVC.
 func VerifyCephRBDPVC(ctx SpecContext) {
 	createWorkloadWithPVC("rds-cephrbd-ns", "ocs-external-storagecluster-ceph-rbd", "rds-cephrbd-fs", "Filesystem")
+
+	verificationRegex := regexPartOne + regexPartTwo
+
+	cmdToRun := []string{"/bin/bash", "-c", "cat /opt/cephfs-pvc/demo-data-file"}
+
+	verifyDataOnPVC("rds-cephrbd-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
+
+	rescheduleWorkloadWithPVC("rds-cephrbd-ns", labelsWlkdOneString, RDSCoreConfig.StorageODFDeployTwoSelector)
+
+	verifyDataOnPVC("rds-cephrbd-ns", labelsWlkdOneString, verificationRegex, cmdToRun)
 }
 
 // VerifyDataOnCephFSPVC verify data on CephFS PVC.
