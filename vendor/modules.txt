@@ -117,8 +117,8 @@ github.com/chai2010/gettext-go/po
 # github.com/clarketm/json v1.17.1
 ## explicit
 github.com/clarketm/json
-# github.com/containernetworking/cni v1.2.0-rc1
-## explicit; go 1.18
+# github.com/containernetworking/cni v1.2.1-0.20240513144334-1e7858f9879a
+## explicit; go 1.21
 github.com/containernetworking/cni/libcni
 github.com/containernetworking/cni/pkg/invoke
 github.com/containernetworking/cni/pkg/ns
