@@ -77,6 +77,28 @@ func SetPowerModeAndWaitForMcpUpdate(perfProfile *nto.Builder, node nodes.Builde
 	return err
 }
 
+// SetCPUFreqAndWaitForMcpUpdate updates the performance profile with the given isolated and reserved
+// core frequencies and waits for the mcp update.
+func SetCPUFreqAndWaitForMcpUpdate(
+	perfProfile *nto.Builder, node nodes.Builder,
+	isolatedCPUFreq *performancev2.CPUfrequency,
+	reservedCPUFreq *performancev2.CPUfrequency) error {
+	glog.V(tsparams.LogLevel).Infof("Set Reserved and Isolated CPU Frequency on performance profile")
+
+	perfProfile.Definition.Spec.HardwareTuning.IsolatedCpuFreq = isolatedCPUFreq
+	perfProfile.Definition.Spec.HardwareTuning.ReservedCpuFreq = reservedCPUFreq
+
+	_, err := perfProfile.Update(true)
+	if err != nil {
+		return err
+	}
+
+	// work-around
+	time.Sleep(5 * time.Second)
+
+	return err
+}
+
 // DefineQoSTestPod defines test pod with given cpu and memory resources.
 func DefineQoSTestPod(namespace, nodeName, cpuReq, cpuLimit, memReq, memLimit string) (*pod.Builder, error) {
 	var err error
