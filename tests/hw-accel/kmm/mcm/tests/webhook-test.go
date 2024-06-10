@@ -159,11 +159,12 @@ var _ = Describe("KMM-HUB", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error building module spec")
 
 			By("Create ManagedClusterModule")
-			_, err = kmm.NewManagedClusterModuleBuilder(APIClient, "no-spoke-namespace",
+			mcm, err := kmm.NewManagedClusterModuleBuilder(APIClient, "no-spoke-namespace",
 				kmmparams.KmmHubOperatorNamespace).
 				WithModuleSpec(moduleSpec).
 				WithSelector(kmmparams.KmmHubSelector).Create()
-			Expect(err.Error()).To(ContainSubstring("is invalid: spec.spokeNamespace: Required value"))
+			Expect(mcm.Definition.Spec.SpokeNamespace).To(Equal(""))
+			Expect(err.Error()).To(ContainSubstring("admission webhook \"vmanagedclustermodule.kb.io\" denied the request"))
 		})
 	})
 })
