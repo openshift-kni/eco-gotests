@@ -98,7 +98,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
 	github.com/clarketm/json v1.17.1 // indirect
-	github.com/containernetworking/cni v1.2.0-rc1 // indirect
+	github.com/containernetworking/cni v1.2.1-0.20240513144334-1e7858f9879a // indirect
 	github.com/coreos/fcct v0.5.0 // indirect
 	github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
