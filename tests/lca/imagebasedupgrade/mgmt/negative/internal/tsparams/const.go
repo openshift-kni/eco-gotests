@@ -6,4 +6,7 @@ const (
 
 	// LabelImmutableSeedImage represents immutable-seed-image label that can be used for test cases selection.
 	LabelImmutableSeedImage = "immutable-seed-image"
+
+	// LabelStageTransition represents stage-transition label that can be used for test cases selection.
+	LabelStageTransition = "stage-transition"
 )
