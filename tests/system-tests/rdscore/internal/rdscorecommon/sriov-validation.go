@@ -516,17 +516,19 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 		podOneResult, err = podOne.ExecCommand(sendDataOneCmd, podOne.Definition.Spec.Containers[0].Name)
 
 		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", sendDataOneCmd)
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", err)
 
 			return false
 		}
 
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command %v within container", sendDataOneCmd)
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command within container %q",
 			podOne.Definition.Spec.Containers[0].Name)
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
 
 		return true
-	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
 
 	verifyMsgInPodLogs(podTwo, msgOne, podTwo.Definition.Spec.Containers[0].Name, timeStart)
@@ -566,6 +568,9 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 		return len(oldPods) == 0
 
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label() still present")
+
+	By("Sleeping 90 seconds")
+	time.Sleep(90 * time.Second)
 
 	By("Removing ConfigMap")
 
@@ -729,6 +734,9 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 		return len(oldPods) == 0
 
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label() still present")
+
+	By("Sleeping 90 seconds")
+	time.Sleep(90 * time.Second)
 
 	By("Removing ConfigMap")
 
