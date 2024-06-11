@@ -93,7 +93,7 @@ func SetCPUFreqAndWaitForMcpUpdate(
 		return err
 	}
 
-	// work-around
+	// Wait for CPU settings to be applied (work in progress)
 	time.Sleep(5 * time.Second)
 
 	return err
