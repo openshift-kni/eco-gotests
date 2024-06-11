@@ -72,9 +72,16 @@ WORKDIR /build/
 RUN git clone https://github.com/cdvultur/simple-kmod.git && \
    cd simple-kmod && \
    make all       KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
-   make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER && \
-   mkdir -p /opt/lib/modules/$KERNEL_VERSION && \
-   cp /lib/modules/$KERNEL_VERSION/simple-*.ko /lib/modules/$KERNEL_VERSION/modules.* /opt/lib/modules/$KERNEL_VERSION
+   make install   KVER=$KERNEL_VERSION KMODVER=$KMODVER
+
+FROM registry.redhat.io/ubi9/ubi-minimal
+ARG KERNEL_VERSION
+RUN microdnf -y install kmod
+
+COPY --from=builder /etc/driver-toolkit-release.json /etc/
+COPY --from=builder /lib/modules/$KERNEL_VERSION/simple-*.ko /opt/lib/modules/${KERNEL_VERSION}/
+COPY --from=builder /lib/modules/$KERNEL_VERSION/modules.* /opt/lib/modules/${KERNEL_VERSION}/
+RUN depmod -b /opt ${KERNEL_VERSION}
 
 RUN mkdir /firmware
 RUN echo -n "simple_kmod_firmware validation string" >> /firmware/simple_kmod_firmware.bin
