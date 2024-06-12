@@ -64,7 +64,7 @@ func VerifySRIOVConfig(ctx SpecContext) {
 		"for the sriovoperatorconfig object in namespace %s",
 		VCoreConfig.VCorePpLabelMap, vcoreparams.SRIOVNamespace)
 
-	sriovOperatorConfigObj, err = sriovOperatorConfigObj.WithInjector(false).
+	_, err = sriovOperatorConfigObj.WithInjector(false).
 		WithOperatorWebhook(false).
 		WithConfigDaemonNodeSelector(VCoreConfig.VCorePpLabelMap).Update()
 	Expect(err).ToNot(HaveOccurred(),
