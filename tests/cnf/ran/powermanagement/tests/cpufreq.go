@@ -19,15 +19,16 @@ import (
 var _ = Describe("CPU frequency tuning tests", Label(tsparams.LabelCPUFrequency), func() {
 	var (
 		perfProfile             *nto.Builder
-		desiredReservedCoreFreq = performancev2.CPUfrequency(2500002)
-		desiredIsolatedCoreFreq = performancev2.CPUfrequency(2200002)
+		desiredReservedCoreFreq = performancev2.CPUfrequency(2500001)
+		desiredIsolatedCoreFreq = performancev2.CPUfrequency(2200001)
 		originalIsolatedCPUFreq performancev2.CPUfrequency
 		originalReservedCPUFreq performancev2.CPUfrequency
 	)
 
 	BeforeEach(func() {
+		var err error
 
-		perfProfile, err := helper.GetPerformanceProfileWithCPUSet()
+		perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 
 		// Get isolated core ID
@@ -46,7 +47,7 @@ var _ = Describe("CPU frequency tuning tests", Label(tsparams.LabelCPUFrequency)
 		spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
 			isolatedCPUNumber)
 		consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
-		Expect(err).ToNot(HaveOccurred(), "Failed to %s", spokeCommand)
+		Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, consoleOut)
 		freqAsInt, err := strconv.Atoi(strings.TrimSpace(consoleOut))
 		Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
 		originalIsolatedCPUFreq = performancev2.CPUfrequency(freqAsInt)
@@ -55,7 +56,7 @@ var _ = Describe("CPU frequency tuning tests", Label(tsparams.LabelCPUFrequency)
 		spokeCommand = fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
 			reservedCPUNumber)
 		consoleOut, err = cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
-		Expect(err).ToNot(HaveOccurred(), "Failed to %s", spokeCommand)
+		Expect(err).ToNot(HaveOccurred(), "Failed to %s, error: %s", spokeCommand, consoleOut)
 		freqAsInt, err = strconv.Atoi(strings.TrimSpace(consoleOut))
 		Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
 		originalReservedCPUFreq = performancev2.CPUfrequency(freqAsInt)
@@ -69,7 +70,8 @@ var _ = Describe("CPU frequency tuning tests", Label(tsparams.LabelCPUFrequency)
 		Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 	})
 
-	FContext("Reserved Core Frequency Tuning Test", func() {
+	Context("Reserved Core Frequency Tuning Test", func() {
+
 		It("tests changing reserved and isolated CPU frequencies", func() {
 			By("patch performance profile to set core frequencies")
 			err := helper.SetCPUFreq(perfProfile,
