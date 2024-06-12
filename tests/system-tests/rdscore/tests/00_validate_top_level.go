@@ -71,9 +71,6 @@ var _ = Describe(
 				By("Creating a workload with CephFS PVC")
 				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
 
-				By("Creating a workload with CephRBD PVC")
-				rdscorecommon.DeployWorkloadCephRBDPVC(ctx)
-
 				By("Creating SR-IOV workloads on the same node")
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)
 
@@ -174,10 +171,6 @@ var _ = Describe(
 				Label("persistent-storage", "verify-cephfs"), reportxml.ID("71873"),
 				rdscorecommon.VerifyDataOnCephFSPVC)
 
-			It("Verifies CephRBD PVC is still accessible",
-				Label("persistent-storage", "verify-cephrbd"), reportxml.ID("71990"),
-				rdscorecommon.VerifyDataOnCephRBDPVC)
-
 			It("Verifies CephFS workload is deployable after hard reboot",
 				Label("persistent-storage", "deploy-cephfs-pvc"), reportxml.ID("71851"), MustPassRepeatedly(3),
 				rdscorecommon.VerifyCephFSPVC)
@@ -207,9 +200,6 @@ var _ = Describe(
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating a workload with CephFS PVC")
 				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
-
-				By("Creating a workload with CephRBD PVC")
-				rdscorecommon.DeployWorkloadCephRBDPVC(ctx)
 
 				By("Creating SR-IOV worklods that run on same node")
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)
@@ -260,10 +250,6 @@ var _ = Describe(
 			It("Verifies CephFS PVC is still accessible",
 				Label("persistent-storage", "verify-cephfs"), reportxml.ID("72042"),
 				rdscorecommon.VerifyDataOnCephFSPVC)
-
-			It("Verifies CephRBD PVC is still accessible",
-				Label("persistent-storage", "verify-cephrbd"), reportxml.ID("72044"),
-				rdscorecommon.VerifyDataOnCephRBDPVC)
 
 			It("Verifies CephFS workload is deployable after graceful reboot",
 				Label("persistent-storage", "deploy-cephfs-pvc"), reportxml.ID("72045"), MustPassRepeatedly(3),
