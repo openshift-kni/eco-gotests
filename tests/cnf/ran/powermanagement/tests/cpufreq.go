@@ -1,9 +1,11 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/cpuset"
 )
 
@@ -29,7 +32,6 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 		)
 
 		BeforeEach(func() {
-
 			perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
 			Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 
@@ -46,13 +48,10 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			reservedCPUNumber := reservedCPUsList[0]
 
 			By("getting original isolated core frequency")
-			originalIsolatedCPUFreq, err = getCPUFreq(isolatedCPUNumber)
-			Expect(err).ToNot(HaveOccurred(), "Failed to get original isolated core frequency")
+			originalIsolatedCPUFreq = getCPUFreq(isolatedCPUNumber)
 
 			By("getting original reserved core frequency")
-			originalReservedCPUFreq, err = getCPUFreq(reservedCPUNumber)
-			Expect(err).ToNot(HaveOccurred(), "Failed to get original reserved core frequency")
-
+			originalReservedCPUFreq = getCPUFreq(reservedCPUNumber)
 		})
 
 		AfterEach(func() {
@@ -62,7 +61,6 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 		})
 
 		When("reserved and isolated core frequency is configured via PerformanceProfile", func() {
-
 			It("sets the reserved and isolated core frequency correctly on the DUT", func() {
 
 				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.Spoke1OCPVersion, "4.16", "")
@@ -80,15 +78,30 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 	})
 
 // getCPUFreq gets the current frequency of a given CPU core.
-func getCPUFreq(coreID int) (performancev2.CPUfrequency, error) {
+func getCPUFreq(coreID int) performancev2.CPUfrequency {
 	spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
 		coreID)
-	cmdOut, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, spokeCommand)
-	Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, cmdOut)
-	freqAsInt, err := strconv.Atoi(strings.TrimSpace(cmdOut))
-	Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
 
-	cpuFreq := performancev2.CPUfrequency(freqAsInt)
+	var frequency int
 
-	return cpuFreq, err
+	// Retry if we cannot convert the frequency to an int, since this usually means malformed output. Errors in
+	// command execution are actual errors though and are returned immediately.
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, 10*time.Second, true, func(ctx context.Context) (bool, error) {
+			cmdOut, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, spokeCommand)
+			if err != nil {
+				return false, err
+			}
+
+			frequency, err = strconv.Atoi(strings.TrimSpace(cmdOut))
+			if err != nil {
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	Expect(err).ToNot(HaveOccurred(), "Failed to check cpu %d frequency", coreID)
+
+	return performancev2.CPUfrequency(frequency)
 }
