@@ -120,13 +120,13 @@ func SetCPUFreq(
 			consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
 
 			if err != nil {
-				return false, errors.New(fmt.Sprintf("Command failed: %v", consoleOut))
+				return false, fmt.Errorf("Command failed: %w", consoleOut)
 			}
 
 			currIsolatedCoreFreq, err := strconv.Atoi(strings.TrimSpace(consoleOut))
 
 			if err != nil {
-				return false, errors.New(fmt.Sprintf("string conversion failed failed: %v", err))
+				return false, fmt.Errorf("string conversion failed failed: %v", err)
 			}
 
 			if currIsolatedCoreFreq != int(*desiredIsolatedCoreFreq) {
@@ -155,12 +155,12 @@ func SetCPUFreq(
 			consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
 
 			if err != nil {
-				return false, errors.New(fmt.Sprintf("command failed: %v", consoleOut))
+				return false, fmt.Errorf("command failed: %v", consoleOut)
 			}
 
 			currReservedFreq, err := strconv.Atoi(strings.TrimSpace(consoleOut))
 			if err != nil {
-				return false, errors.New(fmt.Sprintf("string conversion failed failed: %v", err))
+				return false, fmt.Errorf("string conversion failed failed: %v", err)
 			}
 
 			if currReservedFreq != int(*desiredReservedCoreFreq) {

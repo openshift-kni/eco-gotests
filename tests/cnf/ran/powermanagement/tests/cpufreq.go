@@ -31,13 +31,13 @@ var _ = Describe("CPU frequency tuning tests", Label(tsparams.LabelCPUFrequency)
 		perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 
-		// Get isolated core ID
+		By("getting isolated core ID")
 		isolatedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Isolated))
 		Expect(err).ToNot(HaveOccurred(), "Failed to get isolated cpu set")
 		isolatedCPUsList := isolatedCPUSet.List()
 		isolatedCPUNumber := isolatedCPUsList[0]
 
-		// Get reserved core ID
+		By("getting reserved core ID")
 		reservedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Reserved))
 		Expect(err).ToNot(HaveOccurred(), "Failed to get reserved cpu set")
 		reservedCPUsList := reservedCPUSet.List()
@@ -65,15 +65,13 @@ var _ = Describe("CPU frequency tuning tests", Label(tsparams.LabelCPUFrequency)
 
 	AfterEach(func() {
 		By("Reverts the CPU frequencies to the original setting")
-		err := helper.SetCPUFreq(perfProfile,
-			&originalIsolatedCPUFreq, &originalReservedCPUFreq)
+		err := helper.SetCPUFreq(perfProfile, &originalIsolatedCPUFreq, &originalReservedCPUFreq)
 		Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 	})
 
 	Context("Reserved Core Frequency Tuning Test", func() {
 
-		It("tests changing reserved and isolated CPU frequencies", func() {
-			By("patch performance profile to set core frequencies")
+		It("tests changing reserved and isolated CPU frequencies using performance profile to set core frequencies", func() {
 			err := helper.SetCPUFreq(perfProfile,
 				&desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
 			Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
