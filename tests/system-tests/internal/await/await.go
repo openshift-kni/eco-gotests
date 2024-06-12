@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
-
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -190,23 +188,19 @@ func WaitUntilNodeIsUnreachable(hostname string, timeout time.Duration) error {
 	}
 }
 
-// WaitUntilNewMetalLbDaemonSetIsRunning waits until the new metalLb daemonset is in Ready state.
-func WaitUntilNewMetalLbDaemonSetIsRunning(apiClient *clients.Settings, timeout time.Duration) error {
-	glog.V(90).Infof("Verifying if metalLb daemonset %s is running in namespace %s",
-		systemtestsparams.MetalLbDaemonSetName, systemtestsparams.MetalLbOperatorNamespace)
+// WaitUntilNewDaemonSetIsRunning waits until the new daemonset is in Ready state.
+func WaitUntilNewDaemonSetIsRunning(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
+	glog.V(90).Infof("Verifying if daemonset %s is running in namespace %s", name, nsname)
 
-	var metalLbDs *daemonset.Builder
+	var daemonsetObj *daemonset.Builder
 
 	var err error
 
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			metalLbDs, err = daemonset.Pull(apiClient,
-				systemtestsparams.MetalLbDaemonSetName,
-				systemtestsparams.MetalLbOperatorNamespace)
+			daemonsetObj, err = daemonset.Pull(apiClient, name, nsname)
 			if err != nil {
-				glog.V(90).Infof("Error to pull daemonset %s namespace %s, retry",
-					systemtestsparams.MetalLbDaemonSetName, systemtestsparams.MetalLbOperatorNamespace)
+				glog.V(90).Infof("Error to pull daemonset %s in namespace %s, retry", name, nsname)
 
 				return false, nil
 			}
@@ -218,13 +212,42 @@ func WaitUntilNewMetalLbDaemonSetIsRunning(apiClient *clients.Settings, timeout 
 		return err
 	}
 
-	glog.V(90).Infof("Waiting until the new metalLb daemonset is in Ready state.")
+	glog.V(90).Infof("Waiting until the new daemonset %s in namespace %s is in Ready state.", name, nsname)
 
-	if metalLbDs.IsReady(timeout) {
+	if daemonsetObj.IsReady(timeout) {
 		return nil
 	}
 
-	return fmt.Errorf("metallb daemonSet is not ready")
+	return fmt.Errorf("daemonSet %s in namespace %s is not ready", name, nsname)
+}
+
+// WaitUntilDaemonSetDeleted waits until the daemonset is deleted.
+func WaitUntilDaemonSetDeleted(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
+	glog.V(90).Infof("Wait until daemonset %s in namespace %s is deleted", name, nsname)
+
+	var err error
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := daemonset.Pull(apiClient, name, nsname)
+			if err == nil {
+				glog.V(90).Infof("daemonset %s in namespace %s still exists, retry", name, nsname)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return err
+	}
+
+	if err == nil {
+		return nil
+	}
+
+	return fmt.Errorf("daemonSet %s in namespace %s is not deleted during timeout %t", name, nsname, timeout)
 }
 
 // WaitForThePodReplicasCountInNamespace waiting for the specific pod replicas count in

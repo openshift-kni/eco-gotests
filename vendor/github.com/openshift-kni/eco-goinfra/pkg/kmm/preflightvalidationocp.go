@@ -139,6 +139,12 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 	glog.V(100).Infof("Pulling existing preflightvalidationocp name % under namespace %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("preflightvalidation 'apiClient' cannot be empty")
+	}
+
 	builder := PreflightValidationOCPBuilder{
 		apiClient: apiClient,
 		Definition: &moduleV1Beta1.PreflightValidationOCP{
@@ -153,16 +159,20 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 		glog.V(100).Infof("The name of the preflightvalidationocp is empty")
 
 		builder.errorMsg = "preflightvalidationocp 'name' cannot be empty"
+
+		return &builder, fmt.Errorf(builder.errorMsg)
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the preflightvalidationocp is empty")
 
 		builder.errorMsg = "preflightvalidationocp 'nsname' cannot be empty"
+
+		return &builder, fmt.Errorf(builder.errorMsg)
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("preflightvalidationocp object %s doens't exist in namespace %s",
+		return nil, fmt.Errorf("preflightvalidationocp object %s doesn't exist in namespace %s",
 			name, nsname)
 	}
 
@@ -183,6 +193,9 @@ func (builder *PreflightValidationOCPBuilder) Create() (*PreflightValidationOCPB
 	var err error
 	if !builder.Exists() {
 		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
+		}
 	}
 
 	return builder, err
@@ -198,6 +211,10 @@ func (builder *PreflightValidationOCPBuilder) Update() (*PreflightValidationOCPB
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -227,16 +244,17 @@ func (builder *PreflightValidationOCPBuilder) Delete() (*PreflightValidationOCPB
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("preflightvalidationocp cannot be deleted because it does not exist")
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return builder, err
+		return builder, fmt.Errorf("cannot delete preflightvalidationocp: %w", err)
 	}
 
 	builder.Object = nil
+	builder.Definition.ResourceVersion = ""
 
 	return builder, err
 }

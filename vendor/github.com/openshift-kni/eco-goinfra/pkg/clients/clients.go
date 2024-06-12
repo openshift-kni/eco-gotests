@@ -14,6 +14,7 @@ import (
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	kedav1alpha1 "github.com/kedacore/keda-olm-operator/apis/keda/v1alpha1"
+	kedav2v1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	clov1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
@@ -54,6 +55,7 @@ import (
 	clientCguFake "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/fake"
 	clientCguV1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1"
 
+	clientMachineConfigFake "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/fake"
 	clientMachineConfigV1 "github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1"
 
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
@@ -386,6 +388,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := kedav2v1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -415,7 +421,7 @@ func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet := &Settings{}
 
 	var k8sClientObjects, genericClientObjects, plumbingObjects, srIovObjects,
-		veleroClientObjects, cguObjects, ocmObjects []runtime.Object
+		veleroClientObjects, cguObjects, ocmObjects, mcoObjects []runtime.Object
 
 	//nolint:varnamelen
 	for _, v := range tcp.K8sMockObjects {
@@ -463,6 +469,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *corev1.Event:
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *netv1.NetworkPolicy:
+			k8sClientObjects = append(k8sClientObjects, v)
+		case *appsv1.DaemonSet:
 			k8sClientObjects = append(k8sClientObjects, v)
 		// Generic Client Objects
 		case *bmhv1alpha1.BareMetalHost:
@@ -525,6 +533,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *kedav1alpha1.KedaController:
 			genericClientObjects = append(genericClientObjects, v)
+		case *kedav2v1alpha1.TriggerAuthentication:
+			genericClientObjects = append(genericClientObjects, v)
 		case *agentInstallV1Beta1.AgentServiceConfig:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
@@ -541,6 +551,9 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *hiveV1.HiveConfig:
 			genericClientObjects = append(genericClientObjects, v)
 		case *hiveV1.ClusterImageSet:
+			genericClientObjects = append(genericClientObjects, v)
+		// KMM Client Objects
+		case *moduleV1Beta1.PreflightValidationOCP:
 			genericClientObjects = append(genericClientObjects, v)
 		// Velero Client Objects
 		case *velerov1.Backup:
@@ -568,6 +581,9 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		// OCM Cluster Client Objects
 		case *clusterv1.ManagedCluster:
 			ocmObjects = append(ocmObjects, v)
+		// MCO Client Objects
+		case *mcv1.MachineConfig:
+			mcoObjects = append(mcoObjects, v)
 		}
 	}
 
@@ -577,9 +593,12 @@ func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet.AppsV1Interface = clientSet.K8sClient.AppsV1()
 	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
 	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
+	clientSet.StorageV1Interface = clientSet.K8sClient.StorageV1()
 	clientSet.ClientSrIov = clientSrIovFake.NewSimpleClientset(srIovObjects...)
 	clientSet.ClusterClient = clusterClientFake.NewSimpleClientset(ocmObjects...)
 	clientSet.ClusterV1Interface = clientSet.ClusterClient.ClusterV1()
+	clientSet.MachineconfigurationV1Interface = clientMachineConfigFake.NewSimpleClientset(
+		mcoObjects...).MachineconfigurationV1()
 
 	// Assign the fake multi-networkpolicy clientset to the clientSet
 	// Note: We are not entirely sure that these functions actually work as expected.

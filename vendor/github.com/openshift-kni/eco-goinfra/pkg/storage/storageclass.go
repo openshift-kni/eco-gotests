@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -11,6 +12,7 @@ import (
 	storageV1 "k8s.io/api/storage/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // ClassBuilder provides struct for storageclass object containing
@@ -34,6 +36,12 @@ func NewClassBuilder(apiClient *clients.Settings, name, provisioner string) *Cla
 	glog.V(100).Infof(
 		"Initializing new storageclass structure with the following params: "+
 			"name: %s, provisioner: %s", name, provisioner)
+
+	if apiClient == nil {
+		glog.V(100).Info("StorageClass apiClient cannot be nil")
+
+		return nil
+	}
 
 	builder := ClassBuilder{
 		apiClient: apiClient,
@@ -160,6 +168,42 @@ func (builder *ClassBuilder) WithOptions(options ...AdditionalOptions) *ClassBui
 	return builder
 }
 
+// PullClass pulls an existing storage class into a ClassBuilder struct.
+func PullClass(apiClient *clients.Settings, name string) (*ClassBuilder, error) {
+	glog.V(100).Infof("Pulling existing storageclass %s from cluster", name)
+
+	if apiClient == nil {
+		glog.V(100).Info("The storageclass apiClient is nil")
+
+		return nil, fmt.Errorf("storageclass 'apiClient' cannot be empty")
+	}
+
+	builder := &ClassBuilder{
+		apiClient: apiClient,
+		Definition: &storageV1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("The name of the storageclass is empty")
+
+		return nil, fmt.Errorf("storageclass 'name' cannot be empty")
+	}
+
+	if !builder.Exists() {
+		glog.V(100).Infof("storageclass object %s does not exist", name)
+
+		return nil, fmt.Errorf("storageclass object %s does not exist", name)
+	}
+
+	builder.Definition = builder.Object
+
+	return builder, nil
+}
+
 // Exists checks whether the given storageclass exists.
 func (builder *ClassBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -217,6 +261,52 @@ func (builder *ClassBuilder) Delete() error {
 	return err
 }
 
+// DeleteAndWait deletes the StorageClass and waits up to timeout until it has been removed.
+func (builder *ClassBuilder) DeleteAndWait(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof(
+		"Deleting StorageClass %s and waiting up to %s until it is removed", builder.Definition.Name, timeout)
+
+	err := builder.Delete()
+	if err != nil {
+		return err
+	}
+
+	return builder.WaitUntilDeleted(timeout)
+}
+
+// WaitUntilDeleted waits for the duration of timeout or until the StorageClass has been deleted.
+func (builder *ClassBuilder) WaitUntilDeleted(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Waiting up to %s until StorageClass %s is deleted", timeout, builder.Definition.Name)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.StorageClasses().Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			if err == nil {
+				glog.V(100).Infof("StorageClass %s still present", builder.Definition.Name)
+
+				return false, nil
+			}
+
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("StorageClass %s is gone", builder.Definition.Name)
+
+				return true, nil
+			}
+
+			glog.V(100).Infof("failed to get StorageClass %s", builder.Definition.Name)
+
+			return false, err
+		})
+}
+
 // Update renovates the existing storageclass object with the storageclass definition in builder.
 func (builder *ClassBuilder) Update(force bool) (*ClassBuilder, error) {
 	if valid, err := builder.validate(); !valid {
@@ -237,7 +327,9 @@ func (builder *ClassBuilder) Update(force bool) (*ClassBuilder, error) {
 		return nil, fmt.Errorf(builder.errorMsg)
 	}
 
-	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	var err error
+	builder.Object, err = builder.apiClient.StorageClasses().
+		Update(context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	if err != nil {
 		if force {
@@ -259,10 +351,6 @@ func (builder *ClassBuilder) Update(force bool) (*ClassBuilder, error) {
 
 			return builder.Create()
 		}
-	}
-
-	if err == nil {
-		builder.Object = builder.Definition
 	}
 
 	return builder, err
