@@ -82,7 +82,7 @@ func SetPowerModeAndWaitForMcpUpdate(perfProfile *nto.Builder, node nodes.Builde
 // SetCPUFreq updates the performance profile with the given isolated and reserved
 // core frequencies and verifies that the frequencies have been updated on the spoke cluster.
 func SetCPUFreq(
-	perfProfile *nto.Builder, node nodes.Builder,
+	perfProfile *nto.Builder,
 	desiredIsolatedCPUFreq *performancev2.CPUfrequency,
 	desiredReservedCPUFreq *performancev2.CPUfrequency) error {
 	glog.V(tsparams.LogLevel).Infof("Set Reserved and Isolated CPU Frequency on performance profile")
@@ -97,7 +97,7 @@ func SetCPUFreq(
 	}
 
 	// Wait for CPU settings to be applied (work in progress)
-	// time.Sleep(5 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	// Determine isolated CPU number from IsolatedCPUset
 	isolatedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Isolated))
