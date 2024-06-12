@@ -11,9 +11,9 @@ const (
 	LabelSuite = "powermanagement"
 	// LabelPowerSaveTestCases is the label for a particular test case.
 	LabelPowerSaveTestCases = "powersave"
-	// PowerSaveTimeout is the timeout being used in powersave tests.
+	// LabelCPUFrequency is the label for frequency tuning test cases.
 	LabelCPUFrequency = "cpu_frequency"
-	// LabelCPUFrequency is the label for CPU frequency tuning tests
+	// PowerSaveTimeout is the timeout value for power save tests.
 	PowerSaveTimeout = 10 * time.Minute
 	// TestingNamespace is the tests namespace.
 	TestingNamespace = "ran-test"

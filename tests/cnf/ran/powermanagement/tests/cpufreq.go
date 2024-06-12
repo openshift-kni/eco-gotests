@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"k8s.io/utils/cpuset"
 	"strconv"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
+	"k8s.io/utils/cpuset"
 )
 
 var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelCPUFrequency), func() {
