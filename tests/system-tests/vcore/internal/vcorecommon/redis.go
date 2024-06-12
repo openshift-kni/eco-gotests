@@ -68,7 +68,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		imageURL := fmt.Sprintf("%s/%s", redisImageRepository, redisImageName)
 
 		isDisconnected, err := platform.IsDisconnectedDeployment(APIClient)
-		Expect(err).ToNot(HaveOccurred(), "failed to detect t a deployment type")
+		Expect(err).ToNot(HaveOccurred(), "failed to detect a deployment type")
 
 		if !isDisconnected {
 			glog.V(vcoreparams.VCoreLogLevel).Info("The connected deployment type was detected, " +

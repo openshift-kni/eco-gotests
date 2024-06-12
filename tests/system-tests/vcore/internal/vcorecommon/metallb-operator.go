@@ -117,7 +117,7 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 // VerifyMetaLBSuite container that contains tests for MetalLB verification.
 func VerifyMetaLBSuite() {
 	Describe(
-		"NMState validation",
+		"MetalLB validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
