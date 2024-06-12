@@ -225,9 +225,7 @@ func WaitUntilNewDaemonSetIsRunning(apiClient *clients.Settings, name, nsname st
 func WaitUntilDaemonSetDeleted(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
 	glog.V(90).Infof("Wait until daemonset %s in namespace %s is deleted", name, nsname)
 
-	var err error
-
-	err = wait.PollUntilContextTimeout(
+	err := wait.PollUntilContextTimeout(
 		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := daemonset.Pull(apiClient, name, nsname)
 			if err == nil {
@@ -247,7 +245,7 @@ func WaitUntilDaemonSetDeleted(apiClient *clients.Settings, name, nsname string,
 		return nil
 	}
 
-	return fmt.Errorf("daemonSet %s in namespace %s is not deleted during timeout %t", name, nsname, timeout)
+	return fmt.Errorf("daemonSet %s in namespace %s is not deleted during timeout %v", name, nsname, timeout)
 }
 
 // WaitForThePodReplicasCountInNamespace waiting for the specific pod replicas count in

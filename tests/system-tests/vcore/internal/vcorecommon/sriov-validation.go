@@ -2,11 +2,12 @@ package vcorecommon
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
-	"time"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
@@ -59,30 +60,16 @@ func VerifySRIOVConfig(ctx SpecContext) {
 		fmt.Sprintf("failed to load sriovoperatorconfig object from namespace %s due to %v",
 			vcoreparams.SRIOVNamespace, err))
 
-	glog.V(100).Infof("Disable Injector for the sriovoperatorconfig object in namespace %s",
-		vcoreparams.SRIOVNamespace)
-
-	sriovOperatorConfigObj, err = sriovOperatorConfigObj.WithInjector(false).Update()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("failed to disable Injector for the sriovoperatorconfig object in namespace %s due to %v",
-			vcoreparams.SRIOVNamespace, err))
-
-	glog.V(100).Infof("Disable OperatorWebhook for the sriovoperatorconfig object in namespace %s",
-		vcoreparams.SRIOVNamespace)
-
-	sriovOperatorConfigObj, err = sriovOperatorConfigObj.WithOperatorWebhook(false).Update()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("failed to disable OperatorWebhook for the sriovoperatorconfig object in namespace %s due to %v",
-			vcoreparams.SRIOVNamespace, err))
-
-	glog.V(100).Infof("Setup a node selector value %t for the sriovoperatorconfig object in namespace %s",
+	glog.V(100).Infof("Disable Injector and OperatorWebhook and set a node selector value %v "+
+		"for the sriovoperatorconfig object in namespace %s",
 		VCoreConfig.VCorePpLabelMap, vcoreparams.SRIOVNamespace)
 
-	sriovOperatorConfigObj, err = sriovOperatorConfigObj.WithConfigDaemonNodeSelector(VCoreConfig.VCorePpLabelMap).Update()
+	sriovOperatorConfigObj, err = sriovOperatorConfigObj.WithInjector(false).
+		WithOperatorWebhook(false).
+		WithConfigDaemonNodeSelector(VCoreConfig.VCorePpLabelMap).Update()
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("failed to set node selector value %v "+
-			"for the sriovoperatorconfig object in namespace %s due to %v",
-			VCoreConfig.VCorePpLabelMap, vcoreparams.SRIOVNamespace, err))
+		fmt.Sprintf("failed to change the sriovoperatorconfig object in namespace %s configuration due to %v",
+			vcoreparams.SRIOVNamespace, err))
 
 	glog.V(100).Info("Wait until Webhook and Injector pods are un-deployed")
 
@@ -198,9 +185,9 @@ func VerifySRIOVSuite() {
 				Label("debug"), VerifySRIOVNamespaceExists)
 
 			It("Verifies SR-IOV Operator deployment succeeded",
-				Label("sriov"), reportxml.ID("60041"), VerifySRIOVDeployment)
+				Label("debug"), reportxml.ID("60041"), VerifySRIOVDeployment)
 
 			It("Verifies SR-IOV configuration procedure succeeded",
-				Label("sriov"), reportxml.ID("60088"), VerifySRIOVConfig)
+				Label("debug"), reportxml.ID("60088"), VerifySRIOVConfig)
 		})
 }
