@@ -35,7 +35,7 @@ var (
 var _ = Describe(
 	"HttpWebserverSetup",
 	ContinueOnFailure, Ordered,
-	Label(tsparams.LabelHTTPWebserverSetup), func() {
+	Label(tsparams.LabelHTTPWebserverSetup), Label("disruptive"), func() {
 		Describe("Skipping TLS Verification", Ordered, Label(tsparams.LabelHTTPWebserverSetup), func() {
 			BeforeAll(func() {
 
