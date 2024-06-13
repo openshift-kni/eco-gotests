@@ -66,6 +66,48 @@ var _ = Describe(
 					tsparams.IbuCguNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete upgrade cgu on target hub cluster")
 			})
+
+			By("Creating, enabling rollback CGU and waiting for CGU status to report completed", func() {
+				rollbackCguBuilder := cgu.NewCguBuilder(cnfinittools.TargetHubAPIClient,
+					tsparams.RollbackCguName, tsparams.IbuCguNamespace, 1).
+					WithCluster(tsparams.TargetSnoClusterName).
+					WithManagedPolicy(tsparams.RollbackPolicyName).
+					WithCanary(tsparams.TargetSnoClusterName)
+				rollbackCguBuilder.Definition.Spec.Enable = ptr.To(true)
+
+				rollbackCguBuilder, err := rollbackCguBuilder.Create()
+				Expect(err).ToNot(HaveOccurred(), "Failed to create rollback CGU.")
+
+				_, err = rollbackCguBuilder.WaitUntilComplete(35 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Rollback CGU did not complete in time.")
+			})
+
+			By("Creating, enabling ibu finalize CGU and waiting for CGU status to report completed", func() {
+				finalizeCguBuilder := cgu.NewCguBuilder(cnfinittools.TargetHubAPIClient,
+					tsparams.FinalizeCguName, tsparams.IbuCguNamespace, 1).
+					WithCluster(tsparams.TargetSnoClusterName).
+					WithManagedPolicy(tsparams.FinalizePolicyName).
+					WithCanary(tsparams.TargetSnoClusterName)
+				finalizeCguBuilder.Definition.Spec.Enable = ptr.To(true)
+
+				finalizeCguBuilder, err := finalizeCguBuilder.Create()
+				Expect(err).ToNot(HaveOccurred(), "Failed to create finalize CGU.")
+
+				_, err = finalizeCguBuilder.WaitUntilComplete(5 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Finalize CGU did not complete in time.")
+			})
+
+			By("Deleting rollback cgu created on target hub cluster", func() {
+				err := cnfhelper.DeleteIbuTestCguOnTargetHub(cnfinittools.TargetHubAPIClient, tsparams.RollbackCguName,
+					tsparams.IbuCguNamespace)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete rollback cgu on target hub cluster")
+			})
+
+			By("Deleting finalize cgu created on target hub cluster", func() {
+				err := cnfhelper.DeleteIbuTestCguOnTargetHub(cnfinittools.TargetHubAPIClient, tsparams.FinalizeCguName,
+					tsparams.IbuCguNamespace)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete finalize cgu on target hub cluster")
+			})
 		})
 
 		It("Upgrade end to end", reportxml.ID("68954"), func() {
