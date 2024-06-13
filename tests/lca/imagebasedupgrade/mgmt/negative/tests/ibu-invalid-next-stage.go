@@ -58,4 +58,14 @@ var _ = Describe(
 				"error: ibu seedimage updated with wrong next stage")
 
 		})
+
+		It("fails because from Idle it's not possible to move to Upgrade stage", reportxml.ID("71739"), func() {
+
+			By("Setting the IBU stage to Upgrade")
+
+			_, err := ibu.WithStage("Upgrade").Update()
+			Expect(err.Error()).To(ContainSubstring("the stage transition is not permitted"),
+				"error: ibu seedimage updated with wrong next stage")
+
+		})
 	})
