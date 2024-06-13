@@ -45,22 +45,12 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			reservedCPUNumber := reservedCPUsList[0]
 
 			By("getting original isolated core frequency")
-			spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
-				isolatedCPUNumber)
-			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
-			Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, cmdOut)
-			freqAsInt, err := strconv.Atoi(strings.TrimSpace(cmdOut))
-			Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
-			originalIsolatedCPUFreq = performancev2.CPUfrequency(freqAsInt)
+			originalIsolatedCPUFreq, err = getCPUFreq(isolatedCPUNumber)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get original isolated core frequency")
 
 			By("getting original reserved core frequency")
-			spokeCommand = fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
-				reservedCPUNumber)
-			cmdOut, err = cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
-			Expect(err).ToNot(HaveOccurred(), "Failed to %s, error: %s", spokeCommand, cmdOut)
-			freqAsInt, err = strconv.Atoi(strings.TrimSpace(cmdOut))
-			Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
-			originalReservedCPUFreq = performancev2.CPUfrequency(freqAsInt)
+			originalReservedCPUFreq, err = getCPUFreq(reservedCPUNumber)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get original reserved core frequency")
 
 		})
 
@@ -79,3 +69,17 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			})
 		})
 	})
+
+// getCPUFreq gets the current frequency of a given CPU core.
+func getCPUFreq(coreID int) (performancev2.CPUfrequency, error) {
+	spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
+		coreID)
+	cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+	Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, cmdOut)
+	freqAsInt, err := strconv.Atoi(strings.TrimSpace(cmdOut))
+	Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
+
+	cpuFreq := performancev2.CPUfrequency(freqAsInt)
+
+	return cpuFreq, err
+}
