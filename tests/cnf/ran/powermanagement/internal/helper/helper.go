@@ -117,13 +117,13 @@ func SetCPUFreq(
 				return false, err
 			}
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
-			consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
 
 			if err != nil {
-				return false, fmt.Errorf("command failed: %s", consoleOut)
+				return false, fmt.Errorf("command failed: %s", cmdOut)
 			}
 
-			currIsolatedCoreFreq, err := strconv.Atoi(strings.TrimSpace(consoleOut))
+			currIsolatedCoreFreq, err := strconv.Atoi(strings.TrimSpace(cmdOut))
 
 			if err != nil {
 				return false, fmt.Errorf("string conversion failed failed: %w", err)
@@ -152,13 +152,13 @@ func SetCPUFreq(
 	err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 1*time.Minute, true,
 		func(ctx context.Context) (bool, error) {
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
-			consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
 
 			if err != nil {
-				return false, fmt.Errorf("command failed: %s", consoleOut)
+				return false, fmt.Errorf("command failed: %s", cmdOut)
 			}
 
-			currReservedFreq, err := strconv.Atoi(strings.TrimSpace(consoleOut))
+			currReservedFreq, err := strconv.Atoi(strings.TrimSpace(cmdOut))
 			if err != nil {
 				return false, fmt.Errorf("string conversion failed failed: %w", err)
 			}

@@ -47,18 +47,18 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			By("getting original isolated core frequency")
 			spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
 				isolatedCPUNumber)
-			consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
-			Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, consoleOut)
-			freqAsInt, err := strconv.Atoi(strings.TrimSpace(consoleOut))
+			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+			Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, cmdOut)
+			freqAsInt, err := strconv.Atoi(strings.TrimSpace(cmdOut))
 			Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
 			originalIsolatedCPUFreq = performancev2.CPUfrequency(freqAsInt)
 
 			By("getting original reserved core frequency")
 			spokeCommand = fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
 				reservedCPUNumber)
-			consoleOut, err = cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
-			Expect(err).ToNot(HaveOccurred(), "Failed to %s, error: %s", spokeCommand, consoleOut)
-			freqAsInt, err = strconv.Atoi(strings.TrimSpace(consoleOut))
+			cmdOut, err = cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+			Expect(err).ToNot(HaveOccurred(), "Failed to %s, error: %s", spokeCommand, cmdOut)
+			freqAsInt, err = strconv.Atoi(strings.TrimSpace(cmdOut))
 			Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")
 			originalReservedCPUFreq = performancev2.CPUfrequency(freqAsInt)
 
