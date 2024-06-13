@@ -130,7 +130,7 @@ func SetCPUFreq(
 			}
 
 			if currIsolatedCoreFreq != int(*desiredIsolatedCoreFreq) {
-				return false, errors.New("current Isolated CPU Frequency does not match expected frequency")
+				return false, fmt.Errorf("current Isolated CPU Frequency does not match expected frequency")
 			}
 
 			return true, nil
@@ -164,7 +164,7 @@ func SetCPUFreq(
 			}
 
 			if currReservedFreq != int(*desiredReservedCoreFreq) {
-				return false, errors.New("current Reserved CPU Frequency does not match expected frequency")
+				return false, fmt.Errorf("current Reserved CPU Frequency does not match expected frequency")
 			}
 
 			return true, nil
