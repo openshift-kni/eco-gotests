@@ -72,8 +72,7 @@ var _ = Describe("CPU frequency tuning tests", Label(tsparams.LabelCPUFrequency)
 	Context("Reserved Core Frequency Tuning Test", func() {
 
 		It("tests changing reserved and isolated CPU frequencies using performance profile to set core frequencies", func() {
-			err := helper.SetCPUFreq(perfProfile,
-				&desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
+			err := helper.SetCPUFreq(perfProfile, &desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
 			Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 
 		})

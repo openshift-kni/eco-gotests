@@ -120,7 +120,7 @@ func SetCPUFreq(
 			consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
 
 			if err != nil {
-				return false, fmt.Errorf("command failed: %q", consoleOut)
+				return false, fmt.Errorf("command failed: %s", consoleOut)
 			}
 
 			currIsolatedCoreFreq, err := strconv.Atoi(strings.TrimSpace(consoleOut))
@@ -130,7 +130,7 @@ func SetCPUFreq(
 			}
 
 			if currIsolatedCoreFreq != int(*desiredIsolatedCoreFreq) {
-				return false, fmt.Errorf("current Isolated CPU Frequency does not match expected frequency")
+				return false, nil
 			}
 
 			return true, nil
@@ -155,7 +155,7 @@ func SetCPUFreq(
 			consoleOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
 
 			if err != nil {
-				return false, fmt.Errorf("command failed: %q", consoleOut)
+				return false, fmt.Errorf("command failed: %s", consoleOut)
 			}
 
 			currReservedFreq, err := strconv.Atoi(strings.TrimSpace(consoleOut))
@@ -164,7 +164,7 @@ func SetCPUFreq(
 			}
 
 			if currReservedFreq != int(*desiredReservedCoreFreq) {
-				return false, fmt.Errorf("current Reserved CPU Frequency does not match expected frequency")
+				return false, nil
 			}
 
 			return true, nil
