@@ -70,9 +70,9 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 		})
 
-		Context("Reserved Core Frequency Tuning Test", func() {
+		When("reserved and isolated core frequency is configured via PerformanceProfile", func() {
 
-			It("changes reserved and isolated CPU frequencies using performance profile to set core frequencies", func() {
+			It("sets the reserved and isolated core frequency correctly on the DUT", func() {
 				err := helper.SetCPUFreq(perfProfile, &desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
 				Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 
