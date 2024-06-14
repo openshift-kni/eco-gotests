@@ -147,14 +147,8 @@ func SetCPUFreq(
 				return false, nil
 			}
 
-			return true, nil
-		})
-
-	// Wait for Reserved CPU Frequency to be updated.
-	err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 1*time.Minute, true,
-		func(ctx context.Context) (bool, error) {
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
-			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommandReservedCPUs)
+			cmdOut, err = cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommandReservedCPUs)
 
 			if err != nil {
 				return false, fmt.Errorf("command failed: %s", cmdOut)
