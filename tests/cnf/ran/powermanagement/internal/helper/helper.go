@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -90,8 +89,6 @@ func SetCPUFreq(
 	desiredReservedCoreFreq *performancev2.CPUfrequency) error {
 	glog.V(tsparams.LogLevel).Infof("Set Reserved and Isolated CPU Frequency on performance profile")
 
-	//perfProfile, err := GetPerformanceProfileWithCPUSet()
-
 	// Update PerfProfile with new CPU Frequencies
 	perfProfile.Definition.Spec.HardwareTuning.IsolatedCpuFreq = desiredIsolatedCoreFreq
 	perfProfile.Definition.Spec.HardwareTuning.ReservedCpuFreq = desiredReservedCoreFreq
@@ -162,8 +159,6 @@ func SetCPUFreq(
 			if currReservedFreq != int(*desiredReservedCoreFreq) {
 				return false, nil
 			}
-
-			log.Println("****NEW RCF: %v   ******", currReservedFreq)
 
 			return true, nil
 		})

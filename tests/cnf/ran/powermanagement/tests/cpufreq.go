@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -53,8 +52,6 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			originalReservedCPUFreq, err = getCPUFreq(reservedCPUNumber)
 			Expect(err).ToNot(HaveOccurred(), "Failed to get original reserved core frequency")
 
-			log.Println("****Original RCF: %v", originalReservedCPUFreq)
-
 		})
 
 		AfterEach(func() {
@@ -63,7 +60,7 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 		})
 
-		FWhen("reserved and isolated core frequency is configured via PerformanceProfile", func() {
+		When("reserved and isolated core frequency is configured via PerformanceProfile", func() {
 
 			It("sets the reserved and isolated core frequency correctly on the DUT", func() {
 				err := helper.SetCPUFreq(perfProfile, &desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
