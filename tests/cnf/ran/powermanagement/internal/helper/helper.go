@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"strings"
@@ -89,6 +90,8 @@ func SetCPUFreq(
 	desiredReservedCoreFreq *performancev2.CPUfrequency) error {
 	glog.V(tsparams.LogLevel).Infof("Set Reserved and Isolated CPU Frequency on performance profile")
 
+	//perfProfile, err := GetPerformanceProfileWithCPUSet()
+
 	// Update PerfProfile with new CPU Frequencies
 	perfProfile.Definition.Spec.HardwareTuning.IsolatedCpuFreq = desiredIsolatedCoreFreq
 	perfProfile.Definition.Spec.HardwareTuning.ReservedCpuFreq = desiredReservedCoreFreq
@@ -104,11 +107,22 @@ func SetCPUFreq(
 		return err
 	}
 
+	// Determine reserved CPU number from reservedCPUset
+	reservedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Reserved))
+	if err != nil {
+		return err
+	}
+
 	isolatedCPUsList := isolatedCPUSet.List()
 	isolatedCPUNumber := isolatedCPUsList[0]
+	reservedCPUsList := reservedCPUSet.List()
+	reservedCCPUNumber := reservedCPUsList[0]
 
-	spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
+	spokeCommandIsolatedCPUs := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
 		isolatedCPUNumber)
+
+	spokeCommandReservedCPUs := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
+		reservedCCPUNumber)
 
 	// Wait for Isolated CPU Frequency to be updated.
 	err = wait.PollUntilContextTimeout(
@@ -117,7 +131,7 @@ func SetCPUFreq(
 				return false, err
 			}
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
-			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommandIsolatedCPUs)
 
 			if err != nil {
 				return false, fmt.Errorf("command failed: %s", cmdOut)
@@ -136,23 +150,11 @@ func SetCPUFreq(
 			return true, nil
 		})
 
-	// Determine reserved CPU number from reservedCPUset
-	reservedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Reserved))
-	if err != nil {
-		return err
-	}
-
-	reservedCPUsList := reservedCPUSet.List()
-	reservedCCPUNumber := reservedCPUsList[0]
-
-	spokeCommand = fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
-		reservedCCPUNumber)
-
 	// Wait for Reserved CPU Frequency to be updated.
 	err = wait.PollUntilContextTimeout(context.TODO(), 5*time.Second, 1*time.Minute, true,
 		func(ctx context.Context) (bool, error) {
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
-			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommandReservedCPUs)
 
 			if err != nil {
 				return false, fmt.Errorf("command failed: %s", cmdOut)
@@ -166,6 +168,8 @@ func SetCPUFreq(
 			if currReservedFreq != int(*desiredReservedCoreFreq) {
 				return false, nil
 			}
+
+			log.Println("****NEW RCF: %v   ******", currReservedFreq)
 
 			return true, nil
 		})

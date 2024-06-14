@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -20,14 +21,14 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 	Label(tsparams.LabelCPUFrequency), func() {
 		var (
 			perfProfile             *nto.Builder
-			desiredReservedCoreFreq = performancev2.CPUfrequency(2500001)
-			desiredIsolatedCoreFreq = performancev2.CPUfrequency(2200001)
+			desiredReservedCoreFreq = performancev2.CPUfrequency(2500002)
+			desiredIsolatedCoreFreq = performancev2.CPUfrequency(2200002)
 			originalIsolatedCPUFreq performancev2.CPUfrequency
 			originalReservedCPUFreq performancev2.CPUfrequency
+			err                     error
 		)
 
 		BeforeEach(func() {
-			var err error
 
 			perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
 			Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
@@ -52,6 +53,8 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			originalReservedCPUFreq, err = getCPUFreq(reservedCPUNumber)
 			Expect(err).ToNot(HaveOccurred(), "Failed to get original reserved core frequency")
 
+			log.Println("****Original RCF: %v", originalReservedCPUFreq)
+
 		})
 
 		AfterEach(func() {
@@ -60,7 +63,7 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 		})
 
-		When("reserved and isolated core frequency is configured via PerformanceProfile", func() {
+		FWhen("reserved and isolated core frequency is configured via PerformanceProfile", func() {
 
 			It("sets the reserved and isolated core frequency correctly on the DUT", func() {
 				err := helper.SetCPUFreq(perfProfile, &desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
@@ -72,7 +75,7 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 
 // getCPUFreq gets the current frequency of a given CPU core.
 func getCPUFreq(coreID int) (performancev2.CPUfrequency, error) {
-	spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq |cat -",
+	spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
 		coreID)
 	cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
 	Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, cmdOut)
