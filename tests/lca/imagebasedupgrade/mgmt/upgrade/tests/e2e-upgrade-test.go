@@ -25,24 +25,21 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/route"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
-	"github.com/openshift-kni/eco-goinfra/pkg/velero"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/safeapirequest"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/configmapgenerator"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/brutil"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/url"
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
-	veleroScheme "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/scheme"
 	k8sScheme "k8s.io/client-go/kubernetes/scheme"
 )
 
 const (
 	oadpContentConfigmap = "oadp-cm"
-	ibuKlusterletName    = "acm-klusterlet"
 
 	extraManifestNamespace = "extranamespace"
 	extraManifestConfigmap = "extra-configmap"
@@ -57,11 +54,6 @@ var (
 
 	ibuWorkloadNamespace *namespace.Builder
 	ibuWorkloadRoute     *route.Builder
-	ibuWorkloadBackup    *velero.BackupBuilder
-	ibuWorkloadRestore   *velero.RestoreBuilder
-
-	ibuKlusterLetBackup  *velero.BackupBuilder
-	ibuKlusterLetRestore *velero.RestoreBuilder
 )
 
 var _ = Describe(
@@ -97,11 +89,11 @@ var _ = Describe(
 				extraNamespace.Definition.Annotations["lca.openshift.io/apply-wave"] = "1"
 
 				By("Create configmap for extra manifests namespace")
-				extraNamespaceString, err := configmapgenerator.DataFromDefinition(
-					k8sScheme.Scheme, extraNamespace.Definition, v1.SchemeGroupVersion)
+				extraNamespaceString, err := brutil.NewBackRestoreObject(
+					extraNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest namespace")
 				extraManifestsNamespaceConfigmap, err := configmap.NewBuilder(
-					APIClient, extraManifestNamespaceConfigmapName, tsparams.LCANamespace).WithData(map[string]string{
+					APIClient, extraManifestNamespaceConfigmapName, mgmtparams.LCANamespace).WithData(map[string]string{
 					"namespace.yaml": extraNamespaceString,
 				}).Create()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap for extra manifests namespace")
@@ -115,11 +107,11 @@ var _ = Describe(
 				extraConfigmap.Definition.Annotations["lca.openshift.io/apply-wave"] = "2"
 
 				By("Create configmap for extramanifests configmap")
-				extraConfigmapString, err := configmapgenerator.DataFromDefinition(
-					k8sScheme.Scheme, extraConfigmap.Definition, v1.SchemeGroupVersion)
+				extraConfigmapString, err := brutil.NewBackRestoreObject(
+					extraConfigmap.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest configmap")
 				extraManifestsConfigmapConfigmap, err := configmap.NewBuilder(
-					APIClient, extraManifesConfigmapConfigmapName, tsparams.LCANamespace).WithData(map[string]string{
+					APIClient, extraManifesConfigmapConfigmapName, mgmtparams.LCANamespace).WithData(map[string]string{
 					"configmap.yaml": extraConfigmapString,
 				}).Create()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap for extra manifests configmap")
@@ -135,41 +127,31 @@ var _ = Describe(
 			By("Start test workload on IBU cluster")
 			startTestWorkload()
 
-			By("Define test workload backup and restore")
-			defineWorkloadBackupRestore()
-
-			By("Define klusterlet backup and restore")
-			defineKlusterletBackupRestore()
-
 			By("Create configmap for oadp")
-			oadpConfigmap := configmap.NewBuilder(APIClient, oadpContentConfigmap, tsparams.LCAOADPNamespace)
+			oadpConfigmap := configmap.NewBuilder(APIClient, oadpContentConfigmap, mgmtparams.LCAOADPNamespace)
 			var oadpConfigmapData = make(map[string]string)
 
-			By("Add workload app backup to configmap")
-			configmapData, err := configmapgenerator.DataFromDefinition(
-				veleroScheme.Scheme, ibuWorkloadBackup.Definition, velerov1.SchemeGroupVersion)
+			By("Add workload app backup oadp configmap")
+			workloadBackup, err := brutil.WorkloadBackup.String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data for workload app backup")
-			oadpConfigmapData["backup_app.yaml"] = configmapData
+			oadpConfigmapData["workload_app_backup.yaml"] = workloadBackup
 
-			By("Add workload app restore to configmap")
-			configmapData, err = configmapgenerator.DataFromDefinition(
-				veleroScheme.Scheme, ibuWorkloadRestore.Definition, velerov1.SchemeGroupVersion)
+			By("Add workload app restore to oadp configmap")
+			workloadRestore, err := brutil.WorkloadRestore.String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data for workload app restore")
-			oadpConfigmapData["restore_app.yaml"] = configmapData
+			oadpConfigmapData["workload_app_restore.yaml"] = workloadRestore
 
-			if ibuKlusterLetBackup != nil {
-				By("Add klusterlet backup to configmap")
-				configmapData, err := configmapgenerator.DataFromDefinition(
-					veleroScheme.Scheme, ibuKlusterLetBackup.Definition, velerov1.SchemeGroupVersion)
-				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for workload app backup")
-				oadpConfigmapData["backup_klusterlet.yaml"] = configmapData
+			_, err = namespace.Pull(APIClient, mgmtparams.LCAKlusterletNamespace)
+			if err == nil {
+				By("Add klusterlet backup oadp configmap")
+				klusterletBackup, err := brutil.KlusterletBackup.String()
+				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for klusterlet backup content")
+				oadpConfigmapData["klusterlet_backup.yaml"] = klusterletBackup
 
-				By("Add klusterlet restore to configmap")
-				configmapData, err = configmapgenerator.DataFromDefinition(
-					veleroScheme.Scheme, ibuKlusterLetRestore.Definition, velerov1.SchemeGroupVersion)
-				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for workload app restore")
-				oadpConfigmapData["restore_klusterlet.yaml"] = configmapData
-
+				By("Add klusterlet restore oadp configmap")
+				klusterletRestore, err := brutil.KlusterletRestore.String()
+				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for klusterlet restire content")
+				oadpConfigmapData["klusterlet_restore.yaml"] = klusterletRestore
 			}
 
 			By("Create oadpContent configmap")
@@ -222,7 +204,7 @@ var _ = Describe(
 
 					By("Pull extra manifests namespace configmap")
 					extraManifestsNamespaceConfigmap, err := configmap.Pull(
-						APIClient, extraManifestNamespaceConfigmapName, tsparams.LCANamespace)
+						APIClient, extraManifestNamespaceConfigmapName, mgmtparams.LCANamespace)
 					Expect(err).NotTo(HaveOccurred(), "error pulling extra manifest namespace configmap")
 
 					By("Delete extra manifests namespace configmap")
@@ -231,7 +213,7 @@ var _ = Describe(
 
 					By("Pull extra manifests configmap configmap")
 					extraManifestsConfigmapConfigmap, err := configmap.Pull(
-						APIClient, extraManifesConfigmapConfigmapName, tsparams.LCANamespace)
+						APIClient, extraManifesConfigmapConfigmapName, mgmtparams.LCANamespace)
 					Expect(err).NotTo(HaveOccurred(), "error pulling extra manifest configmap configmap")
 
 					By("Delete extra manifests configmap configmap")
@@ -343,7 +325,7 @@ func upgrade() {
 
 	By("Updating the oadpContent")
 
-	ibu, err = ibu.WithOadpContent(oadpContentConfigmap, tsparams.LCAOADPNamespace).Update()
+	ibu, err = ibu.WithOadpContent(oadpContentConfigmap, mgmtparams.LCAOADPNamespace).Update()
 	Expect(err).NotTo(HaveOccurred(), "error updating ibu oadp content")
 
 	By("Setting the IBU stage to Prep")
@@ -424,10 +406,10 @@ func upgrade() {
 
 	By("Check that all pods are running in workload namespace")
 
-	workloadPods, err := pod.List(APIClient, tsparams.LCAWorkloadName)
-	Expect(err).NotTo(HaveOccurred(), "error listing pods in workload namespace %s", tsparams.LCAWorkloadName)
+	workloadPods, err := pod.List(APIClient, mgmtparams.LCAWorkloadName)
+	Expect(err).NotTo(HaveOccurred(), "error listing pods in workload namespace %s", mgmtparams.LCAWorkloadName)
 	Expect(len(workloadPods) > 0).To(BeTrue(),
-		"error: found no running pods in workload namespace %s", tsparams.LCAWorkloadName)
+		"error: found no running pods in workload namespace %s", mgmtparams.LCAWorkloadName)
 
 	for _, workloadPod := range workloadPods {
 		err := workloadPod.WaitUntilReady(time.Minute * 2)
@@ -436,13 +418,14 @@ func upgrade() {
 
 	verifyIBUWorkloadReachable()
 
-	if ibuKlusterLetBackup != nil {
+	_, err = namespace.Pull(APIClient, mgmtparams.LCAKlusterletNamespace)
+	if err == nil {
 		By("Check that all pods are running in klusterlet namespace")
 
-		klusterletPods, err := pod.List(APIClient, tsparams.LCAKlusterletNamespace)
-		Expect(err).NotTo(HaveOccurred(), "error listing pods in kusterlet namespace %s", tsparams.LCAKlusterletNamespace)
+		klusterletPods, err := pod.List(APIClient, mgmtparams.LCAKlusterletNamespace)
+		Expect(err).NotTo(HaveOccurred(), "error listing pods in kusterlet namespace %s", mgmtparams.LCAKlusterletNamespace)
 		Expect(len(klusterletPods) > 0).To(BeTrue(),
-			"error: found no running pods in klusterlet namespace %s", tsparams.LCAKlusterletNamespace)
+			"error: found no running pods in klusterlet namespace %s", mgmtparams.LCAKlusterletNamespace)
 
 		for _, klusterletPod := range klusterletPods {
 			// We check if the pod is terminataing or if it still exists to
@@ -472,21 +455,21 @@ func updateIBUWithCustomCatalogSources(imagebasedupgrade *lca.ImageBasedUpgradeB
 
 	for _, catalogSource := range catalogSources {
 		if !omitCatalogRegex.MatchString(catalogSource.Object.Name) {
-			configmapData, err := configmapgenerator.DataFromDefinition(APIClient.Scheme(),
-				catalogSource.Object, oplmV1alpha1.SchemeGroupVersion)
+			configmapData, err := brutil.NewBackRestoreObject(
+				catalogSource.Object, APIClient.Scheme(), oplmV1alpha1.SchemeGroupVersion).String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data from catalogsource content")
 
 			By("Create configmap with catalogsource information")
 
 			_, err = configmap.NewBuilder(APIClient,
-				fmt.Sprintf("%s-configmap", catalogSource.Object.Name), tsparams.LCANamespace).WithData(
+				fmt.Sprintf("%s-configmap", catalogSource.Object.Name), mgmtparams.LCANamespace).WithData(
 				map[string]string{
 					fmt.Sprintf("99-%s-catalogsource", catalogSource.Object.Name): configmapData,
 				}).Create()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap from user-defined catalogsource")
 
 			By("Updating IBU to include configmap")
-			imagebasedupgrade.WithExtraManifests(fmt.Sprintf("%s-configmap", catalogSource.Object.Name), tsparams.LCANamespace)
+			imagebasedupgrade.WithExtraManifests(fmt.Sprintf("%s-configmap", catalogSource.Object.Name), mgmtparams.LCANamespace)
 		}
 	}
 }
@@ -494,22 +477,22 @@ func updateIBUWithCustomCatalogSources(imagebasedupgrade *lca.ImageBasedUpgradeB
 func startTestWorkload() {
 	By("Check if workload app namespace exists")
 
-	if ibuWorkloadNamespace, err = namespace.Pull(APIClient, tsparams.LCAWorkloadName); err == nil {
+	if ibuWorkloadNamespace, err = namespace.Pull(APIClient, mgmtparams.LCAWorkloadName); err == nil {
 		deleteTestWorkload()
 	}
 
 	By("Create workload app namespace")
 
-	ibuWorkloadNamespace, err = namespace.NewBuilder(APIClient, tsparams.LCAWorkloadName).Create()
+	ibuWorkloadNamespace, err = namespace.NewBuilder(APIClient, mgmtparams.LCAWorkloadName).Create()
 	Expect(err).NotTo(HaveOccurred(), "error creating namespace for ibu workload app")
 
 	By("Create workload app deployment")
 
 	_, err = deployment.NewBuilder(
-		APIClient, tsparams.LCAWorkloadName, tsparams.LCAWorkloadName, map[string]string{
-			"app": tsparams.LCAWorkloadName,
+		APIClient, mgmtparams.LCAWorkloadName, mgmtparams.LCAWorkloadName, map[string]string{
+			"app": mgmtparams.LCAWorkloadName,
 		}, &v1.Container{
-			Name:  tsparams.LCAWorkloadName,
+			Name:  mgmtparams.LCAWorkloadName,
 			Image: MGMTConfig.IBUWorkloadImage,
 			Ports: []v1.ContainerPort{
 				{
@@ -517,14 +500,14 @@ func startTestWorkload() {
 					ContainerPort: 8080,
 				},
 			},
-		}).WithLabel("app", tsparams.LCAWorkloadName).CreateAndWaitUntilReady(time.Second * 60)
+		}).WithLabel("app", mgmtparams.LCAWorkloadName).CreateAndWaitUntilReady(time.Second * 60)
 	Expect(err).NotTo(HaveOccurred(), "error creating ibu workload deployment")
 
 	By("Create workload app service")
 
 	_, err = service.NewBuilder(
-		APIClient, tsparams.LCAWorkloadName, tsparams.LCAWorkloadName, map[string]string{
-			"app": tsparams.LCAWorkloadName,
+		APIClient, mgmtparams.LCAWorkloadName, mgmtparams.LCAWorkloadName, map[string]string{
+			"app": mgmtparams.LCAWorkloadName,
 		}, v1.ServicePort{
 			Protocol: v1.ProtocolTCP,
 			Port:     8080,
@@ -534,7 +517,7 @@ func startTestWorkload() {
 	By("Create workload app route")
 
 	ibuWorkloadRoute, err = route.NewBuilder(
-		APIClient, tsparams.LCAWorkloadName, tsparams.LCAWorkloadName, tsparams.LCAWorkloadName).Create()
+		APIClient, mgmtparams.LCAWorkloadName, mgmtparams.LCAWorkloadName, mgmtparams.LCAWorkloadName).Create()
 	Expect(err).NotTo(HaveOccurred(), "error creating ibu workload route")
 
 	verifyIBUWorkloadReachable()
@@ -559,45 +542,4 @@ func verifyIBUWorkloadReachable() {
 	)
 
 	Expect(err).NotTo(HaveOccurred(), "error reaching ibu workload")
-}
-
-func defineWorkloadBackupRestore() {
-	By("Define workload backup")
-
-	ibuWorkloadBackup = velero.NewBackupBuilder(
-		APIClient, tsparams.LCAWorkloadName, tsparams.LCAOADPNamespace).WithStorageLocation("default").
-		WithIncludedNamespace(tsparams.LCAWorkloadName).
-		WithIncludedNamespaceScopedResource("deployments").
-		WithIncludedNamespaceScopedResource("services").
-		WithIncludedNamespaceScopedResource("routes").
-		WithExcludedClusterScopedResource("persistentVolumes")
-
-	By("Define workload restore")
-
-	ibuWorkloadRestore = velero.NewRestoreBuilder(APIClient, tsparams.LCAWorkloadName,
-		tsparams.LCAOADPNamespace, tsparams.LCAWorkloadName).WithStorageLocation("default")
-}
-
-func defineKlusterletBackupRestore() {
-	By("Check if klusterlet namespace exists")
-
-	if _, err := namespace.Pull(APIClient, tsparams.LCAKlusterletNamespace); err == nil {
-		By("Define klusterlet backup")
-
-		ibuKlusterLetBackup = velero.NewBackupBuilder(
-			APIClient, ibuKlusterletName, tsparams.LCAOADPNamespace).WithStorageLocation("default").
-			WithIncludedNamespace(tsparams.LCAKlusterletNamespace).
-			WithIncludedClusterScopedResource("klusterlets.operator.open-cluster-management.io").
-			WithIncludedClusterScopedResource("clusterclaims.cluster.open-cluster-management.io").
-			WithIncludedClusterScopedResource("clusterroles.rbac.authorization.k8s.io").
-			WithIncludedClusterScopedResource("clusterrolebindings.rbac.authorization.k8s.io").
-			WithIncludedNamespaceScopedResource("deployments").
-			WithIncludedNamespaceScopedResource("serviceaccounts").
-			WithIncludedNamespaceScopedResource("secrets")
-
-		By("Define klusterlet restore")
-
-		ibuKlusterLetRestore = velero.NewRestoreBuilder(
-			APIClient, ibuKlusterletName, tsparams.LCAOADPNamespace, ibuKlusterletName).WithStorageLocation("default")
-	}
 }

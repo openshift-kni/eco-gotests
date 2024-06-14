@@ -42,6 +42,8 @@ linters-settings:
         - "github.com/NVIDIA/gpu-operator"
         - "github.com/operator-framework/api"
         - "github.com/argoproj-labs/argocd-operator/api"
+        - "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+        - "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/scheme"
         - "github.com/golang/glog"
         - "github.com/rh-ecosystem-edge/kernel-module-management"
         - "github.com/povsister/scp"
