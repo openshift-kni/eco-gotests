@@ -35,4 +35,9 @@ const (
 
 	// IbuPolicyNamespace is the namespace where IBU policies created on target hub.
 	IbuPolicyNamespace = "ztp-group"
+
+	// RollbackCguName is the name of rollback cgu.
+	RollbackCguName = "cgu-ibu-rollback"
+	// RollbackPolicyName is the name of managed policy for ibu rollback stage validation.
+	RollbackPolicyName = "group-ibu-rollback-stage-policy"
 )
