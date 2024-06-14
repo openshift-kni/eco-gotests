@@ -7,13 +7,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
+	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
+	corev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,16 +40,26 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		dot1ad                      = "802.1ad"
 		dot1q                       = "802.1q"
 		srIovPolicyNetDevice        = "sriovnetpolicy-netdevice"
+		srIovPolicyResNameVfioPci   = "sriovpolicyvfiopci"
+		srIovPolicyVfioPci          = "sriovpolicy-vfiopci"
 		srIovNetworkDot1AD          = "sriovnetwork-dot1ad"
 		srIovNetworkDot1Q           = "sriovnetwork-dot1q"
+		srIovNetworkDPDKDot1AD      = "sriovnetwork-dpdk-dot1ad"
+		srIovNetworkDPDKDot1Q       = "sriovnetwork-dpdk-dot1q"
 		srIovNetworkPromiscuous     = "sriovnetwork-promiscuous"
 		srIovPolicyResNameNetDevice = "sriovpolicynetdevice"
+		serverNameDPDKDot1ad        = "server-dpdk-1ad"
+		serverNameDPDKDot1q         = "server-dpdk-1q"
 		serverNameDot1ad            = "server-1ad"
 		serverNameDot1q             = "server-1q"
 		clientNameDot1ad            = "client-1ad"
+		clientNameDPDKDot1ad        = "client-dpdk-1ad"
 		clientNameDot1q             = "client-1q"
+		clientNameDPDKDot1q         = "client-dpdk-1q"
 		nadCVLAN100                 = "nadcvlan100"
 		nadCVLAN101                 = "nadcvlan101"
+		nadCVLANDpdk                = "nadcvlandpdk"
+		perfProfileName             = "performance-profile-dpdk"
 		intNet1                     = "net1"
 		intNet2                     = "net2"
 		intNet3                     = "net3"
@@ -100,7 +114,7 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to create Network-Attachment-Definition %s",
 			nadCVLAN101))
 
-		By("Define and create sriov network policy using worker node label")
+		By("Define and create sriov network policy using worker node label with netDevice type netdevice")
 		_, err = sriov.NewPolicyBuilder(
 			APIClient,
 			srIovPolicyNetDevice,
@@ -111,6 +125,23 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			NetConfig.WorkerLabelMap).Create()
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create sriovnetwork policy %s",
 			srIovPolicyNetDevice))
+
+		By("Define and create sriov network policy using worker node label with netDevice type vfio-pci")
+		sriovPolicy := sriov.NewPolicyBuilder(
+			APIClient,
+			srIovPolicyVfioPci,
+			NetConfig.SriovOperatorNamespace,
+			srIovPolicyResNameVfioPci,
+			16,
+			[]string{fmt.Sprintf("%s#10-15", srIovInterfacesUnderTest[0])},
+			NetConfig.WorkerLabelMap).WithDevType("vfio-pci")
+		if sriovDeviceID == mlxDevice {
+			_, err = sriovPolicy.WithRDMA(true).Create()
+		} else {
+			_, err = sriovPolicy.Create()
+		}
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create sriovnetwork policy %s",
+			srIovPolicyVfioPci))
 
 		By("Waiting until cluster MCP and SR-IOV are stable")
 		err = netenv.WaitForSriovAndMCPStable(
@@ -434,6 +465,85 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			})
 	})
 
+	Context("DPDK", func() {
+		BeforeAll(func() {
+			By("Deploying PerformanceProfile is it's not installed")
+			err = netenv.DeployPerformanceProfile(
+				APIClient,
+				NetConfig,
+				perfProfileName,
+				"1,3,5,7,9,11,13,15,17,19,21,23,25",
+				"0,2,4,6,8,10,12,14,16,18,20",
+				24)
+			Expect(err).ToNot(HaveOccurred(), "Fail to deploy PerformanceProfile")
+
+			By("Setting selinux flag container_use_devices to 1 on all compute nodes")
+			err = cluster.ExecCmd(APIClient, NetConfig.WorkerLabel, "setsebool container_use_devices 1")
+			Expect(err).ToNot(HaveOccurred(), "Fail to enable selinux flag")
+
+			By("Define and create sriov-network with 802.1ad S-VLAN")
+			vlan, err := strconv.Atoi(NetConfig.VLAN)
+			Expect(err).ToNot(HaveOccurred(), "Failed to convert VLAN value")
+			defineAndCreateSrIovNetworkWithQinQ(srIovNetworkDPDKDot1AD, srIovPolicyResNameVfioPci, dot1ad,
+				uint16(vlan))
+
+			By("Define and create sriov-network with 802.1q S-VLAN")
+			defineAndCreateSrIovNetworkWithQinQ(srIovNetworkDPDKDot1Q, srIovPolicyResNameVfioPci, dot1q,
+				uint16(vlan))
+
+			By("Define and create a network attachment definition for dpdk container")
+			tapNad, err := define.TapNad(APIClient, nadCVLANDpdk, tsparams.TestNamespaceName, 0, 0, nil)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to define the Network-Attachment-Definition %s",
+				nadCVLANDpdk))
+			_, err = tapNad.Create()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to create Network-Attachment-Definition %s",
+				nadCVLANDpdk))
+		})
+
+		It("Verify network traffic over a 802.1ad QinQ tunnel between two DPDK pods on the same PF",
+			reportxml.ID("72636"), func() {
+				By("Verify SR-IOV Device IDs for interface under test")
+				if sriovDeviceID != intelDeviceIDE810 {
+					Skip(fmt.Sprintf("The NIC %s does not support 802.1AD", sriovDeviceID))
+				}
+				By("Define and create a container in promiscuous mode")
+				tcpDumpContainer := createPromiscuousClient(workerNodeList[0].Definition.Name,
+					tcpDumpNet1CMD)
+
+				runQinQDpdkTestCases(
+					workerNodeList[0].Definition.Name,
+					serverNameDPDKDot1ad,
+					clientNameDPDKDot1ad,
+					srIovNetworkDPDKDot1AD,
+					nadCVLANDpdk,
+					tcpDumpDot1ADOutput,
+					tcpDumpContainer)
+			})
+
+		It("Verify network traffic over a 802.1q QinQ tunnel between two DPDK pods on the same PF",
+			reportxml.ID("72638"), func() {
+				By("Define and create a container in promiscuous mode")
+				tcpDumpContainer := createPromiscuousClient(workerNodeList[0].Definition.Name,
+					tcpDumpNet1CMD)
+
+				runQinQDpdkTestCases(
+					workerNodeList[0].Definition.Name,
+					serverNameDPDKDot1q,
+					clientNameDPDKDot1q,
+					srIovNetworkDPDKDot1Q,
+					nadCVLANDpdk,
+					tcpDumpDot1QOutput,
+					tcpDumpContainer)
+			})
+		AfterAll(func() {
+			By("Removing performanceProfile")
+			perfProfile, err := nto.Pull(APIClient, perfProfileName)
+			Expect(err).ToNot(HaveOccurred(), "Fail to pull test PerformanceProfile")
+			_, err = perfProfile.Delete()
+			Expect(err).ToNot(HaveOccurred(), "Fail to delete PerformanceProfile")
+		})
+	})
+
 	AfterEach(func() {
 		By("Removing all containers from test namespace")
 		runningNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
@@ -662,4 +772,116 @@ func disableQinQOnSwitch(switchCredentials *sriovenv.SwitchCredentials, switchIn
 	}
 
 	return nil
+}
+
+func defineTestServerPmdCmd(ethPeer, pciAddress string) []string {
+	baseCmd := fmt.Sprintf("dpdk-testpmd -a %s -- --forward-mode txonly --eth-peer=0,%s "+
+		"--cmdline-file=/etc/cmd/cmd_file --stats-period 5", pciAddress, ethPeer)
+
+	return []string{"/bin/bash", "-c", baseCmd}
+}
+
+func defineTestClientPmdCmd(ethPeer, pciAddress string) []string {
+	baseCmd := fmt.Sprintf(
+		"timeout -s SIGKILL 20 dpdk-testpmd --vdev=virtio_user0,path=/dev/vhost-net,iface=net2 -a %s -- "+
+			"--forward-mode rxonly --eth-peer=0,%s --stats-period 5", pciAddress, ethPeer)
+
+	return []string{baseCmd}
+}
+
+func defineAndCreateServerDPDKPod(
+	podName,
+	nodeName string,
+	serverPodNetConfig []*multus.NetworkSelectionElement,
+	podCmd []string) *pod.Builder {
+	var rootUser int64
+	securityContext := corev1.SecurityContext{
+		RunAsUser: &rootUser,
+		Capabilities: &corev1.Capabilities{
+			Add: []corev1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_RAW"},
+		},
+	}
+
+	dpdkContainerCfg, err := pod.NewContainerBuilder(podName, NetConfig.DpdkTestContainer, podCmd).
+		WithSecurityContext(&securityContext).WithResourceLimit("2Gi", "1Gi", 4).
+		WithResourceRequest("2Gi", "1Gi", 4).WithEnvVar("RUN_TYPE", "testcmd").
+		GetContainerCfg()
+
+	Expect(err).ToNot(HaveOccurred(), "Fail to define server dpdk container")
+
+	dpdkPort0Cmd := `port stop 0
+tx_vlan set 0 100
+port start 0
+start
+`
+	configMapData := map[string]string{"cmd_file": dpdkPort0Cmd}
+	configMap, err := configmap.NewBuilder(APIClient, "dpdk-port-cmd", tsparams.TestNamespaceName).
+		WithData(configMapData).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create config map")
+	dpdkPod, err := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName, NetConfig.DpdkTestContainer).
+		WithSecondaryNetwork(serverPodNetConfig).
+		DefineOnNode(nodeName).
+		RedefineDefaultContainer(*dpdkContainerCfg).
+		WithHugePages().WithLocalVolume(configMap.Definition.Name, "/etc/cmd").
+		CreateAndWaitUntilRunning(4 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create a dpdk server pod")
+
+	return dpdkPod
+}
+
+func defineAndCreateClientDPDKPod(
+	podName,
+	nodeName string,
+	serverPodNetConfig []*multus.NetworkSelectionElement) *pod.Builder {
+	var rootUser int64
+	securityContext := corev1.SecurityContext{
+		RunAsUser: &rootUser,
+		Capabilities: &corev1.Capabilities{
+			Add: []corev1.Capability{"IPC_LOCK", "SYS_RESOURCE", "NET_RAW"},
+		},
+	}
+
+	dpdkContainerCfg, err := pod.NewContainerBuilder(podName, NetConfig.DpdkTestContainer,
+		[]string{"/bin/bash", "-c", "sleep INF"}).WithSecurityContext(&securityContext).
+		WithResourceLimit("2Gi", "1Gi", 4).
+		WithResourceRequest("2Gi", "1Gi", 4).WithEnvVar("RUN_TYPE", "testcmd").GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Fail to define client dpdk container")
+
+	dpdkPod, err := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName,
+		NetConfig.DpdkTestContainer).WithSecondaryNetwork(serverPodNetConfig).
+		DefineOnNode(nodeName).RedefineDefaultContainer(*dpdkContainerCfg).WithHugePages().
+		CreateAndWaitUntilRunning(4 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Fail to create a dpdk client pod")
+
+	return dpdkPod
+}
+
+func runQinQDpdkTestCases(nodeName, serverName, clientName, sriovNetworkName, nadCVLANDpdk, outPutSubString string,
+	tcpDumpPod *pod.Builder) {
+	By("Define and create a 802.1AD dpdk server container")
+
+	annotation := pod.StaticIPAnnotationWithMacAddress(sriovNetworkName, []string{}, tsparams.ServerMacAddress)
+	testCmdServer := defineTestServerPmdCmd(tsparams.ClientMacAddress,
+		"${PCIDEVICE_OPENSHIFT_IO_SRIOVPOLICYVFIOPCI}")
+	_ = defineAndCreateServerDPDKPod(serverName, nodeName, annotation, testCmdServer)
+
+	By("Define and create a dpdk client container")
+
+	var annotationDpdk []*multus.NetworkSelectionElement
+
+	sVlan := pod.StaticIPAnnotationWithMacAddress(sriovNetworkName, []string{}, tsparams.ClientMacAddress)
+	cVlan := pod.StaticAnnotation(nadCVLANDpdk)
+	annotationDpdk = append(annotationDpdk, sVlan[0], cVlan)
+	clientDpdk := defineAndCreateClientDPDKPod(clientName, nodeName, annotationDpdk)
+	Expect(clientDpdk.WaitUntilRunning(time.Minute)).ToNot(HaveOccurred(),
+		"Fail to wait until pod is running")
+
+	By("Validate dpdk_testpmd traffic from the server to the client using CVLAN100.")
+
+	clientRxCmd := defineTestClientPmdCmd(tsparams.ServerMacAddress,
+		"${PCIDEVICE_OPENSHIFT_IO_SRIOVPOLICYVFIOPCI}")
+	err := cmd.RxTrafficOnClientPod(clientDpdk, clientRxCmd[0])
+	Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
+	By("Validate that the TCP traffic is double tagged")
+	readAndValidateTCPDump(tcpDumpPod, []string{"bash", "-c", "tail -20 /tmp/tcpdump"}, outPutSubString)
 }

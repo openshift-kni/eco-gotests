@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/dpdkenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/tests"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/params"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
@@ -48,7 +49,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred(), "Cluster doesn't support dpdk test cases")
 
 	By("Deploying PerformanceProfile is it's not installed")
-	err = dpdkenv.DeployPerformanceProfile(
+	err = netenv.DeployPerformanceProfile(
 		APIClient,
 		NetConfig,
 		perfProfileName,
