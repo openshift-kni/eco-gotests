@@ -123,7 +123,7 @@ func SetCPUFreq(
 
 	// Wait for Isolated CPU Frequency to be updated.
 	err = wait.PollUntilContextTimeout(
-		context.TODO(), 5*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
+		context.TODO(), 2*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
 			if err != nil {
 				return false, err
 			}
