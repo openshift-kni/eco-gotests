@@ -1,10 +1,12 @@
 package helper
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -12,12 +14,14 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/cpuset"
 	"k8s.io/utils/ptr"
 )
@@ -73,6 +77,91 @@ func SetPowerModeAndWaitForMcpUpdate(perfProfile *nto.Builder, node nodes.Builde
 	}
 
 	err = node.WaitUntilReady(tsparams.PowerSaveTimeout)
+
+	return err
+}
+
+// SetCPUFreq updates the performance profile with the given isolated and reserved
+// core frequencies and verifies that the frequencies have been updated on the spoke cluster.
+func SetCPUFreq(
+	perfProfile *nto.Builder,
+	desiredIsolatedCoreFreq *performancev2.CPUfrequency,
+	desiredReservedCoreFreq *performancev2.CPUfrequency) error {
+	glog.V(tsparams.LogLevel).Infof("Set Reserved and Isolated CPU Frequency on performance profile")
+
+	// Update PerfProfile with new CPU Frequencies
+	perfProfile.Definition.Spec.HardwareTuning.IsolatedCpuFreq = desiredIsolatedCoreFreq
+	perfProfile.Definition.Spec.HardwareTuning.ReservedCpuFreq = desiredReservedCoreFreq
+	_, err := perfProfile.Update(true)
+
+	if err != nil {
+		return err
+	}
+
+	// Determine isolated CPU number from IsolatedCPUset
+	isolatedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Isolated))
+	if err != nil {
+		return err
+	}
+
+	// Determine reserved CPU number from reservedCPUset
+	reservedCPUSet, err := cpuset.Parse(string(*perfProfile.Object.Spec.CPU.Reserved))
+	if err != nil {
+		return err
+	}
+
+	isolatedCPUsList := isolatedCPUSet.List()
+	isolatedCPUNumber := isolatedCPUsList[0]
+	reservedCPUsList := reservedCPUSet.List()
+	reservedCCPUNumber := reservedCPUsList[0]
+
+	spokeCommandIsolatedCPUs := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
+		isolatedCPUNumber)
+
+	spokeCommandReservedCPUs := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
+		reservedCCPUNumber)
+
+	// Wait for Isolated CPU Frequency to be updated.
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), 2*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
+			if err != nil {
+				return false, err
+			}
+			// Get current isolated core frequency from spoke cluster and compare to desired frequency
+			cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommandIsolatedCPUs)
+
+			if err != nil {
+				return false, fmt.Errorf("command failed: %s", cmdOut)
+			}
+
+			currIsolatedCoreFreq, err := strconv.Atoi(strings.TrimSpace(cmdOut))
+
+			if err != nil {
+				return false, fmt.Errorf("string conversion failed failed: %w", err)
+			}
+
+			if currIsolatedCoreFreq != int(*desiredIsolatedCoreFreq) {
+				return false, nil
+			}
+
+			// Get current isolated core frequency from spoke cluster and compare to desired frequency
+			cmdOut, err = cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommandReservedCPUs)
+
+			if err != nil {
+				return false, fmt.Errorf("command failed: %s", cmdOut)
+			}
+
+			currReservedFreq, err := strconv.Atoi(strings.TrimSpace(cmdOut))
+			if err != nil {
+				return false, fmt.Errorf("string conversion failed failed: %w", err)
+			}
+
+			if currReservedFreq != int(*desiredReservedCoreFreq) {
+				return false, nil
+			}
+
+			return true, nil
+		})
 
 	return err
 }
