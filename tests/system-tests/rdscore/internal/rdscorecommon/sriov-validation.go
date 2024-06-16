@@ -80,12 +80,17 @@ func createServiceAccount(saName, nsName string) {
 
 	var ctx SpecContext
 
-	Eventually(func() bool {
-		deploySa, err := deploySa.Create()
+	deploySa, err := deploySa.Create()
 
-		if err != nil {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error creating SA %q in %q namespace: %v",
-				saName, nsName, err)
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error creating SA %q in %q namespace: %v",
+			saName, nsName, err)
+	}
+
+	Eventually(func() bool {
+		if !deploySa.Exists() {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error creating SA %q in %q namespace",
+				saName, nsName)
 
 			return false
 		}
@@ -112,12 +117,17 @@ func deleteServiceAccount(saName, nsName string) {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting ServiceAccount %q in %q namespace",
 			saName, nsName)
 
-		Eventually(func() bool {
-			err := deploySa.Delete()
+		err := deploySa.Delete()
 
-			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting ServiceAccount %q in %q namespace: %v",
-					saName, nsName, err)
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting ServiceAccount %q in %q namespace: %v",
+				saName, nsName, err)
+		}
+
+		Eventually(func() bool {
+			if deploySa.Exists() {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting ServiceAccount %q in %q namespace",
+					saName, nsName)
 
 				return false
 			}
@@ -145,13 +155,17 @@ func deleteClusterRBAC(rbacName string) {
 		APIClient,
 		rbacName); err == nil {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("ClusterRoleBinding %q found. Deleting...", rbacName)
+		err := crbSa.Delete()
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting ClusterRoleBinding %q : %v",
+				rbacName, err)
+		}
 
 		Eventually(func() bool {
-			err := crbSa.Delete()
-
-			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting ClusterRoleBinding %q : %v",
-					rbacName, err)
+			if crbSa.Exists() {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting ClusterRoleBinding %q",
+					rbacName)
 
 				return false
 			}
@@ -180,9 +194,14 @@ func createClusterRBAC(rbacName, clusterRole, saName, nsName string) {
 			Namespace: nsName,
 		})
 
+	crbSa, err := crbSa.Create()
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			"Error Creating ClusterRoleBinding %q : %v", crbSa.Definition.Name, err)
+	}
+
 	Eventually(func() bool {
-		crbSa, err := crbSa.Create()
-		if err != nil {
+		if !crbSa.Exists() {
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
 				"Error Creating ClusterRoleBinding %q : %v", crbSa.Definition.Name, err)
 
@@ -206,20 +225,23 @@ func deleteConfigMap(cmName, nsName string) {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("configMap %q found, deleting", cmName)
 
 		var ctx SpecContext
+		err := cmBuilder.Delete()
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting configMap %q : %v",
+				cmName, err)
+		}
 
 		Eventually(func() bool {
-			err := cmBuilder.Delete()
-			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting configMap %q : %v",
-					cmName, err)
+			if cmBuilder.Exists() {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error deleting configMap %q", cmName)
 
 				return false
+			} else {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleted configMap %q in %q namespace",
+					cmName, nsName)
+
+				return true
 			}
-
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleted configMap %q in %q namespace",
-				cmName, nsName)
-
-			return true
 		}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
 			"Failed to delete configMap")
 	}
@@ -234,20 +256,25 @@ func createConfigMap(cmName, nsName string, data map[string]string) {
 
 	var ctx SpecContext
 
+	cmResult, err := cmBuilder.Create()
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error creating ConfigMap %q in %q namespace: %v",
+			cmName, nsName, err)
+	}
+
 	Eventually(func() bool {
 
-		cmResult, err := cmBuilder.Create()
-		if err != nil {
+		if !cmResult.Exists() {
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error creating ConfigMap %q in %q namespace",
 				cmName, nsName)
 
 			return false
+		} else {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Created ConfigMap %q in %q namespace",
+				cmResult.Definition.Name, nsName)
+
+			return true
 		}
-
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Created ConfigMap %q in %q namespace",
-			cmResult.Definition.Name, nsName)
-
-		return true
 	}).WithContext(ctx).WithPolling(5*time.Second).WithPolling(1*time.Minute).Should(BeTrue(),
 		"Failed to crete configMap")
 }
