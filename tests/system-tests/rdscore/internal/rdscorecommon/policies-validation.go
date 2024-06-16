@@ -53,7 +53,7 @@ func ValidateAllPoliciesCompliant() {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Policy %q is in %q state", pName, pState)
 
-		if pState != "Compliant" {
+		if pState == "NonCompliant" {
 			NonCompliant = append(NonCompliant, pName)
 		}
 	}
