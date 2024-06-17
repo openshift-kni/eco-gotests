@@ -35,4 +35,6 @@ var _ = Describe(
 		vcorecommon.VerifyRedisSuite()
 
 		vcorecommon.VerifyNTOSuite()
+
+		vcorecommon.VerifySRIOVSuite()
 	})

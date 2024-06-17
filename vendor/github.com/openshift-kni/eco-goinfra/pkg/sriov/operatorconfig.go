@@ -160,6 +160,40 @@ func (builder *OperatorConfigBuilder) WithOperatorWebhook(enable bool) *Operator
 	return builder
 }
 
+// WithConfigDaemonNodeSelector configures configDaemonNodeSelector in the SriovOperatorConfig.
+func (builder *OperatorConfigBuilder) WithConfigDaemonNodeSelector(
+	configDaemonNodeSelector map[string]string) *OperatorConfigBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Configuring configDaemonNodeSelector %s in SriovOperatorConfig object %s in namespace %s",
+		configDaemonNodeSelector, builder.Definition.Name, builder.Definition.Namespace,
+	)
+
+	if len(configDaemonNodeSelector) == 0 {
+		glog.V(100).Infof("The 'configDaemonNodeSelector' of the SriovOperatorConfig is empty")
+
+		builder.errorMsg = "can not apply empty configDaemonNodeSelector"
+
+		return builder
+	}
+
+	for selectorKey := range configDaemonNodeSelector {
+		if selectorKey == "" {
+			glog.V(100).Infof("The 'configDaemonNodeSelector' selectorKey cannot be empty")
+
+			builder.errorMsg = "can not apply configDaemonNodeSelector with an empty selectorKey value"
+
+			return builder
+		}
+	}
+
+	builder.Definition.Spec.ConfigDaemonNodeSelector = configDaemonNodeSelector
+
+	return builder
+}
+
 // Update renovates the existing SriovOperatorConfig object with the new definition in builder.
 func (builder *OperatorConfigBuilder) Update() (*OperatorConfigBuilder, error) {
 	if valid, err := builder.validate(); !valid {

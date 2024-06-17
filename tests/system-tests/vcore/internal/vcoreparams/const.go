@@ -82,6 +82,9 @@ const (
 	// MetalLBOperatorName is a metallb operator name.
 	MetalLBOperatorName = "metallb-operator"
 
+	// MetalLBDaemonSetName default metalLb speaker daemonset names.
+	MetalLBDaemonSetName = "speaker"
+
 	// MetalLBSubscriptionName is a metallb operator subscription name.
 	MetalLBSubscriptionName = "metallb-operator-subscription"
 
@@ -159,4 +162,19 @@ const (
 
 	// NTODeploymentName is a node tuning operator deployment name.
 	NTODeploymentName = "cluster-node-tuning-operator"
+
+	// SRIOVNamespace is a SR-IOV operator namespace.
+	SRIOVNamespace = "openshift-sriov-network-operator"
+
+	// SRIOVSubscriptionName is a SR-IOV operator subscription name.
+	SRIOVSubscriptionName = "sriov-network-operator-subscription"
+
+	// SRIOVDeploymentName is a SR-IOV operator deployment name.
+	SRIOVDeploymentName = "sriov-network-operator"
+
+	// SRIOVInjectorDaemonsetName is a SR-IOV operator injector daemonset name.
+	SRIOVInjectorDaemonsetName = "network-resources-injector"
+
+	// SRIOVWebhookDaemonsetName is a SR-IOV operator webhook daemonset name.
+	SRIOVWebhookDaemonsetName = "operator-webhook"
 )
