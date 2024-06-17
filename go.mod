@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240620154035-1f702e37c052 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240621192821-7c55fda74f32 // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -41,6 +41,7 @@ require (
 )
 
 require (
+	github.com/kedacore/keda-olm-operator v0.0.0-20240501182040-762f6be5a942
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240606123201-0c45cd13c2f1
 	github.com/openshift/client-go v0.0.1
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
@@ -63,7 +64,6 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/kdomanski/iso9660 v0.2.1 // indirect
-	github.com/kedacore/keda-olm-operator v0.0.0-20240501182040-762f6be5a942 // indirect
 	github.com/kedacore/keda/v2 v2.14.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1 // indirect
