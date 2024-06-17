@@ -181,6 +181,9 @@ const (
 	// KedaNamespace is a keda operator namespace.
 	KedaNamespace = "openshift-keda"
 
+	// KedaWatchAppName is a keda watch application name.
+	KedaWatchAppName = "test-app"
+
 	// KedaWatchNamespace is a keda watch namespace name.
 	KedaWatchNamespace = "test-appspace"
 

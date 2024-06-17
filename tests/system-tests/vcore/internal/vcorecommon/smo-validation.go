@@ -146,7 +146,7 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 		varsToReplace["ControlPlaneName"] = "basic"
 		varsToReplace["ControlPlaneNamespace"] = vcoreparams.IstioNamespace
 
-		err = ocpcli.ApplyConfigFile(
+		err = ocpcli.ApplyConfig(
 			templateDir,
 			smoCpTemplateName,
 			destinationDirectoryPath,

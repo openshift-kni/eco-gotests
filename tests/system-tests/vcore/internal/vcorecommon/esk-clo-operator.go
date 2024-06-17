@@ -102,7 +102,7 @@ func CreateCLOInstance(ctx SpecContext) {
 
 	templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
 
-	err = ocpcli.ApplyConfigFile(
+	err = ocpcli.ApplyConfig(
 		templateDir,
 		clusterLoggingTemplateName,
 		destinationDirectoryPath,

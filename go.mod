@@ -42,10 +42,12 @@ require (
 
 require (
 	github.com/kedacore/keda-olm-operator v0.0.0-20240501182040-762f6be5a942
+	github.com/kedacore/keda/v2 v2.14.0
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240606123201-0c45cd13c2f1
 	github.com/openshift/client-go v0.0.1
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/povsister/scp v0.0.0-20210427074412-33febfd9f13e
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/velero v1.13.2
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
@@ -64,7 +66,6 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/kdomanski/iso9660 v0.2.1 // indirect
-	github.com/kedacore/keda/v2 v2.14.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
@@ -72,7 +73,6 @@ require (
 	github.com/openshift-kni/numaresources-operator v0.4.16-0rc0 // indirect
 	github.com/openshift/cluster-logging-operator v0.0.0-20240606085930-750f369019d4 // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2 // indirect
 	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20240109072430-f5fe6043d1f8 // indirect
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20240606130554-01338045271a // indirect

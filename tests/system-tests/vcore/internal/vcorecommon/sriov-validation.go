@@ -182,12 +182,12 @@ func VerifySRIOVSuite() {
 		"SR-IOV Operator deployment and configuration validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.SRIOVNamespace),
-				Label("debug"), VerifySRIOVNamespaceExists)
+				Label("sriov"), VerifySRIOVNamespaceExists)
 
 			It("Verifies SR-IOV Operator deployment succeeded",
-				Label("debug"), reportxml.ID("60041"), VerifySRIOVDeployment)
+				Label("sriov"), reportxml.ID("60041"), VerifySRIOVDeployment)
 
 			It("Verifies SR-IOV configuration procedure succeeded",
-				Label("debug"), reportxml.ID("60088"), VerifySRIOVConfig)
+				Label("sriov"), reportxml.ID("60088"), VerifySRIOVConfig)
 		})
 }

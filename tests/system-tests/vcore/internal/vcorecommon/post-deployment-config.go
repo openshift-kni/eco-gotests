@@ -150,7 +150,7 @@ func VerifySCTPModuleActivation(ctx SpecContext) {
 
 		templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
 
-		err = ocpcli.ApplyConfigFile(
+		err = ocpcli.ApplyConfig(
 			templateDir,
 			sctpModuleTemplateName,
 			destinationDirectoryPath,
