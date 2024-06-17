@@ -3,6 +3,7 @@ package cgu
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -15,10 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-const (
-	isTrue     = "True"
-	isComplete = "Succeeded"
-)
+var conditionComplete = metav1.Condition{Type: "Succeeded", Status: metav1.ConditionTrue}
 
 // CguBuilder provides struct for the cgu object containing connection to
 // the cluster and the cgu definitions.
@@ -338,79 +336,64 @@ func (builder *CguBuilder) WaitUntilDeleted(timeout time.Duration) error {
 		})
 }
 
-// validate will check that the builder and builder definition are properly initialized before
-// accessing any member fields.
-func (builder *CguBuilder) validate() (bool, error) {
-	resourceCRD := "cgu"
-
-	if builder == nil {
-		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
-
-		return false, fmt.Errorf("error: received nil %s builder", resourceCRD)
-	}
-
-	if builder.Definition == nil {
-		glog.V(100).Infof("The %s is undefined", resourceCRD)
-
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
-	}
-
-	if builder.apiClient == nil {
-		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
-
-		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
-	}
-
-	if builder.errorMsg != "" {
-		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
-
-		return false, fmt.Errorf(builder.errorMsg)
-	}
-
-	return true, nil
-}
-
-// WaitUntilComplete waits the specified timeout for the CGU to complete.
-func (builder *CguBuilder) WaitUntilComplete(timeout time.Duration) (*CguBuilder, error) {
+// WaitForCondition waits until the CGU has a condition that matches the expected, checking only the Type, Status,
+// Reason, and Message fields. For the message field, it matches if the message contains the expected. Zero fields in
+// the expected condition are ignored.
+func (builder *CguBuilder) WaitForCondition(expected metav1.Condition, timeout time.Duration) (*CguBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
 
-	glog.V(100).Infof("Waiting for CGU %s to complete", builder.Definition.Name)
-
 	if !builder.Exists() {
 		glog.V(100).Infof("The CGU does not exist on the cluster")
 
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf(
+			"cgu object %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 	}
 
-	// Polls periodically to determine if CGU is in desired state.
-	var err error
-	err = wait.PollUntilContextTimeout(
-		context.TODO(), time.Second*3, timeout, true, func(ctx context.Context) (bool, error) {
-			builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).Get(
-				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
+				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
+				glog.V(100).Info("failed to get cgu %s/%s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
+
 				return false, nil
 			}
 
 			builder.Definition = builder.Object
 
 			for _, condition := range builder.Object.Status.Conditions {
-				if condition.Status == isTrue && condition.Type == isComplete {
-					return true, nil
+				if expected.Type != "" && condition.Type != expected.Type {
+					continue
 				}
+
+				if expected.Status != "" && condition.Status != expected.Status {
+					continue
+				}
+
+				if expected.Reason != "" && condition.Reason != expected.Reason {
+					continue
+				}
+
+				if expected.Message != "" && !strings.Contains(condition.Message, expected.Message) {
+					continue
+				}
+
+				return true, nil
 			}
 
 			return false, nil
 		})
 
-	if err == nil {
-		return builder, nil
-	}
+	return builder, err
+}
 
-	return nil, err
+// WaitUntilComplete waits the specified timeout for the CGU to complete.
+func (builder *CguBuilder) WaitUntilComplete(timeout time.Duration) (*CguBuilder, error) {
+	return builder.WaitForCondition(conditionComplete, timeout)
 }
 
 // WaitUntilBackupStarts waits the specified timeout for the backup to start.
@@ -451,4 +434,36 @@ func (builder *CguBuilder) WaitUntilBackupStarts(timeout time.Duration) (*CguBui
 		builder.Definition.Name, builder.Definition.Namespace, err)
 
 	return nil, err
+}
+
+// validate will check that the builder and builder definition are properly initialized before
+// accessing any member fields.
+func (builder *CguBuilder) validate() (bool, error) {
+	resourceCRD := "cgu"
+
+	if builder == nil {
+		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
+
+		return false, fmt.Errorf("error: received nil %s builder", resourceCRD)
+	}
+
+	if builder.Definition == nil {
+		glog.V(100).Infof("The %s is undefined", resourceCRD)
+
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+	}
+
+	if builder.apiClient == nil {
+		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
+
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
+	}
+
+	if builder.errorMsg != "" {
+		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
+
+		return false, fmt.Errorf(builder.errorMsg)
+	}
+
+	return true, nil
 }

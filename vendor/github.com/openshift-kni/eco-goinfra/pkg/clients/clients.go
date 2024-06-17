@@ -535,6 +535,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *kedav2v1alpha1.TriggerAuthentication:
 			genericClientObjects = append(genericClientObjects, v)
+		case *kedav2v1alpha1.ScaledObject:
+			genericClientObjects = append(genericClientObjects, v)
 		case *agentInstallV1Beta1.AgentServiceConfig:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
