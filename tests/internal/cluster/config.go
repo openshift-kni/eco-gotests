@@ -74,9 +74,9 @@ func CompareOCPVersionWithCurrent(apiClient *clients.Settings,
 
 	if !isGreater {
 		if orEqual {
-		}
-		if currentVersion.LessThanOrEqual(referenceVersion) {
-			return true, nil
+			if currentVersion.LessThanOrEqual(referenceVersion) {
+				return true, nil
+			}
 		}
 	} else {
 		if currentVersion.LessThan(referenceVersion) {
