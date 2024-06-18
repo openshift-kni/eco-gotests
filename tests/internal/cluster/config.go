@@ -3,6 +3,7 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-version"
 	"strings"
 
 	"github.com/golang/glog"
@@ -14,6 +15,75 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	configv1 "github.com/openshift/api/config/v1"
 )
+
+// GetOCPVersion retrieves the OCP clusterversion object from an arbitrary cluster and get current ocp version value.
+func GetOCPVersion(apiClient *clients.Settings) (string, error) {
+	glog.V(90).Infof("Gathering OCP version from cluster at %s", apiClient.KubeconfigPath)
+
+	clusterVersionObj, err := GetOCPClusterVersion(apiClient)
+	if err != nil {
+		return "", err
+	}
+
+	ocpVersion := clusterVersionObj.Object.Status.Desired.Version
+
+	return ocpVersion, nil
+}
+
+// CompareOCPVersionWithCurrent compares current OCP versions with the provided value.
+func CompareOCPVersionWithCurrent(apiClient *clients.Settings,
+	referenceOCPVersion string,
+	isGreater, orEqual bool) (bool, error) {
+	if apiClient == nil {
+		return false, fmt.Errorf("'apiClient' cannot be empty")
+	}
+
+	if referenceOCPVersion == "" {
+		return false, fmt.Errorf("'referenceOCPVersion' cannot be empty")
+	}
+
+	currentOCPVersion, err := GetOCPVersion(apiClient)
+
+	if err != nil {
+		return false, err
+	}
+
+	glog.V(100).Infof("The apiClient is empty")
+
+	currentVersion, err := version.NewVersion(currentOCPVersion)
+	if err != nil {
+		return false, err
+	}
+
+	referenceVersion, err := version.NewVersion(referenceOCPVersion)
+	if err != nil {
+		return false, err
+	}
+
+	if isGreater {
+		if orEqual {
+			if currentVersion.GreaterThanOrEqual(referenceVersion) {
+				return true, nil
+			}
+		} else {
+			if currentVersion.GreaterThan(referenceVersion) {
+				return true, nil
+			}
+		}
+	}
+
+	if orEqual {
+		if currentVersion.LessThanOrEqual(referenceVersion) {
+			return true, nil
+		}
+	}
+
+	if currentVersion.LessThan(referenceVersion) {
+		return true, nil
+	}
+
+	return false, nil
+}
 
 // APIClientGetter is an interface that returns an APIClient from a struct.
 type APIClientGetter interface {

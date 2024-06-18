@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	ranhelper "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
@@ -23,7 +24,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 
 	BeforeEach(func() {
 		By("checking that the talm version is at least 4.11")
-		versionInRange, err := helper.IsVersionStringInRange(tsparams.TalmVersion, "4.11", "")
+		versionInRange, err := ranhelper.IsVersionStringInRange(tsparams.TalmVersion, "4.11", "")
 		Expect(err).ToNot(HaveOccurred(), "Failed to compared talm version string")
 
 		if !versionInRange {
@@ -80,7 +81,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 		Context("with CGU disabled", func() {
 			BeforeEach(func() {
 				By("checking that the talm version is at least 4.12")
-				versionInRange, err := helper.IsVersionStringInRange(tsparams.TalmVersion, "4.12", "")
+				versionInRange, err := ranhelper.IsVersionStringInRange(tsparams.TalmVersion, "4.12", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare talm version string")
 
 				if !versionInRange {

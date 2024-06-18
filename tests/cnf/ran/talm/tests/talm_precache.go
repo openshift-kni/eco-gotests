@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	ranhelper "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/helper"
 	"log"
 	"strings"
 	"time"
@@ -184,7 +185,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 59948 - Configurable filters for precache images.
 			It("tests precache image filtering", reportxml.ID("59948"), func() {
-				versionInRange, err := helper.IsVersionStringInRange(tsparams.TalmVersion, "4.13", "")
+				versionInRange, err := ranhelper.IsVersionStringInRange(tsparams.TalmVersion, "4.13", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
@@ -228,7 +229,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 64746 - Precache User-Specified Image
 			It("tests custom image precaching using a PreCachingConfig CR", reportxml.ID("64746"), func() {
-				versionInRange, err := helper.IsVersionStringInRange(tsparams.TalmVersion, "4.14", "")
+				versionInRange, err := ranhelper.IsVersionStringInRange(tsparams.TalmVersion, "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
@@ -300,7 +301,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 			})
 
 			It("tests custom image precaching using an invalid image", func() {
-				versionInRange, err := helper.IsVersionStringInRange(tsparams.TalmVersion, "4.14", "")
+				versionInRange, err := ranhelper.IsVersionStringInRange(tsparams.TalmVersion, "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
@@ -337,7 +338,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 64751 - Precache with Large Disk
 			It("tests precaching disk space checks using preCachingConfig", reportxml.ID("64751"), func() {
-				versionInRange, err := helper.IsVersionStringInRange(tsparams.TalmVersion, "4.14", "")
+				versionInRange, err := ranhelper.IsVersionStringInRange(tsparams.TalmVersion, "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
