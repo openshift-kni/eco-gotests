@@ -68,4 +68,24 @@ var _ = Describe(
 				"error: ibu seedimage updated with wrong next stage")
 
 		})
+
+		It("fails because from Prep it's not possible to move to Rollback stage", reportxml.ID("71740"), func() {
+
+			By("Setting the IBU stage to Prep")
+
+			_, err := ibu.WithStage("Prep").Update()
+			Expect(err).NotTo(HaveOccurred(), "error setting ibu to Prep stage")
+
+			By("Pull the imagebasedupgrade from the cluster")
+
+			ibu, err = lca.PullImageBasedUpgrade(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling imagebasedupgrade resource")
+
+			By("Setting the IBU stage to Rollback")
+
+			_, err = ibu.WithStage("Rollback").Update()
+			Expect(err.Error()).To(ContainSubstring("the stage transition is not permitted"),
+				"error: ibu seedimage updated with wrong next stage")
+
+		})
 	})
