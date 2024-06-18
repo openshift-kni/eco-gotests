@@ -3,10 +3,10 @@ package cluster
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-version"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-version"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/infrastructure"
@@ -78,8 +78,10 @@ func CompareOCPVersionWithCurrent(apiClient *clients.Settings,
 		}
 	}
 
-	if currentVersion.LessThan(referenceVersion) {
-		return true, nil
+	if !isGreater {
+		if currentVersion.LessThan(referenceVersion) {
+			return true, nil
+		}
 	}
 
 	return false, nil

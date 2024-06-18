@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
@@ -78,7 +79,7 @@ func VerifyCGroupDefault() {
 			BeforeAll(func() {
 				By("Check that the current cluster version is greater or equal to the 4.15")
 
-				isGreaterOrEqual, err := platform.CompareOCPVersionWithCurrent(APIClient,
+				isGreaterOrEqual, err := cluster.CompareOCPVersionWithCurrent(APIClient,
 					"4.15",
 					true,
 					true)

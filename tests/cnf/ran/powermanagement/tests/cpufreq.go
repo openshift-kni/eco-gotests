@@ -2,6 +2,9 @@ package tests
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
@@ -9,11 +12,9 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
-	internalcluster "github.com/openshift-kni/eco-gotests/tests/internal/cluster"
+	rancluster "github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	"k8s.io/utils/cpuset"
-	"strconv"
-	"strings"
 )
 
 var _ = Describe("CPU frequency tuning tests change the core frequencies of isolated and reserved cores",
@@ -24,14 +25,13 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 			desiredIsolatedCoreFreq = performancev2.CPUfrequency(2200002)
 			originalIsolatedCPUFreq performancev2.CPUfrequency
 			originalReservedCPUFreq performancev2.CPUfrequency
-			//err                     error
 		)
 
 		BeforeEach(func() {
 
 			By("Checking that OCP version is 4.16 or later")
-			isGreaterOrEqual, err := internalcluster.CompareOCPVersionWithCurrent(raninittools.Spoke1APIClient,
-				"4.16", true, false)
+			isGreaterOrEqual, err := rancluster.CompareOCPVersionWithCurrent(raninittools.Spoke1APIClient,
+				"4.18", true, false)
 			Expect(err).ToNot(HaveOccurred(), "Failed to get spoke cluster version")
 			if !isGreaterOrEqual {
 				Skip("Reserved Frequency Tuning tests require OCP 4.16 or greater")
