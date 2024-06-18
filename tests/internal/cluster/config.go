@@ -48,7 +48,7 @@ func CompareOCPVersionWithCurrent(apiClient *clients.Settings,
 		return false, err
 	}
 
-	glog.V(100).Infof("The apiClient is empty")
+	glog.V(90).Infof("The apiClient is empty")
 
 	currentVersion, err := version.NewVersion(currentOCPVersion)
 	if err != nil {

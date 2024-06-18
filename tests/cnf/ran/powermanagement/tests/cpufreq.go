@@ -31,7 +31,7 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 
 			By("Checking that OCP version is 4.16 or later")
 			isGreaterOrEqual, err := rancluster.CompareOCPVersionWithCurrent(raninittools.Spoke1APIClient,
-				"4.18", true, false)
+				"4.16", true, false)
 			Expect(err).ToNot(HaveOccurred(), "Failed to get spoke cluster version")
 			if !isGreaterOrEqual {
 				Skip("Reserved Frequency Tuning tests require OCP 4.16 or greater")
