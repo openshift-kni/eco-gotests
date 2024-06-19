@@ -25,6 +25,16 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verifies SR-IOV workloads on same node and different networks",
+				Label("sriov", "sriov-same-node-different-nets"),
+				reportxml.ID("72258"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet)
+
+			It("Verifies SR-IOV workloads on different nodes and different networks",
+				Label("sriov", "sriov-different-nodes-different-nets"),
+				reportxml.ID("72259"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet)
+
 			It("Verifies NUMA-aware workload is deployable", reportxml.ID("73677"), Label("nrop"),
 				rdscorecommon.VerifyNROPWorkload)
 

@@ -144,6 +144,8 @@ type CoreConfig struct {
 	PolicyNS             string `yaml:"rdscore_policy_ns" envconfig:"ECO_RDSCORE_POLICY_NS"`
 	WlkdSRIOVOneNS       string `yaml:"rdscore_wlkd_sriov_one_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_NS"`
 	WlkdSRIOVTwoNS       string `yaml:"rdscore_wlkd_sriov_two_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_NS"`
+	WlkdSRIOV3NS         string `yaml:"rdscore_wlkd_sriov_3_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_NS"`
+	WlkdSRIOV4NS         string `yaml:"rdscore_wlkd_sriov_4_ns" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_NS"`
 	WlkdNROPOneNS        string `yaml:"rdscore_wlkd_nrop_one_ns" envconfig:"ECO_RDSCORE_WLKD_NROP_ONE_NS"`
 	WlkdNROPTwoNS        string `yaml:"rdscore_wlkd_nrop_two_ns" envconfig:"ECO_RDSCORE_WLKD_NROP_TWO_NS"`
 	MCVlanNSOne          string `yaml:"rdscore_mcvlan_ns_one" envconfig:"ECO_RDSCORE_MCVLAN_NS_ONE"`
@@ -162,6 +164,8 @@ type CoreConfig struct {
 	NodesCredentialsMap     NodesBMCMap `yaml:"rdscore_nodes_bmc_map" envconfig:"ECO_RDSCORE_NODES_CREDENTIALS_MAP"`
 	WlkdSRIOVDeployOneImage string      `yaml:"rdscore_wlkd_sriov_one_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_IMG"`
 	WlkdSRIOVDeployTwoImage string      `yaml:"rdscore_wlkd_sriov_two_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_IMG"`
+	WlkdSRIOVDeploy3Image   string      `yaml:"rdscore_wlkd_sriov_3_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_IMG"`
+	WlkdSRIOVDeploy4Image   string      `yaml:"rdscore_wlkd_sriov_4_image" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_IMG"`
 	WlkdNROPDeployOneImage  string      `yaml:"rdscore_wlkd_nrop_one_image" envconfig:"ECO_RDSCORE_WLKD_NROP_ONE_IMG"`
 	WlkdNROPDeployTwoImage  string      `yaml:"rdscore_wlkd_nrop_two_image" envconfig:"ECO_RDSCORE_WLKD_NROP_TWO_IMG"`
 	WlkdSRIOVNetOne         string      `yaml:"rdscore_wlkd_sriov_net_one" envconfig:"ECO_RDSCORE_WLKD_SRIOV_NET_ONE"`
@@ -172,6 +176,8 @@ type CoreConfig struct {
 	WlkdSRIOVConfigMapDataOne EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_one" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_ONE"`
 	//nolint:lll
 	WlkdSRIOVConfigMapDataTwo EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_two" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_TWO"`
+	WlkdSRIOVConfigMapData3   EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_3" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_3"`
+	WlkdSRIOVConfigMapData4   EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_4" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_4"`
 	//nolint:lll
 	StorageODFDeployOneSelector EnvMapString `yaml:"rdscore_wlkd_odf_one_selector" envconfig:"ECO_RDSCORE_WLKD_ODF_ONE_SELECTOR"`
 	//nolint:lll
@@ -183,17 +189,41 @@ type CoreConfig struct {
 	//nolint:lll
 	WlkdSRIOVDeployTwoSelector EnvMapString `yaml:"rdscore_wlkd_sriov_two_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_SELECTOR"`
 	//nolint:lll
+	WlkdSRIOVDeploy3OneSelector EnvMapString `yaml:"rdscore_wlkd_sriov_3_0_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_0_SELECTOR"`
+	//nolint:lll
+	WlkdSRIOVDeploy4OneSelector EnvMapString `yaml:"rdscore_wlkd_sriov_4_0_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_0_SELECTOR"`
+	//nolint:lll
+	WlkdSRIOVDeploy4TwoSelector EnvMapString `yaml:"rdscore_wlkd_sriov_4_1_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_1_SELECTOR"`
+	//nolint:lll
+	WlkdSRIOVDeploy3TwoSelector EnvMapString `yaml:"rdscore_wlkd_sriov_3_1_selector" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_1_SELECTOR"`
+	//nolint:lll
 	WldkNROPDeployOneResRequests EnvMapString `yaml:"rdscore_wlkd_nrop_one_res_requests" envconfig:"ECO_RDSCORE_WLKD_NROP_ONE_RES_REQUESTS"`
 	//nolint:lll
 	WldkSRIOVDeployOneResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_one_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_RES_REQUESTS"`
 	//nolint:lll
 	WldkSRIOVDeployTwoResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_two_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_RES_REQUESTS"`
 	//nolint:lll
+	WldkSRIOVDeploy3OneResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_3_0_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_0_RES_REQUESTS"`
+	//nolint:lll
+	WldkSRIOVDeploy3TwoResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_3_1_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_1_RES_REQUESTS"`
+	//nolint:lll
+	WldkSRIOVDeploy4OneResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_4_0_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_0_RES_REQUESTS"`
+	//nolint:lll
+	WldkSRIOVDeploy4TwoResRequests EnvMapString `yaml:"rdscore_wlkd_sriov_4_1_res_requests" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_1_RES_REQUESTS"`
+	//nolint:lll
 	WldkNROPDeployOneResLimits EnvMapString `yaml:"rdscore_wlkd_nrop_one_res_limits" envconfig:"ECO_RDSCORE_WLKD_NROP_ONE_RES_LIMITS"`
 	//nolint:lll
 	WldkSRIOVDeployOneResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_one_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_ONE_RES_LIMITS"`
 	//nolint:lll
 	WldkSRIOVDeployTwoResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_two_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_RES_LIMITS"`
+	//nolint:lll
+	WldkSRIOVDeploy3OneResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_3_0_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_0_RES_LIMITS"`
+	//nolint:lll
+	WldkSRIOVDeploy3TwoResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_3_1_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_1_RES_LIMITS"`
+	//nolint:lll
+	WldkSRIOVDeploy4OneResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_4_0_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_0_RES_LIMITS"`
+	//nolint:lll
+	WldkSRIOVDeploy4TwoResLimits EnvMapString `yaml:"rdscore_wlkd_sriov_4_1_res_limits" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_1_RES_LIMITS"`
 	//nolint:lll,nolintlint
 	NodeSelectorHTNodes EnvMapString `yaml:"rdscore_node_selector_ht_nodes" envconfig:"ECO_RDSCORE_NODE_SELECTOR_HT_NODES"`
 	//nolint:lll
@@ -201,9 +231,25 @@ type CoreConfig struct {
 	//nolint:lll
 	WlkdSRIOVDeployOneTargetAddressIPv6 string `yaml:"rdscore_wlkd_sriov_deploy_one_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_ONE_TARGET_IPV6"`
 	//nolint:lll
+	WlkdSRIOVDeploy3OneTargetAddress string `yaml:"rdscore_wlkd3_sriov_deploy_one_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_3_ONE_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy3OneTargetAddressIPv6 string `yaml:"rdscore_wlkd3_sriov_deploy_one_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_3_ONE_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy4OneTargetAddress string `yaml:"rdscore_wlkd4_sriov_deploy_one_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_4_ONE_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy4OneTargetAddressIPv6 string `yaml:"rdscore_wlkd4_sriov_deploy_one_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_4_ONE_TARGET_IPV6"`
+	//nolint:lll
 	WlkdSRIOVDeployTwoTargetAddress string `yaml:"rdscore_wlkd_sriov_deploy_two_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_TWO_TARGET"`
 	//nolint:lll
 	WlkdSRIOVDeployTwoTargetAddressIPv6 string `yaml:"rdscore_wlkd_sriov_deploy_two_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy3TwoTargetAddress string `yaml:"rdscore_wlkd3_sriov_deploy_two_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_3_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy3TwoTargetAddressIPv6 string `yaml:"rdscore_wlkd3_sriov_deploy_two_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_3_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	WlkdSRIOVDeploy4TwoTargetAddress string `yaml:"rdscore_wlkd4_sriov_deploy_two_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD_4_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	WlkdSRIOVDeploy4TwoTargetAddressIPv6 string `yaml:"rdscore_wlkd4_sriov_deploy_two_target_ipv6" envconfig:"ECO_RDSCORE_SRIOV_WLKD_4_DEPLOY_TWO_TARGET_IPV6"`
 	//nolint:lll
 	WlkdSRIOVDeploy2OneTargetAddress string `yaml:"rdscore_wlkd2_sriov_deploy_one_target" envconfig:"ECO_RDSCORE_SRIOV_WLKD2_DEPLOY_ONE_TARGET"`
 	//nolint:lll
@@ -242,6 +288,14 @@ type CoreConfig struct {
 	WlkdSRIOVDeploy2OneCmd EnvSliceString `yaml:"rdscore_wlkd2_sriov_one_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_2_ONE_CMD"`
 	//nolint:lll,nolintlint
 	WlkdSRIOVDeploy2TwoCmd EnvSliceString `yaml:"rdscore_wlkd2_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_2_TWO_CMD"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeploy3OneCmd EnvSliceString `yaml:"rdscore_wlkd3_sriov_one_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_ONE_CMD"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeploy3TwoCmd EnvSliceString `yaml:"rdscore_wlkd3_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_3_TWO_CMD"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeploy4OneCmd EnvSliceString `yaml:"rdscore_wlkd4_sriov_one_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_ONE_CMD"`
+	//nolint:lll,nolintlint
+	WlkdSRIOVDeploy4TwoCmd EnvSliceString `yaml:"rdscore_wlkd4_sriov_two_cmd" envconfig:"ECO_RDSCORE_WLKD_SRIOV_4_TWO_CMD"`
 	//nolint:lll,nolintlint
 	MCVlanDeplonOneCMD EnvSliceString `yaml:"rdscore_mcvlan_deploy_1_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_1_CMD"`
 	//nolint:lll,nolintlint
