@@ -28,7 +28,7 @@ var _ = Describe(
 			It("Verifies NUMA-aware workload is deployable", reportxml.ID("73677"), Label("nrop"),
 				rdscorecommon.VerifyNROPWorkload)
 
-			It("Verifies all policies are compliant", reportxml.ID("72355"), Label("validate-policies"),
+			It("Verifies all policies are compliant", reportxml.ID("72354"), Label("validate-policies"),
 				rdscorecommon.ValidateAllPoliciesCompliant)
 
 			It("Verify MACVLAN", Label("macvlan", "validate-new-macvlan-different-nodes"), reportxml.ID("72566"),
@@ -163,6 +163,13 @@ var _ = Describe(
 				Label("statefulset-ready"), reportxml.ID("73972"),
 				rdscorecommon.WaitAllStatefulsetsReady)
 
+			It("Verifies all NodeNetworkConfigurationPolicies are Available after ungraceful reboot",
+				Label("nmstate", "nmstate-nncp"), reportxml.ID("71848"),
+				rdscorecommon.VerifyAllNNCPsAreOK)
+
+			It("Verifies all policies are compliant after hard reboot", reportxml.ID("72355"), Label("validate-policies"),
+				rdscorecommon.ValidateAllPoliciesCompliant)
+
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
 				rdscorecommon.VerifyNROPWorkloadAvailable)
@@ -242,6 +249,13 @@ var _ = Describe(
 			It("Verifies all statefulsets are in Ready state after soft reboot",
 				Label("statefulset-ready"), reportxml.ID("73973"),
 				rdscorecommon.WaitAllStatefulsetsReady)
+
+			It("Verifies all NodeNetworkConfigurationPolicies are Available after soft reboot",
+				Label("nmstate", "nmstate-nncp"), reportxml.ID("71849"),
+				rdscorecommon.VerifyAllNNCPsAreOK)
+
+			It("Verifies all policies are compliant after soft reboot", reportxml.ID("72357"), Label("validate-policies"),
+				rdscorecommon.ValidateAllPoliciesCompliant)
 
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),
