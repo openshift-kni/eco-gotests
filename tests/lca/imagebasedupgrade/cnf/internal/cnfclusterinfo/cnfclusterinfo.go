@@ -59,6 +59,8 @@ type ClusterStruct struct {
 }
 
 // SaveClusterInfo is a dedicated func to save cluster info.
+//
+//nolint:funlen
 func (upgradeVar *ClusterStruct) SaveClusterInfo() error {
 	clusterVersion, err := cluster.GetOCPClusterVersion(cnfinittools.TargetSNOAPIClient)
 
@@ -88,7 +90,11 @@ func (upgradeVar *ClusterStruct) SaveClusterInfo() error {
 
 	for _, csv := range csvList {
 		if !slices.Contains(installedCSV, csv.Object.Name) {
-			installedCSV = append(installedCSV, csv.Object.Name)
+			if !strings.Contains(csv.Object.Name, "oadp-operator") &&
+				!strings.Contains(csv.Object.Name, "packageserver") &&
+				!strings.Contains(csv.Object.Name, "sriov-fec") {
+				installedCSV = append(installedCSV, csv.Object.Name)
+			}
 		}
 	}
 
@@ -116,7 +122,9 @@ func (upgradeVar *ClusterStruct) SaveClusterInfo() error {
 	sriovPolicy, err := sriov.ListPolicy(cnfinittools.TargetSNOAPIClient, cnfinittools.CNFConfig.SriovOperatorNamespace)
 
 	for _, policy := range sriovPolicy {
-		upgradeVar.SriovNetworkNodePolicies = append(upgradeVar.SriovNetworkNodePolicies, policy.Object.Name)
+		if !strings.Contains(policy.Object.Name, "default") {
+			upgradeVar.SriovNetworkNodePolicies = append(upgradeVar.SriovNetworkNodePolicies, policy.Object.Name)
+		}
 	}
 
 	upgradeVar.Version = clusterVersion.Object.Status.Desired.Version
