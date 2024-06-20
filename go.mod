@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240616203043-4ad37ebd38ba // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240620154035-1f702e37c052 // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -69,9 +69,13 @@ require (
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
+	github.com/openshift-kni/numaresources-operator v0.4.16-0rc0 // indirect
 	github.com/openshift/cluster-logging-operator v0.0.0-20240606085930-750f369019d4 // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2 // indirect
 	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
+	github.com/stolostron/cluster-lifecycle-api v0.0.0-20240109072430-f5fe6043d1f8 // indirect
+	github.com/stolostron/klusterlet-addon-controller v0.0.0-20240606130554-01338045271a // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	knative.dev/pkg v0.0.0-20240423132823-3c6badc82748 // indirect

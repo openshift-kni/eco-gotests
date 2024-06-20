@@ -638,7 +638,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240616203043-4ad37ebd38ba
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240620154035-1f702e37c052
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
@@ -677,6 +677,7 @@ github.com/openshift-kni/eco-goinfra/pkg/nodes
 github.com/openshift-kni/eco-goinfra/pkg/nodesconfig
 github.com/openshift-kni/eco-goinfra/pkg/nto
 github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu
+github.com/openshift-kni/eco-goinfra/pkg/oadp/oadptypes
 github.com/openshift-kni/eco-goinfra/pkg/ocm
 github.com/openshift-kni/eco-goinfra/pkg/olm
 github.com/openshift-kni/eco-goinfra/pkg/pod
@@ -694,7 +695,6 @@ github.com/openshift-kni/eco-goinfra/pkg/sriov-fec
 github.com/openshift-kni/eco-goinfra/pkg/sriov-fec/sriovfectypes
 github.com/openshift-kni/eco-goinfra/pkg/statefulset
 github.com/openshift-kni/eco-goinfra/pkg/storage
-github.com/openshift-kni/eco-goinfra/pkg/velero
 github.com/openshift-kni/eco-goinfra/pkg/webhook
 # github.com/openshift-kni/k8sreporter v1.0.5
 ## explicit; go 1.20
@@ -709,6 +709,9 @@ github.com/openshift-kni/lifecycle-agent/controllers/utils
 github.com/openshift-kni/lifecycle-agent/internal/common
 github.com/openshift-kni/lifecycle-agent/lca-cli/seedclusterinfo
 github.com/openshift-kni/lifecycle-agent/utils
+# github.com/openshift-kni/numaresources-operator v0.4.16-0rc0
+## explicit; go 1.21
+github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1
 # github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible => github.com/openshift/api v0.0.0-20240605153344-636e2c17106f
 ## explicit; go 1.21
 github.com/openshift/api
@@ -984,6 +987,10 @@ github.com/pmezard/go-difflib/difflib
 # github.com/povsister/scp v0.0.0-20210427074412-33febfd9f13e
 ## explicit; go 1.15
 github.com/povsister/scp
+# github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2
+## explicit; go 1.21
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1
 # github.com/prometheus/client_golang v1.19.1
 ## explicit; go 1.20
 github.com/prometheus/client_golang/prometheus
@@ -1054,6 +1061,14 @@ github.com/stmcginnis/gofish/swordfish
 # github.com/stoewer/go-strcase v1.3.0
 ## explicit; go 1.11
 github.com/stoewer/go-strcase
+# github.com/stolostron/cluster-lifecycle-api v0.0.0-20240109072430-f5fe6043d1f8
+## explicit; go 1.19
+github.com/stolostron/cluster-lifecycle-api/helpers/imageregistry
+github.com/stolostron/cluster-lifecycle-api/imageregistry/v1alpha1
+# github.com/stolostron/klusterlet-addon-controller v0.0.0-20240606130554-01338045271a
+## explicit; go 1.21
+github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1
+github.com/stolostron/klusterlet-addon-controller/version
 # github.com/stretchr/testify v1.9.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
