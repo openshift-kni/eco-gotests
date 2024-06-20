@@ -96,3 +96,5 @@ rdscore_wlkd_nrop_one_res_limits:
   memory: "500M"
 rdscore_nrop_scheduler_name: topo-aware-scheduler
 rdscore_wlkd_nrop_one_selector: {}
+rdscore_sc_cephfs_name: ''
+rdscore_sc_cephrbd_name: ''
