@@ -123,6 +123,19 @@ type RestoreSpec struct {
 	// +optional
 	// +nullable
 	ResourceModifier *v1.TypedLocalObjectReference `json:"resourceModifier,omitempty"`
+
+	// UploaderConfig specifies the configuration for the restore.
+	// +optional
+	// +nullable
+	UploaderConfig *UploaderConfigForRestore `json:"uploaderConfig,omitempty"`
+}
+
+// UploaderConfigForRestore defines the configuration for the restore.
+type UploaderConfigForRestore struct {
+	// WriteSparseFiles is a flag to indicate whether write files sparsely or not.
+	// +optional
+	// +nullable
+	WriteSparseFiles *bool `json:"writeSparseFiles,omitempty"`
 }
 
 // RestoreHooks contains custom behaviors that should be executed during or post restore.
@@ -214,6 +227,11 @@ type ExecRestoreHook struct {
 	// before attempting to run the command.
 	// +optional
 	WaitTimeout metav1.Duration `json:"waitTimeout,omitempty"`
+
+	// WaitForReady ensures command will be launched when container is Ready instead of Running.
+	// +optional
+	// +nullable
+	WaitForReady *bool `json:"waitForReady,omitempty"`
 }
 
 // InitRestoreHook is a hook that adds an init container to a PodSpec to run commands before the
@@ -340,6 +358,11 @@ type RestoreStatus struct {
 	// RestoreItemAction operations for this restore which ended with an error.
 	// +optional
 	RestoreItemOperationsFailed int `json:"restoreItemOperationsFailed,omitempty"`
+
+	// HookStatus contains information about the status of the hooks.
+	// +optional
+	// +nullable
+	HookStatus *HookStatus `json:"hookStatus,omitempty"`
 }
 
 // RestoreProgress stores information about the restore's execution progress

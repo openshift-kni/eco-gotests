@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/link"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
@@ -56,7 +56,6 @@ const (
 	firstInterfaceBasedOnTapOne  = "ext0.1"
 	secondInterfaceBasedOnTapOne = "ext0.2"
 	firstInterfaceBasedOnTapTwo  = "ext1.1"
-	timeoutError                 = "command terminated with exit code 137"
 	mlxVendorID                  = "15b3"
 	intelVendorID                = "8086"
 	maxMulticastNoiseRate        = 5000
@@ -252,7 +251,11 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				clientPodNetConfig,
 				sleepCMD,
 			)
-			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}"))
+
+			err = cmd.RxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName,
+				"${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}"))
+			Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
+
 			checkRxOutputRateForInterfaces(
 				clientPod,
 				map[string]int{
@@ -261,7 +264,10 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 					firstInterfaceBasedOnTapOne:  minimumExpectedDPDKRate,
 					secondInterfaceBasedOnTapOne: maxMulticastNoiseRate},
 			)
-			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName, "${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}"))
+
+			err = cmd.RxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName,
+				"${PCIDEVICE_OPENSHIFT_IO_DPDKPOLICYONE}"))
+			Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
 			checkRxOutputRateForInterfaces(
 				clientPod,
 				map[string]int{tapTwoInterfaceName: minimumExpectedDPDKRate, firstInterfaceBasedOnTapTwo: maxMulticastNoiseRate})
@@ -331,14 +337,19 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
 				By("Running client dpdk-testpmd")
-				rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+				err = cmd.RxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+				Expect(err).ToNot(HaveOccurred(),
+					"The Receive traffic test on the the client pod failed")
 
 				By("Checking the rx output of tap ext0 device")
 				checkRxOutputRateForInterfaces(
 					clientPod, map[string]int{
 						tapOneInterfaceName:         minimumExpectedDPDKRate,
 						firstInterfaceBasedOnTapOne: minimumExpectedDPDKRate})
-				rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+				err = cmd.RxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+				Expect(err).ToNot(HaveOccurred(),
+					"The Receive traffic test on the the client pod failed")
+
 				checkRxOutputRateForInterfaces(clientPod, map[string]int{
 					tapTwoInterfaceName:              minimumExpectedDPDKRate,
 					firstVlanInterfaceBasedOnTapTwo:  minimumExpectedDPDKRate,
@@ -392,14 +403,18 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				clientPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
-			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			err = cmd.RxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
+
 			checkRxOutputRateForInterfaces(
 				clientPod, map[string]int{
 					tapOneInterfaceName:          minimumExpectedDPDKRate,
 					firstInterfaceBasedOnTapOne:  minimumExpectedDPDKRate,
 					secondInterfaceBasedOnTapOne: maxMulticastNoiseRate,
 				})
-			rxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			err = cmd.RxTrafficOnClientPod(clientPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
+
 			checkRxOutputRateForInterfaces(
 				clientPod, map[string]int{
 					tapTwoInterfaceName:          minimumExpectedDPDKRate,
@@ -492,7 +507,8 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
-			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			err = cmd.RxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
 
 			checkRxOutputRateForInterfaces(
 				deploymentPod, map[string]int{
@@ -500,7 +516,8 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 					firstVlanInterfaceBasedOnTapOne: minimumExpectedDPDKRate,
 				})
 
-			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			err = cmd.RxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
 
 			checkRxOutputRateForInterfaces(
 				deploymentPod, map[string]int{
@@ -525,13 +542,18 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				deploymentPod.Object.Annotations["k8s.v1.cni.cncf.io/network-status"])
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect PCI addresses")
 
-			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			err = cmd.RxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapOneInterfaceName, pciAddressList[0]))
+			Expect(err).ToNot(HaveOccurred(),
+				"The Receive traffic test on the the client pod failed %s")
+
 			checkRxOutputRateForInterfaces(
 				deploymentPod, map[string]int{
 					tapOneInterfaceName:             minimumExpectedDPDKRate,
 					firstVlanInterfaceBasedOnTapOne: minimumExpectedDPDKRate,
 				})
-			rxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			err = cmd.RxTrafficOnClientPod(deploymentPod, defineTestPmdCmd(tapTwoInterfaceName, pciAddressList[1]))
+			Expect(err).ToNot(HaveOccurred(), "The Receive traffic test on the the client pod failed")
+
 			checkRxOutputRateForInterfaces(
 				deploymentPod, map[string]int{
 					tapTwoInterfaceName:          minimumExpectedDPDKRate,
@@ -726,45 +748,6 @@ func defineTestPmdCmd(interfaceName string, pciAddress string) string {
 	return fmt.Sprintf("timeout -s SIGKILL 20 dpdk-testpmd "+
 		"--vdev=virtio_user0,path=/dev/vhost-net,queues=2,queue_size=1024,iface=%s "+
 		"-a %s -- --stats-period 5", interfaceName, pciAddress)
-}
-
-func rxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) {
-	Expect(clientPod.WaitUntilRunning(time.Minute)).ToNot(HaveOccurred(), "Fail to wait until pod is running")
-	clientOut, err := clientPod.ExecCommand([]string{"/bin/bash", "-c", clientRxCmd})
-
-	if err.Error() != timeoutError {
-		Expect(err).ToNot(HaveOccurred(), "Fail to exec cmd")
-	}
-
-	By("Parsing output from the DPDK application")
-	glog.V(90).Infof("Processing testpdm output from client pod \n%s", clientOut.String())
-	Expect(checkRxOnly(clientOut.String())).Should(BeTrue(), "Fail to process output from dpdk application")
-}
-
-func checkRxOnly(out string) bool {
-	lines := strings.Split(out, "\n")
-	Expect(len(lines)).To(BeNumerically(">=", 3),
-		"Fail line list contains less than 3 elements")
-
-	for i, line := range lines {
-		if strings.Contains(line, "NIC statistics for port") {
-			if len(lines) > i && getNumberOfPackets(lines[i+1], "RX") > 0 {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func getNumberOfPackets(line, firstFieldSubstr string) int {
-	splitLine := strings.Fields(line)
-	Expect(splitLine[0]).To(ContainSubstring(firstFieldSubstr), "Fail to find expected substring")
-	Expect(len(splitLine)).To(Equal(6), "the slice doesn't contain 6 elements")
-	numberOfPackets, err := strconv.Atoi(splitLine[1])
-	Expect(err).ToNot(HaveOccurred(), "Fail to convert string to integer")
-
-	return numberOfPackets
 }
 
 func checkRxOutputRateForInterfaces(clientPod *pod.Builder, interfaceTrafficRateMap map[string]int) {

@@ -29,6 +29,7 @@ func HardRebootNode(nodeName string, nsName string) error {
 
 	trueVar := true
 	deployContainer = deployContainer.WithSecurityContext(&v1.SecurityContext{Privileged: &trueVar})
+	deployContainer = deployContainer.WithImagePullPolicy(v1.PullIfNotPresent)
 
 	deployContainerCfg, err := deployContainer.GetContainerCfg()
 	if err != nil {

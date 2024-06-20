@@ -32,12 +32,20 @@ const (
 	sriovDeploy1TwoName = "rdscore-sriov-two"
 	sriovDeploy2OneName = "rdscore-sriov2-one"
 	sriovDeploy2TwoName = "rdscore-sriov2-two"
+	sriovDeploy3OneName = "rdscore-sriov3-one"
+	sriovDeploy3TwoName = "rdscore-sriov3-two"
+	sriovDeploy4OneName = "rdscore-sriov4-one"
+	sriovDeploy4TwoName = "rdscore-sriov4-two"
 	// ConfigMap names.
 	sriovDeploy1CMName = "rdscore-sriov-config"
 	sriovDeploy2CMName = "rdscore-sriov2-config"
+	sriovDeploy3CMName = "rdscore-sriov3-config"
+	sriovDeploy4CMName = "rdscore-sriov4-config"
 	// ServiceAccount names.
 	sriovDeploy1SAName = "rdscore-sriov-sa-one"
 	sriovDeploy2SAName = "rdscore-sriov-sa-two"
+	sriovDeploy3SAName = "rdscore-sriov-sa-3"
+	sriovDeploy4SAName = "rdscore-sriov-sa-4"
 	// Container names within deployments.
 	sriovContainerOneName = "sriov-one"
 	sriovContainerTwoName = "sriov-two"
@@ -46,12 +54,20 @@ const (
 	sriovDeployTwoLabel  = "rds-core=sriov-deploy-two"
 	sriovDeploy2OneLabel = "rds-core=sriov-deploy2-one"
 	sriovDeploy2TwoLabel = "rds-core=sriov-deploy2-two"
+	sriovDeploy3OneLabel = "rds-core=sriov-deploy3-one"
+	sriovDeploy3TwoLabel = "rds-core=sriov-deploy3-two"
+	sriovDeploy4OneLabel = "rds-core=sriov-deploy4-one"
+	sriovDeploy4TwoLabel = "rds-core=sriov-deploy4-two"
 	// RBAC names for the deployments.
 	sriovDeployRBACName  = "privileged-rdscore-sriov"
 	sriovDeployRBACName2 = "privileged-rdscore-sriov2"
+	sriovDeployRBACName3 = "privileged-rdscore-sriov3"
+	sriovDeployRBACName4 = "privileged-rdscore-sriov4"
 	// ClusterRole to use with RBAC.
 	sriovRBACRole  = "system:openshift:scc:privileged"
 	sriovRBACRole2 = "system:openshift:scc:privileged"
+	sriovRBACRole3 = "system:openshift:scc:privileged"
+	sriovRBACRole4 = "system:openshift:scc:privileged"
 )
 
 func createServiceAccount(saName, nsName string) {
@@ -516,17 +532,19 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 		podOneResult, err = podOne.ExecCommand(sendDataOneCmd, podOne.Definition.Spec.Containers[0].Name)
 
 		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", sendDataOneCmd)
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", err)
 
 			return false
 		}
 
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command %v within container", sendDataOneCmd)
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command within container %q",
 			podOne.Definition.Spec.Containers[0].Name)
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
 
 		return true
-	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
 
 	verifyMsgInPodLogs(podTwo, msgOne, podTwo.Definition.Spec.Containers[0].Name, timeStart)
@@ -566,6 +584,9 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 		return len(oldPods) == 0
 
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label() still present")
+
+	By("Sleeping 90 seconds")
+	time.Sleep(90 * time.Second)
 
 	By("Removing ConfigMap")
 
@@ -729,6 +750,9 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 		return len(oldPods) == 0
 
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label() still present")
+
+	By("Sleeping 90 seconds")
+	time.Sleep(90 * time.Second)
 
 	By("Removing ConfigMap")
 
@@ -943,6 +967,346 @@ func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeployTwoLabel,
 			sriovDeployOneLabel,
+			targetAddress)
+	}
+}
+
+// VerifySRIOVWorkloadsOnSameNodeDifferentNet deploy worklods with different SRIOV networks on the same node
+//
+//nolint:funlen
+func VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx SpecContext) {
+	By("Checking SR-IOV deployments don't exist")
+
+	deleteDeployments(sriovDeploy3OneName, RDSCoreConfig.WlkdSRIOV3NS)
+	deleteDeployments(sriovDeploy3TwoName, RDSCoreConfig.WlkdSRIOV3NS)
+
+	By(fmt.Sprintf("Ensuring pods from %q deployment are gone", sriovDeploy3OneName))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Ensuring pods from %q deployment in %q namespace are gone",
+		sriovDeploy3OneName, RDSCoreConfig.WlkdSRIOV3NS)
+
+	Eventually(func() bool {
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+			metav1.ListOptions{LabelSelector: sriovDeploy3OneLabel})
+
+		return len(oldPods) == 0
+
+	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(6*time.Minute).Should(BeTrue(),
+		"pods matching label() still present")
+
+	By(fmt.Sprintf("Ensuring pods from %q deployment are gone", sriovDeploy3TwoName))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Ensuring pods from %q deployment in %q namespace are gone",
+		sriovDeploy3TwoName, RDSCoreConfig.WlkdSRIOV3NS)
+
+	Eventually(func() bool {
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+			metav1.ListOptions{LabelSelector: sriovDeploy3TwoLabel})
+
+		return len(oldPods) == 0
+
+	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(6*time.Minute).Should(BeTrue(),
+		"pods matching label() still present")
+
+	By("Removing ConfigMap")
+
+	deleteConfigMap(sriovDeploy3CMName, RDSCoreConfig.WlkdSRIOV3NS)
+
+	By("Creating ConfigMap")
+
+	createConfigMap(sriovDeploy3CMName,
+		RDSCoreConfig.WlkdSRIOV3NS, RDSCoreConfig.WlkdSRIOVConfigMapData3)
+
+	By("Removing ServiceAccount")
+
+	deleteServiceAccount(sriovDeploy3SAName, RDSCoreConfig.WlkdSRIOV3NS)
+
+	By("Creating ServiceAccount")
+
+	createServiceAccount(sriovDeploy3SAName, RDSCoreConfig.WlkdSRIOV3NS)
+
+	By("Removing Cluster RBAC")
+
+	deleteClusterRBAC(sriovDeployRBACName3)
+
+	By("Creating Cluster RBAC")
+
+	createClusterRBAC(sriovDeployRBACName3, sriovRBACRole3,
+		sriovDeploy3SAName, RDSCoreConfig.WlkdSRIOV3NS)
+
+	By("Defining container configuration")
+
+	deployContainer := defineContainer(sriovContainerOneName, RDSCoreConfig.WlkdSRIOVDeploy3Image,
+		RDSCoreConfig.WlkdSRIOVDeploy3OneCmd, RDSCoreConfig.WldkSRIOVDeploy3OneResRequests,
+		RDSCoreConfig.WldkSRIOVDeploy3OneResLimits)
+
+	deployContainerTwo := defineContainer(sriovContainerTwoName, RDSCoreConfig.WlkdSRIOVDeploy3Image,
+		RDSCoreConfig.WlkdSRIOVDeploy3TwoCmd, RDSCoreConfig.WldkSRIOVDeploy3TwoResRequests,
+		RDSCoreConfig.WldkSRIOVDeploy3TwoResLimits)
+
+	By("Obtaining container definition")
+
+	deployContainerCfg, err := deployContainer.GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get container definition")
+
+	deployContainerTwoCfg, err := deployContainerTwo.GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get container definition")
+
+	By("Defining 1st deployment configuration")
+
+	deployOneLabels := map[string]string{
+		strings.Split(sriovDeploy3OneLabel, "=")[0]: strings.Split(sriovDeploy3OneLabel, "=")[1]}
+
+	deploy := defineDeployment(deployContainerCfg,
+		sriovDeploy3OneName,
+		RDSCoreConfig.WlkdSRIOV3NS,
+		RDSCoreConfig.WlkdSRIOVNetOne,
+		sriovDeploy3CMName,
+		sriovDeploy3SAName,
+		deployOneLabels,
+		RDSCoreConfig.WlkdSRIOVDeploy3OneSelector)
+
+	By("Creating deployment one")
+
+	deploy, err = deploy.CreateAndWaitUntilReady(5 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create deployment %s: %v", sriovDeploy3OneName, err))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q created in %q namespace",
+		deploy.Definition.Name, deploy.Definition.Namespace)
+
+	By("Defining 2nd deployment")
+
+	deployTwoLabels := map[string]string{
+		strings.Split(sriovDeploy3TwoLabel, "=")[0]: strings.Split(sriovDeploy3TwoLabel, "=")[1]}
+
+	deployTwo := defineDeployment(deployContainerTwoCfg,
+		sriovDeploy3TwoName,
+		RDSCoreConfig.WlkdSRIOV3NS,
+		RDSCoreConfig.WlkdSRIOVNetTwo,
+		sriovDeploy3CMName,
+		sriovDeploy3SAName,
+		deployTwoLabels,
+		RDSCoreConfig.WlkdSRIOVDeploy3OneSelector)
+
+	By("Creating 2nd deployment")
+
+	deployTwo, err = deployTwo.CreateAndWaitUntilReady(5 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create deployment %s: %v", sriovDeploy3TwoName, err))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q created in %q namespace",
+		deployTwo.Definition.Name, deployTwo.Definition.Namespace)
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
+
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeploy3OneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy3OneTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV3NS,
+			RDSCoreConfig.WlkdSRIOV3NS,
+			sriovDeploy3OneLabel,
+			sriovDeploy3TwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeploy3TwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy3TwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV3NS,
+			RDSCoreConfig.WlkdSRIOV3NS,
+			sriovDeploy3TwoLabel,
+			sriovDeploy3OneLabel,
+			targetAddress)
+	}
+}
+
+// VerifySRIOVWorkloadsOnDifferentNodesDifferentNet deploy worklods with different SRIOV networks on different nodes
+//
+//nolint:funlen
+func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
+	By("Checking SR-IOV deployments don't exist")
+
+	deleteDeployments(sriovDeploy4OneName, RDSCoreConfig.WlkdSRIOV4NS)
+	deleteDeployments(sriovDeploy4TwoName, RDSCoreConfig.WlkdSRIOV4NS)
+
+	By(fmt.Sprintf("Ensuring pods from %q deployment are gone", sriovDeploy4OneName))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Ensuring pods from %q deployment in %q namespace are gone",
+		sriovDeploy4OneName, RDSCoreConfig.WlkdSRIOV4NS)
+
+	Eventually(func() bool {
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+			metav1.ListOptions{LabelSelector: sriovDeploy4OneLabel})
+
+		return len(oldPods) == 0
+
+	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(6*time.Minute).Should(BeTrue(),
+		"pods matching label() still present")
+
+	By(fmt.Sprintf("Ensuring pods from %q deployment are gone", sriovDeploy4TwoName))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Ensuring pods from %q deployment in %q namespace are gone",
+		sriovDeploy4TwoName, RDSCoreConfig.WlkdSRIOV4NS)
+
+	Eventually(func() bool {
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+			metav1.ListOptions{LabelSelector: sriovDeploy4TwoLabel})
+
+		return len(oldPods) == 0
+
+	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(6*time.Minute).Should(BeTrue(),
+		"pods matching label() still present")
+
+	By("Removing ConfigMap")
+
+	deleteConfigMap(sriovDeploy4CMName, RDSCoreConfig.WlkdSRIOV4NS)
+
+	By("Creating ConfigMap")
+
+	createConfigMap(sriovDeploy4CMName,
+		RDSCoreConfig.WlkdSRIOV4NS, RDSCoreConfig.WlkdSRIOVConfigMapData4)
+
+	By("Removing ServiceAccount")
+
+	deleteServiceAccount(sriovDeploy4SAName, RDSCoreConfig.WlkdSRIOV4NS)
+
+	By("Creating ServiceAccount")
+
+	createServiceAccount(sriovDeploy4SAName, RDSCoreConfig.WlkdSRIOV4NS)
+
+	By("Removing Cluster RBAC")
+
+	deleteClusterRBAC(sriovDeployRBACName4)
+
+	By("Creating Cluster RBAC")
+
+	createClusterRBAC(sriovDeployRBACName4, sriovRBACRole4,
+		sriovDeploy4SAName, RDSCoreConfig.WlkdSRIOV4NS)
+
+	By("Defining container configuration")
+
+	deployContainer := defineContainer(sriovContainerOneName, RDSCoreConfig.WlkdSRIOVDeploy4Image,
+		RDSCoreConfig.WlkdSRIOVDeploy4OneCmd, RDSCoreConfig.WldkSRIOVDeploy4OneResRequests,
+		RDSCoreConfig.WldkSRIOVDeploy4OneResLimits)
+
+	deployContainerTwo := defineContainer(sriovContainerTwoName, RDSCoreConfig.WlkdSRIOVDeploy4Image,
+		RDSCoreConfig.WlkdSRIOVDeploy4TwoCmd, RDSCoreConfig.WldkSRIOVDeploy4TwoResRequests,
+		RDSCoreConfig.WldkSRIOVDeploy4TwoResLimits)
+
+	By("Obtaining container definition")
+
+	deployContainerCfg, err := deployContainer.GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get container definition")
+
+	deployContainerTwoCfg, err := deployContainerTwo.GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get container definition")
+
+	By("Defining 1st deployment configuration")
+
+	deployOneLabels := map[string]string{
+		strings.Split(sriovDeploy4OneLabel, "=")[0]: strings.Split(sriovDeploy4OneLabel, "=")[1]}
+
+	deploy := defineDeployment(deployContainerCfg,
+		sriovDeploy4OneName,
+		RDSCoreConfig.WlkdSRIOV4NS,
+		RDSCoreConfig.WlkdSRIOVNetOne,
+		sriovDeploy4CMName,
+		sriovDeploy4SAName,
+		deployOneLabels,
+		RDSCoreConfig.WlkdSRIOVDeploy4OneSelector)
+
+	By("Creating deployment one")
+
+	deploy, err = deploy.CreateAndWaitUntilReady(5 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create deployment %s: %v", sriovDeploy4OneName, err))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q created in %q namespace",
+		deploy.Definition.Name, deploy.Definition.Namespace)
+
+	By("Defining 2nd deployment")
+
+	deployTwoLabels := map[string]string{
+		strings.Split(sriovDeploy4TwoLabel, "=")[0]: strings.Split(sriovDeploy4TwoLabel, "=")[1]}
+
+	deployTwo := defineDeployment(deployContainerTwoCfg,
+		sriovDeploy4TwoName,
+		RDSCoreConfig.WlkdSRIOV4NS,
+		RDSCoreConfig.WlkdSRIOVNetTwo,
+		sriovDeploy4CMName,
+		sriovDeploy4SAName,
+		deployTwoLabels,
+		RDSCoreConfig.WlkdSRIOVDeploy4TwoSelector)
+
+	By("Creating 2nd deployment")
+
+	deployTwo, err = deployTwo.CreateAndWaitUntilReady(5 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create deployment %s: %v", sriovDeploy4TwoName, err))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q created in %q namespace",
+		deployTwo.Definition.Name, deployTwo.Definition.Namespace)
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
+
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeploy4OneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy4OneTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV4NS,
+			RDSCoreConfig.WlkdSRIOV4NS,
+			sriovDeploy4OneLabel,
+			sriovDeploy4TwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeploy4TwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy4TwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV4NS,
+			RDSCoreConfig.WlkdSRIOV4NS,
+			sriovDeploy4TwoLabel,
+			sriovDeploy4OneLabel,
 			targetAddress)
 	}
 }

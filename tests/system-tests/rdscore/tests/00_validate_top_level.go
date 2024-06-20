@@ -25,10 +25,20 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verifies SR-IOV workloads on same node and different networks",
+				Label("sriov", "sriov-same-node-different-nets"),
+				reportxml.ID("72258"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet)
+
+			It("Verifies SR-IOV workloads on different nodes and different networks",
+				Label("sriov", "sriov-different-nodes-different-nets"),
+				reportxml.ID("72259"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet)
+
 			It("Verifies NUMA-aware workload is deployable", reportxml.ID("73677"), Label("nrop"),
 				rdscorecommon.VerifyNROPWorkload)
 
-			It("Verifies all policies are compliant", reportxml.ID("72355"), Label("validate-policies"),
+			It("Verifies all policies are compliant", reportxml.ID("72354"), Label("validate-policies"),
 				rdscorecommon.ValidateAllPoliciesCompliant)
 
 			It("Verify MACVLAN", Label("macvlan", "validate-new-macvlan-different-nodes"), reportxml.ID("72566"),
@@ -69,10 +79,7 @@ var _ = Describe(
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephFSPVC(ctx)
-
-				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephRBDPVC(ctx)
+				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
 
 				By("Creating SR-IOV workloads on the same node")
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)
@@ -166,6 +173,13 @@ var _ = Describe(
 				Label("statefulset-ready"), reportxml.ID("73972"),
 				rdscorecommon.WaitAllStatefulsetsReady)
 
+			It("Verifies all NodeNetworkConfigurationPolicies are Available after ungraceful reboot",
+				Label("nmstate", "nmstate-nncp"), reportxml.ID("71848"),
+				rdscorecommon.VerifyAllNNCPsAreOK)
+
+			It("Verifies all policies are compliant after hard reboot", reportxml.ID("72355"), Label("validate-policies"),
+				rdscorecommon.ValidateAllPoliciesCompliant)
+
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
 				rdscorecommon.VerifyNROPWorkloadAvailable)
@@ -173,10 +187,6 @@ var _ = Describe(
 			It("Verifies CephFS PVC is still accessible",
 				Label("persistent-storage", "verify-cephfs"), reportxml.ID("71873"),
 				rdscorecommon.VerifyDataOnCephFSPVC)
-
-			It("Verifies CephRBD PVC is still accessible",
-				Label("persistent-storage", "verify-cephrbd"), reportxml.ID("71990"),
-				rdscorecommon.VerifyDataOnCephRBDPVC)
 
 			It("Verifies CephFS workload is deployable after hard reboot",
 				Label("persistent-storage", "deploy-cephfs-pvc"), reportxml.ID("71851"), MustPassRepeatedly(3),
@@ -206,10 +216,7 @@ var _ = Describe(
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
 				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephFSPVC(ctx)
-
-				By("Creating a workload with CephFS PVC")
-				rdscorecommon.VerifyCephRBDPVC(ctx)
+				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
 
 				By("Creating SR-IOV worklods that run on same node")
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)
@@ -253,6 +260,13 @@ var _ = Describe(
 				Label("statefulset-ready"), reportxml.ID("73973"),
 				rdscorecommon.WaitAllStatefulsetsReady)
 
+			It("Verifies all NodeNetworkConfigurationPolicies are Available after soft reboot",
+				Label("nmstate", "nmstate-nncp"), reportxml.ID("71849"),
+				rdscorecommon.VerifyAllNNCPsAreOK)
+
+			It("Verifies all policies are compliant after soft reboot", reportxml.ID("72357"), Label("validate-policies"),
+				rdscorecommon.ValidateAllPoliciesCompliant)
+
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),
 				rdscorecommon.VerifyNROPWorkloadAvailable)
@@ -260,10 +274,6 @@ var _ = Describe(
 			It("Verifies CephFS PVC is still accessible",
 				Label("persistent-storage", "verify-cephfs"), reportxml.ID("72042"),
 				rdscorecommon.VerifyDataOnCephFSPVC)
-
-			It("Verifies CephRBD PVC is still accessible",
-				Label("persistent-storage", "verify-cephrbd"), reportxml.ID("72044"),
-				rdscorecommon.VerifyDataOnCephRBDPVC)
 
 			It("Verifies CephFS workload is deployable after graceful reboot",
 				Label("persistent-storage", "deploy-cephfs-pvc"), reportxml.ID("72045"), MustPassRepeatedly(3),

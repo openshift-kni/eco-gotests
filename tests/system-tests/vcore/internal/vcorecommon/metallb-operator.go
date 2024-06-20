@@ -106,7 +106,10 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 		time.Sleep(5 * time.Second)
 	}
 
-	err = await.WaitUntilNewMetalLbDaemonSetIsRunning(APIClient, 5*time.Minute)
+	err = await.WaitUntilNewDaemonSetIsRunning(APIClient,
+		vcoreparams.MetalLBDaemonSetName,
+		vcoreparams.MetalLBOperatorNamespace,
+		5*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("daemonset for %s deployment speaker not found in %s namespace; %v",
 		vcoreparams.MetalLBOperatorDeploymentName, vcoreparams.MetalLBOperatorNamespace, err))
 } // func VerifyMetalLBOperatorDeployment (ctx SpecContext)

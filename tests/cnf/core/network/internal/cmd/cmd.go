@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -79,4 +81,82 @@ func GetSrIovPf(vfInterfaceName, namespace, nodeName string) (string, error) {
 	}
 
 	return strings.TrimRight(pfName, "\r\n"), nil
+}
+
+// RxTrafficOnClientPod verifies the incoming packets on the dpdk client pod from the dpdk server.
+func RxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) error {
+	timeoutError := "command terminated with exit code 137"
+
+	glog.V(90).Infof("Checking dpdk-pmd traffic command %s from the client pod %s",
+		clientRxCmd, clientPod.Definition.Name)
+
+	err := clientPod.WaitUntilRunning(time.Minute)
+
+	if err != nil {
+		return fmt.Errorf("failed to wait until pod is running with error %w", err)
+	}
+
+	clientOut, err := clientPod.ExecCommand([]string{"/bin/bash", "-c", clientRxCmd})
+
+	if err.Error() != timeoutError {
+		return fmt.Errorf("failed to run the dpdk-pmd command on the client pod %s with output %s and %w",
+			clientRxCmd, clientOut.String(), err)
+	}
+
+	// Parsing output from the DPDK application
+	glog.V(90).Infof("Processing testpdm output from client pod \n%s", clientOut.String())
+	outPutTrue := checkRxOnly(clientOut.String())
+
+	if !outPutTrue {
+		return fmt.Errorf("failed to parse the output from RxTrafficOnClientPod")
+	}
+
+	return nil
+}
+
+// checkRxOnly checks the number of incoming packets.
+func checkRxOnly(out string) bool {
+	lines := strings.Split(out, "\n")
+	for index, line := range lines {
+		if strings.Contains(line, "NIC statistics for port") {
+			if len(lines[index+1]) < 3 {
+				glog.V(90).Info("Fail: line list contains less than 3 elements")
+
+				return false
+			}
+
+			if len(lines) > index && getNumberOfPackets(lines[index+1], "RX") > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// getNumberOfPackets counts the number of packets in the lines with RX output.
+func getNumberOfPackets(line, firstFieldSubstr string) int {
+	splitLine := strings.Fields(line)
+
+	if !strings.Contains(splitLine[0], firstFieldSubstr) {
+		glog.V(90).Infof("Failed to find expected substring %s", firstFieldSubstr)
+
+		return 0
+	}
+
+	if len(splitLine) != 6 {
+		glog.V(90).Info("the slice doesn't contain 6 elements")
+
+		return 0
+	}
+
+	numberOfPackets, err := strconv.Atoi(splitLine[1])
+
+	if err != nil {
+		glog.V(90).Infof("failed to convert string to integer %s", err)
+
+		return 0
+	}
+
+	return numberOfPackets
 }

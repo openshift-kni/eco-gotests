@@ -42,6 +42,9 @@ const (
 	// ArgoCDNotificationsControllerComponent is the name of the Notifications controller control plane component
 	ArgoCDNotificationsControllerComponent = "argocd-notifications-controller"
 
+	// ArgoCDApplicationSetControllerComponent is the name of the ApplictionSet controller control plane component
+	ArgoCDApplicationSetControllerComponent = "argocd-applicationset-controller"
+
 	// ArgoCDOperatorGrafanaComponent is the name of the Grafana control plane component
 	ArgoCDOperatorGrafanaComponent = "argocd-grafana"
 
@@ -61,7 +64,7 @@ const (
 	ArgoCDDefaultArgoImage = "quay.io/argoproj/argocd"
 
 	// ArgoCDDefaultArgoVersion is the Argo CD container image digest to use when version not specified.
-	ArgoCDDefaultArgoVersion = "sha256:acaf3735256979326c8dcd3106454cee65572c40e191525174cba2bcb35541c5" // v2.8.6
+	ArgoCDDefaultArgoVersion = "sha256:5f1de1b4d959868c1e006e08d46361c8f019d9730e74bc1feeab8c7b413f1187" // v2.10.1
 
 	// ArgoCDDefaultBackupKeyLength is the length of the generated default backup key.
 	ArgoCDDefaultBackupKeyLength = 32
@@ -119,7 +122,7 @@ const (
 	ArgoCDDefaultExportJobImage = "quay.io/argoprojlabs/argocd-operator-util"
 
 	// ArgoCDDefaultExportJobVersion is the export job container image tag to use when not specified.
-	ArgoCDDefaultExportJobVersion = "sha256:9b7f3aaf6f34e57171575cdd75fe13d223c4ca9f477598f04fc6147a3eb6a2a4" // 0.8.0
+	ArgoCDDefaultExportJobVersion = "sha256:6f80965a2bef1c80875be0995b18d9be5a6ad4af841cbc170ed3c60101a7deb2" // 0.5.0
 
 	// ArgoCDDefaultExportLocalCapicity is the default capacity to use for local export.
 	ArgoCDDefaultExportLocalCapicity = "2Gi"
@@ -129,39 +132,6 @@ const (
 
 	// ArgoCDDefaultGAAnonymizeUsers is the default value for anonymizing google analytics users.
 	ArgoCDDefaultGAAnonymizeUsers = false
-
-	// ArgoCDDefaultGrafanaAdminUsername is the Grafana admin username to use when not specified.
-	ArgoCDDefaultGrafanaAdminUsername = "admin"
-
-	// ArgoCDDefaultGrafanaAdminPasswordLength is the length of the generated default Grafana admin password.
-	ArgoCDDefaultGrafanaAdminPasswordLength = 32
-
-	// ArgoCDDefaultGrafanaAdminPasswordNumDigits is the number of digits to use for the generated default Grafana admin password.
-	ArgoCDDefaultGrafanaAdminPasswordNumDigits = 5
-
-	// ArgoCDDefaultGrafanaAdminPasswordNumSymbols is the number of symbols to use for the generated default Grafana admin password.
-	ArgoCDDefaultGrafanaAdminPasswordNumSymbols = 5
-
-	// ArgoCDDefaultGrafanaImage is the Grafana container image to use when not specified.
-	ArgoCDDefaultGrafanaImage = "grafana/grafana"
-
-	// ArgoCDDefaultGrafanaReplicas is the default Grafana replica count.
-	ArgoCDDefaultGrafanaReplicas = int32(1)
-
-	// ArgoCDDefaultGrafanaSecretKeyLength is the length of the generated default Grafana secret key.
-	ArgoCDDefaultGrafanaSecretKeyLength = 20
-
-	// ArgoCDDefaultGrafanaSecretKeyNumDigits is the number of digits to use for the generated default Grafana secret key.
-	ArgoCDDefaultGrafanaSecretKeyNumDigits = 5
-
-	// ArgoCDDefaultGrafanaSecretKeyNumSymbols is the number of symbols to use for the generated default Grafana secret key.
-	ArgoCDDefaultGrafanaSecretKeyNumSymbols = 0
-
-	// ArgoCDDefaultGrafanaConfigPath is the default Grafana configuration directory when not specified.
-	ArgoCDDefaultGrafanaConfigPath = "/var/lib/grafana"
-
-	// ArgoCDDefaultGrafanaVersion is the Grafana container image tag to use when not specified.
-	ArgoCDDefaultGrafanaVersion = "sha256:afef23a1b4cf159ec3180aac3ad693c10e560657313bfe3ec81f344ace6d2f05" // 6.7.2
 
 	// ArgoCDDefaultHelpChatURL is the default help chat URL.
 	ArgoCDDefaultHelpChatURL = ""
@@ -177,6 +147,9 @@ const (
 
 	// ArgoCDKeycloakImage is the default Keycloak Image used for the non-openshift platforms when not specified.
 	ArgoCDKeycloakImage = "quay.io/keycloak/keycloak"
+
+	// ArgoCDDefaultLabelSelector is the default Label Selector which will reconcile all ArgoCD instances.
+	ArgoCDDefaultLabelSelector = ""
 
 	// ArgoCDKeycloakVersion is the default Keycloak version used for the non-openshift platform when not specified.
 	// Version: 15.0.2
@@ -303,6 +276,9 @@ vs-ssh.visualstudio.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7Hr1oTWqNqOlzGJOf
 `
 	// OperatorMetricsPort is the port that is used to expose default controller-runtime metrics for the operator pod.
 	OperatorMetricsPort = 8080
+
+	// NotificationsControllerMetricsPort is the port that is used to expose notifications controller metrics.
+	NotificationsControllerMetricsPort = 9001
 )
 
 // DefaultLabels returns the default set of labels for controllers.

@@ -461,11 +461,15 @@ func (builder *Builder) Copy(path, containerName string, tar bool) (bytes.Buffer
 	// More verbose setup of remotecommand executor required in order to tweak PingPeriod.
 	// By default many large files are not copied in their entirety without disabling PingPeriod during the copy.
 	// https://github.com/kubernetes/kubernetes/issues/60140#issuecomment-1411477275
-	upgradeRoundTripper := spdy.NewRoundTripperWithConfig(spdy.RoundTripperConfig{
+	upgradeRoundTripper, err := spdy.NewRoundTripperWithConfig(spdy.RoundTripperConfig{
 		TLS:        tlsConfig,
 		Proxier:    proxy,
 		PingPeriod: 0,
 	})
+
+	if err != nil {
+		return bytes.Buffer{}, err
+	}
 
 	wrapper, err := rest.HTTPWrappersForConfig(builder.apiClient.Config, upgradeRoundTripper)
 	if err != nil {

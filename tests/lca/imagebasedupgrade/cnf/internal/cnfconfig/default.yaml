@@ -1,4 +1,10 @@
 ---
 # General configurations
 ibu_workload_image: "registry.redhat.io/openshift4/ose-hello-openshift-rhel8@sha256:10dca31348f07e1bfb56ee93c324525cceefe27cb7076b23e42ac181e4d1863e"
-...
+ibu_workload_validation_ns: "test"
+ibu_workload_validation_pv_ns: "test"
+ibu_workload_validation_pv_pod_name: "test10-0"
+ibu_workload_validation_pv_file_path: "/data/test10-0"
+ibu_kcat_image: "quay.io/ocp-edge-qe/kcat"
+ibu_kcat_broker: "kafka.example.com:9092"
+ibu_kcat_topic: "vran-qe"

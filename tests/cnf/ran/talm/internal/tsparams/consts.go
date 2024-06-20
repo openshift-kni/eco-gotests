@@ -115,11 +115,20 @@ const (
 	PreCacheSpokeNS = "openshift-talo-pre-cache"
 	// PreCacheOverrideName is the name of the config map for excluding images from precaching.
 	PreCacheOverrideName = "cluster-group-upgrade-overrides"
-	// PreCacheExcludedImage is the name of the image to be excluded from pre caching.
-	PreCacheExcludedImage = "openshift/ose-prometheus"
 	// PreCacheInvalidImage is a nonexistent image to use for pre caching tests.
 	PreCacheInvalidImage = `quay.io/openshift-release-dev/ocp-v4.0-art-dev@` +
 		`sha256:0000000000000000000000000000000000000000000000000000000000000000`
+	// SpokeImageDeleteCommand is the command to delete the excluded pre cache image.
+	SpokeImageDeleteCommand = `podman images --noheading  --filter "label=name=%s" --format {{.ID}}|` +
+		`xargs podman rmi --force`
+	// SpokeImageListCommand is the command to generate a list of cached images on the spoke cluster.
+	SpokeImageListCommand = `podman images  --noheading --filter "label=name=%s"`
+	// SpokeImageGetNameCommand is the command to get the name of an image.
+	SpokeImageGetNameCommand = `podman images --noheading %s --format {{.Labels.name}}`
+	// PrometheusPodName is the name of the prometheus pod.
+	PrometheusPodName = "prometheus-k8s-0"
+	// PrometheusNamespace is the namespace for prometheus.
+	PrometheusNamespace = "openshift-monitoring"
 
 	// MasterNodeSelector when used in a label selector finds all master nodes.
 	MasterNodeSelector = "node-role.kubernetes.io/master="

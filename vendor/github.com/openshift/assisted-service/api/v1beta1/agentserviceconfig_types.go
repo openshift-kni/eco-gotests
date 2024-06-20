@@ -109,16 +109,37 @@ type AgentServiceConfigSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="List of container registries without authentication"
 	// +optional
 	UnauthenticatedRegistries []string `json:"unauthenticatedRegistries,omitempty"`
+
+	// OSImageCACertRef is a reference to a config map containing a certificate authority certificate
+	// this is an optional certificate to allow a user to add a certificate authority for a HTTPS source of images
+	// this certificate will be used by the assisted-image-service when pulling OS images.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OS Image CA Cert ConfigMap reference"
+	// +optional
+	OSImageCACertRef *corev1.LocalObjectReference `json:"OSImageCACertRef,omitempty"`
+
+	// OSImageAdditionalParamsRef is a reference to a secret containing a headers and query parameters to be used during OS image fetch.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OS Images additional parameters reference"
+	// +optional
+	OSImageAdditionalParamsRef *corev1.LocalObjectReference `json:"OSImageAdditionalParamsRef,omitempty"`
+
 }
 
 // ConditionType related to our reconcile loop in addition to all the reasons
 // why ConditionStatus could be true or false.
 const (
+	// ConditionReconcileCompleted reports on whether or not the local cluster is managed.
+	ConditionLocalClusterManaged conditionsv1.ConditionType = "LocalClusterManaged"
 	// ConditionReconcileCompleted reports whether reconcile completed without error.
 	ConditionReconcileCompleted conditionsv1.ConditionType = "ReconcileCompleted"
 	// ConditionDeploymentsHealthy reports whether deployments are healthy.
 	ConditionDeploymentsHealthy conditionsv1.ConditionType = "DeploymentsHealthy"
 
+	// ReasonLocalClusterEntitiesCreated when the local cluster is managed.
+	ReasonLocalClusterManaged string = "Local cluster is managed."
+	// ReasonLocalClusterEntitiesRemoved when the local cluster is not managed.
+	ReasonLocalClusterNotManaged string = "Local cluster is not managed."
+	// ReasonUnableToDetermineLocalClusterManagedStatus when unable to determine the status of local cluster entities.
+	ReasonUnableToDetermineLocalClusterManagedStatus string = "Unable to determine local cluster managed status."
 	// ReasonReconcileSucceeded when the reconcile completes all operations without error.
 	ReasonReconcileSucceeded string = "ReconcileSucceeded"
 	// ReasonDeploymentSucceeded when configuring/deploying the assisted-service deployment completed without errors.
@@ -181,11 +202,15 @@ const (
 	ReasonSpokeClientCreationFailure string = "ReasonSpokeClientCreationFailure"
 	// ReasonKonnectivityAgentFailure when there was a failure creating the namespace.
 	ReasonKonnectivityAgentFailure string = "KonnectivityAgentFailure"
+	// ReasonOSImageCACertRefFailure when there has been a failure resolving the OS image CA using OSImageCACertRef.
+	ReasonOSImageCACertRefFailure string = "OSImageCACertRefFailure"
 
 	// IPXEHTTPRouteEnabled is expected value in IPXEHTTPRoute to enable the route
 	IPXEHTTPRouteEnabled string = "enabled"
 	// IPXEHTTPRouteEnabled is expected value in IPXEHTTPRoute to disable the route
 	IPXEHTTPRouteDisabled string = "disabled"
+	// ReasonOSImageAdditionalParamsRefFailure when there has been a failure resolving the OS image additional params secret using OSImageAdditionalParamsRef.
+	ReasonOSImageAdditionalParamsRefFailure string = "ReasonOSImageAdditionalParamsRefFailure"
 )
 
 // AgentServiceConfigStatus defines the observed state of AgentServiceConfig

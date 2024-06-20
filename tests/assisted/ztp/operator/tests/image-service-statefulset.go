@@ -29,7 +29,7 @@ var _ = Describe(
 	"ImageServiceStatefulset",
 	Ordered,
 	ContinueOnFailure,
-	Label(tsparams.LabelImageServiceStatefulsetTestCases), func() {
+	Label(tsparams.LabelImageServiceStatefulsetTestCases), Label("disruptive"), func() {
 		When("on MCE 2.0 and above", func() {
 			BeforeAll(func() {
 				By("Initialize variables for the test from the original AgentServiceConfig")

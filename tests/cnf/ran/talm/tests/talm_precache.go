@@ -103,9 +103,40 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 		})
 
 		Context("precache OCP with image", func() {
+			var (
+				excludedPreCacheImage string
+				imageListCommand      string
+				imageDeleteCommand    string
+			)
+
 			BeforeEach(func() {
-				By("wiping any existing images from spoke 1 master")
-				_ = cluster.ExecCmd(raninittools.Spoke1APIClient, 3, tsparams.MasterNodeSelector, tsparams.SpokeImageDeleteCommand)
+				By("finding image to exclude")
+				prometheusPod, err := pod.Pull(
+					raninittools.Spoke1APIClient, tsparams.PrometheusPodName, tsparams.PrometheusNamespace)
+				Expect(err).ToNot(HaveOccurred(), "Failed to pull prometheus pod")
+
+				getImageNameCommand := fmt.Sprintf(
+					tsparams.SpokeImageGetNameCommand, prometheusPod.Definition.Spec.Containers[0].Image)
+				excludedPreCacheImages, err := cluster.ExecCmdWithStdout(
+					raninittools.Spoke1APIClient,
+					3,
+					getImageNameCommand,
+					metav1.ListOptions{LabelSelector: tsparams.MasterNodeSelector})
+				Expect(err).ToNot(HaveOccurred(), "Failed to get name of prometheus pod image")
+				Expect(excludedPreCacheImages).ToNot(BeEmpty(), "Failed to get name of prometheus pod image on any nodes")
+
+				for _, image := range excludedPreCacheImages {
+					excludedPreCacheImage = strings.Trim(image, "\r\n ")
+					imageListCommand = fmt.Sprintf(tsparams.SpokeImageListCommand, excludedPreCacheImage)
+					imageDeleteCommand = fmt.Sprintf(tsparams.SpokeImageDeleteCommand, excludedPreCacheImage)
+
+					break
+				}
+
+				if excludedPreCacheImage != "" {
+					By("wiping any existing images from spoke 1 master")
+					_ = cluster.ExecCmd(raninittools.Spoke1APIClient, 3, tsparams.MasterNodeSelector, imageDeleteCommand)
+				}
 			})
 
 			AfterEach(func() {
@@ -138,7 +169,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				preCachedImages, err := cluster.ExecCmdWithStdout(
 					raninittools.Spoke1APIClient,
 					3,
-					tsparams.SpokeImageListCommand,
+					imageListCommand,
 					metav1.ListOptions{LabelSelector: tsparams.MasterNodeSelector})
 				Expect(err).ToNot(HaveOccurred(), "Failed to generate list of precached images on spoke 1")
 				Expect(preCachedImages).ToNot(BeEmpty(), "Failed to find a master node for spoke 1")
@@ -182,7 +213,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				preCachedImages, err := cluster.ExecCmdWithStdout(
 					raninittools.Spoke1APIClient,
 					3,
-					tsparams.SpokeImageListCommand,
+					imageListCommand,
 					metav1.ListOptions{LabelSelector: tsparams.MasterNodeSelector})
 				Expect(err).ToNot(HaveOccurred(), "Failed to generate list of precached images on spoke 1")
 				Expect(preCachedImages).ToNot(BeEmpty(), "Failed to find a master node for spoke 1")
@@ -433,7 +464,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 				By("updating CGU to add afterCompletion action")
 				cguBuilder.Definition.Spec.Actions = v1alpha1.Actions{
-					AfterCompletion: v1alpha1.AfterCompletion{
+					AfterCompletion: &v1alpha1.AfterCompletion{
 						AddClusterLabels: map[string]string{talmCompleteLabel: ""},
 					},
 				}

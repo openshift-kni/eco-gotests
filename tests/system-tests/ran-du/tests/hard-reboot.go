@@ -139,7 +139,7 @@ var _ = Describe(
 		})
 		AfterAll(func() {
 			By("Cleaning up test workload resources")
-			err := randutestworkload.CleanNameSpace(randuparams.DefaultTimeout, RanDuTestConfig.TestWorkload.Namespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to clean workload test namespace objects")
+			_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+			Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
 		})
 	})

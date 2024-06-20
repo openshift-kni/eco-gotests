@@ -13,6 +13,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	appsv1Typed "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
 
 // Builder provides struct for daemonset object containing connection to the cluster and the daemonset definitions.
@@ -24,7 +25,7 @@ type Builder struct {
 	// Used in functions that define or mutate daemonset definition. errorMsg is processed before the daemonset
 	// object is created.
 	errorMsg  string
-	apiClient *clients.Settings
+	apiClient appsv1Typed.DaemonSetInterface
 }
 
 // AdditionalOptions additional options for daemonset object.
@@ -40,8 +41,14 @@ func NewBuilder(
 			"name: %s, namespace: %s, labels: %s, containerSpec %v",
 		name, nsname, labels, containerSpec)
 
-	builder := Builder{
-		apiClient: apiClient,
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
+		return nil
+	}
+
+	builder := &Builder{
+		apiClient: apiClient.DaemonSets(nsname),
 		Definition: &appsv1.DaemonSet{
 			Spec: appsv1.DaemonSetSpec{
 				Selector: &metav1.LabelSelector{
@@ -66,29 +73,41 @@ func NewBuilder(
 		glog.V(100).Infof("The name of the daemonset is empty")
 
 		builder.errorMsg = "daemonset 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the daemonset is empty")
 
 		builder.errorMsg = "daemonset 'namespace' cannot be empty"
+
+		return builder
 	}
 
 	if len(labels) == 0 {
 		glog.V(100).Infof("There are no labels for the daemonset")
 
 		builder.errorMsg = "daemonset 'labels' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull loads an existing daemonSet into the Builder struct.
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing daemonset name:%s under namespace:%s", name, nsname)
 
-	builder := Builder{
-		apiClient: apiClient,
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
+		return nil, fmt.Errorf("apiClient cannot be nil")
+	}
+
+	builder := &Builder{
+		apiClient: apiClient.DaemonSets(nsname),
 		Definition: &appsv1.DaemonSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -98,11 +117,15 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if name == "" {
-		builder.errorMsg = "daemonset 'name' cannot be empty"
+		glog.V(100).Infof("The name of the daemonset is empty")
+
+		return nil, fmt.Errorf("daemonset name cannot be empty")
 	}
 
 	if nsname == "" {
-		builder.errorMsg = "daemonset 'namespace' cannot be empty"
+		glog.V(100).Infof("The namespace of the daemonset is empty")
+
+		return nil, fmt.Errorf("daemonset namespace cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -111,7 +134,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // WithNodeSelector applies nodeSelector to the daemonset definition.
@@ -127,9 +150,7 @@ func (builder *Builder) WithNodeSelector(selector map[string]string) *Builder {
 		glog.V(100).Infof("The nodeselector is empty")
 
 		builder.errorMsg = "cannot accept empty map as nodeselector"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -189,9 +210,7 @@ func (builder *Builder) WithAdditionalContainerSpecs(specs []corev1.Container) *
 		glog.V(100).Infof("The container specs are empty")
 
 		builder.errorMsg = "cannot accept empty list as container specs"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -239,7 +258,7 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Create(
+		builder.Object, err = builder.apiClient.Create(
 			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
@@ -255,7 +274,7 @@ func (builder *Builder) Update() (*Builder, error) {
 	glog.V(100).Infof("Updating daemonset %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Update(
+	builder.Object, err = builder.apiClient.Update(
 		context.TODO(), builder.Definition, metav1.UpdateOptions{})
 
 	return builder, err
@@ -271,10 +290,12 @@ func (builder *Builder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		builder.Object = nil
+
 		return nil
 	}
 
-	err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Delete(
+	err := builder.apiClient.Delete(
 		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
 
 	if err != nil {
@@ -305,7 +326,7 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 	// Polls every retryInterval to determine if daemonset is available.
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
-			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+			builder.Object, err = builder.apiClient.Get(
 				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
@@ -344,7 +365,7 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 	// Polls the daemonset every retryInterval until it is removed.
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
-			_, err := builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+			_, err := builder.apiClient.Get(
 				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
@@ -364,7 +385,7 @@ func (builder *Builder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+	builder.Object, err = builder.apiClient.Get(
 		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
@@ -387,7 +408,7 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 			}
 
 			var err error
-			builder.Object, err = builder.apiClient.DaemonSets(builder.Definition.Namespace).Get(
+			builder.Object, err = builder.apiClient.Get(
 				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 			if err != nil {
@@ -425,13 +446,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

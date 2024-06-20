@@ -37,7 +37,7 @@ func NewBuilder(
 	apiClient *clients.Settings,
 	name string,
 	nsname string,
-	labels map[string]string,
+	selector map[string]string,
 	servicePort corev1.ServicePort) *Builder {
 	glog.V(100).Infof(
 		"Initializing new service structure with the following params: %s, %s", name, nsname)
@@ -50,7 +50,7 @@ func NewBuilder(
 				Namespace: nsname,
 			},
 			Spec: corev1.ServiceSpec{
-				Selector: labels,
+				Selector: selector,
 				Ports:    []corev1.ServicePort{servicePort},
 			},
 		},
@@ -65,7 +65,7 @@ func NewBuilder(
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the service is empty")
 
-		builder.errorMsg = "Namespace 'nsname' cannot be empty"
+		builder.errorMsg = "Service 'nsname' cannot be empty"
 	}
 
 	return &builder
@@ -94,6 +94,12 @@ func (builder *Builder) WithNodePort() *Builder {
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing service name: %s under namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("service 'apiClient' cannot be empty")
+	}
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &corev1.Service{
@@ -105,11 +111,11 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if name == "" {
-		builder.errorMsg = "service 'name' cannot be empty"
+		return nil, fmt.Errorf("service 'name' cannot be empty")
 	}
 
 	if nsname == "" {
-		builder.errorMsg = "service 'namespace' cannot be empty"
+		return nil, fmt.Errorf("service 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -179,6 +185,22 @@ func (builder *Builder) Delete() error {
 	return err
 }
 
+// Update renovates the existing service object with service definition in builder.
+func (builder *Builder) Update() (*Builder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Updating service %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	var err error
+	builder.Object, err = builder.apiClient.Services(builder.Definition.Namespace).Update(
+		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+
+	return builder, err
+}
+
 // WithOptions creates service with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {
@@ -232,6 +254,68 @@ func (builder *Builder) WithExternalTrafficPolicy(policyType corev1.ServiceExter
 	return builder
 }
 
+// WithLabels redefines the service with label.
+func (builder *Builder) WithLabels(labels map[string]string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Defining service's with labels: %v", labels)
+
+	if len(labels) == 0 {
+		glog.V(100).Infof("labels can not be empty")
+
+		builder.errorMsg = "labels can not be empty"
+
+		return builder
+	}
+
+	for key := range labels {
+		if key == "" {
+			glog.V(100).Infof("The 'labels' key cannot be empty")
+
+			builder.errorMsg = "can not apply a labels with an empty key"
+
+			return builder
+		}
+	}
+
+	builder.Definition.Labels = labels
+
+	return builder
+}
+
+// WithSelector redefines the service with Selector.
+func (builder *Builder) WithSelector(selector map[string]string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Defining service's with selector: %v", selector)
+
+	if len(selector) == 0 {
+		glog.V(100).Infof("selector can not be empty")
+
+		builder.errorMsg = "selector can not be empty"
+
+		return builder
+	}
+
+	for key := range selector {
+		if key == "" {
+			glog.V(100).Infof("The 'selector' key cannot be empty")
+
+			builder.errorMsg = "can not apply a selector with an empty key"
+
+			return builder
+		}
+	}
+
+	builder.Definition.Spec.Selector = selector
+
+	return builder
+}
+
 // WithAnnotation redefines the service with Annotation type.
 func (builder *Builder) WithAnnotation(annotation map[string]string) *Builder {
 	if valid, _ := builder.validate(); !valid {
@@ -240,13 +324,23 @@ func (builder *Builder) WithAnnotation(annotation map[string]string) *Builder {
 
 	glog.V(100).Infof("Defining service's Annotation to %v", annotation)
 
-	if annotation == nil {
+	if len(annotation) == 0 {
 		glog.V(100).Infof(
 			"Failed to set Annotation on service %s in namespace %s. "+
 				"Service Annotation can not be empty",
 			builder.Definition.Name, builder.Definition.Namespace)
 
-		builder.errorMsg = "Annotation can not be empty map"
+		builder.errorMsg = "annotation can not be empty map"
+	}
+
+	for key := range annotation {
+		if key == "" {
+			glog.V(100).Infof("The 'annotation' key cannot be empty")
+
+			builder.errorMsg = "can not apply a annotation with an empty key"
+
+			return builder
+		}
 	}
 
 	if builder.errorMsg != "" {
@@ -322,7 +416,7 @@ func GetServiceGVR() schema.GroupVersionResource {
 
 // isValidPort checks if a port is valid.
 func isValidPort(port int32) bool {
-	if (port > 0) || (port < 65535) {
+	if (port > 0) && (port < 65535) {
 		return true
 	}
 
