@@ -501,7 +501,7 @@ func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []
 
 // DeployWorkflowCephFSPVC Verify workload with CephFS PVC.
 func DeployWorkflowCephFSPVC(ctx SpecContext) {
-	createWorkloadWithPVC("rds-cephfs-ns", "ocs-external-storagecluster-cephfs", "rds-cephfs-fs", "Filesystem")
+	createWorkloadWithPVC("rds-cephfs-ns", RDSCoreConfig.StorageCephFSSCName, "rds-cephfs-fs", "Filesystem")
 
 	verificationRegex := regexPartOne + regexPartTwo
 
@@ -512,7 +512,7 @@ func DeployWorkflowCephFSPVC(ctx SpecContext) {
 
 // VerifyCephFSPVC Verify workload with CephFS PVC.
 func VerifyCephFSPVC(ctx SpecContext) {
-	createWorkloadWithPVC("rds-cephfs-ns", "ocs-external-storagecluster-cephfs", "rds-cephfs-fs", "Filesystem")
+	createWorkloadWithPVC("rds-cephfs-ns", RDSCoreConfig.StorageCephFSSCName, "rds-cephfs-fs", "Filesystem")
 
 	verificationRegex := regexPartOne + regexPartTwo
 
@@ -527,7 +527,7 @@ func VerifyCephFSPVC(ctx SpecContext) {
 
 // DeployWorkloadCephRBDPVC Verify workload with CephRBD PVC.
 func DeployWorkloadCephRBDPVC(ctx SpecContext) {
-	createWorkloadWithPVC("rds-cephrbd-ns", "ocs-external-storagecluster-ceph-rbd", "rds-cephrbd-fs", "Filesystem")
+	createWorkloadWithPVC("rds-cephrbd-ns", RDSCoreConfig.StorageCephRBDSCName, "rds-cephrbd-fs", "Filesystem")
 
 	verificationRegex := regexPartOne + regexPartTwo
 
@@ -538,7 +538,7 @@ func DeployWorkloadCephRBDPVC(ctx SpecContext) {
 
 // VerifyCephRBDPVC Verify workload with CephRBD PVC.
 func VerifyCephRBDPVC(ctx SpecContext) {
-	createWorkloadWithPVC("rds-cephrbd-ns", "ocs-external-storagecluster-ceph-rbd", "rds-cephrbd-fs", "Filesystem")
+	createWorkloadWithPVC("rds-cephrbd-ns", RDSCoreConfig.StorageCephRBDSCName, "rds-cephrbd-fs", "Filesystem")
 
 	verificationRegex := regexPartOne + regexPartTwo
 
