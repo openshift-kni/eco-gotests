@@ -228,7 +228,7 @@ func ValidateSeedHostnameRefEtcd() {
 
 			etcdCmd := fmt.Sprintf(
 				"for key in $(etcdctl get --prefix / --keys-only | grep -v ^$); do"+
-					"  value=$(etcdctl get --print-value-only $key); "+
+					"  value=$(etcdctl get --print-value-only $key | tr -d '\\0'); "+
 					"  if [[ $value == *%s* ]]; then"+
 					"    echo Key: $key contains seed reference;"+
 					"    break; "+
