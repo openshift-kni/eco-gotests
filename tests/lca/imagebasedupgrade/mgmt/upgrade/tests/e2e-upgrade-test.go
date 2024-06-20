@@ -331,6 +331,20 @@ var _ = Describe(
 			Expect(originalTargetProxy.Object.Spec.NoProxy).To(Equal(targetProxyPostUpgrade.Object.Spec.NoProxy),
 				"NO_PROXY postupgrade config does not match pre upgrade config")
 		})
+
+		It("fails because from Upgrade it's not possible to move to Prep stage", reportxml.ID("71741"), func() {
+			By("Pull the imagebasedupgrade from the cluster")
+			ibu, err = lca.PullImageBasedUpgrade(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling imagebasedupgrade resource")
+
+			if ibu.Object.Spec.Stage != "Upgrade" {
+				Skip("IBU is not in Upgrade stage")
+			}
+
+			_, err := ibu.WithStage("Prep").Update()
+			Expect(err.Error()).To(ContainSubstring("the stage transition is not permitted"),
+				"error: ibu seedimage updated with wrong next stage")
+		})
 	})
 
 //nolint:funlen
