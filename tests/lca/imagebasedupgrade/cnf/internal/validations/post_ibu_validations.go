@@ -388,13 +388,23 @@ func ValidateSeedRefLogs() {
 
 			logCmd := fmt.Sprintf("kcat  -b %s -C -t %s -C -q -o end -c 200", CNFConfig.IbuKcatBroker, CNFConfig.IbuKcatTopic)
 			getLogsCmd := []string{"sh", "-c", logCmd}
-			getLogsOut, err := kcatPod[0].ExecCommand(getLogsCmd, "kcat")
-			Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
-			Expect(getLogsOut.String()).ToNot(
+
+			var kcatPodOut string
+
+			Eventually(func() bool {
+				getLogsOut, err := kcatPod[0].ExecCommand(getLogsCmd, "kcat")
+				if err != nil {
+					return false
+				}
+
+				kcatPodOut = getLogsOut.String()
+
+				return true
+			}, 1*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to get kcat logs")
+
+			Expect(kcatPodOut).ToNot(
 				ContainSubstring(seedInfo.SNOHostname),
-				"Seed cluster name references detected in kcat logs: %s",
-				getLogsOut.String(),
-			)
+				"Seed cluster name references detected in kcat logs: %s", kcatPodOut)
 		})
 	})
 }
