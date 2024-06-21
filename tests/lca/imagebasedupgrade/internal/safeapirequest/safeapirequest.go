@@ -34,6 +34,10 @@ func Do(req Request) error {
 			continue
 		case strings.Contains(errorStatus, "connection refused"):
 			continue
+		case strings.Contains(errorStatus,
+			"Operation cannot be fulfilled on imagebasedupgrades.lca.openshift.io \"upgrade\": "+
+				"the object has been modified; please apply your changes to the latest version and try again"):
+			continue
 		default:
 			return err
 		}

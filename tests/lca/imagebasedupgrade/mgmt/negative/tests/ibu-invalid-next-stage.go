@@ -31,24 +31,6 @@ var _ = Describe(
 			Expect(err).NotTo(HaveOccurred(), "error updating ibu with image and version")
 		})
 
-		AfterEach(func() {
-			By("Pull the imagebasedupgrade from the cluster")
-			ibu, err = lca.PullImageBasedUpgrade(APIClient)
-			Expect(err).NotTo(HaveOccurred(), "error pulling imagebasedupgrade resource")
-
-			if ibu.Object.Spec.Stage != "Idle" {
-				By("Set IBU stage to Idle")
-				_, err = ibu.WithStage("Idle").Update()
-				Expect(err).NotTo(HaveOccurred(), "error setting ibu to idle stage")
-
-				By("Wait until IBU has become Idle")
-				_, err = ibu.WaitUntilStageComplete("Idle")
-				Expect(err).NotTo(HaveOccurred(), "error waiting for idle stage to complete")
-			}
-
-			Expect(string(ibu.Object.Spec.Stage)).To(Equal("Idle"), "error: ibu resource contains unexpected state")
-		})
-
 		It("fails because from Idle it's not possible to move to Rollback stage", reportxml.ID("71738"), func() {
 
 			By("Setting the IBU stage to Rollback")
