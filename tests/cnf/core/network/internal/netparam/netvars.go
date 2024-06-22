@@ -25,4 +25,6 @@ var (
 	MCOWaitTimeout = 60 * time.Minute
 	// VtySh represents default vtysh cmd prefix.
 	VtySh = []string{"vtysh", "-c"}
+	// MlxDeviceID is the Mellanox SRIOV device ID.
+	MlxDeviceID = "1017"
 )
