@@ -6,14 +6,40 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/files"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
+
+// VerifyHelmSuite container that contains tests for the Helm verification.
+func VerifyHelmSuite() {
+	Describe(
+		"Helm validation",
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			BeforeAll(func() {
+				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
+
+				homeDir, err := os.UserHomeDir()
+				Expect(err).To(BeNil(), fmt.Sprint(err))
+
+				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+
+				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
+
+				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
+				}
+			})
+
+			It("Verify Helm deployment procedure",
+				Label("helm"), reportxml.ID("60085"), VerifyHelmDeploymentProcedure)
+		})
+}
 
 // VerifyHelmDeploymentProcedure asserts Helm deployment procedure.
 func VerifyHelmDeploymentProcedure(ctx SpecContext) {
@@ -56,28 +82,3 @@ func VerifyHelmDeploymentProcedure(ctx SpecContext) {
 	Expect(strings.Contains(string(result), "version.BuildInfo")).To(Equal(true),
 		fmt.Sprintf("Helm was not installed properly; %v", string(result)))
 } // func VerifyHelmDeploymentProcedure (ctx SpecContext)
-
-// VerifyHelmSuite container that contains tests for the Helm verification.
-func VerifyHelmSuite() {
-	Describe(
-		"Helm validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
-
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
-
-				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
-
-				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
-				}
-			})
-
-			It("Verify Helm deployment procedure",
-				Label("helm"), reportxml.ID("60085"), VerifyHelmDeploymentProcedure)
-		})
-}

@@ -10,7 +10,7 @@ spec:
       - image: {{ .AbImageURL }}
         name: test
         command: ["/bin/sh"]
-        args: ["-c", "for i in $(seq 1 50);do echo $i;ab -c 5 -n 120 -v 2 http://test-app.{{ .TestNamespace }}.svc/;sleep 1;done"]
+        args: ["-c", "for i in $(seq 1 100);do echo $i;ab -c 5 -n 120 -v 2 http://test-app.{{ .TestNamespace }}.svc/;sleep 1;done"]
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cgroup"
@@ -16,10 +17,56 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
+
+// VerifyCGroupDefault container that contains tests for cgroup verification.
+func VerifyCGroupDefault() {
+	Describe(
+		"cgroup verification",
+		Label(vcoreparams.LabelVCoreDeployment), func() {
+			BeforeAll(func() {
+				By("Check that the current cluster version is greater or equal to the 4.15")
+
+				isGreaterOrEqual, err := platform.CompareOCPVersionWithCurrent(APIClient,
+					"4.15",
+					true,
+					true)
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to compare versions due to %v", err))
+
+				if isGreaterOrEqual {
+					currentOCPVersion, err := platform.GetOCPVersion(APIClient)
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get OCP version due to %v", err))
+
+					Skip(fmt.Sprintf("current OCP version %s is not greater or equal to the 4.15",
+						currentOCPVersion))
+				}
+
+				By("Insure cgroupv2 configured for the cluster")
+
+				err = cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
+				Expect(err).ToNot(HaveOccurred(),
+					fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
+						configv1.CgroupModeV2, err))
+			})
+
+			It("Verifies cgroupv2 is a default for the cluster deployment",
+				Label("cgroupv2"), reportxml.ID("73370"), VerifyCGroupV2IsADefault)
+
+			It("Verifies that the cluster can be moved to the cgroupv1 and back",
+				Label("cgroupv2"), reportxml.ID("73371"), VerifySwitchBetweenCGroupVersions)
+
+			AfterAll(func() {
+				By("Restore cgroupv2 cluster configuration")
+
+				err := cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
+				Expect(err).ToNot(HaveOccurred(),
+					fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
+						configv1.CgroupModeV2, err))
+			})
+		})
+}
 
 // VerifyCGroupV2IsADefault assert cGroupV2 is a default for the cluster deployment.
 func VerifyCGroupV2IsADefault(ctx SpecContext) {
@@ -69,50 +116,3 @@ func VerifySwitchBetweenCGroupVersions(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
 		configv1.CgroupModeV2, err))
 } // func VerifySwitchBetweenCGroupVersions (ctx SpecContext)
-
-// VerifyCGroupDefault container that contains tests for cgroup verification.
-func VerifyCGroupDefault() {
-	Describe(
-		"cgroup verification",
-		Label(vcoreparams.LabelVCoreDeployment), func() {
-			BeforeAll(func() {
-				By("Check that the current cluster version is greater or equal to the 4.15")
-
-				isGreaterOrEqual, err := platform.CompareOCPVersionWithCurrent(APIClient,
-					"4.15",
-					true,
-					true)
-				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to compare versions due to %v", err))
-
-				if isGreaterOrEqual {
-					currentOCPVersion, err := platform.GetOCPVersion(APIClient)
-					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get OCP version due to %v", err))
-
-					Skip(fmt.Sprintf("current OCP version %s is not greater or equal to the 4.15",
-						currentOCPVersion))
-				}
-
-				By("Insure cgroupv2 configured for the cluster")
-
-				err = cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-				Expect(err).ToNot(HaveOccurred(),
-					fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-						configv1.CgroupModeV2, err))
-			})
-
-			It("Verifies cgroupv2 is a default for the cluster deployment",
-				Label("cgroupv2"), reportxml.ID("73370"), VerifyCGroupV2IsADefault)
-
-			It("Verifies that the cluster can be moved to the cgroupv1 and back",
-				Label("cgroupv2"), reportxml.ID("73371"), VerifySwitchBetweenCGroupVersions)
-
-			AfterAll(func() {
-				By("Restore cgroupv2 cluster configuration")
-
-				err := cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-				Expect(err).ToNot(HaveOccurred(),
-					fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-						configv1.CgroupModeV2, err))
-			})
-		})
-}

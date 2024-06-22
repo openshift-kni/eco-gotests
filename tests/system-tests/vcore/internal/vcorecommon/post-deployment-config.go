@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
@@ -22,10 +24,46 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
+
+// VerifyPostDeploymentConfig container that contains tests for basic post-deployment config verification.
+func VerifyPostDeploymentConfig() {
+	Describe(
+		"Post-deployment config validation",
+		Label(vcoreparams.LabelVCoreDeployment), func() {
+			BeforeAll(func() {
+				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
+
+				homeDir, err := os.UserHomeDir()
+				Expect(err).To(BeNil(), fmt.Sprint(err))
+
+				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+
+				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
+
+				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
+				}
+			})
+
+			It("Verifies Image Registry management state is Enabled",
+				Label("image-registry"), reportxml.ID("72812"), VerifyImageRegistryManagementStateEnablement)
+
+			It("Verifies network policy configuration procedure",
+				Label("network-policy"), reportxml.ID("60086"), VerifyNetworkPolicyConfig)
+
+			It("Verify scc activation succeeded",
+				Label("scc"), reportxml.ID("60042"), VerifySCCActivation)
+
+			It("Verifies sctp module activation succeeded",
+				Label("sctp"), reportxml.ID("60086"), VerifySCTPModuleActivation)
+
+			It("Verifies system reserved memory for masters succeeded",
+				Label("system-reserved"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
+		})
+}
 
 // VerifyImageRegistryManagementStateEnablement asserts imageRegistry managementState can be changed to the Managed.
 func VerifyImageRegistryManagementStateEnablement(ctx SpecContext) {
@@ -259,40 +297,3 @@ func SetSystemReservedMemoryForMasterNodes(ctx SpecContext) {
 		}
 	}
 } // func SetSystemReservedMemoryForMasterNodes (ctx SpecContext)
-
-// VerifyPostDeploymentConfig container that contains tests for basic post-deployment config verification.
-func VerifyPostDeploymentConfig() {
-	Describe(
-		"Post-deployment config validation",
-		Label(vcoreparams.LabelVCoreDeployment), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
-
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
-
-				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
-
-				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
-				}
-			})
-
-			It("Verifies Image Registry management state is Enabled",
-				Label("image-registry"), reportxml.ID("72812"), VerifyImageRegistryManagementStateEnablement)
-
-			It("Verifies network policy configuration procedure",
-				Label("network-policy"), reportxml.ID("60086"), VerifyNetworkPolicyConfig)
-
-			It("Verify scc activation succeeded",
-				Label("scc"), reportxml.ID("60042"), VerifySCCActivation)
-
-			It("Verifies sctp module activation succeeded",
-				Label("sctp"), reportxml.ID("60086"), VerifySCTPModuleActivation)
-
-			It("Verifies system reserved memory for masters succeeded",
-				Label("system-reserved"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
-		})
-}

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
@@ -17,7 +19,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	clusterlogging "github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
@@ -31,6 +32,29 @@ var (
 	kibanaPodNamePattern = "kibana"
 	esoInstances         = "3"
 )
+
+// VerifyESKAndCLOSuite container that contains tests for ElasticSearch and ClusterLogging verification.
+func VerifyESKAndCLOSuite() {
+	Describe(
+		"ElasticSearch and Cluster Logging validation",
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.ESKNamespace),
+				Label("clo"), VerifyESKNamespaceExists)
+
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.CLONamespace),
+				Label("clo"), VerifyCLONamespaceExists)
+
+			It("Verify ElasticSearch Operator successfully installed",
+				Label("clo"), reportxml.ID("59493"), VerifyESKDeployment)
+
+			It(fmt.Sprintf("Verify Cluster Logging instance %s is running in namespace %s",
+				vcoreparams.CLOInstanceName, vcoreparams.CLONamespace),
+				Label("clo"), reportxml.ID("59494"), CreateCLOInstance)
+
+			It("Verify ClusterLogging Operator successfully installed",
+				Label("clo"), reportxml.ID("73678"), VerifyCLODeployment)
+		})
+}
 
 // VerifyESKNamespaceExists asserts namespace for ElasticSearch Operator exists.
 func VerifyESKNamespaceExists(ctx SpecContext) {
@@ -197,26 +221,3 @@ func CreateCLOInstance(ctx SpecContext) {
 	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))
 } // func CreateCLOInstance (ctx SpecContext)
-
-// VerifyESKAndCLOSuite container that contains tests for ElasticSearch and ClusterLogging verification.
-func VerifyESKAndCLOSuite() {
-	Describe(
-		"ElasticSearch and Cluster Logging validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.ESKNamespace),
-				Label("clo"), VerifyESKNamespaceExists)
-
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.CLONamespace),
-				Label("clo"), VerifyCLONamespaceExists)
-
-			It("Verify ElasticSearch Operator successfully installed",
-				Label("clo"), reportxml.ID("59493"), VerifyESKDeployment)
-
-			It(fmt.Sprintf("Verify Cluster Logging instance %s is running in namespace %s",
-				vcoreparams.CLOInstanceName, vcoreparams.CLONamespace),
-				Label("clo"), reportxml.ID("59494"), CreateCLOInstance)
-
-			It("Verify ClusterLogging Operator successfully installed",
-				Label("clo"), reportxml.ID("73678"), VerifyCLODeployment)
-		})
-}
