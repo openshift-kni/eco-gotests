@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,12 +15,30 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
+
+// VerifyNMStateSuite container that contains tests for NMState verification.
+func VerifyNMStateSuite() {
+	Describe(
+		"NMState validation",
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			It(fmt.Sprintf("Verifies %s namespace exists", VCoreConfig.NMStateOperatorNamespace),
+				Label("nmstate"), VerifyNMStateNamespaceExists)
+
+			It("Verifies NMState operator deployment succeeded",
+				Label("nmstate"), reportxml.ID("67027"), VerifyNMStateCSVConditionSucceeded)
+
+			It("Verifies NMState instance exists",
+				Label("nmstate"), reportxml.ID("67027"), VerifyNMStateInstanceExists)
+
+			It("Verifies all NodeNetworkConfigurationPolicies are Available",
+				Label("nmstate"), reportxml.ID("71846"), VerifyAllNNCPsAreOK)
+		})
+}
 
 // VerifyNMStateNamespaceExists asserts namespace for NMState operator exists.
 func VerifyNMStateNamespaceExists(ctx SpecContext) {
@@ -115,22 +135,3 @@ func VerifyAllNNCPsAreOK(ctx SpecContext) {
 	Expect(len(degradedNNCP)).To(Equal(0), "There are Degraded NodeNetworkConfigurationPolicies")
 	Expect(len(nonAvailableNNCP)).To(Equal(0), "There are Progressing NodeNetworkConfigurationPolicies")
 } // func VerifyNNCP (ctx SpecContext)
-
-// VerifyNMStateSuite container that contains tests for NMState verification.
-func VerifyNMStateSuite() {
-	Describe(
-		"NMState validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			It(fmt.Sprintf("Verifies %s namespace exists", VCoreConfig.NMStateOperatorNamespace),
-				Label("nmstate"), VerifyNMStateNamespaceExists)
-
-			It("Verifies NMState operator deployment succeeded",
-				Label("nmstate"), reportxml.ID("67027"), VerifyNMStateCSVConditionSucceeded)
-
-			It("Verifies NMState instance exists",
-				Label("nmstate"), reportxml.ID("67027"), VerifyNMStateInstanceExists)
-
-			It("Verifies all NodeNetworkConfigurationPolicies are Available",
-				Label("nmstate"), reportxml.ID("71846"), VerifyAllNNCPsAreOK)
-		})
-}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -96,9 +97,11 @@ func CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile string) (s
 		return "", err
 	}
 
-	remoteRegistryPullSecretFilePath := filepath.Join(out, combinedPullSecretFile)
+	remoteUserHomeDir := strings.Trim(out, "\n")
+
+	remoteRegistryPullSecretFilePath := filepath.Join(remoteUserHomeDir, combinedPullSecretFile)
 	localRegistryPullSecretFilePath := filepath.Join("/tmp", combinedPullSecretFile)
-	remoteDockerDirectoryPath := filepath.Join(out, ".docker")
+	remoteDockerDirectoryPath := filepath.Join(remoteUserHomeDir, ".docker")
 	localDockerDirectoryPath := filepath.Join(homeDir, ".docker")
 
 	err = remote.ScpFileFrom(

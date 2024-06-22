@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
@@ -21,8 +23,6 @@ import (
 	kubeletconfigv1beta1 "k8s.io/kubelet/config/v1beta1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-
 	v2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 
 	"github.com/golang/glog"
@@ -30,6 +30,35 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 )
+
+// VerifyNTOSuite container that contains tests for Node Tuning Operator verification.
+func VerifyNTOSuite() {
+	Describe(
+		"NTO validation", //nolint:misspell
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.NTONamespace),
+				Label("nto"), VerifyNTONamespaceExists) //nolint:misspell
+
+			It("Verify Node Tuning Operator successfully installed",
+				Label("nto"), reportxml.ID("63656"), VerifyNTODeployment) //nolint:misspell
+
+			It("Create new performanceprofile",
+				Label("nto"), reportxml.ID("63741"), CreatePerformanceProfile) //nolint:misspell
+
+			It("Create new nodes tuning",
+				Label("nto"), reportxml.ID("63740"), CreateNodesTuning) //nolint:misspell
+
+			It("Verify CPU Manager config",
+				Label("nto"), reportxml.ID("63809"), VerifyCPUManagerConfig) //nolint:misspell
+
+			It("Verify Node Tuning Operator Huge Pages configuration",
+				Label("nto"), reportxml.ID("60062"), VerifyHugePagesConfig) //nolint:misspell
+
+			It("Verify System Reserved memory for user-plane-worker nodes configuration",
+				Label("nto"), //nolint:misspell
+				reportxml.ID("60047"), SetSystemReservedMemoryForUserPlaneNodes)
+		})
+}
 
 // VerifyNTONamespaceExists asserts namespace for Node Tuning Operator exists.
 func VerifyNTONamespaceExists(ctx SpecContext) {
@@ -130,7 +159,7 @@ func CreatePerformanceProfile(ctx SpecContext) {
 		WithGloballyDisableIrqLoadBalancing().
 		WithHugePages(vcoreparams.HugePagesSize, hugePages).
 		WithNumaTopology(vcoreparams.TopologyConfig).
-		WithWorkloadHints(false, false, false)
+		WithWorkloadHints(false, true, false)
 
 	if !ppObj.Exists() {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Create new performanceprofile %s", VCoreConfig.VCorePpMCPName)
@@ -369,35 +398,6 @@ func SetSystemReservedMemoryForUserPlaneNodes(ctx SpecContext) {
 				"found: %v", node.Definition.Name, vcoreparams.SystemReservedMemory, output))
 	}
 } // func SetSystemReservedMemoryForUserPlaneNodes (ctx SpecContext)
-
-// VerifyNTOSuite container that contains tests for Node Tuning Operator verification.
-func VerifyNTOSuite() {
-	Describe(
-		"NTO validation", //nolint:misspell
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.NTONamespace),
-				Label("nto"), VerifyNTONamespaceExists) //nolint:misspell
-
-			It("Verify Node Tuning Operator successfully installed",
-				Label("nto"), reportxml.ID("63656"), VerifyNTODeployment) //nolint:misspell
-
-			It("Create new performanceprofile",
-				Label("nto"), reportxml.ID("63741"), CreatePerformanceProfile) //nolint:misspell
-
-			It("Create new nodes tuning",
-				Label("nto"), reportxml.ID("63740"), CreateNodesTuning) //nolint:misspell
-
-			It("Verify CPU Manager config",
-				Label("nto"), reportxml.ID("63809"), VerifyCPUManagerConfig) //nolint:misspell
-
-			It("Verify Node Tuning Operator Huge Pages configuration",
-				Label("nto"), reportxml.ID("60062"), VerifyHugePagesConfig) //nolint:misspell
-
-			It("Verify System Reserved memory for user-plane-worker nodes configuration",
-				Label("nto"), //nolint:misspell
-				reportxml.ID("60047"), SetSystemReservedMemoryForUserPlaneNodes)
-		})
-}
 
 // unmarshalRaw converts raw bytes for a K8s CR into the actual type.
 func unmarshalRaw[T any](raw []byte) T {

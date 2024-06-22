@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,10 +22,43 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
+
+// VerifyInitialDeploymentConfig container that contains tests for initial cluster deployment verification.
+func VerifyInitialDeploymentConfig() {
+	Describe(
+		"Initial deployment config validation",
+		Label(vcoreparams.LabelVCoreDeployment), func() {
+			It("Verifies healthy cluster status",
+				Label("healthy-cluster"), reportxml.ID("59441"), VerifyHealthyClusterStatus)
+
+			It("Asserts time sync was successfully applied for master nodes",
+				Label("chrony"), reportxml.ID("60028"), VerifyEtcChronyMasters)
+
+			It("Asserts time sync was successfully applied for workers nodes",
+				Label("chrony"), reportxml.ID("60029"), VerifyEtcChronyWorkers)
+
+			It("Verifies odf MCP was deployed",
+				Label("odf"), reportxml.ID("73673"), VerifyODFMCPAvailability)
+
+			It("Verifies full set of ODF nodes was deployed",
+				Label("odf"), reportxml.ID("59442"), VerifyODFNodesAvailability)
+
+			It("Verifies control-plane-worker MCP was deployed",
+				Label("cp-mcp"), reportxml.ID("60049"), VerifyControlPlaneWorkerMCPAvailability)
+
+			It("Verifies control-plane-worker nodes availability",
+				Label("cp-nodes"), reportxml.ID("59505"), VerifyControlPlaneWorkerNodesAvailability)
+
+			It("Verifies user-plane-worker MCP was deployed",
+				Label("pp-mcp"), reportxml.ID("60050"), VerifyUserPlaneWorkerMCPAvailability)
+
+			It("Verifies user-plane-worker nodes availability",
+				Label("pp-nodes"), reportxml.ID("59506"), VerifyUserPlaneWorkerNodesAvailability)
+		})
+}
 
 // VerifyHealthyClusterStatus asserts healthy cluster status.
 func VerifyHealthyClusterStatus(ctx SpecContext) {
@@ -187,37 +222,3 @@ func VerifyUserPlaneWorkerMCPAvailability(ctx SpecContext) {
 func VerifyUserPlaneWorkerNodesAvailability(ctx SpecContext) {
 	verifyNodesAvailability(VCoreConfig.VCorePpMCPName, VCoreConfig.VCorePpLabelListOption)
 } // func VerifyUserPlaneWorkerNodesAvailability (ctx SpecContext)
-
-// VerifyInitialDeploymentConfig container that contains tests for initial cluster deployment verification.
-func VerifyInitialDeploymentConfig() {
-	Describe(
-		"Initial deployment config validation",
-		Label(vcoreparams.LabelVCoreDeployment), func() {
-			It("Verifies healthy cluster status",
-				Label("healthy-cluster"), reportxml.ID("59441"), VerifyHealthyClusterStatus)
-
-			It("Asserts time sync was successfully applied for master nodes",
-				Label("chrony"), reportxml.ID("60028"), VerifyEtcChronyMasters)
-
-			It("Asserts time sync was successfully applied for workers nodes",
-				Label("chrony"), reportxml.ID("60029"), VerifyEtcChronyWorkers)
-
-			It("Verifies odf MCP was deployed",
-				Label("odf"), reportxml.ID("73673"), VerifyODFMCPAvailability)
-
-			It("Verifies full set of ODF nodes was deployed",
-				Label("odf"), reportxml.ID("59442"), VerifyODFNodesAvailability)
-
-			It("Verifies control-plane-worker MCP was deployed",
-				Label("cp-mcp"), reportxml.ID("60049"), VerifyControlPlaneWorkerMCPAvailability)
-
-			It("Verifies control-plane-worker nodes availability",
-				Label("cp-nodes"), reportxml.ID("59505"), VerifyControlPlaneWorkerNodesAvailability)
-
-			It("Verifies user-plane-worker MCP was deployed",
-				Label("pp-mcp"), reportxml.ID("60050"), VerifyUserPlaneWorkerMCPAvailability)
-
-			It("Verifies user-plane-worker nodes availability",
-				Label("pp-nodes"), reportxml.ID("59506"), VerifyUserPlaneWorkerNodesAvailability)
-		})
-}

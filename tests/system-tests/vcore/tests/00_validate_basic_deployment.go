@@ -37,4 +37,6 @@ var _ = Describe(
 		vcorecommon.VerifyNTOSuite()
 
 		vcorecommon.VerifySRIOVSuite()
+
+		vcorecommon.VerifyKedaSuite()
 	})

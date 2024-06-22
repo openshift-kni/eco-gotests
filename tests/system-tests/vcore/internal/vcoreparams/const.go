@@ -177,4 +177,22 @@ const (
 
 	// SRIOVWebhookDaemonsetName is a SR-IOV operator webhook daemonset name.
 	SRIOVWebhookDaemonsetName = "operator-webhook"
+
+	// KedaNamespace is a keda operator namespace.
+	KedaNamespace = "openshift-keda"
+
+	// KedaWatchAppName is a keda watch application name.
+	KedaWatchAppName = "test-app"
+
+	// KedaWatchNamespace is a keda watch namespace name.
+	KedaWatchNamespace = "test-appspace"
+
+	// KedaSubscriptionName is a keda operator subscription name.
+	KedaSubscriptionName = "openshift-custom-metrics-autoscaler-operator"
+
+	// KedaDeploymentName is a keda operator deployment name.
+	KedaDeploymentName = "custom-metrics-autoscaler-operator"
+
+	// KedaControllerName is a kedaController name.
+	KedaControllerName = "keda"
 )

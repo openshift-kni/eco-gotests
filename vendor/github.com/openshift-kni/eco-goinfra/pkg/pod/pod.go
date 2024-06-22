@@ -223,6 +223,31 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) (*Builder, error) {
 	return builder, nil
 }
 
+// DeleteImmediate removes the pod immediately and resets the builder object.
+func (builder *Builder) DeleteImmediate() (*Builder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Immediately deleting pod %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("pod cannot be deleted because it does not exist")
+	}
+
+	err := builder.apiClient.Pods(builder.Definition.Namespace).Delete(
+		context.TODO(), builder.Object.Name, metav1.DeleteOptions{GracePeriodSeconds: ptr.To(int64(0))})
+
+	if err != nil {
+		return builder, fmt.Errorf("can not immediately delete pod: %w", err)
+	}
+
+	builder.Object = nil
+
+	return builder, nil
+}
+
 // CreateAndWaitUntilRunning creates the pod object and waits until the pod is running.
 func (builder *Builder) CreateAndWaitUntilRunning(timeout time.Duration) (*Builder, error) {
 	if valid, err := builder.validate(); !valid {

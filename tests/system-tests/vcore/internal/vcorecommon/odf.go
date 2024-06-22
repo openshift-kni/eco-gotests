@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -33,6 +34,22 @@ var (
 	storageClassName = vcoreparams.StorageClassName
 	volumeMode       = corev1.PersistentVolumeBlock
 )
+
+// VerifyODFSuite container that contains tests for ODF verification.
+func VerifyODFSuite() {
+	Describe(
+		"ODF validation",
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.ODFNamespace),
+				Label("odf"), VerifyODFNamespaceExists)
+
+			It("Verify ODF successfully installed",
+				Label("odf"), reportxml.ID("63844"), VerifyODFDeployment)
+
+			It("Verify ODF operator configuration procedure",
+				Label("odf"), reportxml.ID("59487"), VerifyODFConfig)
+		})
+}
 
 // VerifyODFNamespaceExists asserts namespace for ODF exists.
 func VerifyODFNamespaceExists(ctx SpecContext) {
@@ -146,19 +163,3 @@ func VerifyODFConfig(ctx SpecContext) {
 		fmt.Sprintf("Failed to createstorageCluster %s instance in %s namespace; "+
 			"%v", storageclusterName, vcoreparams.ODFNamespace, err))
 } // func VerifyODFConfig (ctx SpecContext)
-
-// VerifyODFSuite container that contains tests for ODF verification.
-func VerifyODFSuite() {
-	Describe(
-		"ODF validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.ODFNamespace),
-				Label("odf"), VerifyODFNamespaceExists)
-
-			It("Verify ODF successfully installed",
-				Label("odf"), reportxml.ID("63844"), VerifyODFDeployment)
-
-			It("Verify ODF operator configuration procedure",
-				Label("odf"), reportxml.ID("59487"), VerifyODFConfig)
-		})
-}

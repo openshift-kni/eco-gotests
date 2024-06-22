@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
@@ -14,10 +16,25 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
+
+// VerifySRIOVSuite container that contains tests for SR-IOV verification.
+func VerifySRIOVSuite() {
+	Describe(
+		"SR-IOV Operator deployment and configuration validation",
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.SRIOVNamespace),
+				Label("sriov"), VerifySRIOVNamespaceExists)
+
+			It("Verifies SR-IOV Operator deployment succeeded",
+				Label("sriov"), reportxml.ID("60041"), VerifySRIOVDeployment)
+
+			It("Verifies SR-IOV configuration procedure succeeded",
+				Label("sriov"), reportxml.ID("60088"), VerifySRIOVConfig)
+		})
+}
 
 // VerifySRIOVNamespaceExists asserts Distributed Tracing Platform Operator namespace exists.
 func VerifySRIOVNamespaceExists(ctx SpecContext) {
@@ -175,19 +192,3 @@ func VerifySRIOVConfig(ctx SpecContext) {
 	_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
 } // func VerifySRIOVConfig (ctx SpecContext)
-
-// VerifySRIOVSuite container that contains tests for SR-IOV verification.
-func VerifySRIOVSuite() {
-	Describe(
-		"SR-IOV Operator deployment and configuration validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.SRIOVNamespace),
-				Label("debug"), VerifySRIOVNamespaceExists)
-
-			It("Verifies SR-IOV Operator deployment succeeded",
-				Label("debug"), reportxml.ID("60041"), VerifySRIOVDeployment)
-
-			It("Verifies SR-IOV configuration procedure succeeded",
-				Label("debug"), reportxml.ID("60088"), VerifySRIOVConfig)
-		})
-}

@@ -21,6 +21,19 @@ var (
 	lvsName = "ocs-deviceset"
 )
 
+// VerifyLSOSuite container that contains tests for LSO verification.
+func VerifyLSOSuite() {
+	Describe(
+		"LSO validation",
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.LSONamespace),
+				Label("lso"), VerifyLSONamespaceExists)
+
+			It("Verify Local Storage Operator successfully installed",
+				Label("lso"), reportxml.ID("59491"), VerifyLSODeployment)
+		})
+}
+
 // VerifyLSONamespaceExists asserts namespace for Local Storage Operator exists.
 func VerifyLSONamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.LSONamespace, time.Second)
@@ -69,16 +82,3 @@ func VerifyLSODeployment(ctx SpecContext) {
 	Expect(lvsInstance.Exists()).To(Equal(true), fmt.Sprintf("%s localvolumeset not found in %s namespace",
 		lvsName, vcoreparams.LSONamespace))
 } // func VerifyLSODeployment (ctx SpecContext)
-
-// VerifyLSOSuite container that contains tests for LSO verification.
-func VerifyLSOSuite() {
-	Describe(
-		"LSO validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.LSONamespace),
-				Label("lso"), VerifyLSONamespaceExists)
-
-			It("Verify Local Storage Operator successfully installed",
-				Label("lso"), reportxml.ID("59491"), VerifyLSODeployment)
-		})
-}
