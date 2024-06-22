@@ -667,6 +667,7 @@ github.com/openshift-kni/eco-goinfra/pkg/machine
 github.com/openshift-kni/eco-goinfra/pkg/mco
 github.com/openshift-kni/eco-goinfra/pkg/metallb
 github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes
+github.com/openshift-kni/eco-goinfra/pkg/monitoring
 github.com/openshift-kni/eco-goinfra/pkg/msg
 github.com/openshift-kni/eco-goinfra/pkg/nad
 github.com/openshift-kni/eco-goinfra/pkg/namespace
