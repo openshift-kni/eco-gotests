@@ -75,7 +75,6 @@ func VerifyNTODeployment(ctx SpecContext) {
 		"",
 		vcoreparams.NTODeploymentName,
 		vcoreparams.NTONamespace,
-
 		time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("operator deployment %s failure in the namespace %s; %v",
