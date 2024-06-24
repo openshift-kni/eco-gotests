@@ -342,9 +342,9 @@ func (builder *Builder) WithNet(userLevelNetworking bool, devices []v2.Device) *
 	}
 
 	if len(devices) == 0 {
-		glog.V(100).Infof("'devices' argument cannot be empty")
+		glog.V(100).Infof("'net' argument cannot be empty")
 
-		builder.errorMsg = "'devices' argument cannot be empty"
+		builder.errorMsg = "'net' argument cannot be empty"
 
 		return builder
 	}
@@ -355,6 +355,28 @@ func (builder *Builder) WithNet(userLevelNetworking bool, devices []v2.Device) *
 	}
 
 	builder.Definition.Spec.Net = &netField
+
+	return builder
+}
+
+// WithAdditionalKernelArgs defines the additionalKernelArgs in the PerformanceProfile.
+func (builder *Builder) WithAdditionalKernelArgs(additionalKernelArgs []string) *Builder {
+	glog.V(100).Infof("Adding additionalKernelArgs field to the PerformanceProfile %s",
+		builder.Definition.Name)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if len(additionalKernelArgs) == 0 {
+		glog.V(100).Infof("'additionalKernelArgs' argument cannot be empty")
+
+		builder.errorMsg = "'additionalKernelArgs' argument cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.AdditionalKernelArgs = additionalKernelArgs
 
 	return builder
 }
