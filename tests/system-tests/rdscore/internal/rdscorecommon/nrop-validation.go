@@ -151,8 +151,6 @@ func VerifyNROPWorkload(ctx SpecContext) {
 
 	By("Creating NROP deployment one")
 
-	insureNamespaceExists(RDSCoreConfig.WlkdNROPOneNS)
-
 	_, err = deploy.CreateAndWaitUntilReady(5 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create deployment %s: %v", nropDeploy1Name, err))

@@ -204,28 +204,28 @@ func VerifyMacVlanOnDifferentNodes() {
 // VerifyMACVLANConnectivityBetweenDifferentNodes verifies connectivity between workloads,
 // using MACVLAN interfaces and running on different nodes.
 func VerifyMACVLANConnectivityBetweenDifferentNodes() {
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy10Label,
 		macvlanDeploy11Label,
 		RDSCoreConfig.MCVlanDeploy1TargetAddress)
 
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy11Label,
 		macvlanDeploy10Label,
 		RDSCoreConfig.MCVlanDeploy2TargetAddress)
 
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy10Label,
 		macvlanDeploy11Label,
 		RDSCoreConfig.MCVlanDeploy1TargetAddressIPv6)
 
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy11Label,
@@ -337,28 +337,28 @@ func VerifyMacVlanOnSameNode() {
 
 // VerifyMACVLANConnectivityOnSameNode verifies connectivity between workloads that use MACVLAN net.
 func VerifyMACVLANConnectivityOnSameNode() {
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy20Label,
 		macvlanDeploy21Label,
 		RDSCoreConfig.MCVlanDeploy3TargetAddress)
 
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy21Label,
 		macvlanDeploy20Label,
 		RDSCoreConfig.MCVlanDeploy4TargetAddress)
 
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy20Label,
 		macvlanDeploy21Label,
 		RDSCoreConfig.MCVlanDeploy3TargetAddressIPv6)
 
-	verifySRIOVConnectivity(
+	verifyConnectivity(
 		RDSCoreConfig.MCVlanNSOne,
 		RDSCoreConfig.MCVlanNSOne,
 		macvlanDeploy21Label,

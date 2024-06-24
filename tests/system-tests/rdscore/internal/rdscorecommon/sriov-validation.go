@@ -1,7 +1,6 @@
 package rdscorecommon
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -132,72 +131,6 @@ func defineDeployment(containerConfig *corev1.Container, deployName, deployNs, s
 	}
 
 	return deploy
-}
-
-func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLabels, targetAddr string) {
-	By("Getting pods backed by deployment")
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
-		deployOneLabels, nsOneName)
-
-	podOneList := findPodWithSelector(nsOneName, deployOneLabels)
-	Expect(len(podOneList)).To(Equal(1), "Expected only one pod")
-
-	podOne := podOneList[0]
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one is %q on node %q",
-		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
-		deployTwoLabels, nsTwoName)
-
-	podTwoList := findPodWithSelector(nsTwoName, deployTwoLabels)
-	Expect(len(podTwoList)).To(Equal(1), "Expected only one pod")
-
-	podTwo := podTwoList[0]
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two is %q on node %q",
-		podTwo.Definition.Name, podTwo.Definition.Spec.NodeName)
-
-	By("Sending data from pod one to pod two")
-
-	msgOne := fmt.Sprintf("Running from pod %s(%s) at %d",
-		podOne.Definition.Name,
-		podOne.Definition.Spec.NodeName,
-		time.Now().Unix())
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending msg %q from pod %s",
-		msgOne, podOne.Definition.Name)
-
-	sendDataOneCmd := []string{"/bin/bash", "-c",
-		fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
-
-	var (
-		podOneResult bytes.Buffer
-		err          error
-		ctx          SpecContext
-	)
-
-	timeStart := time.Now()
-
-	Eventually(func() bool {
-		podOneResult, err = podOne.ExecCommand(sendDataOneCmd, podOne.Definition.Spec.Containers[0].Name)
-
-		if err != nil {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", sendDataOneCmd)
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", err)
-
-			return false
-		}
-
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command %v within container", sendDataOneCmd)
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command within container %q",
-			podOne.Definition.Spec.Containers[0].Name)
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
-
-		return true
-	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
-
-	verifyMsgInPodLogs(podTwo, msgOne, podTwo.Definition.Spec.Containers[0].Name, timeStart)
 }
 
 // VerifySRIOVWorkloadsOnSameNode deploy worklods with SRIOV interfaces on the same node
@@ -332,7 +265,7 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeployOneLabel,
@@ -352,7 +285,7 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeployTwoLabel,
@@ -502,7 +435,7 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeploy2OneLabel,
@@ -522,7 +455,7 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeploy2TwoLabel,
@@ -547,7 +480,7 @@ func VerifySRIOVConnectivityBetweenDifferentNodes(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeploy2OneLabel,
@@ -567,7 +500,7 @@ func VerifySRIOVConnectivityBetweenDifferentNodes(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeploy2TwoLabel,
@@ -592,7 +525,7 @@ func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeployOneLabel,
@@ -612,7 +545,7 @@ func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			RDSCoreConfig.WlkdSRIOVOneNS,
 			sriovDeployTwoLabel,
@@ -762,7 +695,7 @@ func VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOV3NS,
 			RDSCoreConfig.WlkdSRIOV3NS,
 			sriovDeploy3OneLabel,
@@ -782,7 +715,7 @@ func VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOV3NS,
 			RDSCoreConfig.WlkdSRIOV3NS,
 			sriovDeploy3TwoLabel,
@@ -932,7 +865,7 @@ func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOV4NS,
 			RDSCoreConfig.WlkdSRIOV4NS,
 			sriovDeploy4OneLabel,
@@ -952,7 +885,7 @@ func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
 
-		verifySRIOVConnectivity(
+		verifyConnectivity(
 			RDSCoreConfig.WlkdSRIOV4NS,
 			RDSCoreConfig.WlkdSRIOV4NS,
 			sriovDeploy4TwoLabel,

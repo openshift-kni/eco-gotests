@@ -1,6 +1,7 @@
 package rdscorecommon
 
 import (
+	"bytes"
 	"fmt"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
@@ -27,8 +27,6 @@ func createServiceAccount(saName, nsName string) {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Creating SA %q in %q namespace",
 		saName, nsName)
-
-	insureNamespaceExists(nsName)
 
 	deploySa := serviceaccount.NewBuilder(rdscoreinittools.APIClient, saName, nsName)
 
@@ -143,8 +141,6 @@ func createClusterRBAC(rbacName, clusterRole, saName, nsName string) {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Creating ClusterRoleBinding %q", rbacName)
 
-	insureNamespaceExists(nsName)
-
 	crbSa := rbac.NewClusterRoleBindingBuilder(rdscoreinittools.APIClient,
 		rbacName,
 		clusterRole,
@@ -212,8 +208,6 @@ func deleteConfigMap(cmName, nsName string) {
 func createConfigMap(cmName, nsName string, data map[string]string) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Create ConfigMap %q in %q namespace",
 		cmName, nsName)
-
-	insureNamespaceExists(nsName)
 
 	cmBuilder := configmap.NewBuilder(rdscoreinittools.APIClient, cmName, nsName)
 	cmBuilder.WithData(data)
@@ -410,31 +404,68 @@ func verifyMsgInPodLogs(podObj *pod.Builder, msg, cName string, timeSpan time.Ti
 	gomega.Expect(podLog).Should(gomega.ContainSubstring(msg))
 }
 
-func insureNamespaceExists(nsName string) {
-	ginkgo.By(fmt.Sprintf("Insure namespace %q exists", nsName))
+func verifyConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLabels, targetAddr string) {
+	ginkgo.By("Getting pods backed by deployment")
 
-	createNs := namespace.NewBuilder(rdscoreinittools.APIClient, nsName)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
+		deployOneLabels, nsOneName)
 
-	if !createNs.Exists() {
-		var ctx ginkgo.SpecContext
+	podOneList := findPodWithSelector(nsOneName, deployOneLabels)
+	gomega.Expect(len(podOneList)).To(gomega.Equal(1), "Expected only one pod")
 
-		createNs, err := createNs.Create()
+	podOne := podOneList[0]
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one is %q on node %q",
+		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
+		deployTwoLabels, nsTwoName)
+
+	podTwoList := findPodWithSelector(nsTwoName, deployTwoLabels)
+	gomega.Expect(len(podTwoList)).To(gomega.Equal(1), "Expected only one pod")
+
+	podTwo := podTwoList[0]
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two is %q on node %q",
+		podTwo.Definition.Name, podTwo.Definition.Spec.NodeName)
+
+	ginkgo.By("Sending data from pod one to pod two")
+
+	msgOne := fmt.Sprintf("Running from pod %s(%s) at %d",
+		podOne.Definition.Name,
+		podOne.Definition.Spec.NodeName,
+		time.Now().Unix())
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending msg %q from pod %s",
+		msgOne, podOne.Definition.Name)
+
+	sendDataOneCmd := []string{"/bin/bash", "-c",
+		fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
+
+	var (
+		podOneResult bytes.Buffer
+		err          error
+		ctx          ginkgo.SpecContext
+	)
+
+	timeStart := time.Now()
+
+	gomega.Eventually(func() bool {
+		podOneResult, err = podOne.ExecCommand(sendDataOneCmd, podOne.Definition.Spec.Containers[0].Name)
 
 		if err != nil {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error creating namespace %q: %v", nsName, err)
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", sendDataOneCmd)
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command within pod: %v", err)
+
+			return false
 		}
 
-		gomega.Eventually(func() bool {
-			if !createNs.Exists() {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error creating namespace %q", nsName)
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command %v within container", sendDataOneCmd)
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully run command within container %q",
+			podOne.Definition.Spec.Containers[0].Name)
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Result: %v - %s", podOneResult, &podOneResult)
 
-				return false
-			}
+		return true
+	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(5*time.Minute).Should(gomega.BeTrue(),
+		fmt.Sprintf("Failed to send data from pod %s", podOne.Definition.Name))
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Created namespace %q", createNs.Definition.Name)
-
-			return true
-		}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(gomega.BeTrue(),
-			fmt.Sprintf("Failed to create namespace %q", nsName))
-	}
+	verifyMsgInPodLogs(podTwo, msgOne, podTwo.Definition.Spec.Containers[0].Name, timeStart)
 }
