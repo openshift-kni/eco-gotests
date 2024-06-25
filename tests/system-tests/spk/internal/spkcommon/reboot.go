@@ -110,7 +110,7 @@ func VerifyUngracefulReboot(ctx SpecContext) {
 
 			err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true,
 				func(ctx context.Context) (bool, error) {
-					if err := client.SystemPowerCycle(); err != nil {
+					if err := client.SystemForceReset(); err != nil {
 						glog.V(spkparams.SPKLogLevel).Infof(
 							fmt.Sprintf("Failed to power cycle %s -> %v", nodeName, err))
 
@@ -233,7 +233,7 @@ func VerifySoftReboot(ctx SpecContext) {
 
 		err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true,
 			func(ctx context.Context) (bool, error) {
-				if err := bmcClient.SystemPowerCycle(); err != nil {
+				if err := bmcClient.SystemForceReset(); err != nil {
 					glog.V(spkparams.SPKLogLevel).Infof(
 						fmt.Sprintf("Failed to power cycle %s -> %v", _node.Definition.Name, err))
 
