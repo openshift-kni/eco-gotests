@@ -9,6 +9,8 @@ const (
 	LabelPrepAbortFlow = "ibu-prep-abort"
 	// LabelUpgradeAbortFlow represents upgrade-abort label that can be used for test cases selection.
 	LabelUpgradeAbortFlow = "ibu-upgrade-abort"
+	// LabelRollbackFlow represents rollback label that can be used for test cases selection.
+	LabelRollbackFlow = "ibu-auto-rollback"
 
 	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
 	IbuCguNamespace = "default"
