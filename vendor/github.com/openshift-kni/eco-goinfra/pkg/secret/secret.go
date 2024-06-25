@@ -33,6 +33,12 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType cor
 		"Initializing new secret structure with the following params: %s, %s, %s",
 		name, nsname, string(secretType))
 
+	if apiClient == nil {
+		glog.V(100).Infof("secret 'apiClient' cannot be empty")
+
+		return nil
+	}
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &corev1.Secret{
@@ -63,6 +69,12 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType cor
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing secret name: %s under namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("secret 'apiClient' cannot be empty")
+	}
+
 	builder := Builder{
 		apiClient: apiClient,
 		Definition: &corev1.Secret{
@@ -74,11 +86,15 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	if name == "" {
-		builder.errorMsg = "secret 'name' cannot be empty"
+		glog.V(100).Infof("secret name is empty")
+
+		return nil, fmt.Errorf("secret 'name' cannot be empty")
 	}
 
 	if nsname == "" {
-		builder.errorMsg = "secret 'namespace' cannot be empty"
+		glog.V(100).Infof("The namespace of the secret is empty")
+
+		return nil, fmt.Errorf("secret 'nsname' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -190,6 +206,38 @@ func (builder *Builder) WithData(data map[string][]byte) *Builder {
 	return builder
 }
 
+// WithAnnotations defines the annotations in the secret.
+func (builder *Builder) WithAnnotations(annotations map[string]string) *Builder {
+	glog.V(100).Infof("Adding annotations %v to the secret %s in namespace %s",
+		annotations, builder.Definition.Name, builder.Definition.Namespace)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if len(annotations) == 0 {
+		glog.V(100).Infof("'annotations' argument cannot be empty")
+
+		builder.errorMsg = "'annotations' argument cannot be empty"
+
+		return builder
+	}
+
+	for key := range annotations {
+		if key == "" {
+			glog.V(100).Infof("The 'annotations' key cannot be empty")
+
+			builder.errorMsg = "can not apply an annotations with an empty key"
+
+			return builder
+		}
+	}
+
+	builder.Definition.ObjectMeta.Annotations = annotations
+
+	return builder
+}
+
 // WithOptions creates secret with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {
@@ -229,13 +277,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

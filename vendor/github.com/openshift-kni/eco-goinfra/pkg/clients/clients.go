@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
+	"github.com/openshift-kni/eco-goinfra/pkg/oadp/oadptypes"
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
@@ -20,6 +21,7 @@ import (
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	tunedv1 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/tuned/v1"
 	eskv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
+	monv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	v1security "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
@@ -60,6 +62,8 @@ import (
 
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
 	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
+
+	nropv1 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1"
 
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	lcasgv1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1"
@@ -107,6 +111,7 @@ import (
 	lsoV1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
+	kacv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
 	veleroFakeClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/fake"
@@ -336,6 +341,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := nropv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	if err := argocdOperatorv1alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -389,6 +398,14 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := kedav2v1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := kacv1.SchemeBuilder.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := monv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -509,6 +526,10 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *imageregistryV1.Config:
 			genericClientObjects = append(genericClientObjects, v)
+		case *nropv1.NUMAResourcesOperator:
+			genericClientObjects = append(genericClientObjects, v)
+		case *nropv1.NUMAResourcesScheduler:
+			genericClientObjects = append(genericClientObjects, v)
 		case *configV1.ClusterOperator:
 			genericClientObjects = append(genericClientObjects, v)
 		case *cguapiv1alpha1.PreCachingConfig:
@@ -538,6 +559,12 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *kedav2v1alpha1.ScaledObject:
 			genericClientObjects = append(genericClientObjects, v)
 		case *agentInstallV1Beta1.AgentServiceConfig:
+			genericClientObjects = append(genericClientObjects, v)
+		case *kacv1.KlusterletAddonConfig:
+			genericClientObjects = append(genericClientObjects, v)
+		case *monv1.ServiceMonitor:
+			genericClientObjects = append(genericClientObjects, v)
+		case *oadptypes.DataProtectionApplication:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
 		case *argocdOperatorv1alpha1.ArgoCD:

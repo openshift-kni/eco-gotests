@@ -75,8 +75,8 @@ func DownloadAndExtractOcBinaryArchive(apiClient *clients.Settings) error {
 	return nil
 }
 
-// ApplyConfigFile applies config using shell method.
-func ApplyConfigFile(
+// ApplyConfig applies config using shell method.
+func ApplyConfig(
 	templateDir,
 	fileName,
 	destinationDir,
@@ -92,6 +92,32 @@ func ApplyConfigFile(
 	cfgFilePath := filepath.Join(destinationDir, finalFileName)
 
 	applyCmd := fmt.Sprintf("oc apply -f %s", cfgFilePath)
+	_, err = shell.ExecuteCmd(applyCmd)
+
+	if err != nil {
+		return fmt.Errorf("failed to execute %s command due to: %w", applyCmd, err)
+	}
+
+	return nil
+}
+
+// CreateConfig creates config using shell method.
+func CreateConfig(
+	templateDir,
+	fileName,
+	destinationDir,
+	finalFileName string,
+	variablesToReplace map[string]interface{}) error {
+	err := template.SaveTemplate(
+		templateDir, fileName, destinationDir, finalFileName, variablesToReplace)
+
+	if err != nil {
+		return err
+	}
+
+	cfgFilePath := filepath.Join(destinationDir, finalFileName)
+
+	applyCmd := fmt.Sprintf("oc create -f %s", cfgFilePath)
 	_, err = shell.ExecuteCmd(applyCmd)
 
 	if err != nil {

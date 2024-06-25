@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -19,10 +21,55 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
+
+// VerifyServiceMeshSuite container that contains tests for Service Mesh verification.
+func VerifyServiceMeshSuite() {
+	Describe(
+		"Service Mesh Operator deployment and configuration validation",
+		Label(vcoreparams.LabelVCoreOperators), func() {
+			BeforeAll(func() {
+				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
+
+				homeDir, err := os.UserHomeDir()
+				Expect(err).To(BeNil(), fmt.Sprint(err))
+
+				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+
+				glog.V(100).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
+
+				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
+					glog.V(100).Infof("%s folder already exists", vcoreConfigsFolder)
+				}
+			})
+
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.DTPONamespace),
+				Label("smo"), VerifyDTPONamespaceExists)
+
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.KialiNamespace),
+				Label("smo"), VerifyKialiNamespaceExists)
+
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.IstioNamespace),
+				Label("smo"), VerifyIstioNamespaceExists)
+
+			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.SMONamespace),
+				Label("smo"), VerifyServiceMeshNamespaceExists)
+
+			It("Verifies Distributed Tracing Platform Operator deployment succeeded",
+				Label("smo"), reportxml.ID("59495"), VerifyDTPODeployment)
+
+			It("Verifies Kiali deployment succeeded",
+				Label("smo"), reportxml.ID("59496"), VerifyKialiDeployment)
+
+			It("Verifies Service Mesh deployment succeeded",
+				Label("smo"), reportxml.ID("73732"), VerifyServiceMeshDeployment)
+
+			It("Verifies Service Mesh configuration procedure succeeded",
+				Label("smo"), reportxml.ID("59502"), VerifyServiceMeshConfig)
+		})
+}
 
 // VerifyDTPONamespaceExists asserts Distributed Tracing Platform Operator namespace exists.
 func VerifyDTPONamespaceExists(ctx SpecContext) {
@@ -146,7 +193,7 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 		varsToReplace["ControlPlaneName"] = "basic"
 		varsToReplace["ControlPlaneNamespace"] = vcoreparams.IstioNamespace
 
-		err = ocpcli.ApplyConfigFile(
+		err = ocpcli.ApplyConfig(
 			templateDir,
 			smoCpTemplateName,
 			destinationDirectoryPath,
@@ -219,49 +266,3 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), "No %s labeled pods were found in %s namespace; %w",
 		wasmBasicPodLabel, vcoreparams.IstioNamespace, err)
 } // func VerifyServiceMeshConfig (ctx SpecContext)
-
-// VerifyServiceMeshSuite container that contains tests for Service Mesh verification.
-func VerifyServiceMeshSuite() {
-	Describe(
-		"Service Mesh Operator deployment and configuration validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
-
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
-
-				glog.V(100).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
-
-				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(100).Infof("%s folder already exists", vcoreConfigsFolder)
-				}
-			})
-
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.DTPONamespace),
-				Label("smo"), VerifyDTPONamespaceExists)
-
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.KialiNamespace),
-				Label("smo"), VerifyKialiNamespaceExists)
-
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.IstioNamespace),
-				Label("smo"), VerifyIstioNamespaceExists)
-
-			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.SMONamespace),
-				Label("smo"), VerifyServiceMeshNamespaceExists)
-
-			It("Verifies Distributed Tracing Platform Operator deployment succeeded",
-				Label("smo"), reportxml.ID("59495"), VerifyDTPODeployment)
-
-			It("Verifies Kiali deployment succeeded",
-				Label("smo"), reportxml.ID("59496"), VerifyKialiDeployment)
-
-			It("Verifies Service Mesh deployment succeeded",
-				Label("smo"), reportxml.ID("73732"), VerifyServiceMeshDeployment)
-
-			It("Verifies Service Mesh configuration procedure succeeded",
-				Label("smo"), reportxml.ID("59502"), VerifyServiceMeshConfig)
-		})
-}
