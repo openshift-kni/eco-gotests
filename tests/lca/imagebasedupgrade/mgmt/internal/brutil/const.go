@@ -15,6 +15,9 @@ var WorkloadBackup = BackupRestoreObject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mgmtparams.LCAWorkloadName,
 			Namespace: mgmtparams.LCAOADPNamespace,
+			Labels: map[string]string{
+				"velero.io/storage-location": "default",
+			},
 		},
 		Spec: velerov1.BackupSpec{
 			IncludedNamespaces: []string{
@@ -28,7 +31,6 @@ var WorkloadBackup = BackupRestoreObject{
 			ExcludedClusterScopedResources: []string{
 				"persistentVolumes",
 			},
-			StorageLocation: "default",
 		},
 	},
 }
@@ -59,6 +61,9 @@ var KlusterletBackup = BackupRestoreObject{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mgmtparams.LCAKlusterletName,
 			Namespace: mgmtparams.LCAOADPNamespace,
+			Labels: map[string]string{
+				"velero.io/storage-location": "default",
+			},
 		},
 		Spec: velerov1.BackupSpec{
 			IncludedNamespaces: []string{
@@ -75,7 +80,6 @@ var KlusterletBackup = BackupRestoreObject{
 				"serviceaccounts",
 				"secrets",
 			},
-			StorageLocation: "default",
 		},
 	},
 }
