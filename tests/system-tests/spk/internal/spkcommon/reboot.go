@@ -3,15 +3,13 @@ package spkcommon
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
-	bmclib "github.com/bmc-toolbox/bmclib/v2"
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkparams"
 
@@ -56,9 +54,7 @@ func WaitAllNodesAreReady(ctx SpecContext) {
 		"Some nodes are notReady")
 }
 
-// VerifyUngracefulReboot performs ungraceful reboot of the cluster
-//
-//nolint:funlen
+// VerifyUngracefulReboot performs ungraceful reboot of the cluster.
 func VerifyUngracefulReboot(ctx SpecContext) {
 	glog.V(spkparams.SPKLogLevel).Infof("\t*** VerifyUngracefulReboot started ***")
 
@@ -67,15 +63,10 @@ func VerifyUngracefulReboot(ctx SpecContext) {
 		Skip("BMC Details not specified. Skipping...")
 	}
 
-	clientOpts := []bmclib.Option{}
-
-	glog.V(spkparams.SPKLogLevel).Infof(
-		fmt.Sprintf("BMC options %v", clientOpts))
-
 	glog.V(spkparams.SPKLogLevel).Infof(
 		fmt.Sprintf("NodesCredentialsMap:\n\t%#v", SPKConfig.NodesCredentialsMap))
 
-	var bmcMap = make(map[string]*bmclib.Client)
+	var bmcMap = make(map[string]*bmc.BMC)
 
 	for node, auth := range SPKConfig.NodesCredentialsMap {
 		glog.V(spkparams.SPKLogLevel).Infof(
@@ -83,7 +74,10 @@ func VerifyUngracefulReboot(ctx SpecContext) {
 		glog.V(spkparams.SPKLogLevel).Infof(
 			fmt.Sprintf("BMC Auth %#v", auth))
 
-		bmcClient := bmclib.NewClient(auth.BMCAddress, auth.Username, auth.Password, clientOpts...)
+		bmcClient := bmc.New(auth.BMCAddress).
+			WithRedfishUser(auth.Username, auth.Password).
+			WithRedfishTimeout(6 * time.Minute)
+
 		bmcMap[node] = bmcClient
 	}
 
@@ -92,49 +86,31 @@ func VerifyUngracefulReboot(ctx SpecContext) {
 	for node, client := range bmcMap {
 		waitGroup.Add(1)
 
-		go func(wg *sync.WaitGroup, nodeName string, client *bmclib.Client) {
+		go func(wg *sync.WaitGroup, nodeName string, client *bmc.BMC) {
 			glog.V(spkparams.SPKLogLevel).Infof(
 				fmt.Sprintf("Starting go routine for %s", nodeName))
 
 			defer GinkgoRecover()
 			defer wg.Done()
 
-			glog.V(spkparams.SPKLogLevel).Infof(
-				fmt.Sprintf("[%s] Setting timeout for context", nodeName))
-
-			bmcCtx, cancel := context.WithTimeout(context.TODO(), 6*time.Minute)
-
-			defer cancel()
-
-			glog.V(spkparams.SPKLogLevel).Infof(
-				fmt.Sprintf("[%s] Starting BMC session", nodeName))
-
-			err := client.Open(bmcCtx)
-
-			Expect(err).ToNot(HaveOccurred(),
-				fmt.Sprintf("Failed to login to %s", nodeName))
-
-			defer client.Close(bmcCtx)
-
 			By(fmt.Sprintf("Querying power state on %s", nodeName))
 
 			glog.V(spkparams.SPKLogLevel).Infof(
 				fmt.Sprintf("Checking power state on %s", nodeName))
 
-			state, err := client.GetPowerState(bmcCtx)
-			msgRegex := `(?i)chassis power is on|(?i)^on$`
+			state, err := client.SystemPowerState()
+			Expect(err).ToNot(HaveOccurred(),
+				fmt.Sprintf("Failed to login to %s", nodeName))
 
 			glog.V(spkparams.SPKLogLevel).Infof(
 				fmt.Sprintf("Power state on %s -> %s", nodeName, state))
 
-			Expect(err).ToNot(HaveOccurred(),
-				fmt.Sprintf("Failed to login to %s", nodeName))
-			Expect(strings.TrimSpace(state)).To(MatchRegexp(msgRegex),
+			Expect(state).To(Equal("On"),
 				fmt.Sprintf("Unexpected power state %s", state))
 
 			err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true,
 				func(ctx context.Context) (bool, error) {
-					if _, err := client.SetPowerState(bmcCtx, "cycle"); err != nil {
+					if err := client.SystemForceReset(); err != nil {
 						glog.V(spkparams.SPKLogLevel).Infof(
 							fmt.Sprintf("Failed to power cycle %s -> %v", nodeName, err))
 
@@ -234,15 +210,10 @@ func VerifySoftReboot(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Failed to drain %q due to %v", _node.Definition.Name, err))
 
-		clientOpts := []bmclib.Option{}
-
-		glog.V(spkparams.SPKLogLevel).Infof(
-			fmt.Sprintf("BMC options %v", clientOpts))
-
 		glog.V(spkparams.SPKLogLevel).Infof(
 			fmt.Sprintf("NodesCredentialsMap:\n\t%#v", SPKConfig.NodesCredentialsMap))
 
-		var bmcClient *bmclib.Client
+		var bmcClient *bmc.BMC
 
 		glog.V(spkparams.SPKLogLevel).Infof(
 			fmt.Sprintf("Creating BMC client for node %s", _node.Definition.Name))
@@ -252,29 +223,17 @@ func VerifySoftReboot(ctx SpecContext) {
 				fmt.Sprintf("BMC Details for %q not found", _node.Definition.Name))
 			Fail(fmt.Sprintf("BMC Details for %q not found", _node.Definition.Name))
 		} else {
-			bmcClient = bmclib.NewClient(auth.BMCAddress, auth.Username, auth.Password, clientOpts...)
+			bmcClient = bmc.New(auth.BMCAddress).
+				WithRedfishUser(auth.Username, auth.Password).
+				WithRedfishTimeout(6 * time.Minute)
 		}
 
 		glog.V(spkparams.SPKLogLevel).Infof(
 			fmt.Sprintf("[%s] Setting timeout for context", _node.Definition.Name))
 
-		bmcCtx, cancel := context.WithTimeout(context.TODO(), 6*time.Minute)
-
-		defer cancel()
-
-		glog.V(spkparams.SPKLogLevel).Infof(
-			fmt.Sprintf("[%s] Starting BMC session", _node.Definition.Name))
-
-		err = bmcClient.Open(bmcCtx)
-
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to login to %s", _node.Definition.Name))
-
-		defer bmcClient.Close(bmcCtx)
-
 		err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 5*time.Minute, true,
 			func(ctx context.Context) (bool, error) {
-				if _, err := bmcClient.SetPowerState(bmcCtx, "cycle"); err != nil {
+				if err := bmcClient.SystemForceReset(); err != nil {
 					glog.V(spkparams.SPKLogLevel).Infof(
 						fmt.Sprintf("Failed to power cycle %s -> %v", _node.Definition.Name, err))
 
