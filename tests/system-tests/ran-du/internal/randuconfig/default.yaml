@@ -8,3 +8,9 @@ randu_test_workload:
 launch_workload_iterations: 5
 soft_reboot_iterations: 5
 hard_reboot_iterations: 5
+
+stability_duration_mins: 30
+stability_interval_mins: 5
+stability_output_path: "/tmp/reports"
+
+ptp_enabled: true
