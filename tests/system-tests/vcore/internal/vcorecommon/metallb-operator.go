@@ -131,7 +131,7 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 		time.Sleep(5 * time.Second)
 	}
 
-	err = await.WaitUntilNewDaemonSetIsRunning(APIClient,
+	err = await.WaitUntilDaemonSetIsRunning(APIClient,
 		vcoreparams.MetalLBDaemonSetName,
 		vcoreparams.MetalLBOperatorNamespace,
 		5*time.Minute)

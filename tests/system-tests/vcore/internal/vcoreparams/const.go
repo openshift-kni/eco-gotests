@@ -207,4 +207,13 @@ const (
 
 	// NROPInstanceName is a numa resources operator instance name.
 	NROPInstanceName = "numaresourcesoperator"
+
+	// NumaAwareSecondarySchedulerName is a numa-aware secondary pod scheduler name.
+	NumaAwareSecondarySchedulerName = "numaresourcesscheduler"
+
+	// NumaAwareSchedulerName is a numa-aware scheduler name.
+	NumaAwareSchedulerName = "topo-aware-scheduler"
+
+	// NumaWorkloadName is a numa workload name.
+	NumaWorkloadName = "numa-workload-1"
 )
