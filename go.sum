@@ -1691,8 +1691,8 @@ github.com/opencontainers/runtime-spec v1.2.0 h1:z97+pHb3uELt/yiAWD691HNHQIF07bE
 github.com/opencontainers/runtime-spec v1.2.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f07cdbf8af2c h1:wAPCXsnAXOUAJ5DYlVgGUcV9YBSiVlH4o9tbQ9py8ZY=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f07cdbf8af2c/go.mod h1:hkzqKpmQvh7vgPx8Hw6IExJorKPM0dEeJdOXjIW3gNw=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240624143358-5966cfaaf037 h1:KsDgTD0Doc0X70jIBO/9wQ8BAYnZIeC/4kVbk9jEjac=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240624143358-5966cfaaf037/go.mod h1:oGFnQMzZ/bqtnjdh9Rx44NzsMGWaZXgyQsoS0Q7faJ8=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02 h1:e9+xSEmZzymaHJbRsZ+6cndk8TYGYPYdDqVbPTVz0r4=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02/go.mod h1:oGFnQMzZ/bqtnjdh9Rx44NzsMGWaZXgyQsoS0Q7faJ8=
 github.com/openshift-kni/k8sreporter v1.0.5 h1:1GYBc/BTZyVoXilHef43v9A8BSzw700zAPZ6zsZvo6Y=
 github.com/openshift-kni/k8sreporter v1.0.5/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20240606123201-0c45cd13c2f1 h1:y+0Ecc+MSZA/GNS3VOpKq+XK9x8qoNA7TlyHvqbVbpw=

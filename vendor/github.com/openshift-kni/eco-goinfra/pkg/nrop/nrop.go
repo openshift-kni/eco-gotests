@@ -196,7 +196,7 @@ func (builder *Builder) Update() (*Builder, error) {
 }
 
 // WithMCPSelector sets the NUMAResourcesOperator operator's mcpSelector.
-func (builder *Builder) WithMCPSelector(mcpSelector map[string]string) *Builder {
+func (builder *Builder) WithMCPSelector(config nropv1.NodeGroupConfig, mcpSelector metav1.LabelSelector) *Builder {
 	glog.V(100).Infof(
 		"Adding machineConfigPoolSelector to the NUMAResourcesOperator %s; machineConfigPoolSelector %v",
 		builder.Definition.Name, mcpSelector)
@@ -206,35 +206,16 @@ func (builder *Builder) WithMCPSelector(mcpSelector map[string]string) *Builder 
 	}
 
 	nodeGroup := nropv1.NodeGroup{
-		MachineConfigPoolSelector: &metav1.LabelSelector{
-			MatchLabels: mcpSelector,
-		},
+		Config:                    &config,
+		MachineConfigPoolSelector: &mcpSelector,
 	}
 
-	if len(mcpSelector) == 0 {
+	if len(mcpSelector.MatchLabels) == 0 && len(mcpSelector.MatchExpressions) == 0 {
 		glog.V(100).Infof("There are no labels for the machineConfigPoolSelector")
 
 		builder.errorMsg = "NUMAResourcesOperator 'machineConfigPoolSelector' cannot be empty"
 
 		return builder
-	}
-
-	for key, value := range mcpSelector {
-		if key == "" {
-			glog.V(100).Infof("The 'machineConfigPoolSelector' key cannot be empty")
-
-			builder.errorMsg = "can not apply a machineConfigPoolSelector with an empty key"
-
-			return builder
-		}
-
-		if value == "" {
-			glog.V(100).Infof("The 'machineConfigPoolSelector' value cannot be empty")
-
-			builder.errorMsg = "can not apply a machineConfigPoolSelector with an empty value"
-
-			return builder
-		}
 	}
 
 	builder.Definition.Spec.NodeGroups = append(builder.Definition.Spec.NodeGroups, nodeGroup)

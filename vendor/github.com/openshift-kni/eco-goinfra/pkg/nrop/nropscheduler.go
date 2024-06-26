@@ -247,6 +247,29 @@ func (builder *SchedulerBuilder) WithImageSpec(imageSpec string) *SchedulerBuild
 	return builder
 }
 
+// WithSchedulerName sets the NUMAResourcesScheduler operator's schedulerName.
+func (builder *SchedulerBuilder) WithSchedulerName(schedulerName string) *SchedulerBuilder {
+	glog.V(100).Infof(
+		"Adding schedulerName to the NUMAResourcesScheduler %s in namespace %s; schedulerName: %s",
+		builder.Definition.Name, builder.Definition.Namespace, schedulerName)
+
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if schedulerName == "" {
+		glog.V(100).Infof("The 'NUMAResourcesScheduler' schedulerName cannot be empty")
+
+		builder.errorMsg = "can not apply a NUMAResourcesScheduler with an empty schedulerName"
+
+		return builder
+	}
+
+	builder.Definition.Spec.SchedulerName = schedulerName
+
+	return builder
+}
+
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *SchedulerBuilder) validate() (bool, error) {
