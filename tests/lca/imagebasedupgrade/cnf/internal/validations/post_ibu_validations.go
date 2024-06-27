@@ -38,11 +38,21 @@ func PostUpgradeValidations() {
 		Label("PostIBUValidations"), func() {
 			BeforeAll(func() {
 				By("Retrieve seed image info", func() {
-					ibu, err = lca.PullImageBasedUpgrade(TargetSNOAPIClient)
-					Expect(err).NotTo(HaveOccurred(), "error pulling ibu resource from cluster")
+					Eventually(func() bool {
+						ibu, err = lca.PullImageBasedUpgrade(TargetSNOAPIClient)
+						if err != nil {
+							return false
+						}
 
-					seedInfo, err = seedimage.GetContent(TargetSNOAPIClient, ibu.Definition.Spec.SeedImageRef.Image)
-					Expect(err).NotTo(HaveOccurred(), "error getting seed image info")
+						seedImage, err := seedimage.GetContent(TargetSNOAPIClient, ibu.Definition.Spec.SeedImageRef.Image)
+						if err != nil {
+							return false
+						}
+
+						seedInfo = seedImage
+
+						return true
+					}, 2*time.Minute, 5*time.Second).Should(BeTrue(), "Failed to get seed image info")
 				})
 			})
 
