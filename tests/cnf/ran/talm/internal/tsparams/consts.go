@@ -53,15 +53,9 @@ const (
 
 	// TalmPodLabelSelector is the label selector to find talm pods.
 	TalmPodLabelSelector = "pod-template-hash"
-	// TalmContainerName is the name of the container in the talm pod.
-	TalmContainerName = "manager"
 	// TalmCompleteLabel is the label applied during talm after completion.
 	TalmCompleteLabel = "talmcomplete"
 
-	// OperatorHubTalmNamespace talm namespace.
-	OperatorHubTalmNamespace = "topology-aware-lifecycle-manager"
-	// OpenshiftOperatorNamespace is the namespace where operators are.
-	OpenshiftOperatorNamespace = "openshift-operators"
 	// OpenshiftLoggingNamespace is the namespace where logging pods are.
 	OpenshiftLoggingNamespace = "openshift-logging"
 

@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -222,22 +222,22 @@ func WaitForClusterInCguCompleted(cguBuilder *cgu.CguBuilder, cluster string, ti
 // cguBuilder.
 func SetupCguWithNamespace(cguBuilder *cgu.CguBuilder, suffix string) (*cgu.CguBuilder, error) {
 	// The client doesn't matter since we only want the definition. Kind and APIVersion are necessary for TALM.
-	tempNs := namespace.NewBuilder(raninittools.HubAPIClient, tsparams.TemporaryNamespace+suffix)
+	tempNs := namespace.NewBuilder(HubAPIClient, tsparams.TemporaryNamespace+suffix)
 	tempNs.Definition.Kind = "Namespace"
 	tempNs.Definition.APIVersion = corev1.SchemeGroupVersion.Version
 
-	_, err := CreatePolicy(raninittools.HubAPIClient, tempNs.Definition, suffix)
+	_, err := CreatePolicy(HubAPIClient, tempNs.Definition, suffix)
 	if err != nil {
 		return nil, err
 	}
 
 	err = CreatePolicyComponents(
-		raninittools.HubAPIClient, suffix, cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
+		HubAPIClient, suffix, cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = waitForPolicyComponentsExist(raninittools.HubAPIClient, suffix)
+	err = waitForPolicyComponentsExist(HubAPIClient, suffix)
 	if err != nil {
 		return nil, err
 	}
@@ -250,24 +250,24 @@ func SetupCguWithNamespace(cguBuilder *cgu.CguBuilder, suffix string) (*cgu.CguB
 func SetupCguWithCatSrc(cguBuilder *cgu.CguBuilder) (*cgu.CguBuilder, error) {
 	// The client doesn't matter since we only want the definition. Kind and APIVersion are necessary for TALM.
 	catsrc := olm.NewCatalogSourceBuilder(
-		raninittools.HubAPIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace)
+		HubAPIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace)
 	catsrc.Definition.Spec.SourceType = operatorsv1alpha1.SourceTypeInternal
 	catsrc.Definition.Spec.Priority = 1
 	catsrc.Definition.Kind = "CatalogSource"
 	catsrc.Definition.APIVersion = "operators.coreos.com/v1alpha1"
 
-	_, err := CreatePolicy(raninittools.HubAPIClient, catsrc.Definition, "")
+	_, err := CreatePolicy(HubAPIClient, catsrc.Definition, "")
 	if err != nil {
 		return nil, err
 	}
 
 	err = CreatePolicyComponents(
-		raninittools.HubAPIClient, "", cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
+		HubAPIClient, "", cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = waitForPolicyComponentsExist(raninittools.HubAPIClient, "")
+	err = waitForPolicyComponentsExist(HubAPIClient, "")
 	if err != nil {
 		return nil, err
 	}
@@ -288,18 +288,18 @@ func WaitToEnableCgu(cguBuilder *cgu.CguBuilder) (*cgu.CguBuilder, error) {
 // then creates the cguBuilder.
 func SetupCguWithClusterVersion(
 	cguBuilder *cgu.CguBuilder, clusterVersion *configv1.ClusterVersion) (*cgu.CguBuilder, error) {
-	_, err := CreatePolicy(raninittools.HubAPIClient, clusterVersion, "")
+	_, err := CreatePolicy(HubAPIClient, clusterVersion, "")
 	if err != nil {
 		return nil, err
 	}
 
 	err = CreatePolicyComponents(
-		raninittools.HubAPIClient, "", cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
+		HubAPIClient, "", cguBuilder.Definition.Spec.Clusters, metav1.LabelSelector{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = waitForPolicyComponentsExist(raninittools.HubAPIClient, "")
+	err = waitForPolicyComponentsExist(HubAPIClient, "")
 	if err != nil {
 		return nil, err
 	}

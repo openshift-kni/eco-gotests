@@ -1,10 +1,12 @@
-package helper
+package ranhelper
 
 import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // IsPodHealthy returns true if a given pod is healthy, otherwise false.
@@ -39,6 +41,25 @@ func DoesContainerExistInPod(pod *pod.Builder, containerName string) bool {
 	}
 
 	return false
+}
+
+// UnmarshalRaw converts raw bytes for a K8s CR into the actual type.
+func UnmarshalRaw[T any](raw []byte) (*T, error) {
+	untyped := &unstructured.Unstructured{}
+	err := untyped.UnmarshalJSON(raw)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var typed T
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(untyped.UnstructuredContent(), &typed)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &typed, nil
 }
 
 // isPodInCondition returns true if a given pod is in expected condition, otherwise false.
