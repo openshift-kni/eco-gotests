@@ -195,4 +195,25 @@ const (
 
 	// KedaControllerName is a kedaController name.
 	KedaControllerName = "keda"
+
+	// NROPNamespace is a numa resources operator namespace.
+	NROPNamespace = "openshift-numaresources"
+
+	// NROPSubscriptionName is a numa resources operator subscription name.
+	NROPSubscriptionName = "openshift-numaresources-operator"
+
+	// NROPDeploymentName is a numa resources operator deployment name.
+	NROPDeploymentName = "numaresources-controller-manager"
+
+	// NROPInstanceName is a numa resources operator instance name.
+	NROPInstanceName = "numaresourcesoperator"
+
+	// NumaAwareSecondarySchedulerName is a numa-aware secondary pod scheduler name.
+	NumaAwareSecondarySchedulerName = "numaresourcesscheduler"
+
+	// NumaAwareSchedulerName is a numa-aware scheduler name.
+	NumaAwareSchedulerName = "topo-aware-scheduler"
+
+	// NumaWorkloadName is a numa workload name.
+	NumaWorkloadName = "numa-workload-1"
 )

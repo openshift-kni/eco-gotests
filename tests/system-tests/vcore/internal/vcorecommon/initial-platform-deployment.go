@@ -35,28 +35,28 @@ func VerifyInitialDeploymentConfig() {
 				Label("healthy-cluster"), reportxml.ID("59441"), VerifyHealthyClusterStatus)
 
 			It("Asserts time sync was successfully applied for master nodes",
-				Label("chrony"), reportxml.ID("60028"), VerifyEtcChronyMasters)
+				Label("initial"), reportxml.ID("60028"), VerifyEtcChronyMasters)
 
 			It("Asserts time sync was successfully applied for workers nodes",
-				Label("chrony"), reportxml.ID("60029"), VerifyEtcChronyWorkers)
+				Label("initial"), reportxml.ID("60029"), VerifyEtcChronyWorkers)
 
 			It("Verifies odf MCP was deployed",
-				Label("odf"), reportxml.ID("73673"), VerifyODFMCPAvailability)
+				Label("initial"), reportxml.ID("73673"), VerifyODFMCPAvailability)
 
 			It("Verifies full set of ODF nodes was deployed",
-				Label("odf"), reportxml.ID("59442"), VerifyODFNodesAvailability)
+				Label("initial"), reportxml.ID("59442"), VerifyODFNodesAvailability)
 
 			It("Verifies control-plane-worker MCP was deployed",
-				Label("cp-mcp"), reportxml.ID("60049"), VerifyControlPlaneWorkerMCPAvailability)
+				Label("initial"), reportxml.ID("60049"), VerifyControlPlaneWorkerMCPAvailability)
 
 			It("Verifies control-plane-worker nodes availability",
-				Label("cp-nodes"), reportxml.ID("59505"), VerifyControlPlaneWorkerNodesAvailability)
+				Label("initial"), reportxml.ID("59505"), VerifyControlPlaneWorkerNodesAvailability)
 
 			It("Verifies user-plane-worker MCP was deployed",
-				Label("pp-mcp"), reportxml.ID("60050"), VerifyUserPlaneWorkerMCPAvailability)
+				Label("initial"), reportxml.ID("60050"), VerifyUserPlaneWorkerMCPAvailability)
 
 			It("Verifies user-plane-worker nodes availability",
-				Label("pp-nodes"), reportxml.ID("59506"), VerifyUserPlaneWorkerNodesAvailability)
+				Label("initial"), reportxml.ID("59506"), VerifyUserPlaneWorkerNodesAvailability)
 		})
 }
 

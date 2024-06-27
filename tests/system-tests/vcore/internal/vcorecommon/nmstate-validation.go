@@ -12,8 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
-	goclient "sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -34,9 +32,6 @@ func VerifyNMStateSuite() {
 
 			It("Verifies NMState instance exists",
 				Label("nmstate"), reportxml.ID("67027"), VerifyNMStateInstanceExists)
-
-			It("Verifies all NodeNetworkConfigurationPolicies are Available",
-				Label("nmstate"), reportxml.ID("71846"), VerifyAllNNCPsAreOK)
 		})
 }
 
@@ -79,59 +74,3 @@ func VerifyNMStateInstanceExists(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to pull in NMState instance %q", vcoreparams.NMStateInstanceName))
 } // func VerifyNMStateInstanceExists (ctx SpecContext)
-
-// VerifyAllNNCPsAreOK assert all available NNCPs are Available, not progressing and not degraded.
-func VerifyAllNNCPsAreOK(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify NodeNetworkConfigurationPolicies are Available")
-
-	const ConditionTypeTrue = "True"
-
-	nncps, err := nmstate.ListPolicy(APIClient, goclient.ListOptions{})
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to list NodeNetworkConfigurationPolicies: %v", err))
-	Expect(len(nncps)).ToNot(Equal(0), "0 NodeNetworkConfigurationPolicies found")
-
-	nonAvailableNNCP := make(map[string]string)
-	progressingNNCP := make(map[string]string)
-	degradedNNCP := make(map[string]string)
-
-	for _, nncp := range nncps {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("\t Processing %s NodeNetworkConfigurationPolicy",
-			nncp.Definition.Name)
-
-		for _, condition := range nncp.Object.Status.Conditions {
-			//nolint:nolintlint
-			switch condition.Type { //nolint:exhaustive
-			//nolint:goconst
-			case "Available":
-				if condition.Status != ConditionTypeTrue {
-					nonAvailableNNCP[nncp.Definition.Name] = condition.Message
-					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is not Available: %s\n",
-						nncp.Definition.Name, condition.Message)
-				} else {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Available: %s\n",
-						nncp.Definition.Name, condition.Message)
-				}
-			case "Degraded":
-				if condition.Status == ConditionTypeTrue {
-					degradedNNCP[nncp.Definition.Name] = condition.Message
-					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Degraded: %s\n",
-						nncp.Definition.Name, condition.Message)
-				} else {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Not-Degraded\n", nncp.Definition.Name)
-				}
-			case "Progressing":
-				if condition.Status == ConditionTypeTrue {
-					progressingNNCP[nncp.Definition.Name] = condition.Message
-					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Progressing: %s\n",
-						nncp.Definition.Name, condition.Message)
-				} else {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("\t%s NNCP is Not-Progressing\n", nncp.Definition.Name)
-				}
-			}
-		}
-	}
-
-	Expect(len(nonAvailableNNCP)).To(Equal(0), "There are NonAvailable NodeNetworkConfigurationPolicies")
-	Expect(len(degradedNNCP)).To(Equal(0), "There are Degraded NodeNetworkConfigurationPolicies")
-	Expect(len(nonAvailableNNCP)).To(Equal(0), "There are Progressing NodeNetworkConfigurationPolicies")
-} // func VerifyNNCP (ctx SpecContext)

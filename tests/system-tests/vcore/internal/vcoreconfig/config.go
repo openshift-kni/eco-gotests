@@ -40,6 +40,7 @@ type VCoreConfig struct {
 	VCorePpLabel                string
 	VCoreCpLabel                string
 	ControlPlaneLabelListOption metav1.ListOptions
+	WorkerLabelListOption       metav1.ListOptions
 	OdfLabelListOption          metav1.ListOptions
 	VCorePpLabelListOption      metav1.ListOptions
 	VCoreCpLabelListOption      metav1.ListOptions
@@ -107,6 +108,7 @@ func readEnv(vcoreConfig *VCoreConfig) error {
 	vcoreConfig.VCorePpLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.VCorePpMCPName)
 	vcoreConfig.VCoreCpLabel = fmt.Sprintf("%s/%s", vcoreConfig.KubernetesRolePrefix, vcoreConfig.VCoreCpMCPName)
 	vcoreConfig.ControlPlaneLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.ControlPlaneLabel}
+	vcoreConfig.WorkerLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.WorkerLabel}
 	vcoreConfig.OdfLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.OdfLabel}
 	vcoreConfig.VCorePpLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.VCorePpLabel}
 	vcoreConfig.VCoreCpLabelListOption = metav1.ListOptions{LabelSelector: vcoreConfig.VCoreCpLabel}

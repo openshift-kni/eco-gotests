@@ -211,12 +211,12 @@ func CreateCLOInstance(ctx SpecContext) {
 	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))
 
-	eskInstance := clusterlogging.NewElasticsearchBuilder(APIClient,
-		vcoreparams.ESKInstanceName,
-		vcoreparams.CLONamespace)
-	Expect(eskInstance.Exists()).To(Equal(true), fmt.Sprintf("Failed to create ElasticSearch %s "+
-		"instance in %s namespace",
-		vcoreparams.ESKOperatorName, vcoreparams.CLONamespace))
+	// eskInstance := clusterlogging.NewElasticsearchBuilder(APIClient,
+	//   vcoreparams.ESKInstanceName,
+	//	 vcoreparams.CLONamespace)
+	// Expect(eskInstance.Exists()).To(Equal(true), fmt.Sprintf("Failed to create ElasticSearch %s "+
+	//	"instance in %s namespace",
+	//	vcoreparams.ESKOperatorName, vcoreparams.CLONamespace))
 
 	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))

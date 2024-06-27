@@ -1,7 +1,6 @@
 package vcorecommon
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,21 +20,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/golang/glog"
 	kedav1alpha1 "github.com/kedacore/keda-olm-operator/apis/keda/v1alpha1"
 	kedav2v1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/keda"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/mirroring"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
-
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
@@ -417,107 +410,3 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	Expect(isCntReached).To(Equal(true), fmt.Sprintf("failed to scale %s pods in namespace %s after %v",
 		vcoreparams.KedaWatchAppName, vcoreparams.KedaWatchNamespace, time.Minute*5))
 } // func VerifyKedaControllerDeployment (ctx SpecContext)
-
-func getImageURL(repository, name, tag string) (string, error) {
-	imageURL := fmt.Sprintf("%s/%s", repository, name)
-
-	isDisconnected, err := platform.IsDisconnectedDeployment(APIClient)
-
-	if err != nil {
-		return "", err
-	}
-
-	if !isDisconnected {
-		glog.V(vcoreparams.VCoreLogLevel).Info("The connected deployment type was detected, " +
-			"the images mirroring is not required")
-	} else {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Mirror image %s:%s locally", imageURL, tag)
-
-		imageURL, _, err = mirroring.MirrorImageToTheLocalRegistry(
-			APIClient,
-			repository,
-			name,
-			tag,
-			VCoreConfig.Host,
-			VCoreConfig.User,
-			VCoreConfig.Pass,
-			VCoreConfig.CombinedPullSecretFile,
-			VCoreConfig.RegistryRepository)
-
-		if err != nil {
-			return "", fmt.Errorf("failed to mirror image %s:%s locally due to %w",
-				name, tag, err)
-		}
-	}
-
-	return fmt.Sprintf("%s:%s", imageURL, tag), nil
-}
-
-func insureNamespaceNotExists(nsName string) bool {
-	watchNamespace := namespace.NewBuilder(APIClient, nsName)
-	if watchNamespace.Exists() {
-		err := watchNamespace.Delete()
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to delete watch namespace %s due to: %v",
-				vcoreparams.KedaWatchNamespace, err))
-
-		err = wait.PollUntilContextTimeout(
-			context.TODO(),
-			time.Second,
-			time.Minute*10,
-			true,
-			func(ctx context.Context) (bool, error) {
-				isExists := watchNamespace.Exists()
-
-				if !isExists {
-					return true, nil
-				}
-
-				return false, nil
-			})
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to delete watch namespace %s due to: %v",
-				vcoreparams.KedaWatchNamespace, err))
-	}
-
-	return true
-}
-
-func insureNamespaceExists(nsName string) bool {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Insure namespace %q exists", nsName)
-
-	createNs := namespace.NewBuilder(APIClient, nsName)
-
-	if !createNs.Exists() {
-		createNs, err := createNs.Create()
-
-		if err != nil {
-			glog.V(vcoreparams.VCoreLogLevel).Infof("Error creating namespace %q: %v", nsName, err)
-
-			return false
-		}
-
-		err = wait.PollUntilContextTimeout(
-			context.TODO(),
-			time.Second,
-			3*time.Second,
-			true,
-			func(ctx context.Context) (bool, error) {
-				if !createNs.Exists() {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("Error creating namespace %q", nsName)
-
-					return false, nil
-				}
-
-				glog.V(vcoreparams.VCoreLogLevel).Infof("Created namespace %q", createNs.Definition.Name)
-
-				return true, nil
-			})
-
-		if err != nil {
-			return false
-		}
-	}
-
-	return true
-}
