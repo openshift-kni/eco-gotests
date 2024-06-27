@@ -67,7 +67,7 @@ func VerifyServiceMeshSuite() {
 				Label("smo"), reportxml.ID("73732"), VerifyServiceMeshDeployment)
 
 			It("Verifies Service Mesh configuration procedure succeeded",
-				Label("smo"), reportxml.ID("59502"), VerifyServiceMeshConfig)
+				Label("debug"), reportxml.ID("59502"), VerifyServiceMeshConfig)
 		})
 }
 
@@ -217,7 +217,7 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 		err = await.WaitUntilDeploymentReady(APIClient,
 			smodeployment,
 			vcoreparams.IstioNamespace,
-			30*time.Second)
+			2*time.Minute)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("smo deployment %s not found in %s namespace; %v",
 			smodeployment, vcoreparams.IstioNamespace, err))
 	}

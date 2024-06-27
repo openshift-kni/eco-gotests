@@ -26,6 +26,12 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 )
 
+var (
+	workerLabel           = VCoreConfig.WorkerLabel
+	workerLabelMap        = VCoreConfig.WorkerLabelMap
+	workerLabelListOption = VCoreConfig.WorkerLabelListOption
+)
+
 // VerifyNROPSuite container that contains tests for Numa Resources Operator verification.
 func VerifyNROPSuite() {
 	Describe(
