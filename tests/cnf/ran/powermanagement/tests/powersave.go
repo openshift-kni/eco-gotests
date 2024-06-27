@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
@@ -37,7 +37,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 	)
 
 	BeforeAll(func() {
-		nodeList, err = nodes.List(raninittools.Spoke1APIClient)
+		nodeList, err = nodes.List(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get nodes")
 		Expect(len(nodeList)).To(Equal(1), "Currently only SNO clusters are supported")
 
@@ -48,13 +48,13 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		originalPerfProfileSpec = perfProfile.Object.Spec
 
 		By("Creating the privileged pod namespace")
-		_, err = namespace.NewBuilder(raninittools.Spoke1APIClient, tsparams.PrivPodNamespace).Create()
+		_, err = namespace.NewBuilder(Spoke1APIClient, tsparams.PrivPodNamespace).Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create the privileged pod namespace")
 	})
 
 	AfterAll(func() {
 		By("Deleting the privileged pod namespace")
-		err = namespace.NewBuilder(raninittools.Spoke1APIClient, tsparams.PrivPodNamespace).
+		err = namespace.NewBuilder(Spoke1APIClient, tsparams.PrivPodNamespace).
 			DeleteAndWait(tsparams.PowerSaveTimeout)
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete priv pod namespace")
 
@@ -72,7 +72,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 
 		_, err = perfProfile.Update(true)
 		Expect(err).ToNot(HaveOccurred())
-		mcp, err := mco.Pull(raninittools.Spoke1APIClient, "master")
+		mcp, err := mco.Pull(Spoke1APIClient, "master")
 		Expect(err).ToNot(HaveOccurred(), "Failed to get machineconfigpool")
 
 		err = mcp.WaitToBeInCondition(mcov1.MachineConfigPoolUpdating, corev1.ConditionTrue, 2*tsparams.PowerSaveTimeout)
@@ -91,7 +91,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			}
 
 			By("Checking for expected kernel parameters")
-			cmdline, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, "cat /proc/cmdline")
+			cmdline, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, "cat /proc/cmdline")
 			Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
 
 			// Expected default set of kernel parameters when no WorkloadHints are specified in PerformanceProfile
@@ -118,7 +118,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		err := helper.SetPowerModeAndWaitForMcpUpdate(perfProfile, *nodeList[0], true, false, true)
 		Expect(err).ToNot(HaveOccurred(), "Failed to set power mode")
 
-		cmdline, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, "cat /proc/cmdline")
+		cmdline, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, "cat /proc/cmdline")
 		Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
 		Expect(cmdline).
 			To(ContainSubstring("intel_pstate=passive"), "Kernel parameter intel_pstate=passive missing from /proc/cmdline")
@@ -200,11 +200,11 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		)
 
 		BeforeAll(func() {
-			if raninittools.BMCClient == nil {
+			if BMCClient == nil {
 				Skip("Collecting power usage metrics requires the BMC configuration be set.")
 			}
 
-			samplingInterval, err = time.ParseDuration(raninittools.RANConfig.MetricSamplingInterval)
+			samplingInterval, err = time.ParseDuration(RANConfig.MetricSamplingInterval)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse metric sampling interval")
 
 			// Determine power state to be used as a tag for the metric
@@ -213,7 +213,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		})
 
 		It("Checks power usage for 'noworkload' scenario", func() {
-			duration, err := time.ParseDuration(raninittools.RANConfig.NoWorkloadDuration)
+			duration, err := time.ParseDuration(RANConfig.NoWorkloadDuration)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse no workload duration")
 
 			compMap, err := helper.CollectPowerMetricsWithNoWorkload(duration, samplingInterval, powerState)
@@ -226,7 +226,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		})
 
 		It("Checks power usage for 'steadyworkload' scenario", func() {
-			duration, err := time.ParseDuration(raninittools.RANConfig.WorkloadDuration)
+			duration, err := time.ParseDuration(RANConfig.WorkloadDuration)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse steady workload duration")
 
 			compMap, err := helper.CollectPowerMetricsWithSteadyWorkload(
@@ -248,7 +248,7 @@ func checkCPUGovernorsAndResumeLatency(cpus []int, pmQos, governor string) {
 
 		var output string
 		for len(output) == 0 {
-			value, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, command)
+			value, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
 			Expect(err).ToNot(HaveOccurred(), "Error executing command %s", command)
 
 			output = strings.Trim(value, "\r\n")
@@ -259,7 +259,7 @@ func checkCPUGovernorsAndResumeLatency(cpus []int, pmQos, governor string) {
 
 		output = ""
 		for len(output) == 0 {
-			value, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, command)
+			value, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
 			Expect(err).ToNot(HaveOccurred(), "Error executing command %s", command)
 
 			output = strings.Trim(value, "\r\n")

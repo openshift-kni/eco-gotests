@@ -641,6 +641,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 # github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
+github.com/openshift-kni/eco-goinfra/pkg/argocd
 github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmc
