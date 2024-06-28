@@ -13,12 +13,12 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ptp"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/reboot"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/sriov"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuparams"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randutestworkload"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,8 +31,8 @@ var _ = Describe(
 			By("Preparing workload")
 
 			if namespace.NewBuilder(APIClient, RanDuTestConfig.TestWorkload.Namespace).Exists() {
-				err := randutestworkload.CleanNameSpace(randuparams.DefaultTimeout, RanDuTestConfig.TestWorkload.Namespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to clean workload test namespace objects")
+				_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
 			}
 
 			if RanDuTestConfig.TestWorkload.CreateMethod == "shell" {
@@ -82,8 +82,9 @@ var _ = Describe(
 					err = deploy.WaitUntilCondition("Available", 8*time.Minute)
 					Expect(err).ToNot(HaveOccurred(), "openshift apiserver deployment has not recovered in time after reboot")
 
-					By("Wait for two more minutes for the cluster resources to reconciliate their state")
-					time.Sleep(2 * time.Minute)
+					By(fmt.Sprintf("Wait for %d minutes for the cluster resources to reconciliate their state",
+						RanDuTestConfig.RebootRecoveryTime))
+					time.Sleep(time.Duration(RanDuTestConfig.RebootRecoveryTime) * time.Minute)
 
 					By("Remove any pods in UnexpectedAdmissionError state")
 					listOptions := metav1.ListOptions{
@@ -148,6 +149,16 @@ var _ = Describe(
 							Expect(len(vfioDevls)).To(BeNumerically(">=", podvfioDevices),
 								"error: vfio devices inside pod( %s ) do not match pod %s attachments:", cmd.String(), pod.Definition.Name)
 						}
+					}
+
+					if RanDuTestConfig.PtpEnabled {
+						timeInterval := 3 * time.Minute
+						time.Sleep(timeInterval)
+
+						By("Check PTP status for the last 3 minutes")
+						ptpOnSync, err := ptp.ValidatePTPStatus(APIClient, timeInterval)
+						Expect(err).ToNot(HaveOccurred(), "PTP Error: %s", err)
+						Expect(ptpOnSync).To(Equal(true))
 					}
 				}
 			}
