@@ -617,8 +617,8 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
 
 	deployContainerTwo := defineContainer(sriovContainerTwoName, RDSCoreConfig.WlkdSRIOVDeployTwoImage,
-		RDSCoreConfig.WlkdSRIOVDeployTwoCmd, RDSCoreConfig.WldkSRIOVDeployOneResRequests,
-		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
+		RDSCoreConfig.WlkdSRIOVDeployTwoCmd, RDSCoreConfig.WldkSRIOVDeployTwoResRequests,
+		RDSCoreConfig.WldkSRIOVDeployTwoResLimits)
 
 	By("Obtaining container definition")
 
@@ -1156,7 +1156,7 @@ func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
 		sriovDeploy4OneName, RDSCoreConfig.WlkdSRIOV4NS)
 
 	Eventually(func() bool {
-		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV4NS,
 			metav1.ListOptions{LabelSelector: sriovDeploy4OneLabel})
 
 		return len(oldPods) == 0
@@ -1170,7 +1170,7 @@ func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
 		sriovDeploy4TwoName, RDSCoreConfig.WlkdSRIOV4NS)
 
 	Eventually(func() bool {
-		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV4NS,
 			metav1.ListOptions{LabelSelector: sriovDeploy4TwoLabel})
 
 		return len(oldPods) == 0

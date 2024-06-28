@@ -104,7 +104,7 @@ func defineNROPDeployment(containerConfig *corev1.Container, deployName, deployN
 
 // VerifyNROPWorkload deploys workload with NROP scheduler.
 func VerifyNROPWorkload(ctx SpecContext) {
-	By("Checking SR-IOV deployments don't exist")
+	By("Checking NROP deployment doesn't exist")
 
 	deleteDeployments(nropDeploy1Name, RDSCoreConfig.WlkdNROPOneNS)
 
