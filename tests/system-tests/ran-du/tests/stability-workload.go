@@ -14,7 +14,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/stability"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuparams"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randutestworkload"
 )
 
 var _ = Describe(
@@ -131,7 +130,7 @@ var _ = Describe(
 		})
 		AfterAll(func() {
 			By("Cleaning up test workload resources")
-			err := randutestworkload.CleanNameSpace(randuparams.DefaultTimeout, RanDuTestConfig.TestWorkload.Namespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to clean workload test namespace objects")
+			_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+			Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
 		})
 	})
