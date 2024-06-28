@@ -6,8 +6,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/stability"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
 )
@@ -22,6 +24,12 @@ var _ = Describe(
 			err         error
 		)
 		BeforeAll(func() {
+
+			if namespace.NewBuilder(APIClient, RanDuTestConfig.TestWorkload.Namespace).Exists() {
+				By("Cleaning up test workload resources")
+				_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
+			}
 
 			By("Fetching Cluster name")
 			clusterName, err = platform.GetOCPClusterName(APIClient)
