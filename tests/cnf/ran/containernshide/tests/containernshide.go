@@ -10,22 +10,22 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/containernshide/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 )
 
 var _ = Describe("Container Namespace Hiding", Label(tsparams.LabelContainerNSHideTestCases), func() {
 	It("should not have kubelet and crio using the same inode as systemd", reportxml.ID("53681"), func() {
 		By("Getting systemd inodes on cluster nodes")
-		systemdInodes, err := cluster.ExecCmdWithStdout(raninittools.Spoke1APIClient, 3, "readlink /proc/1/ns/mnt")
+		systemdInodes, err := cluster.ExecCmdWithStdout(Spoke1APIClient, 3, "readlink /proc/1/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check systemd inodes")
 
 		By("Getting kubelet inodes on cluster nodes")
 		kubeletInodes, err := cluster.ExecCmdWithStdout(
-			raninittools.Spoke1APIClient, 3, "readlink /proc/$(pidof kubelet)/ns/mnt")
+			Spoke1APIClient, 3, "readlink /proc/$(pidof kubelet)/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check kubelet inodes")
 
 		By("Getting crio inodes on cluster nodes")
-		crioInodes, err := cluster.ExecCmdWithStdout(raninittools.Spoke1APIClient, 3, "readlink /proc/$(pidof crio)/ns/mnt")
+		crioInodes, err := cluster.ExecCmdWithStdout(Spoke1APIClient, 3, "readlink /proc/$(pidof crio)/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check crio inodes")
 
 		Expect(len(systemdInodes)).To(Equal(len(kubeletInodes)),

@@ -4,15 +4,21 @@ import "github.com/golang/glog"
 
 const (
 	// Label represents the label for the ran test cases.
-	Label string = "ran"
+	Label = "ran"
 	// AcmOperatorName operator name of ACM.
-	AcmOperatorName string = "advanced-cluster-management"
+	AcmOperatorName = "advanced-cluster-management"
 	// AcmOperatorNamespace ACM's namespace.
-	AcmOperatorNamespace string = "rhacm"
+	AcmOperatorNamespace = "rhacm"
+	// TalmOperatorHubNamespace TALM namespace.
+	TalmOperatorHubNamespace = "topology-aware-lifecycle-manager"
+	// TalmContainerName is the name of the container in the talm pod.
+	TalmContainerName = "manager"
+	// OpenshiftOperatorNamespace is the namespace where operators are.
+	OpenshiftOperatorNamespace = "openshift-operators"
 	// OpenshiftGitops name.
-	OpenshiftGitops string = "openshift-gitops"
+	OpenshiftGitops = "openshift-gitops"
 	// OpenshiftGitopsRepoServer ocp git repo server.
-	OpenshiftGitopsRepoServer string = "openshift-gitops-repo-server"
+	OpenshiftGitopsRepoServer = "openshift-gitops-repo-server"
 	// PtpContainerName is the name of the container in the PTP daemon pod.
 	PtpContainerName = "linuxptp-daemon-container"
 	// PtpDaemonsetLabelSelector is the label selector to find the PTP daemon pod.
