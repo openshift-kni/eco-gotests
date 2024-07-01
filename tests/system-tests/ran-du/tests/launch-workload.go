@@ -1,11 +1,14 @@
 package ran_du_system_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ptp"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuparams"
@@ -45,6 +48,16 @@ var _ = Describe(
 		It("Assert all pods are ready", reportxml.ID("55465"), Label("launch-workload"), func() {
 			_, err := await.WaitUntilAllPodsReady(APIClient, RanDuTestConfig.TestWorkload.Namespace, randuparams.DefaultTimeout)
 			Expect(err).ToNot(HaveOccurred(), "pod not ready: %s", err)
+
+			if RanDuTestConfig.PtpEnabled {
+				timeInterval := 3 * time.Minute
+				time.Sleep(timeInterval)
+
+				By("Check PTP status for the last 3 minutes after workload deployment")
+				ptpOnSync, err := ptp.ValidatePTPStatus(APIClient, timeInterval)
+				Expect(err).ToNot(HaveOccurred(), "PTP Error: %s", err)
+				Expect(ptpOnSync).To(Equal(true))
+			}
 
 		})
 		AfterAll(func() {

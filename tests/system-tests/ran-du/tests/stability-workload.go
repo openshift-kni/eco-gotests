@@ -60,15 +60,15 @@ var _ = Describe(
 		It("StabilityWorkload", reportxml.ID("42744"), Label("StabilityWorkload"), func() {
 
 			outputDir := RanDuTestConfig.StabilityOutputPath
-			policiesOutputFile := fmt.Sprintf("%s/stability_policies.log", outputDir)
-			ptpOutputFile := fmt.Sprintf("%s/stability_ptp.log", outputDir)
+			policiesOutputFile := fmt.Sprintf("%s/stability_workload_policies.log", outputDir)
+			ptpOutputFile := fmt.Sprintf("%s/stability_workload_ptp.log", outputDir)
 			namespaces := []string{"openshift-etcd", "openshift-apiserver"}
 
-			totalDuration := time.Duration(RanDuTestConfig.StabilityDurationMins) * time.Minute
-			interval := time.Duration(RanDuTestConfig.StabilityIntervalMins) * time.Minute
+			totalDuration := time.Duration(RanDuTestConfig.StabilityWorkloadDurMins) * time.Minute
+			interval := time.Duration(RanDuTestConfig.StabilityWorkloadIntMins) * time.Minute
 			startTime := time.Now()
 
-			By(fmt.Sprintf("Collecting metrics during %d minutes", totalDuration))
+			By(fmt.Sprintf("Collecting metrics during %d minutes", RanDuTestConfig.StabilityWorkloadDurMins))
 			for time.Since(startTime) < totalDuration {
 
 				if RanDuTestConfig.PtpEnabled {
@@ -84,7 +84,7 @@ var _ = Describe(
 				}
 				for _, namespace := range namespaces {
 					err = stability.SavePodsRestartsInNamespace(APIClient,
-						namespace, fmt.Sprintf("%s/stability_%s.log", outputDir, namespace))
+						namespace, fmt.Sprintf("%s/stability_workload_%s.log", outputDir, namespace))
 					if err != nil {
 						fmt.Printf("Error, could not save pod restarts")
 					}
@@ -107,7 +107,7 @@ var _ = Describe(
 			// Verify podRestarts
 			By("Check Pod restarts")
 			for _, namespace := range namespaces {
-				_, err := stability.VerifyStabilityStatusChange(fmt.Sprintf("%s/stability_%s.log", outputDir, namespace))
+				_, err := stability.VerifyStabilityStatusChange(fmt.Sprintf("%s/stability_workload_%s.log", outputDir, namespace))
 				if err != nil {
 					stabilityErrors = append(stabilityErrors, err.Error())
 				}

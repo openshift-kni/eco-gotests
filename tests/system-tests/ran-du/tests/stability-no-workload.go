@@ -39,15 +39,15 @@ var _ = Describe(
 		It("StabilityNoWorkload", reportxml.ID("74522"), Label("StabilityNoWorkload"), func() {
 
 			outputDir := RanDuTestConfig.StabilityOutputPath
-			policiesOutputFile := fmt.Sprintf("%s/stability_policies.log", outputDir)
-			ptpOutputFile := fmt.Sprintf("%s/stability_ptp.log", outputDir)
+			policiesOutputFile := fmt.Sprintf("%s/stability_no_workload_policies.log", outputDir)
+			ptpOutputFile := fmt.Sprintf("%s/stability_no_workload_ptp.log", outputDir)
 			namespaces := []string{"openshift-etcd", "openshift-apiserver"}
 
-			totalDuration := time.Duration(RanDuTestConfig.StabilityDurationMins) * time.Minute
-			interval := time.Duration(RanDuTestConfig.StabilityIntervalMins) * time.Minute
+			totalDuration := time.Duration(RanDuTestConfig.StabilityNoWorkloadDurMins) * time.Minute
+			interval := time.Duration(RanDuTestConfig.StabilityNoWorkloadIntMins) * time.Minute
 			startTime := time.Now()
 
-			By("Start collecting metrics during the stability test duration defined")
+			By(fmt.Sprintf("Collecting metrics during %d minutes", RanDuTestConfig.StabilityNoWorkloadDurMins))
 			for time.Since(startTime) < totalDuration {
 
 				if RanDuTestConfig.PtpEnabled {
@@ -64,7 +64,7 @@ var _ = Describe(
 
 				for _, namespace := range namespaces {
 					err = stability.SavePodsRestartsInNamespace(APIClient,
-						namespace, fmt.Sprintf("%s/stability_%s.log", outputDir, namespace))
+						namespace, fmt.Sprintf("%s/stability_no_workload_%s.log", outputDir, namespace))
 					if err != nil {
 						fmt.Printf("Error, could not save Pod restarts")
 					}
@@ -88,7 +88,9 @@ var _ = Describe(
 			// Verify podRestarts
 			By("Check Pod restarts")
 			for _, namespace := range namespaces {
-				_, err := stability.VerifyStabilityStatusChange(fmt.Sprintf("%s/stability_%s.log", outputDir, namespace))
+				_, err := stability.VerifyStabilityStatusChange(fmt.Sprintf("%s/stability_no_workload_%s.log",
+					outputDir,
+					namespace))
 				if err != nil {
 					stabilityErrors = append(stabilityErrors, err.Error())
 				}

@@ -25,13 +25,16 @@ type RanDuConfig struct {
 		CreateShellCmd string `yaml:"create_shell_cmd" envconfig:"ECO_RANDU_TESTWORKLOAD_CREATE_SHELLCMD"`
 		DeleteShellCmd string `yaml:"delete_shell_cmd" envconfig:"ECO_RANDU_TESTWORKLOAD_DELETE_SHELLCMD"`
 	} `yaml:"randu_test_workload"`
-	LaunchWorkloadIterations int    `yaml:"launch_workload_iterations" envconfig:"ECO_RANDU_LAUNCH_WORKLOAD_ITERATIONS"`
-	SoftRebootIterations     int    `yaml:"soft_reboot_iterations" envconfig:"ECO_RANDU_SOFT_REBOOT_ITERATIONS"`
-	HardRebootIterations     int    `yaml:"hard_reboot_iterations" envconfig:"ECO_RANDU_HARD_REBOOT_ITERATIONS"`
-	StabilityDurationMins    int64  `yaml:"stability_duration_mins" envconfig:"ECO_RANDU_STABILITY_DUR_MINS"`
-	StabilityIntervalMins    int64  `yaml:"stability_interval_mins" envconfig:"ECO_RANDU_STABILITY_INT_MINS"`
-	StabilityOutputPath      string `yaml:"stability_output_path" envconfig:"ECO_RANDU_STABILITY_OUTPUT_PATH"`
-	PtpEnabled               bool   `yaml:"ptp_enabled" envconfig:"ECO_RANDU_PTP_ENABLED"`
+	LaunchWorkloadIterations   int    `yaml:"launch_workload_iterations" envconfig:"ECO_RANDU_LAUNCH_WORKLOAD_ITERATIONS"`
+	SoftRebootIterations       int    `yaml:"soft_reboot_iterations" envconfig:"ECO_RANDU_SOFT_REBOOT_ITERATIONS"`
+	HardRebootIterations       int    `yaml:"hard_reboot_iterations" envconfig:"ECO_RANDU_HARD_REBOOT_ITERATIONS"`
+	StabilityWorkloadDurMins   int    `yaml:"stability_workload_duration_mins" envconfig:"ECO_RANDU_STAB_W_DUR_MINS"`
+	StabilityWorkloadIntMins   int    `yaml:"stability_workload_interval_mins" envconfig:"ECO_RANDU_STAB_W_INT_MINS"`
+	StabilityNoWorkloadDurMins int    `yaml:"stability_no_workload_duration_mins" envconfig:"ECO_RANDU_STAB_NW_DUR_MINS"`
+	StabilityNoWorkloadIntMins int    `yaml:"stability_no_workload_interval_mins" envconfig:"ECO_RANDU_STAB_NW_INT_MINS"`
+	StabilityOutputPath        string `yaml:"stability_output_path" envconfig:"ECO_RANDU_STABILITY_OUTPUT_PATH"`
+	PtpEnabled                 bool   `yaml:"ptp_enabled" envconfig:"ECO_RANDU_PTP_ENABLED"`
+	RebootRecoveryTime         int    `yaml:"reboot_recovery_time" envconfig:"ECO_RANDU_RECOVERY_TIME"`
 }
 
 // NewRanDuConfig returns instance of RanDuConfig config type.
