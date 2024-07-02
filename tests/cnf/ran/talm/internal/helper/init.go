@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
@@ -55,7 +56,7 @@ func VerifyTalmIsInstalled() error {
 
 	// Check each pod for the talm container
 	for _, talmPod := range talmPods {
-		if !ranhelper.IsPodHealthy(talmPod) {
+		if !cluster.IsPodHealthy(talmPod) {
 			return fmt.Errorf("talm pod %s is not healthy", talmPod.Definition.Name)
 		}
 

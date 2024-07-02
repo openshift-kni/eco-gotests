@@ -196,7 +196,8 @@ func (ranconfig *RANConfig) newSpoke1Config(configFile string) {
 
 		ranconfig.Spoke1Config.Spoke1BMC = bmc.New(bmcHost).
 			WithRedfishUser(ranconfig.Spoke1Config.BMCUsername, ranconfig.Spoke1Config.BMCPassword).
-			WithRedfishTimeout(ranconfig.Spoke1Config.BMCTimeout)
+			WithRedfishTimeout(ranconfig.Spoke1Config.BMCTimeout).
+			WithSSHUser(ranconfig.Spoke1Config.BMCUsername, ranconfig.Spoke1Config.BMCPassword)
 	}
 }
 
