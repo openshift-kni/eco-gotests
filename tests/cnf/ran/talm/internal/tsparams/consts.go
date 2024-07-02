@@ -123,6 +123,8 @@ const (
 	PrometheusPodName = "prometheus-k8s-0"
 	// PrometheusNamespace is the namespace for prometheus.
 	PrometheusNamespace = "openshift-monitoring"
+	// TalmBackupNamespace is the namespace that the CGU operator uses when running backups.
+	TalmBackupNamespace = "openshift-talo-backup"
 
 	// MasterNodeSelector when used in a label selector finds all master nodes.
 	MasterNodeSelector = "node-role.kubernetes.io/master="
