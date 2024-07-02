@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/upgrade-talm/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/safeapirequest"
+	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 )
 
 var (
@@ -52,6 +53,7 @@ var _ = Describe(
 				seedImageVersion = ibu.Definition.Spec.SeedImageRef.Version
 
 				By("Setting LCA init-monitor watchdog timer to 5 minutes")
+				ibu.Definition.Spec.AutoRollbackOnFailure = &lcav1.AutoRollbackOnFailure{}
 				ibu.Definition.Spec.AutoRollbackOnFailure.InitMonitorTimeoutSeconds = 300
 				ibu, err = ibu.Update()
 				Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with custom lca init-monitor timeout value")
