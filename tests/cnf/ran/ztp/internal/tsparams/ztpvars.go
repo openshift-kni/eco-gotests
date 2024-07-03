@@ -1,12 +1,17 @@
 package tsparams
 
 import (
-	"fmt"
-
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
+
+// ArgoCdGitDetails is the details for a single app in ArgoCD.
+type ArgoCdGitDetails struct {
+	Repo   string
+	Branch string
+	Path   string
+}
 
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
@@ -16,15 +21,16 @@ var (
 	ReporterNamespacesToDump = map[string]string{
 		TestNamespace: "",
 	}
-
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
-		{Cr: &v1.PodList{}},
+		{Cr: &corev1.PodList{}},
 	}
 
-	// TalmNonExistentClusterMessage is the condition message for when a cluster is non-existent.
-	TalmNonExistentClusterMessage = fmt.Sprintf(
-		"Unable to select clusters: cluster %s is not a ManagedCluster", NonExistentClusterName)
-	// TalmNonExistentPolicyMessage is the condition message for when a policy is non-existent.
-	TalmNonExistentPolicyMessage = fmt.Sprintf("Missing managed policies: [%s]", NonExistentPolicyName)
+	// ArgoCdApps is the slice of the Argo CD app names defined in this package.
+	ArgoCdApps = []string{
+		ArgoCdClustersAppName,
+		ArgoCdPoliciesAppName,
+	}
+	// ArgoCdAppDetails contains more details for each of the ArgoCdApps.
+	ArgoCdAppDetails = map[string]ArgoCdGitDetails{}
 )

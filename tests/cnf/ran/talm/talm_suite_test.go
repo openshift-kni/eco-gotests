@@ -26,24 +26,20 @@ func TestTalm(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	err := helper.InitializeVariables()
-	Expect(err).ToNot(HaveOccurred())
+	err := helper.VerifyTalmIsInstalled()
+	Expect(err).ToNot(HaveOccurred(), "Failed to verify that TALM is installed")
 
-	// Make sure TALM is present
-	err = helper.VerifyTalmIsInstalled()
-	Expect(err).ToNot(HaveOccurred())
-
-	// Delete the namespace before creating it to ensure it is in a consistent blank state
+	By("deleting and recreating TALM test namespace to ensure a blank slate")
 	err = helper.DeleteTalmTestNamespace()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete TALM test namespace")
 	err = helper.CreateTalmTestNamespace()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "Failed to create TALM test namespace")
 })
 
 var _ = AfterSuite(func() {
 	// Deleting the namespace after the suite finishes ensures all the CGUs created are deleted
 	err := helper.DeleteTalmTestNamespace()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete TALM test namespace")
 })
 
 var _ = ReportAfterEach(func(report SpecReport) {

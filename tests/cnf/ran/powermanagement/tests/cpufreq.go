@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
@@ -74,7 +74,7 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 func getCPUFreq(coreID int) (performancev2.CPUfrequency, error) {
 	spokeCommand := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
 		coreID)
-	cmdOut, err := cluster.ExecCommandOnSNO(raninittools.Spoke1APIClient, 3, spokeCommand)
+	cmdOut, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, spokeCommand)
 	Expect(err).ToNot(HaveOccurred(), "Failed to %s, error:%s", spokeCommand, cmdOut)
 	freqAsInt, err := strconv.Atoi(strings.TrimSpace(cmdOut))
 	Expect(err).ToNot(HaveOccurred(), "strconv.Atoi Failed")

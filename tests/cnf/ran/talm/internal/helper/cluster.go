@@ -11,8 +11,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/helper"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	v1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -51,7 +51,7 @@ func GetClusterVersionDefinition(config string, apiClient *clients.Settings) (*v
 		}
 
 		desiredUpdate.Version = version
-		clusterVersion.Spec.Upstream = v1.URL(raninittools.RANConfig.OcpUpgradeUpstreamURL)
+		clusterVersion.Spec.Upstream = v1.URL(RANConfig.OcpUpgradeUpstreamURL)
 		clusterVersion.Spec.Channel = currentVersion.Definition.Spec.Channel
 	}
 
@@ -99,7 +99,7 @@ func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeou
 
 // DeleteClusterLabel deletes a label from a specified cluster.
 func DeleteClusterLabel(clusterName string, labelToBeDeleted string) error {
-	managedCluster, err := ocm.PullManagedCluster(raninittools.HubAPIClient, clusterName)
+	managedCluster, err := ocm.PullManagedCluster(HubAPIClient, clusterName)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func DeleteClusterLabel(clusterName string, labelToBeDeleted string) error {
 
 // DoesClusterLabelExist looks for a label on a managed cluster and returns true if it exists.
 func DoesClusterLabelExist(clusterName string, expectedLabel string) (bool, error) {
-	managedCluster, err := ocm.PullManagedCluster(raninittools.HubAPIClient, clusterName)
+	managedCluster, err := ocm.PullManagedCluster(HubAPIClient, clusterName)
 	if err != nil {
 		return false, err
 	}
@@ -170,7 +170,7 @@ func waitForAllPodsHealthy(client *clients.Settings, namespaces []string, timeou
 				}
 
 				for _, namespacePod := range namespacePods {
-					healthy := helper.IsPodHealthy(namespacePod)
+					healthy := ranhelper.IsPodHealthy(namespacePod)
 
 					// Ignore failed pod with restart policy never. This could happen in image pruner or installer pods that
 					// will never restart. For those pods, instead of restarting the same pod, a new pod will be created

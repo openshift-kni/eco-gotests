@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 )
 
@@ -86,7 +86,7 @@ func CleanupTestResourcesOnSpokes(clusters []*clients.Settings, suffix string) [
 
 // DeleteTalmTestNamespace deletes the TALM test namespace.
 func DeleteTalmTestNamespace() error {
-	clusters := []*clients.Settings{raninittools.HubAPIClient, raninittools.Spoke1APIClient, raninittools.Spoke2APIClient}
+	clusters := []*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient}
 
 	for _, client := range clusters {
 		if client != nil {
