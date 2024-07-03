@@ -89,6 +89,10 @@ func SetCPUFreq(
 	desiredReservedCoreFreq *performancev2.CPUfrequency) error {
 	glog.V(tsparams.LogLevel).Infof("Set Reserved and Isolated CPU Frequency on performance profile")
 
+	if perfProfile.Definition.Spec.HardwareTuning == nil {
+		perfProfile.Definition.Spec.HardwareTuning = &performancev2.HardwareTuning{}
+	}
+
 	// Update PerfProfile with new CPU Frequencies
 	perfProfile.Definition.Spec.HardwareTuning.IsolatedCpuFreq = desiredIsolatedCoreFreq
 	perfProfile.Definition.Spec.HardwareTuning.ReservedCpuFreq = desiredReservedCoreFreq
