@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
@@ -63,7 +64,15 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 		When("reserved and isolated core frequency is configured via PerformanceProfile", func() {
 
 			It("sets the reserved and isolated core frequency correctly on the DUT", func() {
-				err := helper.SetCPUFreq(perfProfile, &desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
+
+				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.Spoke1OCPVersion, "4.16", "")
+				Expect(err).ToNot(HaveOccurred(), "Failed to compare OCP version string")
+
+				if !versionInRange {
+					Skip("OCP 4.16 or higher required for this test")
+				}
+
+				err = helper.SetCPUFreq(perfProfile, &desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
 				Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 
 			})
