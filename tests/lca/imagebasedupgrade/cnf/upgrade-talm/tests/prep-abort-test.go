@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
+	"github.com/openshift-kni/eco-goinfra/pkg/lca"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfclusterinfo"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfhelper"
@@ -26,6 +27,8 @@ var _ = Describe(
 
 				tsparams.TargetSnoClusterName = cnfclusterinfo.PreUpgradeClusterInfo.Name
 
+				ibu, err = lca.PullImageBasedUpgrade(cnfinittools.TargetSNOAPIClient)
+				Expect(err).NotTo(HaveOccurred(), "error pulling ibu resource from cluster")
 			})
 		})
 
@@ -48,6 +51,11 @@ var _ = Describe(
 					tsparams.IbuCguNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete finalize cgu on target hub cluster")
 			})
+
+			// Sleep for 10 seconds to allow talm to reconcile state.
+			// Sometimes if the next test re-creates the CGUs too quickly,
+			// the policies compliance status is not updated correctly.
+			time.Sleep(10 * time.Second)
 		})
 
 		It("Upgrade prep abort flow", reportxml.ID("68956"), func() {
@@ -77,6 +85,9 @@ var _ = Describe(
 				prepCguBuilder, err := prepCguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create prep CGU.")
 
+				_, err = ibu.WaitUntilStageComplete("Prep")
+				Expect(err).NotTo(HaveOccurred(), "error waiting for prep stage to complete")
+
 				_, err = prepCguBuilder.WaitUntilComplete(25 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Prep CGU did not complete in time.")
 			})
@@ -91,6 +102,9 @@ var _ = Describe(
 
 				finalizeCguBuilder, err := finalizeCguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create finalize CGU.")
+
+				_, err = ibu.WaitUntilStageComplete("Idle")
+				Expect(err).NotTo(HaveOccurred(), "error waiting for idle stage to complete")
 
 				_, err = finalizeCguBuilder.WaitUntilComplete(5 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Finalize CGU did not complete in time.")
