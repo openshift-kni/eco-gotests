@@ -2,6 +2,7 @@ package ranhelper
 
 import (
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	v1 "k8s.io/api/core/v1"
@@ -41,6 +42,17 @@ func DoesContainerExistInPod(pod *pod.Builder, containerName string) bool {
 	}
 
 	return false
+}
+
+// AreClustersPresent checks all of the provided clusters and returns false if any are nil.
+func AreClustersPresent(clusters []*clients.Settings) bool {
+	for _, cluster := range clusters {
+		if cluster == nil {
+			return false
+		}
+	}
+
+	return true
 }
 
 // UnmarshalRaw converts raw bytes for a K8s CR into the actual type.

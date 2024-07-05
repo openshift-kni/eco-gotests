@@ -117,6 +117,8 @@ func (ranconfig *RANConfig) newHubConfig(configFile string) {
 		glog.V(ranparam.LogLevel).Infof("Failed to get OCP version from hub: %v", err)
 	}
 
+	glog.V(ranparam.LogLevel).Infof("Found OCP version on hub: %s", ranconfig.HubConfig.HubOCPVersion)
+
 	ranconfig.HubConfig.HubOperatorVersions = make(map[ranparam.HubOperatorName]string)
 
 	ranconfig.HubConfig.HubOperatorVersions[ranparam.ACM], err = ranhelper.GetOperatorVersionFromCsv(
@@ -182,6 +184,8 @@ func (ranconfig *RANConfig) newSpoke1Config(configFile string) {
 		glog.V(ranparam.LogLevel).Infof("Failed to get OCP version from spoke 1: %v", err)
 	}
 
+	glog.V(ranparam.LogLevel).Infof("Found OCP version on spoke 1: %s", ranconfig.Spoke1Config.Spoke1OCPVersion)
+
 	if len(ranconfig.Spoke1Config.BMCHosts) > 0 &&
 		ranconfig.Spoke1Config.BMCUsername != "" &&
 		ranconfig.Spoke1Config.BMCPassword != "" {
@@ -224,6 +228,8 @@ func (ranconfig *RANConfig) newSpoke2Config(configFile string) {
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get OCP version from spoke 2: %v", err)
 	}
+
+	glog.V(ranparam.LogLevel).Infof("Found OCP version on spoke 2: %s", ranconfig.Spoke2Config.Spoke2OCPVersion)
 }
 
 func readConfig[C any](config *C, configFile string) error {
