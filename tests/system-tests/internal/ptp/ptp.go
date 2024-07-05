@@ -1,6 +1,7 @@
 package ptp
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"strings"
@@ -58,8 +59,22 @@ func isPtpClockSync(apiClient *clients.Settings) (bool, error) {
 
 	for _, pod := range podList {
 		if strings.Contains(pod.Object.Name, ptpLinuxPod) {
-			synccmd := []string{"curl", "-s", "http://localhost:9091/metrics"}
-			cmd, err := pod.ExecCommand(synccmd)
+			const maxRetries = 3
+
+			var cmd bytes.Buffer
+
+			for iter := 0; iter < maxRetries; iter++ {
+				synccmd := []string{"curl", "-s", "http://localhost:9091/metrics"}
+				cmd, err = pod.ExecCommand(synccmd)
+
+				if (len(cmd.String()) != 0) || (err == nil) {
+					break
+				}
+
+				if iter < maxRetries-1 {
+					time.Sleep(2 * time.Second)
+				}
+			}
 
 			if (len(cmd.String()) == 0) || (err != nil) {
 				return false, fmt.Errorf("failed to check PTP sync status, %w, %s", err, cmd.String())
