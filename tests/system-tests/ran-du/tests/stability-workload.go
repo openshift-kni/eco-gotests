@@ -62,6 +62,7 @@ var _ = Describe(
 			outputDir := RanDuTestConfig.StabilityOutputPath
 			policiesOutputFile := fmt.Sprintf("%s/stability_workload_policies.log", outputDir)
 			ptpOutputFile := fmt.Sprintf("%s/stability_workload_ptp.log", outputDir)
+			tunedRestartsOutputFile := fmt.Sprintf("%s/stability_tuned_restarts.log", outputDir)
 			namespaces := []string{"openshift-etcd", "openshift-apiserver"}
 
 			totalDuration := time.Duration(RanDuTestConfig.StabilityWorkloadDurMins) * time.Minute
@@ -88,6 +89,11 @@ var _ = Describe(
 					if err != nil {
 						fmt.Printf("Error, could not save pod restarts")
 					}
+				}
+
+				err = stability.SaveTunedRestarts(APIClient, tunedRestartsOutputFile)
+				if err != nil {
+					fmt.Printf("Error, could not save tuned restarts")
 				}
 
 				time.Sleep(interval)
@@ -120,6 +126,13 @@ var _ = Describe(
 				if err != nil {
 					stabilityErrors = append(stabilityErrors, err.Error())
 				}
+			}
+
+			// Verify tuned restarts
+			By("Check tuneds restarts")
+			_, err = stability.VerifyStabilityStatusChange(tunedRestartsOutputFile)
+			if err != nil {
+				stabilityErrors = append(stabilityErrors, err.Error())
 			}
 
 			By("Check if there been any error")

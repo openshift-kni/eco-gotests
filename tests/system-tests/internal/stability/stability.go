@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -121,6 +122,49 @@ func SavePolicyStatus(apiClient *clients.Settings, clusterName string, outputFil
 	}
 
 	entry := buildOutputLine(allPoliciesStatus)
+
+	_, err = file.WriteString(entry)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SaveTunedRestarts stores the status of tuned restarts in the outputFile.
+func SaveTunedRestarts(apiClient *clients.Settings, outputFile string) error {
+	file, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Get the tuned pod by name
+	tunedPods, err := pod.ListByNamePattern(apiClient, "tuned", "openshift-cluster-node-tuning-operator")
+	if err != nil {
+		return err
+	}
+
+	tunedRestarts := make(map[string]string)
+
+	for _, tunedPod := range tunedPods {
+		tunedLog, err := tunedPod.GetFullLog("tuned")
+		if err != nil {
+			return err
+		}
+
+		pattern := "static tuning from profile .* applied"
+
+		regex, err := regexp.Compile(pattern)
+		if err != nil {
+			return err
+		}
+
+		tunedApplyCount := len(regex.FindAllString(tunedLog, -1))
+		tunedRestarts["tuned_restarts"] = fmt.Sprintf("%d", tunedApplyCount)
+	}
+
+	entry := buildOutputLine(tunedRestarts)
 
 	_, err = file.WriteString(entry)
 	if err != nil {
