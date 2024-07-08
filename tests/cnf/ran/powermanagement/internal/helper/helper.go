@@ -128,9 +128,6 @@ func SetCPUFreq(
 	// Wait for Isolated CPU Frequency to be updated.
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), 2*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
-			if err != nil {
-				return false, err
-			}
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
 			cmdOut, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, spokeCommandIsolatedCPUs)
 
@@ -138,10 +135,13 @@ func SetCPUFreq(
 				return false, fmt.Errorf("command failed: %s", cmdOut)
 			}
 
-			currIsolatedCoreFreq, err := strconv.Atoi(strings.TrimSpace(cmdOut))
+			cmdOut = strings.TrimSpace(cmdOut)
+			currIsolatedCoreFreq, err := strconv.Atoi(cmdOut)
 
 			if err != nil {
-				return false, fmt.Errorf("string conversion failed failed: %w", err)
+				glog.V(tsparams.LogLevel).Infof("converting cpu frequency %s to an int failed: %w", cmdOut, err)
+
+				return false, nil
 			}
 
 			if currIsolatedCoreFreq != int(*desiredIsolatedCoreFreq) {
@@ -155,9 +155,13 @@ func SetCPUFreq(
 				return false, fmt.Errorf("command failed: %s", cmdOut)
 			}
 
-			currReservedFreq, err := strconv.Atoi(strings.TrimSpace(cmdOut))
+			cmdOut = strings.TrimSpace(cmdOut)
+			currReservedFreq, err := strconv.Atoi(cmdOut)
+
 			if err != nil {
-				return false, fmt.Errorf("string conversion failed failed: %w", err)
+				glog.V(tsparams.LogLevel).Infof("converting cpu frequency %s to an int failed: %w", cmdOut, err)
+
+				return false, nil
 			}
 
 			if currReservedFreq != int(*desiredReservedCoreFreq) {

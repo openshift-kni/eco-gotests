@@ -244,26 +244,28 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 // checkCPUGovernorsAndResumeLatency checks power and latency settings of the cpus.
 func checkCPUGovernorsAndResumeLatency(cpus []int, pmQos, governor string) {
 	for _, cpu := range cpus {
-		command := fmt.Sprintf("sleep 0.01; cat /sys/devices/system/cpu/cpu%d/power/pm_qos_resume_latency_us | cat -", cpu)
+		command := fmt.Sprintf("cat /sys/devices/system/cpu/cpu%d/power/pm_qos_resume_latency_us", cpu)
 
-		var output string
-		for len(output) == 0 {
-			value, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
-			Expect(err).ToNot(HaveOccurred(), "Error executing command %s", command)
+		// Eventually allows for retries on malformed output, but we use StopTrying since the command failing is
+		// a failure, not just a malformed output.
+		Eventually(func() (string, error) {
+			output, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
+			if err != nil {
+				return "", StopTrying(fmt.Sprintf("Failed to check cpu %d resume latency", cpu)).Wrap(err)
+			}
 
-			output = strings.Trim(value, "\r\n")
-		}
-		Expect(output).To(Equal(pmQos))
+			return strings.TrimSpace(output), nil
+		}, 10*time.Second, time.Second).Should(Equal(pmQos))
 
-		command = fmt.Sprintf("sleep 0.01; cat /sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor | cat -", cpu)
+		command = fmt.Sprintf("cat /sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor", cpu)
 
-		output = ""
-		for len(output) == 0 {
-			value, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
-			Expect(err).ToNot(HaveOccurred(), "Error executing command %s", command)
+		Eventually(func() (string, error) {
+			output, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
+			if err != nil {
+				return "", StopTrying(fmt.Sprintf("Failed to check cpu %d scaling governor", cpu)).Wrap(err)
+			}
 
-			output = strings.Trim(value, "\r\n")
-		}
-		Expect(output).To(Equal(governor))
+			return strings.TrimSpace(output), nil
+		}, 10*time.Second, time.Second).Should(Equal(governor))
 	}
 }
