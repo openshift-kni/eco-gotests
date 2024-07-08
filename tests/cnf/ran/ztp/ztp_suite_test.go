@@ -13,6 +13,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/tests"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
 
@@ -39,9 +40,6 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	// err := helper.ResetArgoCdGitDetails()
-	// Expect(err).ToNot(HaveOccurred(), "Failed to restore original ArgoCD configuration")
-
 	err := namespace.NewBuilder(HubAPIClient, tsparams.TestNamespace).DeleteAndWait(5 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete ZTP test namespace")
 })
