@@ -1,4 +1,4 @@
-package rds_core_system_test
+package rds_management_test
 
 import (
 	"runtime"
@@ -10,9 +10,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdsmanagementparams"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdsmanagement/internal/rdsmanagementparams"
 
-	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/tests"
+	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/rdsmanagement/tests"
 )
 
 var _, currentFile, _, _ = runtime.Caller(0)
