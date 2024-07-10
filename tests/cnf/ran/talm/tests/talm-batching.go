@@ -199,8 +199,8 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 				Spoke2APIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace).Exists()
 			Expect(catSrcExistsOnSpoke2).To(BeFalse(), "Catalog source exists on spoke 2")
 		})
-		It("should continue the CGU when the first batch fails with the Continue batch timeout 
-		   action", reportxml.ID("74753"), func() {
+		It("should continue the CGU when the first batch fails with the Continue batch timeout"+
+		   "action", reportxml.ID("74753"), func() {
 			// 74753 upgrade failure of first batch would not affect second batch
 			By("verifying the temporary namespace does not exist on spoke1")
 			tempExistsOnSpoke1 := namespace.NewBuilder(Spoke1APIClient, tsparams.TemporaryNamespace).Exists()
