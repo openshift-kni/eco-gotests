@@ -57,7 +57,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				}
 			})
 
-			It("tests for precache operator with multiple sources", func() {
+			It("tests for precache operator with multiple sources", reportxml.ID("48902"), func() {
 				var policies []string
 				for _, suffix := range suffixes {
 					policies = append(policies, tsparams.PolicyName+suffix)
@@ -84,7 +84,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on hub")
 			})
 
-			It("tests for ocp cache with version", func() {
+			It("tests for ocp cache with version", reportxml.ID("47950"), func() {
 				By("creating and applying policy with clusterversion CR that defines the upgrade graph, channel, and version")
 				cguBuilder := getPrecacheCGU([]string{tsparams.PolicyName}, []string{RANConfig.Spoke1Name})
 
@@ -149,7 +149,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				Expect(errList).To(BeEmpty(), "Failed to clean up test resources on hub")
 			})
 
-			It("tests for ocp cache with image", func() {
+			It("tests for ocp cache with image", reportxml.ID("48903"), func() {
 				By("creating and applying policy with clusterversion that defines the upgrade graph, channel, and version")
 				cguBuilder := getPrecacheCGU([]string{tsparams.PolicyName}, []string{RANConfig.Spoke1Name})
 
