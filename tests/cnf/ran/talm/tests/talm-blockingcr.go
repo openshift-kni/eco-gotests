@@ -55,7 +55,7 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete namespace for blocking B on spoke 1")
 	})
 
-	When("a blocking CR passes", func() {
+	When("a blocking CR passes", reportxml.ID("47948"), func() {
 		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
 		It("verifies CGU succeeded with blocking CR", reportxml.ID("47948"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
@@ -136,7 +136,7 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 		})
 	})
 
-	When("a blocking CR is missing", func() {
+	When("a blocking CR is missing", reportxml.ID("47956"), func() {
 		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
 		It("verifies CGU is blocked until blocking CR created and succeeded", reportxml.ID("47948"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
