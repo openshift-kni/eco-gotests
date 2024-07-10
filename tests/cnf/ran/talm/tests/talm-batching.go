@@ -52,7 +52,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 	})
 
 	When("a single spoke is missing", Label(tsparams.LabelMissingSpokeTestCases), func() {
-		// 47949 - Tests selected clusters must be non-compliant AND included in UOCR.
+		// 47949 - Tests selected clusters must be non-compliant AND included in CGU.
 		It("should report a missing spoke", reportxml.ID("47949"), func() {
 			By("creating the CGU with non-existent cluster and policy")
 			cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 1).
