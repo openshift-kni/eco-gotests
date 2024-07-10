@@ -59,7 +59,7 @@ func isPtpClockSync(apiClient *clients.Settings) (bool, error) {
 
 	for _, pod := range podList {
 		if strings.Contains(pod.Object.Name, ptpLinuxPod) {
-			const maxRetries = 3
+			const maxRetries = 6
 
 			var cmd bytes.Buffer
 
