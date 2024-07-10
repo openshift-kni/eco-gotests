@@ -199,47 +199,47 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 				Spoke2APIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace).Exists()
 			Expect(catSrcExistsOnSpoke2).To(BeFalse(), "Catalog source exists on spoke 2")
 		})
-		It("should continue the CGU when the first batch fails with the Continue batch timeout action",
-			reportxml.ID("74753"), func() {
-				// 74753 upgrade failure of first batch would not affect second batch
-				By("verifying the temporary namespace does not exist on spoke1")
-				tempExistsOnSpoke1 := namespace.NewBuilder(Spoke1APIClient, tsparams.TemporaryNamespace).Exists()
-				Expect(tempExistsOnSpoke1).To(BeFalse(), "Temporary namespace already exists on spoke 1")
+		It("should continue the CGU when the first batch fails with the Continue batch timeout 
+		   action", reportxml.ID("74753"), func() {
+			// 74753 upgrade failure of first batch would not affect second batch
+			By("verifying the temporary namespace does not exist on spoke1")
+			tempExistsOnSpoke1 := namespace.NewBuilder(Spoke1APIClient, tsparams.TemporaryNamespace).Exists()
+			Expect(tempExistsOnSpoke1).To(BeFalse(), "Temporary namespace already exists on spoke 1")
 
-				By("creating the temporary namespace on spoke2 only")
-				_, err = namespace.NewBuilder(Spoke2APIClient, tsparams.TemporaryNamespace).Create()
-				Expect(err).ToNot(HaveOccurred(), "Failed to create temporary namespace on spoke 2")
+			By("creating the temporary namespace on spoke2 only")
+			_, err = namespace.NewBuilder(Spoke2APIClient, tsparams.TemporaryNamespace).Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create temporary namespace on spoke 2")
 
-				By("creating the CGU and associated resources")
-				// Max concurrency of one to ensure two batches are used.
-				cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 1).
-					WithCluster(RANConfig.Spoke1Name).
-					WithCluster(RANConfig.Spoke2Name).
-					WithManagedPolicy(tsparams.PolicyName)
-				cguBuilder.Definition.Spec.RemediationStrategy.Timeout = 9
-				cguBuilder.Definition.Spec.Enable = ptr.To(false)
+			By("creating the CGU and associated resources")
+			// Max concurrency of one to ensure two batches are used.
+			cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 1).
+				WithCluster(RANConfig.Spoke1Name).
+				WithCluster(RANConfig.Spoke2Name).
+				WithManagedPolicy(tsparams.PolicyName)
+			cguBuilder.Definition.Spec.RemediationStrategy.Timeout = 9
+			cguBuilder.Definition.Spec.Enable = ptr.To(false)
 
-				cguBuilder, err = helper.SetupCguWithCatSrc(cguBuilder)
-				Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
+			cguBuilder, err = helper.SetupCguWithCatSrc(cguBuilder)
+			Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
 
-				By("waiting to enable the CGU")
-				cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
-				Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
+			By("waiting to enable the CGU")
+			cguBuilder, err = helper.WaitToEnableCgu(cguBuilder)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
-				By("waiting for the CGU to timeout")
-				err = helper.WaitForCguTimeout(cguBuilder, 16*time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to timeout")
+			By("waiting for the CGU to timeout")
+			err = helper.WaitForCguTimeout(cguBuilder, 16*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to timeout")
 
-				By("validating that the policy succeeded on spoke2")
-				catSrcExistsOnSpoke2 := olm.NewCatalogSourceBuilder(
-					Spoke2APIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace).Exists()
-				Expect(catSrcExistsOnSpoke2).To(BeTrue(), "Catalog source doesn't exist on spoke 2")
+			By("validating that the policy succeeded on spoke2")
+			catSrcExistsOnSpoke2 := olm.NewCatalogSourceBuilder(
+				Spoke2APIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace).Exists()
+			Expect(catSrcExistsOnSpoke2).To(BeTrue(), "Catalog source doesn't exist on spoke 2")
 
-				By("validating that the policy failed on spoke1")
-				catSrcExistsOnSpoke1 := olm.NewCatalogSourceBuilder(
-					Spoke1APIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace).Exists()
-				Expect(catSrcExistsOnSpoke1).To(BeFalse(), "Catalog source exists on spoke 1")
-			})
+			By("validating that the policy failed on spoke1")
+			catSrcExistsOnSpoke1 := olm.NewCatalogSourceBuilder(
+				Spoke1APIClient, tsparams.CatalogSourceName, tsparams.TemporaryNamespace).Exists()
+			Expect(catSrcExistsOnSpoke1).To(BeFalse(), "Catalog source exists on spoke 1")
+		})
 
 		// 54296 - Batch Timeout Calculation
 		It("should continue the CGU when the second batch fails with the Continue batch timeout action",
