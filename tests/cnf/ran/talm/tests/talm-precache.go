@@ -303,7 +303,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				}
 			})
 
-			// Precache Invalid User-Specified Image
+			// 64747 Precache Invalid User-Specified Image
 			It("tests custom image precaching using an invalid image", reportxml.ID("64747"), func() {
 				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
