@@ -41,7 +41,7 @@ var _ = Describe(
 			outputDir := RanDuTestConfig.StabilityOutputPath
 			policiesOutputFile := fmt.Sprintf("%s/stability_no_workload_policies.log", outputDir)
 			ptpOutputFile := fmt.Sprintf("%s/stability_no_workload_ptp.log", outputDir)
-			tunedRestartsOutputFile := fmt.Sprintf("%s/stability_tuned_restarts.log", outputDir)
+			tunedRestartsOutputFile := fmt.Sprintf("%s/stability_no_workload_tuned_restarts.log", outputDir)
 			namespaces := []string{"openshift-etcd", "openshift-apiserver"}
 
 			totalDuration := time.Duration(RanDuTestConfig.StabilityNoWorkloadDurMins) * time.Minute
