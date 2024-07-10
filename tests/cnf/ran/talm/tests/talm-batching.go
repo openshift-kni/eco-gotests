@@ -52,7 +52,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 	})
 
 	When("a single spoke is missing", Label(tsparams.LabelMissingSpokeTestCases), func() {
-		// 47949 - Tests selected clusters must be non-compliant AND included in UOCR.
+		// 47949 - Tests selected clusters must be non-compliant AND included in CGU.
 		It("should report a missing spoke", reportxml.ID("47949"), func() {
 			By("creating the CGU with non-existent cluster and policy")
 			cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 1).
@@ -200,7 +200,9 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(catSrcExistsOnSpoke2).To(BeFalse(), "Catalog source exists on spoke 2")
 		})
 
-		It("should continue the CGU when the first batch fails with the Continue batch timeout action", func() {
+		// 74753 upgrade failure of first batch would not affect second batch
+		It("should continue the CGU when the first batch fails with the Continue batch timeout"+
+			"action", reportxml.ID("74753"), func() {
 			By("verifying the temporary namespace does not exist on spoke1")
 			tempExistsOnSpoke1 := namespace.NewBuilder(Spoke1APIClient, tsparams.TemporaryNamespace).Exists()
 			Expect(tempExistsOnSpoke1).To(BeFalse(), "Temporary namespace already exists on spoke 1")
@@ -304,7 +306,6 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 
 	When("there is a temporary namespace", Label(tsparams.LabelTempNamespaceTestCases), func() {
 		// 47954 - Tests upgrade aborted due to short timeout.
-		// 54292 - Test Policy Deletion Upon CGU Expiration
 		It("should report the timeout value when one cluster is in a batch and it times out", reportxml.ID("47954"), func() {
 			By("verifying the temporary namespace does not exist on spoke1")
 			tempExistsOnSpoke1 := namespace.NewBuilder(Spoke1APIClient, tsparams.TemporaryNamespace).Exists()
@@ -362,10 +363,6 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 		})
 
 		// 47947 - Tests successful ocp and operator upgrade with canaries and multiple batches.
-		// 54288 - Test Cluster Selection with K8s matchLabels selector
-		// 54289 - Test Cluster Selection with K8s matchExpressions selector
-		// 54559 - CGU Multiple Selection Criteria
-		// 54292 - Test Policy Deletion Upon CGU Expiration
 		It("should complete the CGU when two clusters are successful in a single batch", reportxml.ID("47947"), func() {
 			By("creating the CGU and associated resources")
 			cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 1).

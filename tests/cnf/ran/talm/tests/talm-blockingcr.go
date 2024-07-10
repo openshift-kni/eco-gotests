@@ -56,7 +56,7 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 	})
 
 	When("a blocking CR passes", func() {
-		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
+		// 47948 - Tests multiple CGUs can be enabled in parallel with blocking CR.
 		It("verifies CGU succeeded with blocking CR", reportxml.ID("47948"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
 			cguA := getBlockingCGU(blockingA, 10)
@@ -90,8 +90,8 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 	})
 
 	When("a blocking CR fails", func() {
-		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
-		It("verifies CGU fails with blocking CR", reportxml.ID("47948"), func() {
+		// 74768 - Tests multiple CGUs can be enabled in parallel with blocking CR.
+		It("verifies CGU fails with blocking CR", reportxml.ID("74768"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
 			cguA := getBlockingCGU(blockingA, 2)
 			cguB := getBlockingCGU(blockingB, 1)
@@ -137,8 +137,8 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 	})
 
 	When("a blocking CR is missing", func() {
-		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
-		It("verifies CGU is blocked until blocking CR created and succeeded", reportxml.ID("47948"), func() {
+		// 47956 - Tests multiple CGUs can be enabled in parallel with missing blocking CR.
+		It("verifies CGU is blocked until blocking CR created and succeeded", reportxml.ID("47956"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
 			cguA := getBlockingCGU(blockingA, 10)
 			cguB := getBlockingCGU(blockingB, 15)

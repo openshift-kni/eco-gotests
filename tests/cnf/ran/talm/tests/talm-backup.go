@@ -150,7 +150,8 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 			Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on spokes")
 		})
 
-		It("should not affect backup on second spoke in same batch", func() {
+		// 74752 Unblock Backup in Batch OCP Upgrade
+		It("should not affect backup on second spoke in same batch", reportxml.ID("74752"), func() {
 			By("applying all the required CRs for backup")
 			// max concurrency of 2 so both spokes are in the same batch
 			cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 2).

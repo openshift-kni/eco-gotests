@@ -57,7 +57,8 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				}
 			})
 
-			It("tests for precache operator with multiple sources", func() {
+			// 48902 Tests image precaching - operators
+			It("tests for precache operator with multiple sources", reportxml.ID("48902"), func() {
 				var policies []string
 				for _, suffix := range suffixes {
 					policies = append(policies, tsparams.PolicyName+suffix)
@@ -84,7 +85,8 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on hub")
 			})
 
-			It("tests for ocp cache with version", func() {
+			// 47950 Tests ocp upgrade with image precaching enabled
+			It("tests for ocp cache with version", reportxml.ID("47950"), func() {
 				By("creating and applying policy with clusterversion CR that defines the upgrade graph, channel, and version")
 				cguBuilder := getPrecacheCGU([]string{tsparams.PolicyName}, []string{RANConfig.Spoke1Name})
 
@@ -149,7 +151,8 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				Expect(errList).To(BeEmpty(), "Failed to clean up test resources on hub")
 			})
 
-			It("tests for ocp cache with image", func() {
+			// 48903 Upgrade image precaching - OCP image with explicit image url
+			It("tests for ocp cache with image", reportxml.ID("48903"), func() {
 				By("creating and applying policy with clusterversion that defines the upgrade graph, channel, and version")
 				cguBuilder := getPrecacheCGU([]string{tsparams.PolicyName}, []string{RANConfig.Spoke1Name})
 
@@ -300,7 +303,8 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				}
 			})
 
-			It("tests custom image precaching using an invalid image", func() {
+			// 64747 Precache Invalid User-Specified Image
+			It("tests custom image precaching using an invalid image", reportxml.ID("64747"), func() {
 				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
