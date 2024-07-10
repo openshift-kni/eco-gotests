@@ -136,7 +136,7 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 		})
 	})
 
-	When("a blocking CR is missing", reportxml.ID("47956"), func() {
+	When("a blocking CR is missing", func() {
 		// 47956 - Tests multiple UOCRs can be enabled in parallel with missing blocking CR.
 		It("verifies CGU is blocked until blocking CR created and succeeded", reportxml.ID("47956"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
