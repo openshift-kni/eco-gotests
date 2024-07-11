@@ -17,8 +17,6 @@ const (
 	PowerSaveTimeout = 10 * time.Minute
 	// TestingNamespace is the tests namespace.
 	TestingNamespace = "ran-test"
-	// PrivPodNamespace is the privileged pod namespace.
-	PrivPodNamespace = "cnf-ran-gotests-priv"
 
 	// PowerSavingMode is the name of the power saving power state.
 	PowerSavingMode = "powersaving"
