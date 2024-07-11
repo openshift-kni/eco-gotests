@@ -20,17 +20,19 @@ Some test suites (ZTP, TALM) require clusters to be deployed via GitOps ZTP and 
 | [containernshide](containernshide/containernshide_suite_test.go) | Tests that containers have a hidden mount namespace |
 | [powermanagement](powermanagement/powermanagement_suite_test.go) | Tests powersave settings using workload hints       |
 | [talm](talm/talm_suite_test.go)                                  | Tests the topology aware lifecycle manager (TALM)   |
+| [gitopsztp](gitopsztp/ztp_suite_test.go)                         | Tests zero touch provisioning (ZTP) and Argo CD     |
 
 ### Internal pkgs
 
 | Name                                                 | Description                                                 |
 |------------------------------------------------------|-------------------------------------------------------------|
-| [cluster](internal/cluster/cluster.go)               | Provides a way to execute commands on clusters with retries |
-| [helper](internal/helper/helper.go)                  | Common helpers, currently just for checking pod health      |
+| [rancluster](internal/rancluster/rancluster.go)      | Helpers for viewing the state of a cluster itself           |
+| [ranhelper](internal/ranhelper/ranhelper.go)         | Common helpers that do not fit into a more specific package |
 | [ranconfig](internal/ranconfig/config.go)            | Configures environment variables and default values         |
 | [raninittools](internal/raninittools/raninitools.go) | Provides an APIClient for access to cluster                 |
 | [ranparam](internal/ranparam/const.go)               | Labels and other constants used in the test suites          |
-| [redfish](internal/redfish/redfish.go)               | Wrapper around gofish to provide access to the Redfish API  |
+| [stats](internal/stats/stats.go)                     | Basic statistics functions with unit tests                  |
+| [version](internal/version/version.go)               | Allows getting and checking cluster and operator versions   |
 
 ### Eco-goinfra pkgs
 
@@ -77,14 +79,21 @@ These inputs are all specific to the TALM pre-cache tests. They are also all opt
 - `ECO_CNF_RAN_PTP_OPERATOR_NAMESPACE`: Namespace that the PTP operator uses.
 - `ECO_CNF_RAN_TALM_PRECACHE_POLICIES`: List of policies to copy for the precache operator tests.
 
+#### ZTP generator inputs
+
+This input is specific to the ZTP generator tests and is optional.
+
+- `ECO_CNF_RAN_ZTP_SITE_GENERATE_IMAGE`: Container image to use for generating CRs from the site config.
+
 ### Running the RAN test suites
+
+Except for the container namespace hiding tests, a dump of relevant CRs will be generated for failed tests only when `ECO_ENABLE_REPORT=true`.
 
 #### Running the container namespace hiding test suite
 
 ```
 # export KUBECONFIG=</path/to/spoke/kubeconfig>
-# export ECO_TEST_FEATURES=ran
-# export ECO_TEST_LABELS=containernshide
+# export ECO_TEST_FEATURES=containernshide
 # make run-tests
 ```
 
@@ -92,20 +101,20 @@ These inputs are all specific to the TALM pre-cache tests. They are also all opt
 
 ```
 # export KUBECONFIG=</path/to/spoke/kubeconfig>
-# export ECO_TEST_FEATURES=ran
-# export ECO_TEST_LABELS=powermanagement
+# export ECO_TEST_FEATURES=powermanagement
 # export ECO_CNF_RAN_BMC_USERNAME=<bmc username>
 # export ECO_CNF_RAN_BMC_PASSWORD=<bmc password>
 # export ECO_CNF_RAN_BMC_HOSTS=<bmc ip address>
 # make run-tests
 ```
 
+If using more selective labels that do not include the powersaving tests, such as `ECO_TEST_LABELS="powermanagement && !powersave"`, then the `ECO_CNF_RAN_BMC_*` environment variables are not required.
+
 #### Running the TALM test suite
 
 ```
 # export KUBECONFIG=</path/to/spoke/kubeconfig>
-# export ECO_TEST_FEATURES=ran
-# export ECO_TEST_LABELS=talm
+# export ECO_TEST_FEATURES=talm
 # export ECO_CNF_RAN_KUBECONFIG_HUB=</path/to/hub/kubeconfig>
 # export ECO_CNF_RAN_KUBECONFIG_SPOKE2=</path/to/spoke2/kubeconfig>
 # export ECO_CNF_RAN_BMC_USERNAME=<bmc username>
@@ -116,4 +125,18 @@ These inputs are all specific to the TALM pre-cache tests. They are also all opt
 
 If using more selective labels that do not include TALM pre-cache, such as with `ECO_TEST_LABELS="talm && !precache"`, then the `ECO_CNF_RAN_BMC_*` environment variables are not required.
 
+#### Running the ZTP test suite
+
+```
+# export KUBECONFIG=</path/to/spoke/kubeconfig>
+# export ECO_TEST_FEATURES=ran
+# export ECO_TEST_LABELS="ran-ztp && !no-container"
+# export ECO_CNF_RAN_KUBECONFIG_HUB=</path/to/hub/kubeconfig>
+# make run-tests
+```
+
+The ZTP generator test cannot be run in a container and thus has the `no-container` label. To run it, set `ECO_TEST_LABELS="ran-ztp && no-container"`.
+
 ### Additional Information
+
+Note that excluding a label using `ECO_TEST_LABELS=!my-label` may require `set +H` in the shell first. If not, you may see errors like `bash: !my: event not found`.
