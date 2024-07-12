@@ -4,6 +4,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ArgoCdGitDetails is the details for a single app in ArgoCD.
@@ -33,4 +34,12 @@ var (
 	}
 	// ArgoCdAppDetails contains more details for each of the ArgoCdApps.
 	ArgoCdAppDetails = map[string]ArgoCdGitDetails{}
+
+	// InvalidManagedPoliciesCondition is the CGU condition for where there are invalid managed policies.
+	InvalidManagedPoliciesCondition = metav1.Condition{
+		Type:    "Validated",
+		Status:  metav1.ConditionFalse,
+		Reason:  "NotAllManagedPoliciesExist",
+		Message: "Invalid managed policies",
+	}
 )
