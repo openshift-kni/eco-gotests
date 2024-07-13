@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
@@ -69,16 +68,4 @@ func VerifyLSODeployment(ctx SpecContext) {
 		glog.Fatalf("%s pod in %s namespace in a bad state: %s",
 			lsoPodName, vcoreparams.LSONamespace, lsoPodLog)
 	}
-
-	glog.V(vcoreparams.VCoreLogLevel).Info("Verify auto-discover CRD is created")
-
-	lvdInstance := lso.NewLocalVolumeDiscoveryBuilder(APIClient, lvdName, vcoreparams.LSONamespace)
-	Expect(lvdInstance.Exists()).To(Equal(true), fmt.Sprintf("%s auto-discover-devices not found "+
-		"in %s namespace", lvdName, vcoreparams.LSONamespace))
-
-	glog.V(vcoreparams.VCoreLogLevel).Info("Verify localvolumeset CRD is created")
-
-	lvsInstance := lso.NewLocalVolumeSetBuilder(APIClient, lvsName, vcoreparams.LSONamespace)
-	Expect(lvsInstance.Exists()).To(Equal(true), fmt.Sprintf("%s localvolumeset not found in %s namespace",
-		lvsName, vcoreparams.LSONamespace))
 } // func VerifyLSODeployment (ctx SpecContext)

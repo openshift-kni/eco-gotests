@@ -32,13 +32,21 @@ func (n *NetworkSpec) IsMultus() bool {
 	return n.Provider == NetworkProviderMultus
 }
 
-// IsHost get whether to use host network provider. This method also preserve
-// compatibility with the old HostNetwork field.
+// IsHost is intended to be used to determine if the rook operator should configure
+// managed pods to use host networking.
+// This behavior is enabled by configuring the cephCluster with the "host" network provider.
+// This method also maintains compatibility with the old HostNetwork setting
+// which is incompatible with other network providers: HostNetwork set to true
+// together with an empty or unset network provider has the same effect as
+// network.Provider set to "host"
 func (n *NetworkSpec) IsHost() bool {
 	return (n.HostNetwork && n.Provider == NetworkProviderDefault) || n.Provider == NetworkProviderHost
 }
 
 func ValidateNetworkSpec(clusterNamespace string, spec NetworkSpec) error {
+	if spec.HostNetwork && (spec.Provider != NetworkProviderDefault) {
+		return errors.Errorf(`the legacy hostNetwork setting is only valid with the default network provider ("") and not with '%q'`, spec.Provider)
+	}
 	if spec.IsMultus() {
 		if len(spec.Selectors) == 0 {
 			return errors.Errorf("at least one network selector must be specified when using the %q network provider", NetworkProviderMultus)

@@ -283,6 +283,7 @@ func (builder *Builder) WithVisualization(
 	return builder
 }
 
+<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/clusterlogging/clusterlogging.go
 // IsReady checks for the duration of timeout if the clusterLogging instance state is Ready.
 func (builder *Builder) IsReady(timeout time.Duration) bool {
 	if valid, _ := builder.validate(); !valid {
@@ -309,6 +310,8 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 	return err == nil
 }
 
+=======
+>>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/clusterlogging/clusterlogging.go
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {

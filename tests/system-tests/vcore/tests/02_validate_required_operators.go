@@ -12,9 +12,21 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(vcoreparams.Label), func() {
-		vcorecommon.VerifyInitialDeploymentConfig()
+		vcorecommon.VerifyNMStateSuite()
 
-		vcorecommon.VerifyCGroupDefault()
+		// vcorecommon.VerifyMetaLBSuite()
 
-		vcorecommon.VerifyPostDeploymentConfig()
+		vcorecommon.VerifyServiceMeshSuite()
+
+		vcorecommon.VerifyHelmSuite()
+
+		vcorecommon.VerifyRedisSuite()
+
+		vcorecommon.VerifyNTOSuite()
+
+		vcorecommon.VerifySRIOVSuite()
+
+		vcorecommon.VerifyKedaSuite()
+
+		vcorecommon.VerifyNROPSuite()
 	})

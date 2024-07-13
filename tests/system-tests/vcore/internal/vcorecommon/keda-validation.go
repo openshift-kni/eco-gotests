@@ -39,7 +39,7 @@ const (
 	configmapNamespace        = "openshift-monitoring"
 	testAppServiceMonitorName = "keda-testing-sm"
 	serviceAccountName        = "thanos"
-	saTokenName               = "thanos-secret"
+	saSecretName              = "thanos-secret"
 	triggerAuthName           = "keda-trigger-auth-prometheus"
 	metricsReaderName         = "thanos-metrics-reader"
 
@@ -267,7 +267,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 			serviceAccountName, vcoreparams.KedaWatchNamespace, err))
 
 	_, err = secret.NewBuilder(APIClient,
-		saTokenName,
+		saSecretName,
 		vcoreparams.KedaWatchNamespace,
 		corev1.SecretTypeServiceAccountToken).
 		WithAnnotations(map[string]string{"kubernetes.io/service-account.name": serviceAccountName}).Create()
@@ -277,15 +277,15 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 
 	glog.V(vcoreparams.VCoreLogLevel).
 		Infof("Define TriggerAuthentication %s with the Service Account's token %s in namespace %s",
-			triggerAuthName, vcoreparams.KedaWatchNamespace, saTokenName)
+			triggerAuthName, vcoreparams.KedaWatchNamespace, saSecretName)
 
 	secretTargetRef := []kedav2v1alpha1.AuthSecretTargetRef{{
 		Parameter: "bearerToken",
-		Name:      saTokenName,
+		Name:      saSecretName,
 		Key:       "token",
 	}, {
 		Parameter: "ca",
-		Name:      saTokenName,
+		Name:      saSecretName,
 		Key:       "ca.crt",
 	}}
 
@@ -295,7 +295,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create TriggerAuthentication %s with the Service Account's token %s "+
 			"in namespace %s due to: %v",
-			triggerAuthName, vcoreparams.KedaWatchNamespace, saTokenName, err))
+			triggerAuthName, vcoreparams.KedaWatchNamespace, saSecretName, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create a role %s for reading metric from Thanos in namespace %s",
 		metricsReaderName, vcoreparams.KedaWatchNamespace)

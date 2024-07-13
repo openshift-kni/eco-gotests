@@ -69,15 +69,16 @@ type NooBaaAccountSpec struct {
 
 	// ForceMd5Etag specifies whether MD5 Etags should be calculated for the account or not
 	// +optional
-	ForceMd5Etag bool `json:"force_md5_etag,omitempty"`
+	ForceMd5Etag *bool `json:"force_md5_etag,omitempty"`
 }
 
 // AccountNsfsConfig is the configuration of NSFS of CreateAccountParams
 type AccountNsfsConfig struct {
-	UID            int    `json:"uid"`
-	GID            int    `json:"gid"`
-	NewBucketsPath string `json:"new_buckets_path"`
-	NsfsOnly       bool   `json:"nsfs_only"`
+	UID               *int   `json:"uid,omitempty"`
+	GID               *int   `json:"gid,omitempty"`
+	NewBucketsPath    string `json:"new_buckets_path"`
+	NsfsOnly          bool   `json:"nsfs_only"`
+	DistinguishedName string `json:"distinguished_name,omitempty"`
 }
 
 // NooBaaAccountStatus defines the observed state of NooBaaAccount

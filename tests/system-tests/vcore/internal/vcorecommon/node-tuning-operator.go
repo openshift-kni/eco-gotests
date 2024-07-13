@@ -144,9 +144,8 @@ func CreatePerformanceProfile(ctx SpecContext) {
 			},
 		}
 		performanceKubeletConfigName := fmt.Sprintf("performance-%s", workerLabel)
-		ppAnnotations := map[string]string{"performance.openshift.io/ignore-cgroups-version": "true",
-			"kubeletconfig.experimental": fmt.Sprintf("{\"systemReserved\":{\"cpu\":\"%s\",\"memory\":\"%s\"}}",
-				vcoreparams.SystemReservedCPU, vcoreparams.SystemReservedMemory)}
+		ppAnnotations := map[string]string{"kubeletconfig.experimental": fmt.Sprintf("{\"systemReserved\":{\"cpu\":\"%s\",\"memory\":\"%s\"}}",
+			vcoreparams.SystemReservedCPU, vcoreparams.SystemReservedMemory)}
 		netInterfaceName := "ens2f(0|1)"
 		netDevices := []v2.Device{{
 			InterfaceName: &netInterfaceName,
@@ -273,15 +272,15 @@ func CreateNodesTuning(ctx SpecContext) {
 			nodeLabel, err))
 
 		for _, node := range nodesList {
-			glog.V(vcoreparams.VCoreLogLevel).Infof("Check nohz_full is removed from the node %s",
+			glog.V(vcoreparams.VCoreLogLevel).Infof("Check nohz_full configured on the node %s",
 				node.Definition.Name)
 
 			nohzFullCmd := "cat /proc/cmdline"
 			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, nohzFullCmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
 				nohzFullCmd, node.Object.Name, err))
-			Expect(output).NotTo(ContainSubstring("nohz_full"),
-				fmt.Sprintf("failed to remove nohz_full on the node %s; %v", node.Definition.Name, output))
+			Expect(output).To(ContainSubstring("nohz_full"),
+				fmt.Sprintf("nohz_full not found configured on the node %s; %v", node.Definition.Name, output))
 		}
 	}
 } // func CreateNodesTuning (ctx SpecContext)

@@ -97,23 +97,53 @@ const (
 	// LSONamespace is a local storage operator namespace.
 	LSONamespace = "openshift-local-storage"
 
-	// LSOName is a local storage operator instance name pattern.
+	// LSOName is a local storage operator instance name.
 	LSOName = "local-storage-operator"
+
+	// LocalVolumeDiscoveryName is a localVolumeDiscovery instance name.
+	LocalVolumeDiscoveryName = "auto-discover-devices"
 
 	// ODFNamespace is an odf namespace.
 	ODFNamespace = "openshift-storage"
 
+	// ODFServiceAccount is an odf serviceaccount name.
+	ODFServiceAccount = "odf-vault-auth"
+
+	// ODFServiceAccountSecret is an odf serviceaccount secret name.
+	ODFServiceAccountSecret = "odf-vault-auth-token"
+
 	// StorageClassName is a storage class name.
-	StorageClassName = "ocs-storagecluster-cephfs"
+	StorageClassName = "ocs-storagecluster-ceph-rbd"
 
-	// ESKOperatorName is an elasticsearch operator name.
-	ESKOperatorName = "elasticsearch-operator"
+	// StorageClusterName is a storageCluster name.
+	StorageClusterName = "ocs-storagecluster"
 
-	// ESKNamespace is an elasticsearch operator namespace.
-	ESKNamespace = "openshift-operators-redhat"
+	// StorageSystemName is a storageSystem name.
+	StorageSystemName = "ocs-storagecluster-storagesystem"
 
-	// ESKInstanceName is an elasticsearch instance name.
-	ESKInstanceName = "instance"
+	// RookCephConfigMapName is a rook ceph configmap name.
+	RookCephConfigMapName = "rook-ceph-operator-config"
+
+	// LocalVolumeSetName is a localVolumeSetName name.
+	LocalVolumeSetName = "ocs-deviceset"
+
+	// LokiOperatorSubscriptionName is a loki operator subscription name.
+	LokiOperatorSubscriptionName = "loki-operator"
+
+	// LokiOperatorDeploymentName is a loki operator deployment name.
+	LokiOperatorDeploymentName = "loki-operator-controller-manager"
+
+	// LokiNamespace is a loki operator namespace.
+	LokiNamespace = "openshift-operators-redhat"
+
+	// LokiStackName is a lokiStack instance name.
+	LokiStackName = "logging-loki"
+
+	// LokiSecretName is a loki serviceAccount name.
+	LokiSecretName = "logging-loki-s3"
+
+	// ObjectBucketClaimName is an objectBucketClaim name.
+	ObjectBucketClaimName = "loki-bucket-odf"
 
 	// CLOName is a clusterlogging operator name.
 	CLOName = "cluster-logging"

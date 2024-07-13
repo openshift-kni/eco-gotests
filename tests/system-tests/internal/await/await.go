@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -246,6 +248,30 @@ func WaitUntilDaemonSetDeleted(apiClient *clients.Settings, name, nsname string,
 	}
 
 	return fmt.Errorf("daemonSet %s in namespace %s is not deleted during timeout %v", name, nsname, timeout)
+}
+
+// WaitUntilConfigMapCreated waits until the configMap is created.
+func WaitUntilConfigMapCreated(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
+	glog.V(90).Infof("Wait until configMap %s in namespace %s is created", name, nsname)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := configmap.Pull(apiClient, name, nsname)
+			if err != nil {
+				glog.V(90).Infof("configMap %s in namespace %s not created yet, retry", name, nsname)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("configMap %s in namespace %s is not created during timeout %v; %w",
+			name, nsname, timeout, err)
+	}
+
+	return nil
 }
 
 // WaitForThePodReplicasCountInNamespace waiting for the specific pod replicas count in

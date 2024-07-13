@@ -67,7 +67,7 @@ func VerifyServiceMeshSuite() {
 				Label("smo"), reportxml.ID("73732"), VerifyServiceMeshDeployment)
 
 			It("Verifies Service Mesh configuration procedure succeeded",
-				Label("debug"), reportxml.ID("59502"), VerifyServiceMeshConfig)
+				Label("smo"), reportxml.ID("59502"), VerifyServiceMeshConfig)
 		})
 }
 

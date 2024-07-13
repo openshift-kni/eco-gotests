@@ -3,9 +3,12 @@ package clusterlogging
 import (
 	"context"
 	"fmt"
+<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/clusterlogging/lokistack.go
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+=======
+>>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/clusterlogging/lokistack.go
 
 	lokiv1 "github.com/grafana/loki/operator/apis/loki/v1"
 
@@ -213,9 +216,13 @@ func (builder *LokiStackBuilder) Update() (*LokiStackBuilder, error) {
 		return nil, err
 	}
 
+<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/clusterlogging/lokistack.go
 	if err == nil {
 		builder.Object = builder.Definition
 	}
+=======
+	builder.Object = builder.Definition
+>>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/clusterlogging/lokistack.go
 
 	return builder, err
 }
@@ -364,6 +371,7 @@ func (builder *LokiStackBuilder) WithTemplate(
 	return builder
 }
 
+<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/clusterlogging/lokistack.go
 // IsReady checks for the duration of timeout if the lokiStack state is Ready.
 func (builder *LokiStackBuilder) IsReady(timeout time.Duration) bool {
 	if valid, _ := builder.validate(); !valid {
@@ -390,6 +398,8 @@ func (builder *LokiStackBuilder) IsReady(timeout time.Duration) bool {
 	return err == nil
 }
 
+=======
+>>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/clusterlogging/lokistack.go
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *LokiStackBuilder) validate() (bool, error) {

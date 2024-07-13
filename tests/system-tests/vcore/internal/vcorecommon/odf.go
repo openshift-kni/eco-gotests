@@ -2,14 +2,25 @@ package vcorecommon
 
 import (
 	"fmt"
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	lsov1 "github.com/openshift/local-storage-operator/api/v1"
+	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
+
+	// "github.com/openshift-kni/eco-goinfra/pkg/lso".
 	"time"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-goinfra/pkg/storage"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/lso"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/storage"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -26,7 +37,6 @@ import (
 
 var (
 	ocsLocalvolumesetName  = "ocs-deviceset"
-	storageclusterName     = "ocs-storagecluster"
 	odfConsolePlugin       = "odf-console"
 	odfOperatorDeployments = []string{"csi-addons-controller-manager", "noobaa-operator",
 		"ocs-operator", "odf-console", "odf-operator-controller-manager", "rook-ceph-operator"}
@@ -44,10 +54,25 @@ func VerifyODFSuite() {
 				Label("odf"), VerifyODFNamespaceExists)
 
 			It("Verify ODF successfully installed",
-				Label("odf"), reportxml.ID("63844"), VerifyODFDeployment)
+				Label("odf"), reportxml.ID("63844"), VerifyODFOperatorDeployment)
 
-			It("Verify ODF operator configuration procedure",
-				Label("odf"), reportxml.ID("59487"), VerifyODFConfig)
+			It("Apply taints to the ODF nodes",
+				Label("odf"), reportxml.ID("1234"), VerifyODFTaints)
+
+			It("Verify ODF console enabled",
+				Label("odf"), reportxml.ID("66666"), VerifyODFConsoleConfig)
+
+			It("Verify localvolumediscovery instance exists",
+				Label("odf"), reportxml.ID("66666"), VerifyLocalVolumeDiscovery)
+
+			It("Verify localvolumeset instance exists",
+				Label("odf"), reportxml.ID("66666"), VerifyLocalVolumeSet)
+
+			It("Verify ODF operator StorageSystem configuration procedure",
+				Label("odf2"), reportxml.ID("59487"), VerifyODFStorageSystemConfig)
+
+			It("Apply operators config for the ODF nodes",
+				Label("odf2"), reportxml.ID("23456"), VerifyOperatorsConfigForODFNodes)
 		})
 }
 
@@ -57,8 +82,8 @@ func VerifyODFNamespaceExists(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.ODFNamespace))
 } // func VerifyODFNamespaceExists (ctx SpecContext)
 
-// VerifyODFDeployment asserts ODF successfully installed.
-func VerifyODFDeployment(ctx SpecContext) {
+// VerifyODFOperatorDeployment asserts ODF successfully installed.
+func VerifyODFOperatorDeployment(ctx SpecContext) {
 	for _, operatorPod := range odfOperatorDeployments {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that odf %s pod was deployed and running in %s namespace",
 			operatorPod, vcoreparams.ODFNamespace)
@@ -91,10 +116,28 @@ func VerifyODFDeployment(ctx SpecContext) {
 			fmt.Sprintf("Bad state for %s deployment in %s namespace",
 				operatorDeployment, vcoreparams.ODFNamespace))
 	}
-} // func VerifyODFDeployment (ctx SpecContext)
+} // func VerifyODFOperatorDeployment (ctx SpecContext)
 
-// VerifyODFConfig asserts ODF successfully configured.
-func VerifyODFConfig(ctx SpecContext) {
+// VerifyODFTaints asserts ODF nodes taints configuration.
+func VerifyODFTaints(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Apply taints to the ODF nodes")
+
+	odfNodesList, err := nodes.List(APIClient, VCoreConfig.OdfLabelListOption)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get cluster nodes list due to %v", err))
+
+	for _, odfNode := range odfNodesList {
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode.Definition.Name)
+		applyTaintsCmd := fmt.Sprintf(
+			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true",
+			odfNode.Definition.Name)
+		_, err := shell.ExecuteCmd(applyTaintsCmd)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
+			applyTaintsCmd, err))
+	}
+} // func VerifyODFTaints (ctx SpecContext)
+
+// VerifyODFConsoleConfig asserts ODF console enabled.
+func VerifyODFConsoleConfig(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Enable odf-console")
 
 	consoleOperatorObj, err := console.PullConsoleOperator(APIClient, "cluster")
@@ -110,8 +153,139 @@ func VerifyODFConfig(ctx SpecContext) {
 	Expect(slices.Contains(*newPluginsList, odfConsolePlugin),
 		fmt.Sprintf("Failed to add new plugin %s to the consoleOperator plugins list: %v",
 			odfConsolePlugin, newPluginsList))
+} // func VerifyODFConsoleConfig (ctx SpecContext)
+
+// VerifyLocalVolumeDiscovery asserts localvolumediscovery instance exists.
+func VerifyLocalVolumeDiscovery(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create localvolumediscovery instance %s in namespace %s if not found",
+		vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace)
+
+	var err error
+
+	localVolumeDiscoveryObj := lso.NewLocalVolumeDiscoveryBuilder(APIClient,
+		vcoreparams.LocalVolumeDiscoveryName,
+		vcoreparams.LSONamespace)
+
+	if localVolumeDiscoveryObj.Exists() {
+		err := localVolumeDiscoveryObj.Delete()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("failed to delete localvolumediscovery %s from namespace %s; %v",
+				vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
+	}
+
+	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+		MatchExpressions: []corev1.NodeSelectorRequirement{{
+			Key:      "cluster.ocs.openshift.io/openshift-storage",
+			Operator: "In",
+			Values:   []string{""},
+		}}},
+	}}
+
+	tolerations := []corev1.Toleration{{
+		Key:      "node.ocs.openshift.io/storage",
+		Operator: "Equal",
+		Value:    "true",
+		Effect:   "NoSchedule",
+	}}
+
+	_, err = localVolumeDiscoveryObj.WithNodeSelector(nodeSelector).WithTolerations(tolerations).Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumediscovery %s in namespace %s "+
+		"due to %v", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
+
+	isDiscovering, err := localVolumeDiscoveryObj.IsDiscovering()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve localVolumeDiscovery %s in namespace %s "+
+		"status due to %v", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
+	Expect(isDiscovering).To(Equal(true), fmt.Sprintf("localvolumediscovery %s in namespace %s "+
+		"failed to reach discovery state", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace))
+} // func VerifyLocalVolumeDiscovery (ctx SpecContext)
+
+// VerifyLocalVolumeSet asserts localvolumeset instance exists.
+func VerifyLocalVolumeSet(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create localvolumeset instance %s in namespace %s if not found",
+		vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace)
+
+	var err error
+
+	localVolumeSetObj := lso.NewLocalVolumeSetBuilder(APIClient,
+		vcoreparams.LocalVolumeSetName,
+		vcoreparams.LSONamespace)
+
+	if localVolumeSetObj.Exists() {
+		err := localVolumeSetObj.Delete()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("failed to delete localvolumeset %s from namespace %s; %v",
+				vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace, err))
+	}
+
+	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+		MatchExpressions: []corev1.NodeSelectorRequirement{{
+			Key:      "cluster.ocs.openshift.io/openshift-storage",
+			Operator: "In",
+			Values:   []string{""},
+		}}},
+	}}
+
+	deviceInclusionSpec := lsov1alpha1.DeviceInclusionSpec{
+		DeviceTypes:                []lsov1alpha1.DeviceType{lsov1alpha1.RawDisk},
+		DeviceMechanicalProperties: []lsov1alpha1.DeviceMechanicalProperty{lsov1alpha1.NonRotational},
+	}
+
+	tolerations := []corev1.Toleration{{
+		Key:      "node.ocs.openshift.io/storage",
+		Operator: "Equal",
+		Value:    "true",
+		Effect:   "NoSchedule",
+	}}
+
+	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
+		WithStorageClassName(vcoreparams.StorageClassName).
+		WithVolumeMode(lsov1.PersistentVolumeBlock).
+		WithFSType("ext4").
+		WithMaxDeviceCount(int32(42)).
+		WithDeviceInclusionSpec(deviceInclusionSpec).
+		WithTolerations(tolerations).Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
+		"due to %v", vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace, err))
+} // func VerifyLocalVolumeSet (ctx SpecContext)
+
+// VerifyODFStorageSystemConfig asserts ODF storage cluster system successfully configured.
+func VerifyODFStorageSystemConfig(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Cleanup StorageSystem and StorageCluster config")
+
+	storageSystemObj := storage.NewStorageSystemBuilder(APIClient,
+		vcoreparams.StorageSystemName, vcoreparams.ODFNamespace)
+
+	//if storageSystemObj.Exists() {
+	//	err := storageSystemObj.Delete()
+	//	Expect(err).ToNot(HaveOccurred(),
+	//		fmt.Sprintf("failed to delete ODF StorageSystem %s from namespace %s; %v",
+	//			vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))
+	//}
+
+	storageclusterObj := storage.NewStorageClusterBuilder(APIClient,
+		vcoreparams.StorageClusterName, vcoreparams.ODFNamespace)
+
+	if storageclusterObj.Exists() {
+		err := storageclusterObj.Delete()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("failed to delete ODF StorageCluster %s from namespace %s; %v",
+				vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
+	}
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageSystem")
+
+	_, err := storageSystemObj.WithStorageClusterSpec("storagecluster.ocs.openshift.io/v1",
+		vcoreparams.StorageClusterName, vcoreparams.ODFNamespace).Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageSystem %s instance in %s namespace; "+
+		"%v", vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageCluster")
+
+	annotations := map[string]string{
+		"cluster.ocs.openshift.io/local-devices":    "true",
+		"uninstall.ocs.openshift.io/cleanup-policy": "delete",
+		"uninstall.ocs.openshift.io/mode":           "graceful",
+	}
 
 	managedResources := ocsoperatorv1.ManagedResourcesSpec{
 		CephBlockPools: ocsoperatorv1.ManageCephBlockPools{
@@ -126,10 +300,6 @@ func VerifyODFConfig(ctx SpecContext) {
 		CephObjectStores: ocsoperatorv1.ManageCephObjectStores{
 			ReconcileStrategy: "managed",
 		},
-	}
-
-	multiCloudGateway := ocsoperatorv1.MultiCloudGatewaySpec{
-		ReconcileStrategy: "managed",
 	}
 
 	resourceListMap := make(map[corev1.ResourceName]resource.Quantity)
@@ -152,14 +322,123 @@ func VerifyODFConfig(ctx SpecContext) {
 		},
 	}
 
-	storageclusterObj, err := storage.NewStorageClusterBuilder(APIClient, storageclusterName, vcoreparams.ODFNamespace).
+	storageclusterObj, err = storageclusterObj.
+		WithAnnotations(annotations).
 		WithManageNodes(false).
 		WithManagedResources(managedResources).
 		WithMonDataDirHostPath("/var/lib/rook").
-		WithMultiCloudGateway(multiCloudGateway).WithStorageDeviceSet(storageDeviceSet).Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageCluster %s instance in %s namespace; "+
-		"%v", storageclusterName, vcoreparams.ODFNamespace, err))
+		WithStorageDeviceSet(storageDeviceSet).Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageCluster %s instance in namespace %s; "+
+		"%v", vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
 	Expect(storageclusterObj.Exists()).To(Equal(true),
-		fmt.Sprintf("Failed to createstorageCluster %s instance in %s namespace; "+
-			"%v", storageclusterName, vcoreparams.ODFNamespace, err))
-} // func VerifyODFConfig (ctx SpecContext)
+		fmt.Sprintf("Failed to createstorageCluster %s instance in namespace %s due to %v",
+			vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageCluster ConfigMap")
+
+	configMapObj := configmap.NewBuilder(APIClient, "rook-config-override", vcoreparams.ODFNamespace)
+
+	if !configMapObj.Exists() {
+		cmData := map[string]string{
+			"config": "" +
+				"[global]\n" +
+				"bdev_flock_retry = 20\n" +
+				"mon_osd_full_ratio = .85\n" +
+				"mon_osd_backfillfull_ratio = .8\n" +
+				"mon_osd_nearfull_ratio = .75\n" +
+				"mon_max_pg_per_osd = 600\n" +
+				"mon_pg_warn_max_object_skew = 0\n" +
+				"mon_data_avail_warn = 15\n" +
+				"mon_warn_on_pool_no_redundancy = false\n" +
+				"bluestore_prefer_deferred_size_hdd = 0\n" +
+				"[osd]\n" +
+				"osd_memory_target_cgroup_limit_ratio = 0.8",
+		}
+
+		_, err = configMapObj.WithData(cmData).Create()
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageCluster configMap "+
+			"rook-config-override in namespace %s due to %v", vcoreparams.ODFNamespace, err))
+	}
+} // func VerifyODFStorageSystemConfig (ctx SpecContext)
+
+// VerifyOperatorsConfigForODFNodes asserts operators configuration for ODF nodes.
+//
+//nolint:goconst
+func VerifyOperatorsConfigForODFNodes(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Configuring operators for ODF nodes")
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("DNS operator")
+
+	patchStr :=
+		"spec:\n" +
+			"  nodePlacement:\n" +
+			"    tolerations:\n" +
+			"    - operator: Exists\n"
+
+	// patchStr := `{"spec": {"nodePlacement": {"tolerations": ["operator": "Exists"]}}}`
+
+	err := ocpcli.PatchAPIObject("default", "openshift-dns",
+		"dns.operator", "merge", patchStr)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to patch dns.operator default in namespace openshift-dns"+
+		" due to %v", err))
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Configuring selectors and tolerations for ODF components")
+
+	rookCephConfigMap, err := configmap.Pull(APIClient, vcoreparams.RookCephConfigMapName, vcoreparams.ODFNamespace)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve configmap %s from "+
+		"namespace %s due to %v", vcoreparams.RookCephConfigMapName, vcoreparams.ODFNamespace, err))
+
+	rookData := map[string]string{
+		"CSI_PLUGIN_TOLERATIONS": "" +
+			"- operator: \"Exists\"\n" +
+			"  key: node-role.kubernetes.io/infra\n" +
+			"- key: node.ocs.openshift.io/storage\n" +
+			"  operator: Equal\n" +
+			"  value: \"true\"\n" +
+			"  effect: NoSchedule",
+		"CSI_PROVISIONER_TOLERATIONS": "" +
+			"- key: node.ocs.openshift.io/storage\n" +
+			"  operator: Equal\n" +
+			"  value: \"true\"\n" +
+			"  effect: NoSchedule\n",
+		"CSI_PROVISIONER_NODE_AFFINITY": "" +
+			"requiredDuringSchedulingIgnoredDuringExecution:\n" +
+			"  nodeSelectorTerms:\n" +
+			"  - matchExpressions:\n" +
+			"    - key: cluster.ocs.openshift.io/openshift-storage\n" +
+			"      operator: Exists",
+		"CSI_CEPHFS_PROVISIONER_NODE_AFFINITY": "" +
+			"requiredDuringSchedulingIgnoredDuringExecution:\n" +
+			"  nodeSelectorTerms:\n" +
+			"  - matchExpressions:\n" +
+			"    - key: cluster.ocs.openshift.io/openshift-storage\n" +
+			"      operator: Exists",
+		"CSI_NFS_PROVISIONER_NODE_AFFINITY": "" +
+			"requiredDuringSchedulingIgnoredDuringExecution:\n" +
+			"  nodeSelectorTerms:\n" +
+			"  - matchExpressions:\n" +
+			"    - key: cluster.ocs.openshift.io/openshift-storage\n" +
+			"      operator: Exists",
+		"CSI_RBD_PROVISIONER_NODE_AFFINITY": "" +
+			"requiredDuringSchedulingIgnoredDuringExecution:\n" +
+			"  nodeSelectorTerms:\n" +
+			"  - matchExpressions:\n" +
+			"    - key: cluster.ocs.openshift.io/openshift-storage\n" +
+			"      operator: Exists",
+	}
+
+	_, err = rookCephConfigMap.WithData(rookData).Update()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to update configMap %s in namespace %s due to %v",
+		vcoreparams.RookCephConfigMapName, vcoreparams.ODFNamespace, err))
+
+	glog.V(vcoreparams.VCoreLogLevel).Info("Restarting storage pods")
+
+	restartStoragePodsCmd := fmt.Sprintf("oc delete pods -n %s --all", vcoreparams.ODFNamespace)
+	_, err = shell.ExecuteCmd(restartStoragePodsCmd)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
+		restartStoragePodsCmd, err))
+
+	_, err = await.WaitUntilAllPodsReady(APIClient, vcoreparams.ODFNamespace, 2*time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("not all storage pods in namespace %s succeeded to "+
+		"recover after deletion due to %v", vcoreparams.ODFNamespace, err))
+} // func VerifyOperatorsConfigForODFNodes (ctx SpecContext)

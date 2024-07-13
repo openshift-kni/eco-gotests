@@ -1,6 +1,8 @@
 module github.com/openshift-kni/eco-gotests
 
-go 1.22
+go 1.22.0
+
+toolchain go1.22.3
 
 require (
 	github.com/Juniper/go-netconf v0.3.0
@@ -30,21 +32,24 @@ require (
 	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8
 	gopkg.in/k8snetworkplumbingwg/multus-cni.v4 v4.0.2
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.29.5
-	k8s.io/apimachinery v0.29.5
+	k8s.io/api v0.30.2
+	k8s.io/apimachinery v0.30.2
 	k8s.io/client-go v12.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.17.5
 )
 
 require (
+	github.com/grafana/loki/operator/apis/loki v0.0.0-20240705201834-ce71f1cf9546
 	github.com/kedacore/keda-olm-operator v0.0.0-20240501182040-762f6be5a942
 	github.com/kedacore/keda/v2 v2.14.0
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240606123201-0c45cd13c2f1
 	github.com/openshift-kni/numaresources-operator v0.4.16-0rc0
 	github.com/openshift/client-go v0.0.1
+	github.com/openshift/cluster-logging-operator v0.0.0-20240606085930-750f369019d4
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/povsister/scp v0.0.0-20210427074412-33febfd9f13e
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2
+	github.com/red-hat-storage/odf-operator v0.0.0-20240704062551-2726e073ed37
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/velero v1.13.2
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
@@ -68,7 +73,6 @@ require (
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
-	github.com/openshift/cluster-logging-operator v0.0.0-20240606085930-750f369019d4 // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
 	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20240109072430-f5fe6043d1f8 // indirect
@@ -146,15 +150,15 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.8 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.6 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-5 // indirect
-	github.com/hashicorp/vault/api v1.13.0 // indirect
-	github.com/hashicorp/vault/api/auth/approle v0.5.0 // indirect
-	github.com/hashicorp/vault/api/auth/kubernetes v0.5.0 // indirect
+	github.com/hashicorp/vault/api v1.14.0 // indirect
+	github.com/hashicorp/vault/api/auth/approle v0.6.0 // indirect
+	github.com/hashicorp/vault/api/auth/kubernetes v0.6.0 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -162,8 +166,8 @@ require (
 	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1 // indirect
-	github.com/libopenstorage/secrets v0.0.0-20231011182615-5f4b25ceede1 // indirect
+	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1
+	github.com/libopenstorage/secrets v0.0.0-20240416031220-a17cf7f72c6c // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -177,12 +181,12 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/noobaa/noobaa-operator/v5 v5.0.0-20231213124549-5d7b0417716d // indirect
+	github.com/noobaa/noobaa-operator/v5 v5.0.0-20240625102417-4d63b956e6e6 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f07cdbf8af2c
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
 	github.com/openshift/library-go v0.0.0-20240419113445-f1541d628746 // indirect
-	github.com/openshift/local-storage-operator v0.0.0-20240422172451-2a80d7f6681d // indirect
+	github.com/openshift/local-storage-operator v0.0.0-20240422172451-2a80d7f6681d
 	github.com/openshift/ptp-operator v0.0.0-20240404165119-29a3d7b3d60b // indirect
 	github.com/operator-framework/operator-lifecycle-manager v0.28.0 // indirect
 	github.com/operator-framework/operator-registry v1.41.0 // indirect
@@ -196,7 +200,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/red-hat-storage/ocs-operator v0.4.13
 	github.com/robfig/cron v1.2.0 // indirect
-	github.com/rook/rook/pkg/apis v0.0.0-20231215165123-32de0fb5f69b // indirect
+	github.com/rook/rook/pkg/apis v0.0.0-20240701212738-8e25300ad55a // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/samber/lo v1.39.0 // indirect
