@@ -1042,7 +1042,7 @@ func defineCreateSriovNetPolices(vfioPCIName, vfioPCIResName, sriovInterface,
 		}
 	case "netdevice":
 		_, err := sriovPolicy.WithDevType("netdevice").Create()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Intel sriovnetwork policy %s",
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create sriovnetwork policy %s",
 			vfioPCIName))
 	}
 
