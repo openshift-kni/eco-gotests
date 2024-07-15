@@ -11,4 +11,6 @@ const (
 	LabelParallelDrainingTestCases = "paralleldraining"
 	// LabelQinQTestCases represents ExternallyManaged label that can be used for test cases selection.
 	LabelQinQTestCases = "qinq"
+	// LabelExposeMTUTestCases represents Expose MTU label that can be used for test cases selection.
+	LabelExposeMTUTestCases = "exposemtu"
 )
