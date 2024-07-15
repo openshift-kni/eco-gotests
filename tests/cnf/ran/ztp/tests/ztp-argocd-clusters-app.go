@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
@@ -17,11 +16,6 @@ import (
 
 var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdClustersAppTestCases), func() {
 	BeforeEach(func() {
-		By("checking that the required clusters are present")
-		if !ranhelper.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient}) {
-			Skip("not all of the required clusters are present")
-		}
-
 		By("verifying that ZTP meets the minimum version")
 		versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.ZTPVersion, "4.11", "")
 		Expect(err).ToNot(HaveOccurred(), "Failed to compare ZTP version string")

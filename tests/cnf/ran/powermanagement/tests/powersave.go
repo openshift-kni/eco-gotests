@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
@@ -46,18 +45,9 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 
 		originalPerfProfileSpec = perfProfile.Object.Spec
-
-		By("Creating the privileged pod namespace")
-		_, err = namespace.NewBuilder(Spoke1APIClient, tsparams.PrivPodNamespace).Create()
-		Expect(err).ToNot(HaveOccurred(), "Failed to create the privileged pod namespace")
 	})
 
 	AfterAll(func() {
-		By("Deleting the privileged pod namespace")
-		err = namespace.NewBuilder(Spoke1APIClient, tsparams.PrivPodNamespace).
-			DeleteAndWait(tsparams.PowerSaveTimeout)
-		Expect(err).ToNot(HaveOccurred(), "Failed to delete priv pod namespace")
-
 		perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 
@@ -143,7 +133,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 
 			By("Define test pod")
 			testpod, err := helper.DefineQoSTestPod(
-				tsparams.PrivPodNamespace, nodeName, cpuLimit.String(), cpuLimit.String(), memLimit.String(), memLimit.String())
+				tsparams.TestingNamespace, nodeName, cpuLimit.String(), cpuLimit.String(), memLimit.String(), memLimit.String())
 			Expect(err).ToNot(HaveOccurred(), "Failed to define test pod")
 
 			testpod.Definition.Annotations = testPodAnnotations

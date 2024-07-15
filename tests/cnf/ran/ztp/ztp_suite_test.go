@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
@@ -28,6 +29,11 @@ func TestZtp(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	By("checking that the required clusters are present")
+	if !ranhelper.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient}) {
+		Skip("not all of the required clusters are present")
+	}
+
 	err := helper.GetArgoCdAppGitDetails()
 	Expect(err).ToNot(HaveOccurred(), "Failed to get current data from ArgoCD")
 
