@@ -83,6 +83,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools
       - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools
+      - github.com/openshift-kni/eco-gotests/tests/accel/internal/accelinittools
     # Select the Go version to target. The default is '1.13'.
     go: "1.22"
     # https://staticcheck.io/docs/options#checks
@@ -156,7 +157,11 @@ issues:
     - EXC0014  # EXC0014 revive: Annoying issue about not having a comment. The rare codebase has such comments
   exclude-rules:
     #- # Exclude some linters from running on tests files.
+
     - path: 'tests/internal/inittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/accel/internal/accelinittools'
       linters:
         - gochecknoinits
     - path: 'tests/cnf/core/network/internal/netinittools'
