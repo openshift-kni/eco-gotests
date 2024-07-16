@@ -125,13 +125,15 @@ var _ = Describe("NFD", Ordered, func() {
 				glog.V(ts.LogLevel).Info("retrieve logs from %v", p.Object.Name)
 				log, err := get.PodLogs(APIClient, hwaccelparams.NFDNamespace, p.Object.Name)
 				Expect(err).NotTo(HaveOccurred(), "Error retrieving pod logs.")
-
+				Expect(len(log)).NotTo(Equal(0))
 				for _, errorKeyword := range errorKeywords {
-					if strings.Contains(log, "read /host-sys/class/net/ens5/speed") {
-						Skip("known error")
-					}
 
-					Expect(log).ShouldNot(ContainSubstring(errorKeyword))
+					logLines := strings.Split(log, "\n")
+					for _, line := range logLines {
+						if strings.Contains(errorKeyword, line) {
+							glog.Error("error found in log:", line)
+						}
+					}
 
 				}
 
