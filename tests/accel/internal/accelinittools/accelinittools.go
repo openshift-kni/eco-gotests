@@ -17,6 +17,6 @@ var (
 
 func init() {
 	HubAPIClient = inittools.APIClient
-	SpokeAPIClient = AccelConfig.SpokeAPIClient
 	AccelConfig = accelconfig.NewAccelConfig()
+	SpokeAPIClient = AccelConfig.SpokeAPIClient
 }
