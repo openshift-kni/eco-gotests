@@ -1,0 +1,172 @@
+package upgrade
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/golang/glog"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
+	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-goinfra/pkg/route"
+	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/accelparams"
+	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/internal/url"
+	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/upgradeconfig"
+	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/upgradeinittools"
+)
+
+var (
+	waitToUpgradeStart     = 5 * time.Minute
+	waitToUpgradeCompleted = 130 * time.Minute
+	desiredUpgradeChannel  = accelparams.UpgradeChannel
+	stream                 = accelparams.Z
+)
+
+var _ = Describe("OCP_UPGRADE", Ordered, Label(accelparams.TeamLabel), func() {
+	Context("OCP", Label(accelparams.TeamLabel), func() {
+
+		AfterAll(func() {
+			By("Delete workload test namespace")
+			glog.V(90).Infof("Deleting test deployments")
+			deleteWorkloadNamespace()
+		})
+
+		It("should upgrade successfully", reportxml.ID("72245"), func() {
+			By("Get the clusterversion struct")
+			version, err := clusterversion.Pull(upgradeinittools.HubAPIClient)
+			Expect(err).ToNot(HaveOccurred(), "error retrieving clusterversion")
+			glog.V(90).Infof("got the clusterversion struct %+v", version)
+
+			By("Deploy a workload in the cluster, expose a service and create a route")
+			workloadRoute := startTestWorkloadAndGetRoute()
+
+			By("Patch the clusterversion with the desired upgrade channel")
+			version, err = version.WithDesiredUpdateChannel(desiredUpgradeChannel).Update()
+			Expect(err).ToNot(HaveOccurred(), "error patching the desired upgrade channel")
+			glog.V(90).Infof("patched the clusterversion channel %s", desiredUpgradeChannel)
+
+			By("Get the desired update image")
+			config := upgradeconfig.NewModulesConfig()
+			desiredImage := config.UpgradeTargetVersion
+			if config.UpgradeTargetVersion == "" {
+				desiredImage, err = version.GetNextUpdateVersionImage(stream, false)
+				Expect(err).ToNot(HaveOccurred(), "error getting the next update image")
+			}
+			glog.V(90).Infof("got the desired update image in %s stream %s", stream, desiredImage)
+
+			By("Patch the clusterversion with the desired upgrade image")
+			version, err = version.WithDesiredUpdateImage(desiredImage, true).Update()
+			Expect(err).ToNot(HaveOccurred(), "error patching the desired image")
+			Expect(version.Object.Spec.DesiredUpdate.Image).To(Equal(desiredImage))
+			glog.V(90).Infof("patched the clusterversion with desired image %s", desiredImage)
+
+			By("Wait until upgrade starts")
+			err = version.WaitUntilUpdateIsStarted(waitToUpgradeStart)
+			Expect(err).ToNot(HaveOccurred(), "the upgrade didn't start after %s", waitToUpgradeStart)
+			glog.V(90).Infof("upgrade has started")
+
+			By("Wait until upgrade completes")
+			err = version.WaitUntilUpdateIsCompleted(waitToUpgradeCompleted)
+			Expect(err).ToNot(HaveOccurred(), "the upgrade didn't complete after %s", waitToUpgradeCompleted)
+			glog.V(90).Infof("upgrade has completed")
+
+			By("Check that the clusterversion is updated to the desired version")
+			Expect(version.Object.Status.Desired.Image).To(Equal(desiredImage))
+			glog.V(90).Infof("upgrade to image %s has completed successfully", desiredImage)
+
+			By("Check that all the operators version is the desired version")
+			clusteroperatorList, err := clusteroperator.List(upgradeinittools.HubAPIClient)
+			Expect(err).ToNot(HaveOccurred(), "failed to get the clusteroperators list %v", err)
+			hasVersion, err := clusteroperator.VerifyClusterOperatorsVersion(version.Object.Status.Desired.Version,
+				clusteroperatorList)
+			Expect(err).NotTo(HaveOccurred(), "error while checking operators version")
+			Expect(hasVersion).To(BeTrue())
+
+			By("Check that no cluster operator is progressing")
+			cosStoppedProgressing, err := clusteroperator.
+				WaitForAllClusteroperatorsStopProgressing(upgradeinittools.HubAPIClient, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred(), "error while waiting for cluster operators to stop progressing")
+			Expect(cosStoppedProgressing).To(BeTrue(), "error: some cluster operators are still progressing")
+
+			By("Check that all cluster operators are available")
+			cosAvailable, err := clusteroperator.
+				WaitForAllClusteroperatorsAvailable(upgradeinittools.HubAPIClient, time.Minute*5)
+			Expect(err).NotTo(HaveOccurred(), "error while waiting for cluster operators to become available")
+			Expect(cosAvailable).To(BeTrue(), "error: some cluster operators are not available")
+
+			By("Check that all pods are running in workload namespace")
+			workloadPods, err := pod.List(upgradeinittools.HubAPIClient, accelparams.TestNamespaceName)
+			Expect(err).NotTo(HaveOccurred(), "error listing pods in workload namespace %s", accelparams.TestNamespaceName)
+			Expect(len(workloadPods) > 0).To(BeTrue(),
+				"error: found no running pods in workload namespace %s", accelparams.TestNamespaceName)
+
+			for _, workloadPod := range workloadPods {
+				err := workloadPod.WaitUntilReady(time.Minute * 2)
+				Expect(err).To(BeNil(), "error waiting for workload pod to become ready")
+			}
+
+			verifyWorkloadReachable(workloadRoute)
+		})
+	})
+})
+
+func startTestWorkloadAndGetRoute() *route.Builder {
+	By("Check if workload app namespace exists")
+
+	if _, err := namespace.Pull(upgradeinittools.HubAPIClient, accelparams.TestNamespaceName); err == nil {
+		deleteWorkloadNamespace()
+	}
+
+	By("Create workload app namespace")
+
+	_, err := namespace.NewBuilder(upgradeinittools.HubAPIClient, accelparams.TestNamespaceName).Create()
+	Expect(err).NotTo(HaveOccurred(), "error creating namespace for workload app")
+
+	By("Create workload app deployment")
+
+	_, err = CreateWorkload(upgradeinittools.HubAPIClient, accelparams.IbuWorkloadImage)
+	Expect(err).ToNot(HaveOccurred(), "error creating workload application")
+
+	By("Create workload app service")
+
+	_, err = CreateService(upgradeinittools.HubAPIClient, accelparams.ServicePort)
+	Expect(err).ToNot(HaveOccurred(), "error creating workload service %v", err)
+
+	By("Create workload app route")
+
+	workloadRoute, err := CreateWorkloadRoute(upgradeinittools.HubAPIClient)
+	Expect(err).ToNot(HaveOccurred(), "error creating workload route %v", err)
+
+	verifyWorkloadReachable(workloadRoute)
+
+	return workloadRoute
+}
+
+func deleteWorkloadNamespace() {
+	By("Delete workload")
+
+	err := DeleteNamespace(upgradeinittools.HubAPIClient)
+	Expect(err).NotTo(HaveOccurred(), "error deleting workload namespace %v", err)
+}
+
+func verifyWorkloadReachable(workloadRoute *route.Builder) {
+	By("Verify workload is reachable")
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second*2, time.Second*10, true, func(ctx context.Context) (bool, error) {
+			_, rc, _ := url.Fetch(fmt.Sprintf("http://%s", workloadRoute.Object.Spec.Host), "get", true)
+
+			return rc == 200, nil
+		},
+	)
+
+	Expect(err).NotTo(HaveOccurred(), "error reaching the workload")
+}
