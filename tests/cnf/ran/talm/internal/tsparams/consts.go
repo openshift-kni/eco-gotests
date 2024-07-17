@@ -53,15 +53,9 @@ const (
 
 	// TalmPodLabelSelector is the label selector to find talm pods.
 	TalmPodLabelSelector = "pod-template-hash"
-	// TalmContainerName is the name of the container in the talm pod.
-	TalmContainerName = "manager"
 	// TalmCompleteLabel is the label applied during talm after completion.
 	TalmCompleteLabel = "talmcomplete"
 
-	// OperatorHubTalmNamespace talm namespace.
-	OperatorHubTalmNamespace = "topology-aware-lifecycle-manager"
-	// OpenshiftOperatorNamespace is the namespace where operators are.
-	OpenshiftOperatorNamespace = "openshift-operators"
 	// OpenshiftLoggingNamespace is the namespace where logging pods are.
 	OpenshiftLoggingNamespace = "openshift-logging"
 
@@ -129,6 +123,8 @@ const (
 	PrometheusPodName = "prometheus-k8s-0"
 	// PrometheusNamespace is the namespace for prometheus.
 	PrometheusNamespace = "openshift-monitoring"
+	// TalmBackupNamespace is the namespace that the CGU operator uses when running backups.
+	TalmBackupNamespace = "openshift-talo-backup"
 
 	// MasterNodeSelector when used in a label selector finds all master nodes.
 	MasterNodeSelector = "node-role.kubernetes.io/master="

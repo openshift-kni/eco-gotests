@@ -19,7 +19,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/upgrade-talm/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/safeapirequest"
+	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 )
 
 var (
@@ -52,6 +52,7 @@ var _ = Describe(
 				seedImageVersion = ibu.Definition.Spec.SeedImageRef.Version
 
 				By("Setting LCA init-monitor watchdog timer to 5 minutes")
+				ibu.Definition.Spec.AutoRollbackOnFailure = &lcav1.AutoRollbackOnFailure{}
 				ibu.Definition.Spec.AutoRollbackOnFailure.InitMonitorTimeoutSeconds = 300
 				ibu, err = ibu.Update()
 				Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with custom lca init-monitor timeout value")
@@ -89,6 +90,9 @@ var _ = Describe(
 				finalizeCguBuilder, err := finalizeCguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create finalize CGU.")
 
+				_, err = ibu.WaitUntilStageComplete("Idle")
+				Expect(err).NotTo(HaveOccurred(), "error waiting for idle stage to complete")
+
 				_, err = finalizeCguBuilder.WaitUntilComplete(5 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Finalize CGU did not complete in time.")
 			})
@@ -98,6 +102,11 @@ var _ = Describe(
 					tsparams.IbuCguNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete finalize cgu on target hub cluster")
 			})
+
+			// Sleep for 10 seconds to allow talm to reconcile state.
+			// Sometimes if the next test re-creates the CGUs too quickly,
+			// the policies compliance status is not updated correctly.
+			time.Sleep(10 * time.Second)
 		})
 
 		It("Rollback after a failed upgrade", reportxml.ID("69054"), func() {
@@ -127,6 +136,9 @@ var _ = Describe(
 
 				prepCguBuilder, err = prepCguBuilder.Create()
 				Expect(err).NotTo(HaveOccurred(), "Failed to create prep CGU.")
+
+				_, err = ibu.WaitUntilStageComplete("Prep")
+				Expect(err).NotTo(HaveOccurred(), "error waiting for prep stage to complete")
 
 				_, err = prepCguBuilder.WaitUntilComplete(25 * time.Minute)
 				Expect(err).NotTo(HaveOccurred(), "Prep CGU did not complete in time.")
@@ -168,15 +180,6 @@ var _ = Describe(
 					Expect(err).To(BeNil(), "error waiting for %s node to become reachable", node.Object.Name)
 					Expect(reachable).To(BeTrue(), "error: node %s is still unreachable", node.Object.Name)
 				}
-
-				By("Wait until node is reporting as Ready")
-
-				err = safeapirequest.Do(func() error {
-					_, err := nodes.WaitForAllNodesAreReady(TargetSNOAPIClient, time.Minute*15)
-
-					return err
-				})
-				Expect(err).To(BeNil(), "error waiting for node to become ready")
 
 				By("Wait for IBU resource to be available")
 
@@ -237,15 +240,6 @@ var _ = Describe(
 						Expect(err).To(BeNil(), "error waiting for %s node to become reachable", node.Object.Name)
 						Expect(reachable).To(BeTrue(), "error: node %s is still unreachable", node.Object.Name)
 					}
-
-					By("Wait until node is reporting as Ready")
-
-					err = safeapirequest.Do(func() error {
-						_, err := nodes.WaitForAllNodesAreReady(TargetSNOAPIClient, time.Minute*15)
-
-						return err
-					})
-					Expect(err).To(BeNil(), "error waiting for node to become ready")
 
 					By("Wait for IBU resource to be available")
 

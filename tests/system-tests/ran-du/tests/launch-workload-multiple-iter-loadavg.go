@@ -12,10 +12,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ptp"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randuparams"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/ran-du/internal/randutestworkload"
 )
 
 var _ = Describe(
@@ -29,10 +29,10 @@ var _ = Describe(
 			for iter := 0; iter < RanDuTestConfig.LaunchWorkloadIterations; iter++ {
 				fmt.Printf("Launch workload iteration no. %d\n", iter)
 
-				By("Clean up workload namespace")
 				if namespace.NewBuilder(APIClient, RanDuTestConfig.TestWorkload.Namespace).Exists() {
-					err := randutestworkload.CleanNameSpace(randuparams.DefaultTimeout, RanDuTestConfig.TestWorkload.Namespace)
-					Expect(err).ToNot(HaveOccurred(), "Failed to clean workload test namespace objects")
+					By("Deleting workload using shell method")
+					_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+					Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
 				}
 
 				if RanDuTestConfig.TestWorkload.CreateMethod == randuparams.TestWorkloadShellLaunchMethod {
@@ -54,6 +54,17 @@ var _ = Describe(
 				By("Waiting for all pods to become ready")
 				_, err = await.WaitUntilAllPodsReady(APIClient, RanDuTestConfig.TestWorkload.Namespace, randuparams.DefaultTimeout)
 				Expect(err).ToNot(HaveOccurred(), "pod not ready: %s", err)
+
+				if RanDuTestConfig.PtpEnabled {
+					timeInterval := 3 * time.Minute
+					time.Sleep(timeInterval)
+
+					By("Check PTP status for the last 3 minutes after workload deployment")
+					ptpOnSync, err := ptp.ValidatePTPStatus(APIClient, timeInterval)
+					Expect(err).ToNot(HaveOccurred(), "PTP Error: %s", err)
+					Expect(ptpOnSync).To(Equal(true))
+				}
+
 			}
 
 			By("Observe node load average while workload is running")
@@ -81,7 +92,7 @@ var _ = Describe(
 		})
 		AfterAll(func() {
 			By("Cleaning up test workload resources")
-			err := randutestworkload.CleanNameSpace(randuparams.DefaultTimeout, RanDuTestConfig.TestWorkload.Namespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to clean workload test namespace objects")
+			_, err := shell.ExecuteCmd(RanDuTestConfig.TestWorkload.DeleteShellCmd)
+			Expect(err).ToNot(HaveOccurred(), "Failed to delete workload")
 		})
 	})

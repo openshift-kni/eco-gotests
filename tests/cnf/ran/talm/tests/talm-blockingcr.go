@@ -10,7 +10,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +29,7 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 
 	BeforeEach(func() {
 		By("ensuring TALM is at least version 4.12")
-		versionInRange, err := helper.IsVersionStringInRange(tsparams.TalmVersion, "4.11", "")
+		versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.11", "")
 		Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 		if !versionInRange {
@@ -37,24 +39,24 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 
 	AfterEach(func() {
 		By("Cleaning up test resources on hub")
-		errList := helper.CleanupTestResourcesOnHub(raninittools.HubAPIClient, tsparams.TestNamespace, blockingA)
+		errList := helper.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, blockingA)
 		Expect(errList).To(BeEmpty(), "Failed to cleanup resources for blocking A on hub")
 
-		errList = helper.CleanupTestResourcesOnHub(raninittools.HubAPIClient, tsparams.TestNamespace, blockingB)
+		errList = helper.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, blockingB)
 		Expect(errList).To(BeEmpty(), "Failed to cleanup resources for blocking B on hub")
 
 		By("Deleting test namespaces on spoke 1")
-		err := namespace.NewBuilder(raninittools.Spoke1APIClient, tsparams.TemporaryNamespace+blockingA).
+		err := namespace.NewBuilder(Spoke1APIClient, tsparams.TemporaryNamespace+blockingA).
 			DeleteAndWait(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete namespace for blocking A on spoke 1")
 
-		err = namespace.NewBuilder(raninittools.Spoke1APIClient, tsparams.TemporaryNamespace+blockingB).
+		err = namespace.NewBuilder(Spoke1APIClient, tsparams.TemporaryNamespace+blockingB).
 			DeleteAndWait(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete namespace for blocking B on spoke 1")
 	})
 
 	When("a blocking CR passes", func() {
-		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
+		// 47948 - Tests multiple CGUs can be enabled in parallel with blocking CR.
 		It("verifies CGU succeeded with blocking CR", reportxml.ID("47948"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
 			cguA := getBlockingCGU(blockingA, 10)
@@ -88,8 +90,8 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 	})
 
 	When("a blocking CR fails", func() {
-		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
-		It("verifies CGU fails with blocking CR", reportxml.ID("47948"), func() {
+		// 74768 - Tests multiple CGUs can be enabled in parallel with blocking CR.
+		It("verifies CGU fails with blocking CR", reportxml.ID("74768"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
 			cguA := getBlockingCGU(blockingA, 2)
 			cguB := getBlockingCGU(blockingB, 1)
@@ -99,14 +101,14 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 			}}
 
 			By("Setting up CGU A with a faulty namespace")
-			tempNs := namespace.NewBuilder(raninittools.HubAPIClient, tsparams.TemporaryNamespace+blockingA)
+			tempNs := namespace.NewBuilder(HubAPIClient, tsparams.TemporaryNamespace+blockingA)
 			tempNs.Definition.Kind = "faulty namespace"
 
-			_, err := helper.CreatePolicy(raninittools.HubAPIClient, tempNs.Definition, blockingA)
+			_, err := helper.CreatePolicy(HubAPIClient, tempNs.Definition, blockingA)
 			Expect(err).ToNot(HaveOccurred(), "Failed to create policy in testing namespace")
 
 			err = helper.CreatePolicyComponents(
-				raninittools.HubAPIClient, blockingA, cguA.Definition.Spec.Clusters, metav1.LabelSelector{})
+				HubAPIClient, blockingA, cguA.Definition.Spec.Clusters, metav1.LabelSelector{})
 			Expect(err).ToNot(HaveOccurred(), "Failed to create policy components in testing namespace")
 
 			cguA, err = cguA.Create()
@@ -135,8 +137,8 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 	})
 
 	When("a blocking CR is missing", func() {
-		// 47948 - Tests multiple UOCRs can be enabled in parallel with blocking CR.
-		It("verifies CGU is blocked until blocking CR created and succeeded", reportxml.ID("47948"), func() {
+		// 47956 - Tests multiple CGUs can be enabled in parallel with missing blocking CR.
+		It("verifies CGU is blocked until blocking CR created and succeeded", reportxml.ID("47956"), func() {
 			By("creating two sets of CRs where B will be blocked until A is done")
 			cguA := getBlockingCGU(blockingA, 10)
 			cguB := getBlockingCGU(blockingB, 15)
@@ -183,8 +185,8 @@ var _ = Describe("TALM Blocking CRs Tests", Label(tsparams.LabelBlockingCRTestCa
 })
 
 func getBlockingCGU(suffix string, timeout int) *cgu.CguBuilder {
-	cguBuilder := cgu.NewCguBuilder(raninittools.HubAPIClient, tsparams.CguName+suffix, tsparams.TestNamespace, 1).
-		WithCluster(tsparams.Spoke1Name).
+	cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName+suffix, tsparams.TestNamespace, 1).
+		WithCluster(RANConfig.Spoke1Name).
 		WithManagedPolicy(tsparams.PolicyName + suffix)
 	cguBuilder.Definition.Spec.RemediationStrategy.Timeout = timeout
 	cguBuilder.Definition.Spec.Enable = ptr.To(false)

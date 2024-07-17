@@ -49,19 +49,19 @@ func VerifyPostDeploymentConfig() {
 			})
 
 			It("Verifies Image Registry management state is Enabled",
-				Label("image-registry"), reportxml.ID("72812"), VerifyImageRegistryManagementStateEnablement)
+				Label("day2"), reportxml.ID("72812"), VerifyImageRegistryManagementStateEnablement)
 
 			It("Verifies network policy configuration procedure",
-				Label("network-policy"), reportxml.ID("60086"), VerifyNetworkPolicyConfig)
+				Label("day2"), reportxml.ID("60086"), VerifyNetworkPolicyConfig)
 
 			It("Verify scc activation succeeded",
-				Label("scc"), reportxml.ID("60042"), VerifySCCActivation)
+				Label("day2"), reportxml.ID("60042"), VerifySCCActivation)
 
 			It("Verifies sctp module activation succeeded",
-				Label("sctp"), reportxml.ID("60086"), VerifySCTPModuleActivation)
+				Label("day2"), reportxml.ID("60086"), VerifySCTPModuleActivation)
 
 			It("Verifies system reserved memory for masters succeeded",
-				Label("system-reserved"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
+				Label("day2"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
 		})
 }
 

@@ -12,7 +12,8 @@ var (
 
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		"test": "randu-test-workload",
+		"test":          "randu-test-workload",
+		"openshift-ptp": "randu-ptp-namespace",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

@@ -2,8 +2,9 @@ package vcorecommon
 
 import (
 	"fmt"
-	"strings"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
@@ -31,6 +32,10 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 )
 
+var (
+	workerLabelList = []string{VCoreConfig.VCorePpMCPName, VCoreConfig.VCoreCpMCPName}
+)
+
 // VerifyNTOSuite container that contains tests for Node Tuning Operator verification.
 func VerifyNTOSuite() {
 	Describe(
@@ -56,7 +61,7 @@ func VerifyNTOSuite() {
 
 			It("Verify System Reserved memory for user-plane-worker nodes configuration",
 				Label("nto"), //nolint:misspell
-				reportxml.ID("60047"), SetSystemReservedMemoryForUserPlaneNodes)
+				reportxml.ID("60047"), SetSystemReservedMemoryForWorkers)
 		})
 }
 
@@ -75,7 +80,6 @@ func VerifyNTODeployment(ctx SpecContext) {
 		"",
 		vcoreparams.NTODeploymentName,
 		vcoreparams.NTONamespace,
-
 		time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("operator deployment %s failure in the namespace %s; %v",
@@ -122,282 +126,267 @@ func VerifyNTODeployment(ctx SpecContext) {
 
 // CreatePerformanceProfile asserts performanceprofile can be created and successfully applied.
 func CreatePerformanceProfile(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify performanceprofile %s exists", VCoreConfig.VCorePpMCPName)
+	for _, workerLabel := range workerLabelList {
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Verify performanceprofile %s exists", workerLabel)
 
-	hugePagesNodeOne := int32(0)
-	hugePagesNodeTwo := int32(1)
-	hugePages := []v2.HugePage{
-		{
-			Size:  vcoreparams.HugePagesSize,
-			Count: 32768,
-			Node:  &hugePagesNodeOne,
-		},
-		{
-			Size:  vcoreparams.HugePagesSize,
-			Count: 32768,
-			Node:  &hugePagesNodeTwo,
-		},
+		hugePagesNodeOne := int32(0)
+		hugePagesNodeTwo := int32(1)
+		hugePages := []v2.HugePage{
+			{
+				Size:  vcoreparams.HugePagesSize,
+				Count: 32768,
+				Node:  &hugePagesNodeOne,
+			},
+			{
+				Size:  vcoreparams.HugePagesSize,
+				Count: 32768,
+				Node:  &hugePagesNodeTwo,
+			},
+		}
+		performanceKubeletConfigName := fmt.Sprintf("performance-%s", workerLabel)
+		ppAnnotations := map[string]string{"performance.openshift.io/ignore-cgroups-version": "true",
+			"kubeletconfig.experimental": fmt.Sprintf("{\"systemReserved\":{\"cpu\":\"%s\",\"memory\":\"%s\"}}",
+				vcoreparams.SystemReservedCPU, vcoreparams.SystemReservedMemory)}
+		netInterfaceName := "ens2f(0|1)"
+		netDevices := []v2.Device{{
+			InterfaceName: &netInterfaceName,
+		}}
+
+		var err error
+
+		nodeLabel := fmt.Sprintf("node-role.kubernetes.io/%s", workerLabel)
+		nodeLabelMap := map[string]string{nodeLabel: ""}
+		nodeLabelListOption := metav1.ListOptions{LabelSelector: nodeLabel}
+
+		ppObj := nto.NewBuilder(APIClient,
+			workerLabel,
+			VCoreConfig.CPUIsolated,
+			VCoreConfig.CPUReserved,
+			nodeLabelMap).
+			WithAnnotations(ppAnnotations).
+			WithAdditionalKernelArgs([]string{fmt.Sprintf("nohz_full=%s", VCoreConfig.CPUIsolated)}).
+			WithNet(true, netDevices).
+			WithGloballyDisableIrqLoadBalancing().
+			WithHugePages(vcoreparams.HugePagesSize, hugePages).
+			WithNumaTopology(vcoreparams.TopologyConfig).
+			WithWorkloadHints(false, true, false)
+
+		if !ppObj.Exists() {
+			glog.V(vcoreparams.VCoreLogLevel).Infof("Create new performanceprofile %s", workerLabel)
+
+			_, err = ppObj.Create()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create performanceprofile %s; %v",
+				workerLabel, err))
+
+			glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for all nodes rebooting after applying performanceprofile %s",
+				workerLabel)
+
+			_, err = nodes.WaitForAllNodesToReboot(
+				APIClient,
+				40*time.Minute,
+				nodeLabelListOption)
+			Expect(err).ToNot(HaveOccurred(),
+				fmt.Sprintf("Nodes failed to reboot after applying performanceprofile %s config; %v",
+					workerLabel, err))
+
+			glog.V(vcoreparams.VCoreLogLevel).Info("Wait for all clusteroperators availability after nodes reboot")
+
+			_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
+		}
+
+		glog.V(vcoreparams.VCoreLogLevel).Info("Verify NUMA Topology Manager")
+
+		performanceKubeletConfigObj, err := mco.PullKubeletConfig(APIClient, performanceKubeletConfigName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get kubeletconfigs %s due to %v",
+			performanceKubeletConfigName, err))
+
+		kubeletConfig := performanceKubeletConfigObj.Object.Spec.KubeletConfig.Raw
+
+		currentTopologyManagerPolicy :=
+			unmarshalRaw[kubeletconfigv1beta1.KubeletConfiguration](kubeletConfig).TopologyManagerPolicy
+		Expect(currentTopologyManagerPolicy).To(Equal(vcoreparams.TopologyConfig),
+			fmt.Sprintf("incorrect topology manager policy found; expected: %s, found: %s",
+				vcoreparams.TopologyConfig, currentTopologyManagerPolicy))
 	}
-	performanceKubeletConfigName := fmt.Sprintf("performance-%s", VCoreConfig.VCorePpMCPName)
-	ppAnnotations := map[string]string{"performance.openshift.io/ignore-cgroups-version": "true",
-		"kubeletconfig.experimental": fmt.Sprintf("{\"systemReserved\":{\"cpu\":\"%s\",\"memory\":\"%s\"}}",
-			vcoreparams.SystemReservedCPU, vcoreparams.SystemReservedMemory)}
-	netInterfaceName := "ens2f(0|1)"
-	netDevices := []v2.Device{{
-		InterfaceName: &netInterfaceName,
-	}}
-
-	var err error
-
-	ppObj := nto.NewBuilder(APIClient,
-		VCoreConfig.VCorePpMCPName,
-		VCoreConfig.CPUIsolated,
-		VCoreConfig.CPUReserved,
-		VCoreConfig.VCorePpLabelMap).
-		WithAnnotations(ppAnnotations).
-		WithNet(true, netDevices).
-		WithGloballyDisableIrqLoadBalancing().
-		WithHugePages(vcoreparams.HugePagesSize, hugePages).
-		WithNumaTopology(vcoreparams.TopologyConfig).
-		WithWorkloadHints(false, true, false)
-
-	if !ppObj.Exists() {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Create new performanceprofile %s", VCoreConfig.VCorePpMCPName)
-
-		ppObj, err = ppObj.Create()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create performanceprofile %s; %v",
-			VCoreConfig.VCorePpMCPName, err))
-		Expect(ppObj.Exists()).To(Equal(true),
-			fmt.Sprintf("performanceprofile %s not found", VCoreConfig.VCorePpMCPName))
-
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for all nodes rebooting after applying performanceprofile %s",
-			VCoreConfig.VCorePpMCPName)
-
-		_, err = nodes.WaitForAllNodesToReboot(
-			APIClient,
-			40*time.Minute,
-			VCoreConfig.VCorePpLabelListOption)
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Nodes failed to reboot after applying performanceprofile %s config; %v",
-				VCoreConfig.VCorePpMCPName, err))
-
-		glog.V(vcoreparams.VCoreLogLevel).Info("Wait for all clusteroperators availability after nodes reboot")
-
-		_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
-	}
-
-	glog.V(vcoreparams.VCoreLogLevel).Info("Verify NUMA Topology Manager")
-
-	performanceKubeletConfigObj, err := mco.PullKubeletConfig(APIClient, performanceKubeletConfigName)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get kubeletconfigs %s due to %v",
-		performanceKubeletConfigName, err))
-
-	kubeletConfig := performanceKubeletConfigObj.Object.Spec.KubeletConfig.Raw
-
-	currentTopologyManagerPolicy :=
-		unmarshalRaw[kubeletconfigv1beta1.KubeletConfiguration](kubeletConfig).TopologyManagerPolicy
-	Expect(currentTopologyManagerPolicy).To(Equal(vcoreparams.TopologyConfig),
-		fmt.Sprintf("incorrect topology manager policy found; expected: %s, found: %s",
-			vcoreparams.TopologyConfig, currentTopologyManagerPolicy))
 } // func CreatePerformanceProfile (ctx SpecContext)
 
 // CreateNodesTuning creates new Node Tuning configuration.
-//
-//nolint:funlen
 func CreateNodesTuning(ctx SpecContext) {
-	tunedInstanceName := fmt.Sprintf("configuration-nic-%s", VCoreConfig.VCorePpMCPName)
-	sysctlConf := map[string]string{
-		"net.core.netdev_max_backlog": "5000",
-		"net.core.optmem_max":         "81920",
-		"net.core.rmem_default":       "33554432",
-		"net.core.rmem_max":           "33554432",
-		"net.core.wmem_default":       "33554432",
-		"net.core.wmem_max":           "33554432",
-		"net.ipv4.udp_rmem_min":       "8192",
-	}
-	tunedProfileData := fmt.Sprintf(""+
-		"[main]"+
-		"summary=Configuration changes profile inherited from performance created tuned"+
-		"include=openshift-node-performance-%s"+
-		""+
-		"[sysctl]"+
-		"net.core.netdev_max_backlog = %s"+
-		"net.core.optmem_max = %s"+
-		"net.core.rmem_default = %s"+
-		"net.core.rmem_max = %s"+
-		"net.core.wmem_default = %s"+
-		"net.core.wmem_max = %s"+
-		"net.ipv4.udp_rmem_min = %s"+
-		""+
-		"[net]"+
-		"type=net"+
-		"devices_udev_regex=^INTERFACE=ens2f(0|1)"+
-		"channels=combined 32",
-		VCoreConfig.VCorePpMCPName,
-		sysctlConf["net.core.netdev_max_backlog"],
-		sysctlConf["net.core.optmem_max"],
-		sysctlConf["net.core.rmem_default"],
-		sysctlConf["net.core.rmem_max"],
-		sysctlConf["net.core.wmem_default"],
-		sysctlConf["net.core.wmem_max"],
-		sysctlConf["net.ipv4.udp_rmem_min"])
-	tunedProfile := tunedv1.TunedProfile{
-		Name: &tunedInstanceName,
-		Data: &tunedProfileData,
-	}
-	recommendPriority := uint64(19)
-	recommendLabel := VCoreConfig.VCorePpLabel
-	tunedRecommend := tunedv1.TunedRecommend{
-		Profile:  &tunedInstanceName,
-		Priority: &recommendPriority,
-		Match: []tunedv1.TunedMatch{{
-			Label: &recommendLabel,
-		}},
-	}
+	for _, workerLabel := range workerLabelList {
+		tunedInstanceName := fmt.Sprintf("configuration-nic-%s", workerLabel)
+		tunedProfileData := fmt.Sprintf(
+			"[main]\n"+
+				"summary=Configuration changes profile inherited from performance created tuned\n\n"+
+				"include=openshift-node-performance-%s\n"+
+				"\n"+
+				"[net]\n"+
+				"type=net\n"+
+				"devices_udev_regex=^INTERFACE=ens2f(0|1)\n"+
+				"channels=combined 32",
+			workerLabel)
+		tunedProfile := tunedv1.TunedProfile{
+			Name: &tunedInstanceName,
+			Data: &tunedProfileData,
+		}
+		recommendPriority := uint64(19)
+		recommendLabel := workerLabel
+		tunedRecommend := tunedv1.TunedRecommend{
+			Profile:  &tunedInstanceName,
+			Priority: &recommendPriority,
+			Match: []tunedv1.TunedMatch{{
+				Label: &recommendLabel,
+			}},
+		}
 
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify nodes tuning %s already exists in namespace %s",
-		VCoreConfig.VCorePpMCPName, vcoreparams.NTONamespace)
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Verify nodes tuning %s already exists in namespace %s",
+			workerLabel, vcoreparams.NTONamespace)
 
-	var err error
+		var err error
 
-	ntoObj := nto.NewTunedBuilder(APIClient,
-		tunedInstanceName,
-		vcoreparams.NTONamespace).
-		WithProfile(tunedProfile).
-		WithRecommend(tunedRecommend)
+		nodeLabel := fmt.Sprintf("node-role.kubernetes.io/%s", workerLabel)
+		nodeLabelListOption := metav1.ListOptions{LabelSelector: nodeLabel}
 
-	if !ntoObj.Exists() {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Create new node tuning profile %s in namespace %s",
-			tunedInstanceName, vcoreparams.NTONamespace)
+		ntoObj := nto.NewTunedBuilder(APIClient,
+			tunedInstanceName,
+			vcoreparams.NTONamespace).
+			WithProfile(tunedProfile).
+			WithRecommend(tunedRecommend)
 
-		ntoObj, err = ntoObj.Create()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create tuned %s in namespace %s; %v",
-			tunedInstanceName, vcoreparams.NTONamespace, err))
-		Expect(ntoObj.Exists()).To(Equal(true),
-			fmt.Sprintf("tuned %s not found in namespace %s", tunedInstanceName, vcoreparams.NTONamespace))
+		if !ntoObj.Exists() {
+			glog.V(vcoreparams.VCoreLogLevel).Infof("Create new node tuning profile %s in namespace %s",
+				tunedInstanceName, vcoreparams.NTONamespace)
 
-		glog.V(vcoreparams.VCoreLogLevel).Info("The short sleep to update new values before the following change")
+			ntoObj, err = ntoObj.Create()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create tuned %s in namespace %s; %v",
+				tunedInstanceName, vcoreparams.NTONamespace, err))
+			Expect(ntoObj.Exists()).To(Equal(true),
+				fmt.Sprintf("tuned %s not found in namespace %s", tunedInstanceName, vcoreparams.NTONamespace))
 
-		time.Sleep(10 * time.Second)
-	}
+			glog.V(vcoreparams.VCoreLogLevel).Info("The short sleep to update new values before the following change")
 
-	nodesList, err := nodes.List(APIClient, VCoreConfig.VCorePpLabelListOption)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get nodes list with the label %v; %v",
-		VCoreConfig.VCorePpLabelListOption, err))
+			time.Sleep(10 * time.Second)
+		}
 
-	for _, node := range nodesList {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Check nohz_full is removed from the node %s",
-			node.Definition.Name)
+		nodesList, err := nodes.List(APIClient, nodeLabelListOption)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get nodes list with the label %v; %v",
+			nodeLabel, err))
 
-		nohzFullCmd := "cat /proc/cmdline"
-		output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, nohzFullCmd)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
-			nohzFullCmd, node.Object.Name, err))
-		Expect(output).NotTo(ContainSubstring("nohz_full"),
-			fmt.Sprintf("failed to remove nohz_full on the node %s; %v", node.Definition.Name, output))
-
-		for param, value := range sysctlConf {
-			glog.V(vcoreparams.VCoreLogLevel).Infof("Check net.core.netdev_max_backlog value set on the node %s",
+		for _, node := range nodesList {
+			glog.V(vcoreparams.VCoreLogLevel).Infof("Check nohz_full is removed from the node %s",
 				node.Definition.Name)
 
-			netCmd := fmt.Sprintf("sudo sysctl --all | grep %s", param)
-			output, err = ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, netCmd)
+			nohzFullCmd := "cat /proc/cmdline"
+			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, nohzFullCmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
-				netCmd, node.Object.Name, err))
-
-			Expect(strings.TrimSuffix(output[strings.LastIndex(output, "=")+1:], "\n")).To(Equal(value),
-				fmt.Sprintf("failed to change %s value to %s on the node %s; %v",
-					param, value, node.Definition.Name, output))
+				nohzFullCmd, node.Object.Name, err))
+			Expect(output).NotTo(ContainSubstring("nohz_full"),
+				fmt.Sprintf("failed to remove nohz_full on the node %s; %v", node.Definition.Name, output))
 		}
 	}
 } // func CreateNodesTuning (ctx SpecContext)
 
 // VerifyCPUManagerConfig verifies CPU Manager configuration.
 func VerifyCPUManagerConfig(ctx SpecContext) {
-	nodesList, err := nodes.List(APIClient, VCoreConfig.VCorePpLabelListOption)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get nodes list with the label %v; %v",
-		VCoreConfig.VCorePpLabelListOption, err))
+	for _, workerLabel := range workerLabelList {
+		nodeLabel := fmt.Sprintf("node-role.kubernetes.io/%s", workerLabel)
+		nodeLabelListOption := metav1.ListOptions{LabelSelector: nodeLabel}
 
-	glog.V(vcoreparams.VCoreLogLevel).Info("Verify CPU Manager configuration")
+		nodesList, err := nodes.List(APIClient, nodeLabelListOption)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get nodes list with the label %v; %v",
+			nodeLabel, err))
 
-	cpuManagerCmd := "sudo grep cpuManager /etc/kubernetes/kubelet.conf"
+		glog.V(vcoreparams.VCoreLogLevel).Info("Verify CPU Manager configuration")
 
-	for _, node := range nodesList {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Check CPU Manager activated on the node %s",
-			node.Definition.Name)
+		cpuManagerCmd := "sudo grep cpuManager /etc/kubernetes/kubelet.conf"
 
-		output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, cpuManagerCmd)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
-			cpuManagerCmd, node.Object.Name, err))
-		Expect(output).To(ContainSubstring("cpuManagerPolicy"),
-			fmt.Sprintf("failed to activate CPU Manager on the node %s; %v", node.Definition.Name, output))
+		for _, node := range nodesList {
+			glog.V(vcoreparams.VCoreLogLevel).Infof("Check CPU Manager activated on the node %s",
+				node.Definition.Name)
+
+			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, cpuManagerCmd)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
+				cpuManagerCmd, node.Object.Name, err))
+			Expect(output).To(ContainSubstring("cpuManagerPolicy"),
+				fmt.Sprintf("failed to activate CPU Manager on the node %s; %v", node.Definition.Name, output))
+		}
 	}
 } // func VerifyCPUManagerConfig (ctx SpecContext)
 
 // VerifyHugePagesConfig verifies correctness of the Huge Pages configuration.
 func VerifyHugePagesConfig(ctx SpecContext) {
-	nodesList, err := nodes.List(APIClient, VCoreConfig.VCorePpLabelListOption)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get nodes list with the label %v; %v",
-		VCoreConfig.VCorePpLabelListOption, err))
+	for _, workerLabel := range workerLabelList {
+		nodeLabel := fmt.Sprintf("node-role.kubernetes.io/%s", workerLabel)
+		nodeLabelListOption := metav1.ListOptions{LabelSelector: nodeLabel}
 
-	glog.V(vcoreparams.VCoreLogLevel).Info("Verify Node Tuning instance hugepages configuration")
+		nodesList, err := nodes.List(APIClient, nodeLabelListOption)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get nodes list with the label %v; %v",
+			nodeLabel, err))
 
-	for _, node := range nodesList {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Check hugepages config for the node %s",
-			node.Definition.Name)
+		glog.V(vcoreparams.VCoreLogLevel).Info("Verify Node Tuning instance hugepages configuration")
 
-		allocatableHPResources := node.Object.Status.Allocatable
-		capacityHPResources := node.Object.Status.Capacity
+		for _, node := range nodesList {
+			glog.V(vcoreparams.VCoreLogLevel).Infof("Check hugepages config for the node %s",
+				node.Definition.Name)
 
-		for hpResource, value := range allocatableHPResources {
-			if hpResource == "hugepages-2Mi" {
-				Expect(value).To(Equal(resource.MustParse(vcoreparams.ExpectedHugePagesResource)),
-					fmt.Sprintf("allocatable resource config on node %s not as expected; expected: %s, current: %v",
-						node.Definition.Name, vcoreparams.ExpectedHugePagesResource, value))
+			allocatableHPResources := node.Object.Status.Allocatable
+			capacityHPResources := node.Object.Status.Capacity
+
+			for hpResource, value := range allocatableHPResources {
+				if hpResource == "hugepages-2Mi" {
+					Expect(value).To(Equal(resource.MustParse(vcoreparams.ExpectedHugePagesResource)),
+						fmt.Sprintf("allocatable resource config on node %s not as expected; expected: %s, current: %v",
+							node.Definition.Name, vcoreparams.ExpectedHugePagesResource, value))
+				}
 			}
-		}
 
-		for hpResource, value := range capacityHPResources {
-			if hpResource == "hugepages-2Mi" {
-				Expect(value).To(Equal(resource.MustParse(vcoreparams.ExpectedHugePagesResource)),
-					fmt.Sprintf("capacity resource config on node %s not as expected; expected: %s, current: %v",
-						node.Definition.Name, vcoreparams.ExpectedHugePagesResource, value))
+			for hpResource, value := range capacityHPResources {
+				if hpResource == "hugepages-2Mi" {
+					Expect(value).To(Equal(resource.MustParse(vcoreparams.ExpectedHugePagesResource)),
+						fmt.Sprintf("capacity resource config on node %s not as expected; expected: %s, current: %v",
+							node.Definition.Name, vcoreparams.ExpectedHugePagesResource, value))
+				}
 			}
 		}
 	}
 } // func VerifyHugePagesConfig (ctx SpecContext)
 
-// SetSystemReservedMemoryForUserPlaneNodes assert system reserved memory for user-plane-worker nodes succeeded.
-func SetSystemReservedMemoryForUserPlaneNodes(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify system reserved memory config for masters succeeded")
+// SetSystemReservedMemoryForWorkers assert system reserved memory for user-plane-worker nodes succeeded.
+func SetSystemReservedMemoryForWorkers(ctx SpecContext) {
+	for _, workerLabel := range workerLabelList {
+		nodeLabel := fmt.Sprintf("node-role.kubernetes.io/%s", workerLabel)
+		nodeLabelListOption := metav1.ListOptions{LabelSelector: nodeLabel}
 
-	kubeletConfigName := fmt.Sprintf("performance-%s", VCoreConfig.VCorePpMCPName)
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Verify system reserved memory config for %s nodes succeeded",
+			nodeLabel)
 
-	_, err := mco.PullKubeletConfig(APIClient, kubeletConfigName)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get kubeletconfigs %s due to %v",
-		kubeletConfigName, err))
+		kubeletConfigName := fmt.Sprintf("performance-%s", workerLabel)
 
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify system reserved data updated for all %s nodes",
-		VCoreConfig.ControlPlaneLabel)
+		_, err := mco.PullKubeletConfig(APIClient, kubeletConfigName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get kubeletconfigs %s due to %v",
+			kubeletConfigName, err))
 
-	nodesList, err := nodes.List(APIClient, VCoreConfig.VCorePpLabelListOption)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to get %v nodes list; %v", VCoreConfig.VCorePpLabelListOption, err))
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Verify system reserved data updated for all %s nodes",
+			workerLabel)
 
-	systemReservedDataCmd := "cat /etc/node-sizing.env"
-	for _, node := range nodesList {
-		output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, systemReservedDataCmd)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %v cmd on the %s node due to %v",
-			systemReservedDataCmd, VCoreConfig.ControlPlaneLabel, err))
-		Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_CPU=%s", vcoreparams.SystemReservedCPU)),
-			fmt.Sprintf("reserved CPU configuration did not changed for the node %s; expected value: %s, "+
-				"found: %v", node.Definition.Name, vcoreparams.SystemReservedCPU, output))
-		Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_MEMORY=%s", vcoreparams.SystemReservedMemory)),
-			fmt.Sprintf("reserved memory configuration did not changed for the node %s; expected value: %s, "+
-				"found: %v", node.Definition.Name, vcoreparams.SystemReservedMemory, output))
+		nodesList, err := nodes.List(APIClient, nodeLabelListOption)
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Failed to get %v nodes list; %v", nodeLabel, err))
+
+		systemReservedDataCmd := "cat /etc/node-sizing.env"
+		for _, node := range nodesList {
+			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, systemReservedDataCmd)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %v cmd on the %s node due to %v",
+				systemReservedDataCmd, workerLabel, err))
+			Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_CPU=%s", vcoreparams.SystemReservedCPU)),
+				fmt.Sprintf("reserved CPU configuration did not changed for the node %s; expected value: %s, "+
+					"found: %v", node.Definition.Name, vcoreparams.SystemReservedCPU, output))
+			Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_MEMORY=%s", vcoreparams.SystemReservedMemory)),
+				fmt.Sprintf("reserved memory configuration did not changed for the node %s; expected value: %s, "+
+					"found: %v", node.Definition.Name, vcoreparams.SystemReservedMemory, output))
+		}
 	}
-} // func SetSystemReservedMemoryForUserPlaneNodes (ctx SpecContext)
+} // func SetSystemReservedMemoryForWorkers (ctx SpecContext)
 
 // unmarshalRaw converts raw bytes for a K8s CR into the actual type.
 func unmarshalRaw[T any](raw []byte) T {

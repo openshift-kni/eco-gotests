@@ -15,4 +15,5 @@ ptpOperatorNamespace: "openshift-ptp"
 talmPreCachePolicies:
   - "common-config-policy"
   - "common-subscriptions-policy"
+ztpSiteGenerateImage: "registry-proxy.engineering.redhat.com/rh-osbs/openshift4-ztp-site-generate"
 ...

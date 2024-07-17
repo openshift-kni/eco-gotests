@@ -188,8 +188,8 @@ func WaitUntilNodeIsUnreachable(hostname string, timeout time.Duration) error {
 	}
 }
 
-// WaitUntilNewDaemonSetIsRunning waits until the new daemonset is in Ready state.
-func WaitUntilNewDaemonSetIsRunning(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
+// WaitUntilDaemonSetIsRunning waits until the new daemonset is in Ready state.
+func WaitUntilDaemonSetIsRunning(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
 	glog.V(90).Infof("Verifying if daemonset %s is running in namespace %s", name, nsname)
 
 	var daemonsetObj *daemonset.Builder

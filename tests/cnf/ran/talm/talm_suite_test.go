@@ -1,6 +1,8 @@
 package talm
 
 import (
+	"fmt"
+	"path"
 	"runtime"
 	"testing"
 
@@ -26,29 +28,52 @@ func TestTalm(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	err := helper.InitializeVariables()
-	Expect(err).ToNot(HaveOccurred())
+	err := helper.VerifyTalmIsInstalled()
+	Expect(err).ToNot(HaveOccurred(), "Failed to verify that TALM is installed")
 
-	// Make sure TALM is present
-	err = helper.VerifyTalmIsInstalled()
-	Expect(err).ToNot(HaveOccurred())
-
-	// Delete the namespace before creating it to ensure it is in a consistent blank state
+	By("deleting and recreating TALM test namespace to ensure a blank slate")
 	err = helper.DeleteTalmTestNamespace()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete TALM test namespace")
 	err = helper.CreateTalmTestNamespace()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "Failed to create TALM test namespace")
 })
 
 var _ = AfterSuite(func() {
 	// Deleting the namespace after the suite finishes ensures all the CGUs created are deleted
 	err := helper.DeleteTalmTestNamespace()
-	Expect(err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete TALM test namespace")
 })
 
-var _ = ReportAfterEach(func(report SpecReport) {
+var _ = JustAfterEach(func() {
+	var (
+		currentDir, currentFilename = path.Split(currentFile)
+		hubReportPath               = fmt.Sprintf("%shub_%s", currentDir, currentFilename)
+		spoke2ReportPath            = fmt.Sprintf("%sspoke2_%s", currentDir, currentFilename)
+		report                      = CurrentSpecReport()
+	)
+
 	reporter.ReportIfFailed(
-		report, currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump, clients.SetScheme)
+		report, currentFile, tsparams.ReporterSpokeNamespacesToDump, tsparams.ReporterSpokeCRsToDump, clients.SetScheme)
+
+	if HubAPIClient != nil {
+		reporter.ReportIfFailedOnCluster(
+			RANConfig.HubKubeconfig,
+			report,
+			hubReportPath,
+			tsparams.ReporterHubNamespacesToDump,
+			tsparams.ReporterHubCRsToDump,
+			clients.SetScheme)
+	}
+
+	if Spoke2APIClient != nil {
+		reporter.ReportIfFailedOnCluster(
+			RANConfig.Spoke2Kubeconfig,
+			report,
+			spoke2ReportPath,
+			tsparams.ReporterSpokeNamespacesToDump,
+			tsparams.ReporterSpokeCRsToDump,
+			clients.SetScheme)
+	}
 })
 
 var _ = ReportAfterSuite("", func(report Report) {

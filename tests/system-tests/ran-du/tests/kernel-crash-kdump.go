@@ -1,6 +1,7 @@
 package ran_du_system_test
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -34,8 +35,9 @@ var _ = Describe(
 				err = reboot.KernelCrashKdump(node.Definition.Name)
 				Expect(err).ToNot(HaveOccurred(), "Error triggering a kernel crash on the node.")
 
-				By("Wait for two more minutes for the cluster resources to reconciliate their state")
-				time.Sleep(2 * time.Minute)
+				By(fmt.Sprintf("Wait for %d minutes for the cluster resources to reconciliate their state",
+					RanDuTestConfig.RebootRecoveryTime))
+				time.Sleep(time.Duration(RanDuTestConfig.RebootRecoveryTime) * time.Minute)
 
 				By("Assert vmcore dump was generated")
 				cmdToExec := []string{"chroot", "/rootfs", "ls", "/var/crash"}

@@ -617,8 +617,8 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
 
 	deployContainerTwo := defineContainer(sriovContainerTwoName, RDSCoreConfig.WlkdSRIOVDeployTwoImage,
-		RDSCoreConfig.WlkdSRIOVDeployTwoCmd, RDSCoreConfig.WldkSRIOVDeployOneResRequests,
-		RDSCoreConfig.WldkSRIOVDeployOneResLimits)
+		RDSCoreConfig.WlkdSRIOVDeployTwoCmd, RDSCoreConfig.WldkSRIOVDeployTwoResRequests,
+		RDSCoreConfig.WldkSRIOVDeployTwoResLimits)
 
 	By("Obtaining container definition")
 
@@ -971,6 +971,53 @@ func VerifySRIOVConnectivityOnSameNode(ctx SpecContext) {
 	}
 }
 
+// VerifySRIOVConnectivityOnSameNodeAndDifferentNets verifies connectivity between workloads
+// scheduled on the same node and on different SR-IOV networks.
+func VerifySRIOVConnectivityOnSameNodeAndDifferentNets() {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+		"Verify connectivity between SR-IOV workloads on the same node and different SR-IOV networks")
+
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeploy3OneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy3OneTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV3NS,
+			RDSCoreConfig.WlkdSRIOV3NS,
+			sriovDeploy3OneLabel,
+			sriovDeploy3TwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeploy3TwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy3TwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV3NS,
+			RDSCoreConfig.WlkdSRIOV3NS,
+			sriovDeploy3TwoLabel,
+			sriovDeploy3OneLabel,
+			targetAddress)
+	}
+}
+
 // VerifySRIOVWorkloadsOnSameNodeDifferentNet deploy worklods with different SRIOV networks on the same node
 //
 //nolint:funlen
@@ -1141,6 +1188,53 @@ func VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx SpecContext) {
 	}
 }
 
+// VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks verifies connectivity between workloads
+// running on different SR-IOV networks and different nodes.
+func VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks() {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+		"Verify connectivity between SR-IOV workloads on different nodes and different SR-IOV networks")
+
+	addressesList := []string{RDSCoreConfig.WlkdSRIOVDeploy4OneTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy4OneTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV4NS,
+			RDSCoreConfig.WlkdSRIOV4NS,
+			sriovDeploy4OneLabel,
+			sriovDeploy4TwoLabel,
+			targetAddress)
+	}
+
+	addressesList = []string{RDSCoreConfig.WlkdSRIOVDeploy4TwoTargetAddress,
+		RDSCoreConfig.WlkdSRIOVDeploy4TwoTargetAddressIPv6}
+
+	for _, targetAddress := range addressesList {
+		if targetAddress == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping empty address %q", targetAddress)
+
+			continue
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Access workload via %q", targetAddress)
+
+		verifySRIOVConnectivity(
+			RDSCoreConfig.WlkdSRIOV4NS,
+			RDSCoreConfig.WlkdSRIOV4NS,
+			sriovDeploy4TwoLabel,
+			sriovDeploy4OneLabel,
+			targetAddress)
+	}
+}
+
 // VerifySRIOVWorkloadsOnDifferentNodesDifferentNet deploy worklods with different SRIOV networks on different nodes
 //
 //nolint:funlen
@@ -1156,7 +1250,7 @@ func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
 		sriovDeploy4OneName, RDSCoreConfig.WlkdSRIOV4NS)
 
 	Eventually(func() bool {
-		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV4NS,
 			metav1.ListOptions{LabelSelector: sriovDeploy4OneLabel})
 
 		return len(oldPods) == 0
@@ -1170,7 +1264,7 @@ func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
 		sriovDeploy4TwoName, RDSCoreConfig.WlkdSRIOV4NS)
 
 	Eventually(func() bool {
-		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV3NS,
+		oldPods, _ := pod.List(APIClient, RDSCoreConfig.WlkdSRIOV4NS,
 			metav1.ListOptions{LabelSelector: sriovDeploy4TwoLabel})
 
 		return len(oldPods) == 0

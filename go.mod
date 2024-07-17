@@ -17,7 +17,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240621192821-7c55fda74f32 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02 // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -43,6 +43,7 @@ require (
 	github.com/kedacore/keda-olm-operator v0.0.0-20240501182040-762f6be5a942
 	github.com/kedacore/keda/v2 v2.14.0
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20240606123201-0c45cd13c2f1
+	github.com/openshift-kni/numaresources-operator v0.4.16-0rc0
 	github.com/openshift/client-go v0.0.1
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/povsister/scp v0.0.0-20210427074412-33febfd9f13e
@@ -69,7 +70,6 @@ require (
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
-	github.com/openshift-kni/numaresources-operator v0.4.16-0rc0 // indirect
 	github.com/openshift/cluster-logging-operator v0.0.0-20240606085930-750f369019d4 // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
 	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
