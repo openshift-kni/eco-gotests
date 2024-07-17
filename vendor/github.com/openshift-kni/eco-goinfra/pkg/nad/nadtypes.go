@@ -4,6 +4,7 @@ package nad
 type (
 	Capability struct {
 		Mac bool `json:"mac,omitempty"`
+		IPs bool `json:"ips,omitempty"`
 	}
 
 	// Link contains the link name of a link.
@@ -43,16 +44,22 @@ type (
 
 	// MasterPlugin contains the master plugin configuration for a NAD.
 	MasterPlugin struct {
-		CniVersion      string    `json:"cniVersion,omitempty"`
-		Name            string    `json:"name,omitempty"`
-		Type            string    `json:"type,omitempty"`
-		Master          string    `json:"master,omitempty"`
-		Mode            string    `json:"mode,omitempty"`
-		Plugins         *[]Plugin `json:"plugins,omitempty"`
-		Bridge          string    `json:"bridge,omitempty"`
-		Ipam            *IPAM     `json:"ipam,omitempty"`
-		LinkInContainer bool      `json:"linkInContainer,omitempty"`
-		VlanID          uint16    `json:"vlanId,omitempty"`
+		CniVersion       string      `json:"cniVersion,omitempty"`
+		Name             string      `json:"name,omitempty"`
+		Type             string      `json:"type,omitempty"`
+		Master           string      `json:"master,omitempty"`
+		Mode             string      `json:"mode,omitempty"`
+		Plugins          *[]Plugin   `json:"plugins,omitempty"`
+		Bridge           string      `json:"bridge,omitempty"`
+		Ipam             *IPAM       `json:"ipam,omitempty"`
+		LinkInContainer  bool        `json:"linkInContainer,omitempty"`
+		VlanID           uint16      `json:"vlanId,omitempty"`
+		FailOverMac      int         `json:"failOverMac,omitempty"`
+		LinksInContainer bool        `json:"linksInContainer,omitempty"`
+		Miimon           string      `json:"miimon,omitempty"`
+		Mtu              int         `json:"mtu,omitempty"`
+		Links            []Link      `json:"links,omitempty"`
+		Capabilities     *Capability `json:"capabilities,omitempty"`
 	}
 
 	// IPRanges contains ip range for WhereAbout IPAM plugin.

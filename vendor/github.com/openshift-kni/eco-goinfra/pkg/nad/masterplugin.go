@@ -393,3 +393,136 @@ func (plugin *MasterIPVlanPlugin) GetMasterPluginConfig() (*MasterPlugin, error)
 
 	return plugin.masterPlugin, nil
 }
+
+// MasterBondPlugin provides struct for MasterPlugin to create a NAD for bonded interfaces.
+type MasterBondPlugin struct {
+	masterPlugin *MasterPlugin
+	errorMsg     string
+}
+
+// NewMasterBondPlugin creates new instance of MasterBondPlugin.
+func NewMasterBondPlugin(name, mode string) *MasterBondPlugin {
+	glog.V(100).Infof("Initializing new NewMasterBondPlugin structure %s and %s", name, mode)
+
+	validModes := map[string]bool{
+		"balance-rr":    true,
+		"active-backup": true,
+		"balance-xor":   true,
+	}
+
+	builder := MasterBondPlugin{
+		masterPlugin: &MasterPlugin{
+			CniVersion: "0.3.1",
+			Name:       name,
+			Type:       "bond",
+			Mode:       mode,
+		},
+	}
+
+	// Check if the provided mode is valid
+	if !validModes[mode] {
+		glog.V(100).Infof("error: invalid mode type %s used for MasterBondPlugin bond interface", mode)
+
+		builder.errorMsg = "Bond mode type is not valid"
+	}
+
+	if builder.masterPlugin.Name == "" {
+		glog.V(100).Infof("error NewMasterBondPlugin name can not be empty")
+
+		builder.errorMsg = "NewMasterBondPlugin name is empty"
+	}
+
+	return &builder
+}
+
+// WithFailOverMac defines FailOverMac configuration to MasterBondPlugin.
+func (plugin *MasterBondPlugin) WithFailOverMac(failOverMac int) *MasterBondPlugin {
+	glog.V(100).Infof("Adding failOverMac %d to MasterBoundPlugin", failOverMac)
+
+	if failOverMac < 0 || failOverMac > 2 {
+		glog.V(100).Infof("error adding incorrect value %d for FailOverMac in MasterBondPlugin", failOverMac)
+
+		plugin.errorMsg = "error adding incorrect FailOverMac to MasterBondPlugin"
+	}
+
+	plugin.masterPlugin.FailOverMac = failOverMac
+
+	return plugin
+}
+
+// WithLinksInContainer defines linksInContainer configuration to MasterBondPlugin.
+func (plugin *MasterBondPlugin) WithLinksInContainer(linksInContainer bool) *MasterBondPlugin {
+	glog.V(100).Infof("Adding linksInContainer %v to MasterBoundPlugin", linksInContainer)
+	plugin.masterPlugin.LinksInContainer = linksInContainer
+
+	return plugin
+}
+
+// WithMiimon defines Miimon configuration to MasterBondPlugin.
+func (plugin *MasterBondPlugin) WithMiimon(miimon int) *MasterBondPlugin {
+	glog.V(100).Infof("Adding miimon %d to MasterBoundPlugin", miimon)
+
+	if miimon < 0 {
+		glog.V(100).Infof("error adding incorrect miimon value %d to MasterBondPlugin", miimon)
+
+		plugin.errorMsg = "error adding incorrect miimon value to MasterBondPlugin"
+	}
+
+	plugin.masterPlugin.Miimon = fmt.Sprintf("%d", miimon)
+
+	return plugin
+}
+
+// WithLinks defines Links configuration to MasterBondPlugin.
+func (plugin *MasterBondPlugin) WithLinks(links []Link) *MasterBondPlugin {
+	glog.V(100).Infof("Adding links %v to MasterBoundPlugin", links)
+
+	if links == nil {
+		glog.V(100).Infof("links value %v cannot be nil or empty in MasterBondPlugin", links)
+
+		plugin.errorMsg = "error adding empty links to MasterBondPlugin"
+	}
+
+	plugin.masterPlugin.Links = links
+
+	return plugin
+}
+
+// WithCapabilities defines Capabilities configuration to MasterBondPlugin.
+func (plugin *MasterBondPlugin) WithCapabilities(capabilities *Capability) *MasterBondPlugin {
+	glog.V(100).Infof("Adding capabilities value %d to MasterBoundPlugin", capabilities)
+
+	if capabilities == nil {
+		glog.V(100).Infof("error adding nil value %d capabilities to MasterBondPlugin", capabilities)
+
+		plugin.errorMsg = "error adding empty capabilities to MasterBondPlugin"
+	}
+
+	plugin.masterPlugin.Capabilities = capabilities
+
+	return plugin
+}
+
+// WithIPAM defines IPAM configuration to MasterBondPlugin.
+func (plugin *MasterBondPlugin) WithIPAM(ipam *IPAM) *MasterBondPlugin {
+	glog.V(100).Infof("Adding ipam %v to MasterBoundPlugin", ipam)
+
+	if ipam == nil {
+		glog.V(100).Infof("error adding ipam value %d to MasterBondPlugin", ipam)
+
+		plugin.errorMsg = "error adding empty ipam to MasterBondPlugin"
+	}
+
+	plugin.masterPlugin.Ipam = ipam
+
+	return plugin
+}
+
+// GetMasterPluginConfig returns master plugin if error is not occur.
+func (plugin *MasterBondPlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
+	if plugin.errorMsg != "" {
+		return nil, fmt.Errorf("error to build MasterPlugin config due to :%s", plugin.errorMsg)
+	}
+
+	return plugin.masterPlugin, nil
+}
