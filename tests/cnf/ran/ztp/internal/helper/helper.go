@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
@@ -76,5 +77,33 @@ func WaitUntilSearchCollectorEnabled(kac *ocm.KACBuilder, timeout time.Duration)
 			}
 
 			return kac.Definition.Spec.SearchCollectorConfig.Enabled, nil
+		})
+}
+
+// WaitForConditionInArgoCdApp waits up to timeout until the specified Argo CD app has a condition containing the
+// expectedMessage.
+func WaitForConditionInArgoCdApp(
+	client *clients.Settings, appName, namespace, expectedMessage string, timeout time.Duration) error {
+	glog.V(tsparams.LogLevel).Infof(
+		"Checking application '%s' in namespace '%s' for condition with message '%s'", appName, namespace, expectedMessage)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), tsparams.ArgoCdChangeInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			app, err := argocd.PullApplication(client, appName, namespace)
+			if err != nil {
+				return false, err
+			}
+
+			for _, condition := range app.Definition.Status.Conditions {
+				if strings.Contains(condition.Message, expectedMessage) {
+					glog.V(tsparams.LogLevel).Info("Found matching condition")
+
+					return true, nil
+				}
+
+				glog.V(tsparams.LogLevel).Infof("Condition message '%s' did not match", condition.Message)
+			}
+
+			return false, nil
 		})
 }
