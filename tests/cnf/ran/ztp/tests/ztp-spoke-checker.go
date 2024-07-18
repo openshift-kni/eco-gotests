@@ -1,0 +1,59 @@
+package tests
+
+import (
+	"strings"
+
+	"github.com/golang/glog"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
+)
+
+var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTests), func() {
+	When("a TunedPerformancePatch.yaml PGT disables the chronyd service", func() {
+		// 54237 - Moving chronyd disable to tuned patch
+		It("should disable and inactivate the chronyd service on spoke", reportxml.ID("54237"), func() {
+			By("verifying chronyd is inactive")
+			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
+			// is not active, which is expected here.
+			status, err := cluster.ExecCommandOnSNO(
+				Spoke1APIClient, 3, "systemctl is-active chronyd.service | cat -")
+			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is active")
+
+			glog.V(tsparams.LogLevel).Infof("active status: %s", status)
+
+			status = strings.TrimSpace(status)
+			Expect(status).To(Equal("inactive"), "chronyd service was not inactive")
+
+			By("verifying chronyd is disabled")
+			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
+			// is disabled, which is expected here.
+			status, err = cluster.ExecCommandOnSNO(
+				Spoke1APIClient, 3, "systemctl is-enabled chronyd.service | cat -")
+			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is enabled")
+
+			glog.V(tsparams.LogLevel).Infof("enabled status: %s", status)
+
+			status = strings.TrimSpace(status)
+			Expect(status).To(Equal("disabled"), "chronyd service was not disabled")
+		})
+
+		// 60904 - Verifies list of pods in openshift-network-diagnostics namespace on spoke
+		It("should not have pods in the network diagnostics namespace", reportxml.ID("60904"), func() {
+			pods, err := pod.List(Spoke1APIClient, tsparams.NetworkDiagnosticsNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to list pods in the network diagnostics namespace")
+			Expect(pods).To(BeEmpty(), "Found pods in the network diagnostics namespace")
+		})
+
+		// 60905 - Verifies list of pods in openshift-console namespace on spoke
+		It("should not have pods in the console namespace", reportxml.ID("60905"), func() {
+			pods, err := pod.List(Spoke1APIClient, tsparams.ConsoleNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to list pods in the console namespace")
+			Expect(pods).To(BeEmpty(), "Found pods in the console namespace")
+		})
+	})
+})

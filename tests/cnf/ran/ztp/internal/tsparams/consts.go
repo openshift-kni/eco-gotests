@@ -19,8 +19,12 @@ const (
 	LabelArgoCdNodeDeletionTestCases = "ztp-argocd-node-delete"
 	// LabelArgoCdPoliciesAppTestCases is the label for a particular set of test cases.
 	LabelArgoCdPoliciesAppTestCases = "ztp-argocd-policies"
+	// LabelGeneratorTestCases is the label for a particular set of test cases.
+	LabelGeneratorTestCases = "ztp-generator"
 	// LabelMachineConfigTestCases is the label for a particular set of test cases.
 	LabelMachineConfigTestCases = "ztp-machine-config"
+	// LabelSpokeCheckerTests is the label for a particular set of test cases.
+	LabelSpokeCheckerTests = "ztp-spoke-checker"
 
 	// MultiClusterHubOperator is the name of the multi cluster hub operator.
 	MultiClusterHubOperator = "multiclusterhub-operator"
@@ -32,6 +36,10 @@ const (
 	ImageRegistryName = "cluster"
 	// ImageRegistryNamespace is the namespace for the image registry and where its PVC is.
 	ImageRegistryNamespace = "openshift-image-registry"
+	// NetworkDiagnosticsNamespace is the namespace for network diagnostics.
+	NetworkDiagnosticsNamespace = "openshift-network-diagnostics"
+	// ConsoleNamespace is the namespace for the openshift console.
+	ConsoleNamespace = "openshift-console"
 
 	// ArgoCdPoliciesAppName is the name of the policies app in Argo CD.
 	ArgoCdPoliciesAppName = "policies"
