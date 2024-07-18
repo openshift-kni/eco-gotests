@@ -1,8 +1,18 @@
 package pod
 
 import (
+	"fmt"
+
+	"github.com/golang/glog"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 )
+
+// StaticAnnotation defines network annotation for pod object.
+func StaticAnnotation(name string) *multus.NetworkSelectionElement {
+	return &multus.NetworkSelectionElement{
+		Name: name,
+	}
+}
 
 // StaticIPAnnotation defines static ip address network annotation for pod object.
 func StaticIPAnnotation(name string, ipAddr []string) []*multus.NetworkSelectionElement {
@@ -57,4 +67,45 @@ func StaticIPAnnotationWithInterfaceMacAndNamespace(
 	baseAnnotation[0].InterfaceRequest = intName
 
 	return baseAnnotation
+}
+
+// StaticIPMultiNetDualStackAnnotation defines network annotation for multiple interfaces with dual stack addresses.
+func StaticIPMultiNetDualStackAnnotation(sriovNets, ipAddr []string) ([]*multus.NetworkSelectionElement, error) {
+	if len(sriovNets) == 0 {
+		glog.V(100).Infof("sriovNets cannot be empty")
+
+		return nil, fmt.Errorf("sriovNets []string cannot be empty")
+	}
+
+	annotation := []*multus.NetworkSelectionElement{}
+
+	// Verify ipAddr has an even number of IP addresses and not empty.
+	if len(ipAddr) == 0 || len(ipAddr)%2 != 0 {
+		glog.V(100).Infof("ipAddr needs to contain an even number of IP addresses")
+
+		return nil, fmt.Errorf("ipAddr []string cannot be empy or an odd number")
+	}
+
+	for i, sriovNetName := range sriovNets {
+		if i*2+1 < len(ipAddr) {
+			annotation = append(annotation, StaticIPAnnotation(sriovNetName, []string{ipAddr[i*2], ipAddr[i*2+1]})...)
+		}
+	}
+
+	return annotation, nil
+}
+
+// StaticIPBondAnnotationWithInterface defines static name for bonded interfaces and name, interface and IP for the
+// main bond int.
+func StaticIPBondAnnotationWithInterface(
+	bondNadName, bondIntName string, sriovNetworkNameList, ipAddrBond []string) []*multus.NetworkSelectionElement {
+	annotation := []*multus.NetworkSelectionElement{}
+	for _, sriovNetName := range sriovNetworkNameList {
+		annotation = append(annotation, StaticAnnotation(sriovNetName))
+	}
+
+	bond := StaticIPAnnotation(bondNadName, ipAddrBond)
+	bond[0].InterfaceRequest = bondIntName
+
+	return append(annotation, bond[0])
 }

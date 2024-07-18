@@ -417,3 +417,18 @@ func (builder *NetworkBuilder) Update(force bool) (*NetworkBuilder, error) {
 
 	return builder, err
 }
+
+// WithMetaPluginAllMultiFlag metaplugin activates allmulti multicast mode on a SriovNetwork configuration.
+func (builder *NetworkBuilder) WithMetaPluginAllMultiFlag(allMultiFlag bool) *NetworkBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	builder.Definition.Spec.MetaPluginsConfig = fmt.Sprintf(`{ "type": "tuning", "allmulti": %t }`, allMultiFlag)
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	return builder
+}
