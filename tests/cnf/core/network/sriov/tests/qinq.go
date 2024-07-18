@@ -142,8 +142,8 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			}
 
 			By("Define and create sriovnetwork Polices")
-			defineCreateSriovNetPolices(srIovPolicyVfioPci, srIovPolicyResNameVfioPci, srIovInterfacesUnderTest[0],
-				sriovDeviceID)
+			defineCreateSriovNetPolices(srIovPolicyNetDevice, srIovPolicyResNameNetDevice, srIovInterfacesUnderTest[0],
+				sriovDeviceID, "netdevice")
 			By("Define and create sriovnetworks")
 			defineAndCreateSriovNetworks(srIovNetworkPromiscuous, srIovNetworkDot1AD, srIovNetworkDot1Q,
 				srIovPolicyResNameNetDevice)
@@ -493,7 +493,7 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			Expect(err).ToNot(HaveOccurred(), "Fail to deploy PerformanceProfile")
 
 			defineCreateSriovNetPolices(srIovPolicyVfioPci, srIovPolicyResNameVfioPci, srIovInterfacesUnderTest[0],
-				sriovDeviceID)
+				sriovDeviceID, "vfio-pci")
 
 			By("Setting selinux flag container_use_devices to 1 on all compute nodes")
 			err = cluster.ExecCmd(APIClient, NetConfig.WorkerLabel, "setsebool container_use_devices 1")
@@ -564,6 +564,11 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		const configureNMStatePolicyName = "configurevfs"
 
 		BeforeAll(func() {
+			By("Verify SR-IOV Device IDs for interface under test")
+			if sriovDeviceID != intelDeviceIDE810 {
+				Skip(fmt.Sprintf("The NIC %s does not support 802.1AD", sriovDeviceID))
+			}
+
 			By("Creating a new instance of NMstate instance")
 			err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(7 * time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
@@ -1017,7 +1022,7 @@ func defineQinQBondNAD(nadname, mode string) *nad.Builder {
 
 func defineCreateSriovNetPolices(vfioPCIName, vfioPCIResName, sriovInterface,
 
-	sriovDeviceID string) {
+	sriovDeviceID, reqDriver string) {
 	By("Define and create sriov network policy using worker node label with netDevice type vfio-pci")
 
 	sriovPolicy := sriov.NewPolicyBuilder(
@@ -1028,13 +1033,21 @@ func defineCreateSriovNetPolices(vfioPCIName, vfioPCIResName, sriovInterface,
 		6,
 		[]string{fmt.Sprintf("%s#0-5", sriovInterface)},
 		NetConfig.WorkerLabelMap).WithVhostNet(true)
-	if sriovDeviceID == netparam.MlxDeviceID {
-		_, err := sriovPolicy.WithRDMA(true).WithDevType("netdevice").Create()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Mellanox sriovnetwork policy %s",
-			vfioPCIName))
-	} else {
-		_, err := sriovPolicy.WithDevType("vfio-pci").Create()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Intel sriovnetwork policy %s",
+
+	switch reqDriver {
+	case "vfio-pci":
+		if sriovDeviceID == netparam.MlxDeviceID {
+			_, err := sriovPolicy.WithRDMA(true).WithDevType("netdevice").Create()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Mellanox sriovnetwork policy %s",
+				vfioPCIName))
+		} else {
+			_, err := sriovPolicy.WithDevType("vfio-pci").Create()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Intel sriovnetwork policy %s",
+				vfioPCIName))
+		}
+	case "netdevice":
+		_, err := sriovPolicy.WithDevType("netdevice").Create()
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create sriovnetwork policy %s",
 			vfioPCIName))
 	}
 
