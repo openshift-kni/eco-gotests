@@ -275,7 +275,7 @@ func createAndWaitTestPods(
 		" and server pod with IPs %v, mac %s, SR-IOV resourceName %s.",
 		clientIPs, clientMac, sriovResNameClient, serverIPs, serverMac, sriovResNameServer)
 
-	clientPod, err := createAndWaitTestPodWithSecondaryNetwork("client", clientNodeName,
+	clientPod, err := CreateAndWaitTestPodWithSecondaryNetwork("client", clientNodeName,
 		sriovResNameClient, clientMac, clientIPs)
 	if err != nil {
 		glog.V(90).Infof("Failed to create clientPod")
@@ -283,7 +283,7 @@ func createAndWaitTestPods(
 		return nil, nil, err
 	}
 
-	serverPod, err := createAndWaitTestPodWithSecondaryNetwork("server", serverNodeName,
+	serverPod, err := CreateAndWaitTestPodWithSecondaryNetwork("server", serverNodeName,
 		sriovResNameServer, serverMac, serverIPs)
 	if err != nil {
 		glog.V(90).Infof("Failed to create serverPod")
@@ -294,9 +294,9 @@ func createAndWaitTestPods(
 	return clientPod, serverPod, nil
 }
 
-// createAndWaitTestPodWithSecondaryNetwork creates test pod with secondary network
+// CreateAndWaitTestPodWithSecondaryNetwork creates test pod with secondary network
 // and waits until it is in the ready state.
-func createAndWaitTestPodWithSecondaryNetwork(
+func CreateAndWaitTestPodWithSecondaryNetwork(
 	podName string,
 	testNodeName string,
 	sriovResNameTest string,
