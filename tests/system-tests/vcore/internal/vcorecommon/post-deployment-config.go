@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
@@ -36,10 +38,7 @@ func VerifyPostDeploymentConfig() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
 
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
 
@@ -61,7 +60,7 @@ func VerifyPostDeploymentConfig() {
 				Label("day2"), reportxml.ID("60086"), VerifySCTPModuleActivation)
 
 			It("Verifies system reserved memory for masters succeeded",
-				Label("day2"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
+				Label("debug"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
 		})
 }
 
@@ -178,10 +177,8 @@ func VerifySCTPModuleActivation(ctx SpecContext) {
 		varsToReplace := make(map[string]interface{})
 		varsToReplace["SctpModuleName"] = "load-sctp-module"
 		varsToReplace["McNodeRole"] = vcoreparams.CpMCSelector
-		homeDir, err := os.UserHomeDir()
-		Expect(err).ToNot(HaveOccurred(), "user home directory not found; %s", err)
 
-		destinationDirectoryPath := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+		destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 		workingDir, err := os.Getwd()
 		Expect(err).ToNot(HaveOccurred(), err)
@@ -213,9 +210,9 @@ func VerifySCTPModuleActivation(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify SCTP was activated on each %s node", VCoreConfig.VCoreCpLabel)
 
 	for _, node := range nodesList {
-		checkCmd := "lsmod | grep sctp"
+		checkCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "lsmod | grep sctp"}
 
-		output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, checkCmd)
+		output, err := remote.ExecuteOnNodeWithDebugPod(checkCmd, node.Object.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to execute command on node %s; %s",
 			node.Object.Name, err)
 		Expect(output).To(ContainSubstring("sctp"),
@@ -276,24 +273,25 @@ func SetSystemReservedMemoryForMasterNodes(ctx SpecContext) {
 		_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
+	}
 
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Verify system reserved data updated for all %s nodes",
-			VCoreConfig.ControlPlaneLabel)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify system reserved data updated for all %s nodes",
+		VCoreConfig.ControlPlaneLabel)
 
-		nodesList, err := nodes.List(APIClient, VCoreConfig.ControlPlaneLabelListOption)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get %s nodes list; %v", VCoreConfig.ControlPlaneLabel, err))
+	nodesList, err := nodes.List(APIClient, VCoreConfig.ControlPlaneLabelListOption)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get %s nodes list; %v",
+		VCoreConfig.ControlPlaneLabel, err))
 
-		systemReservedDataCmd := "cat /etc/node-sizing.env"
-		for _, node := range nodesList {
-			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, systemReservedDataCmd)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %v cmd on the %s node due to %v",
-				systemReservedDataCmd, VCoreConfig.ControlPlaneLabel, err))
-			Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_CPU=%s", vcoreparams.SystemReservedCPU)),
-				fmt.Sprintf("reserved CPU configuration did not changed for the node %s; expected value: %s, "+
-					"currently configured: %v", node.Definition.Name, vcoreparams.SystemReservedCPU, output))
-			Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_MEMORY=%s", vcoreparams.SystemReservedMemory)),
-				fmt.Sprintf("reserved memory configuration did not changed for the node %s; expected value: %s, "+
-					"currently configured: %v", node.Definition.Name, vcoreparams.SystemReservedMemory, output))
-		}
+	systemReservedDataCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "cat /etc/node-sizing.env"}
+	for _, node := range nodesList {
+		output, err := remote.ExecuteOnNodeWithDebugPod(systemReservedDataCmd, node.Object.Name)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %v cmd on the %s node due to %v",
+			systemReservedDataCmd, VCoreConfig.ControlPlaneLabel, err))
+		Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_CPU=%s", vcoreparams.SystemReservedCPU)),
+			fmt.Sprintf("reserved CPU configuration did not changed for the node %s; expected value: %s, "+
+				"currently configured: %v", node.Definition.Name, vcoreparams.SystemReservedCPU, output))
+		Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_MEMORY=%s", vcoreparams.SystemReservedMemory)),
+			fmt.Sprintf("reserved memory configuration did not changed for the node %s; expected value: %s, "+
+				"currently configured: %v", node.Definition.Name, vcoreparams.SystemReservedMemory, output))
 	}
 } // func SetSystemReservedMemoryForMasterNodes (ctx SpecContext)

@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/mirroring"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -18,7 +18,7 @@ import (
 func getImageURL(repository, name, tag string) (string, error) {
 	imageURL := fmt.Sprintf("%s/%s", repository, name)
 
-	isDisconnected, err := platform.IsDisconnectedDeployment(vcoreinittools.APIClient)
+	isDisconnected, err := platform.IsDisconnectedDeployment(APIClient)
 
 	if err != nil {
 		return "", err
@@ -31,15 +31,16 @@ func getImageURL(repository, name, tag string) (string, error) {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Mirror image %s:%s locally", imageURL, tag)
 
 		imageURL, _, err = mirroring.MirrorImageToTheLocalRegistry(
-			vcoreinittools.APIClient,
+			APIClient,
 			repository,
 			name,
 			tag,
-			vcoreinittools.VCoreConfig.Host,
-			vcoreinittools.VCoreConfig.User,
-			vcoreinittools.VCoreConfig.Pass,
-			vcoreinittools.VCoreConfig.CombinedPullSecretFile,
-			vcoreinittools.VCoreConfig.RegistryRepository)
+			VCoreConfig.Host,
+			VCoreConfig.User,
+			VCoreConfig.Pass,
+			VCoreConfig.CombinedPullSecretFile,
+			VCoreConfig.RegistryRepository,
+			VCoreConfig.HomeDir)
 
 		if err != nil {
 			return "", fmt.Errorf("failed to mirror image %s:%s locally due to %w",
@@ -51,7 +52,7 @@ func getImageURL(repository, name, tag string) (string, error) {
 }
 
 func insureNamespaceNotExists(nsName string) bool {
-	watchNamespace := namespace.NewBuilder(vcoreinittools.APIClient, nsName)
+	watchNamespace := namespace.NewBuilder(APIClient, nsName)
 	if watchNamespace.Exists() {
 		err := watchNamespace.Delete()
 		gomega.Expect(err).ToNot(gomega.HaveOccurred(),
@@ -83,7 +84,7 @@ func insureNamespaceNotExists(nsName string) bool {
 func insureNamespaceExists(nsName string) bool {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Insure namespace %q exists", nsName)
 
-	createNs := namespace.NewBuilder(vcoreinittools.APIClient, nsName)
+	createNs := namespace.NewBuilder(APIClient, nsName)
 
 	if !createNs.Exists() {
 		createNs, err := createNs.Create()

@@ -101,7 +101,7 @@ func KernelCrashKdump(nodeName string) error {
 
 	cmdToExec := []string{"chroot", "/rootfs", "/bin/sh", "-c", "rm -rf /var/crash/*"}
 	glog.V(90).Infof("Remove any existing crash dumps. Exec cmd %v", cmdToExec)
-	_, err = remote.ExecCmdOnNode(cmdToExec, nodeName)
+	_, err = remote.ExecuteOnNodeWithDebugPod(cmdToExec, nodeName)
 
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func KernelCrashKdump(nodeName string) error {
 	cmdToExec = []string{"/bin/sh", "-c", "echo c > /proc/sysrq-trigger"}
 
 	glog.V(90).Infof("Trigerring kernel crash. Exec cmd %v", cmdToExec)
-	_, err = remote.ExecCmdOnNode(cmdToExec, nodeName)
+	_, err = remote.ExecuteOnNodeWithDebugPod(cmdToExec, nodeName)
 
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func KernelCrashKdump(nodeName string) error {
 func SoftRebootNode(nodeName string) error {
 	cmdToExec := []string{"chroot", "/rootfs", "systemctl", "reboot"}
 
-	_, err := remote.ExecCmdOnNode(cmdToExec, nodeName)
+	_, err := remote.ExecuteOnNodeWithDebugPod(cmdToExec, nodeName)
 
 	if err != nil {
 		return err

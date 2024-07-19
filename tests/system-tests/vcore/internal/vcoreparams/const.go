@@ -16,8 +16,6 @@ const (
 	LabelVCoreRequirements = "vcorerequirements"
 	// VCoreLogLevel configures logging level for vCore related tests.
 	VCoreLogLevel = 90
-	// LabelVCoreDebug is used to select vCore tests under debug.
-	LabelVCoreDebug = "vcoredebug"
 
 	// MasterNodeRole master node role.
 	MasterNodeRole = "master"
@@ -97,23 +95,59 @@ const (
 	// LSONamespace is a local storage operator namespace.
 	LSONamespace = "openshift-local-storage"
 
-	// LSOName is a local storage operator instance name pattern.
+	// LSOName is a local storage operator instance name.
 	LSOName = "local-storage-operator"
+
+	// ODFLocalVolumeDiscoveryName is an ODF localVolumeDiscovery instance name.
+	ODFLocalVolumeDiscoveryName = "auto-discover-devices"
+
+	// RedisLocalVolumeDiscoveryName is a redis localVolumeDiscovery instance name.
+	RedisLocalVolumeDiscoveryName = "redis-auto-discover-devices"
 
 	// ODFNamespace is an odf namespace.
 	ODFNamespace = "openshift-storage"
 
-	// StorageClassName is a storage class name.
-	StorageClassName = "ocs-storagecluster-cephfs"
+	// ODFStorageClassName is an ODF storage class name.
+	ODFStorageClassName = "ocs-storagecluster-ceph-rbd"
 
-	// ESKOperatorName is an elasticsearch operator name.
-	ESKOperatorName = "elasticsearch-operator"
+	// RedisStorageClassName is a redis storage class name.
+	RedisStorageClassName = "standard"
 
-	// ESKNamespace is an elasticsearch operator namespace.
-	ESKNamespace = "openshift-operators-redhat"
+	// StorageClusterName is a storageCluster name.
+	StorageClusterName = "ocs-storagecluster"
 
-	// ESKInstanceName is an elasticsearch instance name.
-	ESKInstanceName = "instance"
+	// ODFStorageSystemName is an ODF storageSystem name.
+	ODFStorageSystemName = "ocs-storagecluster-storagesystem"
+
+	// RedisStorageSystemName is a Redis storageSystem name.
+	RedisStorageSystemName = "redis-storagecluster-storagesystem"
+
+	// RookCephConfigMapName is a rook ceph configmap name.
+	RookCephConfigMapName = "rook-ceph-operator-config"
+
+	// ODFLocalVolumeSetName is an ODF localVolumeSetName name.
+	ODFLocalVolumeSetName = "ocs-deviceset"
+
+	// RedisLocalVolumeSetName is a redis localVolumeSetName name.
+	RedisLocalVolumeSetName = "redis-deviceset"
+
+	// LokiOperatorSubscriptionName is a loki operator subscription name.
+	LokiOperatorSubscriptionName = "loki-operator"
+
+	// LokiOperatorDeploymentName is a loki operator deployment name.
+	LokiOperatorDeploymentName = "loki-operator-controller-manager"
+
+	// LokiNamespace is a loki operator namespace.
+	LokiNamespace = "openshift-operators-redhat"
+
+	// LokiStackName is a lokiStack instance name.
+	LokiStackName = "logging-loki"
+
+	// LokiSecretName is a loki serviceAccount name.
+	LokiSecretName = "logging-loki-s3"
+
+	// ObjectBucketClaimName is an objectBucketClaim name.
+	ObjectBucketClaimName = "loki-bucket-odf"
 
 	// CLOName is a clusterlogging operator name.
 	CLOName = "cluster-logging"

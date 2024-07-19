@@ -7,12 +7,16 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
+	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/statefulset"
+	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -237,15 +241,35 @@ func WaitUntilDaemonSetDeleted(apiClient *clients.Settings, name, nsname string,
 			return true, nil
 		})
 
-	if err != nil {
-		return err
-	}
-
 	if err == nil {
 		return nil
 	}
 
 	return fmt.Errorf("daemonSet %s in namespace %s is not deleted during timeout %v", name, nsname, timeout)
+}
+
+// WaitUntilConfigMapCreated waits until the configMap is created.
+func WaitUntilConfigMapCreated(apiClient *clients.Settings, name, nsname string, timeout time.Duration) error {
+	glog.V(90).Infof("Wait until configMap %s in namespace %s is created", name, nsname)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := configmap.Pull(apiClient, name, nsname)
+			if err != nil {
+				glog.V(90).Infof("configMap %s in namespace %s not created yet, retry", name, nsname)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("configMap %s in namespace %s is not created during timeout %v; %w",
+			name, nsname, timeout, err)
+	}
+
+	return nil
 }
 
 // WaitForThePodReplicasCountInNamespace waiting for the specific pod replicas count in
@@ -290,4 +314,107 @@ func WaitForThePodReplicasCountInNamespace(
 	}
 
 	return true, nil
+}
+
+// WaitUntilPersistentVolumeCreated waits until required count of the persistentVolumes are created.
+func WaitUntilPersistentVolumeCreated(apiClient *clients.Settings,
+	pvCnt int,
+	timeout time.Duration,
+	options ...metav1.ListOptions) error {
+	glog.V(90).Infof("Wait until %d persistentVolumes with option %v are created", pvCnt, options)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pvList, err := storage.ListPV(apiClient, metav1.ListOptions{})
+			if err != nil {
+				glog.V(90).Infof("no persistentVolumes with option %v was found, retry", options)
+
+				return false, nil
+			}
+
+			if len(pvList) != pvCnt {
+				glog.V(90).Infof("persistentVolumes count not equal to the expected: %d; found: %d",
+					pvCnt, len(pvList))
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("persistentVolumes with option %v were not found or count is not as expected %d; %w",
+			options, timeout, err)
+	}
+
+	return nil
+}
+
+// WaitUntilPersistentVolumeClaimCreated waits until required count of the persistentVolumeClaims are created.
+func WaitUntilPersistentVolumeClaimCreated(apiClient *clients.Settings,
+	nsname string,
+	pvcCnt int,
+	timeout time.Duration,
+	options ...metav1.ListOptions) error {
+	glog.V(90).Infof("Wait until %d persistentVolumeClaims with option %v are created", pvcCnt, options)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pvList, err := storage.ListPVC(apiClient, nsname, metav1.ListOptions{})
+			if err != nil {
+				glog.V(90).Infof("no persistentVolumeClaims with option %v was found, retry", options)
+
+				return false, nil
+			}
+
+			if len(pvList) != pvcCnt {
+				glog.V(90).Infof("persistentVolumeClaims count not equal to the expected: %d; found: %d",
+					pvcCnt, len(pvList))
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("persistentVolumeClaimss with option %v were not found or count is not as expected %d; %w",
+			options, timeout, err)
+	}
+
+	return nil
+}
+
+// WaitUntilLVDIsDiscovering waits until the localVolumeDiscovery is Discovering.
+func WaitUntilLVDIsDiscovering(apiClient *clients.Settings,
+	lvdName string,
+	nsname string,
+	timeout time.Duration) error {
+	glog.V(90).Infof("Wait until localVolumeDiscovery %s from namespace %s is Discovering", lvdName, nsname)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			lvdObj, err := lso.PullLocalVolumeDiscovery(apiClient, lvdName, nsname)
+			if err != nil {
+				glog.V(90).Infof("no localVolumeDiscovery %s found in namespace %s, retry", lvdName, nsname)
+
+				return false, nil
+			}
+
+			if lvdObj.Object.Status.Phase != "Discovering" {
+				glog.V(90).Infof("localVolumeDiscovery %s in namespace %s phase not as expected yet, retry",
+					lvdName, nsname)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("localVolumeDiscovery %s in namespace %s phase not as expected after %v; %w",
+			lvdName, nsname, timeout, err)
+	}
+
+	return nil
 }

@@ -172,10 +172,6 @@ func getMirrorRegistryMap(apiClient *clients.Settings) (map[string]interface{}, 
 		}
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	return registryMap, nil
 }
 

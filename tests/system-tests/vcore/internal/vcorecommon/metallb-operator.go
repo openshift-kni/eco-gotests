@@ -30,10 +30,7 @@ func VerifyMetaLBSuite() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
 
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
 					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
@@ -51,7 +48,7 @@ func VerifyMetaLBSuite() {
 func VerifyMetalLBNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.MetalLBOperatorNamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull %q namespace", vcoreparams.MetalLBOperatorNamespace))
+		fmt.Sprintf("Failed to pull namespace %q; %v", vcoreparams.MetalLBOperatorNamespace, err))
 } // func VerifyMetalLBNamespaceExists (ctx SpecContext)
 
 // VerifyMetalLBOperatorDeployment asserts MetalLB operator successfully installed.
@@ -82,20 +79,17 @@ func VerifyMetalLBOperatorDeployment(ctx SpecContext) {
 	metalLBCSVName, err := csv.GetCurrentCSVNameFromSubscription(APIClient,
 		vcoreparams.MetalLBSubscriptionName,
 		vcoreparams.MetalLBOperatorNamespace)
-
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get metalLB %s csv name from the %s namespace",
-		vcoreparams.MetalLBOperatorName, vcoreparams.MetalLBOperatorNamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get metalLB %s csv name from the namespace %s; %v",
+		vcoreparams.MetalLBOperatorName, vcoreparams.MetalLBOperatorNamespace, err))
 
 	metalLBCSVObj, err := olm.PullClusterServiceVersion(APIClient, metalLBCSVName, vcoreparams.MetalLBOperatorNamespace)
-
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q csv from the %s namespace",
-		metalLBCSVName, vcoreparams.MetalLBOperatorNamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull csv %q from the namespace %s; %v",
+		metalLBCSVName, vcoreparams.MetalLBOperatorNamespace, err))
 
 	isSuccessful, err := metalLBCSVObj.IsSuccessful()
-
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to verify metalLB csv %s in the namespace %s status",
-			metalLBCSVName, vcoreparams.MetalLBOperatorNamespace))
+		fmt.Sprintf("Failed to verify metalLB csv %s in the namespace %s status; %v",
+			metalLBCSVName, vcoreparams.MetalLBOperatorNamespace, err))
 	Expect(isSuccessful).To(Equal(true),
 		fmt.Sprintf("Failed to deploy metalLB operator; the csv %s in the namespace %s status %v",
 			metalLBCSVName, vcoreparams.MetalLBOperatorNamespace, isSuccessful))

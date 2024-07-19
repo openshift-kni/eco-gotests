@@ -5,12 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodesconfig"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	configv1 "github.com/openshift/api/config/v1"
 )
 
@@ -27,9 +28,9 @@ func GetNodeLinuxCGroupVersion(apiClient *clients.Settings, nodeName string) (co
 		return "", err
 	}
 
-	cmdToExecute := "stat -c %T -f /sys/fs/cgroup"
+	cmdToExecute := []string{"/bin/sh", "-c", "stat -c %T -f /sys/fs/cgroup"}
 
-	output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, cmdToExecute)
+	output, err := remote.ExecuteOnNodeWithDebugPod(cmdToExecute, node.Object.Name)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to execute command %s on the node %s due to %v",
@@ -45,6 +46,7 @@ func GetNodeLinuxCGroupVersion(apiClient *clients.Settings, nodeName string) (co
 	}
 
 	output = strings.TrimSuffix(output, "\n")
+	output = strings.TrimSuffix(output, "\r")
 
 	var result configv1.CgroupMode
 

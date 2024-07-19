@@ -42,7 +42,7 @@ var _ = Describe(
 				By("Assert vmcore dump was generated")
 				cmdToExec := []string{"chroot", "/rootfs", "ls", "/var/crash"}
 
-				coreDumps, err := remote.ExecCmdOnNode(cmdToExec, node.Definition.Name)
+				coreDumps, err := remote.ExecuteOnNodeWithDebugPod(cmdToExec, node.Definition.Name)
 				Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
 
 				Expect(len(strings.Fields(coreDumps))).To(BeNumerically(">=", 1), "error: vmcore dump was not generated")

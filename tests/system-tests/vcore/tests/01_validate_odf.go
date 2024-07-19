@@ -8,13 +8,14 @@ import (
 )
 
 var _ = Describe(
-	"vCore Basic Deployment Suite",
+	"vCore Internal ODF Test Suite",
 	Ordered,
 	ContinueOnFailure,
 	Label(vcoreparams.Label), func() {
-		vcorecommon.VerifyInitialDeploymentConfig()
+		vcorecommon.VerifyLSOSuite()
 
-		vcorecommon.VerifyCGroupDefault()
+		vcorecommon.VerifyODFSuite()
 
-		vcorecommon.VerifyPostDeploymentConfig()
+		vcorecommon.VerifyLokiSuite()
+
 	})

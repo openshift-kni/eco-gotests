@@ -1,6 +1,7 @@
 package mirroring
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,7 +24,8 @@ func MirrorImageToTheLocalRegistry(
 	user,
 	pass,
 	combinedPullSecretFile,
-	localRegistryRepository string) (string, string, error) {
+	localRegistryRepository,
+	homeDir string) (string, string, error) {
 	if originServerURL == "" {
 		glog.V(100).Infof("The originServerURL is empty")
 
@@ -63,11 +65,15 @@ func MirrorImageToTheLocalRegistry(
 
 	localImageURL := fmt.Sprintf("%s/%s/%s", localRegistryURL, localRegistryRepository, imageName)
 
-	localRegistryPullSecretFilePath, err :=
-		CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile)
+	var localRegistryPullSecretFilePath string
 
-	if err != nil {
-		return "", "", err
+	if _, err = os.Stat(combinedPullSecretFile); errors.Is(err, os.ErrNotExist) {
+		localRegistryPullSecretFilePath, err =
+			CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile, homeDir)
+
+		if err != nil {
+			return "", "", err
+		}
 	}
 
 	glog.Infof("Mirror image %s to the local registry %s", originalImageURL, localRegistryURL)
@@ -86,12 +92,7 @@ func MirrorImageToTheLocalRegistry(
 }
 
 // CopyRegistryAuthLocally copy mirror registry authentication files locally.
-func CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile string) (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
+func CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile, homeDir string) (string, error) {
 	out, err := remote.ExecCmdOnHost(host, user, pass, "pwd")
 	if err != nil {
 		return "", err

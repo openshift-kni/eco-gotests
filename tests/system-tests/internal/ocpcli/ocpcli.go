@@ -127,29 +127,18 @@ func CreateConfig(
 	return nil
 }
 
-// PatchWithNamespace patches the resource using the given patch type, object belongs to the specific namespace
+// PatchAPIObject patches the resource using the given patch type, object belongs to the specific namespace
 // The following patches are exactly the same patch but using different types, 'merge' and 'json'
 // --type merge -p '{"spec": {"selector": {"app": "frommergepatch"}}}'
 // --type json  -p '[{ "op": "replace", "path": "/spec/selector/app", "value": "fromjsonpatch"}]'.
-func PatchWithNamespace(objName, objNamespace, objKind, patchType, patchStr string) error {
-	patchCmd := fmt.Sprintf("oc patch %s/%s -n %s --type %s -p '%v'",
-		objKind, objName, objNamespace, patchType, patchStr)
-
-	_, err := shell.ExecuteCmd(patchCmd)
-	if err != nil {
-		return fmt.Errorf("failed to execute %s command due to: %w", patchCmd, err)
-	}
-
-	return nil
-}
-
-// PatchWithoutNamespace patches the resource using the given patch type, object has no namespace
-// The following patches are exactly the same patch but using different types, 'merge' and 'json'
-// --type merge -p '{"spec": {"selector": {"app": "frommergepatch"}}}'
-// --type json  -p '[{ "op": "replace", "path": "/spec/selector/app", "value": "fromjsonpatch"}]'.
-func PatchWithoutNamespace(objName, objKind, patchType, patchStr string) error {
+func PatchAPIObject(objName, objNamespace, objKind, patchType, patchStr string) error {
 	patchCmd := fmt.Sprintf("oc patch %s/%s --type %s -p '%v'",
 		objKind, objName, patchType, patchStr)
+
+	if objNamespace != "" {
+		patchCmd = fmt.Sprintf("oc patch %s/%s -n %s --type %s -p '%v'",
+			objKind, objName, objNamespace, patchType, patchStr)
+	}
 
 	_, err := shell.ExecuteCmd(patchCmd)
 	if err != nil {
@@ -176,7 +165,7 @@ func AddClusterRoleToServiceAccount(serviceAccountName, namespace, clusterRole s
 func ExecuteViaDebugPodOnNode(
 	nodeName string,
 	cmd string) (string, error) {
-	execCmd := fmt.Sprintf("oc debug node/%s -- bash -c \"chroot /host %s\" --insecure-skip-tls-verify",
+	execCmd := fmt.Sprintf("oc debug nodes/%s -- bash -c \"chroot /host %s\" --insecure-skip-tls-verify",
 		nodeName, cmd)
 	glog.V(100).Infof("Execute command %s", execCmd)
 

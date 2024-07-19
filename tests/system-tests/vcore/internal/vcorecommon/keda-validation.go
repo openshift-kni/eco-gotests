@@ -39,7 +39,7 @@ const (
 	configmapNamespace        = "openshift-monitoring"
 	testAppServiceMonitorName = "keda-testing-sm"
 	serviceAccountName        = "thanos"
-	saTokenName               = "thanos-secret"
+	saSecretName              = "thanos-secret"
 	triggerAuthName           = "keda-trigger-auth-prometheus"
 	metricsReaderName         = "thanos-metrics-reader"
 
@@ -60,10 +60,7 @@ func VerifyKedaSuite() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
 
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
 
@@ -98,7 +95,7 @@ func VerifyKedaSuite() {
 func VerifyKedaNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.KedaNamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull %q namespace", vcoreparams.KedaNamespace))
+		fmt.Sprintf("Failed to pull namespace %q; %v", vcoreparams.KedaNamespace, err))
 } // func VerifyKedaNamespaceExists (ctx SpecContext)
 
 // VerifyKedaDeployment assert that Keda operator deployment succeeded.
@@ -267,7 +264,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 			serviceAccountName, vcoreparams.KedaWatchNamespace, err))
 
 	_, err = secret.NewBuilder(APIClient,
-		saTokenName,
+		saSecretName,
 		vcoreparams.KedaWatchNamespace,
 		corev1.SecretTypeServiceAccountToken).
 		WithAnnotations(map[string]string{"kubernetes.io/service-account.name": serviceAccountName}).Create()
@@ -277,15 +274,15 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 
 	glog.V(vcoreparams.VCoreLogLevel).
 		Infof("Define TriggerAuthentication %s with the Service Account's token %s in namespace %s",
-			triggerAuthName, vcoreparams.KedaWatchNamespace, saTokenName)
+			triggerAuthName, vcoreparams.KedaWatchNamespace, saSecretName)
 
 	secretTargetRef := []kedav2v1alpha1.AuthSecretTargetRef{{
 		Parameter: "bearerToken",
-		Name:      saTokenName,
+		Name:      saSecretName,
 		Key:       "token",
 	}, {
 		Parameter: "ca",
-		Name:      saTokenName,
+		Name:      saSecretName,
 		Key:       "ca.crt",
 	}}
 
@@ -295,7 +292,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create TriggerAuthentication %s with the Service Account's token %s "+
 			"in namespace %s due to: %v",
-			triggerAuthName, vcoreparams.KedaWatchNamespace, saTokenName, err))
+			triggerAuthName, vcoreparams.KedaWatchNamespace, saSecretName, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create a role %s for reading metric from Thanos in namespace %s",
 		metricsReaderName, vcoreparams.KedaWatchNamespace)
@@ -326,10 +323,8 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	varsToReplace["RoleBindingNamespace"] = vcoreparams.KedaWatchNamespace
 	varsToReplace["ServiceAccountName"] = serviceAccountName
 	varsToReplace["RoleName"] = metricsReaderName
-	homeDir, err := os.UserHomeDir()
-	Expect(err).ToNot(HaveOccurred(), "user home directory not found; %s", err)
 
-	destinationDirectoryPath := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+	destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 	workingDir, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred(), err)
@@ -376,14 +371,14 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 		WithCooldownPeriod(int32(10)).
 		WithTriggers(scaleTriggers).Create()
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create scaledObject instance %s in namespace %s due to: %v",
+		fmt.Sprintf("Failed to create scaledObject instance %s in namespace %s due to %v",
 			kedaScaledObjectName, vcoreparams.KedaWatchNamespace, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Generate requests to test the application autoscaling")
 
 	abImageURL, err := getImageURL(abOriginMirrorURL, abImageName, abImageTag)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to generate prometheus image URL for %s/%s:%s due to: %v",
+		fmt.Sprintf("Failed to generate prometheus image URL for %s/%s:%s due to %v",
 			prometheusOriginMirrorURL, prometheusImageName, prometheusImageTag, err))
 
 	appLoadJobTemplateName := "keda-test-app-load-job.yaml"

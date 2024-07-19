@@ -7,6 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/lso"
+	lsov1 "github.com/openshift/local-storage-operator/api/v1"
+	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
@@ -20,7 +24,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/mirroring"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/template"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -38,20 +42,61 @@ func VerifyRedisSuite() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
 
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
 					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
 				}
 			})
 
+			It("Verify redis localvolumeset instance exists",
+				Label("redis"), VerifyRedisLocalVolumeSet)
+
 			It("Verify Redis deployment procedure",
 				Label("redis"), reportxml.ID("59503"), VerifyRedisDeploymentProcedure)
 		})
 }
+
+// VerifyRedisLocalVolumeSet asserts redis localvolumeset instance exists.
+func VerifyRedisLocalVolumeSet(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create redis localvolumeset instance %s in namespace %s if not found",
+		vcoreparams.RedisLocalVolumeSetName, vcoreparams.LSONamespace)
+
+	var err error
+
+	localVolumeSetObj := lso.NewLocalVolumeSetBuilder(APIClient,
+		vcoreparams.RedisLocalVolumeSetName,
+		vcoreparams.LSONamespace)
+
+	if localVolumeSetObj.Exists() {
+		err = localVolumeSetObj.Delete()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("failed to delete localvolumeset %s from namespace %s; %v",
+				vcoreparams.RedisLocalVolumeSetName, vcoreparams.LSONamespace, err))
+	}
+
+	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+		MatchExpressions: []corev1.NodeSelectorRequirement{{
+			Key:      "cluster.ocs.openshift.io/openshift-storage",
+			Operator: "In",
+			Values:   []string{""},
+		}}},
+	}}
+
+	deviceInclusionSpec := lsov1alpha1.DeviceInclusionSpec{
+		DeviceTypes:                []lsov1alpha1.DeviceType{lsov1alpha1.RawDisk},
+		DeviceMechanicalProperties: []lsov1alpha1.DeviceMechanicalProperty{lsov1alpha1.NonRotational},
+	}
+
+	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
+		WithStorageClassName(vcoreparams.RedisStorageClassName).
+		WithVolumeMode(lsov1.PersistentVolumeBlock).
+		WithFSType("ext4").
+		WithMaxDeviceCount(int32(10)).
+		WithDeviceInclusionSpec(deviceInclusionSpec).Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
+		"due to %v", vcoreparams.RedisLocalVolumeSetName, vcoreparams.LSONamespace, err))
+} // func VerifyLocalVolumeSet (ctx SpecContext)
 
 // VerifyRedisDeploymentProcedure asserts Redis deployment procedure.
 //
@@ -73,10 +118,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("redis statefulset %s in namespace %s exists and ready",
 			redisStatefulsetName, redisNamespace)
 	} else {
-		homeDir, err := os.UserHomeDir()
-		Expect(err).To(BeNil(), fmt.Sprint(err))
-
-		vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+		vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 		redisConfigFilePath := filepath.Join(vcoreConfigsFolder, redisCustomValuesTemplate)
 
@@ -109,7 +151,8 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 				VCoreConfig.User,
 				VCoreConfig.Pass,
 				VCoreConfig.CombinedPullSecretFile,
-				VCoreConfig.RegistryRepository)
+				VCoreConfig.RegistryRepository,
+				VCoreConfig.HomeDir)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to mirror redis image locally due to %v", err))
 		}
 
@@ -120,7 +163,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			"helm repo update",
 			fmt.Sprintf("helm fetch dandydev/redis-ha --version 4.12.9 -d %s/.", vcoreConfigsFolder),
 			fmt.Sprintf("tar xvfz %s/redis-ha-4.12.9.tgz --directory=%s/.",
-				vcoreConfigsFolder, homeDir)}
+				vcoreConfigsFolder, VCoreConfig.HomeDir)}
 		for _, cmd := range installRedisCmd {
 			_, err = shell.ExecuteCmd(cmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s command due to %v", cmd, err))
@@ -138,13 +181,14 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 				fmt.Sprintf("namespace %s not found", redisNamespace))
 		}
 
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Create redis secret %s in namespace %s", redisSecretName, redisNamespace)
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Create redis secret %s in namespace %s",
+			redisSecretName, redisNamespace)
 
 		redisSecretBuilder := secret.NewBuilder(
 			APIClient,
 			redisSecretName,
 			redisNamespace,
-			v1.SecretTypeDockerConfigJson)
+			corev1.SecretTypeDockerConfigJson)
 
 		if redisSecretBuilder.Exists() {
 			err = redisSecretBuilder.Delete()
@@ -178,11 +222,12 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		varsToReplace["ImageRepository"] = imageURL
 		varsToReplace["ImageTag"] = redisImageTag
 		varsToReplace["RedisSecret"] = redisSecretName
-		varsToReplace["StorageClass"] = "ocs-storagecluster-cephfs"
+		varsToReplace["StorageClass"] = vcoreparams.ODFStorageClassName
+		// varsToReplace["StorageClass"] = "ocs-storagecluster-cephfs"
 		varsToReplace["RunAsUser"] = runAsUser
 		varsToReplace["FsGroup"] = fsGroup
 
-		destinationDirectoryPath := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+		destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 		workingDir, err := os.Getwd()
 		Expect(err).ToNot(HaveOccurred(), err)
@@ -195,7 +240,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			redisCustomValuesTemplate, vcoreConfigsFolder, err)
 
 		customConfigCmd := fmt.Sprintf("helm upgrade --install %s -n %s %s/%s -f %s --kubeconfig %s",
-			redisAppName, redisNamespace, homeDir, redisAppName,
+			redisAppName, redisNamespace, VCoreConfig.HomeDir, redisAppName,
 			redisConfigFilePath, os.Getenv("KUBECONFIG"))
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Execute command %s", customConfigCmd)
 
