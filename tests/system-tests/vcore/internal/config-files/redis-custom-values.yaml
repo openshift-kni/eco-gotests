@@ -40,7 +40,7 @@ sentinel:
 hardAntiAffinity: true
 persistentVolume:
   enabled: true
-  storageClass: {{ .StorageClass }}
+  storageClass: "standard"
   accessMode:
     - ReadWriteOnce
   size: 5Gi

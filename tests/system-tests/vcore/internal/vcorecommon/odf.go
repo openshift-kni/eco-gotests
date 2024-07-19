@@ -38,13 +38,12 @@ import (
 )
 
 var (
-	ocsLocalvolumesetName  = "ocs-deviceset"
 	odfConsolePlugin       = "odf-console"
 	odfOperatorDeployments = []string{"csi-addons-controller-manager", "noobaa-operator",
 		"ocs-operator", "odf-console", "odf-operator-controller-manager", "rook-ceph-operator"}
 
-	storageClassName = vcoreparams.StorageClassName
-	volumeMode       = corev1.PersistentVolumeBlock
+	odfStorageClassName = vcoreparams.ODFStorageClassName
+	volumeMode          = corev1.PersistentVolumeBlock
 )
 
 // VerifyODFSuite container that contains tests for ODF verification.
@@ -161,19 +160,19 @@ func VerifyODFConsoleConfig(ctx SpecContext) {
 // VerifyLocalVolumeDiscovery asserts localvolumediscovery instance exists.
 func VerifyLocalVolumeDiscovery(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create localvolumediscovery instance %s in namespace %s if not found",
-		vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace)
+		vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace)
 
 	var err error
 
 	localVolumeDiscoveryObj := lso.NewLocalVolumeDiscoveryBuilder(APIClient,
-		vcoreparams.LocalVolumeDiscoveryName,
+		vcoreparams.ODFLocalVolumeDiscoveryName,
 		vcoreparams.LSONamespace)
 
 	if localVolumeDiscoveryObj.Exists() {
 		err = localVolumeDiscoveryObj.Delete()
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("failed to delete localvolumediscovery %s from namespace %s; %v",
-				vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
+				vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
 	}
 
 	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
@@ -191,33 +190,34 @@ func VerifyLocalVolumeDiscovery(ctx SpecContext) {
 		Effect:   "NoSchedule",
 	}}
 
-	_, err = localVolumeDiscoveryObj.WithNodeSelector(nodeSelector).WithTolerations(tolerations).Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumediscovery %s in namespace %s "+
-		"due to %v", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
-
+	localVolumeDiscoveryObj, err = localVolumeDiscoveryObj.
+		WithNodeSelector(nodeSelector).WithTolerations(tolerations).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve localVolumeDiscovery %s in namespace %s "+
-		"status due to %v", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
-	Expect(localVolumeDiscoveryObj.IsDiscovering(5*time.Minute)).To(Equal(true),
+		"status due to %v", vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
+	Expect(await.WaitUntilLVDIsDiscovering(APIClient,
+		localVolumeDiscoveryObj.Definition.Name,
+		localVolumeDiscoveryObj.Definition.Namespace,
+		5*time.Minute)).To(Equal(true),
 		fmt.Sprintf("localvolumediscovery %s in namespace %s failed to discover",
-			vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace))
+			vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace))
 } // func VerifyLocalVolumeDiscovery (ctx SpecContext)
 
 // VerifyLocalVolumeSet asserts localvolumeset instance exists.
 func VerifyLocalVolumeSet(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create localvolumeset instance %s in namespace %s if not found",
-		vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace)
+		vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace)
 
 	var err error
 
 	localVolumeSetObj := lso.NewLocalVolumeSetBuilder(APIClient,
-		vcoreparams.LocalVolumeSetName,
+		vcoreparams.ODFLocalVolumeSetName,
 		vcoreparams.LSONamespace)
 
 	if localVolumeSetObj.Exists() {
 		err = localVolumeSetObj.Delete()
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("failed to delete localvolumeset %s from namespace %s; %v",
-				vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace, err))
+				vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace, err))
 	}
 
 	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
@@ -241,16 +241,16 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 	}}
 
 	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
-		WithStorageClassName(vcoreparams.StorageClassName).
+		WithStorageClassName(vcoreparams.ODFStorageClassName).
 		WithVolumeMode(lsov1.PersistentVolumeBlock).
 		WithFSType("ext4").
 		WithMaxDeviceCount(int32(42)).
 		WithDeviceInclusionSpec(deviceInclusionSpec).
 		WithTolerations(tolerations).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
-		"due to %v", vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace, err))
+		"due to %v", vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace, err))
 
-	pvLabel := fmt.Sprintf("storage.openshift.com/owner-name=%s", vcoreparams.LocalVolumeSetName)
+	pvLabel := fmt.Sprintf("storage.openshift.com/owner-name=%s", vcoreparams.ODFLocalVolumeSetName)
 
 	err = await.WaitUntilPersistentVolumeCreated(APIClient,
 		3,
@@ -264,13 +264,13 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Cleanup StorageSystem and StorageCluster config")
 
 	storageSystemObj := storage.NewSystemODFBuilder(APIClient,
-		vcoreparams.StorageSystemName, vcoreparams.ODFNamespace)
+		vcoreparams.ODFStorageSystemName, vcoreparams.ODFNamespace)
 
 	if storageSystemObj.Exists() {
 		err := storageSystemObj.Delete()
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("failed to delete ODF StorageSystem %s from namespace %s; %v",
-				vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))
+				vcoreparams.ODFStorageSystemName, vcoreparams.ODFNamespace, err))
 	}
 
 	storageclusterObj := storage.NewStorageClusterBuilder(APIClient,
@@ -288,7 +288,7 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 	_, err := storageSystemObj.WithSpec("storagecluster.ocs.openshift.io/v1",
 		vcoreparams.StorageClusterName, vcoreparams.ODFNamespace).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageSystem %s instance in %s namespace; "+
-		"%v", vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))
+		"%v", vcoreparams.ODFStorageSystemName, vcoreparams.ODFNamespace, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageCluster")
 
@@ -320,14 +320,14 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 		Count:    3,
 		Replica:  1,
 		Portable: false,
-		Name:     ocsLocalvolumesetName,
+		Name:     vcoreparams.ODFLocalVolumeSetName,
 		DataPVCTemplate: corev1.PersistentVolumeClaim{
 			Spec: corev1.PersistentVolumeClaimSpec{
 				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 				Resources: corev1.VolumeResourceRequirements{
 					Requests: resourceListMap,
 				},
-				StorageClassName: &storageClassName,
+				StorageClassName: &odfStorageClassName,
 				VolumeMode:       &volumeMode,
 			},
 		},

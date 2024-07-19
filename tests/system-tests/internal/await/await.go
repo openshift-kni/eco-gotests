@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
+	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/statefulset"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
@@ -379,6 +380,40 @@ func WaitUntilPersistentVolumeClaimCreated(apiClient *clients.Settings,
 	if err != nil {
 		return fmt.Errorf("persistentVolumeClaimss with option %v were not found or count is not as expected %d; %w",
 			options, timeout, err)
+	}
+
+	return nil
+}
+
+// WaitUntilLVDIsDiscovering waits until the localVolumeDiscovery is Discovering.
+func WaitUntilLVDIsDiscovering(apiClient *clients.Settings,
+	lvdName string,
+	nsname string,
+	timeout time.Duration) error {
+	glog.V(90).Infof("Wait until localVolumeDiscovery %s from namespace %s is Discovering", lvdName, nsname)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			lvdObj, err := lso.PullLocalVolumeDiscovery(apiClient, lvdName, nsname)
+			if err != nil {
+				glog.V(90).Infof("no localVolumeDiscovery %s found in namespace %s, retry", lvdName, nsname)
+
+				return false, nil
+			}
+
+			if lvdObj.Object.Status.Phase != "Discovering" {
+				glog.V(90).Infof("localVolumeDiscovery %s in namespace %s phase not as expected yet, retry",
+					lvdName, nsname)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("localVolumeDiscovery %s in namespace %s phase not as expected after %v; %w",
+			lvdName, nsname, timeout, err)
 	}
 
 	return nil
