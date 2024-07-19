@@ -28,7 +28,7 @@ func GetNodeLinuxCGroupVersion(apiClient *clients.Settings, nodeName string) (co
 		return "", err
 	}
 
-	cmdToExecute := []string{"stat", "-c", "%T", "-f", "/sys/fs/cgroup"}
+	cmdToExecute := []string{"/bin/sh", "-c", "stat -c %T -f /sys/fs/cgroup"}
 
 	output, err := remote.ExecuteOnNodeWithDebugPod(cmdToExecute, node.Object.Name)
 

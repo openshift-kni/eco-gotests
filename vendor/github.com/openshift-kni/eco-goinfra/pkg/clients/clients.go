@@ -114,6 +114,7 @@ import (
 	lsov1 "github.com/openshift/local-storage-operator/api/v1"
 	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
+	odfoperatorv1alpha1 "github.com/red-hat-storage/odf-operator/api/v1alpha1"
 	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
 	kacv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
@@ -381,6 +382,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := odfoperatorv1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	if err := eskv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -557,6 +562,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *lsov1alpha1.LocalVolumeDiscovery:
 			genericClientObjects = append(genericClientObjects, v)
 		case *lsov1alpha1.LocalVolumeSet:
+			genericClientObjects = append(genericClientObjects, v)
+		case *odfoperatorv1alpha1.StorageSystem:
 			genericClientObjects = append(genericClientObjects, v)
 		case *istiov1.ServiceMeshMemberRoll:
 			genericClientObjects = append(genericClientObjects, v)

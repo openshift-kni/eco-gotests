@@ -2,11 +2,11 @@ package vcorecommon
 
 import (
 	"fmt"
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
@@ -210,9 +210,9 @@ func VerifySCTPModuleActivation(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify SCTP was activated on each %s node", VCoreConfig.VCoreCpLabel)
 
 	for _, node := range nodesList {
-		checkCmd := "lsmod | grep sctp"
+		checkCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "lsmod | grep sctp"}
 
-		output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, checkCmd)
+		output, err := remote.ExecuteOnNodeWithDebugPod(checkCmd, node.Object.Name)
 		Expect(err).ToNot(HaveOccurred(), "Failed to execute command on node %s; %s",
 			node.Object.Name, err)
 		Expect(output).To(ContainSubstring("sctp"),
@@ -282,10 +282,9 @@ func SetSystemReservedMemoryForMasterNodes(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get %s nodes list; %v",
 		VCoreConfig.ControlPlaneLabel, err))
 
-	// systemReservedDataCmd := []string{"chroot", "/host", "cat", "/etc/node-sizing.env"}
-	systemReservedDataCmd := "cat /etc/node-sizing.env"
+	systemReservedDataCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "cat /etc/node-sizing.env"}
 	for _, node := range nodesList {
-		output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, systemReservedDataCmd)
+		output, err := remote.ExecuteOnNodeWithDebugPod(systemReservedDataCmd, node.Object.Name)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %v cmd on the %s node due to %v",
 			systemReservedDataCmd, VCoreConfig.ControlPlaneLabel, err))
 		Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_CPU=%s", vcoreparams.SystemReservedCPU)),
@@ -296,20 +295,3 @@ func SetSystemReservedMemoryForMasterNodes(ctx SpecContext) {
 				"currently configured: %v", node.Definition.Name, vcoreparams.SystemReservedMemory, output))
 	}
 } // func SetSystemReservedMemoryForMasterNodes (ctx SpecContext)
-
-func runCommandOnConfigDaemon(nodeName string, command []string) (string, error) {
-	pods, err := pod.List(APIClient, "openshift-sriov-network-operator", metav1.ListOptions{
-		LabelSelector: "app=sriov-network-config-daemon", FieldSelector: fmt.Sprintf("spec.nodeName=%s", nodeName)})
-	if err != nil {
-		return "", err
-	}
-
-	if len(pods) != 1 {
-		return "", fmt.Errorf("there should be exactly one 'machine-config-daemon' pod per node,"+
-			" but found %d on node %s", len(pods), nodeName)
-	}
-
-	output, err := pods[0].ExecCommand(command)
-
-	return output.String(), err
-}

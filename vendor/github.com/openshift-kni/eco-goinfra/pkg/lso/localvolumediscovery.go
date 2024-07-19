@@ -6,11 +6,6 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-
-	corev1 "k8s.io/api/core/v1"
-=======
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -51,15 +46,7 @@ func NewLocalVolumeDiscoveryBuilder(apiClient *clients.Settings, name, nsname st
 
 	builder := &LocalVolumeDiscoveryBuilder{
 		apiClient: apiClient.Client,
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 		Definition: &lsov1alpha1.LocalVolumeDiscovery{
-=======
-		Definition: &lsoV1alpha1.LocalVolumeDiscovery{
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-=======
-		Definition: &lsov1alpha1.LocalVolumeDiscovery{
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -99,15 +86,7 @@ func PullLocalVolumeDiscovery(apiClient *clients.Settings, name, nsname string) 
 
 	builder := LocalVolumeDiscoveryBuilder{
 		apiClient: apiClient.Client,
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 		Definition: &lsov1alpha1.LocalVolumeDiscovery{
-=======
-		Definition: &lsoV1alpha1.LocalVolumeDiscovery{
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-=======
-		Definition: &lsov1alpha1.LocalVolumeDiscovery{
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -184,8 +163,6 @@ func (builder *LocalVolumeDiscoveryBuilder) Delete() error {
 		return err
 	}
 
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 	glog.V(100).Infof("Deleting the localVolumeDiscovery %s from namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
@@ -194,39 +171,13 @@ func (builder *LocalVolumeDiscoveryBuilder) Delete() error {
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		return nil
-=======
-	glog.V(100).Infof("Deleting the localVolumeDiscovery %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace)
-
-	if !builder.Exists() {
-		return fmt.Errorf("localVolumeDiscovery cannot be deleted because it does not exist")
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-=======
-	glog.V(100).Infof("Deleting the localVolumeDiscovery %s from namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace)
-
-	if !builder.Exists() {
-		glog.V(100).Infof("localVolumeDiscovery %s not found in the namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 		return fmt.Errorf("can not delete localVolumeDiscovery %s from namespace %s: %w",
 			builder.Definition.Name, builder.Definition.Namespace, err)
-=======
-		return fmt.Errorf("can not delete localVolumeDiscovery: %w", err)
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-=======
-		return fmt.Errorf("can not delete localVolumeDiscovery %s from namespace %s: %w",
-			builder.Definition.Name, builder.Definition.Namespace, err)
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 	}
 
 	builder.Object = nil
@@ -249,62 +200,15 @@ func (builder *LocalVolumeDiscoveryBuilder) Exists() bool {
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 // IsDiscovering check if the localVolumeDiscovery is Discovering.
 func (builder *LocalVolumeDiscoveryBuilder) IsDiscovering(timeout time.Duration) bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
-=======
-// Update renovates a localVolumeDiscovery in the cluster and stores the created object in struct.
-func (builder *LocalVolumeDiscoveryBuilder) Update() (*LocalVolumeDiscoveryBuilder, error) {
-	if valid, err := builder.validate(); !valid {
-		return builder, err
-	}
-
-	glog.V(100).Infof("Updating the localVolumeDiscovery %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace)
-
-	if !builder.Exists() {
-		return nil, fmt.Errorf("localVolumeDiscovery object %s does not exist in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-	}
-
-	builder.Definition.CreationTimestamp = metav1.Time{}
-	builder.Definition.ResourceVersion = ""
-
-	err := builder.apiClient.Update(context.TODO(), builder.Definition)
-
-	if err != nil {
-		glog.V(100).Infof(
-			msg.FailToUpdateError("localVolumeDiscovery", builder.Definition.Name, builder.Definition.Namespace))
-
-		return nil, err
-	}
-
-	builder.Object = builder.Definition
-
-	return builder, err
-}
-
-// IsDiscovering check if the localVolumeDiscovery is Discovering.
-func (builder *LocalVolumeDiscoveryBuilder) IsDiscovering() (bool, error) {
-	if valid, err := builder.validate(); !valid {
-		return false, err
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-=======
-// IsDiscovering check if the localVolumeDiscovery is Discovering.
-func (builder *LocalVolumeDiscoveryBuilder) IsDiscovering(timeout time.Duration) bool {
-	if valid, _ := builder.validate(); !valid {
-		return false
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 	}
 
 	glog.V(100).Infof("Verify localVolumeDiscovery %s in namespace %s is in Discovering phase",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-<<<<<<< HEAD:vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
@@ -329,47 +233,6 @@ func (builder *LocalVolumeDiscoveryBuilder) IsDiscovering(timeout time.Duration)
 	}
 
 	return true
-=======
-	if !builder.Exists() {
-		return false, fmt.Errorf("localVolumeDiscovery %s not found in %s namespace",
-			builder.Definition.Name, builder.Definition.Namespace)
-	}
-=======
-	err := wait.PollUntilContextTimeout(
-		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			var err error
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
-
-			phase, err := builder.GetPhase()
-
-			if err != nil {
-				glog.V(100).Infof("failed to get phase value for localVolumeDiscovery %s in namespace %s due to %w",
-					builder.Definition.Name, builder.Definition.Namespace, err)
-
-				return false, nil
-			}
-
-			return phase == "Discovering", nil
-		})
-
-	if err != nil {
-		glog.V(100).Infof("localVolumeDiscovery %s in namespace %s is found not in the discovering state; %w",
-			builder.Definition.Name, builder.Definition.Namespace, err)
-
-		return false
-	}
-
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-	if phase == "Discovering" {
-		return true, nil
-	}
-
-	return false, fmt.Errorf("invalid %s localVolumeDiscovery phase in %s namespace phase: %s",
-		builder.Definition.Name, builder.Definition.Namespace, phase)
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki):tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-=======
-	return true
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 }
 
 // GetPhase get current localVolumeDiscovery phase.
@@ -387,49 +250,6 @@ func (builder *LocalVolumeDiscoveryBuilder) GetPhase() (lsov1alpha1.DiscoveryPha
 	}
 
 	return builder.Definition.Status.Phase, nil
-<<<<<<< HEAD:tests/system-tests/vcore/internal/lso/localvolumediscovery.go
-}
-
-// WithNodeSelector sets the localVolumeDiscovery's nodeSelector.
-func (builder *LocalVolumeDiscoveryBuilder) WithNodeSelector(
-	nodeSelector corev1.NodeSelector) *LocalVolumeDiscoveryBuilder {
-	glog.V(100).Infof(
-		"Adding nodeSelector %v to localVolumeDiscovery %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace, nodeSelector)
-
-	if valid, _ := builder.validate(); !valid {
-		return builder
-	}
-
-	builder.Definition.Spec.NodeSelector = &nodeSelector
-
-	return builder
-}
-
-// WithTolerations sets the localVolumeDiscovery's generation.
-func (builder *LocalVolumeDiscoveryBuilder) WithTolerations(
-	tolerations []corev1.Toleration) *LocalVolumeDiscoveryBuilder {
-	glog.V(100).Infof(
-		"Adding tolerations %v to localVolumeDiscovery %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace, tolerations)
-
-	if valid, _ := builder.validate(); !valid {
-		return builder
-	}
-
-	if len(tolerations) == 0 {
-		glog.V(100).Infof("The tolerations list is empty")
-
-		builder.errorMsg = "'tolerations' argument cannot be empty"
-
-		return builder
-	}
-
-	builder.Definition.Spec.Tolerations = tolerations
-
-	return builder
-=======
->>>>>>> 27964d80 (bump vendors):vendor/github.com/openshift-kni/eco-goinfra/pkg/lso/localvolumediscovery.go
 }
 
 // WithNodeSelector sets the localVolumeDiscovery's nodeSelector.

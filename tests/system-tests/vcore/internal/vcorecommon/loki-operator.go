@@ -173,17 +173,15 @@ func CreateLokiStackInstance(ctx SpecContext) {
 		vcoreparams.ObjectBucketClaimName,
 		vcoreparams.CLONamespace, time.Minute*15)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("configMap %s was not created in namespace %s; "+
-			"check objectBucketClaim %s in namespace %s configuration; %v",
+		fmt.Sprintf("configMap %s was not created in namespace %s; check objectBucketClaim %s in namespace %s "+
+			"configuration due to %v",
 			vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace,
 			vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
 
 	objectBucketClaimConfigMap, err := configmap.Pull(APIClient,
 		vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("configMap %s not found in namespace %s; "+
-			"check objectBucketClaim %s in namespace %s configuration; %v",
-			vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace,
+		fmt.Sprintf("configMap %s not found in namespace %s due to %v",
 			vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
 
 	cmData := objectBucketClaimConfigMap.Object.Data

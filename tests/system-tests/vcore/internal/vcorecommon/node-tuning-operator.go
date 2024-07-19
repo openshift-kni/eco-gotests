@@ -2,8 +2,9 @@ package vcorecommon
 
 import (
 	"fmt"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	"time"
+
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -283,9 +284,9 @@ func CreateNodesTuning(ctx SpecContext) {
 
 			var output string
 
-			nohzFullCmd := "cat /proc/cmdline"
+			nohzFullCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "cat /proc/cmdline"}
 
-			output, err = ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, nohzFullCmd)
+			output, err = remote.ExecuteOnNodeWithDebugPod(nohzFullCmd, node.Object.Name)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
 				nohzFullCmd, node.Object.Name, err))
 			Expect(output).To(ContainSubstring("nohz_full"),
@@ -306,13 +307,14 @@ func VerifyCPUManagerConfig(ctx SpecContext) {
 
 		glog.V(vcoreparams.VCoreLogLevel).Info("Verify CPU Manager configuration")
 
-		cpuManagerCmd := "sudo grep cpuManager /etc/kubernetes/kubelet.conf"
+		cpuManagerCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c",
+			"sudo grep cpuManager /etc/kubernetes/kubelet.conf"}
 
 		for _, node := range nodesList {
 			glog.V(vcoreparams.VCoreLogLevel).Infof("Check CPU Manager activated on the node %s",
 				node.Definition.Name)
 
-			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, cpuManagerCmd)
+			output, err := remote.ExecuteOnNodeWithDebugPod(cpuManagerCmd, node.Object.Name)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
 				cpuManagerCmd, node.Object.Name, err))
 			Expect(output).To(ContainSubstring("cpuManagerPolicy"),
@@ -381,9 +383,9 @@ func SetSystemReservedMemoryForWorkers(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Failed to get %v nodes list; %v", nodeLabel, err))
 
-		systemReservedDataCmd := "cat /etc/node-sizing.env"
+		systemReservedDataCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "cat /etc/node-sizing.env"}
 		for _, node := range nodesList {
-			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, systemReservedDataCmd)
+			output, err := remote.ExecuteOnNodeWithDebugPod(systemReservedDataCmd, node.Object.Name)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %v cmd on the %s node due to %v",
 				systemReservedDataCmd, workerLabel, err))
 			Expect(output).To(ContainSubstring(fmt.Sprintf("SYSTEM_RESERVED_CPU=%s", vcoreparams.SystemReservedCPU)),

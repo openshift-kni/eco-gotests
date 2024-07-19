@@ -2,11 +2,12 @@ package vcorecommon
 
 import (
 	"fmt"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	apiUrl "net/url"
 	"os"
 	"regexp"
 	"time"
+
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
@@ -146,13 +147,13 @@ func verifyEtcChronyRun(nodesRole string, nodeLabelOption metav1.ListOptions) {
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify the chronyd status for %s nodes", nodesRole)
 
-	chronydStatusCmd := "sudo systemctl status chronyd | grep Active"
+	chronydStatusCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "sudo systemctl status chronyd | grep Active"}
 
 	nodesList, err := nodes.List(APIClient, nodeLabelOption)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get %s nodes list; %v", nodesRole, err))
 
 	for _, node := range nodesList {
-		output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, chronydStatusCmd)
+		output, err := remote.ExecuteOnNodeWithDebugPod(chronydStatusCmd, node.Object.Name)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %v cmd on the %s node due to %v",
 			chronydStatusCmd, nodesRole, err))
 		Expect(output).To(ContainSubstring("running"),

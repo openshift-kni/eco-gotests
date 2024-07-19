@@ -22,45 +22,11 @@ func VerifyCGroupDefault() {
 	Describe(
 		"cgroup verification",
 		Label(vcoreparams.LabelVCoreDeployment), func() {
-			// BeforeAll(func() {
-			//	By("Check that the current cluster version is greater or equal to the 4.15")
-			//
-			//	isGreaterOrEqual, err := platform.CompareOCPVersionWithCurrent(APIClient,
-			//		"4.15",
-			//		true,
-			//		true)
-			//	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to compare versions due to %v", err))
-			//
-			//	if isGreaterOrEqual {
-			//		currentOCPVersion, err := platform.GetOCPVersion(APIClient)
-			//		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get OCP version due to %v", err))
-			//
-			//		Skip(fmt.Sprintf("current OCP version %s is not greater or equal to the 4.15",
-			//			currentOCPVersion))
-			//	}
-			//
-			//	By("Insure cgroupv2 configured for the cluster")
-			//
-			//	err = cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-			//	Expect(err).ToNot(HaveOccurred(),
-			//		fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-			//			configv1.CgroupModeV2, err))
-			//})
-			//
 			It("Verifies cgroupv2 is a default for the cluster deployment",
 				Label("cgroupv2"), reportxml.ID("73370"), VerifyCGroupV2IsADefault)
 
 			It("Verifies that the cluster can be moved to the cgroupv1",
 				Label("cgroupv2"), reportxml.ID("73371"), VerifySwitchBetweenCGroupVersions)
-			//
-			// AfterAll(func() {
-			//	By("Restore cgroupv2 cluster configuration")
-			//
-			//	err := cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-			//	Expect(err).ToNot(HaveOccurred(),
-			//		fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-			//			configv1.CgroupModeV2, err))
-			//})
 		})
 }
 
@@ -106,12 +72,4 @@ func VerifySwitchBetweenCGroupVersions(ctx SpecContext) {
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("For the vCore test run cgroup version will stay to be configured " +
 		"to the v1 because cpu load balancing not supported on cgroupv2")
-	//
-	// glog.V(vcoreparams.VCoreLogLevel).Infof("The short sleep to update new values before the following change.")
-	//
-	//time.Sleep(2 * time.Minute)
-	//
-	//err = cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
-	//Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
-	//	configv1.CgroupModeV2, err))
 } // func VerifySwitchBetweenCGroupVersions (ctx SpecContext)

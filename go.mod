@@ -17,7 +17,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240719152154-1785516033a2 // release-4.16
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240719165407-36ffd918dc01 // release-4.16
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/cluster-nfd-operator v0.0.0-20240604082319-19bf50784aa7
@@ -47,7 +47,6 @@ require (
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/povsister/scp v0.0.0-20210427074412-33febfd9f13e
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2
-	github.com/red-hat-storage/odf-operator v0.0.0-20240704062551-2726e073ed37
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/velero v1.13.2
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
@@ -65,13 +64,13 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
-	github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61 // indirect
 	github.com/kdomanski/iso9660 v0.2.1 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
+	github.com/red-hat-storage/odf-operator v0.0.0-20240704062551-2726e073ed37 // indirect
 	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20240109072430-f5fe6043d1f8 // indirect
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20240606130554-01338045271a // indirect

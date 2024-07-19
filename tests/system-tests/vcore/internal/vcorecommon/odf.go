@@ -2,9 +2,9 @@ package vcorecommon
 
 import (
 	"fmt"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/storage"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	lsov1 "github.com/openshift/local-storage-operator/api/v1"
 	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -263,29 +263,29 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 func VerifyODFStorageSystemConfig(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Cleanup StorageSystem and StorageCluster config")
 
-	storageSystemObj := storage.NewStorageSystemBuilder(APIClient,
+	storageSystemObj := storage.NewSystemODFBuilder(APIClient,
 		vcoreparams.StorageSystemName, vcoreparams.ODFNamespace)
 
-	// if storageSystemObj.Exists() {
-	//	 err := storageSystemObj.Delete()
-	//   Expect(err).ToNot(HaveOccurred(),
-	//		fmt.Sprintf("failed to delete ODF StorageSystem %s from namespace %s; %v",
-	//			vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))
-	//}
+	if storageSystemObj.Exists() {
+		err := storageSystemObj.Delete()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("failed to delete ODF StorageSystem %s from namespace %s; %v",
+				vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))
+	}
 
 	storageclusterObj := storage.NewStorageClusterBuilder(APIClient,
 		vcoreparams.StorageClusterName, vcoreparams.ODFNamespace)
 
-	// if storageclusterObj.Exists() {
-	//	err := storageclusterObj.Delete()
-	//	Expect(err).ToNot(HaveOccurred(),
-	//		fmt.Sprintf("failed to delete ODF StorageCluster %s from namespace %s; %v",
-	//			vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
-	//}
+	if storageclusterObj.Exists() {
+		err := storageclusterObj.Delete()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("failed to delete ODF StorageCluster %s from namespace %s; %v",
+				vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
+	}
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageSystem")
 
-	_, err := storageSystemObj.WithStorageClusterSpec("storagecluster.ocs.openshift.io/v1",
+	_, err := storageSystemObj.WithSpec("storagecluster.ocs.openshift.io/v1",
 		vcoreparams.StorageClusterName, vcoreparams.ODFNamespace).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageSystem %s instance in %s namespace; "+
 		"%v", vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))

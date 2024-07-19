@@ -342,11 +342,7 @@ github.com/gorilla/websocket
 # github.com/grafana-operator/grafana-operator/v4 v4.10.1
 ## explicit; go 1.18
 github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1
-<<<<<<< HEAD
-# github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61
-=======
 # github.com/grafana/loki/operator/apis/loki v0.0.0-20240705201834-ce71f1cf9546
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki)
 ## explicit; go 1.19
 github.com/grafana/loki/operator/apis/loki/v1
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
@@ -602,15 +598,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-<<<<<<< HEAD
-<<<<<<< HEAD
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240719152154-1785516033a2
-=======
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240712191009-2ad3fc40ad34
->>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki)
-=======
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240719152154-1785516033a2
->>>>>>> 27964d80 (bump vendors)
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240719165407-36ffd918dc01
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
