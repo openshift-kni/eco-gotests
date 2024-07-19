@@ -131,3 +131,37 @@ func WaitForAllClusteroperatorsStopProgressing(
 
 	return false, err
 }
+
+// VerifyClusterOperatorsVersion checks if all the clusterOperators have version desiredVersion.
+func VerifyClusterOperatorsVersion(desiredVersion string, clusterOperatorList []*Builder,
+	options ...metav1.ListOptions) (bool, error) {
+	if desiredVersion == "" {
+		return false, fmt.Errorf("desiredVersion can't be empty")
+	}
+
+	if clusterOperatorList == nil {
+		return false, fmt.Errorf("clusterOperatorList is invalid")
+	}
+
+	if len(clusterOperatorList) == 0 {
+		return false, fmt.Errorf("clusterOperatorList can't be empty")
+	}
+
+	glog.V(100).Infof("Checking if all the operators have version desiredVersion %s", desiredVersion)
+
+	for _, operator := range clusterOperatorList {
+		glog.V(100).Infof("Checking %s clusterOperator version", operator.Definition.Name)
+		hasDesiredVersion, err := operator.HasDesiredVersion(desiredVersion)
+
+		if err != nil {
+			return false, err
+		}
+
+		if !hasDesiredVersion {
+			return false, fmt.Errorf("the clusterOperator %s doesn't have the desired version %s",
+				operator.Definition.Name, desiredVersion)
+		}
+	}
+
+	return true, nil
+}

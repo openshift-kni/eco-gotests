@@ -20,7 +20,8 @@ type Builder struct {
 	Object *corev1.Secret
 	// Used in functions that define or mutate secret definitions. errorMsg is processed before the secret
 	// object is created.
-	errorMsg  string
+	errorMsg string
+	// api client to interact with the cluster.
 	apiClient *clients.Settings
 }
 
@@ -39,7 +40,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType cor
 		return nil
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -54,15 +55,27 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, secretType cor
 		glog.V(100).Infof("The name of the secret is empty")
 
 		builder.errorMsg = "secret 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the secret is empty")
 
 		builder.errorMsg = "secret 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	if secretType == "" {
+		glog.V(100).Infof("The secretType of the secret is empty")
+
+		builder.errorMsg = "secret 'secretType' cannot be empty"
+
+		return builder
+	}
+
+	return builder
 }
 
 // Pull loads an existing secret into Builder struct.
@@ -153,8 +166,7 @@ func (builder *Builder) Exists() bool {
 		return false
 	}
 
-	glog.V(100).Infof(
-		"Checking if secret %s exists in namespace %s",
+	glog.V(100).Infof("Checking if secret %s exists in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
@@ -206,6 +218,31 @@ func (builder *Builder) WithData(data map[string][]byte) *Builder {
 	return builder
 }
 
+// WithStringData defines the stringData placed in the secret.
+func (builder *Builder) WithStringData(data map[string]string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Defining secret %s in namespace %s with this stringData: %s",
+		builder.Definition.Name, builder.Definition.Namespace, data)
+
+	if len(data) == 0 {
+		glog.V(100).Infof("The stringData of the secret is empty")
+
+		builder.errorMsg = "'stringData' cannot be empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.StringData = data
+
+	return builder
+}
+
 // WithAnnotations defines the annotations in the secret.
 func (builder *Builder) WithAnnotations(annotations map[string]string) *Builder {
 	glog.V(100).Infof("Adding annotations %v to the secret %s in namespace %s",
@@ -233,7 +270,7 @@ func (builder *Builder) WithAnnotations(annotations map[string]string) *Builder 
 		}
 	}
 
-	builder.Definition.ObjectMeta.Annotations = annotations
+	builder.Definition.Annotations = annotations
 
 	return builder
 }

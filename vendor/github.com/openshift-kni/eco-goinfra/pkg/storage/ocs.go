@@ -28,18 +28,20 @@ type StorageClusterBuilder struct {
 	errorMsg string
 }
 
-// NewStorageClusterBuilder creates a new instance of Builder.
+// NewStorageClusterBuilder creates a new instance of StorageClusterBuilder.
 func NewStorageClusterBuilder(apiClient *clients.Settings, name, nsname string) *StorageClusterBuilder {
 	glog.V(100).Infof(
 		"Initializing new storageCluster structure with the following params: %s, %s", name, nsname)
 
-	builder := StorageClusterBuilder{
+	if apiClient == nil {
+		glog.V(100).Infof("storageCluster 'apiClient' cannot be empty")
+
+		return nil
+	}
+
+	builder := &StorageClusterBuilder{
 		apiClient: apiClient.Client,
 		Definition: &ocsoperatorv1.StorageCluster{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       StorageClusterKind,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -51,27 +53,31 @@ func NewStorageClusterBuilder(apiClient *clients.Settings, name, nsname string) 
 		glog.V(100).Infof("The name of the storageCluster is empty")
 
 		builder.errorMsg = "storageCluster 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the storageCluster is empty")
 
 		builder.errorMsg = "storageCluster 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullStorageCluster gets an existing storageCluster object from the cluster.
 func PullStorageCluster(apiClient *clients.Settings, name, namespace string) (*StorageClusterBuilder, error) {
+	glog.V(100).Infof("Pulling existing storageCluster object %s from namespace %s",
+		name, namespace)
+
 	if apiClient == nil {
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("storageCluster 'apiClient' cannot be empty")
 	}
-
-	glog.V(100).Infof("Pulling existing storageCluster object %s from namespace %s",
-		name, namespace)
 
 	builder := StorageClusterBuilder{
 		apiClient: apiClient.Client,
@@ -201,11 +207,17 @@ func (builder *StorageClusterBuilder) Update() (*StorageClusterBuilder, error) {
 	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
-	if err == nil {
-		builder.Object = builder.Definition
+
+	if err != nil {
+		glog.V(100).Infof(
+			msg.FailToUpdateError("storageCluster", builder.Definition.Name, builder.Definition.Namespace))
+
+		return nil, err
 	}
 
-	return builder, err
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // GetManageNodes fetches storageCluster manageNodes value.
@@ -308,6 +320,21 @@ func (builder *StorageClusterBuilder) WithManageNodes(expectedManagedNodesValue 
 	return builder
 }
 
+// WithFlexibleScaling sets the storageCluster's flexibleScaling value.
+func (builder *StorageClusterBuilder) WithFlexibleScaling(flexibleScaling bool) *StorageClusterBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting storageCluster %s in namespace %s with flexibleScaling value: %t",
+		builder.Definition.Name, builder.Definition.Namespace, flexibleScaling)
+
+	builder.Definition.Spec.FlexibleScaling = flexibleScaling
+
+	return builder
+}
+
 // WithManagedResources sets the storageCluster's managedResources value.
 func (builder *StorageClusterBuilder) WithManagedResources(
 	expectedManagedResources ocsoperatorv1.ManagedResourcesSpec) *StorageClusterBuilder {
@@ -381,6 +408,30 @@ func (builder *StorageClusterBuilder) WithStorageDeviceSet(
 	return builder
 }
 
+// WithAnnotations sets the storageCluster's annotations value.
+func (builder *StorageClusterBuilder) WithAnnotations(
+	annotations map[string]string) *StorageClusterBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting storageCluster %s in namespace %s with annotations values: %v",
+		builder.Definition.Name, builder.Definition.Namespace, annotations)
+
+	if len(annotations) == 0 {
+		glog.V(100).Infof("'annotations' argument cannot be empty")
+
+		builder.errorMsg = "'annotations' argument cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Annotations = annotations
+
+	return builder
+}
+
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *StorageClusterBuilder) validate() (bool, error) {
@@ -402,6 +453,12 @@ func (builder *StorageClusterBuilder) validate() (bool, error) {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
 		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
+	}
+
+	if builder.errorMsg != "" {
+		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
+
+		return false, fmt.Errorf(builder.errorMsg)
 	}
 
 	return true, nil

@@ -2,11 +2,11 @@ package tsparams
 
 import (
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
+	hiveextV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1"
+	agentInstallV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
+	hivev1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpparams"
 	"github.com/openshift-kni/k8sreporter"
-	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
-	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
-	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	hiveV1 "github.com/openshift/hive/apis/hive/v1"
+	hiveV1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 

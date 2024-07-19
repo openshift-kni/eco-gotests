@@ -41,6 +41,12 @@ func NewPVCBuilder(apiClient *clients.Settings, name, nsname string) *PVCBuilder
 	glog.V(100).Infof("Creating PersistentVolumeClaim %s in namespace %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("storageSystem 'apiClient' cannot be empty")
+
+		return nil
+	}
+
 	builder := PVCBuilder{
 		Definition: &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
@@ -187,8 +193,8 @@ func (builder *PVCBuilder) WithVolumeMode(volumeMode string) (*PVCBuilder, error
 
 // Create generates a PVC in cluster and stores the created object in struct.
 func (builder *PVCBuilder) Create() (*PVCBuilder, error) {
-	if valid, _ := builder.validate(); !valid {
-		return builder, fmt.Errorf("invalid builder")
+	if valid, err := builder.validate(); !valid {
+		return builder, err
 	}
 
 	glog.V(100).Infof("Creating persistentVolumeClaim %s", builder.Definition.Name)
@@ -199,15 +205,7 @@ func (builder *PVCBuilder) Create() (*PVCBuilder, error) {
 			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
-	if err != nil {
-		glog.V(100).Infof("Error creating persistentVolumeClaim %s - %v", builder.Definition.Name, err)
-
-		builder.errorMsg = fmt.Sprintf("failed to create PVC: %v", err)
-
-		return builder, err
-	}
-
-	return builder, nil
+	return builder, err
 }
 
 // Delete removes PVC from cluster.
@@ -225,6 +223,8 @@ func (builder *PVCBuilder) Delete() error {
 	if !builder.Exists() {
 		glog.V(100).Infof("PersistentVolumeClaim %s not found in %s namespace",
 			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
 
 		return nil
 	}
@@ -283,24 +283,42 @@ func (builder *PVCBuilder) DeleteAndWait(timeout time.Duration) error {
 // PullPersistentVolumeClaim gets an existing PersistentVolumeClaim
 // from the cluster.
 func PullPersistentVolumeClaim(
-	apiClient *clients.Settings, persistentVolumeClaim string, nsname string) (
+	apiClient *clients.Settings, name string, nsname string) (
 	*PVCBuilder, error) {
 	glog.V(100).Infof("Pulling existing PersistentVolumeClaim object: %s from namespace %s",
-		persistentVolumeClaim, nsname)
+		name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Info("The PersistentVolumeClaim apiClient is nil")
+
+		return nil, fmt.Errorf("persistentVolumeClaim 'apiClient' cannot be empty")
+	}
 
 	builder := PVCBuilder{
 		apiClient: apiClient,
 		Definition: &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      persistentVolumeClaim,
+				Name:      name,
 				Namespace: nsname,
 			},
 		},
 	}
 
+	if name == "" {
+		glog.V(100).Info("The name of the PersistentVolumeClaim is empty")
+
+		return nil, fmt.Errorf("persistentVolumeClaim 'name' cannot be empty")
+	}
+
+	if nsname == "" {
+		glog.V(100).Info("The namespace of the PersistentVolumeClaim is empty")
+
+		return nil, fmt.Errorf("persistentVolumeClaim 'nsname' cannot be empty")
+	}
+
 	if !builder.Exists() {
-		return nil, fmt.Errorf("PersistentVolumeClaim object %s does not exist in namespace %s",
-			persistentVolumeClaim, nsname)
+		return nil, fmt.Errorf("persistentVolumeClaim object %s does not exist in namespace %s",
+			name, nsname)
 	}
 
 	builder.Definition = builder.Object
@@ -345,6 +363,12 @@ func (builder *PVCBuilder) validate() (bool, error) {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
 		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
+	}
+
+	if builder.errorMsg != "" {
+		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
+
+		return false, fmt.Errorf(builder.errorMsg)
 	}
 
 	return true, nil

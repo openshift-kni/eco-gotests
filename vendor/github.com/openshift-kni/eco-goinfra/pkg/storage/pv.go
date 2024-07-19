@@ -21,13 +21,16 @@ type PVBuilder struct {
 	Definition *corev1.PersistentVolume
 	// Created persistentvolume object
 	Object *corev1.PersistentVolume
-
+	// api client to interact with the cluster.
 	apiClient *clients.Settings
+	// Used in functions that define or mutate storageSystem definition. errorMsg is processed before the
+	// storageSystem object is created.
+	errorMsg string
 }
 
 // PullPersistentVolume gets an existing PersistentVolume from the cluster.
-func PullPersistentVolume(apiClient *clients.Settings, persistentVolume string) (*PVBuilder, error) {
-	glog.V(100).Infof("Pulling existing PersistentVolume object: %s", persistentVolume)
+func PullPersistentVolume(apiClient *clients.Settings, name string) (*PVBuilder, error) {
+	glog.V(100).Infof("Pulling existing PersistentVolume object: %s", name)
 
 	if apiClient == nil {
 		glog.V(100).Info("The PersistentVolume apiClient is nil")
@@ -39,19 +42,19 @@ func PullPersistentVolume(apiClient *clients.Settings, persistentVolume string) 
 		apiClient: apiClient,
 		Definition: &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: persistentVolume,
+				Name: name,
 			},
 		},
 	}
 
-	if persistentVolume == "" {
+	if name == "" {
 		glog.V(100).Info("The name of the PersistentVolume is empty")
 
 		return nil, fmt.Errorf("persistentVolume 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("PersistentVolume object %s does not exist", persistentVolume)
+		return nil, fmt.Errorf("PersistentVolume object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object
@@ -167,6 +170,12 @@ func (builder *PVBuilder) validate() (bool, error) {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
 		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
+	}
+
+	if builder.errorMsg != "" {
+		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
+
+		return false, fmt.Errorf(builder.errorMsg)
 	}
 
 	return true, nil

@@ -6,14 +6,16 @@ import (
 	"os"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes"
-	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
 	"github.com/openshift-kni/eco-goinfra/pkg/oadp/oadptypes"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlboperator"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes"
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
+	lokiv1 "github.com/grafana/loki/operator/apis/loki/v1"
 	kedav1alpha1 "github.com/kedacore/keda-olm-operator/apis/keda/v1alpha1"
 	kedav2v1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
@@ -65,14 +67,14 @@ import (
 
 	nropv1 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1"
 
+	hiveextV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1"
+	agentInstallV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
+	hiveV1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1"
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	lcasgv1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1"
 	configV1 "github.com/openshift/api/config/v1"
 	imageregistryV1 "github.com/openshift/api/imageregistry/v1"
 	routev1 "github.com/openshift/api/route/v1"
-	hiveextV1Beta1 "github.com/openshift/assisted-service/api/hiveextension/v1beta1"
-	agentInstallV1Beta1 "github.com/openshift/assisted-service/api/v1beta1"
-	hiveV1 "github.com/openshift/hive/apis/hive/v1"
 	moduleV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -104,11 +106,13 @@ import (
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	multinetpolicyclientv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1"
+	noobaav1alpha1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	cguapiv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
 	machinev1beta1client "github.com/openshift/client-go/machine/clientset/versioned/typed/machine/v1beta1"
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
-	lsoV1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
+	lsov1 "github.com/openshift/local-storage-operator/api/v1"
+	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
 	kacv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
@@ -146,7 +150,7 @@ type Settings struct {
 	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
 	operatorv1alpha1.OperatorV1alpha1Interface
 	grafanaV4V1Alpha1.Grafana
-	LocalVolumeInterface lsoV1alpha1.LocalVolumeSet
+	LocalVolumeInterface lsov1alpha1.LocalVolumeSet
 	machinev1beta1client.MachineV1beta1Interface
 	storageV1Client.StorageV1Interface
 	VeleroClient veleroClient.Interface
@@ -293,7 +297,11 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := lsoV1alpha1.AddToScheme(crScheme); err != nil {
+	if err := lsov1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := lsov1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -377,6 +385,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := lokiv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	if err := istiov1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -398,6 +410,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := kedav2v1alpha1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := noobaav1alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -463,6 +479,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *corev1.Node:
 			k8sClientObjects = append(k8sClientObjects, v)
+		case *corev1.Secret:
+			k8sClientObjects = append(k8sClientObjects, v)
 		case *appsv1.Deployment:
 			k8sClientObjects = append(k8sClientObjects, v)
 		case *appsv1.StatefulSet:
@@ -506,7 +524,7 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *mlbtypes.BGPAdvertisement:
 			genericClientObjects = append(genericClientObjects, v)
-		case *mlbtypes.MetalLB:
+		case *mlboperator.MetalLB:
 			genericClientObjects = append(genericClientObjects, v)
 		case *mlbtypes.L2Advertisement:
 			genericClientObjects = append(genericClientObjects, v)
@@ -536,6 +554,10 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *ocsoperatorv1.StorageCluster:
 			genericClientObjects = append(genericClientObjects, v)
+		case *lsov1alpha1.LocalVolumeDiscovery:
+			genericClientObjects = append(genericClientObjects, v)
+		case *lsov1alpha1.LocalVolumeSet:
+			genericClientObjects = append(genericClientObjects, v)
 		case *istiov1.ServiceMeshMemberRoll:
 			genericClientObjects = append(genericClientObjects, v)
 		case *istiov2.ServiceMeshControlPlane:
@@ -545,6 +567,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *clov1.ClusterLogForwarder:
 			genericClientObjects = append(genericClientObjects, v)
 		case *eskv1.Elasticsearch:
+			genericClientObjects = append(genericClientObjects, v)
+		case *lokiv1.LokiStack:
 			genericClientObjects = append(genericClientObjects, v)
 		case *hiveextV1Beta1.AgentClusterInstall:
 			genericClientObjects = append(genericClientObjects, v)
@@ -557,6 +581,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *kedav2v1alpha1.TriggerAuthentication:
 			genericClientObjects = append(genericClientObjects, v)
 		case *kedav2v1alpha1.ScaledObject:
+			genericClientObjects = append(genericClientObjects, v)
+		case *noobaav1alpha1.ObjectBucketClaim:
 			genericClientObjects = append(genericClientObjects, v)
 		case *agentInstallV1Beta1.AgentServiceConfig:
 			genericClientObjects = append(genericClientObjects, v)

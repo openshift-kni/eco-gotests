@@ -342,6 +342,9 @@ github.com/gorilla/websocket
 # github.com/grafana-operator/grafana-operator/v4 v4.10.1
 ## explicit; go 1.18
 github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1
+# github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61
+## explicit; go 1.19
+github.com/grafana/loki/operator/apis/loki/v1
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 ## explicit
 github.com/gregjones/httpcache
@@ -595,7 +598,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240719152154-1785516033a2
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -624,7 +627,6 @@ github.com/openshift-kni/eco-goinfra/pkg/lso
 github.com/openshift-kni/eco-goinfra/pkg/machine
 github.com/openshift-kni/eco-goinfra/pkg/mco
 github.com/openshift-kni/eco-goinfra/pkg/metallb
-github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes
 github.com/openshift-kni/eco-goinfra/pkg/monitoring
 github.com/openshift-kni/eco-goinfra/pkg/msg
 github.com/openshift-kni/eco-goinfra/pkg/nad
@@ -648,13 +650,45 @@ github.com/openshift-kni/eco-goinfra/pkg/rbac
 github.com/openshift-kni/eco-goinfra/pkg/reportxml
 github.com/openshift-kni/eco-goinfra/pkg/route
 github.com/openshift-kni/eco-goinfra/pkg/scc
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/common
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/agent
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/aws
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/azure
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/baremetal
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/gcp
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/none
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/openstack
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/ovirt
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1/vsphere
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/scheme
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/models
+github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/pkg/validations
+github.com/openshift-kni/eco-goinfra/pkg/schemes/fec/fectypes
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/agent
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/aws
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/azure
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/baremetal
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/gcp
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/ibmcloud
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/metricsconfig
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/none
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/openstack
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/ovirt
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/vsphere
+github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/scheme
+github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlboperator
+github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes
+github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2
 github.com/openshift-kni/eco-goinfra/pkg/secret
 github.com/openshift-kni/eco-goinfra/pkg/service
 github.com/openshift-kni/eco-goinfra/pkg/serviceaccount
 github.com/openshift-kni/eco-goinfra/pkg/servicemesh
 github.com/openshift-kni/eco-goinfra/pkg/sriov
 github.com/openshift-kni/eco-goinfra/pkg/sriov-fec
-github.com/openshift-kni/eco-goinfra/pkg/sriov-fec/sriovfectypes
 github.com/openshift-kni/eco-goinfra/pkg/statefulset
 github.com/openshift-kni/eco-goinfra/pkg/storage
 github.com/openshift-kni/eco-goinfra/pkg/velero
@@ -748,17 +782,6 @@ github.com/openshift/api/template
 github.com/openshift/api/template/v1
 github.com/openshift/api/user
 github.com/openshift/api/user/v1
-# github.com/openshift/assisted-service v1.0.10-0.20230830164851-6573b5d7021d
-## explicit; go 1.18
-github.com/openshift/assisted-service/pkg/validations
-# github.com/openshift/assisted-service/api v0.0.0 => github.com/openshift/assisted-service/api v0.0.0-20240529165317-6b26a25e2ae7
-## explicit; go 1.20
-github.com/openshift/assisted-service/api/common
-github.com/openshift/assisted-service/api/hiveextension/v1beta1
-github.com/openshift/assisted-service/api/v1beta1
-# github.com/openshift/assisted-service/models v0.0.0 => github.com/openshift/assisted-service/models v0.0.0-20240529165317-6b26a25e2ae7
-## explicit; go 1.20
-github.com/openshift/assisted-service/models
 # github.com/openshift/client-go v0.0.1 => github.com/openshift/client-go v0.0.1
 ## explicit; go 1.20
 github.com/openshift/client-go/build/applyconfigurations/build/v1
@@ -832,22 +855,6 @@ github.com/openshift/custom-resource-status/conditions/v1
 # github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298
 ## explicit; go 1.17
 github.com/openshift/elasticsearch-operator/apis/logging/v1
-# github.com/openshift/hive/apis v0.0.0-20220707210052-4804c09ccc5a
-## explicit; go 1.18
-github.com/openshift/hive/apis/hive/v1
-github.com/openshift/hive/apis/hive/v1/agent
-github.com/openshift/hive/apis/hive/v1/alibabacloud
-github.com/openshift/hive/apis/hive/v1/aws
-github.com/openshift/hive/apis/hive/v1/azure
-github.com/openshift/hive/apis/hive/v1/baremetal
-github.com/openshift/hive/apis/hive/v1/gcp
-github.com/openshift/hive/apis/hive/v1/ibmcloud
-github.com/openshift/hive/apis/hive/v1/metricsconfig
-github.com/openshift/hive/apis/hive/v1/none
-github.com/openshift/hive/apis/hive/v1/openstack
-github.com/openshift/hive/apis/hive/v1/ovirt
-github.com/openshift/hive/apis/hive/v1/vsphere
-github.com/openshift/hive/apis/scheme
 # github.com/openshift/installer v0.0.0-00010101000000-000000000000 => github.com/openshift/installer v0.9.0-master.0.20230306121016-3485fddca1c3
 ## explicit; go 1.18
 github.com/openshift/installer/pkg/ipnet
