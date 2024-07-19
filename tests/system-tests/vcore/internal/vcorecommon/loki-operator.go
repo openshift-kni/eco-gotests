@@ -2,6 +2,8 @@ package vcorecommon
 
 import (
 	"fmt"
+	"github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
+	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	"time"
 
 	lokiv1 "github.com/grafana/loki/operator/apis/loki/v1"
@@ -20,7 +22,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	clusterlogging2 "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/clusterlogging"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 	clov1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
@@ -113,7 +114,7 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 
 	var err error
 
-	objectBucketClaimObj := clusterlogging2.NewObjectBucketClaimBuilder(APIClient,
+	objectBucketClaimObj := storage.NewObjectBucketClaimBuilder(APIClient,
 		vcoreparams.ObjectBucketClaimName,
 		vcoreparams.CLONamespace)
 
@@ -202,7 +203,7 @@ func CreateLokiStackInstance(ctx SpecContext) {
 		fmt.Sprintf("Failed to create secret %s in namespace %s due to: %v",
 			vcoreparams.LokiSecretName, vcoreparams.CLONamespace, err))
 
-	lokiStackObj := clusterlogging2.NewLokiStackBuilder(APIClient,
+	lokiStackObj := clusterlogging.NewLokiStackBuilder(APIClient,
 		vcoreparams.LokiStackName,
 		vcoreparams.CLONamespace)
 
@@ -276,7 +277,7 @@ func CreateCLOInstance(ctx SpecContext) {
 
 	var err error
 
-	clusterLoggingObj := clusterlogging2.NewBuilder(APIClient, vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
+	clusterLoggingObj := clusterlogging.NewBuilder(APIClient, vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
 	if clusterLoggingObj.Exists() {
 		err := clusterLoggingObj.Delete()

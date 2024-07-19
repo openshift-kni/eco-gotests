@@ -2,8 +2,6 @@ module github.com/openshift-kni/eco-gotests
 
 go 1.22.0
 
-toolchain go1.22.3
-
 require (
 	github.com/Juniper/go-netconf v0.3.0
 	github.com/NVIDIA/gpu-operator v1.11.1
@@ -166,7 +164,7 @@ require (
 	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1
+	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1 // indirect
 	github.com/libopenstorage/secrets v0.0.0-20240416031220-a17cf7f72c6c // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

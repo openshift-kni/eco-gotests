@@ -1,6 +1,7 @@
 package mirroring
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -63,11 +64,15 @@ func MirrorImageToTheLocalRegistry(
 
 	localImageURL := fmt.Sprintf("%s/%s/%s", localRegistryURL, localRegistryRepository, imageName)
 
-	localRegistryPullSecretFilePath, err :=
-		CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile)
+	var localRegistryPullSecretFilePath string
 
-	if err != nil {
-		return "", "", err
+	if _, err = os.Stat(combinedPullSecretFile); errors.Is(err, os.ErrNotExist) {
+		localRegistryPullSecretFilePath, err =
+			CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile)
+
+		if err != nil {
+			return "", "", err
+		}
 	}
 
 	glog.Infof("Mirror image %s to the local registry %s", originalImageURL, localRegistryURL)

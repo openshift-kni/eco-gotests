@@ -603,10 +603,14 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
 <<<<<<< HEAD
+<<<<<<< HEAD
 # github.com/openshift-kni/eco-goinfra v0.0.0-20240719152154-1785516033a2
 =======
 # github.com/openshift-kni/eco-goinfra v0.0.0-20240712191009-2ad3fc40ad34
 >>>>>>> 0a60de03 (vCore: logging refactoring, switch to the loki)
+=======
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240719152154-1785516033a2
+>>>>>>> 27964d80 (bump vendors)
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -616,6 +620,7 @@ github.com/openshift-kni/eco-goinfra/pkg/bmc
 github.com/openshift-kni/eco-goinfra/pkg/bmh
 github.com/openshift-kni/eco-goinfra/pkg/cgu
 github.com/openshift-kni/eco-goinfra/pkg/clients
+github.com/openshift-kni/eco-goinfra/pkg/clusterlogging
 github.com/openshift-kni/eco-goinfra/pkg/clusteroperator
 github.com/openshift-kni/eco-goinfra/pkg/clusterversion
 github.com/openshift-kni/eco-goinfra/pkg/configmap
@@ -630,6 +635,7 @@ github.com/openshift-kni/eco-goinfra/pkg/ingress
 github.com/openshift-kni/eco-goinfra/pkg/keda
 github.com/openshift-kni/eco-goinfra/pkg/kmm
 github.com/openshift-kni/eco-goinfra/pkg/lca
+github.com/openshift-kni/eco-goinfra/pkg/lso
 github.com/openshift-kni/eco-goinfra/pkg/machine
 github.com/openshift-kni/eco-goinfra/pkg/mco
 github.com/openshift-kni/eco-goinfra/pkg/metallb
