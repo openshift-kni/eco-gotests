@@ -12,8 +12,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/route"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 
-	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/accelparams"
-	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/upgradeinittools"
+	upgradeinittools "github.com/openshift-kni/eco-gotests/tests/accel/internal/accelinittools"
+	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/internal/accelparams"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

@@ -17,10 +17,10 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/route"
-	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/accelparams"
-	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/internal/url"
-	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/upgradeconfig"
-	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/upgradeinittools"
+	accelconfig "github.com/openshift-kni/eco-gotests/tests/accel/internal/accelconfig"
+	accelinittools "github.com/openshift-kni/eco-gotests/tests/accel/internal/accelinittools"
+	"github.com/openshift-kni/eco-gotests/tests/accel/upgrade/internal/accelparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/url"
 )
 
 var (
@@ -41,7 +41,7 @@ var _ = Describe("OCP_UPGRADE", Ordered, Label(accelparams.TeamLabel), func() {
 
 		It("should upgrade successfully", reportxml.ID("72245"), func() {
 			By("Get the clusterversion struct")
-			version, err := clusterversion.Pull(upgradeinittools.HubAPIClient)
+			version, err := clusterversion.Pull(accelinittools.HubAPIClient)
 			Expect(err).ToNot(HaveOccurred(), "error retrieving clusterversion")
 			glog.V(90).Infof("got the clusterversion struct %+v", version)
 
@@ -54,7 +54,7 @@ var _ = Describe("OCP_UPGRADE", Ordered, Label(accelparams.TeamLabel), func() {
 			glog.V(90).Infof("patched the clusterversion channel %s", desiredUpgradeChannel)
 
 			By("Get the desired update image")
-			config := upgradeconfig.NewModulesConfig()
+			config := accelconfig.NewModulesConfig()
 			desiredImage := config.UpgradeTargetVersion
 			if config.UpgradeTargetVersion == "" {
 				desiredImage, err = version.GetNextUpdateVersionImage(stream, false)
@@ -83,7 +83,7 @@ var _ = Describe("OCP_UPGRADE", Ordered, Label(accelparams.TeamLabel), func() {
 			glog.V(90).Infof("upgrade to image %s has completed successfully", desiredImage)
 
 			By("Check that all the operators version is the desired version")
-			clusteroperatorList, err := clusteroperator.List(upgradeinittools.HubAPIClient)
+			clusteroperatorList, err := clusteroperator.List(accelinittools.HubAPIClient)
 			Expect(err).ToNot(HaveOccurred(), "failed to get the clusteroperators list %v", err)
 			hasVersion, err := clusteroperator.VerifyClusterOperatorsVersion(version.Object.Status.Desired.Version,
 				clusteroperatorList)
@@ -92,18 +92,18 @@ var _ = Describe("OCP_UPGRADE", Ordered, Label(accelparams.TeamLabel), func() {
 
 			By("Check that no cluster operator is progressing")
 			cosStoppedProgressing, err := clusteroperator.
-				WaitForAllClusteroperatorsStopProgressing(upgradeinittools.HubAPIClient, time.Minute*5)
+				WaitForAllClusteroperatorsStopProgressing(accelinittools.HubAPIClient, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred(), "error while waiting for cluster operators to stop progressing")
 			Expect(cosStoppedProgressing).To(BeTrue(), "error: some cluster operators are still progressing")
 
 			By("Check that all cluster operators are available")
 			cosAvailable, err := clusteroperator.
-				WaitForAllClusteroperatorsAvailable(upgradeinittools.HubAPIClient, time.Minute*5)
+				WaitForAllClusteroperatorsAvailable(accelinittools.HubAPIClient, time.Minute*5)
 			Expect(err).NotTo(HaveOccurred(), "error while waiting for cluster operators to become available")
 			Expect(cosAvailable).To(BeTrue(), "error: some cluster operators are not available")
 
 			By("Check that all pods are running in workload namespace")
-			workloadPods, err := pod.List(upgradeinittools.HubAPIClient, accelparams.TestNamespaceName)
+			workloadPods, err := pod.List(accelinittools.HubAPIClient, accelparams.TestNamespaceName)
 			Expect(err).NotTo(HaveOccurred(), "error listing pods in workload namespace %s", accelparams.TestNamespaceName)
 			Expect(len(workloadPods) > 0).To(BeTrue(),
 				"error: found no running pods in workload namespace %s", accelparams.TestNamespaceName)
@@ -121,28 +121,28 @@ var _ = Describe("OCP_UPGRADE", Ordered, Label(accelparams.TeamLabel), func() {
 func startTestWorkloadAndGetRoute() *route.Builder {
 	By("Check if workload app namespace exists")
 
-	if _, err := namespace.Pull(upgradeinittools.HubAPIClient, accelparams.TestNamespaceName); err == nil {
+	if _, err := namespace.Pull(accelinittools.HubAPIClient, accelparams.TestNamespaceName); err == nil {
 		deleteWorkloadNamespace()
 	}
 
 	By("Create workload app namespace")
 
-	_, err := namespace.NewBuilder(upgradeinittools.HubAPIClient, accelparams.TestNamespaceName).Create()
+	_, err := namespace.NewBuilder(accelinittools.HubAPIClient, accelparams.TestNamespaceName).Create()
 	Expect(err).NotTo(HaveOccurred(), "error creating namespace for workload app")
 
 	By("Create workload app deployment")
 
-	_, err = CreateWorkload(upgradeinittools.HubAPIClient, accelparams.IbuWorkloadImage)
+	_, err = CreateWorkload(accelinittools.HubAPIClient, accelparams.IbuWorkloadImage)
 	Expect(err).ToNot(HaveOccurred(), "error creating workload application")
 
 	By("Create workload app service")
 
-	_, err = CreateService(upgradeinittools.HubAPIClient, accelparams.ServicePort)
+	_, err = CreateService(accelinittools.HubAPIClient, accelparams.ServicePort)
 	Expect(err).ToNot(HaveOccurred(), "error creating workload service %v", err)
 
 	By("Create workload app route")
 
-	workloadRoute, err := CreateWorkloadRoute(upgradeinittools.HubAPIClient)
+	workloadRoute, err := CreateWorkloadRoute(accelinittools.HubAPIClient)
 	Expect(err).ToNot(HaveOccurred(), "error creating workload route %v", err)
 
 	verifyWorkloadReachable(workloadRoute)
@@ -153,7 +153,7 @@ func startTestWorkloadAndGetRoute() *route.Builder {
 func deleteWorkloadNamespace() {
 	By("Delete workload")
 
-	err := DeleteNamespace(upgradeinittools.HubAPIClient)
+	err := DeleteNamespace(accelinittools.HubAPIClient)
 	Expect(err).NotTo(HaveOccurred(), "error deleting workload namespace %v", err)
 }
 
