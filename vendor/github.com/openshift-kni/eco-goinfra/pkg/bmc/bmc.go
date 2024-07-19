@@ -621,6 +621,132 @@ func (bmc *BMC) PowerUsage() (float32, error) {
 	return powerControl.PowerConsumedWatts, nil
 }
 
+// SystemBootOptions uses the redfish api to get the current system's boot options and
+// returns a map references to display names, e.g.:
+//   - "Boot0000":"PXE Device 1: Embedded NIC 1 Port 1 Partition 1"
+//   - "Boot0003":"RAID Controller in SL 3: Red Hat Enterprise Linux]"
+func (bmc *BMC) SystemBootOptions() (map[string]string, error) {
+	glog.V(100).Infof("Getting available boot options from redfish endpoint")
+
+	redfishClient, cancel, err := redfishConnect(
+		bmc.host,
+		bmc.redfishUser.Name,
+		bmc.redfishUser.Password,
+		bmc.timeOuts.Redfish)
+	if err != nil {
+		glog.V(100).Infof("Redfish connection error: %v", err)
+
+		return nil, fmt.Errorf("redfish connection error: %w", err)
+	}
+
+	defer func() {
+		redfishClient.Logout()
+		cancel()
+	}()
+
+	system, err := redfishGetSystem(redfishClient, bmc.systemIndex)
+	if err != nil {
+		glog.V(100).Infof("Failed to get redfish system: %v", err)
+
+		return nil, fmt.Errorf("failed to get redfish system: %w", err)
+	}
+
+	bootOptions, err := system.BootOptions()
+	if err != nil {
+		glog.V(100).Infof("Failed to get redfish system's boot options: %v", err)
+
+		return nil, fmt.Errorf("failed to get redfish system's boot options: %w", err)
+	}
+
+	bootOptionsMap := map[string]string{}
+
+	for _, bootOrderRef := range system.Boot.BootOrder {
+		for _, bootOption := range bootOptions {
+			if bootOrderRef == bootOption.BootOptionReference {
+				bootOptionsMap[bootOrderRef] = bootOption.DisplayName
+			}
+		}
+	}
+
+	return bootOptionsMap, nil
+}
+
+// SystemBootOrderReferences returns the current system's boot order (references) in an ordered slice
+// using redfish API.
+func (bmc *BMC) SystemBootOrderReferences() ([]string, error) {
+	glog.V(100).Infof("Getting BootOrder references from redfish endpoint")
+
+	redfishClient, cancel, err := redfishConnect(
+		bmc.host,
+		bmc.redfishUser.Name,
+		bmc.redfishUser.Password,
+		bmc.timeOuts.Redfish)
+	if err != nil {
+		glog.V(100).Infof("Redfish connection error: %v", err)
+
+		return nil, fmt.Errorf("redfish connection error: %w", err)
+	}
+
+	defer func() {
+		redfishClient.Logout()
+		cancel()
+	}()
+
+	system, err := redfishGetSystem(redfishClient, bmc.systemIndex)
+	if err != nil {
+		glog.V(100).Infof("Failed to get redfish system: %v", err)
+
+		return nil, fmt.Errorf("failed to get redfish system: %w", err)
+	}
+
+	return system.Boot.BootOrder, nil
+}
+
+// SetSystemBootOrderReferences sets the boot order references of the current system using
+// the redfish API. The boot order references are not updated until the system is resetted, meaning
+// that a following call to SystemBootOrderReferences() won't reflect the change until the system has
+// been actually resetted.
+func (bmc *BMC) SetSystemBootOrderReferences(bootOrderReferences []string) error {
+	glog.V(100).Infof("Setting BootOrder references (%+v) from redfish endpoint", bootOrderReferences)
+
+	if len(bootOrderReferences) == 0 {
+		glog.V(100).Infof("bootOrderReferences param cannot be empty")
+
+		return fmt.Errorf("bootOrderReferences param cannot be empty")
+	}
+
+	redfishClient, cancel, err := redfishConnect(
+		bmc.host,
+		bmc.redfishUser.Name,
+		bmc.redfishUser.Password,
+		bmc.timeOuts.Redfish)
+	if err != nil {
+		glog.V(100).Infof("Redfish connection error: %v", err)
+
+		return fmt.Errorf("redfish connection error: %w", err)
+	}
+
+	defer func() {
+		redfishClient.Logout()
+		cancel()
+	}()
+
+	system, err := redfishGetSystem(redfishClient, bmc.systemIndex)
+	if err != nil {
+		glog.V(100).Infof("Failed to get redfish system: %v", err)
+
+		return fmt.Errorf("failed to get redfish system: %w", err)
+	}
+
+	newBoot := redfish.Boot{
+		BootOrder: bootOrderReferences,
+	}
+
+	glog.V(100).Infof("Setting new Boot value: %+v", newBoot)
+
+	return system.SetBoot(newBoot)
+}
+
 // CreateCLISSHSession creates a ssh Session to the host.
 func (bmc *BMC) CreateCLISSHSession() (*ssh.Session, error) {
 	if valid, err := bmc.validateSSH(); !valid {

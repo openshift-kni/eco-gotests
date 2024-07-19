@@ -223,6 +223,41 @@ func (builder *Builder) WaitUntilConditionTrue(
 		})
 }
 
+// HasDesiredVersion checks if an operator has a desiredVersion.
+func (builder *Builder) HasDesiredVersion(desiredVersion string) (bool, error) {
+	if valid, err := builder.validate(); !valid {
+		return false, err
+	}
+
+	if desiredVersion == "" {
+		return false, fmt.Errorf("desiredVersion can't be empty")
+	}
+
+	if builder.Object.Status.Versions == nil {
+		return false, fmt.Errorf("undefined cluster operator status versions")
+	}
+
+	for _, operatorVersion := range builder.Object.Status.Versions {
+		glog.V(100).Infof("Testing %s and %s", operatorVersion.Version, desiredVersion)
+
+		if operatorVersion.Version == desiredVersion {
+			glog.V(100).Infof("The clusterOperator %s version matches the desired version %s",
+				builder.Definition.Name, desiredVersion)
+
+			return true, nil
+		}
+
+		glog.V(100).Infof(
+			"The clusterOperator %s doesn't have the desired version %s, but has version %s. Continue lookup",
+			builder.Definition.Name, desiredVersion, operatorVersion.Version)
+	}
+
+	glog.V(100).Infof("lookup failed.The clusterOperator %s doesn't have the desired version %s",
+		builder.Definition.Name, desiredVersion)
+
+	return false, nil
+}
+
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {

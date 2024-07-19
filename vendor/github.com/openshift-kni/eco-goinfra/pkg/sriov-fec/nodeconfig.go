@@ -11,7 +11,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	"github.com/openshift-kni/eco-goinfra/pkg/sriov-fec/sriovfectypes"
+	sriovfectypes "github.com/openshift-kni/eco-goinfra/pkg/schemes/fec/fectypes"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )

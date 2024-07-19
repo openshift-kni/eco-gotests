@@ -3,6 +3,10 @@ package clusterlogging
 import (
 	"context"
 	"fmt"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -213,6 +217,96 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	}
 
 	return builder, err
+}
+
+// WithCollection sets the clusterLogging operator's collection configuration.
+func (builder *Builder) WithCollection(
+	collection clov1.CollectionSpec) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting clusterLogging %s in namespace %s with the collection config: %v",
+		builder.Definition.Name, builder.Definition.Namespace, collection)
+
+	builder.Definition.Spec.Collection = &collection
+
+	return builder
+}
+
+// WithManagementState sets the clusterLogging operator's managementState configuration.
+func (builder *Builder) WithManagementState(
+	managementState clov1.ManagementState) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting clusterLogging %s in namespace %s with the managementState config: %v",
+		builder.Definition.Name, builder.Definition.Namespace, managementState)
+
+	builder.Definition.Spec.ManagementState = managementState
+
+	return builder
+}
+
+// WithLogStore sets the clusterLogging operator's logStore configuration.
+func (builder *Builder) WithLogStore(
+	logStore clov1.LogStoreSpec) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting clusterLogging %s in namespace %s with the logStore config: %v",
+		builder.Definition.Name, builder.Definition.Namespace, logStore)
+
+	builder.Definition.Spec.LogStore = &logStore
+
+	return builder
+}
+
+// WithVisualization sets the clusterLogging operator's visualization configuration.
+func (builder *Builder) WithVisualization(
+	visualization clov1.VisualizationSpec) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting clusterLogging %s in namespace %s with the visualization config: %v",
+		builder.Definition.Name, builder.Definition.Namespace, visualization)
+
+	builder.Definition.Spec.Visualization = &visualization
+
+	return builder
+}
+
+// IsReady checks for the duration of timeout if the clusterLogging instance state is Ready.
+func (builder *Builder) IsReady(timeout time.Duration) bool {
+	if valid, _ := builder.validate(); !valid {
+		return false
+	}
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			if !builder.Exists() {
+				return false, nil
+			}
+
+			for _, condition := range builder.Definition.Status.Conditions {
+				if condition.Type == clov1.ConditionReady {
+					if condition.Status == corev1.ConditionTrue {
+						return true, nil
+					}
+				}
+			}
+
+			return false, nil
+		})
+
+	return err == nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before

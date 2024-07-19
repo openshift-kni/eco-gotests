@@ -157,6 +157,32 @@ func (builder *Builder) Exists() bool {
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
+// Update renovates the existing configmap object with configmap definition in builder.
+func (builder *Builder) Update() (*Builder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Updating configmap %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	var err error
+
+	builder.Object, err = builder.apiClient.ConfigMaps(builder.Definition.Namespace).
+		Update(context.TODO(), builder.Definition, metav1.UpdateOptions{})
+
+	if err != nil {
+		glog.V(100).Infof(
+			msg.FailToUpdateError("configmap", builder.Definition.Name, builder.Definition.Namespace))
+
+		return nil, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
+}
+
 // WithData defines the data placed in the configmap.
 func (builder *Builder) WithData(data map[string]string) *Builder {
 	if valid, _ := builder.validate(); !valid {
