@@ -1340,8 +1340,8 @@ github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
 github.com/grafana-operator/grafana-operator/v4 v4.10.1 h1:9TSZhuMh6b64frhTa8eb+jBEw0oZp076Bh990Ts2WqU=
 github.com/grafana-operator/grafana-operator/v4 v4.10.1/go.mod h1:k69wJcXVrqAcZBoGuh5LSqz0ak8LlVOxxqp0W3f/4V8=
-github.com/grafana/loki/operator/apis/loki v0.0.0-20240705201834-ce71f1cf9546 h1:7LWCTqLvmsZ/6CTfdBnlctgCovRvw7yDbpRFF0Eqb3g=
-github.com/grafana/loki/operator/apis/loki v0.0.0-20240705201834-ce71f1cf9546/go.mod h1:0M5m4ewKZrM5rS6MfbbzfdIjaurqK6pCMRNmWOdzojc=
+github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61 h1:UxACR7AVQlmoe/shdBjd5PHZxLI4NzudQPeqgaorc+0=
+github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61/go.mod h1:0M5m4ewKZrM5rS6MfbbzfdIjaurqK6pCMRNmWOdzojc=
 github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
 github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 h1:+ngKgrYPPJrOjhax5N+uePQ0Fh1Z7PheYoUI/0nzkPA=
 github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
@@ -1371,8 +1371,8 @@ github.com/hashicorp/go-cleanhttp v0.5.2 h1:035FKYIWjmULyFRBKPs8TBQoi0x6d9G4xc9n
 github.com/hashicorp/go-cleanhttp v0.5.2/go.mod h1:kO/YDlP8L1346E6Sodw+PrpBSV4/SoxCXGY6BqNFT48=
 github.com/hashicorp/go-hclog v0.9.2/go.mod h1:5CU+agLiy3J7N7QjHK5d05KxGsuXiQLrjA0H7acj2lQ=
 github.com/hashicorp/go-hclog v0.16.2/go.mod h1:whpDNt7SSdeAju8AWKIWsul05p54N/39EeqMAyrmvFQ=
-github.com/hashicorp/go-hclog v1.6.3 h1:Qr2kF+eVWjTiYmU7Y31tYlP1h0q/X3Nl3tPGdaB11/k=
-github.com/hashicorp/go-hclog v1.6.3/go.mod h1:W4Qnvbt70Wk/zYJryRzDRU/4r0kIg0PVHBcfoyhpF5M=
+github.com/hashicorp/go-hclog v1.6.2 h1:NOtoftovWkDheyUM/8JW3QMiXyxJK3uHRK7wV04nD2I=
+github.com/hashicorp/go-hclog v1.6.2/go.mod h1:W4Qnvbt70Wk/zYJryRzDRU/4r0kIg0PVHBcfoyhpF5M=
 github.com/hashicorp/go-immutable-radix v1.0.0/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
 github.com/hashicorp/go-msgpack v0.5.3/go.mod h1:ahLV/dePpqEmjfWmKiqvPkv/twdG7iPBM1vqhUKIvfM=
 github.com/hashicorp/go-multierror v1.0.0/go.mod h1:dHtQlpGsu+cZNNAkkCN/P3hoUDHhCYQXV3UM06sGGrk=
@@ -1381,8 +1381,8 @@ github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9
 github.com/hashicorp/go-retryablehttp v0.6.2/go.mod h1:gEx6HMUGxYYhJScX7W1Il64m6cc2C1mDaW3NQ9sY1FY=
 github.com/hashicorp/go-retryablehttp v0.6.6/go.mod h1:vAew36LZh98gCBJNLH42IQ1ER/9wtLZZ8meHqQvEYWY=
 github.com/hashicorp/go-retryablehttp v0.7.1/go.mod h1:vAew36LZh98gCBJNLH42IQ1ER/9wtLZZ8meHqQvEYWY=
-github.com/hashicorp/go-retryablehttp v0.7.7 h1:C8hUCYzor8PIfXHa4UrZkU4VvK8o9ISHxT2Q8+VepXU=
-github.com/hashicorp/go-retryablehttp v0.7.7/go.mod h1:pkQpWZeYWskR+D1tR2O5OcBFOxfA7DoAO6xtkuQnHTk=
+github.com/hashicorp/go-retryablehttp v0.7.5 h1:bJj+Pj19UZMIweq/iie+1u5YCdGrnxCT9yvm0e+Nd5M=
+github.com/hashicorp/go-retryablehttp v0.7.5/go.mod h1:Jy/gPYAdjqffZ/yFGCFV2doI5wjtH1ewM9u8iYVjtX8=
 github.com/hashicorp/go-rootcerts v1.0.0/go.mod h1:K6zTfqpRlCUIjkwsN4Z+hiSfzSTQa6eBIzfwKfwNnHU=
 github.com/hashicorp/go-rootcerts v1.0.2 h1:jzhAVGtqPKbwpyCPELlgNWhE1znq+qwJtW5Oi2viEzc=
 github.com/hashicorp/go-rootcerts v1.0.2/go.mod h1:pqUvnprVnM5bf7AOirdbb01K4ccR319Vf4pU3K5EGc8=
@@ -1418,8 +1418,8 @@ github.com/hashicorp/memberlist v0.1.3/go.mod h1:ajVTdAv/9Im8oMAAj5G31PhhMCZJV2p
 github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/JwenrHc=
 github.com/hashicorp/vault/api v1.10.0/go.mod h1:jo5Y/ET+hNyz+JnKDt8XLAdKs+AM0G5W0Vp1IrFI8N8=
 github.com/hashicorp/vault/api v1.12.0/go.mod h1:si+lJCYO7oGkIoNPAN8j3azBLTn9SjMGS+jFaHd1Cck=
-github.com/hashicorp/vault/api v1.14.0 h1:Ah3CFLixD5jmjusOgm8grfN9M0d+Y8fVR2SW0K6pJLU=
-github.com/hashicorp/vault/api v1.14.0/go.mod h1:pV9YLxBGSz+cItFDd8Ii4G17waWOQ32zVjMWHe/cOqk=
+github.com/hashicorp/vault/api v1.13.0 h1:RTCGpE2Rgkn9jyPcFlc7YmNocomda44k5ck8FKMH41Y=
+github.com/hashicorp/vault/api v1.13.0/go.mod h1:0cb/uZUv1w2cVu9DIvuW1SMlXXC6qtATJt+LXJRx+kg=
 github.com/hashicorp/vault/api/auth/approle v0.5.0/go.mod h1:CHOQIA1AZACfjTzHggmyfiOZ+xCSKNRFqe48FTCzH0k=
 github.com/hashicorp/vault/api/auth/approle v0.6.0 h1:ELfFFQlTM/e97WJKu1HvNFa7lQ3tlTwwzrR1NJE1V7Y=
 github.com/hashicorp/vault/api/auth/approle v0.6.0/go.mod h1:CCoIl1xBC3lAWpd1HV+0ovk76Z8b8Mdepyk21h3pGk0=
@@ -1513,8 +1513,8 @@ github.com/libopenstorage/autopilot-api v1.3.0/go.mod h1:6JLrPbR3ZJQFbUY/+QJMl/a
 github.com/libopenstorage/gossip v0.0.0-20190507031959-c26073a01952/go.mod h1:TjXt2Iz2bTkpfc4Q6xN0ttiNipTVwEEYoZSMZHlfPek=
 github.com/libopenstorage/openstorage v8.0.1-0.20190926212733-daaed777713e+incompatible/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wnOzEhNx2YQedreMcUyc=
 github.com/libopenstorage/operator v0.0.0-20200725001727-48d03e197117/go.mod h1:Qh+VXOB6hj60VmlgsmY+R1w+dFuHK246UueM4SAqZG0=
-github.com/libopenstorage/secrets v0.0.0-20240416031220-a17cf7f72c6c h1:sCgvz+9ukGwz0k9kHNzGm1zJLTOo5HT1F//9mtXZ08g=
-github.com/libopenstorage/secrets v0.0.0-20240416031220-a17cf7f72c6c/go.mod h1:TB8PxROcwcNeaawFm45+XAj0lnZL2wRI3wTr/tZ3/bM=
+github.com/libopenstorage/secrets v0.0.0-20231011182615-5f4b25ceede1 h1:bPR1KJK9pbSYuDPQzx5zXOT7Exj+y/K/8lpGU2KfzRc=
+github.com/libopenstorage/secrets v0.0.0-20231011182615-5f4b25ceede1/go.mod h1:TB8PxROcwcNeaawFm45+XAj0lnZL2wRI3wTr/tZ3/bM=
 github.com/libopenstorage/stork v1.3.0-beta1.0.20200630005842-9255e7a98775/go.mod h1:qBSzYTJVHlOMg5RINNiHD1kBzlasnrc2uKLPZLgu1Qs=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de h1:9TO3cAIGXtEhnIaL+V+BEER86oLrvS+kWobKpbJuye0=
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9B/r2mtpb6U+EI2rYA5OAXxsYw6wTamcNW+zcE=
@@ -1612,8 +1612,8 @@ github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uY
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35 h1:5xsAketfqFXIbMAQq2kz02Biit6Bp4oM6l31Ea1g+Xc=
 github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35/go.mod h1:lb+63X+ifPfwEmwPfCVF+EBLYXWEOyx30BmQU7406Qc=
-github.com/noobaa/noobaa-operator/v5 v5.0.0-20240625102417-4d63b956e6e6 h1:348xPZrX9VJVBjsc70+5ZJd49/Fws1zREZJ/Fh1sP5M=
-github.com/noobaa/noobaa-operator/v5 v5.0.0-20240625102417-4d63b956e6e6/go.mod h1:vvMycF+7bE1D2AhBgoQbMSTociX9KyTUn+zD9Qt+iqk=
+github.com/noobaa/noobaa-operator/v5 v5.0.0-20240319123706-4ee28d614c7c h1:WvbdZkzxtTz2FF9wPi+x8zLVuKBiSGU3Uq7XxmFzJ0k=
+github.com/noobaa/noobaa-operator/v5 v5.0.0-20240319123706-4ee28d614c7c/go.mod h1:JQFAtSoL+dahfhdIXnpMLS+p07gsBprMVIH/2xQhG4Q=
 github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 h1:s6XG+YzY6du/VXWdc+/rj8mj/ccEdqYSEHYrmwyZvVg=
 github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64/go.mod h1:LD0OSxwLPjf375SCAIp70NQRbTPeqKKlM64vx03burs=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
@@ -1808,8 +1808,8 @@ github.com/prometheus/procfs v0.12.0/go.mod h1:pcuDEFsWDnvcgNzo4EEweacyhjeA9Zk3c
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
 github.com/red-hat-storage/ocs-operator v0.4.13 h1:+FdRGqgewn7v22LvhQUV8iSzLm8d6k4T+zyX0Zjo7qw=
 github.com/red-hat-storage/ocs-operator v0.4.13/go.mod h1:92CGJGBXykejC89+h8s0pohpb0JRwfwPE9IwUNF5+sY=
-github.com/red-hat-storage/odf-operator v0.0.0-20240704062551-2726e073ed37 h1:JbxEQ4vDFOUTG30N6GNdNQSYw2yyXuoAB1ZG8hiLFho=
-github.com/red-hat-storage/odf-operator v0.0.0-20240704062551-2726e073ed37/go.mod h1:fbLDGmoRP6qdcyweyNOK5jWow6Zhfl6vHcNxPuuiPZI=
+github.com/red-hat-storage/odf-operator v0.0.0-20240703093545-0e22236e2160 h1:g54q5MJklMCVUwW4OJoCuaF94HiEHQj5pzcEau/o64U=
+github.com/red-hat-storage/odf-operator v0.0.0-20240703093545-0e22236e2160/go.mod h1:uJqcyW9de0frTa708MZR++0SgLvIHiwL793tY6EAuqM=
 github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5 h1:EaDatTxkdHG+U3Bk4EUr+DZ7fOGwTfezUiUJMaIcaho=
 github.com/redis/go-redis/extra/rediscmd/v9 v9.0.5/go.mod h1:fyalQWdtzDBECAQFBJuQe5bzQ02jGd5Qcbgb97Flm7U=
 github.com/redis/go-redis/extra/redisotel/v9 v9.0.5 h1:EfpWLLCyXw8PSM2/XNJLjI3Pb27yVE+gIAfeqp8LUCc=
@@ -1833,8 +1833,8 @@ github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/f
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
 github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
-github.com/rook/rook/pkg/apis v0.0.0-20240701212738-8e25300ad55a h1:OFQE5B28nldHt3ra/btSxA/4IBNT4nxkdn4pi/oMTCQ=
-github.com/rook/rook/pkg/apis v0.0.0-20240701212738-8e25300ad55a/go.mod h1:eRyfiXm9FbP2cYJnwQHnbEQiyCcD2B7efUY4Nru3vYo=
+github.com/rook/rook/pkg/apis v0.0.0-20240513003450-39f88521f0fd h1:AvYCpfHnCy7qY6zXR9lophJ7o9E7AdJV49FXKP+OV6A=
+github.com/rook/rook/pkg/apis v0.0.0-20240513003450-39f88521f0fd/go.mod h1:X/tPOJyDiIcJG75MLdPIYbZ4gKK3WMOyCb6ErPWSG0k=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/russross/blackfriday/v2 v2.1.0 h1:JIOH55/0cWyOuilr9/qlrm0BSXldqnqwMsf35Ld67mk=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
