@@ -14,7 +14,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/url"
+	"github.com/openshift-kni/eco-gotests/tests/internal/url"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/spk/internal/spkparams"
 )
@@ -32,7 +32,7 @@ func reachURL(targetURL, pollInterval, pollDuration string, expectedCode int) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to parse polling interval %q", pollDuration))
 
 	Eventually(func() bool {
-		data, httpCode, err := url.Fetch(targetURL, "GET")
+		data, httpCode, err := url.Fetch(targetURL, "GET", true)
 
 		if err != nil {
 			glog.V(spkparams.SPKLogLevel).Infof("Failed to reach %q: %v", targetURL, err)

@@ -13,11 +13,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/assisted/internal/url"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/setup"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/url"
 )
 
 const (
