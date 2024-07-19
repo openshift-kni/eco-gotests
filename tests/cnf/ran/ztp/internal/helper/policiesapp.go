@@ -98,7 +98,7 @@ func WaitForConditionInImageRegistry(
 	imageRegistryConfig *imageregistry.Builder, expected metav1.Condition, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), tsparams.ArgoCdChangeInterval, timeout, true, func(ctx context.Context) (bool, error) {
-			if !imageRegistryConfig.Exists() {
+			if !imageRegistryConfig.Exists() || imageRegistryConfig.Object == nil {
 				glog.V(tsparams.LogLevel).Infof("imageRegistry %s does not exist in namespace %s",
 					imageRegistryConfig.Definition.Name, imageRegistryConfig.Definition.Namespace)
 

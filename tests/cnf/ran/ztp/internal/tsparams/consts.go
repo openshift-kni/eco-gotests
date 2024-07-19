@@ -95,6 +95,8 @@ const (
 	// HubTemplatingCguNamespace is the namespace used by the hub templating CGU. It should be different than the
 	// policy namespace.
 	HubTemplatingCguNamespace = "default"
+	// HubTemplatingSecretName is the name of the secret used by the hub templating valid test.
+	HubTemplatingSecretName = "sriovsecret"
 	// NodeDeletionCrAnnotation is the annotation applied in the node deletion tests.
 	NodeDeletionCrAnnotation = "bmac.agent-install.openshift.io/remove-agent-and-node-on-delete"
 	// ZtpGeneratedAnnotation is the annotation applied to ztp generated resources.

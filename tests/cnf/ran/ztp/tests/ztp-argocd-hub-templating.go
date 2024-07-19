@@ -13,12 +13,14 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
+	corev1 "k8s.io/api/core/v1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 )
 
@@ -86,6 +88,18 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 			if versionInRange {
 				validTestPath = tsparams.ZtpTestPathTemplatingValid416
 			}
+
+			// We must create the secret before the test since creating it by ZTP is not allowed.
+			validSecret, err := secret.NewBuilder(
+				HubAPIClient, tsparams.HubTemplatingSecretName, tsparams.TestNamespace, corev1.SecretTypeOpaque).
+				WithData(map[string][]byte{"vlanQoS": []byte("MAo=")}).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "Failed to create hub templating secret")
+
+			DeferCleanup(func() {
+				err := validSecret.Delete()
+				Expect(err).ToNot(HaveOccurred(), "Failed to clean up hub templating secret")
+			})
 
 			setupHubTemplateTest(validTestPath)
 
