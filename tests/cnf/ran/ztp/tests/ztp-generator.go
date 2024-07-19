@@ -12,11 +12,12 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
 	"gopkg.in/yaml.v2"
 )
 
-var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases), func() {
+var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, ranparam.LabelNoContainer), func() {
 	var siteConfigPath string
 
 	BeforeEach(func() {
@@ -64,7 +65,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases),
 				By("using brew to find the image tag")
 				cmd := "brew list-builds --package=ztp-site-generate-container --state=COMPLETE --quiet" +
 					fmt.Sprintf(" | grep %s", RANConfig.ZTPVersion) +
-					" | sort -V | tail -1 | awk '{ print $1 }'"
+					" | sort -V | tail -1 | awk '{ print $1 }' | sed -nr 's/.*-(v.*)$/\\1/p'"
 
 				output, err := cluster.ExecLocalCommand(time.Minute, "bash", "-c", cmd)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get output from brew")
