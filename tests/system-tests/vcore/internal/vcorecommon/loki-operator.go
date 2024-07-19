@@ -2,13 +2,17 @@ package vcorecommon
 
 import (
 	"fmt"
-	"github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
-	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	lokiv1 "github.com/grafana/loki/operator/apis/loki/v1"
+	"github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/console"
+	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
+	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
 	corev1 "k8s.io/api/core/v1"
 
@@ -19,28 +23,9 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/console"
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 	clov1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
-)
-
-var (
-	loggingCollectorPodNamePattern = "collector"
-	loggingLokiOnePodNamePattern   = []string{
-		"logging-loki-compactor",
-		"logging-loki-index-gateway",
-		"logging-loki-ingester",
-		"logging-view-plugin",
-	}
-	loggingLokiTwoPodsNamePattern = []string{
-		"logging-loki-distributor",
-		"logging-loki-gateway",
-		"logging-loki-querier",
-		"logging-loki-query-frontend",
-	}
 )
 
 // VerifyLokiSuite container that contains tests for LokiStack and ClusterLogging verification.
@@ -75,13 +60,15 @@ func VerifyLokiSuite() {
 // VerifyCLONamespaceExists asserts namespace for ClusterLogging Operator exists.
 func VerifyCLONamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.CLONamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.CLONamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.CLONamespace, err))
 } // func VerifyCLONamespaceExists (ctx SpecContext)
 
 // VerifyLokiNamespaceExists asserts namespace for ElasticSearch Operator exists.
 func VerifyLokiNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.LokiNamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.LokiNamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.LokiNamespace, err))
 } // func VerifyLokiNamespaceExists (ctx SpecContext)
 
 // VerifyLokiDeployment asserts ElasticSearch Operator successfully installed.
@@ -131,11 +118,37 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create objectBucketClaim %s in namespace %s due to %v",
 			vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the PVCs are created")
+
+	err = await.WaitUntilPersistentVolumeClaimCreated(APIClient,
+		vcoreparams.ODFNamespace,
+		4,
+		5*time.Minute,
+		metav1.ListOptions{})
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+		"failed to create persistentVolumeClaims in namespace %s due to %v",
+		vcoreparams.ODFNamespace, err))
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify storageClass %s created", vcoreparams.StorageClassName)
+
+	_, err = storage.PullClass(APIClient, vcoreparams.StorageClassName)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("storageClass %s not found; %v",
+		vcoreparams.StorageClassName, err))
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait until configmap %s created", vcoreparams.ObjectBucketClaimName)
+
+	err = await.WaitUntilConfigMapCreated(APIClient,
+		vcoreparams.ObjectBucketClaimName,
+		vcoreparams.CLONamespace,
+		20*time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("configmap %s not found in namespace %s; %v",
+		vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
 } // func CreateObjectBucketClaim (ctx SpecContext)
 
 // CreateLokiStackInstance asserts the LokiStack instance created.
 //
-//nolint:goconst,funlen
+//nolint:funlen
 func CreateLokiStackInstance(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create a LokiStack instance")
 
@@ -203,6 +216,9 @@ func CreateLokiStackInstance(ctx SpecContext) {
 		fmt.Sprintf("Failed to create secret %s in namespace %s due to: %v",
 			vcoreparams.LokiSecretName, vcoreparams.CLONamespace, err))
 
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create a LokiStack instance %s in namespace %s",
+		vcoreparams.LokiStackName, vcoreparams.CLONamespace)
+
 	lokiStackObj := clusterlogging.NewLokiStackBuilder(APIClient,
 		vcoreparams.LokiStackName,
 		vcoreparams.CLONamespace)
@@ -214,7 +230,7 @@ func CreateLokiStackInstance(ctx SpecContext) {
 				vcoreparams.LokiStackName, vcoreparams.CLONamespace, err))
 	}
 
-	storage := lokiv1.ObjectStorageSpec{
+	lokiStackStorage := lokiv1.ObjectStorageSpec{
 		Schemas: []lokiv1.ObjectStorageSchema{{
 			EffectiveDate: lokiv1.StorageSchemaEffectiveDateFormat,
 			Version:       lokiv1.ObjectStorageSchemaV13,
@@ -224,10 +240,8 @@ func CreateLokiStackInstance(ctx SpecContext) {
 			Name: vcoreparams.LokiSecretName,
 		},
 		TLS: &lokiv1.ObjectStorageTLSSpec{CASpec: lokiv1.CASpec{
-			CAKey: "caName",
-			CA:    "openshift-service-ca.crt",
-		},
-		},
+			CA: "openshift-service-ca.crt",
+		}},
 	}
 
 	lokiComponent := lokiv1.LokiComponentSpec{
@@ -241,7 +255,6 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	template := lokiv1.LokiTemplateSpec{
 		Compactor:     &lokiComponent,
 		Distributor:   &lokiComponent,
-		Ingester:      &lokiComponent,
 		Querier:       &lokiComponent,
 		QueryFrontend: &lokiComponent,
 		Gateway:       &lokiComponent,
@@ -249,10 +262,10 @@ func CreateLokiStackInstance(ctx SpecContext) {
 		Ruler:         &lokiComponent,
 	}
 
-	_, err = lokiStackObj.
+	lokiStackObj, err = lokiStackObj.
 		WithSize(lokiv1.SizeOneXSmall).
 		WithManagementState(lokiv1.ManagementStateManaged).
-		WithStorage(storage).
+		WithStorage(lokiStackStorage).
 		WithStorageClassName(vcoreparams.StorageClassName).
 		WithTenants(lokiv1.TenantsSpec{Mode: lokiv1.OpenshiftLogging}).
 		WithTemplate(template).
@@ -266,13 +279,16 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create lokiStack instance %s in namespace %s due to %v",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace, err))
+	Expect(lokiStackObj.IsReady(10*time.Minute)).To(Equal(true),
+		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 10 mins",
+			vcoreparams.LokiStackName, vcoreparams.CLONamespace))
 } // func CreateLokiStackInstance (ctx SpecContext)
 
 // CreateCLOInstance asserts ClusterLogging instance can be created and running.
 //
 //nolint:funlen
 func CreateCLOInstance(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify Cluster Logging instance %s is running in namespace %s",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify clusterLogging instance %s is running in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
 	var err error
@@ -288,7 +304,7 @@ func CreateCLOInstance(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new Cluster Logging instance %s in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
-	_, err = clusterLoggingObj.
+	clusterLoggingObj, err = clusterLoggingObj.
 		WithManagementState(clov1.ManagementStateManaged).
 		WithLogStore(clov1.LogStoreSpec{
 			Type:      "lokistack",
@@ -317,72 +333,45 @@ func CreateCLOInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create clusterLogging instance %s in namespace %s; %v",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace, err))
 
-	glog.V(100).Infof("Check clusterLogging pods")
+	glog.V(90).Infof("Check clusterLogging instance deployment")
 
-	podsList, err := pod.ListByNamePattern(APIClient, vcoreparams.CLOName, vcoreparams.CLONamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s not found in namespace %s; %v",
-		vcoreparams.CLOName, vcoreparams.CLONamespace, err))
-	Expect(len(podsList)).To(Equal(1), fmt.Sprintf("pod %s not found in namespace %s",
-		vcoreparams.CLOName, vcoreparams.CLONamespace))
+	glog.V(90).Infof("Check %s deployment", vcoreparams.CLODeploymentName)
 
-	err = podsList[0].WaitUntilReady(time.Second)
-	Expect(err).ToNot(HaveOccurred(), "pod %s in namespace %s is not ready",
-		podsList[0].Definition.Name, vcoreparams.CLONamespace)
+	err = await.WaitUntilDeploymentReady(APIClient, vcoreparams.CLODeploymentName,
+		vcoreparams.CLONamespace, time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Deployment %s in namespace %s failed due to %v",
+		vcoreparams.CLODeploymentName, vcoreparams.CLONamespace, err))
 
-	err = podsList[0].WaitUntilRunning(5 * time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s failed to run; %v",
-		podsList[0].Definition.Name, vcoreparams.CLONamespace, err))
+	isReady, err := await.WaitForThePodReplicasCountInNamespace(APIClient, vcoreparams.CLONamespace, metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/component=distributor",
+	}, 2, time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+		"Failed to create pods for the deployment %s in namespace %s due to %v",
+		vcoreparams.CLODeploymentName, vcoreparams.CLONamespace, err))
+	Expect(isReady).To(Equal(true),
+		fmt.Sprintf("Failed to create pods for the  deployment %s in namespace %s",
+			vcoreparams.CLODeploymentName, vcoreparams.CLONamespace))
 
 	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfMCPName)
 	if odfMcp.IsInCondition("Updated") {
-		podsList, err := pod.ListByNamePattern(APIClient, loggingCollectorPodNamePattern, vcoreparams.CLONamespace)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s not found in namespace %s; %v",
-			loggingCollectorPodNamePattern, vcoreparams.CLONamespace, err))
-		Expect(len(podsList)).To(Equal(10), fmt.Sprintf("not all pods %s found in namespace %s: %v",
-			loggingCollectorPodNamePattern, vcoreparams.CLONamespace, podsList))
+		deploymentsList := []string{"logging-loki-distributor", "logging-loki-gateway",
+			"logging-loki-querier", "logging-loki-query-frontend"}
 
-		for _, pod := range podsList {
-			err = pod.WaitUntilReady(time.Second)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s is not ready",
-				pod.Definition.Name, vcoreparams.CLONamespace))
+		for _, deploymentName := range deploymentsList {
+			glog.V(90).Infof("Check %s deployment", deploymentName)
 
-			err = pod.WaitUntilRunning(5 * time.Second)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s failed to run; %v",
-				pod.Definition.Name, vcoreparams.CLONamespace, err))
-		}
+			err = await.WaitUntilDeploymentReady(APIClient, deploymentName, vcoreparams.CLONamespace, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Deployment %s in namespace %s failed due to %v",
+				deploymentName, vcoreparams.CLONamespace, err))
 
-		for _, clusterLoggingPodNamePattern := range loggingLokiOnePodNamePattern {
-			podsList, err = pod.ListByNamePattern(APIClient, clusterLoggingPodNamePattern, vcoreparams.CLONamespace)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s not found in namespace %s; %v",
-				clusterLoggingPodNamePattern, vcoreparams.CLONamespace, err))
-			Expect(len(podsList)).To(Equal(1), fmt.Sprintf("pods %s not found in namespace %s",
-				clusterLoggingPodNamePattern, vcoreparams.CLONamespace))
-
-			err = podsList[0].WaitUntilReady(time.Second)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s is not ready",
-				podsList[0].Definition.Name, vcoreparams.CLONamespace))
-
-			err = podsList[0].WaitUntilRunning(5 * time.Second)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s failed to run; %v",
-				podsList[0].Definition.Name, vcoreparams.CLONamespace, err))
-		}
-
-		for _, clusterLoggingPodNamePattern := range loggingLokiTwoPodsNamePattern {
-			podsList, err = pod.ListByNamePattern(APIClient, clusterLoggingPodNamePattern, vcoreparams.CLONamespace)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s not found in namespace %s; %v",
-				clusterLoggingPodNamePattern, vcoreparams.CLONamespace, err))
-			Expect(len(podsList)).To(Equal(2), fmt.Sprintf("pods %s not found in namespace %s",
-				clusterLoggingPodNamePattern, vcoreparams.CLONamespace))
-
-			for _, pod := range podsList {
-				err = pod.WaitUntilReady(time.Second)
-				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s is not ready",
-					pod.Definition.Name, vcoreparams.CLONamespace))
-
-				err = pod.WaitUntilRunning(5 * time.Second)
-				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("pod %s in namespace %s failed to run; %v",
-					pod.Definition.Name, vcoreparams.CLONamespace, err))
-			}
+			isReady, err := await.WaitForThePodReplicasCountInNamespace(APIClient, vcoreparams.CLONamespace, metav1.ListOptions{
+				LabelSelector: "app.kubernetes.io/component=distributor",
+			}, 2, time.Minute)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+				"Failed to create pods for the deployment %s in namespace %s due to %v",
+				deploymentName, vcoreparams.CLONamespace, err))
+			Expect(isReady).To(Equal(true), fmt.Sprintf("Failed to create pods for the  deployment %s"+
+				"in namespace %s", deploymentName, vcoreparams.CLONamespace))
 		}
 	}
 
@@ -394,6 +383,9 @@ func CreateCLOInstance(ctx SpecContext) {
 	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))
 
-	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))
+	glog.V(90).Infof("Verify clusterlogging %s in namespace %s state is Ready",
+		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
+	Expect(clusterLoggingObj.IsReady(time.Minute)).To(Equal(true),
+		fmt.Sprintf("clusterlogging %s in namespace %s is Degraded",
+			vcoreparams.CLOInstanceName, vcoreparams.CLONamespace))
 } // func CreateCLOInstance (ctx SpecContext)

@@ -23,7 +23,7 @@ func TunnelConnected(nodeName string) error {
 	glog.V(ipsecparams.IpsecLogLevel).Infof("Checking IPSec tunnel connection status. Exec cmd: %v",
 		ipsecparams.IpsecCmdShow)
 
-	ipsecShowStr, err := remote.ExecCmdOnNode(ipsecparams.IpsecCmdShow, nodeName)
+	ipsecShowStr, err := remote.ExecuteOnNodeWithDebugPod(ipsecparams.IpsecCmdShow, nodeName)
 	if err != nil {
 		glog.V(ipsecparams.IpsecLogLevel).Infof("error could not execute command: %s", err)
 
@@ -50,7 +50,7 @@ func TunnelPackets(nodeName string) *IpsecTunnelPackets {
 	glog.V(ipsecparams.IpsecLogLevel).Infof("Checking IPSec tunnel traffic status. Exec cmd: %v",
 		ipsecparams.IpsecCmdTrafficStatus)
 
-	ipsecOutput, err := remote.ExecCmdOnNode(ipsecparams.IpsecCmdTrafficStatus, nodeName)
+	ipsecOutput, err := remote.ExecuteOnNodeWithDebugPod(ipsecparams.IpsecCmdTrafficStatus, nodeName)
 	if err != nil {
 		glog.V(ipsecparams.IpsecLogLevel).Infof("error could not execute command: %s", err)
 

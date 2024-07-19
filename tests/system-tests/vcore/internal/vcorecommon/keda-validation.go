@@ -60,10 +60,7 @@ func VerifyKedaSuite() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
 
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
 
@@ -98,7 +95,7 @@ func VerifyKedaSuite() {
 func VerifyKedaNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.KedaNamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull %q namespace", vcoreparams.KedaNamespace))
+		fmt.Sprintf("Failed to pull namespace %q; %v", vcoreparams.KedaNamespace, err))
 } // func VerifyKedaNamespaceExists (ctx SpecContext)
 
 // VerifyKedaDeployment assert that Keda operator deployment succeeded.
@@ -326,10 +323,8 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	varsToReplace["RoleBindingNamespace"] = vcoreparams.KedaWatchNamespace
 	varsToReplace["ServiceAccountName"] = serviceAccountName
 	varsToReplace["RoleName"] = metricsReaderName
-	homeDir, err := os.UserHomeDir()
-	Expect(err).ToNot(HaveOccurred(), "user home directory not found; %s", err)
 
-	destinationDirectoryPath := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+	destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 	workingDir, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred(), err)
@@ -376,14 +371,14 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 		WithCooldownPeriod(int32(10)).
 		WithTriggers(scaleTriggers).Create()
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create scaledObject instance %s in namespace %s due to: %v",
+		fmt.Sprintf("Failed to create scaledObject instance %s in namespace %s due to %v",
 			kedaScaledObjectName, vcoreparams.KedaWatchNamespace, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Generate requests to test the application autoscaling")
 
 	abImageURL, err := getImageURL(abOriginMirrorURL, abImageName, abImageTag)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to generate prometheus image URL for %s/%s:%s due to: %v",
+		fmt.Sprintf("Failed to generate prometheus image URL for %s/%s:%s due to %v",
 			prometheusOriginMirrorURL, prometheusImageName, prometheusImageTag, err))
 
 	appLoadJobTemplateName := "keda-test-app-load-job.yaml"

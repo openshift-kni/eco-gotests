@@ -15,11 +15,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
-var (
-	lvdName = "auto-discover-devices"
-	lvsName = "ocs-deviceset"
-)
-
 // VerifyLSOSuite container that contains tests for LSO verification.
 func VerifyLSOSuite() {
 	Describe(
@@ -36,7 +31,7 @@ func VerifyLSOSuite() {
 // VerifyLSONamespaceExists asserts namespace for Local Storage Operator exists.
 func VerifyLSONamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.LSONamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.LSONamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v", vcoreparams.LSONamespace, err))
 } // func VerifyLSONamespaceExists (ctx SpecContext)
 
 // VerifyLSODeployment asserts Local Storage Operator successfully installed.
@@ -50,11 +45,11 @@ func VerifyLSODeployment(ctx SpecContext) {
 		fmt.Sprintf("operator deployment %s failure in the namespace %s; %v",
 			vcoreparams.LSOName, vcoreparams.LSONamespace, err))
 
-	glog.V(100).Infof("Confirm that LSO %s pod was deployed and running in %s namespace",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that LSO %s pod was deployed and running in %s namespace",
 		vcoreparams.LSOName, vcoreparams.LSONamespace)
 
 	lsoPods, err := pod.ListByNamePattern(APIClient, vcoreparams.LSOName, vcoreparams.LSONamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("No %s pods were found in %s namespace due to %s",
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("No %s pods were found in %s namespace due to %v",
 		vcoreparams.LSOName, vcoreparams.LSONamespace, err))
 	Expect(len(lsoPods)).ToNot(Equal(0), fmt.Sprintf("The list of pods %s found in namespace %s is empty",
 		vcoreparams.LSOName, vcoreparams.LSONamespace))

@@ -33,15 +33,12 @@ func VerifyServiceMeshSuite() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
 
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
+				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
-
-				glog.V(100).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
+				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
 
 				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(100).Infof("%s folder already exists", vcoreConfigsFolder)
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
 				}
 			})
 
@@ -74,25 +71,29 @@ func VerifyServiceMeshSuite() {
 // VerifyDTPONamespaceExists asserts Distributed Tracing Platform Operator namespace exists.
 func VerifyDTPONamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.DTPONamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.DTPONamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.DTPONamespace, err))
 } // func VerifyDTPONamespaceExists (ctx SpecContext)
 
 // VerifyKialiNamespaceExists asserts Kiali Operator namespace exists.
 func VerifyKialiNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.KialiNamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.KialiNamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.KialiNamespace, err))
 } // func VerifyKialiNamespaceExists (ctx SpecContext)
 
 // VerifyIstioNamespaceExists asserts Istio Operator namespace exists.
 func VerifyIstioNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.IstioNamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.IstioNamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.IstioNamespace, err))
 } // func VerifyIstioNamespaceExists (ctx SpecContext)
 
 // VerifyServiceMeshNamespaceExists asserts Kiali Operator namespace exists.
 func VerifyServiceMeshNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.SMONamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.SMONamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.SMONamespace, err))
 } // func VerifyServiceMeshNamespaceExists (ctx SpecContext)
 
 // VerifyDTPODeployment assert Distributed Tracing Platform Operator deployment succeeded.
@@ -151,18 +152,18 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 	membersList := []string{"amfmme1", "csdb1", "nrf1", "nssf1", "smf1", "upf1"}
 	servicemeshControlplaneDeployments := []string{"istio-ingressgateway", "istiod-basic", "jaeger"}
 
-	glog.V(100).Info("Create namespaces according to the members list")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Create namespaces according to the members list")
 
 	for _, member := range membersList {
 		nsBuilder, err := namespace.NewBuilder(APIClient, member).Create()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create namespace %s due to %s",
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create namespace %s due to %v",
 			member, err))
 		Expect(nsBuilder.Exists()).To(Equal(true), fmt.Sprintf("namespace %s not found", member))
 	}
 
-	glog.V(100).Info("Start to configure Service-Mesh Operator")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Start to configure Service-Mesh Operator")
 
-	glog.V(100).Info("Create service-mesh memberRoll")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Create service-mesh memberRoll")
 
 	memberRollObj := servicemesh.NewMemberRollBuilder(APIClient, memberRollName, vcoreparams.IstioNamespace)
 
@@ -174,15 +175,12 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 			fmt.Sprintf("memberRoll %s not found in namespace %s", memberRollName, vcoreparams.IstioNamespace))
 	}
 
-	glog.V(100).Info("Create service-mesh control plane")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Create service-mesh control plane")
 
 	controlPlaneBuilder := servicemesh.NewControlPlaneBuilder(APIClient, "basic", vcoreparams.IstioNamespace)
 
 	if !controlPlaneBuilder.Exists() {
-		homeDir, err := os.UserHomeDir()
-		Expect(err).ToNot(HaveOccurred(), "user home directory not found; %s", err)
-
-		destinationDirectoryPath := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+		destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 		workingDir, err := os.Getwd()
 		Expect(err).ToNot(HaveOccurred(), err)
@@ -210,7 +208,8 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 	Expect(memeberRollReady).To(Equal(true),
 		fmt.Sprintf("memberroll %s not found in namespace %s", memberRollName, vcoreparams.IstioNamespace))
 
-	glog.V(100).Infof("Confirm that all servicemesh controlplane deployments %v are running in %s namespace",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that all servicemesh controlplane deployments %v "+
+		"are running in %s namespace",
 		servicemeshControlplaneDeployments, vcoreparams.IstioNamespace)
 
 	for _, smodeployment := range servicemeshControlplaneDeployments {
@@ -222,9 +221,9 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 			smodeployment, vcoreparams.IstioNamespace, err))
 	}
 
-	glog.V(100).Info("Check the service-mesh control plane pods are creating on the " +
+	glog.V(vcoreparams.VCoreLogLevel).Info("Check the service-mesh control plane pods are creating on the " +
 		"istio-system project")
-	glog.V(100).Infof("Confirm that %s pod was deployed and running in %s namespace",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that %s pod was deployed and running in %s namespace",
 		istioBasicPodLabel, vcoreparams.IstioNamespace)
 
 	_, err = await.WaitForThePodReplicasCountInNamespace(
@@ -244,7 +243,7 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), "No %s labeled pods were found in %s namespace; %w",
 		istioBasicPodLabel, vcoreparams.IstioNamespace, err)
 
-	glog.V(100).Infof("Confirm that %s pod was deployed and running in %s namespace",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that %s pod was deployed and running in %s namespace",
 		istioIgwPodLabel, vcoreparams.IstioNamespace)
 
 	_, err = pod.WaitForAllPodsInNamespaceRunning(
@@ -255,7 +254,7 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), "No %s labeled pods were found in %s namespace; %w",
 		istioIgwPodLabel, vcoreparams.IstioNamespace, err)
 
-	glog.V(100).Infof("Confirm that %s pod was deployed and running in %s namespace",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Confirm that %s pod was deployed and running in %s namespace",
 		wasmBasicPodLabel, vcoreparams.IstioNamespace)
 
 	_, err = pod.WaitForAllPodsInNamespaceRunning(

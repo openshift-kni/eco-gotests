@@ -38,10 +38,7 @@ func VerifyRedisSuite() {
 			BeforeAll(func() {
 				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
 
-				homeDir, err := os.UserHomeDir()
-				Expect(err).To(BeNil(), fmt.Sprint(err))
-
-				vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
 					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
@@ -73,10 +70,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("redis statefulset %s in namespace %s exists and ready",
 			redisStatefulsetName, redisNamespace)
 	} else {
-		homeDir, err := os.UserHomeDir()
-		Expect(err).To(BeNil(), fmt.Sprint(err))
-
-		vcoreConfigsFolder := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+		vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 		redisConfigFilePath := filepath.Join(vcoreConfigsFolder, redisCustomValuesTemplate)
 
@@ -109,7 +103,8 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 				VCoreConfig.User,
 				VCoreConfig.Pass,
 				VCoreConfig.CombinedPullSecretFile,
-				VCoreConfig.RegistryRepository)
+				VCoreConfig.RegistryRepository,
+				VCoreConfig.HomeDir)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to mirror redis image locally due to %v", err))
 		}
 
@@ -120,7 +115,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			"helm repo update",
 			fmt.Sprintf("helm fetch dandydev/redis-ha --version 4.12.9 -d %s/.", vcoreConfigsFolder),
 			fmt.Sprintf("tar xvfz %s/redis-ha-4.12.9.tgz --directory=%s/.",
-				vcoreConfigsFolder, homeDir)}
+				vcoreConfigsFolder, VCoreConfig.HomeDir)}
 		for _, cmd := range installRedisCmd {
 			_, err = shell.ExecuteCmd(cmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s command due to %v", cmd, err))
@@ -178,11 +173,12 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		varsToReplace["ImageRepository"] = imageURL
 		varsToReplace["ImageTag"] = redisImageTag
 		varsToReplace["RedisSecret"] = redisSecretName
-		varsToReplace["StorageClass"] = "ocs-storagecluster-cephfs"
+		varsToReplace["StorageClass"] = vcoreparams.StorageClassName
+		// varsToReplace["StorageClass"] = "ocs-storagecluster-cephfs"
 		varsToReplace["RunAsUser"] = runAsUser
 		varsToReplace["FsGroup"] = fsGroup
 
-		destinationDirectoryPath := filepath.Join(homeDir, vcoreparams.ConfigurationFolderName)
+		destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 		workingDir, err := os.Getwd()
 		Expect(err).ToNot(HaveOccurred(), err)
@@ -195,7 +191,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			redisCustomValuesTemplate, vcoreConfigsFolder, err)
 
 		customConfigCmd := fmt.Sprintf("helm upgrade --install %s -n %s %s/%s -f %s --kubeconfig %s",
-			redisAppName, redisNamespace, homeDir, redisAppName,
+			redisAppName, redisNamespace, VCoreConfig.HomeDir, redisAppName,
 			redisConfigFilePath, os.Getenv("KUBECONFIG"))
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Execute command %s", customConfigCmd)
 

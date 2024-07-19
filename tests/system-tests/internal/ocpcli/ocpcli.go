@@ -165,7 +165,7 @@ func AddClusterRoleToServiceAccount(serviceAccountName, namespace, clusterRole s
 func ExecuteViaDebugPodOnNode(
 	nodeName string,
 	cmd string) (string, error) {
-	execCmd := fmt.Sprintf("oc debug node/%s -- bash -c \"chroot /host %s\" --insecure-skip-tls-verify",
+	execCmd := fmt.Sprintf("oc debug nodes/%s -- bash -c \"chroot /host %s\" --insecure-skip-tls-verify",
 		nodeName, cmd)
 	glog.V(100).Infof("Execute command %s", execCmd)
 

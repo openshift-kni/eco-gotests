@@ -81,7 +81,8 @@ func VerifyNROPSuite() {
 // VerifyNROPNamespaceExists asserts namespace for Numa Resources Operator exists.
 func VerifyNROPNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.NROPNamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.NROPNamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.NROPNamespace, err))
 } // func VerifyNROPNamespaceExists (ctx SpecContext)
 
 // VerifyNROPDeployment asserts Numa Resources Operator successfully installed.
@@ -137,7 +138,8 @@ func VerifyNROPCustomResources(ctx SpecContext) {
 		glog.V(vcoreparams.VCoreLogLevel).Info("Wait for all clusteroperators availability after nodes reboot")
 
 		_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v",
+			err))
 	}
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Verify all NUMAResourcesOperator pods was created")
@@ -195,7 +197,7 @@ func VerifyNROPAwareSecondaryPodScheduler(ctx SpecContext) {
 
 		nrtURL, err := getImageURL(nrtOriginMirrorURL, nrtImageName, nrtImageTag)
 		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to generate noderesourcetopology image URL for %s/%s:%s due to: %v",
+			fmt.Sprintf("Failed to generate noderesourcetopology image URL for %s/%s:%s due to %v",
 				nrtOriginMirrorURL, nrtImageName, nrtImageTag, err))
 
 		_, err = nropScheduler.WithImageSpec(nrtURL).WithSchedulerName(vcoreparams.NumaAwareSchedulerName).Create()
@@ -206,7 +208,8 @@ func VerifyNROPAwareSecondaryPodScheduler(ctx SpecContext) {
 		glog.V(vcoreparams.VCoreLogLevel).Info("Wait for all clusteroperators availability")
 
 		_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v",
+			err))
 	}
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Verify all NUMAResourcesScheduler deployment succeeded")
@@ -236,7 +239,7 @@ func VerifyNROPSchedulingWorkload(ctx SpecContext) {
 
 	workloadImage, err := getImageURL(wkldImageOriginURL, wkldImageName, wkldImageTag)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to generate numa workload image URL for %s/%s:%s due to: %v",
+		fmt.Sprintf("Failed to generate numa workload image URL for %s/%s:%s due to %v",
 			wkldImageOriginURL, wkldImageName, wkldImageTag, err))
 
 	workloadSelector := map[string]string{"app": "test"}

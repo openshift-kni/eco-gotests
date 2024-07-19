@@ -39,7 +39,7 @@ func VerifyNMStateSuite() {
 func VerifyNMStateNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, VCoreConfig.NMStateOperatorNamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull %q namespace", VCoreConfig.NMStateOperatorNamespace))
+		fmt.Sprintf("Failed to pull namespace %q; %v", VCoreConfig.NMStateOperatorNamespace, err))
 } // func VerifyNMStateNamespaceExists (ctx SpecContext)
 
 // VerifyNMStateCSVConditionSucceeded assert that NMState operator deployment succeeded.
@@ -62,7 +62,7 @@ func VerifyNMStateInstanceExists(ctx SpecContext) {
 		func(ctx context.Context) (bool, error) {
 			_, pullErr := nmstate.PullNMstate(APIClient, vcoreparams.NMStateInstanceName)
 			if pullErr != nil {
-				glog.V(vcoreparams.VCoreLogLevel).Infof("Failed to pull in NMState instance %q - %v",
+				glog.V(vcoreparams.VCoreLogLevel).Infof("Failed to pull in NMState instance %q due to %v",
 					vcoreparams.NMStateInstanceName, pullErr)
 
 				return false, pullErr
@@ -72,5 +72,5 @@ func VerifyNMStateInstanceExists(ctx SpecContext) {
 		})
 
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull in NMState instance %q", vcoreparams.NMStateInstanceName))
+		fmt.Sprintf("Failed to pull in NMState instance %q; %v", vcoreparams.NMStateInstanceName, err))
 } // func VerifyNMStateInstanceExists (ctx SpecContext)

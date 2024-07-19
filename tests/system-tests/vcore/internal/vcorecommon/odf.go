@@ -2,12 +2,16 @@ package vcorecommon
 
 import (
 	"fmt"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/storage"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	lsov1 "github.com/openshift/local-storage-operator/api/v1"
 	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	// "github.com/openshift-kni/eco-goinfra/pkg/lso".
 	"time"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
@@ -19,8 +23,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/lso"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/storage"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -57,29 +59,30 @@ func VerifyODFSuite() {
 				Label("odf"), reportxml.ID("63844"), VerifyODFOperatorDeployment)
 
 			It("Apply taints to the ODF nodes",
-				Label("odf"), reportxml.ID("1234"), VerifyODFTaints)
+				Label("odf"), reportxml.ID("74916"), VerifyODFTaints)
 
 			It("Verify ODF console enabled",
-				Label("odf"), reportxml.ID("66666"), VerifyODFConsoleConfig)
+				Label("odf"), reportxml.ID("74917"), VerifyODFConsoleConfig)
 
 			It("Verify localvolumediscovery instance exists",
-				Label("odf"), reportxml.ID("66666"), VerifyLocalVolumeDiscovery)
+				Label("odf"), reportxml.ID("74920"), VerifyLocalVolumeDiscovery)
 
 			It("Verify localvolumeset instance exists",
-				Label("odf"), reportxml.ID("66666"), VerifyLocalVolumeSet)
+				Label("odf"), reportxml.ID("74918"), VerifyLocalVolumeSet)
 
 			It("Verify ODF operator StorageSystem configuration procedure",
-				Label("odf2"), reportxml.ID("59487"), VerifyODFStorageSystemConfig)
+				Label("odf"), reportxml.ID("59487"), VerifyODFStorageSystemConfig)
 
 			It("Apply operators config for the ODF nodes",
-				Label("odf2"), reportxml.ID("23456"), VerifyOperatorsConfigForODFNodes)
+				Label("odf"), reportxml.ID("74919"), VerifyOperatorsConfigForODFNodes)
 		})
 }
 
 // VerifyODFNamespaceExists asserts namespace for ODF exists.
 func VerifyODFNamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.ODFNamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.ODFNamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.ODFNamespace, err))
 } // func VerifyODFNamespaceExists (ctx SpecContext)
 
 // VerifyODFOperatorDeployment asserts ODF successfully installed.
@@ -130,7 +133,7 @@ func VerifyODFTaints(ctx SpecContext) {
 		applyTaintsCmd := fmt.Sprintf(
 			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true",
 			odfNode.Definition.Name)
-		_, err := shell.ExecuteCmd(applyTaintsCmd)
+		_, err = shell.ExecuteCmd(applyTaintsCmd)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 			applyTaintsCmd, err))
 	}
@@ -144,12 +147,12 @@ func VerifyODFConsoleConfig(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("consoleOperator 'cluster' not found; %v", err))
 
 	consoleOperatorObj, err = consoleOperatorObj.WithPlugins([]string{odfConsolePlugin}, false).Update()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to add plugins %v to the consoleOperator 'cluster' due to: %v",
-		odfConsolePlugin, err))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to add plugins %v to the consoleOperator 'cluster' "+
+		"due to: %v", odfConsolePlugin, err))
 
 	newPluginsList, err := consoleOperatorObj.GetPlugins()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get plugins value from the consoleOperator 'cluster'; %v",
-		err))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get plugins value from the consoleOperator "+
+		"'cluster'; %v", err))
 	Expect(slices.Contains(*newPluginsList, odfConsolePlugin),
 		fmt.Sprintf("Failed to add new plugin %s to the consoleOperator plugins list: %v",
 			odfConsolePlugin, newPluginsList))
@@ -167,7 +170,7 @@ func VerifyLocalVolumeDiscovery(ctx SpecContext) {
 		vcoreparams.LSONamespace)
 
 	if localVolumeDiscoveryObj.Exists() {
-		err := localVolumeDiscoveryObj.Delete()
+		err = localVolumeDiscoveryObj.Delete()
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("failed to delete localvolumediscovery %s from namespace %s; %v",
 				vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
@@ -192,11 +195,11 @@ func VerifyLocalVolumeDiscovery(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumediscovery %s in namespace %s "+
 		"due to %v", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
 
-	isDiscovering, err := localVolumeDiscoveryObj.IsDiscovering()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve localVolumeDiscovery %s in namespace %s "+
 		"status due to %v", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
-	Expect(isDiscovering).To(Equal(true), fmt.Sprintf("localvolumediscovery %s in namespace %s "+
-		"failed to reach discovery state", vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace))
+	Expect(localVolumeDiscoveryObj.IsDiscovering(5*time.Minute)).To(Equal(true),
+		fmt.Sprintf("localvolumediscovery %s in namespace %s failed to discover",
+			vcoreparams.LocalVolumeDiscoveryName, vcoreparams.LSONamespace))
 } // func VerifyLocalVolumeDiscovery (ctx SpecContext)
 
 // VerifyLocalVolumeSet asserts localvolumeset instance exists.
@@ -211,7 +214,7 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		vcoreparams.LSONamespace)
 
 	if localVolumeSetObj.Exists() {
-		err := localVolumeSetObj.Delete()
+		err = localVolumeSetObj.Delete()
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("failed to delete localvolumeset %s from namespace %s; %v",
 				vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace, err))
@@ -246,6 +249,14 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		WithTolerations(tolerations).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
 		"due to %v", vcoreparams.LocalVolumeSetName, vcoreparams.LSONamespace, err))
+
+	pvLabel := fmt.Sprintf("storage.openshift.com/owner-name=%s", vcoreparams.LocalVolumeSetName)
+
+	err = await.WaitUntilPersistentVolumeCreated(APIClient,
+		3,
+		5*time.Minute,
+		metav1.ListOptions{LabelSelector: pvLabel})
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create persistentVolumes due to %v", err))
 } // func VerifyLocalVolumeSet (ctx SpecContext)
 
 // VerifyODFStorageSystemConfig asserts ODF storage cluster system successfully configured.
@@ -255,9 +266,9 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 	storageSystemObj := storage.NewStorageSystemBuilder(APIClient,
 		vcoreparams.StorageSystemName, vcoreparams.ODFNamespace)
 
-	//if storageSystemObj.Exists() {
-	//	err := storageSystemObj.Delete()
-	//	Expect(err).ToNot(HaveOccurred(),
+	// if storageSystemObj.Exists() {
+	//	 err := storageSystemObj.Delete()
+	//   Expect(err).ToNot(HaveOccurred(),
 	//		fmt.Sprintf("failed to delete ODF StorageSystem %s from namespace %s; %v",
 	//			vcoreparams.StorageSystemName, vcoreparams.ODFNamespace, err))
 	//}
@@ -265,12 +276,12 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 	storageclusterObj := storage.NewStorageClusterBuilder(APIClient,
 		vcoreparams.StorageClusterName, vcoreparams.ODFNamespace)
 
-	if storageclusterObj.Exists() {
-		err := storageclusterObj.Delete()
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("failed to delete ODF StorageCluster %s from namespace %s; %v",
-				vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
-	}
+	// if storageclusterObj.Exists() {
+	//	err := storageclusterObj.Delete()
+	//	Expect(err).ToNot(HaveOccurred(),
+	//		fmt.Sprintf("failed to delete ODF StorageCluster %s from namespace %s; %v",
+	//			vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
+	//}
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageSystem")
 
@@ -331,34 +342,8 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageCluster %s instance in namespace %s; "+
 		"%v", vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
 	Expect(storageclusterObj.Exists()).To(Equal(true),
-		fmt.Sprintf("Failed to createstorageCluster %s instance in namespace %s due to %v",
-			vcoreparams.StorageClusterName, vcoreparams.ODFNamespace, err))
-
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Start to configure ODF StorageCluster ConfigMap")
-
-	configMapObj := configmap.NewBuilder(APIClient, "rook-config-override", vcoreparams.ODFNamespace)
-
-	if !configMapObj.Exists() {
-		cmData := map[string]string{
-			"config": "" +
-				"[global]\n" +
-				"bdev_flock_retry = 20\n" +
-				"mon_osd_full_ratio = .85\n" +
-				"mon_osd_backfillfull_ratio = .8\n" +
-				"mon_osd_nearfull_ratio = .75\n" +
-				"mon_max_pg_per_osd = 600\n" +
-				"mon_pg_warn_max_object_skew = 0\n" +
-				"mon_data_avail_warn = 15\n" +
-				"mon_warn_on_pool_no_redundancy = false\n" +
-				"bluestore_prefer_deferred_size_hdd = 0\n" +
-				"[osd]\n" +
-				"osd_memory_target_cgroup_limit_ratio = 0.8",
-		}
-
-		_, err = configMapObj.WithData(cmData).Create()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create storageCluster configMap "+
-			"rook-config-override in namespace %s due to %v", vcoreparams.ODFNamespace, err))
-	}
+		fmt.Sprintf("Failed to createstorageCluster %s instance in namespace %s due",
+			vcoreparams.StorageClusterName, vcoreparams.ODFNamespace))
 } // func VerifyODFStorageSystemConfig (ctx SpecContext)
 
 // VerifyOperatorsConfigForODFNodes asserts operators configuration for ODF nodes.
@@ -438,7 +423,7 @@ func VerifyOperatorsConfigForODFNodes(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 		restartStoragePodsCmd, err))
 
-	_, err = await.WaitUntilAllPodsReady(APIClient, vcoreparams.ODFNamespace, 2*time.Minute)
+	_, err = await.WaitUntilAllPodsReady(APIClient, vcoreparams.ODFNamespace, 7*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("not all storage pods in namespace %s succeeded to "+
 		"recover after deletion due to %v", vcoreparams.ODFNamespace, err))
 } // func VerifyOperatorsConfigForODFNodes (ctx SpecContext)

@@ -2,6 +2,7 @@ package vcorecommon
 
 import (
 	"fmt"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +17,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 	tunedv1 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/tuned/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -68,7 +68,8 @@ func VerifyNTOSuite() {
 // VerifyNTONamespaceExists asserts namespace for Node Tuning Operator exists.
 func VerifyNTONamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.NTONamespace, time.Second)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull %q namespace", vcoreparams.NTONamespace))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v",
+		vcoreparams.NTONamespace, err))
 } // func VerifyNTONamespaceExists (ctx SpecContext)
 
 // VerifyNTODeployment asserts Node Tuning Operator successfully installed.
@@ -90,7 +91,7 @@ func VerifyNTODeployment(ctx SpecContext) {
 		vcoreparams.NTODeploymentName, vcoreparams.NTONamespace)
 
 	ntoPods, err := pod.ListByNamePattern(APIClient, vcoreparams.NTODeploymentName, vcoreparams.NTONamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("No %s pods were found in %s namespace due to %s",
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("No %s pods were found in %s namespace due to %v",
 		vcoreparams.NTODeploymentName, vcoreparams.NTONamespace, err))
 	Expect(len(ntoPods)).ToNot(Equal(0), fmt.Sprintf("The list of pods %s found in namespace %s is empty",
 		vcoreparams.NTODeploymentName, vcoreparams.NTONamespace))
@@ -109,7 +110,7 @@ func VerifyNTODeployment(ctx SpecContext) {
 		ntoServiceName, vcoreparams.NTONamespace)
 
 	ntoService, err := service.Pull(APIClient, ntoServiceName, vcoreparams.NTONamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get service %s from the namespace %s due to %s",
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get service %s from the namespace %s due to %v",
 		ntoServiceName, vcoreparams.NTONamespace, err))
 	Expect(ntoService.Exists()).To(Equal(true), fmt.Sprintf("no service %s was found in the namespace %s",
 		ntoServiceName, vcoreparams.NTONamespace))
@@ -118,7 +119,7 @@ func VerifyNTODeployment(ctx SpecContext) {
 		ntoServiceName, vcoreparams.NTONamespace)
 
 	paoService, err := service.Pull(APIClient, paoServiceName, vcoreparams.NTONamespace)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get service %s from the namespace %s due to %s",
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get service %s from the namespace %s due to %v",
 		paoServiceName, vcoreparams.NTONamespace, err))
 	Expect(paoService.Exists()).To(Equal(true), fmt.Sprintf("no service %s was found in the namespace %s",
 		paoServiceName, vcoreparams.NTONamespace))
@@ -144,8 +145,12 @@ func CreatePerformanceProfile(ctx SpecContext) {
 			},
 		}
 		performanceKubeletConfigName := fmt.Sprintf("performance-%s", workerLabel)
-		ppAnnotations := map[string]string{"kubeletconfig.experimental": fmt.Sprintf("{\"systemReserved\":{\"cpu\":\"%s\",\"memory\":\"%s\"}}",
-			vcoreparams.SystemReservedCPU, vcoreparams.SystemReservedMemory)}
+		// ppAnnotations := map[string]string{"performance.openshift.io/ignore-cgroups-version": "true",
+		//	"kubeletconfig.experimental": fmt.Sprintf("{\"systemReserved\":{\"cpu\":\"%s\",\"memory\":\"%s\"}}",
+		//		vcoreparams.SystemReservedCPU, vcoreparams.SystemReservedMemory)}
+		ppAnnotations := map[string]string{
+			"kubeletconfig.experimental": fmt.Sprintf("{\"systemReserved\":{\"cpu\":\"%s\",\"memory\":\"%s\"}}",
+				vcoreparams.SystemReservedCPU, vcoreparams.SystemReservedMemory)}
 		netInterfaceName := "ens2f(0|1)"
 		netDevices := []v2.Device{{
 			InterfaceName: &netInterfaceName,
@@ -191,7 +196,8 @@ func CreatePerformanceProfile(ctx SpecContext) {
 			glog.V(vcoreparams.VCoreLogLevel).Info("Wait for all clusteroperators availability after nodes reboot")
 
 			_, err = clusteroperator.WaitForAllClusteroperatorsAvailable(APIClient, 60*time.Second)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v", err))
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Error waiting for all available clusteroperators: %v",
+				err))
 		}
 
 		glog.V(vcoreparams.VCoreLogLevel).Info("Verify NUMA Topology Manager")
@@ -275,12 +281,15 @@ func CreateNodesTuning(ctx SpecContext) {
 			glog.V(vcoreparams.VCoreLogLevel).Infof("Check nohz_full configured on the node %s",
 				node.Definition.Name)
 
+			var output string
+
 			nohzFullCmd := "cat /proc/cmdline"
-			output, err := ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, nohzFullCmd)
+
+			output, err = ocpcli.ExecuteViaDebugPodOnNode(node.Object.Name, nohzFullCmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
 				nohzFullCmd, node.Object.Name, err))
 			Expect(output).To(ContainSubstring("nohz_full"),
-				fmt.Sprintf("nohz_full not found configured on the node %s; %v", node.Definition.Name, output))
+				fmt.Sprintf("nohz_full not found configured on the node %s; %s", node.Definition.Name, output))
 		}
 	}
 } // func CreateNodesTuning (ctx SpecContext)

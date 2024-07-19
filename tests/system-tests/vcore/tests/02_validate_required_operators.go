@@ -14,8 +14,6 @@ var _ = Describe(
 	Label(vcoreparams.Label), func() {
 		vcorecommon.VerifyNMStateSuite()
 
-		// vcorecommon.VerifyMetaLBSuite()
-
 		vcorecommon.VerifyServiceMeshSuite()
 
 		vcorecommon.VerifyHelmSuite()

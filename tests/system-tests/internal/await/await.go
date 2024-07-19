@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/statefulset"
+	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -239,10 +240,6 @@ func WaitUntilDaemonSetDeleted(apiClient *clients.Settings, name, nsname string,
 			return true, nil
 		})
 
-	if err != nil {
-		return err
-	}
-
 	if err == nil {
 		return nil
 	}
@@ -316,4 +313,73 @@ func WaitForThePodReplicasCountInNamespace(
 	}
 
 	return true, nil
+}
+
+// WaitUntilPersistentVolumeCreated waits until required count of the persistentVolumes are created.
+func WaitUntilPersistentVolumeCreated(apiClient *clients.Settings,
+	pvCnt int,
+	timeout time.Duration,
+	options ...metav1.ListOptions) error {
+	glog.V(90).Infof("Wait until %d persistentVolumes with option %v are created", pvCnt, options)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pvList, err := storage.ListPV(apiClient, metav1.ListOptions{})
+			if err != nil {
+				glog.V(90).Infof("no persistentVolumes with option %v was found, retry", options)
+
+				return false, nil
+			}
+
+			if len(pvList) != pvCnt {
+				glog.V(90).Infof("persistentVolumes count not equal to the expected: %d; found: %d",
+					pvCnt, len(pvList))
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("persistentVolumes with option %v were not found or count is not as expected %d; %w",
+			options, timeout, err)
+	}
+
+	return nil
+}
+
+// WaitUntilPersistentVolumeClaimCreated waits until required count of the persistentVolumeClaims are created.
+func WaitUntilPersistentVolumeClaimCreated(apiClient *clients.Settings,
+	nsname string,
+	pvcCnt int,
+	timeout time.Duration,
+	options ...metav1.ListOptions) error {
+	glog.V(90).Infof("Wait until %d persistentVolumeClaims with option %v are created", pvcCnt, options)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pvList, err := storage.ListPVC(apiClient, nsname, metav1.ListOptions{})
+			if err != nil {
+				glog.V(90).Infof("no persistentVolumeClaims with option %v was found, retry", options)
+
+				return false, nil
+			}
+
+			if len(pvList) != pvcCnt {
+				glog.V(90).Infof("persistentVolumeClaims count not equal to the expected: %d; found: %d",
+					pvcCnt, len(pvList))
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("persistentVolumeClaimss with option %v were not found or count is not as expected %d; %w",
+			options, timeout, err)
+	}
+
+	return nil
 }

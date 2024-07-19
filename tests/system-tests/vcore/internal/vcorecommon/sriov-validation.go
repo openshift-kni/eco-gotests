@@ -70,14 +70,14 @@ func VerifySRIOVConfig(ctx SpecContext) {
 	snnpPfname1 := []string{"ens2f0#0-7"}
 	snnpPfname2 := []string{"ens2f1#0-7"}
 
-	glog.V(100).Info("Pre-configuration: change SR-IOV config")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Pre-configuration: change SR-IOV config")
 
 	sriovOperatorConfigObj, err := sriov.PullOperatorConfig(APIClient, vcoreparams.SRIOVNamespace)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to load sriovoperatorconfig object from namespace %s due to %v",
 			vcoreparams.SRIOVNamespace, err))
 
-	glog.V(100).Infof("Disable Injector and OperatorWebhook and set a node selector value %v "+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Disable Injector and OperatorWebhook and set a node selector value %v "+
 		"for the sriovoperatorconfig object in namespace %s",
 		VCoreConfig.VCorePpLabelMap, vcoreparams.SRIOVNamespace)
 
@@ -88,7 +88,7 @@ func VerifySRIOVConfig(ctx SpecContext) {
 		fmt.Sprintf("failed to change the sriovoperatorconfig object in namespace %s configuration due to %v",
 			vcoreparams.SRIOVNamespace, err))
 
-	glog.V(100).Info("Wait until Webhook and Injector pods are un-deployed")
+	glog.V(vcoreparams.VCoreLogLevel).Info("Wait until Webhook and Injector pods are un-deployed")
 
 	err = await.WaitUntilDaemonSetDeleted(APIClient,
 		vcoreparams.SRIOVInjectorDaemonsetName,
@@ -108,7 +108,8 @@ func VerifySRIOVConfig(ctx SpecContext) {
 		fmt.Sprintf("failed to delete daemonset %s in namespace %s due to %v",
 			vcoreparams.SRIOVWebhookDaemonsetName, vcoreparams.SRIOVNamespace, err))
 
-	glog.V(100).Infof("Create SR-IOV network %s in namespace %s", sriovNet1Name, vcoreparams.SRIOVNamespace)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create SR-IOV network %s in namespace %s",
+		sriovNet1Name, vcoreparams.SRIOVNamespace)
 
 	sriovNetwork1 := sriov.NewNetworkBuilder(APIClient,
 		sriovNet1Name,
@@ -125,7 +126,8 @@ func VerifySRIOVConfig(ctx SpecContext) {
 				sriovNet1Name, vcoreparams.SRIOVNamespace))
 	}
 
-	glog.V(100).Infof("Create SR-IOV network %s in namespace %s", sriovNet2Name, vcoreparams.SRIOVNamespace)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create SR-IOV network %s in namespace %s",
+		sriovNet2Name, vcoreparams.SRIOVNamespace)
 
 	sriovNetwork2 := sriov.NewNetworkBuilder(APIClient,
 		sriovNet2Name,
@@ -142,7 +144,7 @@ func VerifySRIOVConfig(ctx SpecContext) {
 				sriovNet2Name, vcoreparams.SRIOVNamespace))
 	}
 
-	glog.V(100).Infof("Create SR-IOV network node policy %s in namespace %s",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create SR-IOV network node policy %s in namespace %s",
 		sriovNet1Name, vcoreparams.SRIOVNamespace)
 
 	sriovNetworkNodePolicy1 := sriov.NewPolicyBuilder(APIClient,
@@ -162,7 +164,7 @@ func VerifySRIOVConfig(ctx SpecContext) {
 				sriovNet1Name, vcoreparams.SRIOVNamespace))
 	}
 
-	glog.V(100).Infof("Create SR-IOV network node policy %s in namespace %s",
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create SR-IOV network node policy %s in namespace %s",
 		sriovNet2Name, vcoreparams.SRIOVNamespace)
 
 	sriovNetworkNodePolicy2 := sriov.NewPolicyBuilder(APIClient,

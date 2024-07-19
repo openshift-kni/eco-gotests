@@ -2,12 +2,12 @@ package vcorecommon
 
 import (
 	"fmt"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cgroup"
-	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodesconfig"
+	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/cgroup"
+	configv1 "github.com/openshift/api/config/v1"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -22,7 +22,7 @@ func VerifyCGroupDefault() {
 	Describe(
 		"cgroup verification",
 		Label(vcoreparams.LabelVCoreDeployment), func() {
-			//BeforeAll(func() {
+			// BeforeAll(func() {
 			//	By("Check that the current cluster version is greater or equal to the 4.15")
 			//
 			//	isGreaterOrEqual, err := platform.CompareOCPVersionWithCurrent(APIClient,
@@ -46,14 +46,14 @@ func VerifyCGroupDefault() {
 			//		fmt.Sprintf("failed to change cluster cgroup mode to the %v due to %v",
 			//			configv1.CgroupModeV2, err))
 			//})
-
+			//
 			It("Verifies cgroupv2 is a default for the cluster deployment",
 				Label("cgroupv2"), reportxml.ID("73370"), VerifyCGroupV2IsADefault)
 
 			It("Verifies that the cluster can be moved to the cgroupv1",
 				Label("cgroupv2"), reportxml.ID("73371"), VerifySwitchBetweenCGroupVersions)
-
-			//AfterAll(func() {
+			//
+			// AfterAll(func() {
 			//	By("Restore cgroupv2 cluster configuration")
 			//
 			//	err := cgroup.SetLinuxCGroupVersion(APIClient, configv1.CgroupModeV2)
@@ -106,8 +106,8 @@ func VerifySwitchBetweenCGroupVersions(ctx SpecContext) {
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("For the vCore test run cgroup version will stay to be configured " +
 		"to the v1 because cpu load balancing not supported on cgroupv2")
-
-	//glog.V(vcoreparams.VCoreLogLevel).Infof("The short sleep to update new values before the following change.")
+	//
+	// glog.V(vcoreparams.VCoreLogLevel).Infof("The short sleep to update new values before the following change.")
 	//
 	//time.Sleep(2 * time.Minute)
 	//

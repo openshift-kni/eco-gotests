@@ -16,8 +16,6 @@ const (
 	LabelVCoreRequirements = "vcorerequirements"
 	// VCoreLogLevel configures logging level for vCore related tests.
 	VCoreLogLevel = 90
-	// LabelVCoreDebug is used to select vCore tests under debug.
-	LabelVCoreDebug = "vcoredebug"
 
 	// MasterNodeRole master node role.
 	MasterNodeRole = "master"
@@ -105,12 +103,6 @@ const (
 
 	// ODFNamespace is an odf namespace.
 	ODFNamespace = "openshift-storage"
-
-	// ODFServiceAccount is an odf serviceaccount name.
-	ODFServiceAccount = "odf-vault-auth"
-
-	// ODFServiceAccountSecret is an odf serviceaccount secret name.
-	ODFServiceAccountSecret = "odf-vault-auth-token"
 
 	// StorageClassName is a storage class name.
 	StorageClassName = "ocs-storagecluster-ceph-rbd"

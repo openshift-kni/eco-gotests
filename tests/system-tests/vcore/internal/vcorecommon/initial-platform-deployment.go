@@ -2,14 +2,13 @@ package vcorecommon
 
 import (
 	"fmt"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	apiUrl "net/url"
 	"os"
 	"regexp"
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
