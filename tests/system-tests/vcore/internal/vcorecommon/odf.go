@@ -2,6 +2,7 @@ package vcorecommon
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
@@ -124,14 +125,16 @@ func VerifyODFOperatorDeployment(ctx SpecContext) {
 func VerifyODFTaints(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Apply taints to the ODF nodes")
 
+	kubeConfigURL := os.Getenv("KUBECONFIG")
+
 	odfNodesList, err := nodes.List(APIClient, VCoreConfig.OdfLabelListOption)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get cluster nodes list due to %v", err))
 
 	for _, odfNode := range odfNodesList {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode.Definition.Name)
 		applyTaintsCmd := fmt.Sprintf(
-			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true",
-			odfNode.Definition.Name)
+			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
+			odfNode.Definition.Name, kubeConfigURL)
 		_, err = shell.ExecuteCmd(applyTaintsCmd)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 			applyTaintsCmd, err))
@@ -197,7 +200,7 @@ func VerifyLocalVolumeDiscovery(ctx SpecContext) {
 	Expect(await.WaitUntilLVDIsDiscovering(APIClient,
 		localVolumeDiscoveryObj.Definition.Name,
 		localVolumeDiscoveryObj.Definition.Namespace,
-		5*time.Minute)).To(Equal(true),
+		5*time.Minute)).ToNot(HaveOccurred(),
 		fmt.Sprintf("localvolumediscovery %s in namespace %s failed to discover",
 			vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace))
 } // func VerifyLocalVolumeDiscovery (ctx SpecContext)

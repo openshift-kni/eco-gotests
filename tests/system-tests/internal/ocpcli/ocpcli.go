@@ -91,7 +91,9 @@ func ApplyConfig(
 
 	cfgFilePath := filepath.Join(destinationDir, finalFileName)
 
-	applyCmd := fmt.Sprintf("oc apply -f %s", cfgFilePath)
+	kubeConfigURL := os.Getenv("KUBECONFIG")
+
+	applyCmd := fmt.Sprintf("oc apply -f %s --kubeconfig=%s", cfgFilePath, kubeConfigURL)
 	_, err = shell.ExecuteCmd(applyCmd)
 
 	if err != nil {
@@ -117,7 +119,9 @@ func CreateConfig(
 
 	cfgFilePath := filepath.Join(destinationDir, finalFileName)
 
-	applyCmd := fmt.Sprintf("oc create -f %s", cfgFilePath)
+	kubeConfigURL := os.Getenv("KUBECONFIG")
+
+	applyCmd := fmt.Sprintf("oc create -f %s --kubeconfig=%s", cfgFilePath, kubeConfigURL)
 	_, err = shell.ExecuteCmd(applyCmd)
 
 	if err != nil {
@@ -135,23 +139,12 @@ func PatchAPIObject(objName, objNamespace, objKind, patchType, patchStr string) 
 	patchCmd := fmt.Sprintf("oc patch %s/%s --type %s -p '%v'",
 		objKind, objName, patchType, patchStr)
 
+	kubeConfigURL := os.Getenv("KUBECONFIG")
+
 	if objNamespace != "" {
-		patchCmd = fmt.Sprintf("oc patch %s/%s -n %s --type %s -p '%v'",
-			objKind, objName, objNamespace, patchType, patchStr)
+		patchCmd = fmt.Sprintf("oc patch %s/%s -n %s --type %s -p '%v' --kubeconfig=%s",
+			objKind, objName, objNamespace, patchType, patchStr, kubeConfigURL)
 	}
-
-	_, err := shell.ExecuteCmd(patchCmd)
-	if err != nil {
-		return fmt.Errorf("failed to execute %s command due to: %w", patchCmd, err)
-	}
-
-	return nil
-}
-
-// AddClusterRoleToServiceAccount adds specific cluster role to the serviceaccount.
-func AddClusterRoleToServiceAccount(serviceAccountName, namespace, clusterRole string) error {
-	patchCmd := fmt.Sprintf("oc adm policy add-cluster-role-to-user %s -z %s -n '%s'",
-		clusterRole, serviceAccountName, namespace)
 
 	_, err := shell.ExecuteCmd(patchCmd)
 	if err != nil {
@@ -165,8 +158,11 @@ func AddClusterRoleToServiceAccount(serviceAccountName, namespace, clusterRole s
 func ExecuteViaDebugPodOnNode(
 	nodeName string,
 	cmd string) (string, error) {
-	execCmd := fmt.Sprintf("oc debug nodes/%s -- bash -c \"chroot /host %s\" --insecure-skip-tls-verify",
-		nodeName, cmd)
+	kubeConfigURL := os.Getenv("KUBECONFIG")
+
+	execCmd := fmt.Sprintf("oc debug nodes/%s -- bash -c \"chroot /host %s\" "+
+		"--insecure-skip-tls-verify --kubeconfig=%s",
+		nodeName, cmd, kubeConfigURL)
 	glog.V(100).Infof("Execute command %s", execCmd)
 
 	output, err := shell.ExecuteCmd(execCmd)

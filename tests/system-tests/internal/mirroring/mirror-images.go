@@ -24,8 +24,7 @@ func MirrorImageToTheLocalRegistry(
 	user,
 	pass,
 	combinedPullSecretFile,
-	localRegistryRepository,
-	homeDir string) (string, string, error) {
+	localRegistryRepository string) (string, string, error) {
 	if originServerURL == "" {
 		glog.V(100).Infof("The originServerURL is empty")
 
@@ -69,7 +68,7 @@ func MirrorImageToTheLocalRegistry(
 
 	if _, err = os.Stat(combinedPullSecretFile); errors.Is(err, os.ErrNotExist) {
 		localRegistryPullSecretFilePath, err =
-			CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile, homeDir)
+			CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile)
 
 		if err != nil {
 			return "", "", err
@@ -92,18 +91,25 @@ func MirrorImageToTheLocalRegistry(
 }
 
 // CopyRegistryAuthLocally copy mirror registry authentication files locally.
-func CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile, homeDir string) (string, error) {
-	out, err := remote.ExecCmdOnHost(host, user, pass, "pwd")
+func CopyRegistryAuthLocally(host, user, pass, combinedPullSecretFile string) (string, error) {
+	remoteHostHomeDir, err := remote.ExecCmdOnHost(host, user, pass, "pwd")
 	if err != nil {
 		return "", err
 	}
 
-	remoteUserHomeDir := strings.Trim(out, "\n")
+	remoteHostHomeDir = strings.Trim(remoteHostHomeDir, "\n")
 
-	remoteRegistryPullSecretFilePath := filepath.Join(remoteUserHomeDir, combinedPullSecretFile)
+	localHostHomeDirBytes, err := shell.ExecuteCmd("pwd")
+	if err != nil {
+		return "", err
+	}
+
+	localHostHomeDir := string(localHostHomeDirBytes)
+
+	remoteRegistryPullSecretFilePath := filepath.Join(remoteHostHomeDir, combinedPullSecretFile)
 	localRegistryPullSecretFilePath := filepath.Join("/tmp", combinedPullSecretFile)
-	remoteDockerDirectoryPath := filepath.Join(remoteUserHomeDir, ".docker")
-	localDockerDirectoryPath := filepath.Join(homeDir, ".docker")
+	remoteDockerDirectoryPath := filepath.Join(remoteHostHomeDir, ".docker")
+	localDockerDirectoryPath := filepath.Join(localHostHomeDir, ".docker")
 
 	err = remote.ScpFileFrom(
 		remoteRegistryPullSecretFilePath,

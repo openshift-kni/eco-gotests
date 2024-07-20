@@ -55,7 +55,7 @@ additionalAffinities:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
       - matchExpressions:
-        - key: node-role.kubernetes.io/master
+        - key: node-role.kubernetes.io/worker
           operator: Exists
 
 securityContext:

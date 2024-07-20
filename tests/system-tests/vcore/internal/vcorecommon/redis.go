@@ -40,12 +40,13 @@ func VerifyRedisSuite() {
 		"Redis validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
 			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
+				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
 
-				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
+				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
 
-				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
+				if err != nil {
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
+						vcoreparams.ConfigurationFolderPath)
 				}
 			})
 
@@ -118,9 +119,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("redis statefulset %s in namespace %s exists and ready",
 			redisStatefulsetName, redisNamespace)
 	} else {
-		vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
-
-		redisConfigFilePath := filepath.Join(vcoreConfigsFolder, redisCustomValuesTemplate)
+		redisConfigFilePath := filepath.Join(vcoreparams.ConfigurationFolderPath, redisCustomValuesTemplate)
 
 		redisImageRepository := "quay.io/cloud-bulldozer"
 		redisImageName := "redis"
@@ -151,19 +150,24 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 				VCoreConfig.User,
 				VCoreConfig.Pass,
 				VCoreConfig.CombinedPullSecretFile,
-				VCoreConfig.RegistryRepository,
-				VCoreConfig.HomeDir)
+				VCoreConfig.RegistryRepository)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to mirror redis image locally due to %v", err))
 		}
 
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Install redis")
 
+		localHostHomeDirBytes, err := shell.ExecuteCmd("pwd")
+		Expect(err).ToNot(HaveOccurred(), "failed to detect local home directory due to %v", err)
+
+		localHostHomeDir := string(localHostHomeDirBytes)
+
 		installRedisCmd := []string{
 			"helm repo add dandydev https://dandydeveloper.github.io/charts",
 			"helm repo update",
-			fmt.Sprintf("helm fetch dandydev/redis-ha --version 4.12.9 -d %s/.", vcoreConfigsFolder),
+			fmt.Sprintf("helm fetch dandydev/redis-ha --version 4.12.9 -d %s/.",
+				vcoreparams.ConfigurationFolderPath),
 			fmt.Sprintf("tar xvfz %s/redis-ha-4.12.9.tgz --directory=%s/.",
-				vcoreConfigsFolder, VCoreConfig.HomeDir)}
+				vcoreparams.ConfigurationFolderPath, localHostHomeDir)}
 		for _, cmd := range installRedisCmd {
 			_, err = shell.ExecuteCmd(cmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s command due to %v", cmd, err))
@@ -223,24 +227,21 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		varsToReplace["ImageTag"] = redisImageTag
 		varsToReplace["RedisSecret"] = redisSecretName
 		varsToReplace["StorageClass"] = vcoreparams.ODFStorageClassName
-		// varsToReplace["StorageClass"] = "ocs-storagecluster-cephfs"
 		varsToReplace["RunAsUser"] = runAsUser
 		varsToReplace["FsGroup"] = fsGroup
-
-		destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
 
 		workingDir, err := os.Getwd()
 		Expect(err).ToNot(HaveOccurred(), err)
 
 		templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
 
-		err = template.SaveTemplate(templateDir, redisCustomValuesTemplate, destinationDirectoryPath,
+		err = template.SaveTemplate(templateDir, redisCustomValuesTemplate, vcoreparams.ConfigurationFolderPath,
 			redisCustomValuesTemplate, varsToReplace)
 		Expect(err).ToNot(HaveOccurred(), "failed to create config file %s at folder %s due to %w",
-			redisCustomValuesTemplate, vcoreConfigsFolder, err)
+			redisCustomValuesTemplate, vcoreparams.ConfigurationFolderPath, err)
 
 		customConfigCmd := fmt.Sprintf("helm upgrade --install %s -n %s %s/%s -f %s --kubeconfig %s",
-			redisAppName, redisNamespace, VCoreConfig.HomeDir, redisAppName,
+			redisAppName, redisNamespace, localHostHomeDir, redisAppName,
 			redisConfigFilePath, os.Getenv("KUBECONFIG"))
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Execute command %s", customConfigCmd)
 

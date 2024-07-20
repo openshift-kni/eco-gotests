@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe(
-	"vCore Basic Deployment Suite",
+	"vCore Operators Deployment Suite",
 	Ordered,
 	ContinueOnFailure,
 	Label(vcoreparams.Label), func() {
