@@ -2,7 +2,6 @@ package vcorecommon
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
@@ -26,17 +25,6 @@ func VerifyMetaLBSuite() {
 	Describe(
 		"MetalLB validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
-
-				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
-
-				if err != nil {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
-						vcoreparams.ConfigurationFolderPath)
-				}
-			})
-
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.MetalLBOperatorNamespace),
 				Label("metallb"), VerifyMetalLBNamespaceExists)
 

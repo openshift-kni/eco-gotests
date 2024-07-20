@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 	lsov1 "github.com/openshift/local-storage-operator/api/v1"
 	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
@@ -22,14 +24,12 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/mirroring"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/template"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
@@ -39,17 +39,6 @@ func VerifyRedisSuite() {
 	Describe(
 		"Redis validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
-
-				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
-
-				if err != nil {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
-						vcoreparams.ConfigurationFolderPath)
-				}
-			})
-
 			It("Verify redis localvolumeset instance exists",
 				Label("redis"), VerifyRedisLocalVolumeSet)
 
@@ -139,27 +128,16 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			glog.V(vcoreparams.VCoreLogLevel).Info("The connected deployment type was detected, " +
 				"the images mirroring is not required")
 		} else {
-			glog.V(vcoreparams.VCoreLogLevel).Info("Mirror redis image locally")
-
-			imageURL, _, err = mirroring.MirrorImageToTheLocalRegistry(
-				APIClient,
-				redisImageRepository,
-				redisImageName,
-				redisImageTag,
-				VCoreConfig.Host,
-				VCoreConfig.User,
-				VCoreConfig.Pass,
-				VCoreConfig.CombinedPullSecretFile,
-				VCoreConfig.RegistryRepository)
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to mirror redis image locally due to %v", err))
+			_, err = getImageURL(redisImageRepository, redisImageName, redisImageTag)
+			Expect(err).ToNot(HaveOccurred(),
+				fmt.Sprintf("Failed to mirror image for %s/%s:%s due to: %v",
+					redisImageRepository, redisImageName, redisImageTag, err))
 		}
 
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Install redis")
 
-		localHostHomeDirBytes, err := shell.ExecuteCmd("pwd")
+		localHostHomeDir, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, "pwd")
 		Expect(err).ToNot(HaveOccurred(), "failed to detect local home directory due to %v", err)
-
-		localHostHomeDir := string(localHostHomeDirBytes)
 
 		installRedisCmd := []string{
 			"helm repo add dandydev https://dandydeveloper.github.io/charts",
@@ -169,7 +147,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			fmt.Sprintf("tar xvfz %s/redis-ha-4.12.9.tgz --directory=%s/.",
 				vcoreparams.ConfigurationFolderPath, localHostHomeDir)}
 		for _, cmd := range installRedisCmd {
-			_, err = shell.ExecuteCmd(cmd)
+			_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, cmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s command due to %v", cmd, err))
 		}
 
@@ -240,15 +218,15 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), "failed to create config file %s at folder %s due to %w",
 			redisCustomValuesTemplate, vcoreparams.ConfigurationFolderPath, err)
 
-		customConfigCmd := fmt.Sprintf("helm upgrade --install %s -n %s %s/%s -f %s --kubeconfig %s",
+		customConfigCmd := fmt.Sprintf("helm upgrade --install %s -n %s %s/%s -f %s --kubeconfig=%s",
 			redisAppName, redisNamespace, localHostHomeDir, redisAppName,
-			redisConfigFilePath, os.Getenv("KUBECONFIG"))
+			redisConfigFilePath, VCoreConfig.KubeconfigPath)
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Execute command %s", customConfigCmd)
 
-		result, err := shell.ExecuteCmd(customConfigCmd)
+		result, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, customConfigCmd)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to config redis due to %v", err))
-		Expect(strings.Contains(string(result), "STATUS: deployed")).To(Equal(true),
-			fmt.Sprintf("redis is not properly configured: %s", string(result)))
+		Expect(strings.Contains(result, "STATUS: deployed")).To(Equal(true),
+			fmt.Sprintf("redis is not properly configured: %s", result))
 	}
 
 	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfMCPName)
