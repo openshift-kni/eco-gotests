@@ -2,10 +2,11 @@ package vcorecommon
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/ocpcli"
 	lsov1 "github.com/openshift/local-storage-operator/api/v1"
 	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,11 +16,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -125,8 +123,6 @@ func VerifyODFOperatorDeployment(ctx SpecContext) {
 func VerifyODFTaints(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Apply taints to the ODF nodes")
 
-	kubeConfigURL := os.Getenv("KUBECONFIG")
-
 	odfNodesList, err := nodes.List(APIClient, VCoreConfig.OdfLabelListOption)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get cluster nodes list due to %v", err))
 
@@ -134,8 +130,8 @@ func VerifyODFTaints(ctx SpecContext) {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode.Definition.Name)
 		applyTaintsCmd := fmt.Sprintf(
 			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
-			odfNode.Definition.Name, kubeConfigURL)
-		_, err = shell.ExecuteCmd(applyTaintsCmd)
+			odfNode.Definition.Name, VCoreConfig.KubeconfigPath)
+		_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyTaintsCmd)
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 			applyTaintsCmd, err))
 	}
@@ -421,8 +417,9 @@ func VerifyOperatorsConfigForODFNodes(ctx SpecContext) {
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Restarting storage pods")
 
-	restartStoragePodsCmd := fmt.Sprintf("oc delete pods -n %s --all", vcoreparams.ODFNamespace)
-	_, err = shell.ExecuteCmd(restartStoragePodsCmd)
+	restartStoragePodsCmd := fmt.Sprintf("oc delete pods -n %s --all --kubeconfig=%s",
+		vcoreparams.ODFNamespace, VCoreConfig.KubeconfigPath)
+	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, restartStoragePodsCmd)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 		restartStoragePodsCmd, err))
 

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/ocpcli"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
@@ -13,7 +15,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/servicemesh"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
@@ -30,17 +31,6 @@ func VerifyServiceMeshSuite() {
 	Describe(
 		"Service Mesh Operator deployment and configuration validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
-
-				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
-
-				if err != nil {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
-						vcoreparams.ConfigurationFolderPath)
-				}
-			})
-
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.DTPONamespace),
 				Label("smo"), VerifyDTPONamespaceExists)
 

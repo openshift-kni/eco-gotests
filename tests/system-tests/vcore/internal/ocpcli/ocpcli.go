@@ -5,12 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/files"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/template"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/walle/targz"
 )
 
@@ -91,10 +94,9 @@ func ApplyConfig(
 
 	cfgFilePath := filepath.Join(destinationDir, finalFileName)
 
-	kubeConfigURL := os.Getenv("KUBECONFIG")
-
-	applyCmd := fmt.Sprintf("oc apply -f %s --kubeconfig=%s", cfgFilePath, kubeConfigURL)
-	_, err = shell.ExecuteCmd(applyCmd)
+	applyCmd := fmt.Sprintf("oc apply -f %s --kubeconfig=%s",
+		cfgFilePath, VCoreConfig.KubeconfigPath)
+	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyCmd)
 
 	if err != nil {
 		return fmt.Errorf("failed to execute %s command due to: %w", applyCmd, err)
@@ -119,13 +121,11 @@ func CreateConfig(
 
 	cfgFilePath := filepath.Join(destinationDir, finalFileName)
 
-	kubeConfigURL := os.Getenv("KUBECONFIG")
-
-	applyCmd := fmt.Sprintf("oc create -f %s --kubeconfig=%s", cfgFilePath, kubeConfigURL)
-	_, err = shell.ExecuteCmd(applyCmd)
+	createCmd := fmt.Sprintf("oc create -f %s --kubeconfig=%s", cfgFilePath, VCoreConfig.KubeconfigPath)
+	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, createCmd)
 
 	if err != nil {
-		return fmt.Errorf("failed to execute %s command due to: %w", applyCmd, err)
+		return fmt.Errorf("failed to execute %s command due to: %w", createCmd, err)
 	}
 
 	return nil
@@ -139,14 +139,12 @@ func PatchAPIObject(objName, objNamespace, objKind, patchType, patchStr string) 
 	patchCmd := fmt.Sprintf("oc patch %s/%s --type %s -p '%v'",
 		objKind, objName, patchType, patchStr)
 
-	kubeConfigURL := os.Getenv("KUBECONFIG")
-
 	if objNamespace != "" {
 		patchCmd = fmt.Sprintf("oc patch %s/%s -n %s --type %s -p '%v' --kubeconfig=%s",
-			objKind, objName, objNamespace, patchType, patchStr, kubeConfigURL)
+			objKind, objName, objNamespace, patchType, patchStr, VCoreConfig.KubeconfigPath)
 	}
 
-	_, err := shell.ExecuteCmd(patchCmd)
+	_, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, patchCmd)
 	if err != nil {
 		return fmt.Errorf("failed to execute %s command due to: %w", patchCmd, err)
 	}
@@ -158,17 +156,14 @@ func PatchAPIObject(objName, objNamespace, objKind, patchType, patchStr string) 
 func ExecuteViaDebugPodOnNode(
 	nodeName string,
 	cmd string) (string, error) {
-	kubeConfigURL := os.Getenv("KUBECONFIG")
-
 	execCmd := fmt.Sprintf("oc debug nodes/%s -- bash -c \"chroot /host %s\" "+
-		"--insecure-skip-tls-verify --kubeconfig=%s",
-		nodeName, cmd, kubeConfigURL)
+		"--insecure-skip-tls-verify --kubeconfig=%s", nodeName, cmd, VCoreConfig.KubeconfigPath)
 	glog.V(100).Infof("Execute command %s", execCmd)
 
-	output, err := shell.ExecuteCmd(execCmd)
+	output, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, execCmd)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute %s command due to: %w", execCmd, err)
 	}
 
-	return string(output), nil
+	return output, nil
 }

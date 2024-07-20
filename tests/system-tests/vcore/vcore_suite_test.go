@@ -1,15 +1,19 @@
 package vcore_system_test
 
 import (
+	"fmt"
 	"runtime"
 	"testing"
+
+	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/tests"
 )
@@ -18,11 +22,43 @@ var _, currentFile, _, _ = runtime.Caller(0)
 
 func TestVCore(t *testing.T) {
 	_, reporterConfig := GinkgoConfiguration()
-	reporterConfig.JUnitReport = GeneralConfig.GetJunitReportPath(currentFile)
+	reporterConfig.JUnitReport = VCoreConfig.GetJunitReportPath(currentFile)
 
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "vCore SystemTests Suite", Label(vcoreparams.Labels...), reporterConfig)
 }
+
+var _ = BeforeSuite(func() {
+	By(fmt.Sprintf("Asserting the folder %s exists", vcoreparams.ConfigurationFolderPath))
+
+	execCmd := fmt.Sprintf("mkdir %s", vcoreparams.ConfigurationFolderPath)
+	_, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, execCmd)
+
+	if err != nil {
+		glog.V(vcoreparams.VCoreLogLevel).Infof("folder %s already exists",
+			vcoreparams.ConfigurationFolderPath)
+	}
+
+	execCmd = fmt.Sprintf("chmod 755 %s", vcoreparams.ConfigurationFolderPath)
+	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, execCmd)
+
+	if err != nil {
+		glog.V(vcoreparams.VCoreLogLevel).Infof("failed to change permitions for the folder %s",
+			vcoreparams.ConfigurationFolderPath)
+	}
+})
+
+var _ = AfterSuite(func() {
+	By(fmt.Sprintf("Deleting the folder %s", vcoreparams.ConfigurationFolderPath))
+
+	execCmd := fmt.Sprintf("rm -rf %s", vcoreparams.ConfigurationFolderPath)
+	_, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, execCmd)
+
+	if err != nil {
+		glog.V(vcoreparams.VCoreLogLevel).Infof("folder %s already removed",
+			vcoreparams.ConfigurationFolderPath)
+	}
+})
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
@@ -32,5 +68,5 @@ var _ = JustAfterEach(func() {
 
 var _ = ReportAfterSuite("", func(report Report) {
 	reportxml.Create(
-		report, GeneralConfig.GetReportPath(), GeneralConfig.TCPrefix)
+		report, VCoreConfig.GetReportPath(), VCoreConfig.TCPrefix)
 })

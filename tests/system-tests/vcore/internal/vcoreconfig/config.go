@@ -36,6 +36,7 @@ type VCoreConfig struct {
 	RegistryRepository          string `yaml:"registry_repository" envconfig:"ECO_SYSTEM_VCORE_REGISTRY_REPOSITORY"`
 	CPUIsolated                 string `yaml:"cpu_isolated" envconfig:"ECO_SYSTEM_VCORE_CPU_ISOLATED"`
 	CPUReserved                 string `yaml:"cpu_reserved" envconfig:"ECO_SYSTEM_VCORE_CPU_RESERVED"`
+	KubeconfigPath              string `yaml:"kubeconfig_path" envconfig:"ECO_SYSTEM_VCORE_KUBECONFIG"`
 	OdfLabel                    string
 	VCorePpLabel                string
 	VCoreCpLabel                string

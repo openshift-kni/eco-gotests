@@ -2,17 +2,17 @@ package vcorecommon
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/files"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
@@ -21,18 +21,6 @@ func VerifyHelmSuite() {
 	Describe(
 		"Helm validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
-
-				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s",
-					vcoreparams.ConfigurationFolderPath)
-
-				if err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755); os.IsExist(err) {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
-						vcoreparams.ConfigurationFolderPath)
-				}
-			})
-
 			It("Verify Helm deployment procedure",
 				Label("helm"), reportxml.ID("60085"), VerifyHelmDeploymentProcedure)
 		})
@@ -47,30 +35,30 @@ func VerifyHelmDeploymentProcedure(ctx SpecContext) {
 	helmScriptLocalPath := filepath.Join(vcoreparams.ConfigurationFolderPath, helmScriptName)
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Download %s script", helmScriptName)
-	err := files.DownloadFile(helmScriptURL, helmScriptName, vcoreparams.ConfigurationFolderPath)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to download %s file locally from the %s due to %v",
+
+	downloadCmd := fmt.Sprintf("wget %s -P %s", helmScriptURL, helmScriptLocalPath)
+	_, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, downloadCmd)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to download %s file to the hypervisor from the %s; %v",
 		helmScriptName, helmScriptURL, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Make %s script executable", helmScriptName)
 
 	chmodCmd := fmt.Sprintf("chmod 700 %s", helmScriptLocalPath)
-	_, err = shell.ExecuteCmd(chmodCmd)
+	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, chmodCmd)
 	Expect(err).ToNot(HaveOccurred(), "failed to make %s script executable due to %w",
 		helmScriptLocalPath, err)
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Install Helm")
 
-	os.Setenv("VERIFY_CHECKSUM", "false")
-
-	_, err = shell.ExecuteCmd(helmScriptLocalPath)
+	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, helmScriptLocalPath)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 		helmScriptLocalPath, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Check HELM working properly")
 
 	cmd := "helm version"
-	result, err := shell.ExecuteCmd(cmd)
+	result, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, cmd)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to check helm version due %v", err))
-	Expect(strings.Contains(string(result), "version.BuildInfo")).To(Equal(true),
-		fmt.Sprintf("Helm was not installed properly; %s", string(result)))
+	Expect(strings.Contains(result, "version.BuildInfo")).To(Equal(true),
+		fmt.Sprintf("Helm was not installed properly; %s", result))
 } // func VerifyHelmDeploymentProcedure (ctx SpecContext)

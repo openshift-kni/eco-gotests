@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/ocpcli"
+
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
@@ -19,7 +21,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/scc"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/imageregistryconfig"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	v1 "github.com/openshift/api/operator/v1"
 
 	"github.com/golang/glog"
@@ -35,17 +36,6 @@ func VerifyPostDeploymentConfig() {
 	Describe(
 		"Post-deployment config validation",
 		Label(vcoreparams.LabelVCoreDeployment), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
-
-				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
-
-				if err != nil {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
-						vcoreparams.ConfigurationFolderPath)
-				}
-			})
-
 			It("Verifies Image Registry management state is Enabled",
 				Label("day2"), reportxml.ID("72812"), VerifyImageRegistryManagementStateEnablement)
 

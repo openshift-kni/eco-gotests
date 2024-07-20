@@ -39,7 +39,8 @@ func getImageURL(repository, name, tag string) (string, error) {
 			VCoreConfig.User,
 			VCoreConfig.Pass,
 			VCoreConfig.CombinedPullSecretFile,
-			VCoreConfig.RegistryRepository)
+			VCoreConfig.RegistryRepository,
+			VCoreConfig.KubeconfigPath)
 
 		if err != nil {
 			return "", fmt.Errorf("failed to mirror image %s:%s locally due to %w",

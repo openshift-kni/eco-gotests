@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/ocpcli"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/monitoring"
@@ -28,7 +30,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/keda"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
@@ -57,17 +58,6 @@ func VerifyKedaSuite() {
 	Describe(
 		"Keda validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
-			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
-
-				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
-
-				if err != nil {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
-						vcoreparams.ConfigurationFolderPath)
-				}
-			})
-
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.KedaNamespace),
 				Label("keda"), VerifyKedaNamespaceExists)
 
