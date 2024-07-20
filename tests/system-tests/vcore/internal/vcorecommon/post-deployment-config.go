@@ -36,14 +36,13 @@ func VerifyPostDeploymentConfig() {
 		"Post-deployment config validation",
 		Label(vcoreparams.LabelVCoreDeployment), func() {
 			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
+				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
 
-				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
+				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
 
-				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
-
-				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
+				if err != nil {
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
+						vcoreparams.ConfigurationFolderPath)
 				}
 			})
 
@@ -60,7 +59,7 @@ func VerifyPostDeploymentConfig() {
 				Label("day2"), reportxml.ID("60086"), VerifySCTPModuleActivation)
 
 			It("Verifies system reserved memory for masters succeeded",
-				Label("debug"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
+				Label("day2"), reportxml.ID("60045"), SetSystemReservedMemoryForMasterNodes)
 		})
 }
 
@@ -178,8 +177,6 @@ func VerifySCTPModuleActivation(ctx SpecContext) {
 		varsToReplace["SctpModuleName"] = "load-sctp-module"
 		varsToReplace["McNodeRole"] = vcoreparams.CpMCSelector
 
-		destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
-
 		workingDir, err := os.Getwd()
 		Expect(err).ToNot(HaveOccurred(), err)
 
@@ -188,7 +185,7 @@ func VerifySCTPModuleActivation(ctx SpecContext) {
 		err = ocpcli.ApplyConfig(
 			templateDir,
 			sctpModuleTemplateName,
-			destinationDirectoryPath,
+			vcoreparams.ConfigurationFolderPath,
 			sctpModuleTemplateName,
 			varsToReplace)
 		Expect(err).To(BeNil(), fmt.Sprint(err))

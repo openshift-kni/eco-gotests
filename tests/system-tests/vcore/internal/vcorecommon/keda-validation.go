@@ -58,14 +58,13 @@ func VerifyKedaSuite() {
 		"Keda validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
 			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
+				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
 
-				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
+				err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
 
-				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
-
-				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
+				if err != nil {
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
+						vcoreparams.ConfigurationFolderPath)
 				}
 			})
 
@@ -324,8 +323,6 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	varsToReplace["ServiceAccountName"] = serviceAccountName
 	varsToReplace["RoleName"] = metricsReaderName
 
-	destinationDirectoryPath := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
-
 	workingDir, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred(), err)
 
@@ -334,7 +331,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	err = ocpcli.CreateConfig(
 		templateDir,
 		kedaRoleBindingTemplateName,
-		destinationDirectoryPath,
+		vcoreparams.ConfigurationFolderPath,
 		kedaRoleBindingTemplateName,
 		varsToReplace)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create load job due to %v", err))
@@ -389,7 +386,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	err = ocpcli.CreateConfig(
 		templateDir,
 		appLoadJobTemplateName,
-		destinationDirectoryPath,
+		vcoreparams.ConfigurationFolderPath,
 		appLoadJobTemplateName,
 		varsToReplace)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create load job due to %v", err))

@@ -36,7 +36,6 @@ type VCoreConfig struct {
 	RegistryRepository          string `yaml:"registry_repository" envconfig:"ECO_SYSTEM_VCORE_REGISTRY_REPOSITORY"`
 	CPUIsolated                 string `yaml:"cpu_isolated" envconfig:"ECO_SYSTEM_VCORE_CPU_ISOLATED"`
 	CPUReserved                 string `yaml:"cpu_reserved" envconfig:"ECO_SYSTEM_VCORE_CPU_RESERVED"`
-	HomeDir                     string `yaml:"home_dir" envconfig:"ECO_SYSTEM_VCORE_HOME_DIR"`
 	OdfLabel                    string
 	VCorePpLabel                string
 	VCoreCpLabel                string

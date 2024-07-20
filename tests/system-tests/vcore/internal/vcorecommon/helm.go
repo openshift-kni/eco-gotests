@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/files"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
@@ -23,14 +22,14 @@ func VerifyHelmSuite() {
 		"Helm validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
 			BeforeAll(func() {
-				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderName))
+				By(fmt.Sprintf("Asserting %s folder exists", vcoreparams.ConfigurationFolderPath))
 
-				vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
+				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s",
+					vcoreparams.ConfigurationFolderPath)
 
-				glog.V(vcoreparams.VCoreLogLevel).Infof("vcoreConfigsFolder: %s", vcoreConfigsFolder)
-
-				if err := os.Mkdir(vcoreConfigsFolder, 0755); os.IsExist(err) {
-					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreConfigsFolder)
+				if err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755); os.IsExist(err) {
+					glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists",
+						vcoreparams.ConfigurationFolderPath)
 				}
 			})
 
@@ -43,14 +42,12 @@ func VerifyHelmSuite() {
 func VerifyHelmDeploymentProcedure(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify Helm could be installed and works correctly")
 
-	vcoreConfigsFolder := filepath.Join(VCoreConfig.HomeDir, vcoreparams.ConfigurationFolderName)
-
 	helmScriptURL := "https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3"
 	helmScriptName := "get_helm.sh"
-	helmScriptLocalPath := filepath.Join(vcoreConfigsFolder, helmScriptName)
+	helmScriptLocalPath := filepath.Join(vcoreparams.ConfigurationFolderPath, helmScriptName)
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Download %s script", helmScriptName)
-	err := files.DownloadFile(helmScriptURL, helmScriptName, vcoreConfigsFolder)
+	err := files.DownloadFile(helmScriptURL, helmScriptName, vcoreparams.ConfigurationFolderPath)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to download %s file locally from the %s due to %v",
 		helmScriptName, helmScriptURL, err))
 

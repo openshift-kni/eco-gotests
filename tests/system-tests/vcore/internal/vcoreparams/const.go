@@ -47,8 +47,8 @@ const (
 	// TemplateFilesFolder path to the template files folder.
 	TemplateFilesFolder = "./internal/config-files/"
 
-	// ConfigurationFolderName path to the folder dedicated to the saving all initial-deployment configuration.
-	ConfigurationFolderName = "vcore-configfiles"
+	// ConfigurationFolderPath path to the folder dedicated to the saving all initial-deployment configuration.
+	ConfigurationFolderPath = "/tmp/vcore-configfiles"
 
 	// RegistryRepository local registry repository to mirror images to.
 	RegistryRepository = "openshift"
