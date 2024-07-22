@@ -319,10 +319,8 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
 
 	err = ocpcli.CreateConfig(
-		templateDir,
-		kedaRoleBindingTemplateName,
-		vcoreparams.ConfigurationFolderPath,
-		kedaRoleBindingTemplateName,
+		filepath.Join(templateDir, kedaRoleBindingTemplateName),
+		filepath.Join(vcoreparams.ConfigurationFolderPath, kedaRoleBindingTemplateName),
 		varsToReplace)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create load job due to %v", err))
 
@@ -374,10 +372,8 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	varsToReplace["AbImageURL"] = abImageURL
 
 	err = ocpcli.CreateConfig(
-		templateDir,
-		appLoadJobTemplateName,
-		vcoreparams.ConfigurationFolderPath,
-		appLoadJobTemplateName,
+		filepath.Join(templateDir, appLoadJobTemplateName),
+		filepath.Join(vcoreparams.ConfigurationFolderPath, appLoadJobTemplateName),
 		varsToReplace)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create load job due to %v", err))
 

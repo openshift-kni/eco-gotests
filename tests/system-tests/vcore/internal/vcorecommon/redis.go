@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
+
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/lso"
@@ -40,7 +42,7 @@ func VerifyRedisSuite() {
 		"Redis validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
 			It("Verify redis localvolumeset instance exists",
-				Label("redis"), VerifyRedisLocalVolumeSet)
+				Label("redis2"), VerifyRedisLocalVolumeSet)
 
 			It("Verify Redis deployment procedure",
 				Label("redis"), reportxml.ID("59503"), VerifyRedisDeploymentProcedure)
@@ -136,8 +138,14 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Install redis")
 
-		localHostHomeDir, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, "pwd")
-		Expect(err).ToNot(HaveOccurred(), "failed to detect local home directory due to %v", err)
+		glog.V(100).Infof("Insure local directory %s exists", vcoreparams.ConfigurationFolderPath)
+
+		err = os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create directory %s, it is already exists",
+				vcoreparams.ConfigurationFolderPath)
+		}
 
 		installRedisCmd := []string{
 			"helm repo add dandydev https://dandydeveloper.github.io/charts",
@@ -145,11 +153,19 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			fmt.Sprintf("helm fetch dandydev/redis-ha --version 4.12.9 -d %s/.",
 				vcoreparams.ConfigurationFolderPath),
 			fmt.Sprintf("tar xvfz %s/redis-ha-4.12.9.tgz --directory=%s/.",
-				vcoreparams.ConfigurationFolderPath, localHostHomeDir)}
+				vcoreparams.ConfigurationFolderPath, vcoreparams.ConfigurationFolderPath)}
 		for _, cmd := range installRedisCmd {
-			_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, cmd)
+			_, err = shell.ExecuteCmd(cmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s command due to %v", cmd, err))
 		}
+
+		err = remote.ScpDirectoryTo(
+			filepath.Join(vcoreparams.ConfigurationFolderPath, "redis-ha"),
+			vcoreparams.ConfigurationFolderPath,
+			VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to transfer folder %s to the %s/%s due to: %v",
+			filepath.Join(vcoreparams.ConfigurationFolderPath, "redis-ha"),
+			VCoreConfig.Host, vcoreparams.ConfigurationFolderPath, err))
 
 		glog.V(vcoreparams.VCoreLogLevel).Info("Create redis namespace")
 
@@ -212,14 +228,21 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), err)
 
 		templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
+		cfgFilePath := filepath.Join(vcoreparams.ConfigurationFolderPath, redisCustomValuesTemplate)
 
-		err = template.SaveTemplate(templateDir, redisCustomValuesTemplate, vcoreparams.ConfigurationFolderPath,
-			redisCustomValuesTemplate, varsToReplace)
+		err = template.SaveTemplate(
+			filepath.Join(templateDir, redisCustomValuesTemplate),
+			cfgFilePath,
+			varsToReplace)
 		Expect(err).ToNot(HaveOccurred(), "failed to create config file %s at folder %s due to %w",
 			redisCustomValuesTemplate, vcoreparams.ConfigurationFolderPath, err)
 
+		err = remote.ScpFileTo(cfgFilePath, cfgFilePath, VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to transfer file %s to the %s/%s due to: %v",
+			cfgFilePath, VCoreConfig.Host, cfgFilePath, err))
+
 		customConfigCmd := fmt.Sprintf("helm upgrade --install %s -n %s %s/%s -f %s --kubeconfig=%s",
-			redisAppName, redisNamespace, localHostHomeDir, redisAppName,
+			redisAppName, redisNamespace, vcoreparams.ConfigurationFolderPath, redisAppName,
 			redisConfigFilePath, VCoreConfig.KubeconfigPath)
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Execute command %s", customConfigCmd)
 

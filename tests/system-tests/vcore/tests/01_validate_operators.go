@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe(
-	"vCore Internal ODF Test Suite",
+	"vCore Operators Test Suite",
 	Ordered,
 	ContinueOnFailure,
 	Label(vcoreparams.Label), func() {
@@ -18,4 +18,19 @@ var _ = Describe(
 
 		vcorecommon.VerifyLokiSuite()
 
+		vcorecommon.VerifyNMStateSuite()
+
+		vcorecommon.VerifyServiceMeshSuite()
+
+		vcorecommon.VerifyHelmSuite()
+
+		vcorecommon.VerifyRedisSuite()
+
+		vcorecommon.VerifyNTOSuite()
+
+		vcorecommon.VerifySRIOVSuite()
+
+		vcorecommon.VerifyKedaSuite()
+
+		vcorecommon.VerifyNROPSuite()
 	})

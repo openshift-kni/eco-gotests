@@ -53,7 +53,7 @@ func VerifyServiceMeshSuite() {
 				Label("smo"), reportxml.ID("73732"), VerifyServiceMeshDeployment)
 
 			It("Verifies Service Mesh configuration procedure succeeded",
-				Label("smo"), reportxml.ID("59502"), VerifyServiceMeshConfig)
+				Label("debug"), reportxml.ID("59502"), VerifyServiceMeshConfig)
 		})
 }
 
@@ -179,10 +179,8 @@ func VerifyServiceMeshConfig(ctx SpecContext) {
 		varsToReplace["ControlPlaneNamespace"] = vcoreparams.IstioNamespace
 
 		err = ocpcli.ApplyConfig(
-			templateDir,
-			smoCpTemplateName,
-			vcoreparams.ConfigurationFolderPath,
-			smoCpTemplateName,
+			filepath.Join(templateDir, smoCpTemplateName),
+			filepath.Join(vcoreparams.ConfigurationFolderPath, smoCpTemplateName),
 			varsToReplace)
 		Expect(err).To(BeNil(), fmt.Sprint(err))
 		Expect(controlPlaneBuilder.Exists()).To(Equal(true),
