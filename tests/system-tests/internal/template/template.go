@@ -3,7 +3,6 @@ package template
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -11,52 +10,30 @@ import (
 
 // SaveTemplate read template file, replace variables and save it to the provided destination folder.
 func SaveTemplate(
-	templateDir,
-	fileName,
-	destinationDir,
-	finalFileName string,
+	source,
+	destination string,
 	variablesToReplace map[string]interface{}) error {
-	if fileName == "" {
-		glog.V(100).Infof("The filename is empty")
+	if source == "" {
+		glog.V(100).Infof("The source is empty")
 
-		return fmt.Errorf("the filename should be provided")
+		return fmt.Errorf("the source should be provided")
 	}
 
-	if finalFileName == "" {
-		finalFileName = fileName
+	glog.V(100).Infof("Read %s template, replace variables and save it locally to the %s",
+		source, destination)
+
+	if destination == "" {
+		glog.V(100).Infof("The destination file is empty")
+
+		return fmt.Errorf("the destination file should be provided")
 	}
 
-	glog.V(100).Infof("Read %s template, replace variables and save it locally to the %s/%s",
-		fileName, destinationDir, finalFileName)
-
-	if templateDir == "" {
-		glog.V(100).Infof("The template folder is empty")
-
-		return fmt.Errorf("the template folder should be provided")
-	}
-
-	pathToTemplate := filepath.Join(templateDir, fileName)
-	destination := filepath.Join(destinationDir, finalFileName)
-	tmpl, err := template.ParseFiles(pathToTemplate)
+	tmpl, err := template.ParseFiles(source)
 
 	if err != nil {
-		glog.V(100).Infof("Error to read config file %s", pathToTemplate)
+		glog.V(100).Infof("Error to read config file %s", source)
 
 		return err
-	}
-
-	glog.V(100).Infof("create %s folder if not exists", destinationDir)
-
-	err = os.Mkdir(destinationDir, 0755)
-
-	if err != nil && !os.IsExist(err) {
-		return err
-	}
-
-	err = os.Remove(destination)
-
-	if err != nil && !os.IsExist(err) {
-		glog.V(100).Infof("%s file not found", destination)
 	}
 
 	// create a new file
@@ -81,7 +58,7 @@ func SaveTemplate(
 	err = os.Chmod(destination, 0755)
 
 	if err != nil {
-		glog.V(100).Infof("Error to chmod file %", destination)
+		glog.V(100).Infof("Error to chmod file %s", destination)
 
 		return err
 	}

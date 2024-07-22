@@ -80,22 +80,24 @@ func DownloadAndExtractOcBinaryArchive(apiClient *clients.Settings) error {
 
 // ApplyConfig applies config using shell method.
 func ApplyConfig(
-	templateDir,
-	fileName,
-	destinationDir,
-	finalFileName string,
+	pathToTemplate,
+	pathToConfigFile string,
 	variablesToReplace map[string]interface{}) error {
-	err := template.SaveTemplate(
-		templateDir, fileName, destinationDir, finalFileName, variablesToReplace)
+	err := template.SaveTemplate(pathToTemplate, pathToConfigFile, variablesToReplace)
 
 	if err != nil {
 		return err
 	}
 
-	cfgFilePath := filepath.Join(destinationDir, finalFileName)
+	err = remote.ScpFileTo(pathToConfigFile, pathToConfigFile, VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass)
+
+	if err != nil {
+		return fmt.Errorf("failed to transfer file %s to the %s/%s due to: %w",
+			pathToConfigFile, VCoreConfig.Host, pathToConfigFile, err)
+	}
 
 	applyCmd := fmt.Sprintf("oc apply -f %s --kubeconfig=%s",
-		cfgFilePath, VCoreConfig.KubeconfigPath)
+		pathToConfigFile, VCoreConfig.KubeconfigPath)
 	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyCmd)
 
 	if err != nil {
@@ -107,21 +109,23 @@ func ApplyConfig(
 
 // CreateConfig creates config using shell method.
 func CreateConfig(
-	templateDir,
-	fileName,
-	destinationDir,
-	finalFileName string,
+	pathToTemplate,
+	pathToConfigFile string,
 	variablesToReplace map[string]interface{}) error {
-	err := template.SaveTemplate(
-		templateDir, fileName, destinationDir, finalFileName, variablesToReplace)
+	err := template.SaveTemplate(pathToTemplate, pathToConfigFile, variablesToReplace)
 
 	if err != nil {
 		return err
 	}
 
-	cfgFilePath := filepath.Join(destinationDir, finalFileName)
+	err = remote.ScpFileTo(pathToConfigFile, pathToConfigFile, VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass)
 
-	createCmd := fmt.Sprintf("oc create -f %s --kubeconfig=%s", cfgFilePath, VCoreConfig.KubeconfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to transfer file %s to the %s/%s due to: %w",
+			pathToConfigFile, VCoreConfig.Host, pathToConfigFile, err)
+	}
+
+	createCmd := fmt.Sprintf("oc create -f %s --kubeconfig=%s", pathToConfigFile, VCoreConfig.KubeconfigPath)
 	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, createCmd)
 
 	if err != nil {
