@@ -9,16 +9,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-const (
-	bpgPeerKind = "BGPPeer"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // BGPPeerBuilder provides struct for the BGPPeer object containing connection to
@@ -26,7 +21,7 @@ const (
 type BGPPeerBuilder struct {
 	Definition *mlbtypes.BGPPeer
 	Object     *mlbtypes.BGPPeer
-	apiClient  *clients.Settings
+	apiClient  runtimeClient.Client
 	errorMsg   string
 }
 
@@ -40,13 +35,16 @@ func NewBPGPeerBuilder(
 		"Initializing new BGPPeer structure with the following params: %s, %s %s %d %d",
 		name, nsname, peerIP, asn, remoteASN)
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil
+	}
+
 	builder := BGPPeerBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.BGPPeer{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       bpgPeerKind,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -89,9 +87,10 @@ func (builder *BGPPeerBuilder) Get() (*mlbtypes.BGPPeer, error) {
 		"Collecting BGPPeer object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	unsObject, err := builder.apiClient.Resource(
-		GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	bgpPeer := &mlbtypes.BGPPeer{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		bgpPeer)
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -101,7 +100,7 @@ func (builder *BGPPeerBuilder) Get() (*mlbtypes.BGPPeer, error) {
 		return nil, err
 	}
 
-	return builder.convertToStructured(unsObject)
+	return bgpPeer, nil
 }
 
 // Exists checks whether the given BGPPeer exists.
@@ -124,8 +123,21 @@ func (builder *BGPPeerBuilder) Exists() bool {
 func PullBGPPeer(apiClient *clients.Settings, name, nsname string) (*BGPPeerBuilder, error) {
 	glog.V(100).Infof("Pulling existing bgppeer name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("bgppeer 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := BGPPeerBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.BGPPeer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -167,17 +179,7 @@ func (builder *BGPPeerBuilder) Create() (*BGPPeerBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		unstructuredBgpPeer, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to convert structured BGPPeer to unstructured object")
-
-			return nil, err
-		}
-
-		unsObject, err := builder.apiClient.Resource(
-			GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpPeer}, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create BGPPeer")
@@ -185,7 +187,7 @@ func (builder *BGPPeerBuilder) Create() (*BGPPeerBuilder, error) {
 			return nil, err
 		}
 
-		builder.Object, err = builder.convertToStructured(unsObject)
+		builder.Object = builder.Definition
 
 		if err != nil {
 			return nil, err
@@ -209,9 +211,7 @@ func (builder *BGPPeerBuilder) Delete() (*BGPPeerBuilder, error) {
 		return builder, fmt.Errorf("BGPPeer cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.Resource(
-		GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete BGPPeer: %w", err)
@@ -232,17 +232,7 @@ func (builder *BGPPeerBuilder) Update(force bool) (*BGPPeerBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
 
-	unstructuredBgpPeer, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to convert structured BGPPeer to unstructured object")
-
-		return nil, err
-	}
-
-	_, err = builder.apiClient.Resource(
-		GetBGPPeerGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpPeer}, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
@@ -515,19 +505,4 @@ func (builder *BGPPeerBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (builder *BGPPeerBuilder) convertToStructured(unsObject *unstructured.Unstructured) (*mlbtypes.BGPPeer, error) {
-	bgpPeer := &mlbtypes.BGPPeer{}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, bgpPeer)
-	if err != nil {
-		glog.V(100).Infof(
-			"Failed to convert from unstructured to BGPPeer object in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil, err
-	}
-
-	return bgpPeer, err
 }

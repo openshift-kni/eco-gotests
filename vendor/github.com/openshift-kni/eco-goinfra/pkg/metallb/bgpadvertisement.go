@@ -10,13 +10,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-const (
-	bpgAdvertisementKind = "BGPAdvertisement"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // BGPAdvertisementBuilder provides struct for the BGPAdvertisement object containing connection to
@@ -24,7 +19,7 @@ const (
 type BGPAdvertisementBuilder struct {
 	Definition *mlbtypes.BGPAdvertisement
 	Object     *mlbtypes.BGPAdvertisement
-	apiClient  *clients.Settings
+	apiClient  runtimeClient.Client
 	errorMsg   string
 }
 
@@ -37,13 +32,16 @@ func NewBGPAdvertisementBuilder(apiClient *clients.Settings, name, nsname string
 		"Initializing new BGPAdvertisement structure with the following params: %s, %s",
 		name, nsname)
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil
+	}
+
 	builder := BGPAdvertisementBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.BGPAdvertisement{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       bpgAdvertisementKind,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -92,9 +90,10 @@ func (builder *BGPAdvertisementBuilder) Get() (*mlbtypes.BGPAdvertisement, error
 		"Collecting BGPAdvertisement object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	unsObject, err := builder.apiClient.Resource(
-		GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	bgpAdvertisement := &mlbtypes.BGPAdvertisement{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		bgpAdvertisement)
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -104,7 +103,7 @@ func (builder *BGPAdvertisementBuilder) Get() (*mlbtypes.BGPAdvertisement, error
 		return nil, err
 	}
 
-	return builder.convertToStructured(unsObject)
+	return bgpAdvertisement, nil
 }
 
 // PullBGPAdvertisement pulls existing bgpadvertisement from cluster.
@@ -117,8 +116,15 @@ func PullBGPAdvertisement(apiClient *clients.Settings, name, nsname string) (*BG
 		return nil, fmt.Errorf("bgpadvertisement 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := BGPAdvertisementBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.BGPAdvertisement{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -160,30 +166,16 @@ func (builder *BGPAdvertisementBuilder) Create() (*BGPAdvertisementBuilder, erro
 
 	var err error
 	if !builder.Exists() {
-		unstructuredBgpAdvertisement, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to convert structured BGPAdvertisement to unstructured object")
-
-			return nil, err
-		}
-
-		unsObject, err := builder.apiClient.Resource(
-			GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpAdvertisement}, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create BGPAdvertisement")
 
 			return nil, err
 		}
-
-		builder.Object, err = builder.convertToStructured(unsObject)
-
-		if err != nil {
-			return nil, err
-		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -202,9 +194,7 @@ func (builder *BGPAdvertisementBuilder) Delete() (*BGPAdvertisementBuilder, erro
 		return builder, fmt.Errorf("BGPAdvertisement cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.Resource(
-		GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete BGPAdvertisement: %w", err)
@@ -236,17 +226,7 @@ func (builder *BGPAdvertisementBuilder) Update(force bool) (*BGPAdvertisementBui
 	}
 
 	builder.Object.Spec = builder.Definition.Spec
-	unstructuredBgpAdvert, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to convert structured BGPAdvertisement to unstructured object")
-
-		return nil, err
-	}
-
-	_, err = builder.apiClient.Resource(
-		GetBGPAdvertisementGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredBgpAdvert}, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
@@ -513,20 +493,4 @@ func (builder *BGPAdvertisementBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (builder *BGPAdvertisementBuilder) convertToStructured(
-	unsObject *unstructured.Unstructured) (*mlbtypes.BGPAdvertisement, error) {
-	bgpAdvertisement := &mlbtypes.BGPAdvertisement{}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, bgpAdvertisement)
-	if err != nil {
-		glog.V(100).Infof(
-			"Failed to convert from unstructured to BGPAdvertisement object in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil, err
-	}
-
-	return bgpAdvertisement, err
 }

@@ -10,13 +10,8 @@ import (
 	mlbtypes "github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlboperator"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-const (
-	metalLb = "MetalLB"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Builder provides struct for the MetalLb object containing connection to
@@ -24,7 +19,7 @@ const (
 type Builder struct {
 	Definition *mlbtypes.MetalLB
 	Object     *mlbtypes.MetalLB
-	apiClient  *clients.Settings
+	apiClient  runtimeClient.Client
 	errorMsg   string
 }
 
@@ -37,13 +32,16 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, nodeSelector m
 		"Initializing new metallb structure with the following params: %s, %s, %v",
 		name, nsname, nodeSelector)
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.MetalLB{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       metalLb,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -86,8 +84,15 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		return nil, fmt.Errorf("metallb 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.MetalLB{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -147,8 +152,9 @@ func (builder *Builder) Get() (*mlbtypes.MetalLB, error) {
 		"Collecting metallb object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	unsObject, err := builder.apiClient.Resource(GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	metallb := &mlbtypes.MetalLB{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace}, metallb)
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -158,7 +164,7 @@ func (builder *Builder) Get() (*mlbtypes.MetalLB, error) {
 		return nil, err
 	}
 
-	return builder.convertToStructured(unsObject)
+	return metallb, nil
 }
 
 // Create makes a MetalLb in the cluster and stores the created object in struct.
@@ -173,17 +179,7 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	var err error
 	if !builder.Exists() {
-		unstructuredMetalLb, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to convert structured MetalLb to unstructured object")
-
-			return nil, err
-		}
-
-		unsObject, err := builder.apiClient.Resource(
-			GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create MetalLb")
@@ -191,7 +187,7 @@ func (builder *Builder) Create() (*Builder, error) {
 			return nil, err
 		}
 
-		builder.Object, err = builder.convertToStructured(unsObject)
+		builder.Object = builder.Definition
 
 		if err != nil {
 			return nil, err
@@ -215,9 +211,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 		return builder, fmt.Errorf("metallb cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.Resource(
-		GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete metallb: %w", err)
@@ -249,16 +243,7 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	builder.Definition.ObjectMeta.ResourceVersion = builder.Object.ObjectMeta.ResourceVersion
 
-	unstructuredMetalLb, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-	if err != nil {
-		glog.V(100).Infof("Failed to convert structured MetalLb to unstructured object")
-
-		return nil, err
-	}
-
-	_, err = builder.apiClient.Resource(
-		GetMetalLbIoGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredMetalLb}, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
@@ -388,19 +373,4 @@ func (builder *Builder) validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (builder *Builder) convertToStructured(unsObject *unstructured.Unstructured) (*mlbtypes.MetalLB, error) {
-	metalLb := &mlbtypes.MetalLB{}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, metalLb)
-	if err != nil {
-		glog.V(100).Infof(
-			"Failed to convert from unstructured to MetalLb object in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil, err
-	}
-
-	return metalLb, err
 }
