@@ -108,7 +108,7 @@ func ScpFileTo(source, destination, remoteHostname, remoteHostUsername, remoteHo
 		return fmt.Errorf("the remoteHostPass could not be empty")
 	}
 
-	glog.V(100).Infof("Verify file %s exists", destination)
+	glog.V(100).Infof("Verify file %s exists", source)
 
 	if _, err := os.Stat(source); !os.IsExist(err) {
 		glog.V(100).Infof("File file %s not found", source)

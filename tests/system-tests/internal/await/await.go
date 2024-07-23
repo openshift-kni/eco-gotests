@@ -378,7 +378,7 @@ func WaitUntilPersistentVolumeClaimCreated(apiClient *clients.Settings,
 		})
 
 	if err != nil {
-		return fmt.Errorf("persistentVolumeClaimss with option %v were not found or count is not as expected %d; %w",
+		return fmt.Errorf("persistentVolumeClaims with option %v were not found or count is not as expected %d; %w",
 			options, timeout, err)
 	}
 

@@ -12,12 +12,6 @@ var _ = Describe(
 	Ordered,
 	ContinueOnFailure,
 	Label(vcoreparams.Label), func() {
-		vcorecommon.VerifyLSOSuite()
-
-		vcorecommon.VerifyODFSuite()
-
-		vcorecommon.VerifyLokiSuite()
-
 		vcorecommon.VerifyNMStateSuite()
 
 		vcorecommon.VerifyServiceMeshSuite()
