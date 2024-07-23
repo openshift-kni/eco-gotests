@@ -31,28 +31,28 @@ func VerifyHelmDeploymentProcedure(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify Helm could be installed and works correctly")
 
 	helmScriptURL := "https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3"
-	helmScriptName := "get_helm.sh"
-	helmScriptLocalPath := filepath.Join(vcoreparams.ConfigurationFolderPath, helmScriptName)
+	helmScriptName := "get-helm-3"
+	helmScriptPath := filepath.Join(vcoreparams.ConfigurationFolderPath, helmScriptName)
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Download %s script", helmScriptName)
 
-	downloadCmd := fmt.Sprintf("wget %s -P %s", helmScriptURL, helmScriptLocalPath)
+	downloadCmd := fmt.Sprintf("wget %s -P %s", helmScriptURL, vcoreparams.ConfigurationFolderPath)
 	_, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, downloadCmd)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to download %s file to the hypervisor from the %s; %v",
 		helmScriptName, helmScriptURL, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Make %s script executable", helmScriptName)
 
-	chmodCmd := fmt.Sprintf("chmod 700 %s", helmScriptLocalPath)
+	chmodCmd := fmt.Sprintf("chmod 700 %s", helmScriptPath)
 	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, chmodCmd)
 	Expect(err).ToNot(HaveOccurred(), "failed to make %s script executable due to %w",
-		helmScriptLocalPath, err)
+		helmScriptPath, err)
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Install Helm")
 
-	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, helmScriptLocalPath)
+	_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, helmScriptPath)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
-		helmScriptLocalPath, err))
+		helmScriptPath, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Check HELM working properly")
 

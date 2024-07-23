@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
-
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/lso"
@@ -155,17 +153,9 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			fmt.Sprintf("tar xvfz %s/redis-ha-4.12.9.tgz --directory=%s/.",
 				vcoreparams.ConfigurationFolderPath, vcoreparams.ConfigurationFolderPath)}
 		for _, cmd := range installRedisCmd {
-			_, err = shell.ExecuteCmd(cmd)
+			_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, cmd)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s command due to %v", cmd, err))
 		}
-
-		err = remote.ScpDirectoryTo(
-			filepath.Join(vcoreparams.ConfigurationFolderPath, "redis-ha"),
-			vcoreparams.ConfigurationFolderPath,
-			VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to transfer folder %s to the %s/%s due to: %v",
-			filepath.Join(vcoreparams.ConfigurationFolderPath, "redis-ha"),
-			VCoreConfig.Host, vcoreparams.ConfigurationFolderPath, err))
 
 		glog.V(vcoreparams.VCoreLogLevel).Info("Create redis namespace")
 
