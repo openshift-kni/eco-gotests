@@ -7,8 +7,6 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes"
 	"github.com/openshift-kni/eco-goinfra/pkg/oadp/oadptypes"
-	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlboperator"
-	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes"
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
@@ -31,6 +29,7 @@ import (
 	ptpV1 "github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1"
 	olm2 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
 
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 
@@ -160,7 +159,11 @@ type Settings struct {
 	clientCguV1.RanV1alpha1Interface
 	ClusterClient clusterClient.Interface
 	clusterV1Client.ClusterV1Interface
+	scheme *runtime.Scheme
 }
+
+// SchemeAttacher represents a function that can modify the clients current schemes.
+type SchemeAttacher func(*runtime.Scheme) error
 
 // New returns a *Settings with the given kubeconfig.
 //
@@ -218,8 +221,8 @@ func New(kubeconfig string) *Settings {
 	clientSet.ClusterV1Interface = clusterV1Client.NewForConfigOrDie(config)
 	clientSet.Config = config
 
-	crScheme := runtime.NewScheme()
-	err = SetScheme(crScheme)
+	clientSet.scheme = runtime.NewScheme()
+	err = SetScheme(clientSet.scheme)
 
 	if err != nil {
 		log.Print("Error to load apiClient scheme")
@@ -228,7 +231,7 @@ func New(kubeconfig string) *Settings {
 	}
 
 	clientSet.Client, err = runtimeClient.New(config, runtimeClient.Options{
-		Scheme: crScheme,
+		Scheme: clientSet.scheme,
 	})
 
 	if err != nil {
@@ -291,6 +294,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := olm2.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := oauthv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -444,10 +451,27 @@ func (settings *Settings) GetAPIClient() (*Settings, error) {
 	return settings, nil
 }
 
+// AttachScheme attaches a scheme to the client's current scheme.
+func (settings *Settings) AttachScheme(attacher SchemeAttacher) error {
+	if settings == nil {
+		glog.V(100).Infof("APIClient is nil")
+
+		return fmt.Errorf("cannot add scheme to nil client")
+	}
+
+	err := attacher(settings.scheme)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // TestClientParams provides the struct to store the parameters for the test client.
 type TestClientParams struct {
-	K8sMockObjects []runtime.Object
-	GVK            []schema.GroupVersionKind
+	K8sMockObjects  []runtime.Object
+	GVK             []schema.GroupVersionKind
+	SchemeAttachers []SchemeAttacher
 
 	// Note: Add more fields below if/when needed.
 }
@@ -520,18 +544,6 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *operatorv1.OpenShiftAPIServer:
 			genericClientObjects = append(genericClientObjects, v)
 		case *routev1.Route:
-			genericClientObjects = append(genericClientObjects, v)
-		case *mlbtypes.IPAddressPool:
-			genericClientObjects = append(genericClientObjects, v)
-		case *mlbtypes.BFDProfile:
-			genericClientObjects = append(genericClientObjects, v)
-		case *mlbtypes.BGPPeer:
-			genericClientObjects = append(genericClientObjects, v)
-		case *mlbtypes.BGPAdvertisement:
-			genericClientObjects = append(genericClientObjects, v)
-		case *mlboperator.MetalLB:
-			genericClientObjects = append(genericClientObjects, v)
-		case *mlbtypes.L2Advertisement:
 			genericClientObjects = append(genericClientObjects, v)
 		case *policiesv1.Policy:
 			genericClientObjects = append(genericClientObjects, v)
@@ -609,6 +621,9 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *lcasgv1.SeedGenerator:
 			genericClientObjects = append(genericClientObjects, v)
+		// OAuthClient Objects
+		case *oauthv1.OAuthClient:
+			genericClientObjects = append(genericClientObjects, v)
 		// Hive Client Objects
 		case *hiveV1.HiveConfig:
 			genericClientObjects = append(genericClientObjects, v)
@@ -675,21 +690,33 @@ func GetTestClients(tcp TestClientParams) *Settings {
 	clientSet.ClientCgu = clientCguFake.NewSimpleClientset(cguObjects...)
 
 	// Update the generic client with schemes of generic resources
-	fakeClientScheme := runtime.NewScheme()
+	clientSet.scheme = runtime.NewScheme()
 
-	err := SetScheme(fakeClientScheme)
+	err := SetScheme(clientSet.scheme)
 	if err != nil {
 		return nil
 	}
 
 	if len(tcp.GVK) > 0 && len(genericClientObjects) > 0 {
-		fakeClientScheme.AddKnownTypeWithName(
+		clientSet.scheme.AddKnownTypeWithName(
 			tcp.GVK[0], genericClientObjects[0])
 	}
 
-	clientSet.Interface = dynamicFake.NewSimpleDynamicClient(fakeClientScheme, genericClientObjects...)
+	if len(tcp.K8sMockObjects) > 0 && len(tcp.SchemeAttachers) > 0 {
+		genericClientObjects = append(genericClientObjects, tcp.K8sMockObjects...)
+	}
+
+	for _, attacher := range tcp.SchemeAttachers {
+		err := clientSet.AttachScheme(attacher)
+		if err != nil {
+			return nil
+		}
+	}
+
+	clientSet.Interface = dynamicFake.NewSimpleDynamicClient(clientSet.scheme, genericClientObjects...)
+
 	// Add fake runtime client to clientSet runtime client
-	clientSet.Client = fakeRuntimeClient.NewClientBuilder().WithScheme(fakeClientScheme).
+	clientSet.Client = fakeRuntimeClient.NewClientBuilder().WithScheme(clientSet.scheme).
 		WithRuntimeObjects(genericClientObjects...).Build()
 
 	return clientSet

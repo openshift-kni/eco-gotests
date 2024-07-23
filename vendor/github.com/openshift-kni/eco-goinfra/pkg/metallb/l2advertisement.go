@@ -10,13 +10,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-const (
-	l2AdvertisementKind = "L2Advertisement"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // L2AdvertisementBuilder provides struct for the L2Advertisement object containing connection to
@@ -24,7 +19,7 @@ const (
 type L2AdvertisementBuilder struct {
 	Definition *mlbtypes.L2Advertisement
 	Object     *mlbtypes.L2Advertisement
-	apiClient  *clients.Settings
+	apiClient  runtimeClient.Client
 	errorMsg   string
 }
 
@@ -43,13 +38,16 @@ func NewL2AdvertisementBuilder(apiClient *clients.Settings, name, nsname string)
 		return nil
 	}
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil
+	}
+
 	builder := L2AdvertisementBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.L2Advertisement{
-			TypeMeta: metaV1.TypeMeta{
-				Kind:       l2AdvertisementKind,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
-			},
 			ObjectMeta: metaV1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -82,8 +80,15 @@ func PullL2Advertisement(apiClient *clients.Settings, name, nsname string) (*L2A
 		return nil, fmt.Errorf("l2Advertisement 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := L2AdvertisementBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.L2Advertisement{
 			ObjectMeta: metaV1.ObjectMeta{
 				Name:      name,
@@ -139,9 +144,10 @@ func (builder *L2AdvertisementBuilder) Get() (*mlbtypes.L2Advertisement, error) 
 		"Collecting L2Advertisement object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	unsObject, err := builder.apiClient.Resource(
-		GetL2AdvertisementGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
+	l2Advertisement := &mlbtypes.L2Advertisement{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		l2Advertisement)
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -151,7 +157,7 @@ func (builder *L2AdvertisementBuilder) Get() (*mlbtypes.L2Advertisement, error) 
 		return nil, err
 	}
 
-	return builder.convertToStructured(unsObject)
+	return l2Advertisement, nil
 }
 
 // Create makes a L2Advertisement in the cluster and stores the created object in struct.
@@ -166,17 +172,7 @@ func (builder *L2AdvertisementBuilder) Create() (*L2AdvertisementBuilder, error)
 
 	var err error
 	if !builder.Exists() {
-		unstructuredL2Advertisement, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to convert structured L2Advertisement to unstructured object")
-
-			return nil, err
-		}
-
-		unsObject, err := builder.apiClient.Resource(
-			GetL2AdvertisementGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredL2Advertisement}, metaV1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create L2Advertisement")
@@ -184,7 +180,7 @@ func (builder *L2AdvertisementBuilder) Create() (*L2AdvertisementBuilder, error)
 			return nil, err
 		}
 
-		builder.Object, err = builder.convertToStructured(unsObject)
+		builder.Object = builder.Definition
 
 		if err != nil {
 			return nil, err
@@ -208,9 +204,7 @@ func (builder *L2AdvertisementBuilder) Delete() (*L2AdvertisementBuilder, error)
 		return builder, fmt.Errorf("L2Advertisement cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.Resource(
-		GetL2AdvertisementGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete L2Advertisement: %w", err)
@@ -242,17 +236,7 @@ func (builder *L2AdvertisementBuilder) Update(force bool) (*L2AdvertisementBuild
 	}
 
 	builder.Object.Spec = builder.Definition.Spec
-	unstructuredL2Advert, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to convert structured L2Advertisement to unstructured object")
-
-		return nil, err
-	}
-
-	_, err = builder.apiClient.Resource(
-		GetL2AdvertisementGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredL2Advert}, metaV1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
@@ -409,20 +393,4 @@ func (builder *L2AdvertisementBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (builder *L2AdvertisementBuilder) convertToStructured(
-	unsObject *unstructured.Unstructured) (*mlbtypes.L2Advertisement, error) {
-	l2Advertisement := &mlbtypes.L2Advertisement{}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, l2Advertisement)
-	if err != nil {
-		glog.V(100).Infof(
-			"Failed to convert from unstructured to L2Advertisement object in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil, err
-	}
-
-	return l2Advertisement, err
 }

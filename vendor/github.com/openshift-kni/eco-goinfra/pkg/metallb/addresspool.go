@@ -10,13 +10,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-const (
-	ipAddressPoolKind = "IPAddressPool"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // IPAddressPoolBuilder provides struct for the IPAddressPool object containing connection to
@@ -24,7 +19,7 @@ const (
 type IPAddressPoolBuilder struct {
 	Definition *mlbtypes.IPAddressPool
 	Object     *mlbtypes.IPAddressPool
-	apiClient  *clients.Settings
+	apiClient  runtimeClient.Client
 	errorMsg   string
 }
 
@@ -38,13 +33,16 @@ func NewIPAddressPoolBuilder(
 		"Initializing new IPAddressPool structure with the following params: %s, %s %s",
 		name, nsname, addrPool)
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil
+	}
+
 	builder := IPAddressPoolBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.IPAddressPool{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       ipAddressPoolKind,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -85,9 +83,10 @@ func (builder *IPAddressPoolBuilder) Get() (*mlbtypes.IPAddressPool, error) {
 		"Collecting IPAddressPool object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	unsObject, err := builder.apiClient.Resource(
-		GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	ipAddressPool := &mlbtypes.IPAddressPool{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		ipAddressPool)
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -97,7 +96,7 @@ func (builder *IPAddressPoolBuilder) Get() (*mlbtypes.IPAddressPool, error) {
 		return nil, err
 	}
 
-	return builder.convertToStructured(unsObject)
+	return ipAddressPool, nil
 }
 
 // Exists checks whether the given IPAddressPool exists.
@@ -126,8 +125,16 @@ func PullAddressPool(apiClient *clients.Settings, name, nsname string) (*IPAddre
 		return nil, fmt.Errorf("addresspool 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := IPAddressPoolBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mlbtypes.IPAddressPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -169,30 +176,15 @@ func (builder *IPAddressPoolBuilder) Create() (*IPAddressPoolBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		unstructuredIPAddressPool, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to convert structured IPAddressPool to unstructured object")
-
-			return nil, err
-		}
-
-		unsObject, err := builder.apiClient.Resource(
-			GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredIPAddressPool}, metav1.CreateOptions{})
-
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
 		if err != nil {
 			glog.V(100).Infof("Failed to create IPAddressPool")
 
 			return nil, err
 		}
-
-		builder.Object, err = builder.convertToStructured(unsObject)
-
-		if err != nil {
-			return nil, err
-		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -211,9 +203,7 @@ func (builder *IPAddressPoolBuilder) Delete() (*IPAddressPoolBuilder, error) {
 		return builder, fmt.Errorf("IPAddressPool cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.Resource(
-		GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete IPAddressPool: %w", err)
@@ -234,17 +224,11 @@ func (builder *IPAddressPoolBuilder) Update(force bool) (*IPAddressPoolBuilder, 
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
 
-	unstructuredIPAddressPool, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to convert structured IPAddressPool to unstructured object")
-
-		return nil, err
+	if !builder.Exists() {
+		return nil, fmt.Errorf("failed to update ipaddresspool, object does not exist on cluster")
 	}
 
-	_, err = builder.apiClient.Resource(
-		GetIPAddressPoolGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredIPAddressPool}, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
@@ -369,20 +353,4 @@ func (builder *IPAddressPoolBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (builder *IPAddressPoolBuilder) convertToStructured(
-	unsObject *unstructured.Unstructured) (*mlbtypes.IPAddressPool, error) {
-	ipAddressPool := &mlbtypes.IPAddressPool{}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, ipAddressPool)
-	if err != nil {
-		glog.V(100).Infof(
-			"Failed to convert from unstructured to ipAddressPool object in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil, err
-	}
-
-	return ipAddressPool, err
 }

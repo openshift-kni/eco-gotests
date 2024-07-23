@@ -249,7 +249,7 @@ func (builder *LocalVolumeDiscoveryBuilder) GetPhase() (lsov1alpha1.DiscoveryPha
 			builder.Definition.Name, builder.Definition.Namespace)
 	}
 
-	return builder.Definition.Status.Phase, nil
+	return builder.Object.Status.Phase, nil
 }
 
 // WithNodeSelector sets the localVolumeDiscovery's nodeSelector.
