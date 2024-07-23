@@ -2,6 +2,7 @@ package vcore_system_test
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"testing"
 
@@ -29,7 +30,14 @@ func TestVCore(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	By(fmt.Sprintf("Asserting the folder %s exists", vcoreparams.ConfigurationFolderPath))
+	By(fmt.Sprintf("Create the folder %s for eco-gotests container", vcoreparams.ConfigurationFolderPath))
+
+	if err := os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755); os.IsExist(err) {
+		glog.V(vcoreparams.VCoreLogLevel).Infof("%s folder already exists", vcoreparams.ConfigurationFolderPath)
+	}
+
+	By(fmt.Sprintf("Asserting the folder %s exists on host %s",
+		vcoreparams.ConfigurationFolderPath, VCoreConfig.Host))
 
 	execCmd := fmt.Sprintf("mkdir %s", vcoreparams.ConfigurationFolderPath)
 	_, err := remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, execCmd)

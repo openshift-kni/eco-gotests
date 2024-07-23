@@ -19,7 +19,7 @@ import (
 func VerifyLSOSuite() {
 	Describe(
 		"LSO validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
+		Label(vcoreparams.LabelVCoreOdf), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.LSONamespace),
 				Label("lso"), VerifyLSONamespaceExists)
 

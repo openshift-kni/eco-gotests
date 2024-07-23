@@ -49,7 +49,7 @@ var (
 func VerifyODFSuite() {
 	Describe(
 		"ODF validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
+		Label(vcoreparams.LabelVCoreOdf), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.ODFNamespace),
 				Label("odf"), VerifyODFNamespaceExists)
 
