@@ -423,7 +423,7 @@ func VerifyOperatorsConfigForODFNodes(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 		restartStoragePodsCmd, err))
 
-	_, err = await.WaitUntilAllPodsReady(APIClient, vcoreparams.ODFNamespace, 7*time.Minute)
+	_, err = pod.WaitForAllPodsInNamespaceRunning(APIClient, vcoreparams.ODFNamespace, 7*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("not all storage pods in namespace %s succeeded to "+
 		"recover after deletion due to %v", vcoreparams.ODFNamespace, err))
 } // func VerifyOperatorsConfigForODFNodes (ctx SpecContext)

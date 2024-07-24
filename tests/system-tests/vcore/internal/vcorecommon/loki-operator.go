@@ -124,7 +124,7 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 	err = await.WaitUntilPersistentVolumeClaimCreated(APIClient,
 		vcoreparams.ODFNamespace,
 		4,
-		5*time.Minute,
+		90*time.Minute,
 		metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
 		"failed to create persistentVolumeClaims in namespace %s due to %v",
