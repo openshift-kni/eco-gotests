@@ -327,8 +327,14 @@ func rescheduleWorkloadWithPVC(fNamespace, fPodLabel string, fNodeSelector map[s
 		deploy.Definition.Name)
 
 	Eventually(func() bool {
-		oldPods, _ := pod.List(APIClient, fNamespace,
+		oldPods, err := pod.List(APIClient, fNamespace,
 			metav1.ListOptions{LabelSelector: labelsWlkdOneString})
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods: %v", err)
+
+			return false
+		}
 
 		return len(oldPods) == 0
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label(s) still present")
