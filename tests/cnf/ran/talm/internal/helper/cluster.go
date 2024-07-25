@@ -5,8 +5,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	v1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -41,7 +41,7 @@ func GetClusterVersionDefinition(config string, apiClient *clients.Settings) (*v
 		}
 
 		desiredUpdate.Version = version
-		clusterVersion.Spec.Upstream = v1.URL(raninittools.RANConfig.OcpUpgradeUpstreamURL)
+		clusterVersion.Spec.Upstream = v1.URL(RANConfig.OcpUpgradeUpstreamURL)
 		clusterVersion.Spec.Channel = currentVersion.Definition.Spec.Channel
 	}
 
@@ -72,14 +72,14 @@ func getClusterVersion(client *clients.Settings) (string, error) {
 		}
 	}
 
-	glog.V(ranparam.LogLevel).Info("No completed version found in clusterversion. Returning desired version")
+	glog.V(tsparams.LogLevel).Info("No completed version found in clusterversion. Returning desired version")
 
 	return clusterVersion.Object.Status.Desired.Version, nil
 }
 
 // DeleteClusterLabel deletes a label from a specified cluster.
 func DeleteClusterLabel(clusterName string, labelToBeDeleted string) error {
-	managedCluster, err := ocm.PullManagedCluster(raninittools.RANConfig.HubAPIClient, clusterName)
+	managedCluster, err := ocm.PullManagedCluster(RANConfig.HubAPIClient, clusterName)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func DeleteClusterLabel(clusterName string, labelToBeDeleted string) error {
 
 // DoesClusterLabelExist looks for a label on a managed cluster and returns true if it exists.
 func DoesClusterLabelExist(clusterName string, expectedLabel string) (bool, error) {
-	managedCluster, err := ocm.PullManagedCluster(raninittools.HubAPIClient, clusterName)
+	managedCluster, err := ocm.PullManagedCluster(HubAPIClient, clusterName)
 	if err != nil {
 		return false, err
 	}

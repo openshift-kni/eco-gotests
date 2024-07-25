@@ -1,27 +1,21 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"regexp"
-	"strconv"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/file"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/helper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/parsehelper"
 	stdinmatcher "github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/stdin-matcher"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/parsehelper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-)
-
-const (
-	timeoutWaitRegex       = 10 * time.Minute
-	timeoutClusterRecovery = 10 * time.Minute
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 )
 
 var _ = Describe("TPM2", Ordered, func() {
@@ -31,59 +25,61 @@ var _ = Describe("TPM2", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		if raninittools.BMCClient == nil {
-			Skip("Collecting power usage metrics requires the BMC configuration be set.")
+		if BMCClient == nil {
+			Skip("collecting power usage metrics requires the BMC configuration be set.")
 		}
 	})
 
 	BeforeEach(func() {
-		By("Checks if Secure Boot is enabled")
+
+		By("checking if Secure Boot is enabled")
 		var isSecureBootEnabled bool
 
 		Eventually(func() error {
-			isSecureBootEnabled, err = raninittools.BMCClient.IsSecureBootEnabled()
+			isSecureBootEnabled, err = BMCClient.IsSecureBootEnabled()
 
 			return err
-		}).WithTimeout(10 * time.Minute).
-			WithPolling(30 * time.Second).Should(BeNil())
+		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
 		if !isSecureBootEnabled {
-			By("Enable SecureBoot")
-			Eventually(raninittools.BMCClient.SecureBootEnable).WithTimeout(10 * time.Minute).
-				WithPolling(30 * time.Second).
+
+			By("enabling SecureBoot")
+			Eventually(BMCClient.SecureBootEnable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+				WithPolling(tsparams.PoolingIntervalBMC).
 				Should(Or(BeNil(), MatchError("secure boot is already enabled")))
 
-			By("Restart node")
+			By("restarting node")
 
-			Eventually(raninittools.BMCClient.SystemPowerCycle).WithTimeout(10 * time.Minute).
-				WithPolling(30 * time.Second).Should(BeNil())
+			Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+				WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 		}
 
 		By("waiting until all spoke 1 pods are ready")
-		err = cluster.WaitForClusterRecover(raninittools.Spoke1APIClient, []string{
-			inittools.GeneralConfig.MCONamespace}, timeoutClusterRecovery)
+		err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{
+			RANConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
 
 		if err != nil {
-			By("Server did not come up, maybe the boot order was swapped, swapping back")
+
+			By("swapping back boot order, the server did not come up, maybe the boot order was swapped before")
 			swapFirstSecondBootItems()
-			By("Restart node")
-			Eventually(raninittools.BMCClient.SystemPowerCycle).WithTimeout(10 * time.Minute).
-				WithPolling(30 * time.Second).Should(BeNil())
+
+			By("restarting node")
+			Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+				WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
+
 			By("waiting until all spoke 1 pods are ready")
-			err = cluster.WaitForClusterRecover(raninittools.Spoke1APIClient, []string{
-				inittools.GeneralConfig.MCONamespace}, timeoutClusterRecovery)
+			err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{
+				RANConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
 		}
 
 		err = file.DeleteFile("/etc/host-hw-Updating.flag")
-		Expect(err).To(Or(MatchError("error deleting file /etc/host-hw-Updating.flag, err=%!w(<nil>)"),
-			MatchError("error deleting file /etc/host-hw-Updating.flag, "+
-				"err=command terminated with exit code 1\nrm: cannot remove '/etc/host-hw-Updating.flag': "+
-				"No such file or directory\r\n")))
+		Expect(err).ToNot(HaveOccurred(), "error deleting /etc/host-hw-Updating.fla file")
 
 		Eventually(func() int {
-			nodeList, err = nodes.List(raninittools.Spoke1APIClient)
-			Expect(err).To(BeNil())
+			nodeList, err = nodes.List(Spoke1APIClient)
+			Expect(err).To(BeNil(), "error listing nodes")
 
 			return len(nodeList)
 		}).Should(BeNumerically("==", 1), "Currently only SNO clusters are supported")
@@ -91,251 +87,246 @@ var _ = Describe("TPM2", Ordered, func() {
 	})
 
 	AfterEach(func() {
-		By("Wait for cluster recovery after test")
-		err = cluster.WaitForClusterRecover(raninittools.Spoke1APIClient, []string{
-			inittools.GeneralConfig.MCONamespace}, timeoutClusterRecovery)
+
+		By("waiting for cluster recovery after test")
+		err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{
+			RANConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
 	})
 
-	Context("Test root disk for TPM2 encryption", func() {
-		It("Verifies that disabling Secure Boot prevents Disk decryption (TPM PCR 7)", reportxml.ID("001"),
-			func(ctx SpecContext) {
+	It("Verifies that disabling Secure Boot prevents"+
+		" Disk decryption (TPM PCR 7)", func() {
 
-				By("Checks that Root disk is encrypted with tpm2 with PCR 1 and 7")
-				var luksListOutput string
-				luksListOutput, err = helper.GetClevisLuksListOutput()
-				Expect(err).To(BeNil())
-				isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
-				Expect(err).To(BeNil())
-				if !isRootDiskTPM2PCR1AND7 {
-					Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
-				}
+		By("checking that Root disk is encrypted with tpm2 with PCR 1 and 7")
+		var luksListOutput string
+		luksListOutput, err = helper.GetClevisLuksListOutput()
+		Expect(err).To(BeNil(), "error getting of clevis luks list command")
+		isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
+		Expect(err).To(BeNil(), "error when checking if the root disk is configured with TPM 1 and 7")
+		if !isRootDiskTPM2PCR1AND7 {
+			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
+		}
 
-				By("Checks if Secure Boot is enabled")
-				var isSecureBootEnabled bool
+		By("checking if Secure Boot is enabled")
+		var isSecureBootEnabled bool
 
-				Eventually(func() error {
-					isSecureBootEnabled, err = raninittools.BMCClient.IsSecureBootEnabled()
+		Eventually(func() error {
+			isSecureBootEnabled, err = BMCClient.IsSecureBootEnabled()
 
-					return err
-				}).WithTimeout(10 * time.Minute).
-					WithPolling(30 * time.Second).Should(BeNil())
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
-				if !isSecureBootEnabled {
-					Skip("Secure boot is not enabled test cannot proceed")
-				}
+		if !isSecureBootEnabled {
+			Skip("Secure boot is not enabled test cannot proceed")
+		}
 
-				By("Checks that the reserved slot is not present")
-				var isRootDiskReservedSlotPresent bool
-				luksListOutput, err = helper.GetClevisLuksListOutput()
-				Expect(err).To(BeNil())
-				isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
-				Expect(err).To(BeNil())
-				Expect(isRootDiskReservedSlotPresent).To(BeFalse())
+		By("checking that the reserved slot is not present")
+		var isRootDiskReservedSlotPresent bool
+		luksListOutput, err = helper.GetClevisLuksListOutput()
+		Expect(err).To(BeNil(), "error getting of clevis luks list command")
+		isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
+		Expect(err).To(BeNil(), "error checking if the output of clevis luks list contains a reserved slot")
+		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
-				By("Disable Secure Boot")
+		By("disabling Secure Boot")
+		Eventually(BMCClient.SecureBootDisable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
-				Eventually(raninittools.BMCClient.SecureBootDisable).WithTimeout(10 * time.Minute).
-					WithPolling(30 * time.Second).Should(BeNil())
+		By("restarting node gracefully")
+		err = cluster.SoftRebootSNO()
+		Expect(err).To(BeNil(), "error rebooting node")
 
-				By("Gracefully Restart node")
-				err = helper.SoftRebootSNO()
-				Expect(err).To(BeNil())
+		By("waiting for Disk decryption Failure log to appear")
+		matches := []stdinmatcher.Matcher{
+			{
+				Regex: regexp.MustCompile("TPM failed"),
+				Times: 10,
+			},
+			{
+				Regex: regexp.MustCompile("pcr-rebind-boot"),
+				Times: 1,
+			},
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), tsparams.TimeoutWaitRegex)
+		defer cancel()
+		matchIndex, err := stdinmatcher.WaitForRegex(ctx, BMCClient, matches)
 
-				By("Wait for Disk decryption Failure log to appear")
-				matches := []stdinmatcher.Matcher{
-					{
-						Regex: regexp.MustCompile("TPM failed"),
-						Times: 10,
-					},
-					{
-						Regex: regexp.MustCompile("pcr-rebind-boot"),
-						Times: 1,
-					},
-				}
+		Expect(err).To(BeNil(), "WaitForRegex should not fail")
+		Expect(matchIndex).To(Equal(0), "WaitForRegex should match TPM failed (0)")
 
-				matchIndex, timeout, err := stdinmatcher.WaitForRegex(raninittools.BMCClient, timeoutWaitRegex, matches)
+		By("enabling SecureBoot")
+		Eventually(BMCClient.SecureBootEnable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).
+			Should(Or(BeNil(), MatchError("secure boot is already enabled")))
 
-				fmt.Fprintf(GinkgoWriter, "timeout:%s, matchIndex %d, err: %s\n", strconv.FormatBool(timeout), matchIndex, err)
+		By("powercycling node")
+		Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
-				Expect(err).To(BeNil())
-				Expect(timeout).To(BeFalse())
-				Expect(matchIndex).To(Equal(0)) // pcr-rebind-boot match
+	})
 
-				By("Enable SecureBoot")
-				Eventually(raninittools.BMCClient.SecureBootEnable).WithTimeout(10 * time.Minute).
-					WithPolling(30 * time.Second).
-					Should(Or(BeNil(), MatchError("secure boot is already enabled")))
+	It("Verifies update indication with file (/etc/host-hw-Updating.flag)", func() {
 
-				By("Power cycle node")
-				Eventually(raninittools.BMCClient.SystemPowerCycle).WithTimeout(10 * time.Minute).
-					WithPolling(30 * time.Second).Should(BeNil())
+		By("checking that Root disk is encrypted with tpm2 with PCR 1 and 7")
+		var luksListOutput string
+		luksListOutput, err = helper.GetClevisLuksListOutput()
+		Expect(err).To(BeNil(), "error getting of clevis luks list command")
+		isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
+		Expect(err).To(BeNil())
+		if !isRootDiskTPM2PCR1AND7 {
+			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
+		}
 
-			})
+		By("checking if Secure Boot is enabled")
+		var isSecureBootEnabled bool
 
-		It("Verifies update indication with file (/etc/host-hw-Updating.flag)", reportxml.ID("002"), func() {
+		Eventually(func() error {
+			isSecureBootEnabled, err = BMCClient.IsSecureBootEnabled()
 
-			By("Checks that Root disk is encrypted with tpm2 with PCR 1 and 7")
-			var luksListOutput string
-			luksListOutput, err = helper.GetClevisLuksListOutput()
-			Expect(err).To(BeNil())
-			isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
-			Expect(err).To(BeNil())
-			if !isRootDiskTPM2PCR1AND7 {
-				Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
-			}
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
-			By("Checks if Secure Boot is enabled")
-			var isSecureBootEnabled bool
+		if !isSecureBootEnabled {
+			Skip("Secure boot is not enabled test cannot proceed")
+		}
 
-			Eventually(func() error {
-				isSecureBootEnabled, err = raninittools.BMCClient.IsSecureBootEnabled()
+		By("Checks that the reserved slot is not present")
+		var isRootDiskReservedSlotPresent bool
+		luksListOutput, err = helper.GetClevisLuksListOutput()
+		Expect(err).To(BeNil(), "error getting of clevis luks list command")
+		isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
+		Expect(err).To(BeNil(), "error checking if the output of clevis luks list contains a reserved slot")
+		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
-				return err
-			}).WithTimeout(10 * time.Minute).
-				WithPolling(30 * time.Second).Should(BeNil())
+		By("touch upgrade indication file")
+		err = file.TouchFile("/etc/host-hw-Updating.flag")
+		Expect(err).To(BeNil(), "the /etc/host-hw-Updating.flag file should be created without error")
 
-			if !isSecureBootEnabled {
-				Skip("Secure boot is not enabled test cannot proceed")
-			}
+		By("disabling Secure Boot")
+		Eventually(BMCClient.SecureBootDisable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
-			By("Checks that the reserved slot is not present")
-			var isRootDiskReservedSlotPresent bool
-			luksListOutput, err = helper.GetClevisLuksListOutput()
-			Expect(err).To(BeNil())
-			isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
-			Expect(err).To(BeNil())
-			Expect(isRootDiskReservedSlotPresent).To(BeFalse())
+		By("restarting node gracefully")
+		err = cluster.SoftRebootSNO()
+		Expect(err).To(BeNil(), "error rebooting node")
 
-			By("touch upgrade indication file")
-			err = file.TouchFile("/etc/host-hw-Updating.flag")
-			Expect(err).To(BeNil())
+		By("waiting for pcr-rebind-boot log to appear (disk decryption succeeded)")
 
-			By("Disable Secure Boot")
-			Eventually(raninittools.BMCClient.SecureBootDisable).WithTimeout(10 * time.Minute).
-				WithPolling(30 * time.Second).Should(BeNil())
+		matches := []stdinmatcher.Matcher{
+			{
+				Regex: regexp.MustCompile("TPM failed"),
+				Times: 10,
+			},
+			{
+				Regex: regexp.MustCompile("pcr-rebind-boot"),
+				Times: 1,
+			},
+		}
 
-			By("Gracefully Restart node")
-			err = helper.SoftRebootSNO()
-			Expect(err).To(BeNil())
+		ctx, cancel := context.WithTimeout(context.Background(), tsparams.TimeoutWaitRegex)
+		defer cancel()
+		matchIndex, err := stdinmatcher.WaitForRegex(ctx, BMCClient, matches)
 
-			By("Wait for pcr-rebind-boot log to appear (disk decryption succeeded)")
+		Expect(err).To(BeNil(), "WaitForRegex should not fail")
+		Expect(matchIndex).To(Equal(1), "WaitForRegex should match pcr-rebind-boot (1)")
 
-			matches := []stdinmatcher.Matcher{
-				{
-					Regex: regexp.MustCompile("TPM failed"),
-					Times: 10,
-				},
-				{
-					Regex: regexp.MustCompile("pcr-rebind-boot"),
-					Times: 1,
-				},
-			}
+		By("enabling SecureBoot")
+		Eventually(BMCClient.SecureBootEnable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).
+			Should(Or(BeNil(), MatchError("secure boot is already enabled")))
 
-			matchIndex, timeout, err := stdinmatcher.WaitForRegex(raninittools.BMCClient, timeoutWaitRegex, matches)
+		By("waiting for cluster to recover")
+		err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{RANConfig.GeneralConfig.MCONamespace,
+			RANConfig.GeneralConfig.MCONamespace}, 45*time.Minute, time.Second)
+		Expect(err).To(BeNil())
 
-			fmt.Fprintf(GinkgoWriter, "timeout:%s, matchIndex %d, err: %s\n", strconv.FormatBool(timeout), matchIndex, err)
-			Expect(err).To(BeNil())
-			Expect(timeout).To(BeFalse())
-			Expect(matchIndex).To(Equal(1)) // matches pcr-rebind-boot match
+		By("restarting node")
+		err = cluster.SoftRebootSNO()
+		Expect(err).To(BeNil(), "error rebooting node")
 
-			By("Enable SecureBoot")
-			Eventually(raninittools.BMCClient.SecureBootEnable).WithTimeout(10 * time.Minute).
-				WithPolling(30 * time.Second).
-				Should(Or(BeNil(), MatchError("secure boot is already enabled")))
+	})
 
-			By("Wait for cluster to recover")
-			err = cluster.WaitForClusterRecover(raninittools.Spoke1APIClient, []string{inittools.GeneralConfig.MCONamespace,
-				inittools.GeneralConfig.MCONamespace}, 45*time.Minute)
-			Expect(err).To(BeNil())
+	It("Verifies that changing Host boot order prevents Disk decryption (TPM PCR 1)", func() {
 
-			By("Restart node")
-			err = helper.SoftRebootSNO()
-			Expect(err).To(BeNil())
+		By("checking that Root disk is encrypted with tpm2 with PCR 1 and 7")
+		var luksListOutput string
+		luksListOutput, err = helper.GetClevisLuksListOutput()
+		Expect(err).To(BeNil(), "error getting of clevis luks list command")
+		isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
+		Expect(err).To(BeNil())
+		if !isRootDiskTPM2PCR1AND7 {
+			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
+		}
 
-		})
+		By("checking if Secure Boot is enabled")
+		var isSecureBootEnabled bool
 
-		It("Verify that changing Host boot order prevents Disk decryption (TPM PCR 1)", reportxml.ID("003"),
-			func(ctx SpecContext) {
+		Eventually(func() error {
+			isSecureBootEnabled, err = BMCClient.IsSecureBootEnabled()
 
-				By("Checks that Root disk is encrypted with tpm2 with PCR 1 and 7")
-				var luksListOutput string
-				luksListOutput, err = helper.GetClevisLuksListOutput()
-				Expect(err).To(BeNil())
-				isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
-				Expect(err).To(BeNil())
-				if !isRootDiskTPM2PCR1AND7 {
-					Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
-				}
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
-				By("Checks if Secure Boot is enabled")
-				var isSecureBootEnabled bool
+		if !isSecureBootEnabled {
+			Skip("Secure boot is not enabled test cannot proceed")
+		}
 
-				Eventually(func() error {
-					isSecureBootEnabled, err = raninittools.BMCClient.IsSecureBootEnabled()
+		By("checking that the reserved slot is not present")
+		var isRootDiskReservedSlotPresent bool
+		luksListOutput, err = helper.GetClevisLuksListOutput()
+		Expect(err).To(BeNil(), "error getting of clevis luks list command")
 
-					return err
-				}).WithTimeout(10 * time.Minute).
-					WithPolling(30 * time.Second).Should(BeNil())
+		isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
+		Expect(err).To(BeNil(), "error checking if the output of clevis luks list contains a reserved slot")
+		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
-				if !isSecureBootEnabled {
-					Skip("Secure boot is not enabled test cannot proceed")
-				}
+		By("changing the server boot order")
+		swapFirstSecondBootItems()
 
-				By("Checks that the reserved slot is not present")
-				var isRootDiskReservedSlotPresent bool
-				luksListOutput, err = helper.GetClevisLuksListOutput()
-				Expect(err).To(BeNil())
-				isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
-				Expect(err).To(BeNil())
-				Expect(isRootDiskReservedSlotPresent).To(BeFalse())
+		By("restarting node gracefully")
+		err = cluster.SoftRebootSNO()
+		Expect(err).To(BeNil(), "error rebooting node")
 
-				By("Change the server boot order")
-				swapFirstSecondBootItems()
+		By("waiting for pcr-rebind-boot log to appear (disk decryption succeeded)")
+		matches := []stdinmatcher.Matcher{
+			{
+				Regex: regexp.MustCompile("TPM failed"),
+				Times: 10,
+			},
+			{
+				Regex: regexp.MustCompile("pcr-rebind-boot"),
+				Times: 1,
+			},
+		}
 
-				By("Gracefully Restart node")
-				err = helper.SoftRebootSNO()
-				Expect(err).To(BeNil())
+		ctx, cancel := context.WithTimeout(context.Background(), tsparams.TimeoutWaitRegex)
+		defer cancel()
+		matchIndex, err := stdinmatcher.WaitForRegex(ctx, BMCClient, matches)
 
-				By("Wait for pcr-rebind-boot log to appear (disk decryption succeeded)")
-				matches := []stdinmatcher.Matcher{
-					{
-						Regex: regexp.MustCompile("TPM failed"),
-						Times: 10,
-					},
-					{
-						Regex: regexp.MustCompile("pcr-rebind-boot"),
-						Times: 1,
-					},
-				}
+		Expect(err).To(BeNil(), "WaitForRegex should not fail")
+		Expect(matchIndex).To(Equal(0), "WaitForRegex should match TPM failed (0)")
 
-				matchIndex, timeout, err := stdinmatcher.WaitForRegex(raninittools.BMCClient, timeoutWaitRegex, matches)
+		By("changing the server boot order back to defaults")
+		swapFirstSecondBootItems()
 
-				fmt.Fprintf(GinkgoWriter, "timeout:%s, matchIndex %d, err: %s\n", strconv.FormatBool(timeout), matchIndex, err)
+		By("powercycling node")
+		Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PoolingIntervalBMC).Should(BeNil())
 
-				Expect(err).To(BeNil())
-				Expect(timeout).To(BeFalse())
-				Expect(matchIndex).To(Equal(0)) // pcr-rebind-boot match
-
-				By("Change the server boot order back to defaults")
-				swapFirstSecondBootItems()
-
-				By("Power cycle node")
-				Eventually(raninittools.BMCClient.SystemPowerCycle).WithTimeout(10 * time.Minute).
-					WithPolling(30 * time.Second).Should(BeNil())
-
-			})
 	})
 })
 
 func swapFirstSecondBootItems() {
-	By("Change the server boot order back to defaults")
+	By("changing the server boot order back to defaults")
 
 	var bootRefs []string
 
 	var err error
 
 	Eventually(func() error {
-		bootRefs, err = raninittools.BMCClient.SystemBootOrderReferences()
+		bootRefs, err = BMCClient.SystemBootOrderReferences()
 
 		return err
 	}).Should(BeNil())
@@ -344,8 +335,8 @@ func swapFirstSecondBootItems() {
 	// Creates a boot override swapping first and second boot references
 	var bootOverride []string
 	bootOverride, err = parsehelper.SwapFirstAndSecondSliceItems(bootRefs)
-	Expect(err).To(BeNil())
+	Expect(err).To(BeNil(), "SwapFirstAndSecondSliceItems should not fail")
 	fmt.Printf("New boot Order: %s\n", bootOverride)
-	Eventually(raninittools.BMCClient.SetSystemBootOrderReferences).WithTimeout(10 * time.Minute).
-		WithPolling(30 * time.Second).WithArguments(bootOverride).Should(BeNil())
+	Eventually(BMCClient.SetSystemBootOrderReferences).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+		WithPolling(tsparams.PoolingIntervalBMC).WithArguments(bootOverride).Should(BeNil())
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_getEncryptedDriveList(t *testing.T) {
+func TestGetEncryptedDriveList(t *testing.T) {
 	type args struct {
 		lsblkoutput string
 	}
@@ -303,7 +303,7 @@ func TestSubSlice(t *testing.T) {
 	}
 }
 
-func Test_swapFirstAndSecondSliceItems(t *testing.T) {
+func TestSwapFirstAndSecondSliceItems(t *testing.T) {
 	type args struct {
 		slice []string
 	}

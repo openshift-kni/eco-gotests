@@ -14,7 +14,7 @@ const (
 )
 
 // GetEncryptedDriveList returns the list of encrypted drives present in the host.
-func GetEncryptedDriveList(lsblkoutput string) (driveList []string) {
+func GetEncryptedDriveList(lsblkoutput string) []string {
 	const regex = `(.*?)\scrypto_LUKS`
 
 	// Compile the regular expression
@@ -23,18 +23,18 @@ func GetEncryptedDriveList(lsblkoutput string) (driveList []string) {
 	// Find all matches
 	matches := re.FindAllStringSubmatch(lsblkoutput, -1)
 
+	var driveList []string
+
 	for _, match := range matches {
 		driveList = append(driveList, match[1])
 	}
-
-	fmt.Printf("Drive list: %#v\n", driveList)
 
 	return driveList
 }
 
 // IsDiskRoot returs true if the "diskName" drive is the root drive (e.g. /).
 // processes the output of the lsblk -o mountpoints -l /dev/sdaX command.
-func IsDiskRoot(lsblkMounts string) (isRoot bool) {
+func IsDiskRoot(lsblkMounts string) bool {
 	const regex = `\n/\n`
 
 	// Compile the regular expression
@@ -71,7 +71,7 @@ func LuksListContainsPCR1And7(input string) (found bool) {
 
 // LuksListContainsReservedSlot checks the output of
 // sudo clevis luks list -d /dev/sdX for the reserved slot.
-func LuksListContainsReservedSlot(input string) (found bool) {
+func LuksListContainsReservedSlot(input string) bool {
 	RefReservedSlot := TPM2ReservedSlot + TPM2ReservedSlotContent
 
 	return RefReservedSlot == input

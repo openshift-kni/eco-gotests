@@ -1,13 +1,11 @@
-// Original code from https://github.com/greyerof/stdin-matcher
-
 package stdinmatcher
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"regexp"
-	"time"
 )
 
 // Matcher struc to hold regex to match for and the minimum of matches expected.
@@ -21,52 +19,47 @@ type Matcher struct {
 // WaitForAnyMatch waits for expected regex matches
 // if function found a match, the first match index is return as index in the match slice
 // If there was not match after timeout duration, timedout is set to true.
-func WaitForAnyMatch(input io.Reader, matches []Matcher, timeout time.Duration) (index int, timedout bool, err error) {
+func WaitForAnyMatch(ctx context.Context, input io.Reader, matches []Matcher) (int, error) {
 	reader := bufio.NewReader(input)
-
-	errCh := make(chan error)
 	lineCh := make(chan string)
+	errCh := make(chan error, 1)
 
 	go func() {
-		line := ""
-
-		for {
-			data, isPrefix, err := reader.ReadLine()
-			if err != nil {
-				errCh <- err
-
-				break
-			}
-
-			line += string(data)
-			if !isPrefix {
-				lineCh <- line
-				line = ""
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			select {
+			case <-ctx.Done():
+				return
+			case lineCh <- scanner.Text():
 			}
 		}
-	}()
 
-	timeoutCh := time.After(timeout)
+		if err := scanner.Err(); err != nil {
+			errCh <- err
+		}
+
+		close(lineCh)
+	}()
 
 	matchingCount := make([]int, len(matches))
 
 	for {
 		select {
-		case <-timeoutCh:
-			return 0, true, nil
+		case <-ctx.Done():
+			return 0, ctx.Err()
 		case err := <-errCh:
-			return 0, false, err
-		case line := <-lineCh:
-			for inti := range matches {
-				regexText := matches[inti]
+			return 0, err
+		case line, ok := <-lineCh:
+			if !ok {
+				return 0, io.EOF
+			}
 
-				match := regexText.Regex.Find([]byte(line))
-				if match != nil {
-					matchingCount[inti]++
-				}
-
-				if matchingCount[inti] == regexText.Times {
-					return inti, false, nil
+			for i, m := range matches {
+				if m.Regex.MatchString(line) {
+					matchingCount[i]++
+					if matchingCount[i] == m.Times {
+						return i, nil
+					}
 				}
 			}
 		}
@@ -83,10 +76,10 @@ type BMC interface {
 // WaitForRegex waits for any matches passed in a matches slice to appear in the
 // BMC console for the expected number of times.
 // If no matches, timedout is set to true.
-func WaitForRegex(bmc BMC, timeout time.Duration, matches []Matcher) (matchIndex int, timedout bool, err error) {
+func WaitForRegex(ctx context.Context, bmc BMC, matches []Matcher) (int, error) {
 	reader, _, err := bmc.OpenSerialConsole("")
 	if err != nil {
-		return matchIndex, false, err
+		return 0, err
 	}
 
 	defer func() {
@@ -96,5 +89,5 @@ func WaitForRegex(bmc BMC, timeout time.Duration, matches []Matcher) (matchIndex
 		}
 	}()
 
-	return WaitForAnyMatch(reader, matches, timeout)
+	return WaitForAnyMatch(ctx, reader, matches)
 }

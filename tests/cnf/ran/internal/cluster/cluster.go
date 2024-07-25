@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	corev1 "k8s.io/api/core/v1"
@@ -103,13 +103,20 @@ func isErrorExecuting(err error) bool {
 }
 
 // WaitForClusterRecover waits up to timeout for all pods in namespaces on a provided node to recover.
-func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeout time.Duration) error {
+func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeout, extraWait time.Duration) error {
 	err := waitForClusterReachable(client, timeout)
 	if err != nil {
 		return err
 	}
 
-	return waitForAllPodsHealthy(client, namespaces, timeout)
+	err = waitForAllPodsHealthy(client, namespaces, timeout)
+	if err != nil {
+		return err
+	}
+
+	time.Sleep(extraWait)
+
+	return nil
 }
 
 // waitForClusterReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
@@ -206,9 +213,11 @@ func IsPodInCondition(pod *pod.Builder, condition corev1.PodConditionType) bool 
 	return false
 }
 
-// RebootSNO Gracefully reboots SNO cluster.
-func RebootSNO(path string) error {
+// SoftRebootSNO executes systemctl reboot on a node.
+func SoftRebootSNO() error {
 	cmdToExec := "sudo systemctl reboot"
 
-	return ExecCmd(raninittools.Spoke1APIClient, 3, ranparam.MasterNodeSelector, cmdToExec)
+	_, err := ExecCommandOnSNO(Spoke1APIClient, 3, cmdToExec)
+
+	return err
 }

@@ -29,8 +29,6 @@ const (
 	LogLevel glog.Level = 80
 	// OpenshiftLoggingNamespace is the namespace where logging pods are.
 	OpenshiftLoggingNamespace = "openshift-logging"
-	// MasterNodeSelector Master node selector.
-	MasterNodeSelector = "node-role.kubernetes.io/master="
 )
 
 // HubOperatorName represets the possible operator names that may have associated versions on the hub cluster.

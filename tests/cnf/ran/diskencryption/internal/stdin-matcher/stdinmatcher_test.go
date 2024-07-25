@@ -1,14 +1,15 @@
-// Original code from https://github.com/greyerof/stdin-matcher
-
 package stdinmatcher
 
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"io"
 	"regexp"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type fakeBmcSlow struct {
@@ -126,19 +127,12 @@ Not it comes the lassst line :)
 			Times: 1,
 		},
 	}
+	ctx1, cancel1 := context.WithTimeout(context.Background(), 10*time.Second)
 
-	matchIndex, timeout, err := WaitForRegex(bmc1, 10*time.Second, matches)
-	if err != nil {
-		t.Errorf("err found: %v", err)
+	defer cancel1()
 
-		return
-	}
-
-	if timeout {
-		t.Errorf("Timeout waiting for regex!\n")
-
-		return
-	}
+	matchIndex, err := WaitForRegex(ctx1, bmc1, matches)
+	assert.NoError(t, err)
 
 	if matchIndex == 0 { // if first match found = success
 		t.Log("Expected regex found!\n")
@@ -157,18 +151,12 @@ Not it comes the lassst line :)
 		},
 	}
 
-	matchIndex, timeout, err = WaitForRegex(bmc2, 10*time.Second, matches)
-	if err != nil {
-		t.Errorf("err found: %v", err)
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
 
-		return
-	}
+	defer cancel2()
 
-	if timeout {
-		t.Errorf("Timeout waiting for regex!\n")
-
-		return
-	}
+	matchIndex, err = WaitForRegex(ctx2, bmc2, matches)
+	assert.NoError(t, err)
 
 	if matchIndex == 1 { // if second match found = success
 		t.Log("Expected regex found!\n")
