@@ -1,6 +1,8 @@
 package ztp
 
 import (
+	"fmt"
+	"path"
 	"runtime"
 	"testing"
 	"time"
@@ -50,9 +52,25 @@ var _ = AfterSuite(func() {
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete ZTP test namespace")
 })
 
-var _ = ReportAfterEach(func(report SpecReport) {
+var _ = JustAfterEach(func() {
+	var (
+		currentDir, currentFilename = path.Split(currentFile)
+		hubReportPath               = fmt.Sprintf("%shub_%s", currentDir, currentFilename)
+		report                      = CurrentSpecReport()
+	)
+
 	reporter.ReportIfFailed(
-		report, currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump, clients.SetScheme)
+		report, currentFile, tsparams.ReporterSpokeNamespacesToDump, tsparams.ReporterSpokeCRsToDump, clients.SetScheme)
+
+	if HubAPIClient != nil {
+		reporter.ReportIfFailedOnCluster(
+			RANConfig.HubKubeconfig,
+			report,
+			hubReportPath,
+			tsparams.ReporterHubNamespacesToDump,
+			tsparams.ReporterHubCRsToDump,
+			clients.SetScheme)
+	}
 })
 
 var _ = ReportAfterSuite("", func(report Report) {

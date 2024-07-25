@@ -154,7 +154,9 @@ func assertTalmPodLog(client *clients.Settings, expectedSubstring string) {
 		var podLog string
 
 		for _, podBuilder := range podList {
-			if strings.HasPrefix(podBuilder.Definition.GetName(), tsparams.TalmHubPodName) {
+			if strings.HasPrefix(podBuilder.Object.Name, tsparams.TalmHubPodName) {
+				glog.V(tsparams.LogLevel).Infof("Checking logs for pod %s", podBuilder.Object.Name)
+
 				podLog, err = podBuilder.GetLog(1*time.Minute, ranparam.TalmContainerName)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get TALM pod log")
 
