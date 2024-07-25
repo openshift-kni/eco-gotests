@@ -60,6 +60,8 @@ var _ = Describe(
 					Skip("The hub cluster must be connected")
 				}
 
+				tsparams.ReporterNamespacesToDump[infraenvTestSpoke] = "infraenv-spoke namespace"
+
 				nsBuilder = namespace.NewBuilder(HubAPIClient, infraenvTestSpoke)
 
 				By("Grab the MirrorRegistryRef value from the spec")

@@ -54,6 +54,8 @@ var _ = Describe(
 				if !osImageFound {
 					Skip("Corresponding OS Image not found in AgentServiceConfig")
 				}
+
+				tsparams.ReporterNamespacesToDump[osImageClusterImageSetName] = "osimage-clusterimageset-test namespace"
 			})
 
 			It("result in successfully created infraenv", reportxml.ID("41937"), func() {
