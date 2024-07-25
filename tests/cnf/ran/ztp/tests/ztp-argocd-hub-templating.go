@@ -63,11 +63,11 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 
 	// 54240 - Hub-side ACM templating with TALM
 	It("should report an error for using autoindent function where not allowed", reportxml.ID("54240"), func() {
-		setupHubTemplateTest(tsparams.ZtpTestPathTemplatingAutoIndent)
-
 		By("checking the ZTP version")
 		versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.ZTPVersion, "", "4.15")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if ZTP version is in range")
+
+		setupHubTemplateTest(tsparams.ZtpTestPathTemplatingAutoIndent)
 
 		if !versionInRange {
 			Skip("This test requires a ZTP version of 4.15 or lower")
