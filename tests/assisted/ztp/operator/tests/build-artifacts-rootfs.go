@@ -50,6 +50,8 @@ var _ = Describe(
 					}
 				}
 
+				tsparams.ReporterNamespacesToDump[rootfsSpokeName] = "rootfs-test namespace"
+
 				By("Creating " + rootfsSpokeName + " spoke cluster resources")
 				rootfsSpokeResources, err = setup.NewSpokeCluster(HubAPIClient).WithName(rootfsSpokeName).WithDefaultNamespace().
 					WithDefaultPullSecret().WithDefaultClusterDeployment().

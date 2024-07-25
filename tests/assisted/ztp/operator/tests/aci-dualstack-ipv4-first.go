@@ -40,6 +40,8 @@ var _ = Describe(
 				}
 
 				nsBuilder = namespace.NewBuilder(HubAPIClient, dualstackTestSpoke)
+
+				tsparams.ReporterNamespacesToDump[dualstackTestSpoke] = "dualstacktest namespace"
 			})
 			AfterEach(func() {
 				By("Delete the temporary namespace after test")
