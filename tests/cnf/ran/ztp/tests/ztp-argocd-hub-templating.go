@@ -67,11 +67,11 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 		versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.ZTPVersion, "", "4.15")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if ZTP version is in range")
 
-		setupHubTemplateTest(tsparams.ZtpTestPathTemplatingAutoIndent)
-
 		if !versionInRange {
 			Skip("This test requires a ZTP version of 4.15 or lower")
 		}
+
+		setupHubTemplateTest(tsparams.ZtpTestPathTemplatingAutoIndent)
 
 		By("validating TALM reported a policy error")
 		assertTalmPodLog(HubAPIClient, "policy has hub template error")
