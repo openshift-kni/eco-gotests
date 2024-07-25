@@ -1,9 +1,17 @@
 package tsparams
 
 import (
+	argocdoperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
+	sriovv1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
+	cguv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
 	corev1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/utils/ptr"
+	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
+	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
 
 // ArgoCdGitDetails is the details for a single app in ArgoCD.
@@ -17,13 +25,40 @@ var (
 	// Labels represents the range of labels that can be used for test cases selection.
 	Labels = append(ranparam.Labels, LabelSuite)
 
-	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
-	ReporterNamespacesToDump = map[string]string{
+	// ReporterHubNamespacesToDump tells to the reporter which namespaces on the hub to collect pod logs from.
+	ReporterHubNamespacesToDump = map[string]string{
+		TestNamespace:                       "",
+		ranparam.OpenshiftOperatorNamespace: "",
+	}
+
+	// ReporterSpokeNamespacesToDump tells the reporter which namespaces on the spokes to collect pod logs from.
+	ReporterSpokeNamespacesToDump = map[string]string{
 		TestNamespace: "",
 	}
-	// ReporterCRDsToDump tells to the reporter what CRs to dump.
-	ReporterCRDsToDump = []k8sreporter.CRData{
+
+	// ReporterHubCRsToDump is the CRs the reporter should dump on the hub.
+	ReporterHubCRsToDump = []k8sreporter.CRData{
+		{Cr: &corev1.NamespaceList{}},
 		{Cr: &corev1.PodList{}},
+		{Cr: &policiesv1.PolicyList{}},
+		{Cr: &placementrulev1.PlacementRuleList{}, Namespace: ptr.To(TestNamespace)},
+		{Cr: &cguv1alpha1.ClusterGroupUpgradeList{}},
+		{Cr: &corev1.ConfigMapList{}, Namespace: ptr.To(TestNamespace)},
+		{Cr: &corev1.SecretList{}, Namespace: ptr.To(TestNamespace)},
+		{Cr: &argocdoperatorv1alpha1.ArgoCDList{}},
+	}
+
+	// ReporterSpokeCRsToDump is the CRs the reporter should dump on the spokes.
+	ReporterSpokeCRsToDump = []k8sreporter.CRData{
+		{Cr: &corev1.NamespaceList{}},
+		{Cr: &corev1.PodList{}},
+		{Cr: &policiesv1.PolicyList{}},
+		{Cr: &corev1.PersistentVolumeList{}},
+		{Cr: &corev1.PersistentVolumeClaimList{}, Namespace: ptr.To(ImageRegistryNamespace)},
+		{Cr: &storagev1.StorageClassList{}},
+		{Cr: &corev1.ServiceAccountList{}, Namespace: ptr.To(CustomSourceTestNamespace)},
+		{Cr: &sriovv1.SriovNetworkList{}, Namespace: ptr.To(RANConfig.SriovOperatorNamespace)},
+		{Cr: &sriovv1.SriovNetworkList{}, Namespace: ptr.To(TestNamespace)},
 	}
 
 	// ArgoCdApps is the slice of the Argo CD app names defined in this package.

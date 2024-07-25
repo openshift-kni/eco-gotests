@@ -108,27 +108,16 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 	When("an image registry is configured on the DU profile", func() {
 		var imageRegistryConfig *imageregistry.Builder
 
-		BeforeEach(func() {
-			// This test requires that the spoke be configured with the ImageRegistry capability enabled in
-			// the ClusterVersion as a precondition. It will fail without that capability enabled.
-			By("checking if the image registry directory is present on spoke 1")
-			_, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, fmt.Sprintf("ls %s", tsparams.ImageRegistryPath))
-			Expect(err).ToNot(HaveOccurred(), "Image registry directory '%s' does not exist", tsparams.ImageRegistryPath)
-
-			imageRegistryConfig, err = imageregistry.Pull(Spoke1APIClient, tsparams.ImageRegistryName)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull image registry config")
-		})
-
 		AfterEach(func() {
-			if imageRegistryConfig == nil {
-				return
-			}
-
 			// Reset the policies app before doing later restore actions so that they're not affected.
 			By("resetting the policies app to the original settings")
 			err := helper.SetGitDetailsInArgoCd(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName], true, false)
 			Expect(err).ToNot(HaveOccurred(), "Failed to reset policies app git details")
+
+			if imageRegistryConfig == nil {
+				return
+			}
 
 			By("restoring the image registry configs")
 			err = helper.RestoreImageRegistry(Spoke1APIClient, tsparams.ImageRegistryName, imageRegistryConfig)
@@ -149,6 +138,16 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			}
 
 			Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
+
+			// This test requires that the spoke be configured with the ImageRegistry capability enabled in
+			// the ClusterVersion as a precondition. If the ZTP test path exists but the capability is not
+			// enabled, this test will fail.
+			By("checking if the image registry directory is present on spoke 1")
+			_, err = cluster.ExecCommandOnSNO(Spoke1APIClient, 3, fmt.Sprintf("ls %s", tsparams.ImageRegistryPath))
+			Expect(err).ToNot(HaveOccurred(), "Image registry directory '%s' does not exist", tsparams.ImageRegistryPath)
+
+			imageRegistryConfig, err = imageregistry.Pull(Spoke1APIClient, tsparams.ImageRegistryName)
+			Expect(err).ToNot(HaveOccurred(), "Failed to pull image registry config")
 
 			By("waiting for the policies to exist and be compliant")
 			for _, policyName := range tsparams.ImageRegistryPolicies {
