@@ -1,6 +1,10 @@
 package tsparams
 
-import "time"
+import (
+	"time"
+
+	"github.com/golang/glog"
+)
 
 const (
 	// LabelSuite Suite name.
@@ -9,8 +13,10 @@ const (
 	TimeoutWaitRegex = 10 * time.Minute
 	// TimeoutClusterRecovery timeout for cluster recovery.
 	TimeoutClusterRecovery = 10 * time.Minute
-	// PoolingIntervalBMC interval to pool the BMC after an error.
-	PoolingIntervalBMC = 30 * time.Second
+	// PollingIntervalBMC interval to poll the BMC after an error.
+	PollingIntervalBMC = 30 * time.Second
 	// TimeoutWaitingOnBMC timeout until failing a BMC command.
 	TimeoutWaitingOnBMC = 10 * time.Minute
+	// LogLevel is the verbosity of glog statements in this test suite.
+	LogLevel glog.Level = 90
 )

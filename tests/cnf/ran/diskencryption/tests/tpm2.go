@@ -17,24 +17,26 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 )
 
 var _ = Describe("TPM2", func() {
 	var (
-		nodeList []*nodes.Builder
-		err      error
+		err error
 	)
 
+	// BeforeEach is preparing the cluster before the tests can be run.
+	// In case the cluster is in a bad state from previously running tests,
+	// recovery is attempted as follows:
+	// - If Secure Boot is enabled, the disk should be able to be decrypted.
+	// - If not, enable it and power cycle. Otherwise the cluster will not be able to come back online
+	// - If the cluster does not come back online, maybe the boot order was changed. Change it back
+	// and power cycle
+	// - Finally, clean the "/etc/host-hw-Updating.flag" file and wait for the cluster to come back
+	// Once up check that the cluster is SNO, etc
 	BeforeEach(func() {
 		if BMCClient == nil {
 			Skip("collecting power usage metrics requires the BMC configuration be set.")
 		}
-
-		isTTYConsole, err := helper.IsTTYConsole()
-		Expect(err).ToNot(HaveOccurred(), "error checkking kernel command line for tty console")
-		Expect(isTTYConsole).To(BeTrue(), "the TTY options should be configured on the kernel"+
-			" boot line (nomodeset console=tty0 console=ttyS0,115200n8)")
 
 		By("checking if Secure Boot is enabled")
 		var isSecureBootEnabled bool
@@ -44,21 +46,21 @@ var _ = Describe("TPM2", func() {
 
 			return err
 		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			" IsSecureBootEnabled should not return an error")
 
 		if !isSecureBootEnabled {
 
 			By("enabling SecureBoot")
 			Eventually(BMCClient.SecureBootEnable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-				WithPolling(tsparams.PoolingIntervalBMC).
+				WithPolling(tsparams.PollingIntervalBMC).
 				Should(Or(Succeed(), MatchError("secure boot is already enabled")),
 					"enabling Secure Boot should succeed even if it is already enabled")
 
 			By("restarting node")
 
 			Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-				WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+				WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 				"power cycling node should succeed")
 		}
 
@@ -73,7 +75,7 @@ var _ = Describe("TPM2", func() {
 
 			By("restarting node")
 			Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-				WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+				WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 				"power cycling node should succeed")
 
 			By("waiting until all spoke 1 pods are ready")
@@ -82,9 +84,8 @@ var _ = Describe("TPM2", func() {
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
 		}
 
-		err = file.DeleteFile("/etc/host-hw-Updating.flag")
-		Expect(err).ToNot(HaveOccurred(), "error deleting /etc/host-hw-Updating.flag file")
-
+		// After this point the cluster should be back up.
+		var nodeList []*nodes.Builder
 		Eventually(func() int {
 			nodeList, err = nodes.List(Spoke1APIClient)
 			Expect(err).ToNot(HaveOccurred(), "error listing nodes")
@@ -92,6 +93,13 @@ var _ = Describe("TPM2", func() {
 			return len(nodeList)
 		}).Should(BeNumerically("==", 1), "Currently only SNO clusters are supported")
 
+		isTTYConsole, err := helper.IsTTYConsole()
+		Expect(err).ToNot(HaveOccurred(), "error checking kernel command line for tty console")
+		Expect(isTTYConsole).To(BeTrue(), "the TTY options should be configured on the kernel"+
+			" boot line (nomodeset console=tty0 console=ttyS0,115200n8)")
+
+		err = file.DeleteFile("/etc/host-hw-Updating.flag")
+		Expect(err).ToNot(HaveOccurred(), "error deleting /etc/host-hw-Updating.flag file")
 	})
 
 	AfterEach(func() {
@@ -122,7 +130,7 @@ var _ = Describe("TPM2", func() {
 
 			return err
 		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			"IsSecureBootEnabled should not return an error")
 
 		if !isSecureBootEnabled {
@@ -139,7 +147,7 @@ var _ = Describe("TPM2", func() {
 
 		By("disabling Secure Boot")
 		Eventually(BMCClient.SecureBootDisable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			"disabling Secure Boot should not return an error")
 
 		By("restarting node gracefully")
@@ -166,13 +174,13 @@ var _ = Describe("TPM2", func() {
 
 		By("enabling SecureBoot")
 		Eventually(BMCClient.SecureBootEnable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).
+			WithPolling(tsparams.PollingIntervalBMC).
 			Should(Or(Succeed(), MatchError("secure boot is already enabled")),
 				"enabling Secure Boot should not return an error")
 
 		By("powercycling node")
 		Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			"power cycling the node should succeed")
 
 	})
@@ -196,7 +204,7 @@ var _ = Describe("TPM2", func() {
 
 			return err
 		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			"IsSecureBootEnabled should not return an error")
 
 		if !isSecureBootEnabled {
@@ -217,7 +225,7 @@ var _ = Describe("TPM2", func() {
 
 		By("disabling Secure Boot")
 		Eventually(BMCClient.SecureBootDisable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			"SecureBootDisable should not return an error")
 
 		By("restarting node gracefully")
@@ -246,7 +254,7 @@ var _ = Describe("TPM2", func() {
 
 		By("enabling SecureBoot")
 		Eventually(BMCClient.SecureBootEnable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).
+			WithPolling(tsparams.PollingIntervalBMC).
 			Should(Or(Succeed(), MatchError("secure boot is already enabled")),
 				"enabling Secure Boot should succeed, even if it is already enabled ")
 
@@ -280,7 +288,7 @@ var _ = Describe("TPM2", func() {
 
 			return err
 		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			"IsSecureBootEnabled should not return an error")
 
 		if !isSecureBootEnabled {
@@ -327,7 +335,7 @@ var _ = Describe("TPM2", func() {
 
 		By("power cycling node")
 		Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-			WithPolling(tsparams.PoolingIntervalBMC).ShouldNot(HaveOccurred(),
+			WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 			"power cycling the node should not return an error")
 
 	})
@@ -346,13 +354,13 @@ func swapFirstSecondBootItems() {
 		return err
 	}).ShouldNot(HaveOccurred(), "getting boot order should not return an error")
 
-	glog.V(ranparam.LogLevel).Infof("Current boot Order: %s\n", bootRefs)
+	glog.V(tsparams.LogLevel).Infof("Current boot Order: %s\n", bootRefs)
 	// Creates a boot override swapping first and second boot references
 	var bootOverride []string
 	bootOverride, err = parsehelper.SwapFirstAndSecondSliceItems(bootRefs)
 	Expect(err).ToNot(HaveOccurred(), "SwapFirstAndSecondSliceItems should not fail")
-	glog.V(ranparam.LogLevel).Infof("New boot Order: %s\n", bootOverride)
+	glog.V(tsparams.LogLevel).Infof("New boot Order: %s\n", bootOverride)
 	Eventually(BMCClient.SetSystemBootOrderReferences).WithTimeout(tsparams.TimeoutWaitingOnBMC).
-		WithPolling(tsparams.PoolingIntervalBMC).WithArguments(bootOverride).ShouldNot(HaveOccurred(),
+		WithPolling(tsparams.PollingIntervalBMC).WithArguments(bootOverride).ShouldNot(HaveOccurred(),
 		"changing boot order should not return an error")
 }
