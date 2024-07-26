@@ -392,6 +392,25 @@ func (builder *ContainerBuilder) WithVolumeMount(volMount corev1.VolumeMount) *C
 	return builder
 }
 
+// WithPorts adds a list of ports to expose from the container.
+func (builder *ContainerBuilder) WithPorts(ports []corev1.ContainerPort) *ContainerBuilder {
+	glog.V(100).Infof("Configuring continer port %v", ports)
+
+	if len(ports) == 0 {
+		glog.V(100).Infof("Ports can not be empty")
+
+		builder.errorMsg = "can not modify container config without any port"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.definition.Ports = ports
+
+	return builder
+}
+
 // GetContainerCfg returns Container struct.
 func (builder *ContainerBuilder) GetContainerCfg() (*corev1.Container, error) {
 	glog.V(100).Infof("Returning configuration for container %s", builder.definition.Name)
