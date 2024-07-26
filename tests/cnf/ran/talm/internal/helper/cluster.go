@@ -79,7 +79,7 @@ func getClusterVersion(client *clients.Settings) (string, error) {
 
 // DeleteClusterLabel deletes a label from a specified cluster.
 func DeleteClusterLabel(clusterName string, labelToBeDeleted string) error {
-	managedCluster, err := ocm.PullManagedCluster(RANConfig.HubAPIClient, clusterName)
+	managedCluster, err := ocm.PullManagedCluster(HubAPIClient, clusterName)
 	if err != nil {
 		return err
 	}

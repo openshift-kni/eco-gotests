@@ -106,12 +106,12 @@ func SubSlice(s, sub []string) bool {
 }
 
 // SwapFirstAndSecondSliceItems swaps the first and second items in a string slice.
-func SwapFirstAndSecondSliceItems(slice []string) (newSlice []string, err error) {
+func SwapFirstAndSecondSliceItems(slice []string) ([]string, error) {
 	if len(slice) < 2 {
 		return slice, fmt.Errorf("cannot swap two first items of slice, for slices of length < 2")
 	}
 
-	newSlice = slice
+	newSlice := slice
 
 	temp := slice[0]
 	newSlice[0] = slice[1]

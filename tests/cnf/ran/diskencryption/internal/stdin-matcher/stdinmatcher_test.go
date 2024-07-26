@@ -127,7 +127,7 @@ Not it comes the lassst line :)
 			Times: 1,
 		},
 	}
-	ctx1, cancel1 := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx1, cancel1 := context.WithTimeout(context.TODO(), 10*time.Second)
 
 	defer cancel1()
 
@@ -151,7 +151,7 @@ Not it comes the lassst line :)
 		},
 	}
 
-	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx2, cancel2 := context.WithTimeout(context.TODO(), 10*time.Second)
 
 	defer cancel2()
 

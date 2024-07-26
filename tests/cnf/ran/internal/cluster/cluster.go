@@ -119,6 +119,45 @@ func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeou
 	return nil
 }
 
+// IsPodHealthy returns true if a given pod is healthy, otherwise false.
+func IsPodHealthy(pod *pod.Builder) bool {
+	if pod.Object.Status.Phase == corev1.PodRunning {
+		// Check if running pod is ready
+		if !IsPodInCondition(pod, corev1.PodReady) {
+			glog.V(ranparam.LogLevel).Infof("pod condition is not Ready. Message: %s", pod.Object.Status.Message)
+
+			return false
+		}
+	} else if pod.Object.Status.Phase != corev1.PodSucceeded {
+		// Pod is not running or completed.
+		glog.V(ranparam.LogLevel).Infof("pod phase is %s. Message: %s", pod.Object.Status.Phase, pod.Object.Status.Message)
+
+		return false
+	}
+
+	return true
+}
+
+// IsPodInCondition returns true if a given pod is in expected condition, otherwise false.
+func IsPodInCondition(pod *pod.Builder, condition corev1.PodConditionType) bool {
+	for _, c := range pod.Object.Status.Conditions {
+		if c.Type == condition && c.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+
+	return false
+}
+
+// SoftRebootSNO executes systemctl reboot on a node.
+func SoftRebootSNO() error {
+	cmdToExec := "sudo systemctl reboot"
+
+	_, err := ExecCommandOnSNO(Spoke1APIClient, 3, cmdToExec)
+
+	return err
+}
+
 // waitForClusterReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
 // cluster.
 func waitForClusterReachable(client *clients.Settings, timeout time.Duration) error {
@@ -181,43 +220,4 @@ func waitForAllPodsHealthy(client *clients.Settings, namespaces []string, timeou
 
 			return true, nil
 		})
-}
-
-// IsPodHealthy returns true if a given pod is healthy, otherwise false.
-func IsPodHealthy(pod *pod.Builder) bool {
-	if pod.Object.Status.Phase == corev1.PodRunning {
-		// Check if running pod is ready
-		if !IsPodInCondition(pod, corev1.PodReady) {
-			glog.V(ranparam.LogLevel).Infof("pod condition is not Ready. Message: %s", pod.Object.Status.Message)
-
-			return false
-		}
-	} else if pod.Object.Status.Phase != corev1.PodSucceeded {
-		// Pod is not running or completed.
-		glog.V(ranparam.LogLevel).Infof("pod phase is %s. Message: %s", pod.Object.Status.Phase, pod.Object.Status.Message)
-
-		return false
-	}
-
-	return true
-}
-
-// IsPodInCondition returns true if a given pod is in expected condition, otherwise false.
-func IsPodInCondition(pod *pod.Builder, condition corev1.PodConditionType) bool {
-	for _, c := range pod.Object.Status.Conditions {
-		if c.Type == condition && c.Status == corev1.ConditionTrue {
-			return true
-		}
-	}
-
-	return false
-}
-
-// SoftRebootSNO executes systemctl reboot on a node.
-func SoftRebootSNO() error {
-	cmdToExec := "sudo systemctl reboot"
-
-	_, err := ExecCommandOnSNO(Spoke1APIClient, 3, cmdToExec)
-
-	return err
 }
