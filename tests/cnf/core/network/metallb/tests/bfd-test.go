@@ -66,14 +66,14 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 	Context("single hop", Label("singlehop"), func() {
 		BeforeEach(func() {
 			By("Collect running metallb bgp speakers")
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
+			frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+				LabelSelector: tsparams.FRRK8sDefaultLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
-			bfdProfile := createBFDProfileAndVerifyIfItsReady(speakerPods)
+			bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
 			createBGPPeerAndVerifyIfItsReady(
-				ipv4metalLbIPList[0], bfdProfile.Definition.Name, tsparams.RemoteBGPASN, false, speakerPods)
+				ipv4metalLbIPList[0], bfdProfile.Definition.Name, tsparams.RemoteBGPASN, false, frrk8sPods)
 
 			By("Creating MetalLb configMap")
 			bfdConfigMap := createConfigMap(tsparams.RemoteBGPASN, ipv4NodeAddrList, false, true)
@@ -112,8 +112,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to redefine %s namespace with the label %s",
 				NetConfig.MlbOperatorNamespace, tsparams.PrometheusMonitoringLabel))
 
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel})
+			frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+				LabelSelector: tsparams.FRRK8sDefaultLabel})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list MetalLB speaker pods")
 
 			prometheusPods, err := pod.List(APIClient, NetConfig.PrometheusOperatorNamespace, metav1.ListOptions{
@@ -121,7 +121,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
 
-			verifyMetricPresentInPrometheus(speakerPods, prometheusPods[0], "metallb_bfd_")
+			verifyMetricPresentInPrometheus(frrk8sPods, prometheusPods[0], "metallb_bfd_")
 		})
 
 		AfterEach(func() {
@@ -154,12 +154,12 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		BeforeEach(func() {
 			By("Collecting information before test")
-			speakerPodList, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
+			frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+				LabelSelector: tsparams.FRRK8sDefaultLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list speaker pods")
 
-			speakerRoutesMap, err = buildRoutesMap(speakerPodList, ipv4metalLbIPList)
+			speakerRoutesMap, err = buildRoutesMap(frrk8sPods, ipv4metalLbIPList)
 			Expect(err).ToNot(HaveOccurred(), "Failed to build speaker route map")
 
 			By("Configuring Local GW mode")
@@ -180,12 +180,12 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
 			By("Removing static routes from the speakers")
-			speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
+			frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+				LabelSelector: tsparams.FRRK8sDefaultLabel,
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
-			for _, speakerPod := range speakerPods {
-				out, err := frr.SetStaticRoute(speakerPod, "del", "172.16.0.1", speakerRoutesMap)
+			for _, frrk8sPod := range frrk8sPods {
+				out, err := frr.SetStaticRoute(frrk8sPod, "del", "172.16.0.1", speakerRoutesMap)
 				Expect(err).ToNot(HaveOccurred(), out)
 			}
 
@@ -226,11 +226,11 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				}
 
 				By("Collecting running MetalLB speakers")
-				speakerPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-					LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
+				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+					LabelSelector: tsparams.FRRK8sDefaultLabel,
 				})
 				Expect(err).ToNot(HaveOccurred(), "Failed to list metalLb speaker pods")
-				bfdProfile := createBFDProfileAndVerifyIfItsReady(speakerPods)
+				bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
 				neighbourASN := uint32(tsparams.LocalBGPASN)
 				var eBgpMultiHop bool
@@ -239,7 +239,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					eBgpMultiHop = true
 				}
 				createBGPPeerAndVerifyIfItsReady(
-					masterClientPodIP, bfdProfile.Definition.Name, neighbourASN, eBgpMultiHop, speakerPods)
+					masterClientPodIP, bfdProfile.Definition.Name, neighbourASN, eBgpMultiHop, frrk8sPods)
 
 				prefixLen := int32(32)
 				if ipStack == netparam.IPV6Family {
@@ -294,8 +294,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					Expect(err).ToNot(HaveOccurred(), buffer.String())
 				}
 				By("Adding static routes to the speakers")
-				for _, speakerPod := range speakerPods {
-					out, err := frr.SetStaticRoute(speakerPod, "add", masterClientPodIP, speakerRoutesMap)
+				for _, frrk8sPod := range frrk8sPods {
+					out, err := frr.SetStaticRoute(frrk8sPod, "add", masterClientPodIP, speakerRoutesMap)
 					Expect(err).ToNot(HaveOccurred(), out)
 				}
 
@@ -463,7 +463,7 @@ func testBFDFailBack() {
 	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
 }
 
-func createBFDProfileAndVerifyIfItsReady(mlbSpeakerPods []*pod.Builder) *metallb.BFDBuilder {
+func createBFDProfileAndVerifyIfItsReady(frrk8sPods []*pod.Builder) *metallb.BFDBuilder {
 	By("Creating BFD profile")
 
 	bfdProfile, err := metallb.NewBFDBuilder(APIClient, "bfdprofile", NetConfig.MlbOperatorNamespace).
@@ -473,9 +473,9 @@ func createBFDProfileAndVerifyIfItsReady(mlbSpeakerPods []*pod.Builder) *metallb
 	Expect(err).ToNot(HaveOccurred(), "Failed to create BFD profile")
 	Expect(bfdProfile.Exists()).To(BeTrue(), "BFD profile doesn't exist")
 
-	for _, speakerPod := range mlbSpeakerPods {
+	for _, frrk8sPod := range frrk8sPods {
 		Eventually(frr.IsProtocolConfigured,
-			time.Minute, tsparams.DefaultRetryInterval).WithArguments(speakerPod, "bfd").
+			time.Minute, tsparams.DefaultRetryInterval).WithArguments(frrk8sPod, "bfd").
 			Should(BeTrue(), "BFD is not configured on the Speakers")
 	}
 
@@ -526,8 +526,8 @@ func buildRoutesMap(podList []*pod.Builder, nextHopList []string) (map[string]st
 
 	routesMap := make(map[string]string)
 
-	for num, speakerPod := range podList {
-		routesMap[speakerPod.Definition.Spec.NodeName] = nextHopList[num]
+	for num, pod := range podList {
+		routesMap[pod.Definition.Spec.NodeName] = nextHopList[num]
 	}
 
 	return routesMap, nil

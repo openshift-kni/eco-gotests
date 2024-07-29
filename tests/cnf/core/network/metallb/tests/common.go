@@ -102,7 +102,7 @@ func createExternalNad() {
 }
 
 func createBGPPeerAndVerifyIfItsReady(
-	peerIP, bfdProfileName string, remoteAsn uint32, eBgpMultiHop bool, speakerPods []*pod.Builder) {
+	peerIP, bfdProfileName string, remoteAsn uint32, eBgpMultiHop bool, frrk8sPods []*pod.Builder) {
 	By("Creating BGP Peer")
 
 	bgpPeer := metallb.NewBPGPeerBuilder(APIClient, "testpeer", NetConfig.MlbOperatorNamespace,
@@ -117,9 +117,9 @@ func createBGPPeerAndVerifyIfItsReady(
 
 	By("Verifying if BGP protocol configured")
 
-	for _, speakerPod := range speakerPods {
+	for _, frrk8sPod := range frrk8sPods {
 		Eventually(frr.IsProtocolConfigured,
-			time.Minute, tsparams.DefaultRetryInterval).WithArguments(speakerPod, "router bgp").
+			time.Minute, tsparams.DefaultRetryInterval).WithArguments(frrk8sPod, "router bgp").
 			Should(BeTrue(), "BGP is not configured on the Speakers")
 	}
 }
@@ -242,17 +242,17 @@ func removePrefixFromIPList(ipAddressList []string) []string {
 }
 
 func verifyMetricPresentInPrometheus(
-	speakerPods []*pod.Builder, prometheusPod *pod.Builder, metricPrefix string, expectedMetrics ...[]string) {
+	frrk8sPods []*pod.Builder, prometheusPod *pod.Builder, metricPrefix string, expectedMetrics ...[]string) {
 	By("Verifying if metrics are present in Prometheus database")
 
-	for _, speakerPod := range speakerPods {
+	for _, frrk8sPod := range frrk8sPods {
 		var (
 			metricsFromSpeaker []string
 			err                error
 		)
 
 		Eventually(func() error {
-			metricsFromSpeaker, err = frr.GetMetricsByPrefix(speakerPod, metricPrefix)
+			metricsFromSpeaker, err = frr.GetMetricsByPrefix(frrk8sPod, metricPrefix)
 
 			return err
 		}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(),
@@ -265,7 +265,7 @@ func verifyMetricPresentInPrometheus(
 
 		Eventually(
 			prometheus.PodMetricsPresentInDB, 5*time.Minute, tsparams.DefaultRetryInterval).WithArguments(
-			prometheusPod, speakerPod.Definition.Name, metricsFromSpeaker).Should(
+			prometheusPod, frrk8sPod.Definition.Name, metricsFromSpeaker).Should(
 			BeTrue(), "Failed to match metric in prometheus")
 	}
 }

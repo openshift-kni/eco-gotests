@@ -40,8 +40,8 @@ var (
 	MetalLbIo = "metallb"
 	// MetalLbDsName default metalLb speaker daemonset names.
 	MetalLbDsName = "speaker"
-	// MetalLbDefaultSpeakerLabel represents the default metalLb speaker label.
-	MetalLbDefaultSpeakerLabel = "component=speaker"
+	// FRRK8sDefaultLabel represents the default metalLb FRRK8S pod label.
+	FRRK8sDefaultLabel = "component=frr-k8s"
 	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	ExternalMacVlanNADName = "external"
 	// SleepCMD represents shel sleep command.
