@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/parsehelper"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/parsehelper"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools"
 )
 
 const (
@@ -24,7 +24,7 @@ func GetClevisLuksListOutput() (string, error) {
 
 	cmdToExec := fmt.Sprintf("sudo clevis luks list -d %s", rootDisk)
 
-	return cluster.ExecCommandOnSNO(Spoke1APIClient, 3, cmdToExec)
+	return cluster.ExecCommandOnSNOWithRetries(APIClient, 3, cmdToExec)
 }
 
 // getRootDisk returns the name of the encrypted root disk in the form /dev/sdaX.
@@ -57,7 +57,7 @@ func getRootDisk() (string, error) {
 // false otherwise.
 func IsTTYConsole() (bool, error) {
 	cmdToExec := "sudo cat /proc/cmdline"
-	output, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, cmdToExec)
+	output, err := cluster.ExecCommandOnSNOWithRetries(APIClient, 3, cmdToExec)
 
 	if err != nil {
 		return false, fmt.Errorf("error getting kernel command line, err: %w", err)
@@ -76,12 +76,12 @@ func IsTTYConsole() (bool, error) {
 func getAllDriveListOutput() (string, error) {
 	cmdToExec := "lsblk -o NAME,FSTYPE -l"
 
-	return cluster.ExecCommandOnSNO(Spoke1APIClient, 3, cmdToExec)
+	return cluster.ExecCommandOnSNOWithRetries(APIClient, 3, cmdToExec)
 }
 
 // getLSBLKMounts returns the output of the lsblk -o mountpoints -l /dev/sdaX command on host.
 func getLSBLKMounts(diskName string) (string, error) {
 	cmdToExec := "lsblk -o mountpoints -l " + diskName
 
-	return cluster.ExecCommandOnSNO(Spoke1APIClient, 3, cmdToExec)
+	return cluster.ExecCommandOnSNOWithRetries(APIClient, 3, cmdToExec)
 }

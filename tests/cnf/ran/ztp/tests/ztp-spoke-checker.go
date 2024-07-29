@@ -8,9 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 )
 
 var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTests), func() {
@@ -20,7 +20,7 @@ var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTest
 			By("verifying chronyd is inactive")
 			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
 			// is not active, which is expected here.
-			status, err := cluster.ExecCommandOnSNO(
+			status, err := cluster.ExecCommandOnSNOWithRetries(
 				Spoke1APIClient, 3, "systemctl is-active chronyd.service | cat -")
 			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is active")
 
@@ -32,7 +32,7 @@ var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTest
 			By("verifying chronyd is disabled")
 			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
 			// is disabled, which is expected here.
-			status, err = cluster.ExecCommandOnSNO(
+			status, err = cluster.ExecCommandOnSNOWithRetries(
 				Spoke1APIClient, 3, "systemctl is-enabled chronyd.service | cat -")
 			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is enabled")
 

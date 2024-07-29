@@ -18,12 +18,12 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	subscriptionsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -120,7 +120,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 				getImageNameCommand := fmt.Sprintf(
 					tsparams.SpokeImageGetNameCommand, prometheusPod.Definition.Spec.Containers[0].Image)
-				excludedPreCacheImages, err := cluster.ExecCmdWithStdout(
+				excludedPreCacheImages, err := cluster.ExecCmdWithStdoutWithRetries(
 					Spoke1APIClient,
 					3,
 					getImageNameCommand,
@@ -138,7 +138,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 				if excludedPreCacheImage != "" {
 					By("wiping any existing images from spoke 1 master")
-					_ = cluster.ExecCmd(Spoke1APIClient, 3, tsparams.MasterNodeSelector, imageDeleteCommand)
+					_ = cluster.ExecCmdWithRetries(Spoke1APIClient, 3, tsparams.MasterNodeSelector, imageDeleteCommand)
 				}
 			})
 
@@ -170,7 +170,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				Expect(err).ToNot(HaveOccurred(), "Failed to check the precache pod log")
 
 				By("generating list of precached images on spoke 1")
-				preCachedImages, err := cluster.ExecCmdWithStdout(
+				preCachedImages, err := cluster.ExecCmdWithStdoutWithRetries(
 					Spoke1APIClient,
 					3,
 					imageListCommand,
@@ -214,7 +214,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				assertPrecacheStatus(RANConfig.Spoke1Name, "Succeeded")
 
 				By("generating list of precached images on spoke 1")
-				preCachedImages, err := cluster.ExecCmdWithStdout(
+				preCachedImages, err := cluster.ExecCmdWithStdoutWithRetries(
 					Spoke1APIClient,
 					3,
 					imageListCommand,
@@ -259,7 +259,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 				By("deleting PTP image used by spoke 1")
 				ptpImageDeleteCmd := fmt.Sprintf("podman rmi %s", targetPrecacheImage)
-				_ = cluster.ExecCmd(Spoke1APIClient, 3, tsparams.MasterNodeSelector, ptpImageDeleteCmd)
+				_ = cluster.ExecCmdWithRetries(Spoke1APIClient, 3, tsparams.MasterNodeSelector, ptpImageDeleteCmd)
 
 				By("creating a PreCachingConfig on hub")
 				preCachingConfig := cgu.NewPreCachingConfigBuilder(
@@ -290,7 +290,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 				spokeImageListCmd := fmt.Sprintf(`podman images  --noheading --filter reference=%s`, targetPrecacheImage)
 				By("checking images list on spoke for targetImage")
-				preCachedImages, err := cluster.ExecCmdWithStdout(
+				preCachedImages, err := cluster.ExecCmdWithStdoutWithRetries(
 					Spoke1APIClient, 3, spokeImageListCmd, metav1.ListOptions{LabelSelector: tsparams.MasterNodeSelector})
 				Expect(err).ToNot(HaveOccurred(), "Failed to generate list of precached images on spoke 1")
 				Expect(preCachedImages).ToNot(BeEmpty(), "Failed to find a master node for spoke 1")

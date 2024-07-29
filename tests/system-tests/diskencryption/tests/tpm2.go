@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/file"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/helper"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/parsehelper"
-	stdinmatcher "github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/internal/stdin-matcher"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/diskencryption/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/file"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/helper"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/inittools"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/parsehelper"
+	stdinmatcher "github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/stdin-matcher"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
 )
 
 var _ = Describe("TPM2", func() {
@@ -65,8 +65,8 @@ var _ = Describe("TPM2", func() {
 		}
 
 		By("waiting until all spoke 1 pods are ready")
-		err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{
-			RANConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
+		err = cluster.WaitForClusterRecover(APIClient, []string{
+			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
 
 		if err != nil {
 
@@ -79,15 +79,15 @@ var _ = Describe("TPM2", func() {
 				"power cycling node should succeed")
 
 			By("waiting until all spoke 1 pods are ready")
-			err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{
-				RANConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
+			err = cluster.WaitForClusterRecover(APIClient, []string{
+				DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
 		}
 
 		// After this point the cluster should be back up.
 		var nodeList []*nodes.Builder
 		Eventually(func() int {
-			nodeList, err = nodes.List(Spoke1APIClient)
+			nodeList, err = nodes.List(APIClient)
 			Expect(err).ToNot(HaveOccurred(), "error listing nodes")
 
 			return len(nodeList)
@@ -105,8 +105,8 @@ var _ = Describe("TPM2", func() {
 	AfterEach(func() {
 
 		By("waiting for cluster recovery after test")
-		err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{
-			RANConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
+		err = cluster.WaitForClusterRecover(APIClient, []string{
+			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
 	})
 
 	It("Verifies that disabling Secure Boot prevents"+
@@ -151,7 +151,7 @@ var _ = Describe("TPM2", func() {
 			"disabling Secure Boot should not return an error")
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO()
+		err = cluster.SoftRebootSNO(APIClient)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
 
 		By("waiting for Disk decryption Failure log to appear")
@@ -229,7 +229,7 @@ var _ = Describe("TPM2", func() {
 			"SecureBootDisable should not return an error")
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO()
+		err = cluster.SoftRebootSNO(APIClient)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
 
 		By("waiting for pcr-rebind-boot log to appear (disk decryption succeeded)")
@@ -259,12 +259,12 @@ var _ = Describe("TPM2", func() {
 				"enabling Secure Boot should succeed, even if it is already enabled ")
 
 		By("waiting for cluster to recover")
-		err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{RANConfig.GeneralConfig.MCONamespace,
-			RANConfig.GeneralConfig.MCONamespace}, 45*time.Minute, time.Second)
+		err = cluster.WaitForClusterRecover(APIClient, []string{DiskEntryptionTestConfig.GeneralConfig.MCONamespace,
+			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, 45*time.Minute, time.Second)
 		Expect(err).ToNot(HaveOccurred(), "cluster should recover without error")
 
 		By("restarting node")
-		err = cluster.SoftRebootSNO()
+		err = cluster.SoftRebootSNO(APIClient)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
 
 	})
@@ -308,7 +308,7 @@ var _ = Describe("TPM2", func() {
 		swapFirstSecondBootItems()
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO()
+		err = cluster.SoftRebootSNO(APIClient)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
 
 		By("waiting for pcr-rebind-boot log to appear (disk decryption succeeded)")

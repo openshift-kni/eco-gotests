@@ -7,7 +7,9 @@ import (
 	"runtime"
 
 	"github.com/kelseyhightower/envconfig"
+
 	"github.com/openshift-kni/eco-gotests/tests/internal/config"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -19,6 +21,7 @@ const (
 // SystemTestsConfig type keeps general configuration.
 type SystemTestsConfig struct {
 	*config.GeneralConfig
+
 	IpmiToolImage          string `yaml:"ipmitool_image" envconfig:"ECO_SYSTEM_TESTS_IPMITOOL_IMAGE"`
 	CNFGoTestsClientImage  string `yaml:"cnf_gotests_client_image" envconfig:"ECO_SYSTEM_TESTS_CNF_CLIENT_IMAGE"`
 	DestinationRegistryURL string `yaml:"dest_registry_url" envconfig:"ECO_SYSTEM_TESTS_DEST_REGISTRY_URL"`

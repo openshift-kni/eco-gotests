@@ -14,10 +14,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	"github.com/openshift/cluster-node-tuning-operator/pkg/performanceprofile/controller/performanceprofile/components"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
@@ -81,7 +81,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			}
 
 			By("Checking for expected kernel parameters")
-			cmdline, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, "cat /proc/cmdline")
+			cmdline, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, 3, "cat /proc/cmdline")
 			Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
 
 			// Expected default set of kernel parameters when no WorkloadHints are specified in PerformanceProfile
@@ -108,7 +108,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 		err := helper.SetPowerModeAndWaitForMcpUpdate(perfProfile, *nodeList[0], true, false, true)
 		Expect(err).ToNot(HaveOccurred(), "Failed to set power mode")
 
-		cmdline, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, "cat /proc/cmdline")
+		cmdline, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, 3, "cat /proc/cmdline")
 		Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
 		Expect(cmdline).
 			To(ContainSubstring("intel_pstate=passive"), "Kernel parameter intel_pstate=passive missing from /proc/cmdline")
@@ -239,7 +239,7 @@ func checkCPUGovernorsAndResumeLatency(cpus []int, pmQos, governor string) {
 		// Eventually allows for retries on malformed output, but we use StopTrying since the command failing is
 		// a failure, not just a malformed output.
 		Eventually(func() (string, error) {
-			output, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
+			output, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, 3, command)
 			if err != nil {
 				return "", StopTrying(fmt.Sprintf("Failed to check cpu %d resume latency", cpu)).Wrap(err)
 			}
@@ -250,7 +250,7 @@ func checkCPUGovernorsAndResumeLatency(cpus []int, pmQos, governor string) {
 		command = fmt.Sprintf("cat /sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor", cpu)
 
 		Eventually(func() (string, error) {
-			output, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, command)
+			output, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, 3, command)
 			if err != nil {
 				return "", StopTrying(fmt.Sprintf("Failed to check cpu %d scaling governor", cpu)).Wrap(err)
 			}

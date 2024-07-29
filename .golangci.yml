@@ -84,6 +84,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools
       - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools
       - github.com/openshift-kni/eco-gotests/tests/accel/internal/accelinittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/inittools
     # Select the Go version to target. The default is '1.13'.
     go: "1.22"
     # https://staticcheck.io/docs/options#checks
@@ -198,6 +199,9 @@ issues:
       linters:
         - gochecknoinits
     - path: 'tests/rhwa/internal/rhwainittools'
+      linters:
+        - gochecknoinits
+    - path: 'tests/system-tests/diskencryption/internal/inittools'
       linters:
         - gochecknoinits
     - path: 'tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools'

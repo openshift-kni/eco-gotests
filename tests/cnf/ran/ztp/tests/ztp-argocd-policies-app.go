@@ -12,12 +12,12 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 )
@@ -143,7 +143,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			// the ClusterVersion as a precondition. If the ZTP test path exists but the capability is not
 			// enabled, this test will fail.
 			By("checking if the image registry directory is present on spoke 1")
-			_, err = cluster.ExecCommandOnSNO(Spoke1APIClient, 3, fmt.Sprintf("ls %s", tsparams.ImageRegistryPath))
+			_, err = cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, 3, fmt.Sprintf("ls %s", tsparams.ImageRegistryPath))
 			Expect(err).ToNot(HaveOccurred(), "Image registry directory '%s' does not exist", tsparams.ImageRegistryPath)
 
 			imageRegistryConfig, err = imageregistry.Pull(Spoke1APIClient, tsparams.ImageRegistryName)

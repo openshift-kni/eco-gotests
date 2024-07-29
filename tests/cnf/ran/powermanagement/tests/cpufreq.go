@@ -10,11 +10,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/cpuset"
@@ -88,7 +88,7 @@ func getCPUFreq(coreID int) performancev2.CPUfrequency {
 	// command execution are actual errors though and are returned immediately.
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, 10*time.Second, true, func(ctx context.Context) (bool, error) {
-			cmdOut, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, spokeCommand)
+			cmdOut, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, 3, spokeCommand)
 			if err != nil {
 				return false, err
 			}
