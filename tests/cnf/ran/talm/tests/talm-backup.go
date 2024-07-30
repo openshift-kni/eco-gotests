@@ -31,6 +31,14 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 		if !versionInRange {
 			Skip("backup tests require talm 4.11 or higher")
 		}
+
+		By("checking that the talm version is at most 4.15")
+		versionInRange, err = ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "", "4.15")
+		Expect(err).ToNot(HaveOccurred(), "Failed to compare talm version string")
+
+		if !versionInRange {
+			Skip("backup tests are deprecated for talm 4.16 and higher")
+		}
 	})
 
 	When("there is a single spoke", func() {
