@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes"
-	"github.com/openshift-kni/eco-goinfra/pkg/oadp/oadptypes"
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/dynamic"
@@ -23,13 +22,11 @@ import (
 	eskv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	monv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	v1security "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	ptpV1 "github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1"
-	olm2 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme"
-
-	oauthv1 "github.com/openshift/api/oauth/v1"
 	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 
@@ -106,7 +103,6 @@ import (
 	multinetpolicyclientv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1"
 	noobaav1alpha1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	cguapiv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
-	nvidiagpuv1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/nvidiagputypes"
 	machinev1beta1client "github.com/openshift/client-go/machine/clientset/versioned/typed/machine/v1beta1"
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
@@ -293,10 +289,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := olm2.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
 	if err := oauthv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -330,10 +322,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := mcmV1Beta1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := nvidiagpuv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -608,8 +596,6 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *kacv1.KlusterletAddonConfig:
 			genericClientObjects = append(genericClientObjects, v)
 		case *monv1.ServiceMonitor:
-			genericClientObjects = append(genericClientObjects, v)
-		case *oadptypes.DataProtectionApplication:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
 		case *argocdOperatorv1alpha1.ArgoCD:

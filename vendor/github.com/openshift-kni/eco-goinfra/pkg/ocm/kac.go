@@ -180,6 +180,8 @@ func (builder *KACBuilder) Update(force bool) (*KACBuilder, error) {
 			glog.V(100).Infof(msg.FailToUpdateNotification("klusterletAddonConfig", builder.Definition.Name))
 
 			err := builder.Delete()
+			builder.Definition.ResourceVersion = ""
+
 			if err != nil {
 				glog.V(100).Infof(msg.FailToUpdateError("klusterletAddonConfig", builder.Definition.Name))
 

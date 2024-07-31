@@ -598,7 +598,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240726142624-8eb62208ad75
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240731154756-d6b470ae81c2
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -641,7 +641,6 @@ github.com/openshift-kni/eco-goinfra/pkg/nrop
 github.com/openshift-kni/eco-goinfra/pkg/nto
 github.com/openshift-kni/eco-goinfra/pkg/nvidiagpu
 github.com/openshift-kni/eco-goinfra/pkg/oadp
-github.com/openshift-kni/eco-goinfra/pkg/oadp/oadptypes
 github.com/openshift-kni/eco-goinfra/pkg/ocm
 github.com/openshift-kni/eco-goinfra/pkg/olm
 github.com/openshift-kni/eco-goinfra/pkg/pod
@@ -688,6 +687,13 @@ github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/k8skoperatorlibs/upgr
 github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/nvidiagputypes
 github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/nvidiagputypes/internal/consts
 github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/semver
+github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/api/v1alpha1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/pkg/common
+github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/velero/api/v1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/velero/pkg/restore
+github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators
+github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/version
 github.com/openshift-kni/eco-goinfra/pkg/secret
 github.com/openshift-kni/eco-goinfra/pkg/service
 github.com/openshift-kni/eco-goinfra/pkg/serviceaccount

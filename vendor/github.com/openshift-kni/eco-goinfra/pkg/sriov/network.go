@@ -222,6 +222,26 @@ func (builder *NetworkBuilder) WithVlanQoS(qoSClass uint16) *NetworkBuilder {
 	return builder
 }
 
+// WithLogLevel sets logLevel parameter in the SrIovNetwork definition spec.
+func (builder *NetworkBuilder) WithLogLevel(logLevel string) *NetworkBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	allowedLogLevels := []string{"panic", "error", "warning", "info", "debug", ""}
+
+	if !slices.Contains(allowedLogLevels, logLevel) {
+		builder.errorMsg = "invalid logLevel value, allowed logLevel values are:" +
+			" panic, error, warning, info, debug or empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.LogLevel = logLevel
+
+	return builder
+}
+
 // WithIPAddressSupport sets ips capabilities in the SrIovNetwork definition spec.
 func (builder *NetworkBuilder) WithIPAddressSupport() *NetworkBuilder {
 	return builder.withCapabilities("ips")
