@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/policy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	corev1 "k8s.io/api/core/v1"
@@ -84,7 +85,7 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 			NetConfig.SriovOperatorNamespace,
 			tsparams.TestNamespaceName,
 			sriovPolicy.Definition.Spec.ResourceName).
-			WithStaticIpam().Create()
+			WithStaticIpam().WithLogLevel(netparam.LogLevelDebug).Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to configure sr-iov network")
 
 		By("Waiting until cluster MCP and SR-IOV are stable")

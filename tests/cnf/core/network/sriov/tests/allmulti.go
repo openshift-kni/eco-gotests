@@ -320,7 +320,7 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 func defineAndCreateSrIovNetwork(srIovNetwork, resName string, allMulti bool) {
 	srIovNetworkObject := sriov.NewNetworkBuilder(
 		APIClient, srIovNetwork, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, resName).
-		WithStaticIpam().WithIPAddressSupport().WithMacAddressSupport()
+		WithStaticIpam().WithIPAddressSupport().WithMacAddressSupport().WithLogLevel(netparam.LogLevelDebug)
 
 	if allMulti {
 		srIovNetworkObject.WithTrustFlag(true).WithMetaPluginAllMultiFlag(true)
@@ -477,7 +477,7 @@ func defineBondNAD(nadname, mode string) *nad.Builder {
 func defineAndCreateSrIovNetworkWithOutIPAM(srIovNetwork string, allMulti bool) {
 	srIovNetworkObject := sriov.NewNetworkBuilder(
 		APIClient, srIovNetwork, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName,
-		srIovPolicyNode0ResName).WithMacAddressSupport()
+		srIovPolicyNode0ResName).WithMacAddressSupport().WithLogLevel(netparam.LogLevelDebug)
 
 	if allMulti {
 		srIovNetworkObject.WithTrustFlag(true).WithMetaPluginAllMultiFlag(true)

@@ -24,6 +24,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
@@ -652,7 +653,7 @@ func defineAndCreateVlanNad(name, intName string, vlanID uint16, ipam *nad.IPAM)
 func defineAndCreateSrIovNetwork(srIovNetwork, resName string, vlanID uint16) {
 	srIovNetworkObject := sriov.NewNetworkBuilder(
 		APIClient, srIovNetwork, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, resName).
-		WithMacAddressSupport()
+		WithMacAddressSupport().WithLogLevel(netparam.LogLevelDebug)
 
 	if vlanID != 0 {
 		srIovNetworkObject.WithVLAN(vlanID)

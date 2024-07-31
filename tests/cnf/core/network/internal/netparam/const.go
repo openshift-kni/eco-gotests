@@ -19,4 +19,6 @@ const (
 	IPSubnet64 = "64"
 	// IPSubnet32 represents prefix 32 ipv4 subnet.
 	IPSubnet32 = "32"
+	// LogLevelDebug represents log level debug.
+	LogLevelDebug = "debug"
 )
