@@ -1,4 +1,4 @@
-package ipsecinittools
+package diskencryptioninittools
 
 import (
 	"github.com/golang/glog"
