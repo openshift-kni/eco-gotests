@@ -20,26 +20,31 @@ var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTest
 			By("verifying chronyd is inactive")
 			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
 			// is not active, which is expected here.
-			status, err := cluster.ExecCommandOnSNO(
-				Spoke1APIClient, 3, "systemctl is-active chronyd.service | cat -")
+			statuses, err := cluster.ExecCmdWithStdout(Spoke1APIClient, 3, "systemctl is-active chronyd.service | cat -")
 			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is active")
+			Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for chronyd service")
 
-			glog.V(tsparams.LogLevel).Infof("active status: %s", status)
+			for nodeName, status := range statuses {
+				glog.V(tsparams.LogLevel).Infof("%s active status: %s", nodeName, status)
 
-			status = strings.TrimSpace(status)
-			Expect(status).To(Equal("inactive"), "chronyd service was not inactive")
+				status = strings.TrimSpace(status)
+				Expect(status).To(Equal("inactive"), "chronyd service was not inactive")
+			}
 
 			By("verifying chronyd is disabled")
 			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
 			// is disabled, which is expected here.
-			status, err = cluster.ExecCommandOnSNO(
-				Spoke1APIClient, 3, "systemctl is-enabled chronyd.service | cat -")
+			statuses, err = cluster.ExecCmdWithStdout(Spoke1APIClient, 3, "systemctl is-enabled chronyd.service | cat -")
 			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is enabled")
+			Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for chronyd service")
 
-			glog.V(tsparams.LogLevel).Infof("enabled status: %s", status)
+			for nodeName, status := range statuses {
+				glog.V(tsparams.LogLevel).Infof("%s enabled status: %s", nodeName, status)
 
-			status = strings.TrimSpace(status)
-			Expect(status).To(Equal("disabled"), "chronyd service was not disabled")
+				status = strings.TrimSpace(status)
+				Expect(status).To(Equal("disabled"), "chronyd service was not disabled")
+			}
+
 		})
 
 		// 60904 - Verifies list of pods in openshift-network-diagnostics namespace on spoke
