@@ -3,7 +3,6 @@ package tests
 import (
 	"context"
 	"regexp"
-	"time"
 
 	"github.com/golang/glog"
 
@@ -66,7 +65,7 @@ var _ = Describe("TPM2", func() {
 
 		By("waiting until all spoke 1 pods are ready")
 		err = cluster.WaitForClusterRecover(APIClient, []string{
-			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
+			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 
 		if err != nil {
 
@@ -80,7 +79,7 @@ var _ = Describe("TPM2", func() {
 
 			By("waiting until all spoke 1 pods are ready")
 			err = cluster.WaitForClusterRecover(APIClient, []string{
-				DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
+				DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
 		}
 
@@ -91,10 +90,20 @@ var _ = Describe("TPM2", func() {
 			Expect(err).ToNot(HaveOccurred(), "error listing nodes")
 
 			return len(nodeList)
-		}).Should(BeNumerically("==", 1), "Currently only SNO clusters are supported")
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).
+			Should(BeNumerically("==", 1), "Currently only SNO clusters are supported")
 
-		isTTYConsole, err := helper.IsTTYConsole()
-		Expect(err).ToNot(HaveOccurred(), "error checking kernel command line for tty console")
+		var isTTYConsole bool
+		Eventually(func() error {
+			isTTYConsole, err = helper.IsTTYConsole()
+			Expect(err).ToNot(HaveOccurred(), "error checking kernel command line for tty console")
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).
+			ShouldNot(HaveOccurred(), "Currently only SNO clusters are supported")
+
 		Expect(isTTYConsole).To(BeTrue(), "the TTY options should be configured on the kernel"+
 			" boot line (nomodeset console=tty0 console=ttyS0,115200n8)")
 
@@ -106,7 +115,7 @@ var _ = Describe("TPM2", func() {
 
 		By("waiting for cluster recovery after test")
 		err = cluster.WaitForClusterRecover(APIClient, []string{
-			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery, time.Second)
+			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 	})
 
 	It("Verifies that disabling Secure Boot prevents"+
@@ -151,7 +160,7 @@ var _ = Describe("TPM2", func() {
 			"disabling Secure Boot should not return an error")
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO(APIClient)
+		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
 
 		By("waiting for Disk decryption Failure log to appear")
@@ -229,7 +238,7 @@ var _ = Describe("TPM2", func() {
 			"SecureBootDisable should not return an error")
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO(APIClient)
+		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
 
 		By("waiting for pcr-rebind-boot log to appear (disk decryption succeeded)")
@@ -252,21 +261,20 @@ var _ = Describe("TPM2", func() {
 		Expect(err).ToNot(HaveOccurred(), "WaitForRegex should not fail")
 		Expect(matchIndex).To(Equal(1), "WaitForRegex should match pcr-rebind-boot (1)")
 
+		By("waiting for cluster to recover")
+		err = cluster.WaitForClusterRecover(APIClient, []string{DiskEncryptionTestConfig.GeneralConfig.MCONamespace,
+			DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
+		Expect(err).ToNot(HaveOccurred(), "cluster should recover without error")
+
 		By("enabling SecureBoot")
 		Eventually(BMCClient.SecureBootEnable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
 			WithPolling(tsparams.PollingIntervalBMC).
 			Should(Or(Succeed(), MatchError("secure boot is already enabled")),
 				"enabling Secure Boot should succeed, even if it is already enabled ")
 
-		By("waiting for cluster to recover")
-		err = cluster.WaitForClusterRecover(APIClient, []string{DiskEntryptionTestConfig.GeneralConfig.MCONamespace,
-			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, 45*time.Minute, time.Second)
-		Expect(err).ToNot(HaveOccurred(), "cluster should recover without error")
-
-		By("restarting node")
-		err = cluster.SoftRebootSNO(APIClient)
+		By("restarting node gracefully")
+		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
-
 	})
 
 	It("Verifies that changing Host boot order prevents Disk decryption (TPM PCR 1)", func() {
@@ -308,10 +316,10 @@ var _ = Describe("TPM2", func() {
 		swapFirstSecondBootItems()
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO(APIClient)
+		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
 		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
 
-		By("waiting for pcr-rebind-boot log to appear (disk decryption succeeded)")
+		By("waiting for TPM Failed log to appear (disk decryption failed)")
 		matches := []stdinmatcher.Matcher{
 			{
 				Regex: regexp.MustCompile("TPM failed"),
@@ -352,7 +360,9 @@ func swapFirstSecondBootItems() {
 		bootRefs, err = BMCClient.SystemBootOrderReferences()
 
 		return err
-	}).ShouldNot(HaveOccurred(), "getting boot order should not return an error")
+	}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+		WithPolling(tsparams.PollingIntervalBMC).
+		ShouldNot(HaveOccurred(), "getting boot order should not return an error")
 
 	glog.V(tsparams.LogLevel).Infof("Current boot Order: %s\n", bootRefs)
 	// Creates a boot override swapping first and second boot references
