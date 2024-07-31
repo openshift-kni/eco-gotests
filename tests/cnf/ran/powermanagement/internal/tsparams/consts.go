@@ -48,7 +48,6 @@ const (
 	RanPowerMetricStdDevInstantPower = "ranmetrics_power_standard_deviation_instantaneous"
 	// RanPowerMetricMedianInstantPower is the metric for median instantaneous power.
 	RanPowerMetricMedianInstantPower = "ranmetrics_power_median_instantaneous"
-
 	// LogLevel is the verbosity of glog statements in this test suite.
 	LogLevel glog.Level = 90
 )

@@ -30,6 +30,7 @@ type GeneralConfig struct {
 	ControlPlaneLabel         string `yaml:"control_plane_label" envconfig:"ECO_CONTROL_PLANE_LABEL"`
 	TCPrefix                  string `yaml:"tc_prefix" envconfig:"ECO_TC_PREFIX"`
 	MCONamespace              string `yaml:"mco_namespace" envconfig:"ECO_MCO_NAMESPACE"`
+	LoggingNamespace          string `yaml:"logging_namespace" envconfig:"ECO_LOGGING_NAMESPACE"`
 	MCOConfigDaemonName       string `yaml:"mco_config_daemon_name" envconfig:"ECO_MCO_CONFIG_DAEMON_NAME"`
 	SriovOperatorNamespace    string `yaml:"sriov_operator_namespace" envconfig:"ECO_SRIOV_OPERATOR_NAMESPACE"`
 	NMStateOperatorNamespace  string `yaml:"nmstate_operator_namespace" envconfig:"ECO_NMSTATE_OPERATOR_NAMESPACE"`

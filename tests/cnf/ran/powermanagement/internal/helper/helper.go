@@ -14,9 +14,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -129,7 +130,8 @@ func SetCPUFreq(
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), 2*time.Second, 1*time.Minute, true, func(ctx context.Context) (bool, error) {
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
-			cmdOut, err := cluster.ExecCommandOnSNO(Spoke1APIClient, 3, spokeCommandIsolatedCPUs)
+			cmdOut, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, ranparam.RetryCount,
+				ranparam.RetryInterval, spokeCommandIsolatedCPUs)
 
 			if err != nil {
 				return false, fmt.Errorf("command failed: %s", cmdOut)
@@ -149,7 +151,8 @@ func SetCPUFreq(
 			}
 
 			// Get current isolated core frequency from spoke cluster and compare to desired frequency
-			cmdOut, err = cluster.ExecCommandOnSNO(Spoke1APIClient, 3, spokeCommandReservedCPUs)
+			cmdOut, err = cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, ranparam.RetryCount,
+				ranparam.RetryInterval, spokeCommandReservedCPUs)
 
 			if err != nil {
 				return false, fmt.Errorf("command failed: %s", cmdOut)
