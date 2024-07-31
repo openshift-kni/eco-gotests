@@ -7,36 +7,27 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	"github.com/openshift-kni/eco-goinfra/pkg/oadp/oadptypes"
+	oadpv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/api/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // DPABuilder provides a struct for backup object from the cluster and a backup definition.
 type DPABuilder struct {
 	// Backup definition, used to create the backup object.
-	Definition *oadptypes.DataProtectionApplication
+	Definition *oadpv1alpha1.DataProtectionApplication
 	// Created backup object.
-	Object *oadptypes.DataProtectionApplication
+	Object *oadpv1alpha1.DataProtectionApplication
 	// Used to store latest error message upon defining or mutating backup definition.
 	errorMsg string
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
-}
-
-// GetDataProtectionApplicationGVR returns dataprotectionapplication's GroupVersionResource.
-func GetDataProtectionApplicationGVR() schema.GroupVersionResource {
-	return schema.GroupVersionResource{
-		Group: APIGroup, Version: V1Alpha1Version, Resource: "dataprotectionapplications",
-	}
+	apiClient runtimeClient.Client
 }
 
 // NewDPABuilder creates a new instance of DPABuilder.
 func NewDPABuilder(
-	apiClient *clients.Settings, name, namespace string, config oadptypes.ApplicationConfig) *DPABuilder {
+	apiClient *clients.Settings, name, namespace string, config oadpv1alpha1.ApplicationConfig) *DPABuilder {
 	glog.V(100).Infof(
 		"Initializing new dataprotectionapplication structure with the following params: "+
 			"name: %s, namespace: %s, config %v",
@@ -48,18 +39,21 @@ func NewDPABuilder(
 		return nil
 	}
 
+	if err := apiClient.AttachScheme(oadpv1alpha1.AddToScheme); err != nil {
+		glog.V(100).Infof(
+			"Failed to add oadpv1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &DPABuilder{
-		apiClient: apiClient,
-		Definition: &oadptypes.DataProtectionApplication{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       DPAKind,
-				APIVersion: V1Alpha1Version,
-			},
+		apiClient: apiClient.Client,
+		Definition: &oadpv1alpha1.DataProtectionApplication{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: namespace,
 			},
-			Spec: oadptypes.DataProtectionApplicationSpec{
+			Spec: oadpv1alpha1.DataProtectionApplicationSpec{
 				Configuration: &config,
 			},
 		},
@@ -96,9 +90,16 @@ func PullDPA(apiClient *clients.Settings, name, nsname string) (*DPABuilder, err
 		return nil, fmt.Errorf("the apiClient is nil")
 	}
 
+	if err := apiClient.AttachScheme(oadpv1alpha1.AddToScheme); err != nil {
+		glog.V(100).Infof(
+			"Failed to add oadpv1alpha1 scheme to client schemes")
+
+		return nil, fmt.Errorf("failed to add oadpv1alpha1 to client schemes")
+	}
+
 	builder := DPABuilder{
-		apiClient: apiClient,
-		Definition: &oadptypes.DataProtectionApplication{
+		apiClient: apiClient.Client,
+		Definition: &oadpv1alpha1.DataProtectionApplication{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -128,7 +129,7 @@ func PullDPA(apiClient *clients.Settings, name, nsname string) (*DPABuilder, err
 }
 
 // WithBackupLocation configures the dataprotectionapplication with the specified backup location.
-func (builder *DPABuilder) WithBackupLocation(backupLocation oadptypes.BackupLocation) *DPABuilder {
+func (builder *DPABuilder) WithBackupLocation(backupLocation oadpv1alpha1.BackupLocation) *DPABuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -150,7 +151,7 @@ func (builder *DPABuilder) WithBackupLocation(backupLocation oadptypes.BackupLoc
 }
 
 // Get fetches the defined dataprotectionapplication from the cluster.
-func (builder *DPABuilder) Get() (*oadptypes.DataProtectionApplication, error) {
+func (builder *DPABuilder) Get() (*oadpv1alpha1.DataProtectionApplication, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -158,14 +159,18 @@ func (builder *DPABuilder) Get() (*oadptypes.DataProtectionApplication, error) {
 	glog.V(100).Infof("Getting dataprotectionapplication %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	unsObject, err := builder.apiClient.Resource(GetDataProtectionApplicationGVR()).Namespace(
-		builder.Definition.Namespace).Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	dataprotectionapplication := &oadpv1alpha1.DataProtectionApplication{}
+
+	err := builder.apiClient.Get(context.TODO(), runtimeClient.ObjectKey{
+		Name:      builder.Definition.Name,
+		Namespace: builder.Definition.Namespace,
+	}, dataprotectionapplication)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return builder.convertToStructured(unsObject)
+	return dataprotectionapplication, err
 }
 
 // Exists checks whether the given dataprotectionapplication exists.
@@ -195,28 +200,9 @@ func (builder *DPABuilder) Create() (*DPABuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		unstructuredDPA, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to convert structured DataProtectionApplication to unstructured object")
-
-			return nil, err
-		}
-
-		unsObject, err := builder.apiClient.Resource(
-			GetDataProtectionApplicationGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredDPA}, metav1.CreateOptions{})
-
-		if err != nil {
-			glog.V(100).Infof("Failed to create dataprotectionapplication")
-
-			return nil, err
-		}
-
-		builder.Object, err = builder.convertToStructured(unsObject)
-
-		if err != nil {
-			return nil, err
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
 		}
 	}
 
@@ -230,38 +216,22 @@ func (builder *DPABuilder) Update(force bool) (*DPABuilder, error) {
 		return builder, err
 	}
 
+	glog.V(100).Infof("Updating dataprotectionapplication %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
 		return nil, fmt.Errorf("failed to update dataprotectionapplication, object does not exist on cluster")
 	}
 
-	glog.V(100).Infof("Updating the dataprotectionapplication object %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace,
-	)
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
-	}
-
-	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
-	builder.Definition.ObjectMeta.ResourceVersion = builder.Object.ObjectMeta.ResourceVersion
-
-	unstructuredDPA, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-	if err != nil {
-		glog.V(100).Infof("Failed to convert structured DataProtectionApplication to unstructured object")
-
-		return nil, err
-	}
-
-	unstructObj, err := builder.apiClient.Resource(
-		GetDataProtectionApplicationGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredDPA}, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
 				msg.FailToUpdateNotification("dataprotectionapplication", builder.Definition.Name, builder.Definition.Namespace))
 
-			err := builder.Delete()
+			err = builder.Delete()
+			builder.Definition.ResourceVersion = ""
 
 			if err != nil {
 				glog.V(100).Infof(
@@ -275,14 +245,7 @@ func (builder *DPABuilder) Update(force bool) (*DPABuilder, error) {
 	}
 
 	if err == nil {
-		structuredDPA, err := builder.convertToStructured(unstructObj)
-		if err != nil {
-			glog.V(100).Infof("Failed to convert unstructured dataprotectionapplication into structured object")
-
-			return nil, err
-		}
-
-		builder.Object = structuredDPA
+		builder.Object = builder.Definition
 	}
 
 	return builder, err
@@ -294,9 +257,8 @@ func (builder *DPABuilder) Delete() error {
 		return err
 	}
 
-	glog.V(100).Infof("Deleting the dataprotectionapplication object %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace,
-	)
+	glog.V(100).Infof("Deleting the dataprotectionapplication %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
 		glog.V(100).Infof("Dataprotectionapplication %s in namespace %s cannot be deleted because it does not exist",
@@ -305,33 +267,15 @@ func (builder *DPABuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.Resource(
-		GetDataProtectionApplicationGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
-		return fmt.Errorf("can not delete dataprotectionapplication: %w", err)
+		return fmt.Errorf("cannot delete dataprotectionapplication: %w", err)
 	}
 
 	builder.Object = nil
 
 	return nil
-}
-
-func (builder *DPABuilder) convertToStructured(
-	unsObject *unstructured.Unstructured) (*oadptypes.DataProtectionApplication, error) {
-	dpaBuilder := &oadptypes.DataProtectionApplication{}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, dpaBuilder)
-	if err != nil {
-		glog.V(100).Infof(
-			"Failed to convert from unstructured to DataProtectionApplication object in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil, err
-	}
-
-	return dpaBuilder, err
 }
 
 // validate will check that the builder and builder definition are properly initialized before

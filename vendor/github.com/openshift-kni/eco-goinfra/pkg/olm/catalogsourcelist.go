@@ -4,23 +4,39 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	oplmV1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1"
 )
 
 // ListCatalogSources returns catalogsource inventory in the given namespace.
 func ListCatalogSources(
 	apiClient *clients.Settings,
 	nsname string,
-	options ...metav1.ListOptions) ([]*CatalogSourceBuilder, error) {
-	if nsname == "" {
-		glog.V(100).Infof("catalogsource 'namespace' parameter can not be empty")
+	options ...client.ListOptions) ([]*CatalogSourceBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
 
-		return nil, fmt.Errorf("failed to list catalogsource, 'namespace' parameter is empty")
+		return nil, fmt.Errorf("failed to list catalogSource, 'apiClient' parameter is empty")
 	}
 
-	passedOptions := metav1.ListOptions{}
+	err := apiClient.AttachScheme(oplmV1alpha1.AddToScheme)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to add oplmV1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	if nsname == "" {
+		glog.V(100).Infof("catalogsource 'nsname' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list catalogsource, 'nsname' parameter is empty")
+	}
+
+	passedOptions := client.ListOptions{}
 	logMessage := fmt.Sprintf("Listing catalogsource in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -36,8 +52,10 @@ func ListCatalogSources(
 
 	glog.V(100).Infof(logMessage)
 
-	catalogSourceList, err := apiClient.OperatorsV1alpha1Interface.CatalogSources(nsname).List(
-		context.TODO(), passedOptions)
+	passedOptions.Namespace = nsname
+
+	catalogSourceList := new(oplmV1alpha1.CatalogSourceList)
+	err = apiClient.List(context.TODO(), catalogSourceList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list catalogsources in the namespace %s due to %s", nsname, err.Error())
@@ -50,7 +68,7 @@ func ListCatalogSources(
 	for _, existingCatalogSource := range catalogSourceList.Items {
 		copiedCatalogSource := existingCatalogSource
 		catalogSourceBuilder := &CatalogSourceBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedCatalogSource,
 			Definition: &copiedCatalogSource,
 		}

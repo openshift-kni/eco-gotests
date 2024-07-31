@@ -11,7 +11,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
-	goclient "sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Builder provides a struct for ClusterPolicy object
@@ -23,7 +23,7 @@ type Builder struct {
 	// Created Builder object on the cluster.
 	Object *nvidiagpuv1.ClusterPolicy
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeClient.Client
 	// errorMsg is processed before Builder object is created.
 	errorMsg string
 }
@@ -33,22 +33,38 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 	glog.V(100).Infof(
 		"Initializing new Builder structure from almExample string")
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(nvidiagpuv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nvidiagpuv1 scheme to client schemes")
+
+		return nil
+	}
+
 	clusterPolicy, err := getClusterPolicyFromAlmExample(almExample)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"error initializing ClusterPolicy from alm-examples: %s", err.Error())
+
+		return &Builder{
+			apiClient: apiClient.Client,
+			errorMsg:  fmt.Sprintf("error initializing ClusterPolicy from alm-examples: %s", err.Error()),
+		}
+	}
 
 	glog.V(100).Infof(
 		"Initializing new Builder structure from almExample string with clusterPolicy name: %s",
 		clusterPolicy.Name)
 
 	builder := Builder{
-		apiClient:  apiClient,
+		apiClient:  apiClient.Client,
 		Definition: clusterPolicy,
-	}
-
-	if err != nil {
-		glog.V(100).Infof(
-			"Error initializing ClusterPolicy from alm-examples: %s", err.Error())
-
-		builder.errorMsg = fmt.Sprintf("Error initializing ClusterPolicy from alm-examples: %s", err.Error())
 	}
 
 	if builder.Definition == nil {
@@ -58,6 +74,47 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 	}
 
 	return &builder
+}
+
+// Pull loads an existing clusterPolicy into Builder struct.
+func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing clusterPolicy name: %s", name)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("clusterPolicy 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(nvidiagpuv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nvidiagpuv1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	builder := Builder{
+		apiClient: apiClient.Client,
+		Definition: &nvidiagpuv1.ClusterPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("ClusterPolicy name is empty")
+
+		return nil, fmt.Errorf("clusterPolicy 'name' cannot be empty")
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("ClusterPolicy object %s does not exist", name)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
 }
 
 // Get returns clusterPolicy object if found.
@@ -70,9 +127,7 @@ func (builder *Builder) Get() (*nvidiagpuv1.ClusterPolicy, error) {
 		"Collecting ClusterPolicy object %s", builder.Definition.Name)
 
 	clusterPolicy := &nvidiagpuv1.ClusterPolicy{}
-	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
-		Name: builder.Definition.Name,
-	}, clusterPolicy)
+	err := builder.apiClient.Get(context.TODO(), runtimeClient.ObjectKey{Name: builder.Definition.Name}, clusterPolicy)
 
 	if err != nil {
 		glog.V(100).Infof(
@@ -82,34 +137,6 @@ func (builder *Builder) Get() (*nvidiagpuv1.ClusterPolicy, error) {
 	}
 
 	return clusterPolicy, err
-}
-
-// Pull loads an existing clusterPolicy into Builder struct.
-func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
-	glog.V(100).Infof("Pulling existing clusterPolicy name: %s", name)
-
-	builder := Builder{
-		apiClient: apiClient,
-		Definition: &nvidiagpuv1.ClusterPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: name,
-			},
-		},
-	}
-
-	if name == "" {
-		glog.V(100).Infof("ClusterPolicy name is empty")
-
-		builder.errorMsg = "ClusterPolicy 'name' cannot be empty"
-	}
-
-	if !builder.Exists() {
-		return nil, fmt.Errorf("ClusterPolicy object %s does not exist", name)
-	}
-
-	builder.Definition = builder.Object
-
-	return &builder, nil
 }
 
 // Exists checks whether the given ClusterPolicy exists.
@@ -140,7 +167,9 @@ func (builder *Builder) Delete() (*Builder, error) {
 	glog.V(100).Infof("Deleting ClusterPolicy %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("clusterpolicy cannot be deleted because it does not exist")
+		glog.V(100).Infof("clusterpolicy cannot be deleted because it does not exist")
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
@@ -204,27 +233,6 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	return builder, err
 }
 
-// getClusterPolicyFromAlmExample extracts the ClusterPolicy from the alm-examples block.
-func getClusterPolicyFromAlmExample(almExample string) (*nvidiagpuv1.ClusterPolicy, error) {
-	clusterPolicyList := &nvidiagpuv1.ClusterPolicyList{}
-
-	if almExample == "" {
-		return nil, fmt.Errorf("almExample is an empty string")
-	}
-
-	err := json.Unmarshal([]byte(almExample), &clusterPolicyList.Items)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(clusterPolicyList.Items) == 0 {
-		return nil, fmt.Errorf("failed to get alm examples")
-	}
-
-	return &clusterPolicyList.Items[0], nil
-}
-
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {
@@ -255,4 +263,25 @@ func (builder *Builder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+// getClusterPolicyFromAlmExample extracts the ClusterPolicy from the alm-examples block.
+func getClusterPolicyFromAlmExample(almExample string) (*nvidiagpuv1.ClusterPolicy, error) {
+	clusterPolicyList := &nvidiagpuv1.ClusterPolicyList{}
+
+	if almExample == "" {
+		return nil, fmt.Errorf("almExample is an empty string")
+	}
+
+	err := json.Unmarshal([]byte(almExample), &clusterPolicyList.Items)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(clusterPolicyList.Items) == 0 {
+		return nil, fmt.Errorf("failed to get alm examples")
+	}
+
+	return &clusterPolicyList.Items[0], nil
 }
