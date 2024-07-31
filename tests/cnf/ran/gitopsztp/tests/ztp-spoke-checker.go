@@ -9,8 +9,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 )
 
 var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTests), func() {
@@ -20,7 +21,9 @@ var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTest
 			By("verifying chronyd is inactive")
 			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
 			// is not active, which is expected here.
-			statuses, err := cluster.ExecCmdWithStdout(Spoke1APIClient, 3, "systemctl is-active chronyd.service | cat -")
+			statuses, err := cluster.ExecCmdWithStdoutWithRetries(Spoke1APIClient,
+				ranparam.RetryCount, ranparam.RetryInterval,
+				"systemctl is-active chronyd.service | cat -")
 			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is active")
 			Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for chronyd service")
 
@@ -34,7 +37,9 @@ var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTest
 			By("verifying chronyd is disabled")
 			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
 			// is disabled, which is expected here.
-			statuses, err = cluster.ExecCmdWithStdout(Spoke1APIClient, 3, "systemctl is-enabled chronyd.service | cat -")
+			statuses, err = cluster.ExecCmdWithStdoutWithRetries(Spoke1APIClient,
+				ranparam.RetryCount, ranparam.RetryInterval,
+				"systemctl is-enabled chronyd.service | cat -")
 			Expect(err).ToNot(HaveOccurred(), "Failed to check if chronyd service is enabled")
 			Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for chronyd service")
 

@@ -6,8 +6,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 )
 
 // PrepareEnvWithSmallMountPoint creates a virtual filesystem mounted at the backup path using a loopback device backed
@@ -15,18 +16,21 @@ import (
 // and https://youtu.be/r9CQhwci4tE
 func PrepareEnvWithSmallMountPoint(client *clients.Settings) (string, error) {
 	// create the backup and test paths if they don't exist
-	_, err := cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo mkdir -p %s", tsparams.BackupPath))
+	_, err := cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+		fmt.Sprintf("sudo mkdir -p %s", tsparams.BackupPath))
 	if err != nil {
 		return "", err
 	}
 
-	_, err = cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo mkdir -p %s", tsparams.RANTestPath))
+	_, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+		fmt.Sprintf("sudo mkdir -p %s", tsparams.RANTestPath))
 	if err != nil {
 		return "", err
 	}
 
 	// find the next available loopback device (OS takes care of creating a new one if needed)
-	loopbackDevicePath, err := cluster.ExecCommandOnSNO(client, 3, "sudo losetup -f")
+	loopbackDevicePath, err := cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+		"sudo losetup -f")
 	if err != nil {
 		return "", err
 	}
@@ -35,27 +39,32 @@ func PrepareEnvWithSmallMountPoint(client *clients.Settings) (string, error) {
 	glog.V(tsparams.LogLevel).Info("loopback device path: ", loopbackDevicePath)
 
 	// create a file with desired size for the filesystem to use
-	_, err = cluster.ExecCommandOnSNO(
-		client, 3, fmt.Sprintf("sudo fallocate -l %s %s/%s.img", tsparams.FSSize, tsparams.RANTestPath, tsparams.FSSize))
+	_, err = cluster.ExecCommandOnSNOWithRetries(
+		client, ranparam.RetryCount, ranparam.RetryInterval,
+		fmt.Sprintf("sudo fallocate -l %s %s/%s.img", tsparams.FSSize, tsparams.RANTestPath, tsparams.FSSize))
 	if err != nil {
 		return "", err
 	}
 
 	// create the loopback device by assigning it with the file
-	_, err = cluster.ExecCommandOnSNO(
-		client, 3, fmt.Sprintf("sudo losetup %s %s/%s.img", loopbackDevicePath, tsparams.RANTestPath, tsparams.FSSize))
+	_, err = cluster.ExecCommandOnSNOWithRetries(
+		client, ranparam.RetryCount, ranparam.RetryInterval,
+		fmt.Sprintf("sudo losetup %s %s/%s.img", loopbackDevicePath, tsparams.RANTestPath, tsparams.FSSize))
 	if err != nil {
 		return "", err
 	}
 
 	// format the loopback device with xfs
-	_, err = cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo mkfs.xfs -f -q %s", loopbackDevicePath))
+	_, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+		fmt.Sprintf("sudo mkfs.xfs -f -q %s", loopbackDevicePath))
 	if err != nil {
 		return "", err
 	}
 
 	// mount the fs to backup dir
-	_, err = cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo mount %s %s", loopbackDevicePath, tsparams.BackupPath))
+	_, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+		fmt.Sprintf("sudo mount %s %s",
+			loopbackDevicePath, tsparams.BackupPath))
 
 	return loopbackDevicePath, err
 }
@@ -70,8 +79,9 @@ func DiskFullEnvCleanup(client *clients.Settings, loopbackDevicePath string) err
 	// findmnt outputs a blank string sometimes so retry until successful
 	for len(output) == 0 {
 		// retrieve all mounts for backup dir
-		output, err = cluster.ExecCommandOnSNO(
-			client, 3, fmt.Sprintf("findmnt -n -o SOURCE --target %s", tsparams.BackupPath))
+		output, err = cluster.ExecCommandOnSNOWithRetries(
+			client, ranparam.RetryCount, ranparam.RetryInterval,
+			fmt.Sprintf("findmnt -n -o SOURCE --target %s", tsparams.BackupPath))
 		if err != nil {
 			return err
 		}
@@ -87,19 +97,22 @@ func DiskFullEnvCleanup(client *clients.Settings, loopbackDevicePath string) err
 	}
 
 	if safeToDeleteBackupDir {
-		_, err = cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo rm -rf %s", tsparams.BackupPath))
+		_, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+			fmt.Sprintf("sudo rm -rf %s", tsparams.BackupPath))
 		if err != nil {
 			return err
 		}
 	} else {
 		// if false there was a partition (most likely ZTP w/ MC) so delete content instead of the whole thing
-		_, err = cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo rm -rf %s/*", tsparams.BackupPath))
+		_, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+			fmt.Sprintf("sudo rm -rf %s/*", tsparams.BackupPath))
 		if err != nil {
 			return err
 		}
 	}
 
-	_, err = cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo rm -rf %s", tsparams.RANTestPath))
+	_, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+		fmt.Sprintf("sudo rm -rf %s", tsparams.RANTestPath))
 
 	return err
 }
@@ -121,7 +134,8 @@ func unmountLoopback(client *clients.Settings, loopbackDevicePath, findmntOutput
 		var deviceType string
 		for deviceType == "" {
 			var err error
-			deviceType, err = cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("lsblk %s -o TYPE -n", devicePath))
+			deviceType, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
+				fmt.Sprintf("lsblk %s -o TYPE -n", devicePath))
 
 			if err != nil {
 				return false, err
@@ -138,7 +152,9 @@ func unmountLoopback(client *clients.Settings, loopbackDevicePath, findmntOutput
 		} else if deviceType == "loop" {
 			if loopbackDevicePath == devicePath {
 				// unmount and detach the loop device
-				_, err := cluster.ExecCommandOnSNO(client, 3, fmt.Sprintf("sudo umount --detach-loop %s", tsparams.BackupPath))
+				_, err := cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount,
+					ranparam.RetryInterval, fmt.Sprintf("sudo umount --detach-loop %s",
+						tsparams.BackupPath))
 				if err != nil {
 					return false, err
 				}

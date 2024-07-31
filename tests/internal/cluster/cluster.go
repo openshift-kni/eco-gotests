@@ -1,20 +1,25 @@
 package cluster
 
 import (
-	"fmt"
 	"regexp"
-	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/golang/glog"
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+	"time"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/ptr"
 )
 
 // PullTestImageOnNodes pulls given image on range of relevant nodes based on nodeSelector.
@@ -89,8 +94,12 @@ func ExecCmd(apiClient *clients.Settings, nodeSelector string, shellCmd string) 
 }
 
 // ExecCmdWithStdout runs cmd on all selected nodes and returns their stdout.
+//
+//nolint:funlen
 func ExecCmdWithStdout(
 	apiClient *clients.Settings, shellCmd string, options ...metav1.ListOptions) (map[string]string, error) {
+	glog.V(90).Infof("Executing command '%s' with stdout and options ('%v')", shellCmd, options)
+
 	if GeneralConfig.MCOConfigDaemonName == "" {
 		return nil, fmt.Errorf("error: mco config daemon pod name cannot be empty")
 	}
@@ -170,4 +179,147 @@ func ExecCmdWithStdout(
 	}
 
 	return outputMap, nil
+}
+
+// new commands
+
+// ExecLocalCommand runs the provided command with the provided args locally, cancelling execution if it exceeds
+// timeout.
+func ExecLocalCommand(timeout time.Duration, command string, args ...string) (string, error) {
+	glog.V(90).Infof("Locally executing command '%s' with args '%v'", command, args)
+
+	ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+
+	defer cancel()
+
+	output, err := exec.CommandContext(ctx, command, args...).Output()
+
+	return string(output), err
+}
+
+// ExecCmdWithRetries executes a command on the provided client on each node matching nodeSelector,
+// retrying on internal errors
+// retries times with a 10 second delay between retries, and ignores the stdout.
+func ExecCmdWithRetries(client *clients.Settings, retries uint,
+	interval time.Duration, nodeSelector, command string) error {
+	glog.V(90).Infof("Executing command '%s' with %d retries and interval %v. Node Selector: %v",
+		command, retries, interval, nodeSelector)
+
+	for retry := range retries {
+		err := ExecCmd(client, nodeSelector, command)
+		if isErrorExecuting(err) {
+			glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry+1, retries, err)
+
+			time.Sleep(interval)
+
+			continue
+		}
+
+		return err
+	}
+
+	return fmt.Errorf("ran out of %d retries executing command %s", retries, command)
+}
+
+// ExecCmdWithStdoutWithRetries executes a command on the provided client,
+// retrying on internal errors retries times with a 10
+// second delay between retries, and returns the stdout for each node.
+func ExecCmdWithStdoutWithRetries(
+	client *clients.Settings, retries uint, interval time.Duration,
+	command string, options ...metav1.ListOptions) (map[string]string, error) {
+	glog.V(90).Infof("Executing command with stdout '%s' with %d retries and interval %v. Options: %v",
+		command, retries, interval, options)
+
+	for retry := range retries {
+		outputs, err := ExecCmdWithStdout(client, command, options...)
+		if isErrorExecuting(err) {
+			glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry+1, retries, err)
+
+			time.Sleep(interval)
+
+			continue
+		}
+
+		return outputs, err
+	}
+
+	return nil, fmt.Errorf("ran out of %d retries executing command %s", retries, command)
+}
+
+// ExecCommandOnSNOWithRetries executes a command on the provided single node client,
+// retrying on internal errors retries times
+// with a 10 second delay between retries, and returns the stdout.
+func ExecCommandOnSNOWithRetries(client *clients.Settings, retries uint,
+	interval time.Duration, command string) (string, error) {
+	glog.V(90).Infof("Executing command on SNO '%s' with %d retries and interval %v", command, retries, interval)
+
+	outputs, err := ExecCmdWithStdoutWithRetries(client, retries, interval, command)
+	if err != nil {
+		return "", err
+	}
+
+	if len(outputs) != 1 {
+		return "", fmt.Errorf("expected results from one node, found %d nodes", len(outputs))
+	}
+
+	for _, output := range outputs {
+		return output, nil
+	}
+
+	return "", fmt.Errorf("found unreachable code in ExecCommandOnSNO")
+}
+
+// WaitForClusterRecover waits up to timeout for all pods in namespaces on a provided node to recover.
+func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeout time.Duration) error {
+	glog.V(90).Infof("Wait for cluster to recover for namespaces: %v timeout: %v", namespaces, timeout)
+	err := waitForClusterReachable(client, timeout)
+
+	if err != nil {
+		return err
+	}
+
+	err = pod.WaitForAllPodsInNamespacesHealthy(client, namespaces, timeout,
+		true, false, true, []string{GeneralConfig.LoggingNamespace})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SoftRebootSNO executes systemctl reboot on a node.
+func SoftRebootSNO(apiClient *clients.Settings, retries uint, interval time.Duration) error {
+	glog.V(90).Infof("Rebooting SNO node with %d retries interval %v", retries, interval)
+
+	cmdToExec := "sudo systemctl reboot"
+
+	_, err := ExecCommandOnSNOWithRetries(apiClient, retries, interval, cmdToExec)
+
+	return err
+}
+
+// waitForClusterReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
+// cluster.
+func waitForClusterReachable(client *clients.Settings, timeout time.Duration) error {
+	glog.V(90).Infof("Wait for cluster reachable with timeout: %v", timeout)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := nodes.List(client, metav1.ListOptions{TimeoutSeconds: ptr.To[int64](3)})
+			if err != nil {
+				return false, nil
+			}
+
+			return true, nil
+		})
+}
+
+// isErrorExecuting matches errors that contain the message "error executing command in container".
+func isErrorExecuting(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return strings.Contains(err.Error(), "error executing command in container") ||
+		strings.Contains(err.Error(), "container not found")
 }

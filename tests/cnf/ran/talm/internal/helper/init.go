@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -55,7 +56,8 @@ func VerifyTalmIsInstalled() error {
 
 	// Check each pod for the talm container
 	for _, talmPod := range talmPods {
-		if !ranhelper.IsPodHealthy(talmPod) {
+		err := talmPod.WaitUntilHealthy(0*time.Second, true, false, true)
+		if err != nil {
 			return fmt.Errorf("talm pod %s is not healthy", talmPod.Definition.Name)
 		}
 
