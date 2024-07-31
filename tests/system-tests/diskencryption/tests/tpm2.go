@@ -11,12 +11,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/file"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/diskencryptioninittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/helper"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/parsehelper"
 	stdinmatcher "github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/stdin-matcher"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/file"
 )
 
 var _ = Describe("TPM2", func() {

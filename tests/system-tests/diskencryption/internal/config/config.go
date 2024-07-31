@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	// PathToDefaultDiskEncryptionParamsFile path to config file with default ipsec parameters.
+	// PathToDefaultDiskEncryptionParamsFile path to config file with default disk encryption parameters.
 	PathToDefaultDiskEncryptionParamsFile = "./default.yaml"
 )
 
-// DiskEncrptionConfig type keeps ipsec configuration.
+// DiskEncrptionConfig type keeps disk encryption configuration.
 type DiskEncrptionConfig struct {
 	*systemtestsconfig.SystemTestsConfig
 	// BMCClient provides access to the BMC. Nil when BMC configs are not provided.
@@ -31,9 +31,9 @@ type DiskEncrptionConfig struct {
 	BMCTimeout  time.Duration `yaml:"BMCTimeout" envconfig:"ECO_SYSTEM_TESTS_BMC_TIMEOUT"`
 }
 
-// NewDiskEncryptionConfig returns instance of IpsecConfig config type.
+// NewDiskEncryptionConfig returns instance of DiskEncrptionConfig config type.
 func NewDiskEncryptionConfig() *DiskEncrptionConfig {
-	log.Print("Creating new IpsecConfig struct")
+	log.Print("Creating new DiskEncrptionConfig struct")
 
 	var diskEncryptionConf DiskEncrptionConfig
 
@@ -75,7 +75,7 @@ func NewDiskEncryptionConfig() *DiskEncrptionConfig {
 	return &diskEncryptionConf
 }
 
-func readFile(ipsecConfig *DiskEncrptionConfig, cfgFile string) error {
+func readFile(diskEncrptionConfig *DiskEncrptionConfig, cfgFile string) error {
 	openedCfgFile, err := os.Open(cfgFile)
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func readFile(ipsecConfig *DiskEncrptionConfig, cfgFile string) error {
 	}()
 
 	decoder := yaml.NewDecoder(openedCfgFile)
-	err = decoder.Decode(&ipsecConfig)
+	err = decoder.Decode(&diskEncrptionConfig)
 
 	if err != nil {
 		return err
@@ -95,8 +95,8 @@ func readFile(ipsecConfig *DiskEncrptionConfig, cfgFile string) error {
 	return nil
 }
 
-func readEnv(ipsecConfig *DiskEncrptionConfig) error {
-	err := envconfig.Process("", ipsecConfig)
+func readEnv(diskEncrptionConfig *DiskEncrptionConfig) error {
+	err := envconfig.Process("", diskEncrptionConfig)
 	if err != nil {
 		return err
 	}
