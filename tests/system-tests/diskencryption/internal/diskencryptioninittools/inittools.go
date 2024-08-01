@@ -17,17 +17,17 @@ var (
 	// BMCClient provides API access to BMC.
 	BMCClient *bmc.BMC
 
-	// DiskEntryptionTestConfig provides access to IPSec system tests configuration parameters.
-	DiskEntryptionTestConfig *config.DiskEncrptionConfig
+	// DiskEncryptionTestConfig provides access to IPSec system tests configuration parameters.
+	DiskEncryptionTestConfig *config.DiskEncrptionConfig
 )
 
 // init loads all variables automatically when this package is imported.
 // Once package is imported a user has full access to all vars within init function.
 // It is recommended to import this package using dot import.
 func init() {
-	DiskEntryptionTestConfig = config.NewDiskEncryptionConfig()
+	DiskEncryptionTestConfig = config.NewDiskEncryptionConfig()
 	APIClient = inittools.APIClient
-	BMCClient = DiskEntryptionTestConfig.Spoke1BMC
+	BMCClient = DiskEncryptionTestConfig.Spoke1BMC
 }
 
 // GetNodeNames returns a string slice with all of the cluster node names.

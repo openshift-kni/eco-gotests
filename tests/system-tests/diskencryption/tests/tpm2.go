@@ -12,7 +12,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/diskencryptioninittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/helper"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/parsehelper"
 	stdinmatcher "github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/stdin-matcher"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/file"
@@ -65,7 +64,7 @@ var _ = Describe("TPM2", func() {
 
 		By("waiting until all spoke 1 pods are ready")
 		err = cluster.WaitForClusterRecover(APIClient, []string{
-			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
+			DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 
 		if err != nil {
 
@@ -79,7 +78,7 @@ var _ = Describe("TPM2", func() {
 
 			By("waiting until all spoke 1 pods are ready")
 			err = cluster.WaitForClusterRecover(APIClient, []string{
-				DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
+				DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
 		}
 
@@ -115,7 +114,7 @@ var _ = Describe("TPM2", func() {
 
 		By("waiting for cluster recovery after test")
 		err = cluster.WaitForClusterRecover(APIClient, []string{
-			DiskEntryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
+			DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 	})
 
 	It("Verifies that disabling Secure Boot prevents"+
@@ -125,7 +124,7 @@ var _ = Describe("TPM2", func() {
 		var luksListOutput string
 		luksListOutput, err = helper.GetClevisLuksListOutput()
 		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
-		isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
+		isRootDiskTPM2PCR1AND7 := helper.LuksListContainsPCR1And7(luksListOutput)
 		Expect(err).ToNot(HaveOccurred(), "error when checking if the root disk is configured with TPM 1 and 7")
 		if !isRootDiskTPM2PCR1AND7 {
 			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
@@ -150,7 +149,7 @@ var _ = Describe("TPM2", func() {
 		var isRootDiskReservedSlotPresent bool
 		luksListOutput, err = helper.GetClevisLuksListOutput()
 		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
-		isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
+		isRootDiskReservedSlotPresent = helper.LuksListContainsReservedSlot(luksListOutput)
 		Expect(err).ToNot(HaveOccurred(), "error checking if the output of clevis luks list contains a reserved slot")
 		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
@@ -200,7 +199,7 @@ var _ = Describe("TPM2", func() {
 		var luksListOutput string
 		luksListOutput, err = helper.GetClevisLuksListOutput()
 		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
-		isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
+		isRootDiskTPM2PCR1AND7 := helper.LuksListContainsPCR1And7(luksListOutput)
 		if !isRootDiskTPM2PCR1AND7 {
 			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
 		}
@@ -224,7 +223,7 @@ var _ = Describe("TPM2", func() {
 		var isRootDiskReservedSlotPresent bool
 		luksListOutput, err = helper.GetClevisLuksListOutput()
 		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
-		isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
+		isRootDiskReservedSlotPresent = helper.LuksListContainsReservedSlot(luksListOutput)
 		Expect(err).ToNot(HaveOccurred(), "error checking if the output of clevis luks list contains a reserved slot")
 		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
@@ -283,7 +282,7 @@ var _ = Describe("TPM2", func() {
 		var luksListOutput string
 		luksListOutput, err = helper.GetClevisLuksListOutput()
 		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
-		isRootDiskTPM2PCR1AND7 := parsehelper.LuksListContainsPCR1And7(luksListOutput)
+		isRootDiskTPM2PCR1AND7 := helper.LuksListContainsPCR1And7(luksListOutput)
 		if !isRootDiskTPM2PCR1AND7 {
 			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
 		}
@@ -308,7 +307,7 @@ var _ = Describe("TPM2", func() {
 		luksListOutput, err = helper.GetClevisLuksListOutput()
 		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
 
-		isRootDiskReservedSlotPresent = parsehelper.LuksListContainsReservedSlot(luksListOutput)
+		isRootDiskReservedSlotPresent = helper.LuksListContainsReservedSlot(luksListOutput)
 		Expect(err).ToNot(HaveOccurred(), "error checking if the output of clevis luks list contains a reserved slot")
 		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
@@ -367,7 +366,7 @@ func swapFirstSecondBootItems() {
 	glog.V(tsparams.LogLevel).Infof("Current boot Order: %s\n", bootRefs)
 	// Creates a boot override swapping first and second boot references
 	var bootOverride []string
-	bootOverride, err = parsehelper.SwapFirstAndSecondSliceItems(bootRefs)
+	bootOverride, err = helper.SwapFirstAndSecondSliceItems(bootRefs)
 	Expect(err).ToNot(HaveOccurred(), "SwapFirstAndSecondSliceItems should not fail")
 	glog.V(tsparams.LogLevel).Infof("New boot Order: %s\n", bootOverride)
 	Eventually(BMCClient.SetSystemBootOrderReferences).WithTimeout(tsparams.TimeoutWaitingOnBMC).
