@@ -7,9 +7,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	operatorsV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operatorsV1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // SubscriptionBuilder provides a struct for Subscription object containing connection to the
@@ -20,7 +21,7 @@ type SubscriptionBuilder struct {
 	// Created Subscription object on the cluster.
 	Object *operatorsV1alpha1.Subscription
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeClient.Client
 	// errorMsg is processed before Subscription object is created.
 	errorMsg string
 }
@@ -33,8 +34,21 @@ func NewSubscriptionBuilder(apiClient *clients.Settings, subName, subNamespace, 
 			"subNamespace: %s, catalogSource: %s, catalogSourceNamespace: %s, packageName: %s ",
 		subName, subNamespace, catalogSource, catalogSourceNamespace, packageName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(operatorsV1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add operatorsV1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &SubscriptionBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &operatorsV1alpha1.Subscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      subName,
@@ -51,31 +65,31 @@ func NewSubscriptionBuilder(apiClient *clients.Settings, subName, subNamespace, 
 	if subName == "" {
 		glog.V(100).Infof("The Name of the Subscription is empty")
 
-		builder.errorMsg = "Subscription 'subName' cannot be empty"
+		builder.errorMsg = "subscription 'subName' cannot be empty"
 	}
 
 	if subNamespace == "" {
 		glog.V(100).Infof("The Namespace of the Subscription is empty")
 
-		builder.errorMsg = "Subscription 'subNamespace' cannot be empty"
+		builder.errorMsg = "subscription 'subNamespace' cannot be empty"
 	}
 
 	if catalogSource == "" {
 		glog.V(100).Infof("The Catalogsource of the Subscription is empty")
 
-		builder.errorMsg = "Subscription 'catalogSource' cannot be empty"
+		builder.errorMsg = "subscription 'catalogSource' cannot be empty"
 	}
 
 	if catalogSourceNamespace == "" {
 		glog.V(100).Infof("The Catalogsource namespace of the Subscription is empty")
 
-		builder.errorMsg = "Subscription 'catalogSourceNamespace' cannot be empty"
+		builder.errorMsg = "subscription 'catalogSourceNamespace' cannot be empty"
 	}
 
 	if packageName == "" {
 		glog.V(100).Infof("The Package name of the Subscription is empty")
 
-		builder.errorMsg = "Subscription 'packageName' cannot be empty"
+		builder.errorMsg = "subscription 'packageName' cannot be empty"
 	}
 
 	return builder
@@ -150,6 +164,32 @@ func (builder *SubscriptionBuilder) WithInstallPlanApproval(
 	return builder
 }
 
+// Get returns Subscription object if found.
+func (builder *SubscriptionBuilder) Get() (*operatorsV1alpha1.Subscription, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting Subscription object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	subscription := &operatorsV1alpha1.Subscription{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		subscription)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"Subscription object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return subscription, nil
+}
+
 // Create makes an Subscription in cluster and stores the created object in struct.
 func (builder *SubscriptionBuilder) Create() (*SubscriptionBuilder, error) {
 	if valid, err := builder.validate(); !valid {
@@ -161,9 +201,16 @@ func (builder *SubscriptionBuilder) Create() (*SubscriptionBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.Subscriptions(builder.Definition.Namespace).Create(context.TODO(),
-			builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create Subscription")
+
+			return nil, err
+		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -174,13 +221,12 @@ func (builder *SubscriptionBuilder) Exists() bool {
 		return false
 	}
 
-	glog.V(100).Infof("Checking if Subscription %s exists in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace)
+	glog.V(100).Infof(
+		"Checking if Subscription %s exists",
+		builder.Definition.Name)
 
 	var err error
-
-	builder.Object, err = builder.apiClient.Subscriptions(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -198,8 +244,7 @@ func (builder *SubscriptionBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.Subscriptions(builder.Definition.Namespace).Delete(context.TODO(), builder.Object.Name,
-		metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return err
@@ -224,10 +269,11 @@ func (builder *SubscriptionBuilder) Update() (*SubscriptionBuilder, error) {
 			builder.Definition.Name, builder.Definition.Namespace)
 	}
 
-	var err error
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
-	builder.Object, err = builder.apiClient.Subscriptions(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -237,8 +283,21 @@ func PullSubscription(apiClient *clients.Settings, subName, subNamespace string)
 	glog.V(100).Infof("Pulling existing Subscription %s from cluster in namespace %s",
 		subName, subNamespace)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("subscription 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(operatorsV1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add operatorsV1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := &SubscriptionBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &operatorsV1alpha1.Subscription{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      subName,
@@ -250,17 +309,18 @@ func PullSubscription(apiClient *clients.Settings, subName, subNamespace string)
 	if subName == "" {
 		glog.V(100).Infof("The name of the Subscription is empty")
 
-		builder.errorMsg = "Subscription 'subName' cannot be empty"
+		return nil, fmt.Errorf("subscription 'subName' cannot be empty")
 	}
 
 	if subNamespace == "" {
 		glog.V(100).Infof("The namespace of the Subscription is empty")
 
-		builder.errorMsg = "Subscription 'subNamespace' cannot be empty"
+		return nil, fmt.Errorf("subscription 'subNamespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("subscription object named %s does not exist", subName)
+		return nil, fmt.Errorf(
+			"subscription object named %s does not exist in namespace %s", subName, subNamespace)
 	}
 
 	builder.Definition = builder.Object
