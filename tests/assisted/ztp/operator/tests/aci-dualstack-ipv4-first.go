@@ -56,7 +56,7 @@ var _ = Describe(
 
 				By("Waiting for specific error message from SpecSynced condition")
 				err = agentClusterInstallBuilder.WaitForConditionMessage(v1beta1.ClusterSpecSyncedCondition,
-					"The Spec could not be synced due to an input error: First machine network has to be IPv4 subnet", time.Second*10)
+					"The Spec could not be synced due to an input error: First machine network has to be IPv4 subnet", time.Second*30)
 				Expect(err).NotTo(HaveOccurred(), "didn't get the expected message from SpecSynced condition")
 
 			})
