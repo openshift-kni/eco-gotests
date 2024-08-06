@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Juniper/go-netconf v0.3.0
-	github.com/NVIDIA/gpu-operator v1.11.1
+	github.com/NVIDIA/gpu-operator v1.8.3-0.20230908215219-ec06e52425f3
 	github.com/bmc-toolbox/bmclib/v2 v2.2.1
 	github.com/cavaliergopher/cpio v1.0.1
 	github.com/cavaliergopher/grab/v3 v3.0.1
@@ -18,16 +18,16 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20231116153922-80c6e01df02e
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240416171718-24e8ec19e5e6 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240806183830-e3d1d55fa491 // release-4.15
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
 	github.com/openshift/assisted-service/models v0.0.0
 	github.com/openshift/cluster-nfd-operator v0.0.0-20231206145954-f49a827bf617
-	github.com/openshift/cluster-node-tuning-operator v0.0.0-20231225123609-e63d2c9626fe
+	github.com/openshift/cluster-node-tuning-operator v0.0.0-20231207200033-570bbfd7e761
 	github.com/openshift/hive/apis v0.0.0-20220707210052-4804c09ccc5a
-	github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a9
-	github.com/operator-framework/api v0.22.0
+	github.com/openshift/machine-config-operator v0.0.1-0.20231024085435-7e1fb719c1ba
+	github.com/operator-framework/api v0.21.0
 	github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20240214075243-67ea06a82ab8
 	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 	github.com/wk8/go-ordered-map/v2 v2.1.8
@@ -50,6 +50,8 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
+	github.com/NVIDIA/k8s-kata-manager v0.0.0-20230620232711-08b57feb9b5a // indirect
+	github.com/NVIDIA/k8s-operator-libs v0.0.0-20230811202718-cd051ba8bafe // indirect
 	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/PaesslerAG/jsonpath v0.1.1 // indirect
 	github.com/VictorLowther/simplexml v0.0.0-20180716164440-0bff93621230 // indirect
@@ -149,10 +151,11 @@ require (
 	github.com/openshift/library-go v0.0.0-20231027143522-b8cd45d2d2c8 // indirect
 	github.com/openshift/local-storage-operator v0.0.0-20240308014313-cc4f213cd7c8 // indirect
 	github.com/openshift/ptp-operator v0.0.0-20231220185604-29113b41981b // indirect
-	github.com/operator-framework/operator-lifecycle-manager v0.27.1-0.20240301195430-1d12f8f4de16 // indirect
+	github.com/operator-framework/operator-lifecycle-manager v0.26.0 // indirect
 	github.com/operator-framework/operator-registry v1.35.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.68.0 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
@@ -181,7 +184,7 @@ require (
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/term v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
@@ -191,7 +194,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -205,7 +208,7 @@ require (
 	k8s.io/kube-aggregator v0.28.5 // indirect
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
 	k8s.io/kubectl v0.28.5 // indirect
-	k8s.io/kubelet v0.27.4 // indirect
+	k8s.io/kubelet v0.27.7 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect
 	open-cluster-management.io/governance-policy-propagator v0.12.0 // indirect
 	open-cluster-management.io/multicloud-operators-subscription v0.11.0 // indirect
@@ -218,7 +221,7 @@ require (
 )
 
 replace (
-	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20240228013256-b13485442721 // release-4.15
+	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20240805020554-36ef98ec8bf0 // release-4.15
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20240228005710-4511c790cc60 // release-4.15
 	github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20240222220008-d60e80f8658c // release-4.15

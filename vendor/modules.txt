@@ -23,9 +23,15 @@ github.com/Masterminds/semver/v3
 # github.com/Masterminds/sprig/v3 v3.2.3
 ## explicit; go 1.13
 github.com/Masterminds/sprig/v3
-# github.com/NVIDIA/gpu-operator v1.11.1
-## explicit; go 1.17
+# github.com/NVIDIA/gpu-operator v1.8.3-0.20230908215219-ec06e52425f3
+## explicit; go 1.20
 github.com/NVIDIA/gpu-operator/api/v1
+# github.com/NVIDIA/k8s-kata-manager v0.0.0-20230620232711-08b57feb9b5a
+## explicit; go 1.20
+github.com/NVIDIA/k8s-kata-manager/api/v1alpha1/config
+# github.com/NVIDIA/k8s-operator-libs v0.0.0-20230811202718-cd051ba8bafe
+## explicit; go 1.20
+github.com/NVIDIA/k8s-operator-libs/api/upgrade/v1alpha1
 # github.com/PaesslerAG/gval v1.0.0
 ## explicit
 github.com/PaesslerAG/gval
@@ -406,12 +412,14 @@ github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/scheme
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
-# github.com/k8snetworkplumbingwg/sriov-network-operator v1.2.0 => github.com/openshift/sriov-network-operator v0.0.0-20240228013256-b13485442721
+# github.com/k8snetworkplumbingwg/sriov-network-operator v1.2.0 => github.com/openshift/sriov-network-operator v0.0.0-20240805020554-36ef98ec8bf0
 ## explicit; go 1.20
 github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/scheme
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1
+github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/consts
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/render
+github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/vars
 # github.com/kdomanski/iso9660 v0.2.1
 ## explicit; go 1.14
 github.com/kdomanski/iso9660
@@ -521,7 +529,7 @@ github.com/onsi/gomega/types
 ## explicit; go 1.20
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240416171718-24e8ec19e5e6
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240806183830-e3d1d55fa491
 ## explicit; go 1.20
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmh
@@ -704,8 +712,8 @@ github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
 # github.com/openshift/cluster-nfd-operator v0.0.0-20231206145954-f49a827bf617
 ## explicit; go 1.20
 github.com/openshift/cluster-nfd-operator/api/v1
-# github.com/openshift/cluster-node-tuning-operator v0.0.0-20231225123609-e63d2c9626fe
-## explicit; go 1.21
+# github.com/openshift/cluster-node-tuning-operator v0.0.0-20231207200033-570bbfd7e761
+## explicit; go 1.20
 github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v1
 github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2
 github.com/openshift/cluster-node-tuning-operator/pkg/performanceprofile/controller/performanceprofile/components
@@ -764,7 +772,7 @@ github.com/openshift/library-go/pkg/operator/v1helpers
 ## explicit; go 1.20
 github.com/openshift/local-storage-operator/api/v1
 github.com/openshift/local-storage-operator/api/v1alpha1
-# github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a9
+# github.com/openshift/machine-config-operator v0.0.1-0.20231024085435-7e1fb719c1ba
 ## explicit; go 1.20
 github.com/openshift/machine-config-operator/internal/clients
 github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1
@@ -784,8 +792,8 @@ github.com/openshift/machine-config-operator/pkg/version
 github.com/openshift/ptp-operator/api/v1
 github.com/openshift/ptp-operator/pkg/client/clientset/versioned/scheme
 github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1
-# github.com/operator-framework/api v0.22.0
-## explicit; go 1.21
+# github.com/operator-framework/api v0.21.0
+## explicit; go 1.20
 github.com/operator-framework/api/pkg/constraints
 github.com/operator-framework/api/pkg/lib/version
 github.com/operator-framework/api/pkg/operators
@@ -793,8 +801,8 @@ github.com/operator-framework/api/pkg/operators/v1
 github.com/operator-framework/api/pkg/operators/v1alpha1
 github.com/operator-framework/api/pkg/operators/v1alpha2
 github.com/operator-framework/api/pkg/operators/v2
-# github.com/operator-framework/operator-lifecycle-manager v0.27.1-0.20240301195430-1d12f8f4de16
-## explicit; go 1.21
+# github.com/operator-framework/operator-lifecycle-manager v0.26.0
+## explicit; go 1.20
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/scheme
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1
@@ -817,6 +825,10 @@ github.com/peterbourgon/diskv
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.68.0
+## explicit; go 1.17
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring
+github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1
 # github.com/prometheus/client_golang v1.18.0
 ## explicit; go 1.19
 github.com/prometheus/client_golang/prometheus
@@ -974,7 +986,7 @@ golang.org/x/oauth2/internal
 # golang.org/x/sync v0.6.0
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.17.0
+# golang.org/x/sys v0.20.0
 ## explicit; go 1.18
 golang.org/x/sys/cpu
 golang.org/x/sys/plan9
@@ -1083,14 +1095,15 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.31.0
-## explicit; go 1.11
+# google.golang.org/protobuf v1.33.0
+## explicit; go 1.17
 google.golang.org/protobuf/encoding/protojson
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
 google.golang.org/protobuf/internal/descopts
 google.golang.org/protobuf/internal/detrand
+google.golang.org/protobuf/internal/editiondefaults
 google.golang.org/protobuf/internal/encoding/defval
 google.golang.org/protobuf/internal/encoding/json
 google.golang.org/protobuf/internal/encoding/messageset
@@ -1115,6 +1128,7 @@ google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/dynamicpb
+google.golang.org/protobuf/types/gofeaturespb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/emptypb
@@ -1612,7 +1626,7 @@ k8s.io/kubectl/pkg/util/openapi
 k8s.io/kubectl/pkg/util/templates
 k8s.io/kubectl/pkg/util/term
 k8s.io/kubectl/pkg/validation
-# k8s.io/kubelet v0.27.4 => k8s.io/kubelet v0.28.7
+# k8s.io/kubelet v0.27.7 => k8s.io/kubelet v0.28.7
 ## explicit; go 1.20
 k8s.io/kubelet/config/v1beta1
 # k8s.io/utils v0.0.0-20230726121419-3b25d923346b
@@ -1784,7 +1798,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20240228013256-b13485442721
+# github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20240805020554-36ef98ec8bf0
 # github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20240228005710-4511c790cc60
 # github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20240222220008-d60e80f8658c
