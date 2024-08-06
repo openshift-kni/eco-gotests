@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	oplmV1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ClusterServiceVersionBuilder provides a struct for clusterserviceversion object
@@ -32,6 +32,19 @@ func PullClusterServiceVersion(apiClient *clients.Settings, name, namespace stri
 	error) {
 	glog.V(100).Infof("Pulling existing clusterserviceversion name %s in namespace %s", name, namespace)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("clusterserviceversion 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(oplmV1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add operatorsV1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := ClusterServiceVersionBuilder{
 		apiClient: apiClient,
 		Definition: &oplmV1alpha1.ClusterServiceVersion{
@@ -43,11 +56,15 @@ func PullClusterServiceVersion(apiClient *clients.Settings, name, namespace stri
 	}
 
 	if name == "" {
-		builder.errorMsg = "clusterserviceversion 'name' cannot be empty"
+		glog.V(100).Infof("The name of the clusterserviceversion is empty")
+
+		return nil, fmt.Errorf("clusterserviceversion 'name' cannot be empty")
 	}
 
 	if namespace == "" {
-		builder.errorMsg = "clusterserviceversion 'namespace' cannot be empty"
+		glog.V(100).Infof("The namespace of the clusterserviceversion is empty")
+
+		return nil, fmt.Errorf("clusterserviceversion 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -59,20 +76,44 @@ func PullClusterServiceVersion(apiClient *clients.Settings, name, namespace stri
 	return &builder, nil
 }
 
-// Exists checks whether the given clusterserviceversion exists.
+// Get returns ClusterServiceVersion object if found.
+func (builder *ClusterServiceVersionBuilder) Get() (*oplmV1alpha1.ClusterServiceVersion, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting ClusterServiceVersion object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	clusterServiceVersion := &oplmV1alpha1.ClusterServiceVersion{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		clusterServiceVersion)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"ClusterServiceVersion object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return clusterServiceVersion, nil
+}
+
+// Exists checks whether the given ClusterService exists.
 func (builder *ClusterServiceVersionBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
 	}
 
 	glog.V(100).Infof(
-		"Checking if clusterserviceversion %s exists",
+		"Checking if ClusterServiceVersion %s exists",
 		builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.OperatorsV1alpha1Interface.ClusterServiceVersions(
-		builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -87,11 +128,12 @@ func (builder *ClusterServiceVersionBuilder) Delete() error {
 		builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("clusterserviceversion cannot be deleted because it does not exist")
+
 		return nil
 	}
 
-	err := builder.apiClient.ClusterServiceVersions(builder.Definition.Namespace).Delete(context.TODO(),
-		builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return err

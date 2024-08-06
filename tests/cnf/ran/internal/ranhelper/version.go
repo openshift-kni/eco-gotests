@@ -15,7 +15,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	configv1 "github.com/openshift/api/config/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -114,7 +113,7 @@ func GetClusterName(kubeconfigPath string) (string, error) {
 // GetOperatorVersionFromCsv returns operator version from csv, or an empty string if no CSV for the provided operator
 // is found.
 func GetOperatorVersionFromCsv(client *clients.Settings, operatorName, operatorNamespace string) (string, error) {
-	csv, err := olm.ListClusterServiceVersion(client, operatorNamespace, metav1.ListOptions{})
+	csv, err := olm.ListClusterServiceVersion(client, operatorNamespace)
 	if err != nil {
 		return "", err
 	}
