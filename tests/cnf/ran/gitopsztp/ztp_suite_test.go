@@ -12,11 +12,11 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/helper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
+	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/tests"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/helper"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
-	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/tests"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
 

@@ -8,7 +8,7 @@ import (
 
 const (
 	// LabelSuite is the label for all the tests in this suite.
-	LabelSuite = "ran-ztp"
+	LabelSuite = "gitopsztp"
 	// LabelArgoCdAcmCrsTestCases is the label for the ACM CRs test cases.
 	LabelArgoCdAcmCrsTestCases = "ztp-argocd-acm-crs"
 	// LabelArgoCdClustersAppTestCases is the label for the Argo CD clusters app test cases.
