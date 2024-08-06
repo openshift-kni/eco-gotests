@@ -16,8 +16,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/negative/internal/tsparams"
 
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/safeapirequest"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/seedimage"
 	_ "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/negative/tests"
+	"github.com/openshift-kni/eco-gotests/tests/lca/internal/seedimage"
 )
 
 var _, currentFile, _, _ = runtime.Caller(0)
