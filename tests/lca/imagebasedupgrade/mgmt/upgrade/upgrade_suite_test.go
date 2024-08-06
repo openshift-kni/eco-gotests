@@ -11,10 +11,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/seedimage"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/tests"
+	"github.com/openshift-kni/eco-gotests/tests/lca/internal/seedimage"
 )
 
 var _, currentFile, _, _ = runtime.Caller(0)

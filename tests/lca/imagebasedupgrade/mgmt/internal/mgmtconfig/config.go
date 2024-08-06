@@ -4,8 +4,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/ibuconfig"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/seedimage"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtparams"
+	"github.com/openshift-kni/eco-gotests/tests/lca/internal/seedimage"
 )
 
 // MGMTConfig type contains mgmt configuration.
