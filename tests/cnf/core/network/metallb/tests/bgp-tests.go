@@ -60,7 +60,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			"Failed to detect master nodes")
 	})
 
-	var speakerPods []*pod.Builder
+	var frrk8sPods []*pod.Builder
 
 	BeforeEach(func() {
 		By("Creating External NAD")
@@ -68,14 +68,14 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 		By("Listing metalLb speakers pod")
 		var err error
-		speakerPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-			LabelSelector: tsparams.MetalLbDefaultSpeakerLabel,
+		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+			LabelSelector: tsparams.FRRK8sDefaultLabel,
 		})
 		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
-		Expect(len(speakerPods)).To(BeNumerically(">", 0),
+		Expect(len(frrk8sPods)).To(BeNumerically(">", 0),
 			"Failed the number of frr speaker pods is 0")
 		createBGPPeerAndVerifyIfItsReady(
-			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, speakerPods)
+			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, frrk8sPods)
 	})
 
 	AfterEach(func() {
@@ -110,7 +110,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				}
 
 				createBGPPeerAndVerifyIfItsReady(
-					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, speakerPods)
+					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, frrk8sPods)
 
 				By("Setting test iteration parameters")
 				_, subMask, mlbAddressList, nodeAddrList, addressPool, _, err :=
@@ -172,7 +172,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 			createBGPPeerAndVerifyIfItsReady(
-				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, speakerPods)
+				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, frrk8sPods)
 
 			By("Checking that BGP session is established and up")
 			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
@@ -190,7 +190,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
 
 			verifyMetricPresentInPrometheus(
-				speakerPods, prometheusPods[0], "metallb_bgp_", tsparams.MetalLbBgpMetrics)
+				frrk8sPods, prometheusPods[0], "metallb_bgp_", tsparams.MetalLbBgpMetrics)
 		})
 
 		AfterAll(func() {
