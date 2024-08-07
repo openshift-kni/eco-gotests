@@ -8,11 +8,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/helper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/helper"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 )
 
