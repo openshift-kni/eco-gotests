@@ -176,9 +176,9 @@ func VerifyLocalVolumeDiscovery(ctx SpecContext) {
 
 	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
 		MatchExpressions: []corev1.NodeSelectorRequirement{{
-			Key:      "cluster.ocs.openshift.io/openshift-storage",
+			Key:      "kubernetes.io/hostname",
 			Operator: "In",
-			Values:   []string{""},
+			Values:   []string{"worker-4", "worker-5", "worker-6"},
 		}}},
 	}}
 
@@ -221,9 +221,9 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 
 	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
 		MatchExpressions: []corev1.NodeSelectorRequirement{{
-			Key:      "cluster.ocs.openshift.io/openshift-storage",
+			Key:      "kubernetes.io/hostname",
 			Operator: "In",
-			Values:   []string{""},
+			Values:   []string{"worker-4", "worker-5", "worker-6"},
 		}}},
 	}}
 
