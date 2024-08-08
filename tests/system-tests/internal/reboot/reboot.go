@@ -24,12 +24,20 @@ func HardRebootNode(nodeName string, nsName string) error {
 		return err
 	}
 
+	rmiCmdToExec := []string{"chroot", "/rootfs", "/bin/sh", "-c", "podman rmi -f " + SystemTestsTestConfig.IpmiToolImage}
+	glog.V(90).Infof("Cleaning up any of the existing ipmitool images. Exec cmd %v", rmiCmdToExec)
+	_, err = remote.ExecuteOnNodeWithDebugPod(rmiCmdToExec, nodeName)
+
+	if err != nil {
+		return err
+	}
+
 	deployContainer := pod.NewContainerBuilder(systemtestsparams.HardRebootDeploymentName,
 		SystemTestsTestConfig.IpmiToolImage, []string{"sleep", "86400"})
 
 	trueVar := true
 	deployContainer = deployContainer.WithSecurityContext(&v1.SecurityContext{Privileged: &trueVar})
-	deployContainer = deployContainer.WithImagePullPolicy(v1.PullIfNotPresent)
+	deployContainer = deployContainer.WithImagePullPolicy(v1.PullAlways)
 
 	deployContainerCfg, err := deployContainer.GetContainerCfg()
 	if err != nil {
