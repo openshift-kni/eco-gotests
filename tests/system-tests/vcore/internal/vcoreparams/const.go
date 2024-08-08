@@ -101,17 +101,11 @@ const (
 	// ODFLocalVolumeDiscoveryName is an ODF localVolumeDiscovery instance name.
 	ODFLocalVolumeDiscoveryName = "auto-discover-devices"
 
-	// RedisLocalVolumeDiscoveryName is a redis localVolumeDiscovery instance name.
-	RedisLocalVolumeDiscoveryName = "redis-auto-discover-devices"
-
 	// ODFNamespace is an odf namespace.
 	ODFNamespace = "openshift-storage"
 
 	// ODFStorageClassName is an ODF storage class name.
 	ODFStorageClassName = "ocs-storagecluster-ceph-rbd"
-
-	// RedisStorageClassName is a redis storage class name.
-	RedisStorageClassName = "standard"
 
 	// StorageClusterName is a storageCluster name.
 	StorageClusterName = "ocs-storagecluster"
@@ -119,17 +113,11 @@ const (
 	// ODFStorageSystemName is an ODF storageSystem name.
 	ODFStorageSystemName = "ocs-storagecluster-storagesystem"
 
-	// RedisStorageSystemName is a Redis storageSystem name.
-	RedisStorageSystemName = "redis-storagecluster-storagesystem"
-
 	// RookCephConfigMapName is a rook ceph configmap name.
 	RookCephConfigMapName = "rook-ceph-operator-config"
 
 	// ODFLocalVolumeSetName is an ODF localVolumeSetName name.
 	ODFLocalVolumeSetName = "ocs-deviceset"
-
-	// RedisLocalVolumeSetName is a redis localVolumeSetName name.
-	RedisLocalVolumeSetName = "redis-deviceset"
 
 	// LokiOperatorSubscriptionName is a loki operator subscription name.
 	LokiOperatorSubscriptionName = "loki-operator"
