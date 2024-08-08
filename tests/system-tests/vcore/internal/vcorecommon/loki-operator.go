@@ -114,7 +114,7 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 
 	_, err = objectBucketClaimObj.
 		WithGenerateBucketName(vcoreparams.ObjectBucketClaimName).
-		WithStorageClassName("openshift-storage.noobaa.io").Create()
+		WithStorageClassName("ocs-storagecluster-ceph-rgw").Create()
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create objectBucketClaim %s in namespace %s due to %v",
 			vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
@@ -123,7 +123,7 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 
 	err = await.WaitUntilPersistentVolumeClaimCreated(APIClient,
 		vcoreparams.ODFNamespace,
-		4,
+		3,
 		90*time.Minute,
 		metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(

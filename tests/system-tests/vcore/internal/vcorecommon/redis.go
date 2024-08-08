@@ -9,10 +9,6 @@ import (
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/lso"
-	lsov1 "github.com/openshift/local-storage-operator/api/v1"
-	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
@@ -39,54 +35,10 @@ func VerifyRedisSuite() {
 	Describe(
 		"Redis validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
-			It("Verify redis localvolumeset instance exists",
-				Label("redis2"), VerifyRedisLocalVolumeSet)
-
 			It("Verify Redis deployment procedure",
 				Label("redis"), reportxml.ID("59503"), VerifyRedisDeploymentProcedure)
 		})
 }
-
-// VerifyRedisLocalVolumeSet asserts redis localvolumeset instance exists.
-func VerifyRedisLocalVolumeSet(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Create redis localvolumeset instance %s in namespace %s if not found",
-		vcoreparams.RedisLocalVolumeSetName, vcoreparams.LSONamespace)
-
-	var err error
-
-	localVolumeSetObj := lso.NewLocalVolumeSetBuilder(APIClient,
-		vcoreparams.RedisLocalVolumeSetName,
-		vcoreparams.LSONamespace)
-
-	if localVolumeSetObj.Exists() {
-		err = localVolumeSetObj.Delete()
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("failed to delete localvolumeset %s from namespace %s; %v",
-				vcoreparams.RedisLocalVolumeSetName, vcoreparams.LSONamespace, err))
-	}
-
-	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
-		MatchExpressions: []corev1.NodeSelectorRequirement{{
-			Key:      "kubernetes.io/hostname",
-			Operator: "In",
-			Values:   []string{"master-0", "master-1", "master-2"},
-		}}},
-	}}
-
-	deviceInclusionSpec := lsov1alpha1.DeviceInclusionSpec{
-		DeviceTypes:                []lsov1alpha1.DeviceType{lsov1alpha1.RawDisk},
-		DeviceMechanicalProperties: []lsov1alpha1.DeviceMechanicalProperty{lsov1alpha1.NonRotational},
-	}
-
-	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
-		WithStorageClassName(vcoreparams.RedisStorageClassName).
-		WithVolumeMode(lsov1.PersistentVolumeBlock).
-		WithFSType("ext4").
-		WithMaxDeviceCount(int32(10)).
-		WithDeviceInclusionSpec(deviceInclusionSpec).Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
-		"due to %v", vcoreparams.RedisLocalVolumeSetName, vcoreparams.LSONamespace, err))
-} // func VerifyLocalVolumeSet (ctx SpecContext)
 
 // VerifyRedisDeploymentProcedure asserts Redis deployment procedure.
 //
