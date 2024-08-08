@@ -4,25 +4,26 @@ import (
 	"context"
 	"fmt"
 
+	operatorsv1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/golang/glog"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	olmv1 "github.com/operator-framework/api/pkg/operators/v1"
 )
 
 // OperatorGroupBuilder provides a struct for OperatorGroup object containing connection to the
 // cluster and the OperatorGroup definition.
 type OperatorGroupBuilder struct {
 	// OperatorGroup definition. Used to create OperatorGroup object with minimum set of required elements.
-	Definition *olmv1.OperatorGroup
+	Definition *operatorsv1.OperatorGroup
 	// Created OperatorGroup object on the cluster.
-	Object *olmv1.OperatorGroup
+	Object *operatorsv1.OperatorGroup
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeClient.Client
 	// errorMsg is processed before OperatorGroup object is created.
 	errorMsg string
 }
@@ -32,15 +33,28 @@ func NewOperatorGroupBuilder(apiClient *clients.Settings, groupName, nsName stri
 	glog.V(100).Infof(
 		"Initializing new OperatorGroupBuilder structure with the following params: %s, %s", groupName, nsName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(operatorsv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add operatorsv1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &OperatorGroupBuilder{
-		apiClient: apiClient,
-		Definition: &olmv1.OperatorGroup{
+		apiClient: apiClient.Client,
+		Definition: &operatorsv1.OperatorGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:         groupName,
 				Namespace:    nsName,
 				GenerateName: fmt.Sprintf("%v-", groupName),
 			},
-			Spec: olmv1.OperatorGroupSpec{
+			Spec: operatorsv1.OperatorGroupSpec{
 				TargetNamespaces: []string{nsName},
 			},
 		},
@@ -49,16 +63,42 @@ func NewOperatorGroupBuilder(apiClient *clients.Settings, groupName, nsName stri
 	if groupName == "" {
 		glog.V(100).Infof("The Name of the OperatorGroup is empty")
 
-		builder.errorMsg = "OperatorGroup 'groupName' cannot be empty"
+		builder.errorMsg = "operatorGroup 'groupName' cannot be empty"
 	}
 
 	if nsName == "" {
 		glog.V(100).Infof("The Namespace of the OperatorGroup is empty")
 
-		builder.errorMsg = "OperatorGroup 'Namespace' cannot be empty"
+		builder.errorMsg = "operatorGroup 'Namespace' cannot be empty"
 	}
 
 	return builder
+}
+
+// Get returns OperatorGroup object if found.
+func (builder *OperatorGroupBuilder) Get() (*operatorsv1.OperatorGroup, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting operatorGroup object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	operatorGroup := &operatorsv1.OperatorGroup{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		operatorGroup)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"OperatorGroup object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return operatorGroup, nil
 }
 
 // Create makes an OperatorGroup in cluster and stores the created object in struct.
@@ -67,14 +107,20 @@ func (builder *OperatorGroupBuilder) Create() (*OperatorGroupBuilder, error) {
 		return builder, err
 	}
 
-	glog.V(100).Infof("Creating the OperatorGroup %s",
-		builder.Definition.Name)
+	glog.V(100).Infof("Creating the OperatorGroup %s", builder.Definition.Name)
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.OperatorGroups(builder.Definition.Namespace).Create(context.TODO(),
-			builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create OperatorGroup")
+
+			return nil, err
+		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -89,9 +135,7 @@ func (builder *OperatorGroupBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-
-	builder.Object, err = builder.apiClient.OperatorGroups(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -109,8 +153,7 @@ func (builder *OperatorGroupBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.OperatorGroups(builder.Definition.Namespace).Delete(context.TODO(), builder.Object.Name,
-		metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return err
@@ -130,9 +173,15 @@ func (builder *OperatorGroupBuilder) Update() (*OperatorGroupBuilder, error) {
 	glog.V(100).Infof("Updating OperatorGroup %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	builder.Object, err = builder.apiClient.OperatorGroups(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if !builder.Exists() {
+		return nil, fmt.Errorf("cannot update non-existent operatorgroup")
+	}
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -142,9 +191,22 @@ func PullOperatorGroup(apiClient *clients.Settings, groupName, nsName string) (*
 	glog.V(100).Infof("Pulling existing OperatorGroup %s from cluster in namespace %s",
 		groupName, nsName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("operatorGroup 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(operatorsv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add operatorsv1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := &OperatorGroupBuilder{
-		apiClient: apiClient,
-		Definition: &olmv1.OperatorGroup{
+		apiClient: apiClient.Client,
+		Definition: &operatorsv1.OperatorGroup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:         groupName,
 				Namespace:    nsName,
@@ -156,17 +218,17 @@ func PullOperatorGroup(apiClient *clients.Settings, groupName, nsName string) (*
 	if groupName == "" {
 		glog.V(100).Infof("The name of the OperatorGroup is empty")
 
-		builder.errorMsg = "OperatorGroup 'Name' cannot be empty"
+		return nil, fmt.Errorf("operatorGroup 'Name' cannot be empty")
 	}
 
 	if nsName == "" {
 		glog.V(100).Infof("The namespace of the OperatorGroup is empty")
 
-		builder.errorMsg = "OperatorGroup 'Namespace' cannot be empty"
+		return nil, fmt.Errorf("operatorGroup 'Namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("OperatorGroup object named %s does not exist", nsName)
+		return nil, fmt.Errorf("operatorGroup object named %s does not exist", nsName)
 	}
 
 	builder.Definition = builder.Object

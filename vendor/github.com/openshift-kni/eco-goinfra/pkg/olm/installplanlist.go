@@ -4,21 +4,37 @@ import (
 	"context"
 	"fmt"
 
+	oplmV1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListInstallPlan returns a list of installplans found for specific namespace.
 func ListInstallPlan(
-	apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*InstallPlanBuilder, error) {
+	apiClient *clients.Settings, nsname string, options ...client.ListOptions) ([]*InstallPlanBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Info("The nsname of the installplan is empty")
 
 		return nil, fmt.Errorf("the nsname of the installplan is empty")
 	}
 
-	passedOptions := metav1.ListOptions{}
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("failed to list installPlan, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(oplmV1alpha1.AddToScheme)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to add oplmV1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	passedOptions := client.ListOptions{}
 	logMessage := fmt.Sprintf("Listing InstallPlans in namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -34,7 +50,8 @@ func ListInstallPlan(
 
 	glog.V(100).Infof(logMessage)
 
-	installPlanList, err := apiClient.InstallPlans(nsname).List(context.TODO(), passedOptions)
+	installPlanList := new(oplmV1alpha1.InstallPlanList)
+	err = apiClient.List(context.TODO(), installPlanList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all installplan in namespace %s due to %s",
@@ -48,7 +65,7 @@ func ListInstallPlan(
 	for _, foundCsv := range installPlanList.Items {
 		copiedCsv := foundCsv
 		csvBuilder := &InstallPlanBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedCsv,
 			Definition: &copiedCsv,
 		}

@@ -23,7 +23,7 @@ type PolicyBuilder struct {
 	// created policy object.
 	Object *policiesv1.Policy
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// used to store latest error message upon defining or mutating application definition.
 	errorMsg string
 }
@@ -35,8 +35,21 @@ func NewPolicyBuilder(
 		"Initializing new policy structure with the following params: name: %s, nsname: %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the Policy is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(policiesv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add Policy scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PolicyBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &policiesv1.Policy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -61,9 +74,9 @@ func NewPolicyBuilder(
 	}
 
 	if template == nil {
-		glog.V(100).Info("The PolicyTemplate of the Policy is empty")
+		glog.V(100).Info("The PolicyTemplate of the Policy is nil")
 
-		builder.errorMsg = "policy 'template' cannot be empty"
+		builder.errorMsg = "policy 'template' cannot be nil"
 	}
 
 	return &builder
@@ -74,13 +87,20 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 	glog.V(100).Infof("Pulling existing policy name %s under namespace %s from cluster", name, nsname)
 
 	if apiClient == nil {
-		glog.V(100).Infof("The apiClient is empty")
+		glog.V(100).Infof("The apiClient is nil")
 
-		return nil, fmt.Errorf("policy 'apiClient' cannot be empty")
+		return nil, fmt.Errorf("policy 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(policiesv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add Policy scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := PolicyBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &policiesv1.Policy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -198,21 +218,29 @@ func (builder *PolicyBuilder) Update(force bool) (*PolicyBuilder, error) {
 		return builder, err
 	}
 
+	if !builder.Exists() {
+		glog.V(100).Infof("Policy %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, fmt.Errorf("cannot update non-existent policy")
+	}
+
 	glog.V(100).Infof("Updating the policy object: %s in namespace: %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				msg.FailToUpdateNotification("policy", builder.Definition.Name))
+				msg.FailToUpdateNotification("policy", builder.Definition.Name, builder.Definition.Namespace))
 
 			builder, err := builder.Delete()
+			builder.Definition.ResourceVersion = ""
 
 			if err != nil {
 				glog.V(100).Infof(
-					msg.FailToUpdateError("policy", builder.Definition.Name))
+					msg.FailToUpdateError("policy", builder.Definition.Name, builder.Definition.Namespace))
 
 				return nil, err
 			}
@@ -221,9 +249,7 @@ func (builder *PolicyBuilder) Update(force bool) (*PolicyBuilder, error) {
 		}
 	}
 
-	if err == nil {
-		builder.Object = builder.Definition
-	}
+	builder.Object = builder.Definition
 
 	return builder, err
 }

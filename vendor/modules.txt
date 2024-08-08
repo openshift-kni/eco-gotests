@@ -598,7 +598,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240806143944-e49acf61eb1b
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240809133315-01bbbf4c9ede
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -692,6 +692,7 @@ github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/pkg/common
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/velero/api/v1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/velero/pkg/restore
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators
+github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/version
 github.com/openshift-kni/eco-goinfra/pkg/secret

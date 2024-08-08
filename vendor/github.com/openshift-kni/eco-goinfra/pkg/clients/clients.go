@@ -75,7 +75,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	coreV1Client "k8s.io/client-go/kubernetes/typed/core/v1"
 	storageV1Client "k8s.io/client-go/kubernetes/typed/storage/v1"
-	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 
 	plumbingv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	fakeMultiNetPolicyClient "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/fake"
@@ -83,7 +82,6 @@ import (
 	clusterClient "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterClientFake "open-cluster-management.io/api/client/cluster/clientset/versioned/fake"
 	clusterV1Client "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
-	clusterv1 "open-cluster-management.io/api/cluster/v1"
 
 	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
@@ -111,14 +109,11 @@ import (
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	odfoperatorv1alpha1 "github.com/red-hat-storage/odf-operator/api/v1alpha1"
 	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
-	kacv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
 	veleroFakeClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/fake"
 	veleroV1Client "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/typed/velero/v1"
 	dynamicFake "k8s.io/client-go/dynamic/fake"
-	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
-	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
 
 // Settings provides the struct to talk with relevant API.
@@ -213,8 +208,6 @@ func New(kubeconfig string) *Settings {
 	clientSet.VeleroV1Interface = veleroV1Client.NewForConfigOrDie(config)
 	clientSet.ClientCgu = clientCgu.NewForConfigOrDie(config)
 	clientSet.RanV1alpha1Interface = clientCguV1.NewForConfigOrDie(config)
-	clientSet.ClusterClient = clusterClient.NewForConfigOrDie(config)
-	clientSet.ClusterV1Interface = clusterV1Client.NewForConfigOrDie(config)
 	clientSet.Config = config
 
 	clientSet.scheme = runtime.NewScheme()
@@ -353,19 +346,7 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := policiesv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
 	if err := cguapiv1alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := policiesv1beta1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := placementrulev1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -417,10 +398,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := kacv1.SchemeBuilder.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
 	if err := monv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -465,9 +442,18 @@ type TestClientParams struct {
 }
 
 // GetTestClients returns a fake clientset for testing.
+func GetTestClients(tcp TestClientParams) *Settings {
+	clientSet, testBuilder := GetModifiableTestClients(tcp)
+	clientSet.Client = testBuilder.Build()
+
+	return clientSet
+}
+
+// GetModifiableTestClients returns a fake clientset
+// and a modifiable clientbuilder for testing.
 //
 //nolint:funlen,gocyclo
-func GetTestClients(tcp TestClientParams) *Settings {
+func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClient.ClientBuilder) {
 	clientSet := &Settings{}
 
 	var k8sClientObjects, genericClientObjects, plumbingObjects, srIovObjects,
@@ -533,14 +519,6 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *routev1.Route:
 			genericClientObjects = append(genericClientObjects, v)
-		case *policiesv1.Policy:
-			genericClientObjects = append(genericClientObjects, v)
-		case *policiesv1.PlacementBinding:
-			genericClientObjects = append(genericClientObjects, v)
-		case *placementrulev1.PlacementRule:
-			genericClientObjects = append(genericClientObjects, v)
-		case *policiesv1beta1.PolicySet:
-			genericClientObjects = append(genericClientObjects, v)
 		case *configV1.Node:
 			genericClientObjects = append(genericClientObjects, v)
 		case *operatorv1.IngressController:
@@ -593,8 +571,6 @@ func GetTestClients(tcp TestClientParams) *Settings {
 			genericClientObjects = append(genericClientObjects, v)
 		case *agentInstallV1Beta1.AgentServiceConfig:
 			genericClientObjects = append(genericClientObjects, v)
-		case *kacv1.KlusterletAddonConfig:
-			genericClientObjects = append(genericClientObjects, v)
 		case *monv1.ServiceMonitor:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
@@ -641,9 +617,6 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		// MultiNetworkPolicy Client Objects
 		case *plumbingv1.MultiNetworkPolicy:
 			plumbingObjects = append(plumbingObjects, v)
-		// OCM Cluster Client Objects
-		case *clusterv1.ManagedCluster:
-			ocmObjects = append(ocmObjects, v)
 		// MCO Client Objects
 		case *mcv1.MachineConfig:
 			mcoObjects = append(mcoObjects, v)
@@ -680,7 +653,7 @@ func GetTestClients(tcp TestClientParams) *Settings {
 
 	err := SetScheme(clientSet.scheme)
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 
 	if len(tcp.GVK) > 0 && len(genericClientObjects) > 0 {
@@ -690,20 +663,20 @@ func GetTestClients(tcp TestClientParams) *Settings {
 
 	if len(tcp.K8sMockObjects) > 0 && len(tcp.SchemeAttachers) > 0 {
 		genericClientObjects = append(genericClientObjects, tcp.K8sMockObjects...)
+	} else {
+		clientSet.Interface = dynamicFake.NewSimpleDynamicClient(clientSet.scheme, genericClientObjects...)
 	}
 
 	for _, attacher := range tcp.SchemeAttachers {
 		err := clientSet.AttachScheme(attacher)
 		if err != nil {
-			return nil
+			return nil, nil
 		}
 	}
 
-	clientSet.Interface = dynamicFake.NewSimpleDynamicClient(clientSet.scheme, genericClientObjects...)
-
 	// Add fake runtime client to clientSet runtime client
-	clientSet.Client = fakeRuntimeClient.NewClientBuilder().WithScheme(clientSet.scheme).
-		WithRuntimeObjects(genericClientObjects...).Build()
+	clientBuilder := fakeRuntimeClient.NewClientBuilder().WithScheme(clientSet.scheme).
+		WithRuntimeObjects(genericClientObjects...)
 
-	return clientSet
+	return clientSet, clientBuilder
 }

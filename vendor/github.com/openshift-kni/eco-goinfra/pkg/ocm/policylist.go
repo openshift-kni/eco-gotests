@@ -14,6 +14,19 @@ import (
 func ListPoliciesInAllNamespaces(apiClient *clients.Settings,
 	options ...runtimeclient.ListOptions) (
 	[]*PolicyBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Info("Policies 'apiClient' parameter cannot be nil")
+
+		return nil, fmt.Errorf("failed to list policies, 'apiClient' parameter is nil")
+	}
+
+	err := apiClient.AttachScheme(policiesv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add Policy scheme to client schemes")
+
+		return nil, err
+	}
+
 	logMessage := string("Listing all policies in all namespaces")
 	passedOptions := runtimeclient.ListOptions{}
 
@@ -30,9 +43,8 @@ func ListPoliciesInAllNamespaces(apiClient *clients.Settings,
 
 	glog.V(100).Infof(logMessage)
 
-	policyList := &policiesv1.PolicyList{}
-
-	err := apiClient.Client.List(context.TODO(), policyList, &passedOptions)
+	policyList := new(policiesv1.PolicyList)
+	err = apiClient.Client.List(context.TODO(), policyList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all policies in all namespaces due to %s", err.Error())
@@ -45,7 +57,7 @@ func ListPoliciesInAllNamespaces(apiClient *clients.Settings,
 	for _, policy := range policyList.Items {
 		copiedPolicy := policy
 		policyBuilder := &PolicyBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedPolicy,
 			Definition: &copiedPolicy,
 		}

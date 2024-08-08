@@ -9,8 +9,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterV1Client "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ManagedClusterBuilder provides a struct for the ManagedCluster object containing connection to the cluster and the
@@ -19,7 +19,7 @@ type ManagedClusterBuilder struct {
 	Definition *clusterv1.ManagedCluster
 	Object     *clusterv1.ManagedCluster
 	errorMsg   string
-	apiClient  clusterV1Client.ClusterV1Interface
+	apiClient  runtimeclient.Client
 }
 
 // ManagedClusterAdditionalOptions additional options for ManagedCluster object.
@@ -30,23 +30,27 @@ func NewManagedClusterBuilder(apiClient *clients.Settings, name string) *Managed
 	glog.V(100).Infof(
 		"Initializing new ManagedCluster structure with the following params: name: %s", name)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the ManagedCluster is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(clusterv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add ManagedCluster scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &ManagedClusterBuilder{
+		apiClient: apiClient.Client,
 		Definition: &clusterv1.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 		},
 	}
-
-	if apiClient == nil {
-		glog.V(100).Info("The apiClient for the ManagedCluster is nil")
-
-		builder.errorMsg = "managedCluster 'apiClient' cannot be nil"
-
-		return builder
-	}
-
-	builder.apiClient = apiClient.ClusterV1Interface
 
 	if name == "" {
 		glog.V(100).Infof("The name of the ManagedCluster is empty")
@@ -94,8 +98,15 @@ func PullManagedCluster(apiClient *clients.Settings, name string) (*ManagedClust
 		return nil, fmt.Errorf("managedCluster 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(clusterv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add ManagedCluster scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := &ManagedClusterBuilder{
-		apiClient: apiClient.ClusterV1Interface,
+		apiClient: apiClient.Client,
 		Definition: &clusterv1.ManagedCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -128,11 +139,22 @@ func (builder *ManagedClusterBuilder) Update() (*ManagedClusterBuilder, error) {
 
 	glog.V(100).Infof("Updating ManagedCluster %s", builder.Definition.Name)
 
-	var err error
-	builder.Object, err = builder.apiClient.ManagedClusters().
-		Update(context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if !builder.Exists() {
+		glog.V(100).Infof("ManagedCluster %s does not exist", builder.Definition.Name)
 
-	return builder, err
+		return nil, fmt.Errorf("cannot update non-existent managedCluster")
+	}
+
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	if err != nil {
+		return nil, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // Delete removes a ManagedCluster from the cluster.
@@ -149,15 +171,12 @@ func (builder *ManagedClusterBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.ManagedClusters().Delete(context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
-
+	err := builder.apiClient.Delete(context.TODO(), builder.Object)
 	if err != nil {
 		return fmt.Errorf("cannot delete managedCluster: %w", err)
 	}
 
 	builder.Object = nil
-	builder.Definition.ResourceVersion = ""
-	builder.Definition.CreationTimestamp = metav1.Time{}
 
 	return nil
 }
@@ -170,9 +189,14 @@ func (builder *ManagedClusterBuilder) Exists() bool {
 
 	glog.V(100).Infof("Checking if ManagedCluster %s exists", builder.Definition.Name)
 
-	var err error
-	builder.Object, err = builder.apiClient.ManagedClusters().
-		Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	managedCluster := &clusterv1.ManagedCluster{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
+		Name: builder.Definition.Name,
+	}, managedCluster)
+
+	if err == nil {
+		builder.Object = managedCluster
+	}
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
