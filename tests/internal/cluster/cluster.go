@@ -181,8 +181,6 @@ func ExecCmdWithStdout(
 	return outputMap, nil
 }
 
-// new commands
-
 // ExecLocalCommand runs the provided command with the provided args locally, cancelling execution if it exceeds
 // timeout.
 func ExecLocalCommand(timeout time.Duration, command string, args ...string) (string, error) {
@@ -199,7 +197,7 @@ func ExecLocalCommand(timeout time.Duration, command string, args ...string) (st
 
 // ExecCmdWithRetries executes a command on the provided client on each node matching nodeSelector,
 // retrying on internal errors
-// retries times with a 10 second delay between retries, and ignores the stdout.
+// "retries" times with a "interval" duration between retries, and ignores the stdout.
 func ExecCmdWithRetries(client *clients.Settings, retries uint,
 	interval time.Duration, nodeSelector, command string) error {
 	glog.V(90).Infof("Executing command '%s' with %d retries and interval %v. Node Selector: %v",
@@ -222,8 +220,8 @@ func ExecCmdWithRetries(client *clients.Settings, retries uint,
 }
 
 // ExecCmdWithStdoutWithRetries executes a command on the provided client,
-// retrying on internal errors retries times with a 10
-// second delay between retries, and returns the stdout for each node.
+// retrying on internal errors "retries" times with a "interval"
+// duration between retries, and returns the stdout for each node.
 func ExecCmdWithStdoutWithRetries(
 	client *clients.Settings, retries uint, interval time.Duration,
 	command string, options ...metav1.ListOptions) (map[string]string, error) {
@@ -247,8 +245,8 @@ func ExecCmdWithStdoutWithRetries(
 }
 
 // ExecCommandOnSNOWithRetries executes a command on the provided single node client,
-// retrying on internal errors retries times
-// with a 10 second delay between retries, and returns the stdout.
+// retrying on internal errors "retries" times
+// waits with a "interval" duration between retries, and returns the stdout.
 func ExecCommandOnSNOWithRetries(client *clients.Settings, retries uint,
 	interval time.Duration, command string) (string, error) {
 	glog.V(90).Infof("Executing command on SNO '%s' with %d retries and interval %v", command, retries, interval)
