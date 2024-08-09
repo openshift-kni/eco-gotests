@@ -212,23 +212,6 @@ func GetBondSlaves(bondName, nodeNetworkStateName string) ([]string, error) {
 	return bondInterface.LinkAggregation.Port, nil
 }
 
-// GetBaseVlanInterface returns base interface under given Vlan interface name.
-func GetBaseVlanInterface(vlanInterfaceName, nodeNetworkStateName string) (string, error) {
-	glog.V(90).Infof("Getting base interface for Vlan interface %s", vlanInterfaceName)
-
-	nodeNetworkState, err := nmstate.PullNodeNetworkState(APIClient, nodeNetworkStateName)
-	if err != nil {
-		return "", err
-	}
-
-	vlanInterface, err := nodeNetworkState.GetInterfaceType(vlanInterfaceName, "vlan")
-	if err != nil {
-		return "", err
-	}
-
-	return vlanInterface.Vlan.BaseIface, nil
-}
-
 // GetBondMode returns Bond mode under given Bond interface name.
 func GetBondMode(bondName, nodeNetworkStateName string) (string, error) {
 	glog.V(90).Infof("Getting Bond mode under Bond interface %s", bondName)
@@ -323,17 +306,16 @@ func WithBondOptionFailOverMac(
 	)
 }
 
-// CheckThatWorkersDeployedWithBondVlanVfs verifies whether workers have been deployed with the specified configuration
+// CheckThatWorkersDeployedWithBondVfs verifies whether workers have been deployed with the specified configuration
 // of bonded VLAN virtual interfaces (VFs). This function ensures that the network setup adheres to the intended bond
 // and VLAN configurations.
-func CheckThatWorkersDeployedWithBondVlanVfs(
-	workerNodes []*nodes.Builder, namespace string) (string, []string, []string, error) {
+func CheckThatWorkersDeployedWithBondVfs(
+	workerNodes []*nodes.Builder, namespace string) (string, []string, error) {
 	glog.V(90).Infof("Verifying that the cluster deployed via bond interface")
 
 	var (
-		bondName       string
-		baseInterfaces []string
-		err            error
+		bondName string
+		err      error
 	)
 
 	for _, worker := range workerNodes {
@@ -341,61 +323,46 @@ func CheckThatWorkersDeployedWithBondVlanVfs(
 		if err != nil {
 			glog.V(90).Infof("Failed to get Slave Interfaces for the primary bond interface")
 
-			return "", nil, nil, err
+			return "", nil, err
 		}
 
 		if bondName == "" {
 			glog.V(90).Infof("bondName is empty on worker %s", worker.Definition.Name)
 
-			return "", nil, nil, fmt.Errorf("primary interface on worker %s is not a bond interface",
+			return "", nil, fmt.Errorf("primary interface on worker %s is not a bond interface",
 				worker.Definition.Name)
 		}
 	}
 
 	glog.V(90).Infof("Gathering enslave interfaces for the bond interface")
 
-	bondInterfaceVlanSlaves, err := GetBondSlaves(bondName, workerNodes[0].Definition.Name)
+	bondSlaves, err := GetBondSlaves(bondName, workerNodes[0].Definition.Name)
 	if err != nil {
 		glog.V(90).Infof("Failed to get bond slave interfaces")
 
-		return "", nil, nil, err
+		return "", nil, err
 	}
 
 	glog.V(90).Infof(
-		"Verifying that enslave interfaces are vlan interfaces and base-interface for Vlan interface is a VF interface")
+		"Verifying that enslave interfaces are SR-IOV VF interfaces")
 
-	for _, bondSlave := range bondInterfaceVlanSlaves {
-		baseInterface, err := GetBaseVlanInterface(bondSlave, workerNodes[0].Definition.Name)
-		if err != nil && strings.Contains(err.Error(), "it is not a vlan type") {
-			glog.V(90).Infof("bond slave interfaces are not vlan type")
-
-			return "", nil, nil, fmt.Errorf("bond slave interfaces are not vlan interfaces")
-		}
-
-		if err != nil {
-			glog.V(90).Infof("Failed to get Vlan base interface")
-
-			return "", nil, nil, err
-		}
-
-		// If a Vlan baseInterface has SR-IOV PF, it means that the baseInterface is VF.
-		_, err = cmd.GetSrIovPf(baseInterface, namespace, workerNodes[0].Definition.Name)
+	for _, bondSlave := range bondSlaves {
+		// If a baseInterface has SR-IOV PF, it means that the baseInterface is VF.
+		_, err = cmd.GetSrIovPf(bondSlave, namespace, workerNodes[0].Definition.Name)
 		if err != nil && strings.Contains(err.Error(), "No such file or directory") {
 			glog.V(90).Infof("Failed to find PF for the baseInterface VFs")
 
-			return "", nil, nil, fmt.Errorf("bond slave interfaces are not vlan interfaces")
+			return "", nil, fmt.Errorf("bond slaves are not SR-IOV VFs")
 		}
 
 		if err != nil {
 			glog.V(90).Infof("Failed to get SR-IOV PF interface")
 
-			return "", nil, nil, err
+			return "", nil, err
 		}
-
-		baseInterfaces = append(baseInterfaces, baseInterface)
 	}
 
-	return bondName, bondInterfaceVlanSlaves, baseInterfaces, nil
+	return bondName, bondSlaves, nil
 }
 
 // withBondOptionMutator returns a function that mutates a specific option for a bond interface.

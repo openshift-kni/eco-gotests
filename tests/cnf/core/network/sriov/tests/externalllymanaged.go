@@ -301,17 +301,17 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 				Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 
-				_, _, baseVfInterfaces, err := netnmstate.
-					CheckThatWorkersDeployedWithBondVlanVfs(workerNodeList, tsparams.TestNamespaceName)
+				_, bondSlaves, err := netnmstate.
+					CheckThatWorkersDeployedWithBondVfs(workerNodeList, tsparams.TestNamespaceName)
 				if err != nil {
 					Skip(fmt.Sprintf("The cluster is not suitable for testing: %s", err.Error()))
 				}
 
-				Expect(len(baseVfInterfaces)).To(BeNumerically(">", 1),
-					"Base VF interfaces should be more than 2")
+				Expect(len(bondSlaves)).To(BeNumerically(">", 1),
+					"Base VF interfaces should be more than 1")
 
 				By("Getting VFs for the test")
-				vfsUnderTest = getVfsUnderTest(baseVfInterfaces)
+				vfsUnderTest = getVfsUnderTest(bondSlaves)
 
 				By("Getting cluster vlan for the test")
 				testVlanString, err := NetConfig.GetClusterVlan()
