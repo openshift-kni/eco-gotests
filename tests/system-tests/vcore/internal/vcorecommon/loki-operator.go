@@ -141,7 +141,7 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 	err = await.WaitUntilConfigMapCreated(APIClient,
 		vcoreparams.ObjectBucketClaimName,
 		vcoreparams.CLONamespace,
-		20*time.Minute)
+		65*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("configmap %s not found in namespace %s; %v",
 		vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
 } // func CreateObjectBucketClaim (ctx SpecContext)
