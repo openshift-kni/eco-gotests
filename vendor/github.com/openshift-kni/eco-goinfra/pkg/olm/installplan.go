@@ -4,35 +4,50 @@ import (
 	"context"
 	"fmt"
 
+	operatorsV1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // InstallPlanBuilder provides a struct for installplan object from the cluster and an installplan definition.
 type InstallPlanBuilder struct {
 	// Installplan definition, used to create the installplan object.
-	Definition *v1alpha1.InstallPlan
+	Definition *operatorsV1alpha1.InstallPlan
 	// Created installplan object.
-	Object *v1alpha1.InstallPlan
+	Object *operatorsV1alpha1.InstallPlan
 	// Used in functions that define or mutate installplan definition. errorMsg is processed
 	// before the installplan object is created
 	errorMsg string
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeClient.Client
 }
 
 // NewInstallPlanBuilder creates new instance of InstallPlanBuilder.
 func NewInstallPlanBuilder(apiClient *clients.Settings, name, nsname string) *InstallPlanBuilder {
 	glog.V(100).Infof("Initializing new %s installplan structure", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(operatorsV1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add operatorsV1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := InstallPlanBuilder{
-		apiClient: apiClient,
-		Definition: &v1alpha1.InstallPlan{
+		apiClient: apiClient.Client,
+		Definition: &operatorsV1alpha1.InstallPlan{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -55,6 +70,81 @@ func NewInstallPlanBuilder(apiClient *clients.Settings, name, nsname string) *In
 	return &builder
 }
 
+// PullInstallPlan loads existing InstallPlan from cluster into the InstallPlanBuilder struct.
+func PullInstallPlan(apiClient *clients.Settings, name, nsName string) (*InstallPlanBuilder, error) {
+	glog.V(100).Infof("Pulling existing InstallPlan %s from cluster in namespace %s", name, nsName)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("installPlan 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(operatorsV1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add operatorsV1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	builder := &InstallPlanBuilder{
+		apiClient: apiClient.Client,
+		Definition: &operatorsV1alpha1.InstallPlan{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: nsName,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("The name of the InstallPlan is empty")
+
+		return nil, fmt.Errorf("installPlan 'name' cannot be empty")
+	}
+
+	if nsName == "" {
+		glog.V(100).Infof("The namespace of the InstallPlan is empty")
+
+		return nil, fmt.Errorf("installPlan 'nsName' cannot be empty")
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf(
+			"installPlan object named %s does not exist in namespace %s", name, nsName)
+	}
+
+	builder.Definition = builder.Object
+
+	return builder, nil
+}
+
+// Get returns InstallPlan object if found.
+func (builder *InstallPlanBuilder) Get() (*operatorsV1alpha1.InstallPlan, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting InstallPlan object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	installPlan := &operatorsV1alpha1.InstallPlan{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		installPlan)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"InstallPlan object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return installPlan, nil
+}
+
 // Create makes an InstallPlanBuilder in cluster and stores the created object in struct.
 func (builder *InstallPlanBuilder) Create() (*InstallPlanBuilder, error) {
 	if valid, err := builder.validate(); !valid {
@@ -66,9 +156,16 @@ func (builder *InstallPlanBuilder) Create() (*InstallPlanBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.InstallPlans(builder.Definition.Namespace).Create(context.TODO(),
-			builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create InstallPlan")
+
+			return nil, err
+		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -83,8 +180,7 @@ func (builder *InstallPlanBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.InstallPlans(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -102,8 +198,7 @@ func (builder *InstallPlanBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.InstallPlans(builder.Definition.Namespace).Delete(context.TODO(),
-		builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return err
@@ -123,9 +218,16 @@ func (builder *InstallPlanBuilder) Update() (*InstallPlanBuilder, error) {
 	glog.V(100).Infof("Updating installPlan %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	builder.Object, err = builder.apiClient.InstallPlans(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if !builder.Exists() {
+		return nil, fmt.Errorf("installPlan named %s in namespace %s does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }

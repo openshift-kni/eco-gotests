@@ -14,6 +14,19 @@ import (
 func ListPlacementrulesInAllNamespaces(apiClient *clients.Settings,
 	options ...runtimeclient.ListOptions) (
 	[]*PlacementRuleBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Info("PlacementRules 'apiClient' parameter cannot be nil")
+
+		return nil, fmt.Errorf("failed to list placementrules, 'apiClient' parameter is nil")
+	}
+
+	err := apiClient.AttachScheme(placementrulev1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PlacementRule scheme to client schemes")
+
+		return nil, err
+	}
+
 	logMessage := string("Listing all placementrules in all namespaces")
 	passedOptions := runtimeclient.ListOptions{}
 
@@ -30,9 +43,8 @@ func ListPlacementrulesInAllNamespaces(apiClient *clients.Settings,
 
 	glog.V(100).Infof(logMessage)
 
-	placementRuleList := &placementrulev1.PlacementRuleList{}
-
-	err := apiClient.Client.List(context.TODO(), placementRuleList, &passedOptions)
+	placementRuleList := new(placementrulev1.PlacementRuleList)
+	err = apiClient.Client.List(context.TODO(), placementRuleList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all placementrules in all namespaces due to %s", err.Error())
@@ -45,7 +57,7 @@ func ListPlacementrulesInAllNamespaces(apiClient *clients.Settings,
 	for _, placementRule := range placementRuleList.Items {
 		copiedPlacementRule := placementRule
 		placementRuleBuilder := &PlacementRuleBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedPlacementRule,
 			Definition: &copiedPlacementRule,
 		}

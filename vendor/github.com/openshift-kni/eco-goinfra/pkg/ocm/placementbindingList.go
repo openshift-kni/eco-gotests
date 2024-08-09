@@ -14,6 +14,19 @@ import (
 func ListPlacementBindingsInAllNamespaces(apiClient *clients.Settings,
 	options ...runtimeclient.ListOptions) (
 	[]*PlacementBindingBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Info("PlacementBindings 'apiClient' parameter cannot be nil")
+
+		return nil, fmt.Errorf("failed to list placementBindings, 'apiClient' parameter is nil")
+	}
+
+	err := apiClient.AttachScheme(policiesv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PlacementBinding scheme to client schemes")
+
+		return nil, err
+	}
+
 	logMessage := string("Listing all placementBindings in all namespaces")
 	passedOptions := runtimeclient.ListOptions{}
 
@@ -30,9 +43,8 @@ func ListPlacementBindingsInAllNamespaces(apiClient *clients.Settings,
 
 	glog.V(100).Infof(logMessage)
 
-	placementBindingList := &policiesv1.PlacementBindingList{}
-
-	err := apiClient.Client.List(context.TODO(), placementBindingList, &passedOptions)
+	placementBindingList := new(policiesv1.PlacementBindingList)
+	err = apiClient.Client.List(context.TODO(), placementBindingList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all placementBindings in all namespaces due to %s", err.Error())
@@ -45,7 +57,7 @@ func ListPlacementBindingsInAllNamespaces(apiClient *clients.Settings,
 	for _, placementBinding := range placementBindingList.Items {
 		copiedplacementBinding := placementBinding
 		placementBinding := &PlacementBindingBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedplacementBinding,
 			Definition: &copiedplacementBinding,
 		}

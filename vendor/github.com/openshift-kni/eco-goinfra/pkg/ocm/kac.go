@@ -31,7 +31,21 @@ func NewKACBuilder(apiClient *clients.Settings, name, nsname string) *KACBuilder
 	glog.V(100).Infof(
 		"Initializing new KlusterletAddonConfig structure with the following params: name: %s, nsname: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the KlusterletAddonConfig is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(kacv1.SchemeBuilder.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add KlusterletAddonConfig scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &KACBuilder{
+		apiClient: apiClient.Client,
 		Definition: &kacv1.KlusterletAddonConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -39,16 +53,6 @@ func NewKACBuilder(apiClient *clients.Settings, name, nsname string) *KACBuilder
 			},
 		},
 	}
-
-	if apiClient == nil {
-		glog.V(100).Info("The apiClient for the KlusterletAddonConfig is nil")
-
-		builder.errorMsg = "klusterletAddonConfig 'apiClient' cannot be nil"
-
-		return builder
-	}
-
-	builder.apiClient = apiClient.Client
 
 	if name == "" {
 		glog.V(100).Info("The name of the KlusterletAddonConfig is empty")
@@ -77,6 +81,13 @@ func PullKAC(apiClient *clients.Settings, name, nsname string) (*KACBuilder, err
 		glog.V(100).Info("The apiClient is empty")
 
 		return nil, fmt.Errorf("klusterletAddonConfig 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(kacv1.SchemeBuilder.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add KlusterletAddonConfig scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := &KACBuilder{
@@ -173,6 +184,8 @@ func (builder *KACBuilder) Update(force bool) (*KACBuilder, error) {
 
 		return nil, fmt.Errorf("cannot update non-existent klusterletAddonConfig")
 	}
+
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 	if err != nil {

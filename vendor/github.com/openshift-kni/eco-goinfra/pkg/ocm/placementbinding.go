@@ -20,7 +20,7 @@ type PlacementBindingBuilder struct {
 	// created placementBinding object.
 	Object *policiesv1.PlacementBinding
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// used to store latest error message upon defining or mutating placementBinding definition.
 	errorMsg string
 }
@@ -36,8 +36,21 @@ func NewPlacementBindingBuilder(
 		"Initializing new placement binding structure with the following params: name: %s, nsname: %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the PlacementBinding is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(policiesv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PlacementBinding scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PlacementBindingBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &policiesv1.PlacementBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -77,8 +90,15 @@ func PullPlacementBinding(apiClient *clients.Settings, name, nsname string) (*Pl
 		return nil, fmt.Errorf("placementBinding's 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(policiesv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PlacementBinding scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := PlacementBindingBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &policiesv1.PlacementBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -196,23 +216,29 @@ func (builder *PlacementBindingBuilder) Update(force bool) (*PlacementBindingBui
 		return builder, err
 	}
 
+	if !builder.Exists() {
+		glog.V(100).Infof(
+			"PlacementBinding %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, fmt.Errorf("cannot update non-existent placementBinding")
+	}
+
 	glog.V(100).Infof("Updating the placementBinding object: %s in namespace: %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				"Failed to update the placementBinding object %s. "+
-					"Note: Force flag set, executed delete/create methods instead", builder.Definition.Name)
+				msg.FailToUpdateNotification("placementBinding", builder.Definition.Name, builder.Definition.Namespace))
 
 			builder, err := builder.Delete()
+			builder.Definition.ResourceVersion = ""
 
 			if err != nil {
-				glog.V(100).Infof(
-					"Failed to update the placementBinding object %s, "+
-						"due to error in delete function", builder.Definition.Name)
+				glog.V(100).Infof(msg.FailToUpdateError("placementBinding", builder.Definition.Name, builder.Definition.Namespace))
 
 				return nil, err
 			}
@@ -221,9 +247,7 @@ func (builder *PlacementBindingBuilder) Update(force bool) (*PlacementBindingBui
 		}
 	}
 
-	if err == nil {
-		builder.Object = builder.Definition
-	}
+	builder.Object = builder.Definition
 
 	return builder, err
 }

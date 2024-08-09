@@ -21,7 +21,7 @@ type PlacementRuleBuilder struct {
 	// created PlacementRule object.
 	Object *placementrulev1.PlacementRule
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// used to store latest error message upon defining or mutating PlacementRule definition.
 	errorMsg string
 }
@@ -32,8 +32,21 @@ func NewPlacementRuleBuilder(apiClient *clients.Settings, name, nsname string) *
 		"Initializing new placement rule structure with the following params: name: %s, nsname: %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the PlacementRule is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(placementrulev1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PlacementRule scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PlacementRuleBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &placementrulev1.PlacementRule{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -67,8 +80,15 @@ func PullPlacementRule(apiClient *clients.Settings, name, nsname string) (*Place
 		return nil, fmt.Errorf("placementrule's 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(placementrulev1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PlacementRule scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := PlacementRuleBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &placementrulev1.PlacementRule{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -170,7 +190,6 @@ func (builder *PlacementRuleBuilder) Delete() (*PlacementRuleBuilder, error) {
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
-
 	if err != nil {
 		return builder, fmt.Errorf("cannot delete placementrule: %w", err)
 	}
@@ -186,23 +205,29 @@ func (builder *PlacementRuleBuilder) Update(force bool) (*PlacementRuleBuilder, 
 		return builder, err
 	}
 
+	if !builder.Exists() {
+		glog.V(100).Infof(
+			"PlacementRule %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, fmt.Errorf("cannot update non-existent placementrule")
+	}
+
 	glog.V(100).Infof("Updating the placementrule object: %s in namespace: %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				"Failed to update the placementrule object %s. "+
-					"Note: Force flag set, executed delete/create methods instead", builder.Definition.Name)
+				msg.FailToUpdateNotification("placementrule", builder.Definition.Name, builder.Definition.Namespace))
 
 			builder, err := builder.Delete()
+			builder.Definition.ResourceVersion = ""
 
 			if err != nil {
-				glog.V(100).Infof(
-					"Failed to update the placementrule object %s, "+
-						"due to error in delete function", builder.Definition.Name)
+				glog.V(100).Infof(msg.FailToUpdateError("placementrule", builder.Definition.Name, builder.Definition.Namespace))
 
 				return nil, err
 			}
@@ -211,9 +236,7 @@ func (builder *PlacementRuleBuilder) Update(force bool) (*PlacementRuleBuilder, 
 		}
 	}
 
-	if err == nil {
-		builder.Object = builder.Definition
-	}
+	builder.Object = builder.Definition
 
 	return builder, err
 }

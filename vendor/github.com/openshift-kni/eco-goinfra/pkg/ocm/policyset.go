@@ -21,7 +21,7 @@ type PolicySetBuilder struct {
 	// created policySet object.
 	Object *policiesv1beta1.PolicySet
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// used to store latest error message upon defining or mutating policySet definition.
 	errorMsg string
 }
@@ -33,8 +33,21 @@ func NewPolicySetBuilder(
 		"Initializing new policy set structure with the following params: name: %s, nsname: %s, policy: %v",
 		name, nsname, policy)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(policiesv1beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PolicySet scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PolicySetBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &policiesv1beta1.PolicySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -72,13 +85,20 @@ func PullPolicySet(apiClient *clients.Settings, name, nsname string) (*PolicySet
 	glog.V(100).Infof("Pulling existing policySet name %s under namespace %s from cluster", name, nsname)
 
 	if apiClient == nil {
-		glog.V(100).Infof("The apiClient is empty")
+		glog.V(100).Infof("The apiClient is nil")
 
-		return nil, fmt.Errorf("policyset's 'apiClient' cannot be empty")
+		return nil, fmt.Errorf("policyset's 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(policiesv1beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add PolicySet scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := PolicySetBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &policiesv1beta1.PolicySet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -196,21 +216,30 @@ func (builder *PolicySetBuilder) Update(force bool) (*PolicySetBuilder, error) {
 		return builder, err
 	}
 
+	if !builder.Exists() {
+		glog.V(100).Infof(
+			"PolicySet %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, fmt.Errorf("cannot update non-existent policySet")
+	}
+
 	glog.V(100).Infof("Updating the policySet object: %s in namespace: %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
 			glog.V(100).Infof(
-				msg.FailToUpdateNotification("policySet", builder.Definition.Name))
+				msg.FailToUpdateNotification("policySet", builder.Definition.Name, builder.Definition.Namespace))
 
 			builder, err := builder.Delete()
+			builder.Definition.ResourceVersion = ""
 
 			if err != nil {
 				glog.V(100).Infof(
-					msg.FailToUpdateError("policySet", builder.Definition.Name))
+					msg.FailToUpdateError("policySet", builder.Definition.Name, builder.Definition.Namespace))
 
 				return nil, err
 			}
@@ -219,9 +248,7 @@ func (builder *PolicySetBuilder) Update(force bool) (*PolicySetBuilder, error) {
 		}
 	}
 
-	if err == nil {
-		builder.Object = builder.Definition
-	}
+	builder.Object = builder.Definition
 
 	return builder, err
 }
