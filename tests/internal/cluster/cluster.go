@@ -188,20 +188,22 @@ func ExecCmdWithRetries(client *clients.Settings, retries uint,
 	glog.V(90).Infof("Executing command '%s' with %d retries and interval %v. Node Selector: %v",
 		command, retries, interval, nodeSelector)
 
-	for retry := range retries {
-		err := ExecCmd(client, nodeSelector, command)
-		if isErrorExecuting(err) {
-			glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry+1, retries, err)
+	retry := 1
 
-			time.Sleep(interval)
+	return wait.PollUntilContextTimeout(
+		context.TODO(), interval, time.Duration(retries-1)*interval, true, func(ctx context.Context) (bool, error) {
+			err := ExecCmd(client, nodeSelector, command)
 
-			continue
-		}
+			if isErrorExecuting(err) {
+				glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry, retries, err)
 
-		return err
-	}
+				retry++
 
-	return fmt.Errorf("ran out of %d retries executing command %s", retries, command)
+				return false, nil
+			}
+
+			return true, nil
+		})
 }
 
 // ExecCmdWithStdoutWithRetries executes a command on the provided client,
@@ -213,20 +215,25 @@ func ExecCmdWithStdoutWithRetries(
 	glog.V(90).Infof("Executing command with stdout '%s' with %d retries and interval %v. Options: %v",
 		command, retries, interval, options)
 
-	for retry := range retries {
-		outputs, err := ExecCmdWithStdout(client, command, options...)
-		if isErrorExecuting(err) {
-			glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry+1, retries, err)
+	var outputs map[string]string
 
-			time.Sleep(interval)
+	retry := 1
 
-			continue
-		}
+	return outputs, wait.PollUntilContextTimeout(
+		context.TODO(), interval, time.Duration(retries-1)*interval, true, func(ctx context.Context) (bool, error) {
+			var err error
 
-		return outputs, err
-	}
+			outputs, err = ExecCmdWithStdout(client, command, options...)
+			if isErrorExecuting(err) {
+				glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry, retries, err)
 
-	return nil, fmt.Errorf("ran out of %d retries executing command %s", retries, command)
+				retry++
+
+				return false, nil
+			}
+
+			return true, nil
+		})
 }
 
 // ExecCommandOnSNOWithRetries executes a command on the provided single node client,
@@ -262,7 +269,7 @@ func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeou
 	}
 
 	err = pod.WaitForAllPodsInNamespacesHealthy(client, namespaces, timeout,
-		true, false, true, []string{GeneralConfig.LoggingNamespace})
+		true, false, true, []string{GeneralConfig.LoggingOperatorNamespace})
 	if err != nil {
 		return err
 	}
