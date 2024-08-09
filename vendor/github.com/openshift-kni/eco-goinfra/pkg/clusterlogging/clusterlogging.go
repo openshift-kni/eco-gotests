@@ -35,6 +35,19 @@ func NewBuilder(
 	glog.V(100).Infof("Initializing new clusterLogging structure with the following params: name: %s, namespace: %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("clusterLogging 'apiClient' cannot be empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(clov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add clov1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &clov1.ClusterLogging{
@@ -69,6 +82,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("clusterLogging 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(clov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add clov1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := Builder{

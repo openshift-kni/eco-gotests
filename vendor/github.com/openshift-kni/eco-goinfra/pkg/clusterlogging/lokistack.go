@@ -41,6 +41,13 @@ func NewLokiStackBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(lokiv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lokv1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &LokiStackBuilder{
 		apiClient: apiClient.Client,
 		Definition: &lokiv1.LokiStack{
@@ -75,6 +82,13 @@ func PullLokiStack(apiClient *clients.Settings, name, nsname string) (*LokiStack
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("lokiStack 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(lokiv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lokv1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := LokiStackBuilder{

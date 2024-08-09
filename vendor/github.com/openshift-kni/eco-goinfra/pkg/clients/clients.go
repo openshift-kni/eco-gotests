@@ -12,21 +12,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
-	lokiv1 "github.com/grafana/loki/operator/apis/loki/v1"
-	kedav1alpha1 "github.com/kedacore/keda-olm-operator/apis/keda/v1alpha1"
-	kedav2v1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
-	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
-	clov1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	tunedv1 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/tuned/v1"
-	eskv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	monv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 
 	oauthv1 "github.com/openshift/api/oauth/v1"
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	v1security "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
-	ptpV1 "github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1"
 
 	apiExt "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -125,7 +118,6 @@ type Settings struct {
 	clientSrIovV1.SriovnetworkV1Interface
 	Config *rest.Config
 	runtimeClient.Client
-	ptpV1.PtpV1Interface
 	v1security.SecurityV1Interface
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
@@ -183,7 +175,6 @@ func New(kubeconfig string) *Settings {
 	clientSet.ClientSrIov = clientSrIov.NewForConfigOrDie(config)
 	clientSet.SriovnetworkV1Interface = clientSrIovV1.NewForConfigOrDie(config)
 	clientSet.NetworkingV1Interface = networkV1Client.NewForConfigOrDie(config)
-	clientSet.PtpV1Interface = ptpV1.NewForConfigOrDie(config)
 	clientSet.RbacV1Interface = rbacV1Client.NewForConfigOrDie(config)
 	clientSet.K8sCniCncfIoV1Interface = clientNetAttDefV1.NewForConfigOrDie(config)
 	clientSet.Interface = dynamic.NewForConfigOrDie(config)
@@ -247,10 +238,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := clov1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
 	if err := lcav1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -272,10 +259,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := oauthv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := bmhv1alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -347,14 +330,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := eskv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := lokiv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
 	if err := istiov1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -368,14 +343,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := tunedv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := kedav1alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := kedav2v1alpha1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -496,8 +463,6 @@ func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClie
 		case *appsv1.DaemonSet:
 			k8sClientObjects = append(k8sClientObjects, v)
 		// Generic Client Objects
-		case *bmhv1alpha1.BareMetalHost:
-			genericClientObjects = append(genericClientObjects, v)
 		case *operatorv1.KubeAPIServer:
 			genericClientObjects = append(genericClientObjects, v)
 		case *operatorv1.OpenShiftAPIServer:
@@ -532,25 +497,11 @@ func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClie
 			genericClientObjects = append(genericClientObjects, v)
 		case *istiov2.ServiceMeshControlPlane:
 			genericClientObjects = append(genericClientObjects, v)
-		case *clov1.ClusterLogging:
-			genericClientObjects = append(genericClientObjects, v)
-		case *clov1.ClusterLogForwarder:
-			genericClientObjects = append(genericClientObjects, v)
-		case *eskv1.Elasticsearch:
-			genericClientObjects = append(genericClientObjects, v)
-		case *lokiv1.LokiStack:
-			genericClientObjects = append(genericClientObjects, v)
 		case *hiveextV1Beta1.AgentClusterInstall:
 			genericClientObjects = append(genericClientObjects, v)
 		case *performanceV2.PerformanceProfile:
 			genericClientObjects = append(genericClientObjects, v)
 		case *tunedv1.Tuned:
-			genericClientObjects = append(genericClientObjects, v)
-		case *kedav1alpha1.KedaController:
-			genericClientObjects = append(genericClientObjects, v)
-		case *kedav2v1alpha1.TriggerAuthentication:
-			genericClientObjects = append(genericClientObjects, v)
-		case *kedav2v1alpha1.ScaledObject:
 			genericClientObjects = append(genericClientObjects, v)
 		case *noobaav1alpha1.ObjectBucketClaim:
 			genericClientObjects = append(genericClientObjects, v)
