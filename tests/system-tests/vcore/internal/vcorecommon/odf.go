@@ -212,13 +212,6 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		vcoreparams.ODFLocalVolumeSetName,
 		vcoreparams.LSONamespace)
 
-	if localVolumeSetObj.Exists() {
-		err = localVolumeSetObj.Delete()
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("failed to delete localvolumeset %s from namespace %s; %v",
-				vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace, err))
-	}
-
 	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
 		MatchExpressions: []corev1.NodeSelectorRequirement{{
 			Key:      "kubernetes.io/hostname",
@@ -239,15 +232,17 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		Effect:   "NoSchedule",
 	}}
 
-	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
+	localVolumeSetObj, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
 		WithStorageClassName(vcoreparams.ODFStorageClassName).
 		WithVolumeMode(lsov1.PersistentVolumeBlock).
 		WithFSType("ext4").
-		WithMaxDeviceCount(int32(42)).
+		WithMaxDeviceCount(int32(10)).
 		WithDeviceInclusionSpec(deviceInclusionSpec).
 		WithTolerations(tolerations).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
 		"due to %v", vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace, err))
+
+	_, _ = localVolumeSetObj.Create()
 
 	pvLabel := fmt.Sprintf("storage.openshift.com/owner-name=%s", vcoreparams.ODFLocalVolumeSetName)
 
