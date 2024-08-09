@@ -4,23 +4,39 @@ import (
 	"context"
 	"fmt"
 
+	operatorv1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/package-server/operators/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListPackageManifest returns PackageManifest inventory in the given namespace.
 func ListPackageManifest(
 	apiClient *clients.Settings,
 	nsname string,
-	options ...metav1.ListOptions) ([]*PackageManifestBuilder, error) {
+	options ...client.ListOptions) ([]*PackageManifestBuilder, error) {
 	if nsname == "" {
 		glog.V(100).Infof("packagemanifest 'nsname' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list packagemanifests, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metav1.ListOptions{}
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("failed to list packageManifest, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(operatorv1.AddToScheme)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to add packageManifest scheme to client schemes")
+
+		return nil, err
+	}
+
+	passedOptions := client.ListOptions{}
 	logMessage := fmt.Sprintf("Listing PackageManifests in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -36,8 +52,8 @@ func ListPackageManifest(
 
 	glog.V(100).Infof(logMessage)
 
-	pkgManifestList, err := apiClient.PackageManifestInterface.PackageManifests(nsname).List(context.TODO(),
-		passedOptions)
+	pkgManifestList := new(operatorv1.PackageManifestList)
+	err = apiClient.List(context.TODO(), pkgManifestList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list PackageManifests in the namespace %s due to %s",
@@ -51,7 +67,7 @@ func ListPackageManifest(
 	for _, runningPkgManifest := range pkgManifestList.Items {
 		copiedPkgManifest := runningPkgManifest
 		pkgManifestBuilder := &PackageManifestBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedPkgManifest,
 			Definition: &copiedPkgManifest,
 		}

@@ -27,11 +27,6 @@ import (
 	v1security "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	ptpV1 "github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1"
-	olmv1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1"
-	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
-
-	pkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
-	clientPkgManifestV1 "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/versioned/typed/operators/v1"
 
 	apiExt "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -132,13 +127,10 @@ type Settings struct {
 	runtimeClient.Client
 	ptpV1.PtpV1Interface
 	v1security.SecurityV1Interface
-	olm.OperatorsV1alpha1Interface
 	clientNetAttDefV1.K8sCniCncfIoV1Interface
 	dynamic.Interface
-	olmv1.OperatorsV1Interface
 	MultiNetworkPolicyClient multinetpolicyclientv1.K8sCniCncfIoV1beta1Interface
 	multinetpolicyclientv1.K8sCniCncfIoV1beta1Interface
-	PackageManifestInterface clientPkgManifestV1.OperatorsV1Interface
 	operatorv1alpha1.OperatorV1alpha1Interface
 	grafanaV4V1Alpha1.Grafana
 	LocalVolumeInterface lsov1alpha1.LocalVolumeSet
@@ -193,11 +185,8 @@ func New(kubeconfig string) *Settings {
 	clientSet.NetworkingV1Interface = networkV1Client.NewForConfigOrDie(config)
 	clientSet.PtpV1Interface = ptpV1.NewForConfigOrDie(config)
 	clientSet.RbacV1Interface = rbacV1Client.NewForConfigOrDie(config)
-	clientSet.OperatorsV1alpha1Interface = olm.NewForConfigOrDie(config)
 	clientSet.K8sCniCncfIoV1Interface = clientNetAttDefV1.NewForConfigOrDie(config)
 	clientSet.Interface = dynamic.NewForConfigOrDie(config)
-	clientSet.OperatorsV1Interface = olmv1.NewForConfigOrDie(config)
-	clientSet.PackageManifestInterface = clientPkgManifestV1.NewForConfigOrDie(config)
 	clientSet.SecurityV1Interface = v1security.NewForConfigOrDie(config)
 	clientSet.OperatorV1alpha1Interface = operatorv1alpha1.NewForConfigOrDie(config)
 	clientSet.MachineV1beta1Interface = machinev1beta1client.NewForConfigOrDie(config)
@@ -323,10 +312,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := grafanaV4V1Alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := pkgManifestV1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -673,7 +658,6 @@ func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClie
 			return nil, nil
 		}
 	}
-
 	// Add fake runtime client to clientSet runtime client
 	clientBuilder := fakeRuntimeClient.NewClientBuilder().WithScheme(clientSet.scheme).
 		WithRuntimeObjects(genericClientObjects...)
