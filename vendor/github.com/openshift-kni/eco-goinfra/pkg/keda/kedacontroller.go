@@ -38,6 +38,13 @@ func NewControllerBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(kedav1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add kedav1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &ControllerBuilder{
 		apiClient: apiClient.Client,
 		Definition: &kedav1alpha1.KedaController{
@@ -75,6 +82,13 @@ func PullController(apiClient *clients.Settings, name, nsname string) (*Controll
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("kedaController 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(kedav1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add kedav1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := ControllerBuilder{

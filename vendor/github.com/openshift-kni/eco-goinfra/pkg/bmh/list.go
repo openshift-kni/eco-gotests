@@ -131,8 +131,15 @@ func WaitForAllBareMetalHostsInGoodOperationalState(apiClient *clients.Settings,
 
 // list lists the BareMetalHosts according to the provided options.
 func list(apiClient *clients.Settings, options goclient.ListOptions) ([]*BmhBuilder, error) {
+	err := apiClient.AttachScheme(bmhv1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add bmhv1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	var bmhList bmhv1alpha1.BareMetalHostList
-	err := apiClient.List(context.TODO(), &bmhList, &options)
+	err = apiClient.List(context.TODO(), &bmhList, &options)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list bareMetalHosts due to %s", err.Error())
