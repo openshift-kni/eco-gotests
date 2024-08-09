@@ -371,7 +371,7 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			By("Define and create sriov-network for the promiscuous client")
 			_, err = sriov.NewNetworkBuilder(APIClient,
 				srIovNetworkPromiscuous, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName,
-				srIovPolicyResNameNetDevice).WithTrustFlag(true).Create()
+				srIovPolicyResNameNetDevice).WithTrustFlag(true).WithLogLevel(netparam.LogLevelDebug).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create sriov network srIovNetworkPromiscuous")
 
 			By("Define and create sriov-network with 802.1q S-VLAN")
@@ -698,7 +698,7 @@ func defineAndCreateSrIovNetworkWithQinQ(srIovNetwork, resName, vlanProtocol str
 
 	srIovNetworkObject, err := sriov.NewNetworkBuilder(
 		APIClient, srIovNetwork, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, resName).
-		WithVlanProto(vlanProtocol).WithVLAN(uint16(vlan)).Create()
+		WithVlanProto(vlanProtocol).WithVLAN(uint16(vlan)).WithLogLevel(netparam.LogLevelDebug).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create sriov network %s", err))
 
 	Eventually(func() bool {
@@ -711,7 +711,8 @@ func defineAndCreateSrIovNetworkWithQinQ(srIovNetwork, resName, vlanProtocol str
 
 func defineAndCreateSrIovNetworkClientDPDK(srIovNetworkName, resName string) {
 	srIovNetworkObject, err := sriov.NewNetworkBuilder(
-		APIClient, srIovNetworkName, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, resName).Create()
+		APIClient, srIovNetworkName, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, resName).
+		WithLogLevel(netparam.LogLevelDebug).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create dpdk sriov-network")
 
 	Eventually(func() bool {
@@ -1064,7 +1065,7 @@ func defineAndCreateSriovNetworks(sriovNetworkPromiscName, sriovNetworkDot1ADNam
 
 	_, err := sriov.NewNetworkBuilder(APIClient,
 		sriovNetworkPromiscName, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName,
-		sriovResName).WithTrustFlag(true).Create()
+		sriovResName).WithTrustFlag(true).WithLogLevel(netparam.LogLevelDebug).Create()
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create sriov network srIovNetworkPromiscuous %s", err))
 

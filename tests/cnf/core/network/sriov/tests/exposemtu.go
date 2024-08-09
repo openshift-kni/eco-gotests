@@ -109,12 +109,12 @@ var _ = Describe("SRIOV: Expose MTU:", Ordered, Label(tsparams.LabelExposeMTUTes
 			By("Creating 2 SR-IOV networks")
 			_, err = sriov.NewNetworkBuilder(APIClient, sriovAndResourceName5000, NetConfig.SriovOperatorNamespace,
 				tsparams.TestNamespaceName, sriovAndResourceName5000).WithStaticIpam().WithMacAddressSupport().
-				WithIPAddressSupport().Create()
+				WithIPAddressSupport().WithLogLevel(netparam.LogLevelDebug).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network for the policy with 5000 MTU")
 
 			_, err = sriov.NewNetworkBuilder(APIClient, sriovAndResourceName9000, NetConfig.SriovOperatorNamespace,
 				tsparams.TestNamespaceName, sriovAndResourceName9000).WithStaticIpam().WithMacAddressSupport().
-				WithIPAddressSupport().Create()
+				WithIPAddressSupport().WithLogLevel(netparam.LogLevelDebug).Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network for the policy with 9000 MTU")
 
 			By("Creating 2 pods with different VFs")
@@ -171,7 +171,7 @@ func testExposeMTU(mtu int, interfacesUnderTest []string, devType, workerName st
 
 	_, err = sriov.NewNetworkBuilder(APIClient, sriovAndResourceNameExposeMTU, NetConfig.SriovOperatorNamespace,
 		tsparams.TestNamespaceName, sriovAndResourceNameExposeMTU).WithStaticIpam().WithMacAddressSupport().
-		WithIPAddressSupport().Create()
+		WithIPAddressSupport().WithLogLevel(netparam.LogLevelDebug).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
 
 	By("Creating test pod")

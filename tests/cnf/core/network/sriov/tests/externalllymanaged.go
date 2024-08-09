@@ -385,7 +385,8 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				_, err = sriov.NewNetworkBuilder(
 					APIClient, sriovAndResourceNameExManagedTrue, NetConfig.SriovOperatorNamespace,
 					tsparams.TestNamespaceName, sriovAndResourceNameExManagedTrue).
-					WithStaticIpam().WithMacAddressSupport().WithIPAddressSupport().WithVLAN(uint16(testVlan)).Create()
+					WithStaticIpam().WithMacAddressSupport().WithIPAddressSupport().WithVLAN(uint16(testVlan)).
+					WithLogLevel(netparam.LogLevelDebug).Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
 
 				By("Creating test pods and checking connectivity between test pods")
@@ -410,7 +411,8 @@ func createSriovConfiguration(sriovAndResName, sriovInterfaceName string, extern
 	By("Creating SR-IOV network")
 
 	_, err = sriov.NewNetworkBuilder(APIClient, sriovAndResName, NetConfig.SriovOperatorNamespace,
-		tsparams.TestNamespaceName, sriovAndResName).WithStaticIpam().WithMacAddressSupport().WithIPAddressSupport().Create()
+		tsparams.TestNamespaceName, sriovAndResName).WithStaticIpam().WithMacAddressSupport().WithIPAddressSupport().
+		WithLogLevel(netparam.LogLevelDebug).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
 }
 

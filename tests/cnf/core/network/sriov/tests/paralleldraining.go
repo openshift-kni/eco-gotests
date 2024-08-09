@@ -248,7 +248,7 @@ func createSriovConfigurationParallelDrain(sriovInterfaceName string) {
 
 	_, err = sriov.NewNetworkBuilder(APIClient, sriovAndResourceNameParallelDrain, NetConfig.SriovOperatorNamespace,
 		tsparams.TestNamespaceName, sriovAndResourceNameParallelDrain).WithStaticIpam().WithMacAddressSupport().
-		WithIPAddressSupport().Create()
+		WithIPAddressSupport().WithLogLevel(netparam.LogLevelDebug).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
 }
 
