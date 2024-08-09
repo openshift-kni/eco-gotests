@@ -8,7 +8,6 @@ import (
 
 	"context"
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -179,20 +178,6 @@ func ExecCmdWithStdout(
 	}
 
 	return outputMap, nil
-}
-
-// ExecLocalCommand runs the provided command with the provided args locally, cancelling execution if it exceeds
-// timeout.
-func ExecLocalCommand(timeout time.Duration, command string, args ...string) (string, error) {
-	glog.V(90).Infof("Locally executing command '%s' with args '%v'", command, args)
-
-	ctx, cancel := context.WithTimeout(context.TODO(), timeout)
-
-	defer cancel()
-
-	output, err := exec.CommandContext(ctx, command, args...).Output()
-
-	return string(output), err
 }
 
 // ExecCmdWithRetries executes a command on the provided client on each node matching nodeSelector,
