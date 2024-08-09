@@ -31,6 +31,19 @@ func NewElasticsearchBuilder(
 	glog.V(100).Infof("Initializing new elasticsearch structure with the following params: name: %s, namespace: %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("elasticsearch 'apiClient' cannot be empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(eskv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add eskv1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &ElasticsearchBuilder{
 		apiClient: apiClient.Client,
 		Definition: &eskv1.Elasticsearch{
@@ -65,6 +78,13 @@ func PullElasticsearch(apiClient *clients.Settings, name, nsname string) (*Elast
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("elasticsearch 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(eskv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add eskv1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := ElasticsearchBuilder{

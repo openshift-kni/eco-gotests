@@ -21,7 +21,7 @@ type ClusterLogForwarderBuilder struct {
 	// Created clusterlogforwarder object.
 	Object *clov1.ClusterLogForwarder
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	// errorMsg is processed before clusterlogforwarder object is created.
 	errorMsg string
 }
@@ -32,8 +32,21 @@ func NewClusterLogForwarderBuilder(
 	glog.V(100).Infof("Initializing new clusterlogforwarder structure with the following params: "+
 		"name: %s, namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("clusterLogForwarder 'apiClient' cannot be empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(clov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add clov1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &ClusterLogForwarderBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &clov1.ClusterLogForwarder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -123,8 +136,15 @@ func PullClusterLogForwarder(apiClient *clients.Settings, name, nsname string) (
 		return nil, fmt.Errorf("clusterlogforwarder 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(clov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add clov1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := ClusterLogForwarderBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &clov1.ClusterLogForwarder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,

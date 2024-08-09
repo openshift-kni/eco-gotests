@@ -562,7 +562,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240809150049-0634a7a9fb27
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240809175523-08d2ee10447b
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -888,11 +888,6 @@ github.com/openshift/machine-config-operator/pkg/generated/informers/externalver
 github.com/openshift/machine-config-operator/pkg/generated/informers/externalversions/machineconfiguration.openshift.io/v1
 github.com/openshift/machine-config-operator/pkg/generated/listers/machineconfiguration.openshift.io/v1
 github.com/openshift/machine-config-operator/pkg/version
-# github.com/openshift/ptp-operator v0.0.0-20240404165119-29a3d7b3d60b
-## explicit; go 1.20
-github.com/openshift/ptp-operator/api/v1
-github.com/openshift/ptp-operator/pkg/client/clientset/versioned/scheme
-github.com/openshift/ptp-operator/pkg/client/clientset/versioned/typed/ptp/v1
 # github.com/operator-framework/api v0.23.0
 ## explicit; go 1.21
 github.com/operator-framework/api/pkg/lib/version

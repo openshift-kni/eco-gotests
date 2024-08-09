@@ -17,7 +17,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240809150049-0634a7a9fb27 // latest
+	github.com/openshift-kni/eco-goinfra v0.0.0-20240809175523-08d2ee10447b // latest
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/cluster-nfd-operator v0.0.0-20240604082319-19bf50784aa7
@@ -180,7 +180,6 @@ require (
 	github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f07cdbf8af2c
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
 	github.com/openshift/library-go v0.0.0-20240419113445-f1541d628746 // indirect
-	github.com/openshift/ptp-operator v0.0.0-20240404165119-29a3d7b3d60b // indirect
 	github.com/otiai10/copy v1.14.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect

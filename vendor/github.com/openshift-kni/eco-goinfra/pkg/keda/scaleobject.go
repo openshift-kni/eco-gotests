@@ -40,6 +40,13 @@ func NewScaledObjectBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(kedav2v1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add kedav2v1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &ScaledObjectBuilder{
 		apiClient: apiClient.Client,
 		Definition: &kedav2v1alpha1.ScaledObject{
@@ -78,6 +85,13 @@ func PullScaledObject(apiClient *clients.Settings, name, nsname string) (*Scaled
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("scaledObject 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(kedav2v1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add kedav2v1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := ScaledObjectBuilder{

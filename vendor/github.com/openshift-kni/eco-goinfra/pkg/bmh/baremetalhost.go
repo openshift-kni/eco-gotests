@@ -34,6 +34,19 @@ type AdditionalOptions func(builder *BmhBuilder) (*BmhBuilder, error)
 // NewBuilder creates a new instance of BmhBuilder.
 func NewBuilder(
 	apiClient *clients.Settings, name, nsname, bmcAddress, bmcSecretName, bootMacAddress, bootMode string) *BmhBuilder {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(bmhv1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add bmhv1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := BmhBuilder{
 		apiClient: apiClient.Client,
 		Definition: &bmhv1alpha1.BareMetalHost{
@@ -365,6 +378,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*BmhBuilder, error)
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("baremetalhost 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(bmhv1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add bmhv1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := BmhBuilder{

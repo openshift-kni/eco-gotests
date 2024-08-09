@@ -396,6 +396,71 @@ func (builder *CguBuilder) WaitUntilComplete(timeout time.Duration) (*CguBuilder
 	return builder.WaitForCondition(conditionComplete, timeout)
 }
 
+// WaitUntilClusterInState waits the specified timeout for a cluster in the CGU to be in the specified state.
+func (builder *CguBuilder) WaitUntilClusterInState(cluster, state string, timeout time.Duration) (*CguBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	if cluster == "" {
+		glog.V(100).Info("Cluster name cannot be empty")
+
+		return nil, fmt.Errorf("cluster name cannot be empty")
+	}
+
+	if state == "" {
+		glog.V(100).Info("State cannot be empty")
+
+		return nil, fmt.Errorf("state cannot be empty")
+	}
+
+	glog.V(100).Infof(
+		"Waiting until cluster %s on CGU %s in namespace %s is in state %s",
+		cluster, builder.Definition.Name, builder.Definition.Namespace, state)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf(
+			"cgu object %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	var err error
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
+				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			if err != nil {
+				return false, nil
+			}
+
+			status, ok := builder.Object.Status.Status.CurrentBatchRemediationProgress[cluster]
+			if !ok {
+				glog.V(100).Infof(
+					"cluster %s not found in batch remediation progress for cgu %s in namespace %s",
+					cluster, builder.Definition.Name, builder.Definition.Namespace)
+
+				return false, nil
+			}
+
+			return status.State == state, nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return builder, nil
+}
+
+// WaitUntilClusterComplete waits the specified timeout for a cluster in the CGU to complete remidation.
+func (builder *CguBuilder) WaitUntilClusterComplete(cluster string, timeout time.Duration) (*CguBuilder, error) {
+	return builder.WaitUntilClusterInState(cluster, v1alpha1.Completed, timeout)
+}
+
+// WaitUntilClusterInProgress waits the specified timeout for a cluster in the CGU to start remidation.
+func (builder *CguBuilder) WaitUntilClusterInProgress(cluster string, timeout time.Duration) (*CguBuilder, error) {
+	return builder.WaitUntilClusterInState(cluster, v1alpha1.InProgress, timeout)
+}
+
 // WaitUntilBackupStarts waits the specified timeout for the backup to start.
 func (builder *CguBuilder) WaitUntilBackupStarts(timeout time.Duration) (*CguBuilder, error) {
 	if valid, err := builder.validate(); !valid {
