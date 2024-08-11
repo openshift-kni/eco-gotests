@@ -190,6 +190,53 @@ for e.g. on `192.168.12.22 1111` on 1st workload and `192.168.12.33 1111` on 2nd
 |rdscore_macvlan_deploy_4_target | IPv4 address and port configured on 1st workload | `192.168.12.12 1111` |
 |rdscore_macvlan_deploy_4_target_ipv6 | IPv6 address configured on 1st workload | |
 
+### _VerifyIpVlanOnDifferentNodes_
+
+Verifies connectivity between test workloads that use same IPVLAN definition and are scheduled on different nodes.
+
+Test expects `nc` process to listen on IP address(es) on IPVLAN interfaces on both workloads,
+for e.g. on `192.168.12.22 1111` on 1st workload and `192.168.12.33 1111` on 2nd workload.
+
+**Requires 2 nodes where the same IPVLAN network is configured**
+
+| paremater                           | description                                      | example                             |
+|-------------------------------------|--------------------------------------------------|-------------------------------------|
+| rdscore_ipvlan_ns_one               | Namespace for the test workload                  | `my-mc-1`                           |
+| rdscore_ipvlan_cm_data_one          | Content of configMap that is mounted within pods |                                     |
+| rdscore_ipvlan_deploy_img_one       | Image used by the test workload                  | `quay.io/myorg/my-mc-app:1.1`       |
+| rdscore_ipvlan_deploy_1_cmd         | Command executed by 1st container                | `["/bin/sh", "-c", "/myapp --run"]` |
+| rdscore_ipvlan_deploy_2_cmd         | Command executed by 2nd container                | `["/bin/sh", "-c", "/myapp --run"]` |
+| rdscore_ipvlan_nad_one_name         | Name of the IpVlan network                       | `ip-vlan`                           |
+| rdscore_ipvlan_1_node_selector      | Node selector for the 1st workload               | `kubernetes.io/hostname: worker-X`  |
+| rdscore_ipvlan_2_node_selector      | Node selector for the 1st workload               | `kubernetes.io/hostname: worker-Y`  |
+| rdscore_ipvlan_deploy_1_target      | IPv4 address and port configured on 2nd workload | `192.168.12.22 1111`                |
+| rdscore_ipvlan_deploy_1_target_ipv6 | IPv6 address configured on 2nd workload          |                                     |
+| rdscore_ipvlan_deploy_2_target      | IPv4 address and port configured on 1st workload | `192.168.12.12 1111`                |
+| rdscore_ipvlan_deploy_2_target_ipv6 | IPv6 address configured on 1st workload          |                                     |
+
+### _VerifyIpVlanOnSameNode_
+
+Verifies connectivity between test workloads that use same IPVLAN definition and are scheduled on the same node.
+
+Test expects `nc` process to listen on IP address(es) on IPVLAN interfaces on both workloads,
+for e.g. on `192.168.12.22 1111` on 1st workload and `192.168.12.33 1111` on 2nd workload.
+
+**Requires 1 node where IPVLAN network is configured**
+
+| paremater                           | description                                      | example                             |
+|-------------------------------------|--------------------------------------------------|-------------------------------------|
+| rdscore_ipvlan_ns_one               | Namespace for the test workload                  | `my-mc-1`                           |
+| rdscore_ipvlan_cm_data_one          | Content of configMap that is mounted within pods |                                     |
+| rdscore_ipvlan_deploy_img_one       | Image used by test workloads                     | `quay.io/myorg/my-mc-app:1.1`       |
+| rdscore_ipvlan_deploy_3_cmd         | Command executed by 1st container                | `["/bin/sh", "-c", "/myapp --run"]` |
+| rdscore_ipvlan_deploy_4_cmd         | Command executed by 2nd container                | `["/bin/sh", "-c", "/myapp --run"]` |
+| rdscore_ipvlan_nad_one_name         | Name of the IpVlan network                       | `ip-vlan`                           |
+| rdscore_ipvlan_1_node_selector      | Node selector for the 1st workload               | `kubernetes.io/hostname: worker-X`  |
+| rdscore_ipvlan_deploy_3_target      | IPv4 address and port configured on 2nd workload | `192.168.12.22 1111`                |
+| rdscore_ipvlan_deploy_3_target_ipv6 | IPv6 address configured on 2nd workload          |                                     |
+| rdscore_ipvlan_deploy_4_target      | IPv4 address and port configured on 1st workload | `192.168.12.12 1111`                |
+| rdscore_ipvlan_deploy_4_target_ipv6 | IPv6 address configured on 1st workload          |                                     |
+
 ### _VerifyNMStateNamespaceExists_
 
 Verifies namespace for _NMState_ operator exists

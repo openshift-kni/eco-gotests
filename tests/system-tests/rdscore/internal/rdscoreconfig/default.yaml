@@ -72,7 +72,6 @@ rdscore_mcvlan_1_node_selector: {}
 rdscore_mcvlan_2_node_selector: {}
 rdscore_macvlan_deploy_1_target: ""
 rdscore_macvlan_deploy_1_target_ipv6: ""
-
 rdscore_macvlan_deploy_2_target: ""
 rdscore_macvlan_deploy_2_target_ipv6: ""
 rdscore_mcvlan_deploy_3_cmd: []
@@ -81,6 +80,24 @@ rdscore_macvlan_deploy_3_target: ""
 rdscore_macvlan_deploy_3_target_ipv6: ""
 rdscore_macvlan_deploy_4_target: ""
 rdscore_macvlan_deploy_4_target_ipv6: ""
+rdscore_ipvlan_ns_one: rds-ipvlan-wlkd
+rdscore_ipvlan_cm_data_one: {}
+rdscore_ipvlan_deploy_img_one: ""
+rdscore_ipvlan_deploy_1_cmd: []
+rdscore_ipvlan_deploy_2_cmd: []
+rdscore_ipvlan_nad_one_name: "ip-vlan"
+rdscore_ipvlan_1_node_selector: {}
+rdscore_ipvlan_2_node_selector: {}
+rdscore_ipcvlan_deploy_1_target: ""
+rdscore_ipvlan_deploy_1_target_ipv6: ""
+rdscore_ipvlan_deploy_2_target: ""
+rdscore_ipvlan_deploy_2_target_ipv6: ""
+rdscore_ipvlan_deploy_3_cmd: []
+rdscore_ipvlan_deploy_4_cmd: []
+rdscore_ipvlan_deploy_3_target: ""
+rdscore_ipvlan_deploy_3_target_ipv6: ""
+rdscore_ipvlan_deploy_4_target: ""
+rdscore_ipvlan_deploy_4_target_ipv6: ""
 rdscore_policy_ns: ""
 rdscore_wlkd_nrop_one_ns: rds-nrop-wlkd
 rdscore_wlkd_nrop_one_image: ""

@@ -53,11 +53,20 @@ var _ = Describe(
 			It("Verifies all policies are compliant", reportxml.ID("72354"), Label("validate-policies"),
 				rdscorecommon.ValidateAllPoliciesCompliant)
 
-			It("Verify MACVLAN", Label("macvlan", "validate-new-macvlan-different-nodes"), reportxml.ID("72566"),
+			It("Verify MACVLAN workload on different nodes", Label("macvlan",
+				"validate-new-macvlan-different-nodes"), reportxml.ID("72566"),
 				rdscorecommon.VerifyMacVlanOnDifferentNodes)
 
-			It("Verify MACVLAN", Label("macvlan", "validate-new-macvlan-same-node"), reportxml.ID("72567"),
+			It("Verify MACVLAN workloads on the same node", Label("macvlan",
+				"validate-new-macvlan-same-node"), reportxml.ID("72567"),
 				rdscorecommon.VerifyMacVlanOnSameNode)
+
+			It("Verify IPVLAN workload on different nodes", Label("ipvlan",
+				"validate-new-ipvlan-different-nodes"), reportxml.ID("75057"),
+				rdscorecommon.VerifyIPVlanOnDifferentNodes)
+
+			It("Verify IPVLAN workloads on the same node", Label("ipvlan", "validate-new-ipvlan-same-node"),
+				reportxml.ID("75562"), rdscorecommon.VerifyIPVlanOnSameNode)
 
 			It("Verifices SR-IOV workloads on the same node",
 				Label("sriov", "sriov-same-node"), reportxml.ID("71949"), MustPassRepeatedly(3),
@@ -76,7 +85,7 @@ var _ = Describe(
 				rdscorecommon.VerifyNMStateInstanceExists)
 
 			It("Verifies all NodeNetworkConfigurationPolicies are Available",
-				Label("nmstate", "nmstate-nncp"), reportxml.ID("71846"),
+				Label("nmstate", "validate-policies"), reportxml.ID("71846"),
 				rdscorecommon.VerifyAllNNCPsAreOK)
 
 			It("Verifies CephFS",
@@ -107,6 +116,12 @@ var _ = Describe(
 
 				By("Creating MACVLAN workloads on different nodes")
 				rdscorecommon.VerifyMacVlanOnDifferentNodes()
+
+				By("Creating IPVLAN workloads on the same node")
+				rdscorecommon.VerifyIPVlanOnSameNode()
+
+				By("Creating IPVLAN workloads on different nodes")
+				rdscorecommon.VerifyIPVlanOnDifferentNodes()
 
 				By("Creating NUMA aware workload")
 				rdscorecommon.VerifyNROPWorkload(ctx)
@@ -195,11 +210,11 @@ var _ = Describe(
 				rdscorecommon.WaitAllStatefulsetsReady)
 
 			It("Verifies all NodeNetworkConfigurationPolicies are Available after ungraceful reboot",
-				Label("nmstate", "nmstate-nncp"), reportxml.ID("71848"),
+				Label("nmstate", "validate-policies"), reportxml.ID("71848"),
 				rdscorecommon.VerifyAllNNCPsAreOK)
 
-			It("Verifies all policies are compliant after hard reboot", reportxml.ID("72355"), Label("validate-policies"),
-				rdscorecommon.ValidateAllPoliciesCompliant)
+			It("Verifies all policies are compliant after hard reboot", reportxml.ID("72355"),
+				Label("validate-policies"), rdscorecommon.ValidateAllPoliciesCompliant)
 
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
@@ -243,7 +258,15 @@ var _ = Describe(
 
 			It("Verifies MACVLAN workloads on different nodes post hard reboot",
 				Label("macvlan", "verify-macvlan-different-nodes"), reportxml.ID("72568"),
-				rdscorecommon.VerifyMACVLANConnectivityOnSameNode)
+				rdscorecommon.VerifyMACVLANConnectivityBetweenDifferentNodes)
+
+			It("Verifies IPVLAN workloads on the same node post hard reboot",
+				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75565"),
+				rdscorecommon.VerifyIPVLANConnectivityOnSameNode)
+
+			It("Verifies IPVLAN workloads on different nodes post hard reboot",
+				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75059"),
+				rdscorecommon.VerifyIPVLANConnectivityBetweenDifferentNodes)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -265,6 +288,12 @@ var _ = Describe(
 
 				By("Creating MACVLAN workloads on different nodes")
 				rdscorecommon.VerifyMacVlanOnDifferentNodes()
+
+				By("Creating IPVLAN workloads on the same node")
+				rdscorecommon.VerifyIPVlanOnSameNode()
+
+				By("Creating IPVLAN workloads on different nodes")
+				rdscorecommon.VerifyIPVlanOnDifferentNodes()
 
 				By("Creating NUMA aware workload")
 				rdscorecommon.VerifyNROPWorkload(ctx)
@@ -303,11 +332,11 @@ var _ = Describe(
 				rdscorecommon.WaitAllStatefulsetsReady)
 
 			It("Verifies all NodeNetworkConfigurationPolicies are Available after soft reboot",
-				Label("nmstate", "nmstate-nncp"), reportxml.ID("71849"),
+				Label("nmstate", "validate-policies"), reportxml.ID("71849"),
 				rdscorecommon.VerifyAllNNCPsAreOK)
 
-			It("Verifies all policies are compliant after soft reboot", reportxml.ID("72357"), Label("validate-policies"),
-				rdscorecommon.ValidateAllPoliciesCompliant)
+			It("Verifies all policies are compliant after soft reboot", reportxml.ID("72357"),
+				Label("validate-policies"), rdscorecommon.ValidateAllPoliciesCompliant)
 
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),
@@ -359,6 +388,14 @@ var _ = Describe(
 
 			It("Verifies MACVLAN workloads on different nodes post soft reboot",
 				Label("macvlan", "verify-macvlan-different-nodes"), reportxml.ID("72570"),
-				rdscorecommon.VerifyMACVLANConnectivityOnSameNode)
+				rdscorecommon.VerifyMACVLANConnectivityBetweenDifferentNodes)
+
+			It("Verifies IPVLAN workloads on the same node post soft reboot",
+				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75564"),
+				rdscorecommon.VerifyIPVLANConnectivityOnSameNode)
+
+			It("Verifies IPVLAN workloads on different nodes post soft reboot",
+				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75058"),
+				rdscorecommon.VerifyIPVLANConnectivityBetweenDifferentNodes)
 		})
 	})
