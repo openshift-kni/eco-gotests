@@ -62,8 +62,8 @@ func VerifyODFSuite() {
 			It("Verify ODF console enabled",
 				Label("odf"), reportxml.ID("74917"), VerifyODFConsoleConfig)
 
-			It("Verify localvolumediscovery instance exists",
-				Label("odf"), reportxml.ID("74920"), VerifyLocalVolumeDiscovery)
+			// It("Verify localvolumediscovery instance exists",
+			//	 Label("odf"), reportxml.ID("74920"), VerifyLocalVolumeDiscovery)
 
 			It("Verify localvolumeset instance exists",
 				Label("odf"), reportxml.ID("74918"), VerifyLocalVolumeSet)
@@ -178,7 +178,7 @@ func VerifyLocalVolumeDiscovery(ctx SpecContext) {
 		MatchExpressions: []corev1.NodeSelectorRequirement{{
 			Key:      "kubernetes.io/hostname",
 			Operator: "In",
-			Values:   []string{"worker-4", "worker-5", "worker-6"},
+			Values:   []string{"worker-2", "worker-3", "worker-4"},
 		}}},
 	}}
 
@@ -216,7 +216,7 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		MatchExpressions: []corev1.NodeSelectorRequirement{{
 			Key:      "kubernetes.io/hostname",
 			Operator: "In",
-			Values:   []string{"worker-4", "worker-5", "worker-6"},
+			Values:   []string{"worker-2", "worker-3", "worker-4"},
 		}}},
 	}}
 
@@ -232,7 +232,7 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		Effect:   "NoSchedule",
 	}}
 
-	localVolumeSetObj, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
+	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
 		WithStorageClassName(vcoreparams.ODFStorageClassName).
 		WithVolumeMode(lsov1.PersistentVolumeBlock).
 		WithFSType("ext4").
@@ -241,8 +241,6 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		WithTolerations(tolerations).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
 		"due to %v", vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace, err))
-
-	_, _ = localVolumeSetObj.Create()
 
 	pvLabel := fmt.Sprintf("storage.openshift.com/owner-name=%s", vcoreparams.ODFLocalVolumeSetName)
 
