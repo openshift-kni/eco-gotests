@@ -149,6 +149,12 @@ const (
 	// CLOInstanceName is a clusterlogging instance name.
 	CLOInstanceName = "instance"
 
+	// RedisStorageClassName is a redis storage class name.
+	RedisStorageClassName = "standard"
+
+	// RedisLocalVolumeSetName is a redis localVolumeSetName name.
+	RedisLocalVolumeSetName = "redis-deviceset"
+
 	// DTPONamespace is a distributed tracing platform operator namespace.
 	DTPONamespace = "openshift-distributed-tracing"
 
