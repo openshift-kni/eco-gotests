@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
-	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"golang.org/x/exp/slices"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -26,7 +27,7 @@ type PolicyBuilder struct {
 	// object is created.
 	errorMsg string
 	// apiClient opens api connection to the cluster.
-	apiClient clientSrIov.Interface
+	apiClient runtimeClient.Client
 }
 
 // PolicyAdditionalOptions additional options for SriovNetworkNodePolicy object.
@@ -41,8 +42,21 @@ func NewPolicyBuilder(
 	vfsNumber int,
 	nicNames []string,
 	nodeSelector map[string]string) *PolicyBuilder {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriovv1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PolicyBuilder{
-		apiClient: apiClient.ClientSrIov,
+		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetworkNodePolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -231,8 +245,15 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 		return nil, fmt.Errorf("sriovnetworknodepolicy 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriovv1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := PolicyBuilder{
-		apiClient: apiClient.ClientSrIov,
+		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetworkNodePolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -262,6 +283,32 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 	return &builder, nil
 }
 
+// Get returns CatalogSource object if found.
+func (builder *PolicyBuilder) Get() (*srIovV1.SriovNetworkNodePolicy, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting SriovNetworkNodePolicy object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	nodePolicy := &srIovV1.SriovNetworkNodePolicy{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		nodePolicy)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"SriovNetworkNodePolicy object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return nodePolicy, nil
+}
+
 // Create generates an SriovNetworkNodePolicy in the cluster and stores the created object in struct.
 func (builder *PolicyBuilder) Create() (*PolicyBuilder, error) {
 	if valid, err := builder.validate(); !valid {
@@ -269,15 +316,14 @@ func (builder *PolicyBuilder) Create() (*PolicyBuilder, error) {
 	}
 
 	if !builder.Exists() {
-		var err error
-		builder.Object, err = builder.apiClient.SriovnetworkV1().
-			SriovNetworkNodePolicies(builder.Definition.Namespace).
-			Create(context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, nil
 }
@@ -292,8 +338,7 @@ func (builder *PolicyBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.SriovnetworkV1().SriovNetworkNodePolicies(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return err
@@ -310,9 +355,10 @@ func (builder *PolicyBuilder) Exists() bool {
 		return false
 	}
 
+	glog.V(100).Infof("Checking if SriovNetworkNodePolicy %s exists", builder.Definition.Name)
+
 	var err error
-	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworkNodePolicies(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

@@ -5,16 +5,24 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // List returns sriov networks in the given namespace.
-func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*NetworkBuilder, error) {
+func List(apiClient *clients.Settings, nsname string, options ...client.ListOptions) ([]*NetworkBuilder, error) {
 	if apiClient == nil {
 		glog.V(100).Infof("sriov network 'apiClient' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list sriov networks, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add oplmV1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	if nsname == "" {
@@ -23,7 +31,7 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 		return nil, fmt.Errorf("failed to list sriov networks, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metav1.ListOptions{}
+	passedOptions := client.ListOptions{}
 	logMessage := fmt.Sprintf("Listing sriov networks in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -39,8 +47,8 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 
 	glog.V(100).Infof(logMessage)
 
-	networkList, err := apiClient.ClientSrIov.SriovnetworkV1().
-		SriovNetworks(nsname).List(context.TODO(), passedOptions)
+	networkList := new(srIovV1.SriovNetworkList)
+	err = apiClient.List(context.TODO(), networkList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list sriov networks in the namespace %s due to %s", nsname, err.Error())
@@ -53,7 +61,7 @@ func List(apiClient *clients.Settings, nsname string, options ...metav1.ListOpti
 	for _, runningNetwork := range networkList.Items {
 		copiedNetwork := runningNetwork
 		networkBuilder := &NetworkBuilder{
-			apiClient:  apiClient.ClientSrIov,
+			apiClient:  apiClient.Client,
 			Object:     &copiedNetwork,
 			Definition: &copiedNetwork,
 		}
@@ -69,7 +77,7 @@ func CleanAllNetworksByTargetNamespace(
 	apiClient *clients.Settings,
 	operatornsname string,
 	targetnsname string,
-	options ...metav1.ListOptions) error {
+	options ...client.ListOptions) error {
 	glog.V(100).Infof("Cleaning up sriov networks in the %s namespace with %s NetworkNamespace spec",
 		operatornsname, targetnsname)
 

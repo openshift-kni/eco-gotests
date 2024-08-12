@@ -32,6 +32,19 @@ func NewControlPlaneBuilder(apiClient *clients.Settings, name, nsname string) *C
 	glog.V(100).Infof("Initializing new ControlPlaneBuilder structure with the following "+
 		"params: name: %s, namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(istiov2.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add istiov2 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &ControlPlaneBuilder{
 		apiClient: apiClient.Client,
 		Definition: &istiov2.ServiceMeshControlPlane{
@@ -318,6 +331,13 @@ func PullControlPlane(apiClient *clients.Settings, name, nsname string) (*Contro
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("serviceMeshControlPlane 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(istiov2.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add istiov2 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := ControlPlaneBuilder{
