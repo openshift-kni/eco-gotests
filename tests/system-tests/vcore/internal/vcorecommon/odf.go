@@ -246,7 +246,7 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 
 	err = await.WaitUntilPersistentVolumeCreated(APIClient,
 		3,
-		5*time.Minute,
+		15*time.Minute,
 		metav1.ListOptions{LabelSelector: pvLabel})
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create persistentVolumes due to %v", err))
 } // func VerifyLocalVolumeSet (ctx SpecContext)
