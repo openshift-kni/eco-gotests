@@ -152,9 +152,13 @@ type CoreConfig struct {
 	MCVlanNSTwo          string `yaml:"rdscore_mcvlan_ns_two" envconfig:"ECO_RDSCORE_MCVLAN_NS_TWO"`
 	MCVlanDeployImageOne string `yaml:"rdscore_mcvlan_deploy_img_one" envconfig:"ECO_SYSTEM_RDSCORE_DEPLOY_IMG_ONE"`
 	MCVlanNADOneName     string `yaml:"rdscore_mcvlan_nad_one_name" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_NAD_ONE_NAME"`
+	KDumpCPNodeLabel     string `yaml:"rdscore_kdump_cp_node_label" envconfig:"ECO_RDSCORE_KDUMP_CP_NODE_LABEL"`
+	KDumpCNFMCPNodeLabel string `yaml:"rdscore_kdump_cnf_node_label" envconfig:"ECO_RDSCORE_KDUMP_CNF_NODE_LABEL"`
 	//nolint:lll
-	PerformanceProfileHTName string         `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
-	WlkdTolerationList       TolerationList `yaml:"rdscore_tolerations_list" envconfig:"ECO_RDSCORE_TOLERATIONS_LIST"`
+	PerformanceProfileHTName string `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
+	//nolint:lll
+	KDumpWorkerMCPNodeLabel string         `yaml:"rdscore_kdump_worker_node_label" envconfig:"ECO_RDSCORE_KDUMP_WORKER_NODE_LABEL"`
+	WlkdTolerationList      TolerationList `yaml:"rdscore_tolerations_list" envconfig:"ECO_RDSCORE_TOLERATIONS_LIST"`
 	//nolint:lll
 	WlkdNROPTolerationList TolerationList `yaml:"rdscore_nrop_tolerations_list" envconfig:"ECO_RDSCORE_NROP_TOLERATIONS_LIST"`
 	//nolint:lll,nolintlint
