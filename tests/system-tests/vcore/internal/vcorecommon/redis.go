@@ -78,7 +78,7 @@ func VerifyRedisLocalVolumeSet(ctx SpecContext) {
 	}
 
 	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
-		WithStorageClassName(vcoreparams.RedisStorageClassName).
+		WithStorageClassName(vcoreparams.StorageClassName).
 		WithVolumeMode(lsov1.PersistentVolumeBlock).
 		WithFSType("ext4").
 		WithMaxDeviceCount(int32(10)).
@@ -209,7 +209,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		varsToReplace["ImageRepository"] = imageURL
 		varsToReplace["ImageTag"] = redisImageTag
 		varsToReplace["RedisSecret"] = redisSecretName
-		varsToReplace["StorageClass"] = vcoreparams.RedisStorageClassName
+		varsToReplace["StorageClass"] = vcoreparams.StorageClassName
 		varsToReplace["RunAsUser"] = runAsUser
 		varsToReplace["FsGroup"] = fsGroup
 

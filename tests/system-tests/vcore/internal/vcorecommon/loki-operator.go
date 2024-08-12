@@ -130,11 +130,11 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 		"failed to create persistentVolumeClaims in namespace %s due to %v",
 		vcoreparams.ODFNamespace, err))
 
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify storageClass %s created", vcoreparams.ODFStorageClassName)
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify storageClass %s created", vcoreparams.StorageClassName)
 
-	_, err = storage.PullClass(APIClient, vcoreparams.ODFStorageClassName)
+	_, err = storage.PullClass(APIClient, vcoreparams.StorageClassName)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("storageClass %s not found; %v",
-		vcoreparams.ODFStorageClassName, err))
+		vcoreparams.StorageClassName, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait until configmap %s created", vcoreparams.ObjectBucketClaimName)
 
@@ -264,7 +264,7 @@ func CreateLokiStackInstance(ctx SpecContext) {
 		WithSize(lokiv1.SizeOneXSmall).
 		WithManagementState(lokiv1.ManagementStateManaged).
 		WithStorage(lokiStackStorage).
-		WithStorageClassName(vcoreparams.ODFStorageClassName).
+		WithStorageClassName(vcoreparams.StorageClassName).
 		WithTenants(lokiv1.TenantsSpec{Mode: lokiv1.OpenshiftLogging}).
 		WithTemplate(template).
 		WithLimits(lokiv1.LimitsSpec{

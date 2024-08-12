@@ -41,7 +41,7 @@ var (
 	odfOperatorDeployments = []string{"csi-addons-controller-manager", "noobaa-operator",
 		"ocs-operator", "odf-console", "odf-operator-controller-manager", "rook-ceph-operator"}
 
-	odfStorageClassName = vcoreparams.ODFStorageClassName
+	odfStorageClassName = vcoreparams.StorageClassName
 	volumeMode          = corev1.PersistentVolumeBlock
 )
 
@@ -233,7 +233,7 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 	}}
 
 	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
-		WithStorageClassName(vcoreparams.ODFStorageClassName).
+		WithStorageClassName(vcoreparams.StorageClassName).
 		WithVolumeMode(lsov1.PersistentVolumeBlock).
 		WithFSType("ext4").
 		WithMaxDeviceCount(int32(10)).
