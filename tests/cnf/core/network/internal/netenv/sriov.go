@@ -8,7 +8,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // WaitForSriovAndMCPStable waits until SR-IOV and MCP stable.
@@ -32,7 +31,7 @@ func WaitForSriovAndMCPStable(
 
 // WaitForSriovStable waits until all the SR-IOV node states are in sync.
 func WaitForSriovStable(apiClient *clients.Settings, waitingTime time.Duration, sriovOperatorNamespace string) error {
-	networkNodeStateList, err := sriov.ListNetworkNodeState(apiClient, sriovOperatorNamespace, metav1.ListOptions{})
+	networkNodeStateList, err := sriov.ListNetworkNodeState(apiClient, sriovOperatorNamespace)
 
 	if err != nil {
 		return fmt.Errorf("failed to fetch nodes state %w", err)

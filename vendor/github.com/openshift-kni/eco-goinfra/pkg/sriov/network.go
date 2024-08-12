@@ -6,12 +6,11 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -31,7 +30,7 @@ type NetworkBuilder struct {
 	// object is created.
 	errorMsg string
 	// apiClient opens api connection to the cluster.
-	apiClient clientSrIov.Interface
+	apiClient runtimeClient.Client
 }
 
 // NetworkAdditionalOptions additional options for SriovNetwork object.
@@ -40,8 +39,21 @@ type NetworkAdditionalOptions func(builder *NetworkBuilder) (*NetworkBuilder, er
 // NewNetworkBuilder creates new instance of Builder.
 func NewNetworkBuilder(
 	apiClient *clients.Settings, name, nsname, targetNsname, resName string) *NetworkBuilder {
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriovv1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := NetworkBuilder{
-		apiClient: apiClient.ClientSrIov,
+		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetwork{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -292,8 +304,15 @@ func PullNetwork(apiClient *clients.Settings, name, nsname string) (*NetworkBuil
 		return nil, fmt.Errorf("sriovnetwork 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriovv1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := NetworkBuilder{
-		apiClient: apiClient.ClientSrIov,
+		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetwork{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -323,6 +342,32 @@ func PullNetwork(apiClient *clients.Settings, name, nsname string) (*NetworkBuil
 	return &builder, nil
 }
 
+// Get returns CatalogSource object if found.
+func (builder *NetworkBuilder) Get() (*srIovV1.SriovNetwork, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting SriovNetwork object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	network := &srIovV1.SriovNetwork{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		network)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"SriovNetwork object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return network, nil
+}
+
 // Create generates SrIovNetwork in a cluster and stores the created object in struct.
 func (builder *NetworkBuilder) Create() (*NetworkBuilder, error) {
 	if valid, err := builder.validate(); !valid {
@@ -330,15 +375,16 @@ func (builder *NetworkBuilder) Create() (*NetworkBuilder, error) {
 	}
 
 	if !builder.Exists() {
-		var err error
-		builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{},
-		)
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
+			glog.V(100).Infof("Failed to create SriovNetwork")
+
 			return nil, err
 		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, nil
 }
@@ -350,11 +396,12 @@ func (builder *NetworkBuilder) Delete() error {
 	}
 
 	if !builder.Exists() {
+		glog.V(100).Infof("SriovNetwork cannot be deleted because it does not exist")
+
 		return nil
 	}
 
-	err := builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return err
@@ -394,8 +441,8 @@ func (builder *NetworkBuilder) WaitUntilDeleted(timeout time.Duration) error {
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			_, err := builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).
-				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			_, err := builder.Get()
+
 			if err == nil {
 				glog.V(100).Infof("SrIovNetwork %s/%s still present", builder.Definition.Name, builder.Definition.Namespace)
 
@@ -420,9 +467,12 @@ func (builder *NetworkBuilder) Exists() bool {
 		return false
 	}
 
+	glog.V(100).Infof(
+		"Checking if SriovNetwork %s exists",
+		builder.Definition.Name)
+
 	var err error
-	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -437,26 +487,28 @@ func (builder *NetworkBuilder) Update(force bool) (*NetworkBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
 
-	var err error
-	builder.Object, err = builder.apiClient.SriovnetworkV1().SriovNetworks(builder.Definition.Namespace).
-		Update(context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if !builder.Exists() {
+		return nil, fmt.Errorf("failed to update SriovNetwork, object does not exist on cluster")
+	}
 
-	if err != nil {
-		if force {
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	} else if force {
+		glog.V(100).Infof(
+			msg.FailToUpdateNotification("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
+
+		err = builder.Delete()
+
+		if err != nil {
 			glog.V(100).Infof(
-				msg.FailToUpdateNotification("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
+				msg.FailToUpdateError("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
 
-			err = builder.Delete()
-
-			if err != nil {
-				glog.V(100).Infof(
-					msg.FailToUpdateError("SrIovNetwork", builder.Definition.Name, builder.Definition.Namespace))
-
-				return nil, err
-			}
-
-			return builder.Create()
+			return nil, err
 		}
+
+		return builder.Create()
 	}
 
 	return builder, err

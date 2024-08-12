@@ -654,12 +654,12 @@ var _ = Describe("SRIOV", Ordered, Label("multinetworkpolicy"), ContinueOnFailur
 
 	AfterAll(func() {
 		By("Removing all SR-IOV Policies")
-		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
+		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Fail to clean srIovPolicy")
 
 		By("Removing all srIovNetworks")
 		err = sriov.CleanAllNetworksByTargetNamespace(
-			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Fail to clean sriov networks")
 
 		By("Waiting until cluster MCP and SR-IOV are stable")

@@ -307,12 +307,12 @@ var _ = Describe("allmulti", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	AfterAll(func() {
 		By("Removing all SR-IOV Policy")
-		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
+		err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean srIovPolicy")
 
 		By("Removing all srIovNetworks")
 		err = sriov.CleanAllNetworksByTargetNamespace(
-			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean sriov networks")
 	})
 })

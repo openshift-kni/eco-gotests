@@ -36,6 +36,19 @@ func NewMemberRollBuilder(apiClient *clients.Settings, name, nsname string) *Mem
 	glog.V(100).Infof("Initializing new serviceMeshMemberRollBuilder structure with the following "+
 		"params: name: %s, namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(istiov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add istiov1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &MemberRollBuilder{
 		apiClient: apiClient.Client,
 		Definition: &istiov1.ServiceMeshMemberRoll{
@@ -70,6 +83,13 @@ func PullMemberRoll(apiClient *clients.Settings, name, nsname string) (*MemberRo
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("serviceMeshMemberRoll 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(istiov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add istiov1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := MemberRollBuilder{

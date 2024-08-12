@@ -9,7 +9,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-goinfra/pkg/statefulset"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CleanNameSpace function removes all objects inside the namespace plus sriov networks whose
@@ -33,6 +32,5 @@ func CleanNameSpace(cleanTimeout time.Duration, nsname string) error {
 
 	return sriov.CleanAllNetworksByTargetNamespace(APIClient,
 		SystemTestsTestConfig.SriovOperatorNamespace,
-		nsname,
-		metav1.ListOptions{})
+		nsname)
 }

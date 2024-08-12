@@ -677,12 +677,12 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		setVFPromiscMode(workerNodeList[0].Definition.Name, srIovInterfacesUnderTest[0], sriovDeviceID, "off")
 
 		By("Removing all SR-IOV Policy")
-		err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
+		err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean srIovPolicy")
 
 		By("Removing all srIovNetworks")
 		err = sriov.CleanAllNetworksByTargetNamespace(
-			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
+			APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean sriov networks")
 
 		By("Waiting until cluster MCP and SR-IOV are stable")
@@ -1121,13 +1121,13 @@ func cleanTestEnvSRIOVConfiguration() {
 		tsparams.WaitTimeout, pod.GetGVR())).ToNot(HaveOccurred(), "Failed to the test namespace")
 	By("Removing all SR-IOV Policy")
 
-	err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{})
+	err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean srIovPolicy")
 
 	By("Removing all srIovNetworks")
 
 	err = sriov.CleanAllNetworksByTargetNamespace(
-		APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName, metav1.ListOptions{})
+		APIClient, NetConfig.SriovOperatorNamespace, tsparams.TestNamespaceName)
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean sriov networks")
 
 	By("Waiting until cluster MCP and SR-IOV are stable")

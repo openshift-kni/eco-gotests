@@ -4,17 +4,26 @@ import (
 	"context"
 	"fmt"
 
+	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListPolicy returns SriovNetworkNodePolicies inventory in the given namespace.
-func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*PolicyBuilder, error) {
+func ListPolicy(apiClient *clients.Settings, nsname string, options ...client.ListOptions) ([]*PolicyBuilder, error) {
 	if apiClient == nil {
 		glog.V(100).Infof("SriovNetworkNodePolicies 'apiClient' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list SriovNetworkNodePolicies, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriovv1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	if nsname == "" {
@@ -23,7 +32,7 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.Li
 		return nil, fmt.Errorf("failed to list SriovNetworkNodePolicies, 'nsname' parameter is empty")
 	}
 
-	passedOptions := metav1.ListOptions{}
+	passedOptions := client.ListOptions{}
 	logMessage := fmt.Sprintf("Listing SriovNetworkNodePolicies in the namespace %s", nsname)
 
 	if len(options) > 1 {
@@ -39,8 +48,8 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.Li
 
 	glog.V(100).Infof(logMessage)
 
-	networkNodePoliciesList, err := apiClient.ClientSrIov.SriovnetworkV1().
-		SriovNetworkNodePolicies(nsname).List(context.TODO(), passedOptions)
+	networkNodePoliciesList := new(srIovV1.SriovNetworkNodePolicyList)
+	err = apiClient.List(context.TODO(), networkNodePoliciesList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list SriovNetworkNodePolicies in the namespace %s due to %s",
@@ -54,7 +63,7 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.Li
 	for _, policy := range networkNodePoliciesList.Items {
 		copiedNetworkNodePolicy := policy
 		policyBuilder := &PolicyBuilder{
-			apiClient:  apiClient.ClientSrIov,
+			apiClient:  apiClient.Client,
 			Object:     &copiedNetworkNodePolicy,
 			Definition: &copiedNetworkNodePolicy}
 
@@ -66,7 +75,7 @@ func ListPolicy(apiClient *clients.Settings, nsname string, options ...metav1.Li
 
 // CleanAllNetworkNodePolicies removes all SriovNetworkNodePolicies that are not set as default.
 func CleanAllNetworkNodePolicies(
-	apiClient *clients.Settings, operatornsname string, options ...metav1.ListOptions) error {
+	apiClient *clients.Settings, operatornsname string, options ...client.ListOptions) error {
 	glog.V(100).Infof("Cleaning up SriovNetworkNodePolicies in the %s namespace", operatornsname)
 
 	if operatornsname == "" {
