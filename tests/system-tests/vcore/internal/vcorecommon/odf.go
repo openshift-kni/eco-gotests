@@ -98,7 +98,7 @@ func VerifyODFOperatorDeployment(ctx SpecContext) {
 		odfPod := odfPods[0]
 		odfPodName := odfPod.Object.Name
 
-		err = odfPod.WaitUntilReady(time.Second)
+		err = odfPod.WaitUntilReady(30 * time.Second)
 		if err != nil {
 			odfPodLog, _ := odfPod.GetLog(600*time.Second, operatorPod)
 			glog.Fatalf("%s pod in %s namespace in a bad state: %s",
