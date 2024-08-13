@@ -297,6 +297,22 @@ func SoftRebootSNO(apiClient *clients.Settings, retries uint, interval time.Dura
 	return err
 }
 
+// WaitForClusterUnreachable waits up to timeout for the cluster to become unavailable
+// by attempting to list nodes in the cluster.
+func WaitForClusterUnreachable(client *clients.Settings, timeout time.Duration) error {
+	glog.V(90).Infof("Wait for cluster unreachable with timeout: %v", timeout)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := nodes.List(client, metav1.ListOptions{TimeoutSeconds: ptr.To[int64](3)})
+			if err != nil {
+				return true, nil
+			}
+
+			return false, nil
+		})
+}
+
 // waitForClusterReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
 // cluster.
 func waitForClusterReachable(client *clients.Settings, timeout time.Duration) error {

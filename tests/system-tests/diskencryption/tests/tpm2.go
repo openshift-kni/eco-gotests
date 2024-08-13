@@ -2,9 +2,9 @@ package tests
 
 import (
 	"context"
-	"regexp"
+	"fmt"
 
-	"github.com/golang/glog"
+	"regexp"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -76,10 +76,13 @@ var _ = Describe("TPM2", func() {
 				WithPolling(tsparams.PollingIntervalBMC).ShouldNot(HaveOccurred(),
 				"power cycling node should succeed")
 
-			By("waiting until all spoke 1 pods are ready")
-			err = cluster.WaitForClusterRecover(APIClient, []string{
-				DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
-			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
+			By("waiting cluster recovery")
+			Eventually(cluster.WaitForClusterRecover).WithTimeout(tsparams.TimeoutClusterRecovery).
+				WithPolling(tsparams.RetryInterval).
+				WithArguments(APIClient, []string{
+					DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery).
+				ShouldNot(HaveOccurred(),
+					"the cluster should be up before continuing")
 		}
 
 		// After this point the cluster should be back up.
@@ -106,15 +109,79 @@ var _ = Describe("TPM2", func() {
 		Expect(isTTYConsole).To(BeTrue(), "the TTY options should be configured on the kernel"+
 			" boot line (nomodeset console=tty0 console=ttyS0,115200n8)")
 
-		err = file.DeleteFile("/etc/host-hw-Updating.flag")
-		Expect(err).ToNot(HaveOccurred(), "error deleting /etc/host-hw-Updating.flag file")
+		Eventually(file.DeleteFile).WithArguments("/etc/host-hw-Updating.flag").
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error deleting /etc/host-hw-Updating.flag file")
+
+		By("backing up TPM max failed retries ")
+		Eventually(func() error {
+			tsparams.OriginalTPMMaxRetries, err = helper.GetTPMMaxRetries()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting TPM max retries")
+
+		By(fmt.Sprintf("listing original TPM Max Failed Retries: %d", tsparams.OriginalTPMMaxRetries))
+
+		By("setting max retries in test environment")
+		Eventually(helper.SetTPMMaxRetries).WithArguments(tsparams.TestTPMMaxRetries).
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error setting TPM max retries")
+
+		By("resetting lockout counter in test environment")
+		Eventually(helper.SetTPMLockoutCounterZero).
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error resetting TPM lockout counter to zero")
+
+		By("verifying max retries in test environment")
+		var maxRetriesCheck int64
+		Eventually(func() error {
+			maxRetriesCheck, err = helper.GetTPMMaxRetries()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting TPM max retries")
+
+		By(fmt.Sprintf("verifying TPM Max Failed Retries: %d", maxRetriesCheck))
+
+		By("verifying lockout counter in test environment")
+		var lockoutCounterCheck int64
+		Eventually(func() error {
+			lockoutCounterCheck, err = helper.GetTPMLockoutCounter()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting lockout counter")
+
+		By(fmt.Sprintf("verifying Test lockout counter: %d", lockoutCounterCheck))
+
 	})
 
 	AfterEach(func() {
+		By("waiting for the cluster to become unreachable")
+		err = cluster.WaitForClusterUnreachable(APIClient, tsparams.TimeoutClusterUnreachable)
+		Expect(err).ToNot(HaveOccurred(), "error waiting for cluster to be unreachable")
 
 		By("waiting for cluster recovery after test")
-		err = cluster.WaitForClusterRecover(APIClient, []string{
-			DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
+		Eventually(cluster.WaitForClusterRecover).WithTimeout(tsparams.TimeoutClusterRecovery).
+			WithPolling(tsparams.RetryInterval).
+			WithArguments(APIClient, []string{
+				DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery).
+			ShouldNot(HaveOccurred(),
+				"the cluster should be up before continuing")
+
+		By(fmt.Sprintf("restoring max retries to initial value: %d", tsparams.OriginalTPMMaxRetries))
+		Eventually(helper.SetTPMMaxRetries).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.RetryInterval).
+			WithArguments(tsparams.OriginalTPMMaxRetries).
+			ShouldNot(HaveOccurred(),
+				"setting original TPM max retries should succeed")
 	})
 
 	It("Verifies that disabling Secure Boot prevents"+
@@ -122,10 +189,18 @@ var _ = Describe("TPM2", func() {
 
 		By("checking that Root disk is encrypted with tpm2 with PCR 1 and 7")
 		var luksListOutput string
-		luksListOutput, err = helper.GetClevisLuksListOutput()
-		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
+
+		Eventually(func() error {
+			luksListOutput, err = helper.GetClevisLuksListOutput()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting of clevis luks list command")
+
 		isRootDiskTPM2PCR1AND7 := helper.LuksListContainsPCR1And7(luksListOutput)
 		Expect(err).ToNot(HaveOccurred(), "error when checking if the root disk is configured with TPM 1 and 7")
+
 		if !isRootDiskTPM2PCR1AND7 {
 			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
 		}
@@ -146,11 +221,15 @@ var _ = Describe("TPM2", func() {
 		}
 
 		By("checking that the reserved slot is not present")
-		var isRootDiskReservedSlotPresent bool
-		luksListOutput, err = helper.GetClevisLuksListOutput()
-		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
-		isRootDiskReservedSlotPresent = helper.LuksListContainsReservedSlot(luksListOutput)
-		Expect(err).ToNot(HaveOccurred(), "error checking if the output of clevis luks list contains a reserved slot")
+		Eventually(func() error {
+			luksListOutput, err = helper.GetClevisLuksListOutput()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting of clevis luks list command")
+
+		isRootDiskReservedSlotPresent := helper.LuksListContainsReservedSlot(luksListOutput)
 		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
 		By("disabling Secure Boot")
@@ -159,8 +238,10 @@ var _ = Describe("TPM2", func() {
 			"disabling Secure Boot should not return an error")
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
-		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
+		Eventually(cluster.SoftRebootSNO).WithArguments(APIClient, tsparams.RetryCount, tsparams.RetryInterval).
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error rebooting node")
 
 		By("waiting for Disk decryption Failure log to appear")
 		matches := []stdinmatcher.Matcher{
@@ -197,8 +278,14 @@ var _ = Describe("TPM2", func() {
 
 		By("checking that Root disk is encrypted with tpm2 with PCR 1 and 7")
 		var luksListOutput string
-		luksListOutput, err = helper.GetClevisLuksListOutput()
-		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
+		Eventually(func() error {
+			luksListOutput, err = helper.GetClevisLuksListOutput()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting of clevis luks list command")
+
 		isRootDiskTPM2PCR1AND7 := helper.LuksListContainsPCR1And7(luksListOutput)
 		if !isRootDiskTPM2PCR1AND7 {
 			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
@@ -219,17 +306,23 @@ var _ = Describe("TPM2", func() {
 			Skip("Secure boot is not enabled test cannot proceed")
 		}
 
-		By("Checks that the reserved slot is not present")
-		var isRootDiskReservedSlotPresent bool
-		luksListOutput, err = helper.GetClevisLuksListOutput()
-		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
-		isRootDiskReservedSlotPresent = helper.LuksListContainsReservedSlot(luksListOutput)
-		Expect(err).ToNot(HaveOccurred(), "error checking if the output of clevis luks list contains a reserved slot")
+		By("checking that the reserved slot is not present")
+		Eventually(func() error {
+			luksListOutput, err = helper.GetClevisLuksListOutput()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting of clevis luks list command")
+
+		isRootDiskReservedSlotPresent := helper.LuksListContainsReservedSlot(luksListOutput)
 		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
-		By("touch upgrade indication file")
-		err = file.TouchFile("/etc/host-hw-Updating.flag")
-		Expect(err).ToNot(HaveOccurred(), "the /etc/host-hw-Updating.flag file should be created without error")
+		By("touching upgrade indication file")
+		Eventually(file.TouchFile).WithArguments("/etc/host-hw-Updating.flag").
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"the /etc/host-hw-Updating.flag file should be created without error")
 
 		By("disabling Secure Boot")
 		Eventually(BMCClient.SecureBootDisable).WithTimeout(tsparams.TimeoutWaitingOnBMC).
@@ -237,8 +330,10 @@ var _ = Describe("TPM2", func() {
 			"SecureBootDisable should not return an error")
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
-		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
+		Eventually(cluster.SoftRebootSNO).WithArguments(APIClient, tsparams.RetryCount, tsparams.RetryInterval).
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error rebooting node")
 
 		By("waiting for pcr-rebind-boot log to appear (disk decryption succeeded)")
 
@@ -272,16 +367,24 @@ var _ = Describe("TPM2", func() {
 				"enabling Secure Boot should succeed, even if it is already enabled ")
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
-		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
+		Eventually(cluster.SoftRebootSNO).WithArguments(APIClient, tsparams.RetryCount, tsparams.RetryInterval).
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error rebooting node")
 	})
 
 	It("Verifies that changing Host boot order prevents Disk decryption (TPM PCR 1)", func() {
 
 		By("checking that Root disk is encrypted with tpm2 with PCR 1 and 7")
 		var luksListOutput string
-		luksListOutput, err = helper.GetClevisLuksListOutput()
-		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
+		Eventually(func() error {
+			luksListOutput, err = helper.GetClevisLuksListOutput()
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting of clevis luks list command")
+
 		isRootDiskTPM2PCR1AND7 := helper.LuksListContainsPCR1And7(luksListOutput)
 		if !isRootDiskTPM2PCR1AND7 {
 			Skip("Root disk is not encrypted with PCR 1 and 7, skip TPM1 tests")
@@ -303,20 +406,25 @@ var _ = Describe("TPM2", func() {
 		}
 
 		By("checking that the reserved slot is not present")
-		var isRootDiskReservedSlotPresent bool
-		luksListOutput, err = helper.GetClevisLuksListOutput()
-		Expect(err).ToNot(HaveOccurred(), "error getting of clevis luks list command")
+		Eventually(func() error {
+			luksListOutput, err = helper.GetClevisLuksListOutput()
 
-		isRootDiskReservedSlotPresent = helper.LuksListContainsReservedSlot(luksListOutput)
-		Expect(err).ToNot(HaveOccurred(), "error checking if the output of clevis luks list contains a reserved slot")
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error getting of clevis luks list command")
+
+		isRootDiskReservedSlotPresent := helper.LuksListContainsReservedSlot(luksListOutput)
 		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
 		By("changing the server boot order")
 		swapFirstSecondBootItems()
 
 		By("restarting node gracefully")
-		err = cluster.SoftRebootSNO(APIClient, tsparams.RetryCount, tsparams.RetryInterval)
-		Expect(err).ToNot(HaveOccurred(), "error rebooting node")
+		Eventually(cluster.SoftRebootSNO).WithArguments(APIClient, tsparams.RetryCount, tsparams.RetryInterval).
+			WithTimeout(tsparams.TimeoutWaitingOnK8S).
+			WithPolling(tsparams.PollingIntervalK8S).ShouldNot(HaveOccurred(),
+			"error rebooting node")
 
 		By("waiting for TPM Failed log to appear (disk decryption failed)")
 		matches := []stdinmatcher.Matcher{
@@ -349,8 +457,6 @@ var _ = Describe("TPM2", func() {
 })
 
 func swapFirstSecondBootItems() {
-	By("changing the server boot order back to defaults")
-
 	var bootRefs []string
 
 	var err error
@@ -358,17 +464,21 @@ func swapFirstSecondBootItems() {
 	Eventually(func() error {
 		bootRefs, err = BMCClient.SystemBootOrderReferences()
 
+		if len(bootRefs) < 2 {
+			return fmt.Errorf("need at least 2 boot entries")
+		}
+
 		return err
 	}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
 		WithPolling(tsparams.PollingIntervalBMC).
 		ShouldNot(HaveOccurred(), "getting boot order should not return an error")
 
-	glog.V(tsparams.LogLevel).Infof("Current boot Order: %s\n", bootRefs)
+	By(fmt.Sprintf("listing current boot Order: %s", bootRefs))
 	// Creates a boot override swapping first and second boot references
 	var bootOverride []string
 	bootOverride, err = helper.SwapFirstAndSecondSliceItems(bootRefs)
 	Expect(err).ToNot(HaveOccurred(), "SwapFirstAndSecondSliceItems should not fail")
-	glog.V(tsparams.LogLevel).Infof("New boot Order: %s\n", bootOverride)
+	By(fmt.Sprintf("setting new boot Order: %s", bootOverride))
 	Eventually(BMCClient.SetSystemBootOrderReferences).WithTimeout(tsparams.TimeoutWaitingOnBMC).
 		WithPolling(tsparams.PollingIntervalBMC).WithArguments(bootOverride).ShouldNot(HaveOccurred(),
 		"changing boot order should not return an error")

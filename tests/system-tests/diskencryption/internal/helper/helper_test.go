@@ -342,3 +342,114 @@ func TestSwapFirstAndSecondSliceItems(t *testing.T) {
 		})
 	}
 }
+
+const TPMPropertiesTestData = `TPM2_PT_PERMANENT:
+  ownerAuthSet:              0
+  endorsementAuthSet:        0
+  lockoutAuthSet:            0
+  reserved1:                 0
+  disableClear:              0
+  inLockout:                 0
+  tpmGeneratedEPS:           1
+  reserved2:                 0
+TPM2_PT_STARTUP_CLEAR:
+  phEnable:                  1
+  shEnable:                  1
+  ehEnable:                  1
+  phEnableNV:                1
+  reserved1:                 0
+  orderly:                   1
+TPM2_PT_HR_NV_INDEX: 0x9
+TPM2_PT_HR_LOADED: 0x0
+TPM2_PT_HR_LOADED_AVAIL: 0x5
+TPM2_PT_HR_ACTIVE: 0x0
+TPM2_PT_HR_ACTIVE_AVAIL: 0x40
+TPM2_PT_HR_TRANSIENT_AVAIL: 0x5
+TPM2_PT_HR_PERSISTENT: 0x0
+TPM2_PT_HR_PERSISTENT_AVAIL: 0xD
+TPM2_PT_NV_COUNTERS: 0x0
+TPM2_PT_NV_COUNTERS_AVAIL: 0xC
+TPM2_PT_ALGORITHM_SET: 0xFFFFFFFF
+TPM2_PT_LOADED_CURVES: 0x3
+TPM2_PT_LOCKOUT_COUNTER: 0x7
+TPM2_PT_MAX_AUTH_FAIL: 0x3E8
+TPM2_PT_LOCKOUT_INTERVAL: 0x1C20
+TPM2_PT_LOCKOUT_RECOVERY: 0x15180
+TPM2_PT_NV_WRITE_RECOVERY: 0x0
+TPM2_PT_AUDIT_COUNTER_0: 0x0
+TPM2_PT_AUDIT_COUNTER_1: 0x0
+`
+
+func TestGetTPMMaxRetries(t *testing.T) {
+	type args struct {
+		tpmProperties string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{
+			name: "ok",
+			args: args{
+				tpmProperties: TPMPropertiesTestData,
+			},
+			want:    1000,
+			wantErr: false,
+		},
+	}
+
+	for _, testcase := range tests {
+		t.Run(testcase.name, func(t *testing.T) {
+			got, err := parseTPMMaxRetries(testcase.args.tpmProperties)
+			if (err != nil) != testcase.wantErr {
+				t.Errorf("GetTPMMaxRetries() error = %s, wantErr %v", err, testcase.wantErr)
+
+				return
+			}
+
+			if got != testcase.want {
+				t.Errorf("GetTPMMaxRetries() = %v, want %v", got, testcase.want)
+			}
+		})
+	}
+}
+
+func TestGetTPMLockoutCounter(t *testing.T) {
+	type args struct {
+		tpmProperties string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		{
+			name: "ok",
+			args: args{
+				tpmProperties: TPMPropertiesTestData,
+			},
+			want:    7,
+			wantErr: false,
+		},
+	}
+
+	for _, testcase := range tests {
+		t.Run(testcase.name, func(t *testing.T) {
+			got, err := parseTPMLockoutCounter(testcase.args.tpmProperties)
+			if (err != nil) != testcase.wantErr {
+				t.Errorf("GetTPMMaxRetries() error = %s, wantErr %v", err, testcase.wantErr)
+
+				return
+			}
+
+			if got != testcase.want {
+				t.Errorf("GetTPMMaxRetries() = %v, want %v", got, testcase.want)
+			}
+		})
+	}
+}

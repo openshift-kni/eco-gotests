@@ -3,6 +3,7 @@ package helper
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
@@ -185,6 +186,52 @@ func SwapFirstAndSecondSliceItems(slice []string) ([]string, error) {
 	return newSlice, nil
 }
 
+// SetTPMLockoutCounterZero sets the TPM lockout counter to zero.
+func SetTPMLockoutCounterZero() error {
+	cmdToExec := "tpm2_dictionarylockout --setup-parameters --clear-lockout"
+
+	_, err := cluster.ExecCommandOnSNOWithRetries(APIClient, tsparams.RetryCount,
+		tsparams.RetryInterval,
+		cmdToExec)
+	if err != nil {
+		return fmt.Errorf("error resetting lockout counter to zero, err=%w", err)
+	}
+
+	return nil
+}
+
+// SetTPMMaxRetries sets TPM max failed retries as an int64 decimal number.
+// This function also resets the lockout counter to zero.
+func SetTPMMaxRetries(maxRetries int64) error {
+	cmdToExec := "tpm2_dictionarylockout --setup-parameters --max-tries=%d"
+
+	_, err := cluster.ExecCommandOnSNOWithRetries(APIClient, tsparams.RetryCount,
+		tsparams.RetryInterval,
+		fmt.Sprintf(cmdToExec, maxRetries))
+
+	return err
+}
+
+// GetTPMMaxRetries Gets TPM max failed retries as an int64 decimal number.
+func GetTPMMaxRetries() (int64, error) {
+	output, err := getTPMProperties()
+	if err != nil {
+		return 0, fmt.Errorf("error getting TPM properties, err=%w", err)
+	}
+
+	return parseTPMMaxRetries(output)
+}
+
+// GetTPMLockoutCounter Gets TPM max failed retries as an int64 decimal number.
+func GetTPMLockoutCounter() (int64, error) {
+	output, err := getTPMProperties()
+	if err != nil {
+		return 0, fmt.Errorf("error getting TPM properties, err=%w", err)
+	}
+
+	return parseTPMLockoutCounter(output)
+}
+
 // getAllDriveListOutput returns the output of the lsblk -o NAME,FSTYPE -l command.
 func getAllDriveListOutput() (string, error) {
 	cmdToExec := "lsblk -o NAME,FSTYPE -l"
@@ -200,4 +247,47 @@ func getLSBLKMounts(diskName string) (string, error) {
 	return cluster.ExecCommandOnSNOWithRetries(APIClient, tsparams.RetryCount,
 		tsparams.RetryInterval,
 		cmdToExec)
+}
+
+// GetTPMProperties runs the tpm2_getcap properties-variable and returns a string.
+func getTPMProperties() (string, error) {
+	cmdToExec := "tpm2_getcap properties-variable"
+
+	return cluster.ExecCommandOnSNOWithRetries(APIClient, tsparams.RetryCount,
+		tsparams.RetryInterval,
+		cmdToExec)
+}
+
+// parseTPMMaxRetries Gets the Dictionary protection parameter TPM2_PT_MAX_AUTH_FAIL.
+func parseTPMMaxRetries(tpmProperties string) (int64, error) {
+	const regex = `TPM2_PT_MAX_AUTH_FAIL:\s*(.*)`
+
+	// Compile the regular expression
+	re := regexp.MustCompile(regex)
+
+	// Find all matches
+	matches := re.FindAllStringSubmatch(tpmProperties, -1)
+
+	if len(matches) < 1 {
+		return 0, fmt.Errorf("could not retrieve TPM2_PT_MAX_AUTH_FAIL from output")
+	}
+
+	return strconv.ParseInt(matches[0][1], 0, 64)
+}
+
+// parseTPMMaxRetries Gets the Dictionary protection parameter TPM2_PT_MAX_AUTH_FAIL.
+func parseTPMLockoutCounter(tpmProperties string) (int64, error) {
+	const regex = `TPM2_PT_LOCKOUT_COUNTER:\s*(.*)`
+
+	// Compile the regular expression
+	re := regexp.MustCompile(regex)
+
+	// Find all matches
+	matches := re.FindAllStringSubmatch(tpmProperties, -1)
+
+	if len(matches) < 1 {
+		return 0, fmt.Errorf("could not retrieve TPM2_PT_LOCKOUT_COUNTER from output")
+	}
+
+	return strconv.ParseInt(matches[0][1], 0, 64)
 }
