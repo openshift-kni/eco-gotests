@@ -25,6 +25,18 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verifies KDump service on Control Plane node",
+				Label("kdump", "kdump-cp"), reportxml.ID("75620"),
+				rdscorecommon.VerifyKDumpOnControlPlane)
+
+			It("Verifies KDump service on Worker node",
+				Label("kdump", "kdump-worker"), reportxml.ID("75621"),
+				rdscorecommon.VerifyKDumpOnWorkerMCP)
+
+			It("Verifies KDump service on CNF node",
+				Label("kdump", "kdump-cnf"), reportxml.ID("75622"),
+				rdscorecommon.VerifyKDumpOnCNFMCP)
+
 			It("Verifies SR-IOV workloads on same node and different networks",
 				Label("sriov", "sriov-same-node-different-nets"),
 				reportxml.ID("72258"), MustPassRepeatedly(3),
