@@ -104,8 +104,8 @@ const (
 	// ODFNamespace is an odf namespace.
 	ODFNamespace = "openshift-storage"
 
-	// ODFStorageClassName is an ODF storage class name.
-	ODFStorageClassName = "ocs-storagecluster-ceph-rbd"
+	// StorageClassName is an ODF storage class name.
+	StorageClassName = "ocs-storagecluster-ceph-rbd"
 
 	// StorageClusterName is a storageCluster name.
 	StorageClusterName = "ocs-storagecluster"
@@ -148,9 +148,6 @@ const (
 
 	// CLOInstanceName is a clusterlogging instance name.
 	CLOInstanceName = "instance"
-
-	// RedisStorageClassName is a redis storage class name.
-	RedisStorageClassName = "standard"
 
 	// RedisLocalVolumeSetName is a redis localVolumeSetName name.
 	RedisLocalVolumeSetName = "redis-deviceset"
