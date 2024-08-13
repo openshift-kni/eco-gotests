@@ -82,6 +82,13 @@ func PullImageBasedUpgrade(apiClient *clients.Settings) (*ImageBasedUpgradeBuild
 		return nil, fmt.Errorf("the apiClient is nil")
 	}
 
+	err := apiClient.AttachScheme(lcav1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lsa v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := ImageBasedUpgradeBuilder{
 		apiClient: apiClient.Client,
 		Definition: &lcav1.ImageBasedUpgrade{

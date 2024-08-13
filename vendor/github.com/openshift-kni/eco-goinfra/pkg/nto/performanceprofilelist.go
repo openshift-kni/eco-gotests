@@ -15,6 +15,19 @@ func ListProfiles(apiClient *clients.Settings, options ...goclient.ListOptions) 
 	passedOptions := goclient.ListOptions{}
 	logMessage := "Listing PerformanceProfiles on cluster"
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(v2.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add node-tuning-operator v2 scheme to client schemes")
+
+		return nil, err
+	}
+
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")
 
@@ -29,7 +42,7 @@ func ListProfiles(apiClient *clients.Settings, options ...goclient.ListOptions) 
 	glog.V(100).Infof(logMessage)
 
 	var performanceProfiles v2.PerformanceProfileList
-	err := apiClient.List(context.TODO(), &performanceProfiles, &passedOptions)
+	err = apiClient.List(context.TODO(), &performanceProfiles, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list PerformanceProfiles due to %s", err.Error())
@@ -42,7 +55,7 @@ func ListProfiles(apiClient *clients.Settings, options ...goclient.ListOptions) 
 	for _, perfProfile := range performanceProfiles.Items {
 		copiedPerfProfile := perfProfile
 		perfProfileBuilder := &Builder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedPerfProfile,
 			Definition: &copiedPerfProfile,
 		}

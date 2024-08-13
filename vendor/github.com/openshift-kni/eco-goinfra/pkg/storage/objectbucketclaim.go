@@ -38,6 +38,13 @@ func NewObjectBucketClaimBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(noobaav1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add objectbucket.io/v1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &ObjectBucketClaimBuilder{
 		apiClient: apiClient.Client,
 		Definition: &noobaav1alpha1.ObjectBucketClaim{
@@ -72,6 +79,13 @@ func PullObjectBucketClaim(apiClient *clients.Settings, name, nsname string) (*O
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("objectBucketClaim 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(noobaav1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add objectbucket.io/v1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := ObjectBucketClaimBuilder{

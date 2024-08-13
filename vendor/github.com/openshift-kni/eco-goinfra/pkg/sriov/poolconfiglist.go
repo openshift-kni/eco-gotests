@@ -14,13 +14,26 @@ import (
 func ListPoolConfigs(apiClient *clients.Settings, namespace string) ([]*PoolConfigBuilder, error) {
 	sriovNetworkPoolConfigList := &srIovV1.SriovNetworkPoolConfigList{}
 
+	if apiClient == nil {
+		glog.V(100).Infof("sriov network 'apiClient' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list sriov networks, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add oplmV1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	if namespace == "" {
 		glog.V(100).Infof("sriovNetworkPoolConfigs 'namespace' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list sriovNetworkPoolConfigs, 'namespace' parameter is empty")
 	}
 
-	err := apiClient.List(context.TODO(), sriovNetworkPoolConfigList, &client.ListOptions{Namespace: namespace})
+	err = apiClient.List(context.TODO(), sriovNetworkPoolConfigList, &client.ListOptions{Namespace: namespace})
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list SriovNetworkPoolConfigs in namespace: %s due to %s",
@@ -34,7 +47,7 @@ func ListPoolConfigs(apiClient *clients.Settings, namespace string) ([]*PoolConf
 	for _, sriovNetworkPoolConfigObj := range sriovNetworkPoolConfigList.Items {
 		sriovNetworkPoolConfig := sriovNetworkPoolConfigObj
 		sriovNetworkPoolConfBuilder := &PoolConfigBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Definition: &sriovNetworkPoolConfig,
 			Object:     &sriovNetworkPoolConfig,
 		}

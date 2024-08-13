@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
-	goclient "sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
+	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // StorageClusterBuilder provides struct for StorageCluster object containing connection
@@ -35,6 +34,13 @@ func NewStorageClusterBuilder(apiClient *clients.Settings, name, nsname string) 
 
 	if apiClient == nil {
 		glog.V(100).Infof("storageCluster 'apiClient' cannot be empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(ocsoperatorv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add ocs-operator v1 scheme to client schemes")
 
 		return nil
 	}
@@ -77,6 +83,13 @@ func PullStorageCluster(apiClient *clients.Settings, name, namespace string) (*S
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("storageCluster 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(ocsoperatorv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add ocs-operator v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := StorageClusterBuilder{

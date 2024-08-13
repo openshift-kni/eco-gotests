@@ -40,6 +40,13 @@ func NewSchedulerBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(nropv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nrop v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &SchedulerBuilder{
 		apiClient: apiClient.Client,
 		Definition: &nropv1.NUMAResourcesScheduler{
@@ -78,6 +85,13 @@ func PullScheduler(apiClient *clients.Settings, name, nsname string) (*Scheduler
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("NUMAResourcesScheduler 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(nropv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nrop v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := SchedulerBuilder{

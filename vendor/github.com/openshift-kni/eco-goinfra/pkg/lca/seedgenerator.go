@@ -46,6 +46,13 @@ func NewSeedGeneratorBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(lcasgv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lcasg v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := SeedGeneratorBuilder{
 		apiClient: apiClient.Client,
 		Definition: &lcasgv1.SeedGenerator{
@@ -117,6 +124,13 @@ func PullSeedGenerator(apiClient *clients.Settings, name string) (*SeedGenerator
 		glog.V(100).Infof("The apiClient cannot be nil")
 
 		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
+	err := apiClient.AttachScheme(lcasgv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lcasg v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := SeedGeneratorBuilder{

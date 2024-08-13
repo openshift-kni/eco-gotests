@@ -41,6 +41,13 @@ func NewLocalVolumeSetBuilder(apiClient *clients.Settings, name, nsname string) 
 		return nil
 	}
 
+	err := apiClient.AttachScheme(lsov1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lsov1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &LocalVolumeSetBuilder{
 		apiClient: apiClient.Client,
 		Definition: &lsov1alpha1.LocalVolumeSet{
@@ -79,6 +86,13 @@ func PullLocalVolumeSet(apiClient *clients.Settings, name, nsname string) (*Loca
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("localVolumeSet 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(lsov1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lsov1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := LocalVolumeSetBuilder{

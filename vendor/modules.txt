@@ -48,9 +48,6 @@ github.com/bahlo/generic-list-go
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
-# github.com/blang/semver v3.5.1+incompatible
-## explicit
-github.com/blang/semver
 # github.com/blang/semver/v4 v4.0.0
 ## explicit; go 1.14
 github.com/blang/semver/v4
@@ -313,9 +310,6 @@ github.com/google/uuid
 # github.com/gorilla/websocket v1.5.1
 ## explicit; go 1.20
 github.com/gorilla/websocket
-# github.com/grafana-operator/grafana-operator/v4 v4.10.1
-## explicit; go 1.18
-github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1
 # github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61
 ## explicit; go 1.19
 github.com/grafana/loki/operator/apis/loki/v1
@@ -412,11 +406,6 @@ github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
 # github.com/k8snetworkplumbingwg/sriov-network-operator v1.2.0 => github.com/openshift/sriov-network-operator v0.0.0-20240508132640-2b61056c9758
 ## explicit; go 1.21
 github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1
-github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned
-github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/fake
-github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/scheme
-github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1
-github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1/fake
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/consts
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/render
 github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/vars
@@ -562,7 +551,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240812145528-915aa75bfdb6
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240813134610-7cfb14e1ce75
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -1756,21 +1745,7 @@ maistra.io/api/core/v1
 maistra.io/api/core/v2
 # open-cluster-management.io/api v0.13.0
 ## explicit; go 1.21
-open-cluster-management.io/api/client/cluster/clientset/versioned
-open-cluster-management.io/api/client/cluster/clientset/versioned/fake
-open-cluster-management.io/api/client/cluster/clientset/versioned/scheme
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1/fake
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1alpha1/fake
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta1/fake
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta2
-open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1beta2/fake
 open-cluster-management.io/api/cluster/v1
-open-cluster-management.io/api/cluster/v1alpha1
-open-cluster-management.io/api/cluster/v1beta1
-open-cluster-management.io/api/cluster/v1beta2
 # open-cluster-management.io/config-policy-controller v0.13.0
 ## explicit; go 1.21
 open-cluster-management.io/config-policy-controller/api/v1

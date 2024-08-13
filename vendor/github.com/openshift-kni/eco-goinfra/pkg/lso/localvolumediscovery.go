@@ -44,6 +44,13 @@ func NewLocalVolumeDiscoveryBuilder(apiClient *clients.Settings, name, nsname st
 		return nil
 	}
 
+	err := apiClient.AttachScheme(lsov1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lsov1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &LocalVolumeDiscoveryBuilder{
 		apiClient: apiClient.Client,
 		Definition: &lsov1alpha1.LocalVolumeDiscovery{
@@ -82,6 +89,13 @@ func PullLocalVolumeDiscovery(apiClient *clients.Settings, name, nsname string) 
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("localVolumeDiscovery 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(lsov1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add lsov1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := LocalVolumeDiscoveryBuilder{
