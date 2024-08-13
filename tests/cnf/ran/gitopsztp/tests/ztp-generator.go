@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"gopkg.in/yaml.v2"
@@ -22,7 +22,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 
 	BeforeEach(func() {
 		By("getting current user")
-		output, err := cluster.ExecLocalCommand(time.Minute, "whoami")
+		output, err := ranhelper.ExecLocalCommand(time.Minute, "whoami")
 		Expect(err).ToNot(HaveOccurred(), "Failed to run get current user")
 
 		user := strings.TrimSpace(output)
@@ -35,10 +35,10 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 
 	AfterEach(func() {
 		By("deleting the generated manifests and policies")
-		_, err := cluster.ExecLocalCommand(time.Minute, "sudo", "rm", "-rf", siteConfigPath+"/siteconfig/out")
+		_, err := ranhelper.ExecLocalCommand(time.Minute, "sudo", "rm", "-rf", siteConfigPath+"/siteconfig/out")
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete siteconfig output")
 
-		_, err = cluster.ExecLocalCommand(time.Minute, "sudo", "rm", "-rf", siteConfigPath+"/policygentemplates/out")
+		_, err = ranhelper.ExecLocalCommand(time.Minute, "sudo", "rm", "-rf", siteConfigPath+"/policygentemplates/out")
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete policygentemplates output")
 	})
 
@@ -49,7 +49,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 			var ztpImageTag string
 
 			// Since brew is a lot faster than skopeo, we want to use it if its available
-			brew, err := cluster.ExecLocalCommand(time.Minute, "which", "brew")
+			brew, err := ranhelper.ExecLocalCommand(time.Minute, "which", "brew")
 
 			if err != nil || brew == "" {
 				By("using skopeo to find the image tag")
@@ -57,7 +57,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 					"skopeo list-tags docker://%s | grep %s", RANConfig.ZtpSiteGenerateImage, RANConfig.ZTPVersion) +
 					" | sort -V | tail -1 | tr -d '\"' | tr -d ','"
 
-				output, err := cluster.ExecLocalCommand(time.Minute, "bash", "-c", cmd)
+				output, err := ranhelper.ExecLocalCommand(time.Minute, "bash", "-c", cmd)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get output from skopeo")
 
 				ztpImageTag = strings.TrimSpace(output)
@@ -67,7 +67,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 					fmt.Sprintf(" | grep %s", RANConfig.ZTPVersion) +
 					" | sort -V | tail -1 | awk '{ print $1 }' | sed -nr 's/.*-(v.*)$/\\1/p'"
 
-				output, err := cluster.ExecLocalCommand(time.Minute, "bash", "-c", cmd)
+				output, err := ranhelper.ExecLocalCommand(time.Minute, "bash", "-c", cmd)
 				Expect(err).ToNot(HaveOccurred(), "Failed to get output from brew")
 
 				ztpImageTag = strings.TrimSpace(output)
@@ -76,7 +76,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 			glog.V(tsparams.LogLevel).Infof("Detected ZTP image tag '%s'", ztpImageTag)
 
 			By("generating the install time CRs and manifests")
-			_, err = cluster.ExecLocalCommand(
+			_, err = ranhelper.ExecLocalCommand(
 				time.Minute,
 				"podman",
 				"run",
@@ -105,7 +105,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 			}
 
 			By("generating the policies")
-			_, err = cluster.ExecLocalCommand(
+			_, err = ranhelper.ExecLocalCommand(
 				time.Minute,
 				"podman",
 				"run",

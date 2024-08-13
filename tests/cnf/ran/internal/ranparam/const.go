@@ -1,6 +1,10 @@
 package ranparam
 
-import "github.com/golang/glog"
+import (
+	"time"
+
+	"github.com/golang/glog"
+)
 
 const (
 	// Label represents the label for the ran test cases.
@@ -27,6 +31,10 @@ const (
 	PtpDaemonsetLabelSelector = "app=linuxptp-daemon"
 	// LogLevel is the verbosity for ran/internal packages.
 	LogLevel glog.Level = 80
+	// RetryInterval retry interval for node exec commands.
+	RetryInterval = 10 * time.Second
+	// RetryCount retry count for node exec commands.
+	RetryCount = 3
 )
 
 // HubOperatorName represets the possible operator names that may have associated versions on the hub cluster.
