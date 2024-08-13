@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/reboot"
@@ -22,6 +23,12 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("KernelCrashKdump"), func() {
 		It("Trigger kernel crash to generate kdump vmcore", reportxml.ID("56216"), Label("KernelCrashKdump"), func() {
+			By("Pulling in OpenshiftAPI deployment")
+
+			// pull openshift apiserver deployment object to wait for after the node reboot.
+			openshiftAPIDeploy, err := deployment.Pull(APIClient, "apiserver", "openshift-apiserver")
+
+			Expect(err).ToNot(HaveOccurred(), "Failed to pull in Openshift API deployment")
 
 			By("Retrieve nodes list")
 			nodeList, err := nodes.List(
@@ -34,6 +41,11 @@ var _ = Describe(
 				By("Trigger kernel crash")
 				err = reboot.KernelCrashKdump(node.Definition.Name)
 				Expect(err).ToNot(HaveOccurred(), "Error triggering a kernel crash on the node.")
+
+				By("Waiting for the openshift apiserver deployment to be available")
+				err = openshiftAPIDeploy.WaitUntilCondition("Available", 5*time.Minute)
+
+				Expect(err).ToNot(HaveOccurred(), "OpenShift API server deployment not Availalble")
 
 				By(fmt.Sprintf("Wait for %d minutes for the cluster resources to reconciliate their state",
 					RanDuTestConfig.RebootRecoveryTime))
