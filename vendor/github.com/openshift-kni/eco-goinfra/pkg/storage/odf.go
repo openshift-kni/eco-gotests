@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	odfoperatorv1alpha1 "github.com/red-hat-storage/odf-operator/api/v1alpha1"
-
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
+	odfoperatorv1alpha1 "github.com/red-hat-storage/odf-operator/api/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,6 +35,13 @@ func NewSystemODFBuilder(apiClient *clients.Settings, name, nsname string) *Syst
 
 	if apiClient == nil {
 		glog.V(100).Infof("SystemODF 'apiClient' cannot be empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(odfoperatorv1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add odf v1alpha1 scheme to client schemes")
 
 		return nil
 	}
@@ -78,6 +84,13 @@ func PullSystemODF(apiClient *clients.Settings, name, namespace string) (*System
 		glog.V(100).Infof("The SystemODF's apiClient is empty")
 
 		return nil, fmt.Errorf("SystemODF 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(odfoperatorv1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add odf v1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := SystemODFBuilder{

@@ -12,11 +12,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
-	performanceV2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
-	tunedv1 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/tuned/v1"
-	monv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-
-	oauthv1 "github.com/openshift/api/oauth/v1"
 	clientConfigV1 "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	v1security "github.com/openshift/client-go/security/clientset/versioned/typed/security/v1"
 	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
@@ -33,11 +28,6 @@ import (
 
 	netAttDefV1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	clientNetAttDefV1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1"
-	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
-
-	clientSrIov "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned"
-	clientSrIovFake "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/fake"
-	clientSrIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/pkg/client/clientset/versioned/typed/sriovnetwork/v1"
 
 	clientCgu "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned"
 	clientCguFake "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/fake"
@@ -49,13 +39,9 @@ import (
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
 	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
 
-	nropv1 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1"
-
 	hiveextV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1"
 	agentInstallV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
 	hiveV1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1"
-	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
-	lcasgv1 "github.com/openshift-kni/lifecycle-agent/api/seedgenerator/v1"
 	configV1 "github.com/openshift/api/config/v1"
 	imageregistryV1 "github.com/openshift/api/imageregistry/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -67,10 +53,6 @@ import (
 	plumbingv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
 	fakeMultiNetPolicyClient "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/fake"
 
-	clusterClient "open-cluster-management.io/api/client/cluster/clientset/versioned"
-	clusterClientFake "open-cluster-management.io/api/client/cluster/clientset/versioned/fake"
-	clusterV1Client "open-cluster-management.io/api/client/cluster/clientset/versioned/typed/cluster/v1"
-
 	appsv1 "k8s.io/api/apps/v1"
 	scalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -81,18 +63,12 @@ import (
 	k8sFakeClient "k8s.io/client-go/kubernetes/fake"
 	fakeRuntimeClient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	grafanaV4V1Alpha1 "github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1"
 	multinetpolicyclientv1 "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1"
-	noobaav1alpha1 "github.com/kube-object-storage/lib-bucket-provisioner/pkg/apis/objectbucket.io/v1alpha1"
 	cguapiv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	machinev1beta1client "github.com/openshift/client-go/machine/clientset/versioned/typed/machine/v1beta1"
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	nfdv1 "github.com/openshift/cluster-nfd-operator/api/v1"
-	lsov1 "github.com/openshift/local-storage-operator/api/v1"
-	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
-	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
-	odfoperatorv1alpha1 "github.com/red-hat-storage/odf-operator/api/v1alpha1"
 	mcmV1Beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
@@ -111,8 +87,6 @@ type Settings struct {
 	networkV1Client.NetworkingV1Interface
 	appsV1Client.AppsV1Interface
 	rbacV1Client.RbacV1Interface
-	ClientSrIov clientSrIov.Interface
-	clientSrIovV1.SriovnetworkV1Interface
 	Config *rest.Config
 	runtimeClient.Client
 	v1security.SecurityV1Interface
@@ -121,16 +95,12 @@ type Settings struct {
 	MultiNetworkPolicyClient multinetpolicyclientv1.K8sCniCncfIoV1beta1Interface
 	multinetpolicyclientv1.K8sCniCncfIoV1beta1Interface
 	operatorv1alpha1.OperatorV1alpha1Interface
-	grafanaV4V1Alpha1.Grafana
-	LocalVolumeInterface lsov1alpha1.LocalVolumeSet
 	machinev1beta1client.MachineV1beta1Interface
 	storageV1Client.StorageV1Interface
 	VeleroClient veleroClient.Interface
 	veleroV1Client.VeleroV1Interface
 	ClientCgu clientCgu.Interface
 	clientCguV1.RanV1alpha1Interface
-	ClusterClient clusterClient.Interface
-	clusterV1Client.ClusterV1Interface
 	scheme *runtime.Scheme
 }
 
@@ -138,8 +108,6 @@ type Settings struct {
 type SchemeAttacher func(*runtime.Scheme) error
 
 // New returns a *Settings with the given kubeconfig.
-//
-//nolint:funlen
 func New(kubeconfig string) *Settings {
 	var (
 		config *rest.Config
@@ -169,8 +137,6 @@ func New(kubeconfig string) *Settings {
 	clientSet.ConfigV1Interface = clientConfigV1.NewForConfigOrDie(config)
 	clientSet.MachineconfigurationV1Interface = clientMachineConfigV1.NewForConfigOrDie(config)
 	clientSet.AppsV1Interface = appsV1Client.NewForConfigOrDie(config)
-	clientSet.ClientSrIov = clientSrIov.NewForConfigOrDie(config)
-	clientSet.SriovnetworkV1Interface = clientSrIovV1.NewForConfigOrDie(config)
 	clientSet.NetworkingV1Interface = networkV1Client.NewForConfigOrDie(config)
 	clientSet.RbacV1Interface = rbacV1Client.NewForConfigOrDie(config)
 	clientSet.K8sCniCncfIoV1Interface = clientNetAttDefV1.NewForConfigOrDie(config)
@@ -212,8 +178,6 @@ func New(kubeconfig string) *Settings {
 }
 
 // SetScheme returns mutated apiClient's scheme.
-//
-//nolint:funlen, gocyclo, gocognit
 func SetScheme(crScheme *runtime.Scheme) error {
 	if err := scheme.AddToScheme(crScheme); err != nil {
 		return err
@@ -223,23 +187,11 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := srIovV1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
 	if err := mcv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
 	if err := apiExt.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := lcav1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := lcasgv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -252,18 +204,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := operatorv1.Install(crScheme); err != nil {
-		return err
-	}
-
-	if err := oauthv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := lsov1alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := lsov1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -291,19 +231,11 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
-	if err := grafanaV4V1Alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
 	if err := nmstatev1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
 	if err := nmstateV1alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := nropv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -316,30 +248,6 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := routev1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := ocsoperatorv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := odfoperatorv1alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := performanceV2.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := tunedv1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := noobaav1alpha1.AddToScheme(crScheme); err != nil {
-		return err
-	}
-
-	if err := monv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -397,8 +305,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClient.ClientBuilder) {
 	clientSet := &Settings{}
 
-	var k8sClientObjects, genericClientObjects, plumbingObjects, srIovObjects,
-		veleroClientObjects, cguObjects, ocmObjects, mcoObjects []runtime.Object
+	var k8sClientObjects, genericClientObjects, plumbingObjects,
+		veleroClientObjects, cguObjects, mcoObjects []runtime.Object
 
 	//nolint:varnamelen
 	for _, v := range tcp.K8sMockObjects {
@@ -466,46 +374,18 @@ func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClie
 			genericClientObjects = append(genericClientObjects, v)
 		case *imageregistryV1.Config:
 			genericClientObjects = append(genericClientObjects, v)
-		case *nropv1.NUMAResourcesOperator:
-			genericClientObjects = append(genericClientObjects, v)
-		case *nropv1.NUMAResourcesScheduler:
-			genericClientObjects = append(genericClientObjects, v)
 		case *configV1.ClusterOperator:
 			genericClientObjects = append(genericClientObjects, v)
 		case *cguapiv1alpha1.PreCachingConfig:
 			genericClientObjects = append(genericClientObjects, v)
-		case *ocsoperatorv1.StorageCluster:
-			genericClientObjects = append(genericClientObjects, v)
-		case *lsov1alpha1.LocalVolumeDiscovery:
-			genericClientObjects = append(genericClientObjects, v)
-		case *lsov1alpha1.LocalVolumeSet:
-			genericClientObjects = append(genericClientObjects, v)
-		case *odfoperatorv1alpha1.StorageSystem:
-			genericClientObjects = append(genericClientObjects, v)
 		case *hiveextV1Beta1.AgentClusterInstall:
 			genericClientObjects = append(genericClientObjects, v)
-		case *performanceV2.PerformanceProfile:
-			genericClientObjects = append(genericClientObjects, v)
-		case *tunedv1.Tuned:
-			genericClientObjects = append(genericClientObjects, v)
-		case *noobaav1alpha1.ObjectBucketClaim:
-			genericClientObjects = append(genericClientObjects, v)
 		case *agentInstallV1Beta1.AgentServiceConfig:
-			genericClientObjects = append(genericClientObjects, v)
-		case *monv1.ServiceMonitor:
 			genericClientObjects = append(genericClientObjects, v)
 		// ArgoCD Client Objects
 		case *argocdOperatorv1alpha1.ArgoCD:
 			genericClientObjects = append(genericClientObjects, v)
 		case *argocdtypes.Application:
-			genericClientObjects = append(genericClientObjects, v)
-		// LCA Client Objects
-		case *lcav1.ImageBasedUpgrade:
-			genericClientObjects = append(genericClientObjects, v)
-		case *lcasgv1.SeedGenerator:
-			genericClientObjects = append(genericClientObjects, v)
-		// OAuthClient Objects
-		case *oauthv1.OAuthClient:
 			genericClientObjects = append(genericClientObjects, v)
 		// Hive Client Objects
 		case *hiveV1.HiveConfig:
@@ -524,8 +404,6 @@ func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClie
 			veleroClientObjects = append(veleroClientObjects, v)
 		case *cguapiv1alpha1.ClusterGroupUpgrade:
 			cguObjects = append(cguObjects, v)
-		case *srIovV1.SriovNetworkPoolConfig:
-			srIovObjects = append(srIovObjects, v)
 		// MultiNetworkPolicy Client Objects
 		case *plumbingv1.MultiNetworkPolicy:
 			plumbingObjects = append(plumbingObjects, v)
@@ -542,9 +420,6 @@ func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClie
 	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
 	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
 	clientSet.StorageV1Interface = clientSet.K8sClient.StorageV1()
-	clientSet.ClientSrIov = clientSrIovFake.NewSimpleClientset(srIovObjects...)
-	clientSet.ClusterClient = clusterClientFake.NewSimpleClientset(ocmObjects...)
-	clientSet.ClusterV1Interface = clientSet.ClusterClient.ClusterV1()
 	clientSet.MachineconfigurationV1Interface = clientMachineConfigFake.NewSimpleClientset(
 		mcoObjects...).MachineconfigurationV1()
 

@@ -3,6 +3,7 @@ package ocm
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -351,6 +352,56 @@ func (builder *PolicyBuilder) WaitUntilComplianceState(state policiesv1.Complian
 
 			return updatedPolicy.Status.ComplianceState == state, nil
 		})
+}
+
+// WaitForStatusMessageToContain waits up to the specified timeout for the policy message to contain the
+// expectedMessage.
+func (builder *PolicyBuilder) WaitForStatusMessageToContain(
+	expectedMessage string, timeout time.Duration) (*PolicyBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	if expectedMessage == "" {
+		glog.V(100).Info("expectedMessage for policy cannot be empty")
+
+		return nil, fmt.Errorf("policy expectedMessage is empty")
+	}
+
+	glog.V(100).Infof(
+		"Waiting until status message of policy %s in namespace %s contains '%s'",
+		builder.Definition.Name, builder.Definition.Namespace, expectedMessage)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf(
+			"policy object %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	var err error
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
+			if err != nil {
+				return false, nil
+			}
+
+			details := builder.Object.Status.Details
+			if len(details) > 0 && len(details[0].History) > 0 {
+				message := details[0].History[0].Message
+
+				glog.V(100).Infof("Checking if message '%s' contains substring '%s'", message, expectedMessage)
+
+				return strings.Contains(message, expectedMessage), nil
+			}
+
+			return false, nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return builder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before

@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	nropv1 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1"
-
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
+	nropv1 "github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,6 +33,13 @@ func NewBuilder(
 
 	if apiClient == nil {
 		glog.V(100).Infof("NUMAResourcesOperator 'apiClient' cannot be empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(nropv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nrop v1 scheme to client schemes")
 
 		return nil
 	}
@@ -66,6 +72,13 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("NUMAResourcesOperator 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(nropv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nrop v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := Builder{

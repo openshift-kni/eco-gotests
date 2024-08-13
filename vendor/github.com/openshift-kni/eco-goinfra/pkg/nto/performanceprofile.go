@@ -24,7 +24,7 @@ type Builder struct {
 	// Used to store latest error message upon defining or mutating PerformanceProfile definition.
 	errorMsg string
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 }
 
 // NewBuilder creates a new instance of Builder.
@@ -34,11 +34,24 @@ func NewBuilder(
 		"Initializing new PerformanceProfile structure with the following params: "+
 			"name: %s, cpu isolated: %s, cpu reserved %s, nodeSelector %v", name, cpuIsolated, cpuReserved, nodeSelector)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(v2.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add node-tuning-operator v2 scheme to client schemes")
+
+		return nil
+	}
+
 	isolatedCPUSet := v2.CPUSet(cpuIsolated)
 	reservedCPUSet := v2.CPUSet(cpuReserved)
 
 	builder := &Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &v2.PerformanceProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -98,8 +111,15 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 		return nil, fmt.Errorf("performanceProfile 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(v2.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add node-tuning-operator v2 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &v2.PerformanceProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,

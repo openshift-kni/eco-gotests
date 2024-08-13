@@ -269,7 +269,7 @@ func WaitForAllPodsInNamespacesHealthy(
 	}
 
 	for _, podObj := range podList {
-		if slices.Contains(ignoreNamespaces, podObj.apiClient.Namespace) {
+		if slices.Contains(ignoreNamespaces, podObj.Definition.Namespace) {
 			continue
 		}
 

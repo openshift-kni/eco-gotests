@@ -40,6 +40,13 @@ func NewBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(monv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add prometheus v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &monv1.ServiceMonitor{
@@ -78,6 +85,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("serviceMonitor 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(monv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add prometheus v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := Builder{

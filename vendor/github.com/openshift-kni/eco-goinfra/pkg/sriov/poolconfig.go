@@ -29,7 +29,7 @@ type PoolConfigBuilder struct {
 	// errorMsg is processed before the SriovNetworkPoolConfig object is created.
 	errorMsg string
 	// apiClient opens api connection to the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 }
 
 // NewPoolConfigBuilder creates a new instance of PoolConfigBuilder.
@@ -37,8 +37,21 @@ func NewPoolConfigBuilder(apiClient *clients.Settings, name, nsname string) *Poo
 	glog.V(100).Infof(
 		"Initializing new SriovNetworkPoolConfig structure with the name %s in the namespace %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriovv1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PoolConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetworkPoolConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -247,8 +260,15 @@ func PullPoolConfig(apiClient *clients.Settings, name, nsname string) (*PoolConf
 		return nil, fmt.Errorf("SriovNetworkPoolConfig 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(srIovV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriovv1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := PoolConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetworkPoolConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,

@@ -32,6 +32,19 @@ func NewTunedBuilder(
 		"Initializing new Tuned structure with the following params: "+
 			"name: %s, namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(tunedv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add tuned v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &TunedBuilder{
 		apiClient: apiClient.Client,
 		Definition: &tunedv1.Tuned{
@@ -69,6 +82,13 @@ func PullTuned(apiClient *clients.Settings, name, nsname string) (*TunedBuilder,
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("tuned 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(tunedv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add tuned v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := TunedBuilder{
