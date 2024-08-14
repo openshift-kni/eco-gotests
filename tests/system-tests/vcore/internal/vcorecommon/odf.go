@@ -2,6 +2,10 @@ package vcorecommon
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
@@ -37,6 +41,7 @@ import (
 )
 
 var (
+	odfNodesList           = []string{"worker-0", "worker-1", "worker-2"}
 	odfConsolePlugin       = "odf-console"
 	odfOperatorDeployments = []string{"csi-addons-controller-manager", "noobaa-operator",
 		"ocs-operator", "odf-console", "odf-operator-controller-manager", "rook-ceph-operator"}
@@ -56,17 +61,14 @@ func VerifyODFSuite() {
 			It("Verify ODF successfully installed",
 				Label("odf"), reportxml.ID("63844"), VerifyODFOperatorDeployment)
 
-			It("Apply taints to the ODF nodes",
-				Label("odf"), reportxml.ID("74916"), VerifyODFTaints)
-
 			It("Verify ODF console enabled",
 				Label("odf"), reportxml.ID("74917"), VerifyODFConsoleConfig)
 
-			// It("Verify localvolumediscovery instance exists",
-			//	 Label("odf"), reportxml.ID("74920"), VerifyLocalVolumeDiscovery)
-
 			It("Verify localvolumeset instance exists",
 				Label("odf"), reportxml.ID("74918"), VerifyLocalVolumeSet)
+
+			It("Apply taints to the ODF nodes",
+				Label("odf"), reportxml.ID("74916"), VerifyODFTaints)
 
 			It("Verify ODF operator StorageSystem configuration procedure",
 				Label("odf"), reportxml.ID("59487"), VerifyODFStorageSystemConfig)
@@ -119,24 +121,6 @@ func VerifyODFOperatorDeployment(ctx SpecContext) {
 	}
 } // func VerifyODFOperatorDeployment (ctx SpecContext)
 
-// VerifyODFTaints asserts ODF nodes taints configuration.
-func VerifyODFTaints(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Apply taints to the ODF nodes")
-
-	odfNodesList, err := nodes.List(APIClient, VCoreConfig.OdfLabelListOption)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to get cluster nodes list due to %v", err))
-
-	for _, odfNode := range odfNodesList {
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode.Definition.Name)
-		applyTaintsCmd := fmt.Sprintf(
-			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
-			odfNode.Definition.Name, VCoreConfig.KubeconfigPath)
-		_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyTaintsCmd)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
-			applyTaintsCmd, err))
-	}
-} // func VerifyODFTaints (ctx SpecContext)
-
 // VerifyODFConsoleConfig asserts ODF console enabled.
 func VerifyODFConsoleConfig(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Enable odf-console")
@@ -156,51 +140,6 @@ func VerifyODFConsoleConfig(ctx SpecContext) {
 			odfConsolePlugin, newPluginsList))
 } // func VerifyODFConsoleConfig (ctx SpecContext)
 
-// VerifyLocalVolumeDiscovery asserts localvolumediscovery instance exists.
-func VerifyLocalVolumeDiscovery(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Create localvolumediscovery instance %s in namespace %s if not found",
-		vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace)
-
-	var err error
-
-	localVolumeDiscoveryObj := lso.NewLocalVolumeDiscoveryBuilder(APIClient,
-		vcoreparams.ODFLocalVolumeDiscoveryName,
-		vcoreparams.LSONamespace)
-
-	if localVolumeDiscoveryObj.Exists() {
-		err = localVolumeDiscoveryObj.Delete()
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("failed to delete localvolumediscovery %s from namespace %s; %v",
-				vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
-	}
-
-	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
-		MatchExpressions: []corev1.NodeSelectorRequirement{{
-			Key:      "kubernetes.io/hostname",
-			Operator: "In",
-			Values:   []string{"worker-2", "worker-3", "worker-4"},
-		}}},
-	}}
-
-	tolerations := []corev1.Toleration{{
-		Key:      "node.ocs.openshift.io/storage",
-		Operator: "Equal",
-		Value:    "true",
-		Effect:   "NoSchedule",
-	}}
-
-	localVolumeDiscoveryObj, err = localVolumeDiscoveryObj.
-		WithNodeSelector(nodeSelector).WithTolerations(tolerations).Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve localVolumeDiscovery %s in namespace %s "+
-		"status due to %v", vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace, err))
-	Expect(await.WaitUntilLVDIsDiscovering(APIClient,
-		localVolumeDiscoveryObj.Definition.Name,
-		localVolumeDiscoveryObj.Definition.Namespace,
-		5*time.Minute)).ToNot(HaveOccurred(),
-		fmt.Sprintf("localvolumediscovery %s in namespace %s failed to discover",
-			vcoreparams.ODFLocalVolumeDiscoveryName, vcoreparams.LSONamespace))
-} // func VerifyLocalVolumeDiscovery (ctx SpecContext)
-
 // VerifyLocalVolumeSet asserts localvolumeset instance exists.
 func VerifyLocalVolumeSet(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create localvolumeset instance %s in namespace %s if not found",
@@ -216,7 +155,7 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		MatchExpressions: []corev1.NodeSelectorRequirement{{
 			Key:      "kubernetes.io/hostname",
 			Operator: "In",
-			Values:   []string{"worker-2", "worker-3", "worker-4"},
+			Values:   odfNodesList,
 		}}},
 	}}
 
@@ -236,7 +175,7 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		WithStorageClassName(vcoreparams.StorageClassName).
 		WithVolumeMode(lsov1.PersistentVolumeBlock).
 		WithFSType("ext4").
-		WithMaxDeviceCount(int32(10)).
+		WithMaxDeviceCount(int32(42)).
 		WithDeviceInclusionSpec(deviceInclusionSpec).
 		WithTolerations(tolerations).Create()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
@@ -250,6 +189,64 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		metav1.ListOptions{LabelSelector: pvLabel})
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create persistentVolumes due to %v", err))
 } // func VerifyLocalVolumeSet (ctx SpecContext)
+
+// VerifyODFTaints asserts ODF nodes taints configuration.
+func VerifyODFTaints(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new mcp %s", VCoreConfig.OdfMCPName)
+	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfMCPName)
+
+	if !odfMcp.Exists() {
+		odfMCPTemplateName := "odf-mcp.yaml"
+		varsToReplace := make(map[string]interface{})
+		varsToReplace["MCPName"] = VCoreConfig.OdfMCPName
+
+		workingDir, err := os.Getwd()
+		Expect(err).ToNot(HaveOccurred(), err)
+
+		templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
+
+		err = ocpcli.ApplyConfig(
+			filepath.Join(templateDir, odfMCPTemplateName),
+			filepath.Join(vcoreparams.ConfigurationFolderPath, odfMCPTemplateName),
+			varsToReplace)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
+
+		err = odfMcp.WaitForUpdate(3 * time.Minute)
+		Expect(err).To(BeNil(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
+	}
+
+	for _, odfNode := range odfNodesList {
+		currentODFNode, err := nodes.Pull(APIClient, odfNode)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve node %s object due to %v",
+			odfNode, err))
+
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Change node %s role to the %s", odfNode, VCoreConfig.OdfMCPName)
+
+		_, err = currentODFNode.
+			WithNewLabel("custom-label/used", "").
+			WithNewLabel("cluster.ocs.openshift.io/openshift-storage", "").
+			WithNewLabel("node-role.kubernetes.io/infra", "").
+			WithNewLabel("node-role.kubernetes.io/odf", "").
+			RemoveLabel("node-role.kubernetes.io/worker", "").Update()
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to update labels for the node %s due to %v",
+			odfNode, err))
+
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode)
+
+		applyTaintsCmd := fmt.Sprintf(
+			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
+			odfNode, VCoreConfig.KubeconfigPath)
+		_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyTaintsCmd)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
+			applyTaintsCmd, err))
+	}
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the mcp %s to update", VCoreConfig.OdfMCPName)
+	time.Sleep(3 * time.Second)
+
+	err := odfMcp.WaitForUpdate(3 * time.Minute)
+	Expect(err).To(BeNil(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
+} // func VerifyODFTaints (ctx SpecContext)
 
 // VerifyODFStorageSystemConfig asserts ODF storage cluster system successfully configured.
 func VerifyODFStorageSystemConfig(ctx SpecContext) {

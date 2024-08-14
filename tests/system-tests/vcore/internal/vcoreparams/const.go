@@ -98,9 +98,6 @@ const (
 	// LSOName is a local storage operator instance name.
 	LSOName = "local-storage-operator"
 
-	// ODFLocalVolumeDiscoveryName is an ODF localVolumeDiscovery instance name.
-	ODFLocalVolumeDiscoveryName = "auto-discover-devices"
-
 	// ODFNamespace is an odf namespace.
 	ODFNamespace = "openshift-storage"
 

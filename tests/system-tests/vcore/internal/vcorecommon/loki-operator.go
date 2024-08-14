@@ -32,7 +32,7 @@ import (
 func VerifyLokiSuite() {
 	Describe(
 		"LokiStack and Cluster Logging validation",
-		Label(vcoreparams.LabelVCoreOdf), func() {
+		Label(vcoreparams.LabelVCoreOperators), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.CLONamespace),
 				Label("loki"), VerifyCLONamespaceExists)
 
@@ -49,7 +49,7 @@ func VerifyLokiSuite() {
 				Label("loki"), reportxml.ID("74914"), CreateObjectBucketClaim)
 
 			It("Create LokiStack instance",
-				Label("loki"), reportxml.ID("74915"), CreateLokiStackInstance)
+				Label("debug"), reportxml.ID("74915"), CreateLokiStackInstance)
 
 			It(fmt.Sprintf("Verify Cluster Logging instance %s is running in namespace %s",
 				vcoreparams.CLOInstanceName, vcoreparams.CLONamespace),
@@ -123,8 +123,8 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 
 	err = await.WaitUntilPersistentVolumeClaimCreated(APIClient,
 		vcoreparams.ODFNamespace,
-		3,
-		90*time.Minute,
+		4,
+		5*time.Minute,
 		metav1.ListOptions{})
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
 		"failed to create persistentVolumeClaims in namespace %s due to %v",
@@ -141,7 +141,7 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 	err = await.WaitUntilConfigMapCreated(APIClient,
 		vcoreparams.ObjectBucketClaimName,
 		vcoreparams.CLONamespace,
-		65*time.Minute)
+		5*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("configmap %s not found in namespace %s; %v",
 		vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
 } // func CreateObjectBucketClaim (ctx SpecContext)
