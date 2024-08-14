@@ -3,11 +3,15 @@
 iperf3_test_workload:
     namespace: 'test'
 iperf3tool_image: 'quay.io/bradyjohnson/iperf@sha256:327ff61852c0ab482b00b97b54ace00a9017e27d531b9674eaed8bfcbe23e7ac'
-iperf3_server_sno_ip: '10.1.232.10'
+# For SNO+1 or MNO, use comma-separated: '10.1.232.10,10.1.232.11,10.1.232.12'
+iperf3_server_ocp_ips: '10.1.232.10'
 secgw_host_ip: '10.1.28.190'
 secgw_server_ip: '172.16.123.10'
 iperf3_client_tx_bytes: '500M'
+# For SNO+1 or MNO, NodePorts will be node_port + node_port_increment:
+# SNO [30000], SNO+1 [30000, 31000], MNO [30000, 31000, 32000]
 node_port: '30000'
+node_port_increment: '1000'
 ssh_user: 'root'
 ssh_private_key: '/home/kni/.ssh/id_rsa'
 ssh_port: '22'

@@ -30,9 +30,10 @@ type IpsecConfig struct {
 	SecGwHostIP string `yaml:"secgw_host_ip" envconfig:"ECO_IPSEC_SECGW_HOST_IP"`
 	// This is the SecGW IPSec tunnel IP
 	SecGwServerIP       string `yaml:"secgw_server_ip" envconfig:"ECO_IPSEC_SECGW_SERVER_IP"`
-	Iperf3ServerSnoIP   string `yaml:"iperf3_server_sno_ip" envconfig:"ECO_IPSEC_IPERF3_SERVER_SNO_IP"`
+	Iperf3ServerOcpIPs  string `yaml:"iperf3_server_ocp_ips" envconfig:"ECO_IPSEC_IPERF3_SERVER_OCP_IPS"`
 	Iperf3ClientTxBytes string `yaml:"iperf3_client_tx_bytes" envconfig:"ECO_IPSEC_IPERF3_CLIENT_TX_BYTES"`
 	NodePort            string `yaml:"node_port" envconfig:"ECO_IPSEC_NODE_PORT"`
+	NodePortIncrement   string `yaml:"node_port_increment" envconfig:"ECO_IPSEC_NODE_PORT_INCREMENT"`
 	SSHUser             string `yaml:"ssh_user" envconfig:"ECO_SSH_USER"`
 	SSHPrivateKey       string `yaml:"ssh_private_key" envconfig:"ECO_SSH_PRIVATE_KEY"`
 	SSHPort             string `yaml:"ssh_port" envconfig:"ECO_SSH_PORT"`
