@@ -177,9 +177,8 @@ func VerifySCTPModuleActivation(ctx SpecContext) {
 			filepath.Join(vcoreparams.ConfigurationFolderPath, sctpModuleTemplateName),
 			varsToReplace)
 		Expect(err).To(BeNil(), fmt.Sprint(err))
-
 		Expect(sctpBuilder.Exists()).To(Equal(true),
-			"Failed to create %s CRD", sctpModuleTemplateName)
+			fmt.Sprintf("Failed to create %s CRD", sctpModuleTemplateName))
 
 		_, err = nodes.WaitForAllNodesToReboot(
 			APIClient,

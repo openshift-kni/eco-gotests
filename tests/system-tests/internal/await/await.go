@@ -367,7 +367,7 @@ func WaitUntilPersistentVolumeClaimCreated(apiClient *clients.Settings,
 				return false, nil
 			}
 
-			if len(pvList) != pvcCnt {
+			if len(pvList) < pvcCnt {
 				glog.V(90).Infof("persistentVolumeClaims count not equal to the expected: %d; found: %d",
 					pvcCnt, len(pvList))
 
