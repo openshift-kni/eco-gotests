@@ -193,13 +193,16 @@ func ExecCmdWithRetries(client *clients.Settings, retries uint,
 	return wait.PollUntilContextTimeout(
 		context.TODO(), interval, time.Duration(retries-1)*interval, true, func(ctx context.Context) (bool, error) {
 			err := ExecCmd(client, nodeSelector, command)
-
 			if isErrorExecuting(err) {
-				glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry, retries, err)
+				glog.V(90).Infof("Error during command execution, retry %d (%d max): %v", retry, retries, err)
 
 				retry++
 
 				return false, nil
+			}
+
+			if err != nil {
+				return false, err
 			}
 
 			return true, nil
@@ -215,25 +218,31 @@ func ExecCmdWithStdoutWithRetries(
 	glog.V(90).Infof("Executing command with stdout '%s' with %d retries and interval %v. Options: %v",
 		command, retries, interval, options)
 
-	var outputs map[string]string
+	var (
+		outputs map[string]string
+		err     error
+		retry   = 1
+	)
 
-	retry := 1
-
-	return outputs, wait.PollUntilContextTimeout(
+	err = wait.PollUntilContextTimeout(
 		context.TODO(), interval, time.Duration(retries-1)*interval, true, func(ctx context.Context) (bool, error) {
-			var err error
-
 			outputs, err = ExecCmdWithStdout(client, command, options...)
 			if isErrorExecuting(err) {
-				glog.V(90).Infof("Error during command execution, retry %d (%d max): %w", retry, retries, err)
+				glog.V(90).Infof("Error during command execution, retry %d (%d max): %v", retry, retries, err)
 
 				retry++
 
 				return false, nil
 			}
 
+			if err != nil {
+				return false, err
+			}
+
 			return true, nil
 		})
+
+	return outputs, err
 }
 
 // ExecCommandOnSNOWithRetries executes a command on the provided single node client,
