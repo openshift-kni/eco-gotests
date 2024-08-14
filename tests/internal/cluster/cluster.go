@@ -133,6 +133,10 @@ func ExecCmdWithStdout(
 		return nil, err
 	}
 
+	if len(nodeList) == 0 {
+		return nil, fmt.Errorf("could not find valid nodes to run command")
+	}
+
 	glog.V(90).Infof("Found %d nodes matching selector", len(nodeList))
 
 	outputMap := make(map[string]string)
