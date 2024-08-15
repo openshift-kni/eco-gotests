@@ -63,7 +63,7 @@ var _ = Describe("SRIOV: Expose MTU:", Ordered, Label(tsparams.LabelExposeMTUTes
 			testExposeMTU(9000, sriovInterfacesUnderTest, "netdevice", workerNodeList[0].Object.Name)
 		})
 
-		It("vfio 1500", reportxml.ID("73785"), func() {
+		It("vfio 1500", reportxml.ID("73789"), func() {
 			testExposeMTU(1500, sriovInterfacesUnderTest, "vfio-pci", workerNodeList[0].Object.Name)
 		})
 
