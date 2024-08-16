@@ -1,22 +1,22 @@
 package helper
 
 import (
-	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GetClusterVersionDefinition returns a unstructured ClusterVersion definition based on the apiClient.
-// Use "Image" to include only DesiredUpdate.Image retrieved from the provided apiClient
-// Use "Version" to include only DesiredUpdate.Version retrieved from the provided apiClient
-// Use "Both" to include both DesiredUpdate.Image and DesiredUpdate.Image retrieved from the provided apiClient.
-func GetClusterVersionDefinition(config string, apiClient *clients.Settings) (*v1.ClusterVersion, error) {
-	clusterVersion := &v1.ClusterVersion{
+// GetClusterVersionDefinition returns a ClusterVersion definition based on the client.
+//
+// Use "Image" to include only DesiredUpdate.Image retrieved from the provided client. Use "Version" to include only
+// DesiredUpdate.Version retrieved from the provided client. Use "Both" to include both DesiredUpdate.Image and
+// DesiredUpdate.Version retrieved from the provided client.
+func GetClusterVersionDefinition(client *clients.Settings, config string) (*configv1.ClusterVersion, error) {
+	clusterVersion := &configv1.ClusterVersion{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterVersion",
 			APIVersion: "config.openshift.io/v1",
@@ -26,22 +26,22 @@ func GetClusterVersionDefinition(config string, apiClient *clients.Settings) (*v
 		},
 	}
 
-	var desiredUpdate v1.Update
-
-	currentVersion, err := clusterversion.Pull(apiClient)
+	currentVersion, err := clusterversion.Pull(client)
 	if err != nil {
 		return nil, err
 	}
 
+	var desiredUpdate configv1.Update
+
 	// channel and upstream specs are required when desiredUpdate.version is used
 	if config != "Image" {
-		version, err := getClusterVersion(apiClient)
+		version, err := ranhelper.GetOCPVersion(client)
 		if err != nil {
 			return nil, err
 		}
 
 		desiredUpdate.Version = version
-		clusterVersion.Spec.Upstream = v1.URL(RANConfig.OcpUpgradeUpstreamURL)
+		clusterVersion.Spec.Upstream = configv1.URL(RANConfig.OcpUpgradeUpstreamURL)
 		clusterVersion.Spec.Channel = currentVersion.Definition.Spec.Channel
 	}
 
@@ -58,28 +58,9 @@ func GetClusterVersionDefinition(config string, apiClient *clients.Settings) (*v
 	return clusterVersion, nil
 }
 
-func getClusterVersion(client *clients.Settings) (string, error) {
-	clusterVersion, err := clusterversion.Pull(client)
-	if err != nil {
-		return "", err
-	}
-
-	histories := clusterVersion.Object.Status.History
-	for i := len(histories) - 1; i >= 0; i-- {
-		history := histories[i]
-		if history.State == "Completed" {
-			return history.Version, nil
-		}
-	}
-
-	glog.V(tsparams.LogLevel).Info("No completed version found in clusterversion. Returning desired version")
-
-	return clusterVersion.Object.Status.Desired.Version, nil
-}
-
-// DeleteClusterLabel deletes a label from a specified cluster.
-func DeleteClusterLabel(clusterName string, labelToBeDeleted string) error {
-	managedCluster, err := ocm.PullManagedCluster(HubAPIClient, clusterName)
+// DeleteClusterLabel deletes a label from and updates the specified cluster.
+func DeleteClusterLabel(client *clients.Settings, clusterName string, labelToBeDeleted string) error {
+	managedCluster, err := ocm.PullManagedCluster(client, clusterName)
 	if err != nil {
 		return err
 	}
@@ -93,17 +74,13 @@ func DeleteClusterLabel(clusterName string, labelToBeDeleted string) error {
 }
 
 // DoesClusterLabelExist looks for a label on a managed cluster and returns true if it exists.
-func DoesClusterLabelExist(clusterName string, expectedLabel string) (bool, error) {
-	managedCluster, err := ocm.PullManagedCluster(HubAPIClient, clusterName)
+func DoesClusterLabelExist(client *clients.Settings, clusterName string, label string) (bool, error) {
+	managedCluster, err := ocm.PullManagedCluster(client, clusterName)
 	if err != nil {
 		return false, err
 	}
 
-	for label := range managedCluster.Object.Labels {
-		if label == expectedLabel {
-			return true, nil
-		}
-	}
+	_, exists := managedCluster.Object.Labels[label]
 
-	return false, nil
+	return exists, nil
 }

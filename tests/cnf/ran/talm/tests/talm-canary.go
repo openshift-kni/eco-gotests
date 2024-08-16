@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/setup"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	"k8s.io/utils/ptr"
 )
@@ -26,11 +27,11 @@ var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func
 
 	AfterEach(func() {
 		By("cleaning up resources on hub")
-		errorList := helper.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, "")
+		errorList := setup.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, "")
 		Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on hub")
 
 		By("cleaning up resources on spokes")
-		errorList = helper.CleanupTestResourcesOnSpokes(
+		errorList = setup.CleanupTestResourcesOnSpokes(
 			[]*clients.Settings{Spoke1APIClient, Spoke2APIClient}, "")
 		Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on spokes")
 	})
@@ -67,16 +68,17 @@ var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func
 		Expect(err).ToNot(HaveOccurred(), "Failed to enable CGU")
 
 		By("making sure the canary cluster (spoke 2) starts first")
-		err = helper.WaitForClusterInCguInProgress(cguBuilder, RANConfig.Spoke2Name, 3*tsparams.TalmDefaultReconcileTime)
+		cguBuilder, err = cguBuilder.WaitUntilClusterInProgress(RANConfig.Spoke2Name, 3*tsparams.TalmDefaultReconcileTime)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for batch remediation for spoke 2 to be in progress")
 
 		By("Making sure the non-canary cluster (spoke 1) has not started yet")
-		started, err := helper.IsClusterInCguInProgress(cguBuilder, RANConfig.Spoke1Name)
-		Expect(err).ToNot(HaveOccurred(), "Failed to check if batch remediation for spoke 1 is in progress")
-		Expect(started).To(BeFalse(), "Batch remediation for non-canary cluster has already started")
+		progress, ok := cguBuilder.Object.Status.Status.CurrentBatchRemediationProgress[RANConfig.Spoke1Name]
+		if ok {
+			Expect(progress.State).ToNot(Equal("InProgress"), "Batch remediation for non-canary cluster has already started")
+		}
 
 		By("Validating that the timeout was due to canary failure")
-		err = helper.WaitForCguTimeoutCanary(cguBuilder, 11*time.Minute)
+		_, err = cguBuilder.WaitForCondition(tsparams.CguTimeoutCanaryCondition, 11*time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for timeout due to canary failure")
 	})
 
@@ -93,16 +95,17 @@ var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func
 		Expect(err).ToNot(HaveOccurred(), "Failed to setup CGU")
 
 		By("making sure the canary cluster (spoke 2) starts first")
-		err := helper.WaitForClusterInCguInProgress(cguBuilder, RANConfig.Spoke2Name, 3*tsparams.TalmDefaultReconcileTime)
+		cguBuilder, err = cguBuilder.WaitUntilClusterInProgress(RANConfig.Spoke2Name, 3*tsparams.TalmDefaultReconcileTime)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for batch remediation for spoke 2 to be in progress")
 
 		By("Making sure the non-canary cluster (spoke 1) has not started yet")
-		started, err := helper.IsClusterInCguInProgress(cguBuilder, RANConfig.Spoke1Name)
-		Expect(err).ToNot(HaveOccurred(), "Failed to check if batch remediation for spoke 1 is in progress")
-		Expect(started).To(BeFalse(), "Batch remediation for non-canary cluster has already started")
+		progress, ok := cguBuilder.Object.Status.Status.CurrentBatchRemediationProgress[RANConfig.Spoke1Name]
+		if ok {
+			Expect(progress.State).ToNot(Equal("InProgress"), "Batch remediation for non-canary cluster has already started")
+		}
 
 		By("waiting for the CGU to finish successfully")
-		err = helper.WaitForCguSuccessfulFinish(cguBuilder, 10*time.Minute)
+		_, err = cguBuilder.WaitForCondition(tsparams.CguSuccessfulFinishCondition, 10*time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to finish successfully")
 	})
 })

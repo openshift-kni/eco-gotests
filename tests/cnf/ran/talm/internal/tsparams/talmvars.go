@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
@@ -55,4 +56,32 @@ var (
 		"Unable to select clusters: cluster %s is not a ManagedCluster", NonExistentClusterName)
 	// TalmNonExistentPolicyMessage is the condition message for when a policy is non-existent.
 	TalmNonExistentPolicyMessage = fmt.Sprintf("Missing managed policies: [%s]", NonExistentPolicyName)
+
+	// CguTimeoutReasonCondition is the condition when the CGU has timed out.
+	CguTimeoutReasonCondition = metav1.Condition{Type: SucceededType, Reason: TimedOutReason}
+	// CguTimeoutMessageCondition is the condition when the CGU has timed out since policy remidation took too long.
+	CguTimeoutMessageCondition = metav1.Condition{Type: SucceededType, Message: TalmTimeoutMessage}
+	// CguTimeoutCanaryCondition is the condition when the CGU has timed out due to canary policy remediation.
+	CguTimeoutCanaryCondition = metav1.Condition{Type: SucceededType, Message: TalmCanaryTimeoutMessage}
+	// CguSuccessfulFinishCondition is the condition when the CGU has completed.
+	CguSuccessfulFinishCondition = metav1.Condition{Type: SucceededType, Reason: CompletedReason}
+	// CguSucceededCondition is the condition when the CGU has succeeded for any reason.
+	CguSucceededCondition = metav1.Condition{Type: SucceededType, Status: metav1.ConditionTrue}
+	// CguNonExistentClusterCondition is the condition when the CGU has a non-existent cluster.
+	CguNonExistentClusterCondition = metav1.Condition{Type: ClustersSelectedType, Message: TalmNonExistentClusterMessage}
+	// CguNonExistentPolicyCondition is the condition when the CGU has a non-existent policy.
+	CguNonExistentPolicyCondition = metav1.Condition{Type: ValidatedType, Message: TalmNonExistentPolicyMessage}
+	// CguPreCacheValidCondition is the condition when the CGU pre-caching is valid.
+	CguPreCacheValidCondition = metav1.Condition{
+		Type:    PreCacheValidType,
+		Status:  metav1.ConditionTrue,
+		Message: PreCacheValidMessage,
+	}
+	// CguPreCachePartialCondition is the condition when the CGU pre-caching could only partially complete.
+	CguPreCachePartialCondition = metav1.Condition{
+		Type:    PreCacheSucceededType,
+		Status:  metav1.ConditionTrue,
+		Message: PreCachePartialFailMessage,
+		Reason:  PartiallyDoneReason,
+	}
 )
