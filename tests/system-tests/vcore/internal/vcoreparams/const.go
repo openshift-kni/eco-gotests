@@ -8,8 +8,10 @@ const (
 	// LabelVCoreOperators is used to select all vCore initial-deployment deployment and configuration tests
 	// excluding odf part.
 	LabelVCoreOperators = "vcoreoperators"
-	// LabelVCoreOdf is used to select odf configuration tests.
-	LabelVCoreOdf = "vcoreodf"
+	// LabelVCoreLSO is used to select lso configuration tests.
+	LabelVCoreLSO = "vcorelso"
+	// LabelVCoreODF is used to select odf configuration tests.
+	LabelVCoreODF = "vcoreodf"
 	// LabelUserCases is used to select all vCore user-cases tests.
 	LabelUserCases = "vcoreusercases"
 	// LabelVCoreRequirements is used to select all vCore requirements tests.
