@@ -2,11 +2,6 @@ package vcorecommon
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-
 	"time"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -16,7 +11,6 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/console"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
@@ -56,9 +50,6 @@ func VerifyODFSuite() {
 
 			It("Verify ODF console enabled",
 				Label("odf"), reportxml.ID("74917"), VerifyODFConsoleConfig)
-
-			It("Apply taints to the ODF nodes",
-				Label("odf"), reportxml.ID("74916"), VerifyODFTaints)
 
 			It("Verify ODF operator StorageSystem configuration procedure",
 				Label("odf"), reportxml.ID("59487"), VerifyODFStorageSystemConfig)
@@ -132,64 +123,6 @@ func VerifyODFConsoleConfig(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the console enablement")
 	time.Sleep(5 * time.Minute)
 } // func VerifyODFConsoleConfig (ctx SpecContext)
-
-// VerifyODFTaints asserts ODF nodes taints configuration.
-func VerifyODFTaints(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new mcp %s", VCoreConfig.OdfMCPName)
-	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfMCPName)
-
-	if !odfMcp.Exists() {
-		odfMCPTemplateName := "odf-mcp.yaml"
-		varsToReplace := make(map[string]interface{})
-		varsToReplace["MCPName"] = VCoreConfig.OdfMCPName
-
-		workingDir, err := os.Getwd()
-		Expect(err).ToNot(HaveOccurred(), err)
-
-		templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
-
-		err = ocpcli.ApplyConfig(
-			filepath.Join(templateDir, odfMCPTemplateName),
-			filepath.Join(vcoreparams.ConfigurationFolderPath, odfMCPTemplateName),
-			varsToReplace)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
-
-		err = odfMcp.WaitForUpdate(3 * time.Minute)
-		Expect(err).To(BeNil(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
-	}
-
-	for _, odfNode := range odfNodesList {
-		currentODFNode, err := nodes.Pull(APIClient, odfNode)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve node %s object due to %v",
-			odfNode, err))
-
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Change node %s role to the %s", odfNode, VCoreConfig.OdfMCPName)
-
-		_, err = currentODFNode.
-			WithNewLabel("custom-label/used", "").
-			WithNewLabel("cluster.ocs.openshift.io/openshift-storage", "").
-			WithNewLabel("node-role.kubernetes.io/infra", "").
-			WithNewLabel("node-role.kubernetes.io/odf", "").
-			RemoveLabel("node-role.kubernetes.io/worker", "").Update()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to update labels for the node %s due to %v",
-			odfNode, err))
-
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode)
-
-		applyTaintsCmd := fmt.Sprintf(
-			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
-			odfNode, VCoreConfig.KubeconfigPath)
-		_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyTaintsCmd)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
-			applyTaintsCmd, err))
-	}
-
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the mcp %s to update", VCoreConfig.OdfMCPName)
-	time.Sleep(3 * time.Second)
-
-	err := odfMcp.WaitForUpdate(3 * time.Minute)
-	Expect(err).To(BeNil(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
-} // func VerifyODFTaints (ctx SpecContext)
 
 // VerifyODFStorageSystemConfig asserts ODF storage cluster system successfully configured.
 func VerifyODFStorageSystemConfig(ctx SpecContext) {
