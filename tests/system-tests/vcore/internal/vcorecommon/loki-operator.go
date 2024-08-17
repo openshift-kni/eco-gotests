@@ -32,7 +32,7 @@ import (
 func VerifyLokiSuite() {
 	Describe(
 		"LokiStack and Cluster Logging validation",
-		Label(vcoreparams.LabelVCoreOperators), func() {
+		Label(vcoreparams.LabelVCoreODF), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.CLONamespace),
 				Label("loki"), VerifyCLONamespaceExists)
 
@@ -49,7 +49,7 @@ func VerifyLokiSuite() {
 				Label("loki"), reportxml.ID("74914"), CreateObjectBucketClaim)
 
 			It("Create LokiStack instance",
-				Label("debug"), reportxml.ID("74915"), CreateLokiStackInstance)
+				Label("loki"), reportxml.ID("74915"), CreateLokiStackInstance)
 
 			It(fmt.Sprintf("Verify Cluster Logging instance %s is running in namespace %s",
 				vcoreparams.CLOInstanceName, vcoreparams.CLONamespace),

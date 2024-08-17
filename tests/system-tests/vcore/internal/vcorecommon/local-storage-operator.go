@@ -4,6 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/lso"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
+	lsov1 "github.com/openshift/local-storage-operator/api/v1"
+	lsov1alpha1 "github.com/openshift/local-storage-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
@@ -19,12 +26,15 @@ import (
 func VerifyLSOSuite() {
 	Describe(
 		"LSO validation",
-		Label(vcoreparams.LabelVCoreOdf), func() {
+		Label(vcoreparams.LabelVCoreLSO), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.LSONamespace),
 				Label("lso"), VerifyLSONamespaceExists)
 
 			It("Verify Local Storage Operator successfully installed",
 				Label("lso"), reportxml.ID("59491"), VerifyLSODeployment)
+
+			It("Verify localvolumeset instance exists",
+				Label("lso"), reportxml.ID("74918"), VerifyLocalVolumeSet)
 		})
 }
 
@@ -64,3 +74,53 @@ func VerifyLSODeployment(ctx SpecContext) {
 			lsoPodName, vcoreparams.LSONamespace, lsoPodLog)
 	}
 } // func VerifyLSODeployment (ctx SpecContext)
+
+// VerifyLocalVolumeSet asserts localvolumeset instance exists.
+func VerifyLocalVolumeSet(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Create localvolumeset instance %s in namespace %s if not found",
+		vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace)
+
+	var err error
+
+	localVolumeSetObj := lso.NewLocalVolumeSetBuilder(APIClient,
+		vcoreparams.ODFLocalVolumeSetName,
+		vcoreparams.LSONamespace)
+
+	nodeSelector := corev1.NodeSelector{NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+		MatchExpressions: []corev1.NodeSelectorRequirement{{
+			Key:      "kubernetes.io/hostname",
+			Operator: "In",
+			Values:   odfNodesList,
+		}}},
+	}}
+
+	deviceInclusionSpec := lsov1alpha1.DeviceInclusionSpec{
+		DeviceTypes:                []lsov1alpha1.DeviceType{lsov1alpha1.RawDisk},
+		DeviceMechanicalProperties: []lsov1alpha1.DeviceMechanicalProperty{lsov1alpha1.NonRotational},
+	}
+
+	tolerations := []corev1.Toleration{{
+		Key:      "node.ocs.openshift.io/storage",
+		Operator: "Equal",
+		Value:    "true",
+		Effect:   "NoSchedule",
+	}}
+
+	_, err = localVolumeSetObj.WithNodeSelector(nodeSelector).
+		WithStorageClassName(vcoreparams.StorageClassName).
+		WithVolumeMode(lsov1.PersistentVolumeBlock).
+		WithFSType("ext4").
+		WithMaxDeviceCount(int32(42)).
+		WithDeviceInclusionSpec(deviceInclusionSpec).
+		WithTolerations(tolerations).Create()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create localvolumeset %s in namespace %s "+
+		"due to %v", vcoreparams.ODFLocalVolumeSetName, vcoreparams.LSONamespace, err))
+
+	pvLabel := fmt.Sprintf("storage.openshift.com/owner-name=%s", vcoreparams.ODFLocalVolumeSetName)
+
+	err = await.WaitUntilPersistentVolumeCreated(APIClient,
+		3,
+		15*time.Minute,
+		metav1.ListOptions{LabelSelector: pvLabel})
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create persistentVolumes due to %v", err))
+} // func VerifyLocalVolumeSet (ctx SpecContext)
