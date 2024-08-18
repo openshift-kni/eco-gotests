@@ -2,14 +2,7 @@ package vcorecommon
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
-
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/ocpcli"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
@@ -42,9 +35,6 @@ func VerifyLSOSuite() {
 
 			It("Verify localvolumeset instance exists",
 				Label("lso"), reportxml.ID("74918"), VerifyLocalVolumeSet)
-
-			It("Apply taints to the ODF nodes",
-				Label("lso"), reportxml.ID("74916"), LabelODFNodesAndSetTaints)
 		})
 }
 
@@ -134,61 +124,3 @@ func VerifyLocalVolumeSet(ctx SpecContext) {
 		metav1.ListOptions{LabelSelector: pvLabel})
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create persistentVolumes due to %v", err))
 } // func VerifyLocalVolumeSet (ctx SpecContext)
-
-// LabelODFNodesAndSetTaints asserts ODF nodes taints configuration.
-func LabelODFNodesAndSetTaints(ctx SpecContext) {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new mcp %s", VCoreConfig.OdfMCPName)
-	odfMcp := mco.NewMCPBuilder(APIClient, VCoreConfig.OdfMCPName)
-
-	if !odfMcp.Exists() {
-		odfMCPTemplateName := "odf-mcp.yaml"
-		varsToReplace := make(map[string]interface{})
-		varsToReplace["MCPName"] = VCoreConfig.OdfMCPName
-
-		workingDir, err := os.Getwd()
-		Expect(err).ToNot(HaveOccurred(), err)
-
-		templateDir := filepath.Join(workingDir, vcoreparams.TemplateFilesFolder)
-
-		err = ocpcli.ApplyConfig(
-			filepath.Join(templateDir, odfMCPTemplateName),
-			filepath.Join(vcoreparams.ConfigurationFolderPath, odfMCPTemplateName),
-			varsToReplace)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
-
-		err = odfMcp.WaitForUpdate(3 * time.Minute)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to update mcp %s", VCoreConfig.OdfMCPName))
-	}
-
-	for _, odfNode := range odfNodesList {
-		currentODFNode, err := nodes.Pull(APIClient, odfNode)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve node %s object due to %v",
-			odfNode, err))
-
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Change node %s role to the %s", odfNode, VCoreConfig.OdfMCPName)
-
-		_, err = currentODFNode.
-			WithNewLabel("custom-label/used", "").
-			WithNewLabel("cluster.ocs.openshift.io/openshift-storage", "").
-			WithNewLabel("node-role.kubernetes.io/infra", "").
-			WithNewLabel("node-role.kubernetes.io/odf", "").
-			RemoveLabel("node-role.kubernetes.io/worker", "").Update()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to update labels for the node %s due to %v",
-			odfNode, err))
-
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode)
-
-		applyTaintsCmd := fmt.Sprintf(
-			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
-			odfNode, VCoreConfig.KubeconfigPath)
-		_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyTaintsCmd)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
-			applyTaintsCmd, err))
-	}
-
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the mcp %s to update", VCoreConfig.OdfMCPName)
-	time.Sleep(3 * time.Second)
-
-	err := odfMcp.WaitForUpdate(3 * time.Minute)
-	Expect(err).To(BeNil(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
-} // func LabelODFNodesAndSetTaints (ctx SpecContext)

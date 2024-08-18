@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
@@ -50,6 +52,9 @@ func VerifyODFSuite() {
 
 			It("Verify ODF console enabled",
 				Label("odf"), reportxml.ID("74917"), VerifyODFConsoleConfig)
+
+			It("Apply taints to the ODF nodes",
+				Label("odf"), reportxml.ID("74916"), VerifyODFTaints)
 
 			It("Verify ODF operator StorageSystem configuration procedure",
 				Label("odf"), reportxml.ID("59487"), VerifyODFStorageSystemConfig)
@@ -123,6 +128,25 @@ func VerifyODFConsoleConfig(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the console enablement")
 	time.Sleep(5 * time.Minute)
 } // func VerifyODFConsoleConfig (ctx SpecContext)
+
+// VerifyODFTaints asserts ODF nodes taints configuration.
+func VerifyODFTaints(ctx SpecContext) {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Apply taints to the ODF nodes")
+
+	for _, odfNodeName := range odfNodesList {
+		odfNode, err := nodes.Pull(APIClient, odfNodeName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve node %s object due to %v",
+			odfNodeName, err))
+
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode.Definition.Name)
+		applyTaintsCmd := fmt.Sprintf(
+			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
+			odfNode.Definition.Name, VCoreConfig.KubeconfigPath)
+		_, err = remote.ExecCmdOnHost(VCoreConfig.Host, VCoreConfig.User, VCoreConfig.Pass, applyTaintsCmd)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
+			applyTaintsCmd, err))
+	}
+} // func VerifyODFTaints (ctx SpecContext)
 
 // VerifyODFStorageSystemConfig asserts ODF storage cluster system successfully configured.
 func VerifyODFStorageSystemConfig(ctx SpecContext) {
