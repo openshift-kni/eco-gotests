@@ -157,7 +157,7 @@ func LabelODFNodesAndSetTaints(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
 
 		err = odfMcp.WaitForUpdate(3 * time.Minute)
-		Expect(err).To(BeNil(), fmt.Sprintf("Failed to create mcp %s", VCoreConfig.OdfMCPName))
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to update mcp %s", VCoreConfig.OdfMCPName))
 	}
 
 	for _, odfNode := range odfNodesList {
