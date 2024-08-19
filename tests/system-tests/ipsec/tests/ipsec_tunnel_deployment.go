@@ -19,8 +19,11 @@ var _ = Describe(
 			glog.V(ipsecparams.IpsecLogLevel).Infof("Check IPSec tunnel connection at OCP deployment")
 
 			nodeNames, _ := GetNodeNames()
-			err := ipsectunnel.TunnelConnected(nodeNames[0])
-			Expect(err).ToNot(HaveOccurred(), "Error: The IPSec tunnel is not connected.")
+			for _, nodeName := range nodeNames {
+				glog.V(ipsecparams.IpsecLogLevel).Infof("Check IPSec tunnel connection on node %s", nodeName)
+				err := ipsectunnel.TunnelConnected(nodeName)
+				Expect(err).ToNot(HaveOccurred(), "Error: The IPSec tunnel is not connected.")
+			}
 		})
 	},
 )

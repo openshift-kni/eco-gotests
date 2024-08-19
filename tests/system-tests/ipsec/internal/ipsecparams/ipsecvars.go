@@ -3,6 +3,7 @@ package ipsecparams
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
 	"github.com/openshift-kni/k8sreporter"
@@ -10,18 +11,18 @@ import (
 )
 
 var (
-	// Iperf3DeploymentName represents the deployment name used for launching iperf3 client and server workloads.
-	Iperf3DeploymentName = "iperf3"
-
 	// Labels represents the range of labels that can be used for test cases selection.
+	// Used in ipsec_suite_test.go.
 	Labels = []string{systemtestsparams.Label, Label}
 
 	// ReporterNamespacesToDump tells the reporter from where to collect logs.
+	// Used in ipsec_suite_test.go.
 	ReporterNamespacesToDump = map[string]string{
 		"test": "ipsec-test-workload",
 	}
 
 	// ReporterCRDsToDump tells the reporter what CRs to dump.
+	// Used in ipsec_suite_test.go.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &corev1.PodList{}},
 	}
@@ -29,12 +30,13 @@ var (
 	// TestNamespaceName is used for defining the namespace name where test resources are created.
 	TestNamespaceName = "ipsec-system-tests"
 
-	containerLabelKey = "ipsec-systemtest"
-	containerLabelVal = "iperf3"
-	// ContainerLabelsMap labels in an map used when creating the iperf3 container.
-	ContainerLabelsMap = map[string]string{containerLabelKey: containerLabelVal}
-	// ContainerLabelsStr labels in a str used when creating the iperf3 container.
-	ContainerLabelsStr = fmt.Sprintf("%s=%s", containerLabelKey, containerLabelVal)
+	// ContainerLabelKey is used below in CreateContainerLabelsMap(),
+	// CreateContainerLabelsStr() ,and CreateServiceDeploymentName().
+	ContainerLabelKey = "ipsec-systemtest"
+
+	// ContainerLabelValPrefix is used below in CreateContainerLabelsMap(),
+	// CreateContainerLabelsStr(), and CreateServiceDeploymentName().
+	ContainerLabelValPrefix = "iperf3"
 
 	// ContainerCmdBash start a container command with bash.
 	ContainerCmdBash = []string{"/bin/bash", "-c"}
@@ -70,3 +72,31 @@ var (
 	// If the client does not connect in 180 seconds, the server will be interrupted.
 	Iperf3ServerBaseCmd = []string{"timeout", "180", "iperf3", "--one-off", "-J", "-s"}
 )
+
+// CreateContainerLabelsMap create a container label map with the index passed in.
+func CreateContainerLabelsMap(index int, namePrefix string) map[string]string {
+	labelValue := fmt.Sprintf("%s-%s-%d", ContainerLabelValPrefix, namePrefix, index)
+	containerLabelsMap := map[string]string{ContainerLabelKey: labelValue}
+
+	return containerLabelsMap
+}
+
+// CreateContainerLabelsStr create a container label string with the index passed in.
+func CreateContainerLabelsStr(index int, namePrefix string) string {
+	return fmt.Sprintf("%s=%s-%s-%d", ContainerLabelKey, ContainerLabelValPrefix, namePrefix, index)
+}
+
+// CreateServiceDeploymentName create a deployment name with the index and prefix passed in.
+func CreateServiceDeploymentName(index int, namePrefix string) string {
+	return fmt.Sprintf("%s-%s-%d", ContainerLabelValPrefix, namePrefix, index)
+}
+
+// CreateIperf3ServerOcpIPs convert a sting of comma-separated IPs into a string
+// list of IPs.
+func CreateIperf3ServerOcpIPs(ipsStr string) ([]string, error) {
+	if len(ipsStr) == 0 {
+		return nil, fmt.Errorf("error: CreateIperf3ServerOcpIPs variable must be set")
+	}
+
+	return strings.Split(ipsStr, ","), nil
+}
