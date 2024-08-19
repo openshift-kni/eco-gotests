@@ -1,11 +1,14 @@
 package vcorecommon
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/lso"
 	lsov1 "github.com/openshift/local-storage-operator/api/v1"
@@ -191,7 +194,19 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 
 		glog.V(vcoreparams.VCoreLogLevel).Info("Get runAsUser and fsGroup values")
 
-		fsGroupFull := redisNamespaceBuilder.Object.Annotations["openshift.io/sa.scc.supplemental-groups"]
+		fsGroupFull := ""
+		_ = wait.PollUntilContextTimeout(
+			context.TODO(), 3*time.Second, time.Minute, true, func(ctx context.Context) (bool, error) {
+				fsGroupFull = redisNamespaceBuilder.Object.Annotations["openshift.io/sa.scc.supplemental-groups"]
+				if fsGroupFull == "" {
+					glog.V(90).Infof("no fsGroup was defined yet, retry")
+
+					return false, nil
+				}
+
+				return true, nil
+			})
+
 		Expect(fsGroupFull).ToNot(Equal(""), fmt.Sprintf("failed to get fsGroup value for the namespase %s",
 			redisNamespace))
 
