@@ -13,8 +13,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 
 	sriovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -193,6 +195,153 @@ func ConfigureSriovMlnxFirmwareOnWorkers(
 	}
 
 	return nil
+}
+
+// CreatePodsAndRunTraffic creates test pods and verifies connectivity between them.
+func CreatePodsAndRunTraffic(
+	clientNodeName string,
+	serverNodeName string,
+	sriovResNameClient string,
+	sriovResNameServer string,
+	clientMac string,
+	serverMac string,
+	clientIPs []string,
+	serverIPs []string) error {
+	glog.V(90).Infof("Creating test pods and checking ICMP connectivity between them")
+
+	clientPod, _, err := createAndWaitTestPods(
+		clientNodeName,
+		serverNodeName,
+		sriovResNameClient,
+		sriovResNameServer,
+		clientMac,
+		serverMac,
+		clientIPs,
+		serverIPs)
+
+	if err != nil {
+		glog.V(90).Infof("Failed to create test pods")
+
+		return err
+	}
+
+	return cmd.ICMPConnectivityCheck(clientPod, serverIPs)
+}
+
+// RemoveSriovConfigurationAndWaitForSriovAndMCPStable removes all SR-IOV networks
+// and policies in SR-IOV operator namespace.
+func RemoveSriovConfigurationAndWaitForSriovAndMCPStable() error {
+	glog.V(90).Infof("Removing all SR-IOV networks and policies")
+
+	err := RemoveAllSriovNetworks()
+	if err != nil {
+		glog.V(90).Infof("Failed to remove all SR-IOV networks")
+
+		return err
+	}
+
+	err = removeAllPoliciesAndWaitForSriovAndMCPStable()
+	if err != nil {
+		glog.V(90).Infof("Failed to remove all SR-IOV policies")
+
+		return err
+	}
+
+	return nil
+}
+
+// RemoveAllSriovNetworks removes all SR-IOV networks.
+func RemoveAllSriovNetworks() error {
+	glog.V(90).Infof("Removing all SR-IOV networks")
+
+	sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
+	if err != nil {
+		glog.V(90).Infof("Failed to pull SR-IOV operator namespace")
+
+		return err
+	}
+
+	err = sriovNs.CleanObjects(
+		netparam.DefaultTimeout,
+		sriov.GetSriovNetworksGVR())
+	if err != nil {
+		glog.V(90).Infof("Failed to remove SR-IOV networks from SR-IOV operator namespace")
+
+		return err
+	}
+
+	return nil
+}
+
+// removeAllPoliciesAndWaitForSriovAndMCPStable removes all  SriovNetworkNodePolicies and waits until
+// SR-IOV and MCP become stable.
+func removeAllPoliciesAndWaitForSriovAndMCPStable() error {
+	glog.V(90).Infof("Deleting all SriovNetworkNodePolicies and waiting for SR-IOV and MCP become stable.")
+
+	err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
+	if err != nil {
+		return err
+	}
+
+	return netenv.WaitForSriovAndMCPStable(
+		APIClient, tsparams.MCOWaitTimeout, time.Minute, NetConfig.CnfMcpLabel, NetConfig.SriovOperatorNamespace)
+}
+
+// createAndWaitTestPods creates test pods and waits until they are in the ready state.
+func createAndWaitTestPods(
+	clientNodeName string,
+	serverNodeName string,
+	sriovResNameClient string,
+	sriovResNameServer string,
+	clientMac string,
+	serverMac string,
+	clientIPs []string,
+	serverIPs []string) (client *pod.Builder, server *pod.Builder, err error) {
+	glog.V(90).Infof("Creating client pod with IPs %v, mac %s, SR-IOV resourceName %s"+
+		" and server pod with IPs %v, mac %s, SR-IOV resourceName %s.",
+		clientIPs, clientMac, sriovResNameClient, serverIPs, serverMac, sriovResNameServer)
+
+	clientPod, err := createAndWaitTestPodWithSecondaryNetwork("client", clientNodeName,
+		sriovResNameClient, clientMac, clientIPs)
+	if err != nil {
+		glog.V(90).Infof("Failed to create clientPod")
+
+		return nil, nil, err
+	}
+
+	serverPod, err := createAndWaitTestPodWithSecondaryNetwork("server", serverNodeName,
+		sriovResNameServer, serverMac, serverIPs)
+	if err != nil {
+		glog.V(90).Infof("Failed to create serverPod")
+
+		return nil, nil, err
+	}
+
+	return clientPod, serverPod, nil
+}
+
+// createAndWaitTestPodWithSecondaryNetwork creates test pod with secondary network
+// and waits until it is in the ready state.
+func createAndWaitTestPodWithSecondaryNetwork(
+	podName string,
+	testNodeName string,
+	sriovResNameTest string,
+	testMac string,
+	testIPs []string) (*pod.Builder, error) {
+	glog.V(90).Infof("Creating a test pod name %s", podName)
+
+	secNetwork := pod.StaticIPAnnotationWithMacAddress(sriovResNameTest, testIPs, testMac)
+	testPod, err := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		DefineOnNode(testNodeName).WithPrivilegedFlag().
+		WithSecondaryNetwork(secNetwork).CreateAndWaitUntilRunning(netparam.DefaultTimeout)
+
+	if err != nil {
+		glog.V(90).Infof("Failed to create pod %s with secondary network", podName)
+
+		return nil, err
+	}
+
+	return testPod, nil
 }
 
 func isVfCreated(sriovNodeState *sriov.NetworkNodeStateBuilder, vfNumber int, sriovInterfaceName string) error {
