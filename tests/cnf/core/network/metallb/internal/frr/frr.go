@@ -127,7 +127,7 @@ func IsProtocolConfigured(frrPod *pod.Builder, protocol string) (bool, error) {
 
 // GetMetricsByPrefix pulls all metrics from frr pods and sort them in the list by given prefix.
 func GetMetricsByPrefix(frrPod *pod.Builder, metricPrefix string) ([]string, error) {
-	stdout, err := frrPod.ExecCommand([]string{"curl", "localhost:29151/metrics"}, "frr")
+	stdout, err := frrPod.ExecCommand([]string{"curl", "localhost:7573/metrics"}, "frr")
 
 	if err != nil {
 		return nil, err

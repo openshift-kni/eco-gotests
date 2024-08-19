@@ -190,7 +190,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
 
 			verifyMetricPresentInPrometheus(
-				frrk8sPods, prometheusPods[0], "metallb_bgp_", tsparams.MetalLbBgpMetrics)
+				frrk8sPods, prometheusPods[0], "frrk8s_bgp_", tsparams.MetalLbBgpMetrics)
 		})
 
 		AfterAll(func() {

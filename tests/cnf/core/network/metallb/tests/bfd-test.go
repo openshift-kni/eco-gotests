@@ -121,7 +121,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list prometheus pods")
 
-			verifyMetricPresentInPrometheus(frrk8sPods, prometheusPods[0], "metallb_bfd_")
+			verifyMetricPresentInPrometheus(frrk8sPods, prometheusPods[0], "frrk8s_bfd_")
 		})
 
 		AfterEach(func() {
