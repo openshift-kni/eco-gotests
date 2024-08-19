@@ -42,6 +42,10 @@ func VerifyLSOSuite() {
 func VerifyLSONamespaceExists(ctx SpecContext) {
 	err := apiobjectshelper.VerifyNamespaceExists(APIClient, vcoreparams.LSONamespace, time.Second)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to pull namespace %q; %v", vcoreparams.LSONamespace, err))
+
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Short sleep to stabilize nodes to avoid pv creation failure")
+
+	time.Sleep(10 * time.Minute)
 } // func VerifyLSONamespaceExists (ctx SpecContext)
 
 // VerifyLSODeployment asserts Local Storage Operator successfully installed.
