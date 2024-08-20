@@ -126,7 +126,7 @@ func VerifyODFConsoleConfig(ctx SpecContext) {
 			odfConsolePlugin, newPluginsList))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the console enablement")
-	time.Sleep(5 * time.Minute)
+	time.Sleep(3 * time.Minute)
 } // func VerifyODFConsoleConfig (ctx SpecContext)
 
 // VerifyODFTaints asserts ODF nodes taints configuration.
