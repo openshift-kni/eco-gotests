@@ -154,6 +154,10 @@ type CoreConfig struct {
 	MCVlanNADOneName     string `yaml:"rdscore_mcvlan_nad_one_name" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_NAD_ONE_NAME"`
 	KDumpCPNodeLabel     string `yaml:"rdscore_kdump_cp_node_label" envconfig:"ECO_RDSCORE_KDUMP_CP_NODE_LABEL"`
 	KDumpCNFMCPNodeLabel string `yaml:"rdscore_kdump_cnf_node_label" envconfig:"ECO_RDSCORE_KDUMP_CNF_NODE_LABEL"`
+	IPVlanNSOne          string `yaml:"rdscore_ipvlan_ns_one" envconfig:"ECO_RDSCORE_IPVLAN_NS_ONE"`
+	IPVlanNSTwo          string `yaml:"rdscore_ipvlan_ns_two" envconfig:"ECO_RDSCORE_IPVLAN_NS_TWO"`
+	IPVlanDeployImageOne string `yaml:"rdscore_ipvlan_deploy_img_one" envconfig:"ECO_SYSTEM_RDSCORE_DEPLOY_IMG_ONE"`
+	IPVlanNADOneName     string `yaml:"rdscore_ipvlan_nad_one_name" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_NAD_ONE_NAME"`
 	//nolint:lll
 	PerformanceProfileHTName string `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
 	//nolint:lll
@@ -163,6 +167,8 @@ type CoreConfig struct {
 	WlkdNROPTolerationList TolerationList `yaml:"rdscore_nrop_tolerations_list" envconfig:"ECO_RDSCORE_NROP_TOLERATIONS_LIST"`
 	//nolint:lll,nolintlint
 	MCVlanCMDataOne map[string]string `yaml:"rdscore_mcvlan_cm_data_one" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_CM_DATA_ONE"`
+	//nolint:lll,nolintlint
+	IPVlanCMDataOne map[string]string `yaml:"rdscore_ipvlan_cm_data_one" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_CM_DATA_ONE"`
 	//nolint:lll
 	StorageODFWorkloadImage string      `yaml:"rdscore_storage_storage_wlkd_image" envconfig:"ECO_RDSCORE_STORAGE_WLKD_IMAGE"`
 	NodesCredentialsMap     NodesBMCMap `yaml:"rdscore_nodes_bmc_map" envconfig:"ECO_RDSCORE_NODES_CREDENTIALS_MAP"`
@@ -282,6 +288,26 @@ type CoreConfig struct {
 	MCVlanDeploy4TargetAddress string `yaml:"rdscore_macvlan_deploy_4_target" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_4_TARGET"`
 	//nolint:lll
 	MCVlanDeploy4TargetAddressIPv6 string `yaml:"rdscore_macvlan_deploy_4_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_MACVLAN_DEPLOY_4_TARGET_IPV6"`
+	//nolint:lll
+	IPVlanDeployNodeSelectorOne EnvMapString `yaml:"rdscore_ipvlan_1_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_1_NODE_SELECTOR"`
+	//nolint:lll
+	IPVlanDeployNodeSelectorTwo EnvMapString `yaml:"rdscore_ipvlan_2_node_selector" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_2_NODE_SELECTOR"`
+	//nolint:lll
+	IPVlanDeploy1TargetAddress string `yaml:"rdscore_ipvlan_deploy_1_target" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_ONE_TARGET"`
+	//nolint:lll
+	IPVlanDeploy1TargetAddressIPv6 string `yaml:"rdscore_ipvlan_deploy_1_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_ONE_TARGET_IPV6"`
+	//nolint:lll
+	IPVlanDeploy2TargetAddress string `yaml:"rdscore_ipvlan_deploy_2_target" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_TWO_TARGET"`
+	//nolint:lll
+	IPVlanDeploy2TargetAddressIPv6 string `yaml:"rdscore_ipvlan_deploy_2_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_TWO_TARGET_IPV6"`
+	//nolint:lll
+	IPVlanDeploy3TargetAddress string `yaml:"rdscore_ipvlan_deploy_3_target" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_3_TARGET"`
+	//nolint:lll
+	IPVlanDeploy3TargetAddressIPv6 string `yaml:"rdscore_ipvlan_deploy_3_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_3_TARGET_IPV6"`
+	//nolint:lll
+	IPVlanDeploy4TargetAddress string `yaml:"rdscore_ipvlan_deploy_4_target" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_4_TARGET"`
+	//nolint:lll
+	IPVlanDeploy4TargetAddressIPv6 string `yaml:"rdscore_ipvlan_deploy_4_target_ipv6" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_4_TARGET_IPV6"`
 	//nolint:lll,nolintlint
 	WlkdNROPDeployOneCmd EnvSliceString `yaml:"rdscore_wlkd_nrop_one_cmd" envconfig:"ECO_RDSCORE_WLKD_NROP_ONE_CMD"`
 	//nolint:lll,nolintlint
@@ -307,7 +333,15 @@ type CoreConfig struct {
 	//nolint:lll,nolintlint
 	MCVlanDeplon3CMD EnvSliceString `yaml:"rdscore_mcvlan_deploy_3_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_3_CMD"`
 	//nolint:lll,nolintlint
-	MCVlanDeplon4CMD     EnvSliceString `yaml:"rdscore_mcvlan_deploy_4_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_4_CMD"`
+	MCVlanDeplon4CMD EnvSliceString `yaml:"rdscore_mcvlan_deploy_4_cmd" envconfig:"ECO_SYSTEM_RDSCORE_MCVLAN_DEPLOY_4_CMD"`
+	//nolint:lll,nolintlint
+	IPVlanDeplonOneCMD EnvSliceString `yaml:"rdscore_ipvlan_deploy_1_cmd" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_1_CMD"`
+	//nolint:lll,nolintlint
+	IPVlanDeplonTwoCMD EnvSliceString `yaml:"rdscore_ipvlan_deploy_2_cmd" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_2_CMD"`
+	//nolint:lll,nolintlint
+	IPVlanDeplon3CMD EnvSliceString `yaml:"rdscore_ipvlan_deploy_3_cmd" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_3_CMD"`
+	//nolint:lll,nolintlint
+	IPVlanDeplon4CMD     EnvSliceString `yaml:"rdscore_ipvlan_deploy_4_cmd" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_4_CMD"`
 	StorageCephFSSCName  string         `yaml:"rdscore_sc_cephfs_name" envconfig:"ECO_RDSCORE_SC_CEPHFS_NAME"`
 	StorageCephRBDSCName string         `yaml:"rdscore_sc_cephrbd_name" envconfig:"ECO_RDSCORE_SC_CEPHRBD_NAME"`
 }

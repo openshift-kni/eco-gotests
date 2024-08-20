@@ -334,6 +334,12 @@ func VerifyHardRebootSuite() {
 
 				By("Creating MACVLAN workloads on different nodes")
 				VerifyMacVlanOnDifferentNodes()
+
+				By("Creating IPVLAN workloads on the same node")
+				VerifyIPVlanOnSameNode()
+
+				By("Creating IPVLAN workloads on different nodes")
+				VerifyIPVlanOnDifferentNodes()
 			})
 
 			It("Verifies ungraceful cluster reboot",
@@ -433,10 +439,20 @@ func VerifyHardRebootSuite() {
 			It("Verifies MACVLAN workloads on different nodes post hard reboot",
 				Label("rds-core-post-hard-reboot-macvlan-different-nodes"), reportxml.ID("72568"),
 				VerifyMACVLANConnectivityOnSameNode)
+
+			It("Verifies IPVLAN workloads on the same node post hard reboot",
+				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75565"),
+				VerifyIPVLANConnectivityOnSameNode)
+
+			It("Verifies IPVLAN workloads on different nodes post hard reboot",
+				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75059"),
+				VerifyIPVLANConnectivityBetweenDifferentNodes)
 		})
 }
 
 // VerifyGracefulRebootSuite container that contains tests for graceful reboot verification.
+//
+//nolint:funlen
 func VerifyGracefulRebootSuite() {
 	Describe(
 		"Graceful reboot validation",
@@ -459,6 +475,12 @@ func VerifyGracefulRebootSuite() {
 
 				By("Creating MACVLAN workloads on different nodes")
 				VerifyMacVlanOnDifferentNodes()
+
+				By("Creating IPVLAN workloads on the same node")
+				VerifyIPVlanOnSameNode()
+
+				By("Creating IPVLAN workloads on different nodes")
+				VerifyIPVlanOnDifferentNodes()
 			})
 
 			It("Verifies graceful cluster reboot",
@@ -517,5 +539,13 @@ func VerifyGracefulRebootSuite() {
 			It("Verifies MACVLAN workloads on different nodes post soft reboot",
 				Label("rds-core-post-soft-reboot-macvlan-different-nodes"), reportxml.ID("72570"),
 				VerifyMACVLANConnectivityOnSameNode)
+
+			It("Verifies IPVLAN workloads on the same node post soft reboot",
+				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75564"),
+				VerifyIPVLANConnectivityOnSameNode)
+
+			It("Verifies IPVLAN workloads on different nodes post soft reboot",
+				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75058"),
+				VerifyIPVLANConnectivityBetweenDifferentNodes)
 		})
 }
