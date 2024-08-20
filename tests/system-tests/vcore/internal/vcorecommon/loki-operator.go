@@ -34,22 +34,22 @@ func VerifyLokiSuite() {
 		"LokiStack and Cluster Logging validation",
 		Label(vcoreparams.LabelVCoreODF), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.CLONamespace),
-				Label("loki2"), VerifyCLONamespaceExists)
+				Label("loki"), VerifyCLONamespaceExists)
 
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.LokiNamespace),
-				Label("loki2"), VerifyLokiNamespaceExists)
+				Label("loki"), VerifyLokiNamespaceExists)
 
 			It("Verify Loki Operator successfully installed",
-				Label("loki2"), reportxml.ID("74913"), VerifyLokiDeployment)
+				Label("loki"), reportxml.ID("74913"), VerifyLokiDeployment)
 
 			It("Verify ClusterLogging Operator successfully installed",
-				Label("loki2"), reportxml.ID("73678"), VerifyCLODeployment)
+				Label("loki"), reportxml.ID("73678"), VerifyCLODeployment)
 
 			It("Create ObjectBucketClaim config",
-				Label("loki2"), reportxml.ID("74914"), CreateObjectBucketClaim)
+				Label("loki"), reportxml.ID("74914"), CreateObjectBucketClaim)
 
 			It("Create LokiStack instance",
-				Label("loki2"), reportxml.ID("74915"), CreateLokiStackInstance)
+				Label("loki"), reportxml.ID("74915"), CreateLokiStackInstance)
 
 			It(fmt.Sprintf("Verify Cluster Logging instance %s is running in namespace %s",
 				vcoreparams.CLOInstanceName, vcoreparams.CLONamespace),
@@ -279,7 +279,6 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create lokiStack instance %s in namespace %s due to %v",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace, err))
-
 	Expect(lokiStackObj.IsReady(15*time.Minute)).To(Equal(true),
 		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 10 mins",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace))
