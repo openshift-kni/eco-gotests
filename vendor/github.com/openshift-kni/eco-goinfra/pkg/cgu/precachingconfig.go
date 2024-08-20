@@ -21,7 +21,7 @@ type PreCachingConfigBuilder struct {
 	// Object of the PreCachingConfig as it is on the cluster.
 	Object *v1alpha1.PreCachingConfig
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// used to store latest error message upon defining or mutating application definition.
 	errorMsg string
 }
@@ -31,8 +31,21 @@ func NewPreCachingConfigBuilder(apiClient *clients.Settings, name, nsname string
 	glog.V(100).Infof(
 		"Initializing new PreCachingConfig structure with the following params: name: %s, nsname: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient for the PreCachingConfig is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(v1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add cgu v1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &PreCachingConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &v1alpha1.PreCachingConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -69,8 +82,15 @@ func PullPreCachingConfig(apiClient *clients.Settings, name, nsname string) (*Pr
 		return nil, fmt.Errorf("preCachingConfig 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(v1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add cgu v1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := PreCachingConfigBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &v1alpha1.PreCachingConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,

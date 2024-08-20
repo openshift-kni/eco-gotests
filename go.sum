@@ -1572,6 +1572,8 @@ github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f07cdbf8af2c/go.mod h1:hkzqKpmQvh7vgPx8Hw6IExJorKPM0dEeJdOXjIW3gNw=
 github.com/openshift-kni/eco-goinfra v0.0.0-20240813134610-7cfb14e1ce75 h1:Q+Sr/fYSRMfXSvetdX5ZTe4WI2ubaL2NedKVaE1BbKM=
 github.com/openshift-kni/eco-goinfra v0.0.0-20240813134610-7cfb14e1ce75/go.mod h1:1e3J+jXsIFWbuLD3Cf6nLF+/l9XI30fZiLc20CVSA2M=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240819205434-62b2119d4777 h1:fkQhAU+1ZE5/f2OmPIJKeJ5khlHYJ4B+Bsz611QmkZo=
+github.com/openshift-kni/eco-goinfra v0.0.0-20240819205434-62b2119d4777/go.mod h1:f3XX4dM4BbVlqRTl3GrQqC0yuSJL8tA7Ebv6skpc7RE=
 github.com/openshift-kni/k8sreporter v1.0.5 h1:1GYBc/BTZyVoXilHef43v9A8BSzw700zAPZ6zsZvo6Y=
 github.com/openshift-kni/k8sreporter v1.0.5/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20240606123201-0c45cd13c2f1 h1:y+0Ecc+MSZA/GNS3VOpKq+XK9x8qoNA7TlyHvqbVbpw=

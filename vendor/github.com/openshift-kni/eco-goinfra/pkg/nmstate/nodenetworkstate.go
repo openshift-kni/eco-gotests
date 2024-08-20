@@ -9,11 +9,10 @@ import (
 	"github.com/golang/glog"
 	"golang.org/x/exp/slices"
 
-	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
+	nmstateV1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,7 +29,7 @@ type StateBuilder struct {
 	// Created NodeNetworkState object on the cluster.
 	Object *nmstateV1alpha1.NodeNetworkState
 	// API client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	// errorMsg is processed before NodeNetworkState object is created.
 	errorMsg string
 }
@@ -183,8 +182,21 @@ func (builder *StateBuilder) GetSriovVfs(sriovInterfaceName string) ([]Vf, error
 func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuilder, error) {
 	glog.V(100).Infof("Pulling NodeNetworkState object name:%s", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(nmstateV1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nmstate v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	stateBuilder := StateBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Object: &nmstateV1alpha1.NodeNetworkState{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -195,11 +207,11 @@ func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuild
 	if name == "" {
 		glog.V(100).Infof("The name of the NodeNetworkState is empty")
 
-		stateBuilder.errorMsg = "NodeNetworkState 'name' cannot be empty"
+		return nil, fmt.Errorf("nodeNetworkState 'name' cannot be empty")
 	}
 
 	if !stateBuilder.Exists() {
-		return nil, fmt.Errorf("NodeNetworkState object %s does not exist", name)
+		return nil, fmt.Errorf("nodeNetworkState object %s does not exist", name)
 	}
 
 	return &stateBuilder, nil

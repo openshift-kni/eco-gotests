@@ -8,10 +8,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
-	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
-
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // BackupBuilder provides a struct for backup object from the cluster and a backup definition.
@@ -23,7 +22,7 @@ type BackupBuilder struct {
 	// Used to store latest error message upon defining or mutating backup definition.
 	errorMsg string
 	// api client to interact with the cluster.
-	apiClient veleroClient.Interface
+	apiClient goclient.Client
 }
 
 // NewBackupBuilder creates a new instance of BackupBuilder.
@@ -32,8 +31,21 @@ func NewBackupBuilder(apiClient *clients.Settings, name, nsname string) *BackupB
 		"Initializing new backup structure with the following params: "+
 			"name: %s, namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(velerov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add velero v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &BackupBuilder{
-		apiClient: apiClient.VeleroClient,
+		apiClient: apiClient.Client,
 		Definition: &velerov1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -61,8 +73,21 @@ func NewBackupBuilder(apiClient *clients.Settings, name, nsname string) *BackupB
 func PullBackup(apiClient *clients.Settings, name, nsname string) (*BackupBuilder, error) {
 	glog.V(100).Infof("Pulling existing backup name: %s under namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(velerov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add velero v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := BackupBuilder{
-		apiClient: apiClient.VeleroClient,
+		apiClient: apiClient.Client,
 		Definition: &velerov1.Backup{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -246,6 +271,28 @@ func (builder *BackupBuilder) WithExcludedNamespaceScopedResources(crd string) *
 	return builder
 }
 
+// Get returns Backup object if found.
+func (builder *BackupBuilder) Get() (*velerov1.Backup, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Collecting Backup object %s", builder.Definition.Name)
+
+	backup := &velerov1.Backup{}
+	err := builder.apiClient.Get(
+		context.TODO(),
+		goclient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace}, backup)
+
+	if err != nil {
+		glog.V(100).Infof("Backup object %s does not exist", builder.Definition.Name)
+
+		return nil, err
+	}
+
+	return backup, err
+}
+
 // Exists checks whether the given backup exists.
 func (builder *BackupBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -256,8 +303,7 @@ func (builder *BackupBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.VeleroV1().Backups(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -273,8 +319,10 @@ func (builder *BackupBuilder) Create() (*BackupBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.VeleroV1().Backups(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
+		}
 	}
 
 	return builder, err
@@ -288,9 +336,11 @@ func (builder *BackupBuilder) Update() (*BackupBuilder, error) {
 
 	glog.V(100).Infof("Updating backup %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	builder.Object, err = builder.apiClient.VeleroV1().Backups(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -308,8 +358,7 @@ func (builder *BackupBuilder) Delete() (*BackupBuilder, error) {
 		return builder, fmt.Errorf("backup cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.VeleroV1().Backups(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete backup: %w", err)

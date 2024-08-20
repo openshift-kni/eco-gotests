@@ -5,12 +5,10 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-
-	nmstateV1 "github.com/nmstate/kubernetes-nmstate/api/v1"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 
+	nmstateV1 "github.com/nmstate/kubernetes-nmstate/api/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,7 +22,7 @@ type Builder struct {
 	// Created NMState object on the cluster.
 	Object *nmstateV1.NMState
 	// API client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	// errorMsg is processed before NMState object is created.
 	errorMsg string
 }
@@ -33,8 +31,21 @@ type Builder struct {
 func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 	glog.V(100).Infof("Initializing new NMState structure with the name: %s", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(nmstateV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nmstate v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &nmstateV1.NMState{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -116,6 +127,15 @@ func (builder *Builder) Delete() (*Builder, error) {
 
 	glog.V(100).Infof("Deleting the NMState object %s", builder.Definition.Name)
 
+	if !builder.Exists() {
+		glog.V(100).Infof("NMState %s cannot be deleted because it does not exist",
+			builder.Definition.Name)
+
+		builder.Object = nil
+
+		return builder, nil
+	}
+
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
@@ -137,22 +157,22 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
-	if err != nil {
-		if force {
+	if err == nil {
+		builder.Object = builder.Definition
+	} else if force {
+		glog.V(100).Infof(
+			msg.FailToUpdateNotification("NMState", builder.Definition.Name))
+
+		builder, err := builder.Delete()
+
+		if err != nil {
 			glog.V(100).Infof(
-				msg.FailToUpdateNotification("NMState", builder.Definition.Name))
+				msg.FailToUpdateError("NMState", builder.Definition.Name))
 
-			builder, err := builder.Delete()
-
-			if err != nil {
-				glog.V(100).Infof(
-					msg.FailToUpdateError("NMState", builder.Definition.Name))
-
-				return nil, err
-			}
-
-			return builder.Create()
+			return nil, err
 		}
+
+		return builder.Create()
 	}
 
 	return builder, err
@@ -162,8 +182,21 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 func PullNMstate(apiClient *clients.Settings, name string) (*Builder, error) {
 	glog.V(100).Infof("Pulling NMState object name: %s", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(nmstateV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nmstate v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &nmstateV1.NMState{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -174,11 +207,11 @@ func PullNMstate(apiClient *clients.Settings, name string) (*Builder, error) {
 	if name == "" {
 		glog.V(100).Infof("The name of the NMState is empty")
 
-		builder.errorMsg = "NMState 'name' cannot be empty"
+		return nil, fmt.Errorf("nmState 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("NMState object %s does not exist", name)
+		return nil, fmt.Errorf("nmState object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object

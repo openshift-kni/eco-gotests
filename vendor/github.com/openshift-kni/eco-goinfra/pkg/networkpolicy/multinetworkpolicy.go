@@ -6,12 +6,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1"
-	multinetworkpolicyTyped "github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MultiNetworkPolicyBuilder provides struct for MultiNetworkPolicy object.
@@ -21,7 +21,7 @@ type MultiNetworkPolicyBuilder struct {
 	// Created MultiNetworkPolicy object on the cluster.
 	Object *v1beta1.MultiNetworkPolicy
 	// api client to interact with the cluster.
-	apiClient multinetworkpolicyTyped.K8sCniCncfIoV1beta1Interface
+	apiClient runtimeClient.Client
 	// errorMsg is processed before MultiNetworkPolicy object is created.
 	errorMsg string
 }
@@ -32,8 +32,21 @@ func NewMultiNetworkPolicyBuilder(apiClient *clients.Settings, name, nsname stri
 		"Initializing new MultiNetworkPolicyBuilder structure with the following params: name: %s, namespace: %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(v1beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add multi-networkpolicy v1beta1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &MultiNetworkPolicyBuilder{
-		apiClient: apiClient.K8sCniCncfIoV1beta1Interface,
+		apiClient: apiClient.Client,
 		Definition: &v1beta1.MultiNetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -182,8 +195,21 @@ func (builder *MultiNetworkPolicyBuilder) WithPolicyType(
 func PullMultiNetworkPolicy(apiClient *clients.Settings, name, nsname string) (*MultiNetworkPolicyBuilder, error) {
 	glog.V(100).Infof("Pulling existing MultiNetworkPolicy name: %s, namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(v1beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add multi-networkpolicy v1beta1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := MultiNetworkPolicyBuilder{
-		apiClient: apiClient.K8sCniCncfIoV1beta1Interface,
+		apiClient: apiClient.Client,
 		Definition: &v1beta1.MultiNetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -217,6 +243,32 @@ func PullMultiNetworkPolicy(apiClient *clients.Settings, name, nsname string) (*
 	return &builder, nil
 }
 
+// Get returns MultiNetworkPolicy object if found.
+func (builder *MultiNetworkPolicyBuilder) Get() (*v1beta1.MultiNetworkPolicy, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting MultiNetworkPolicy object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	network := &v1beta1.MultiNetworkPolicy{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		network)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"MultiNetworkPolicy object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return network, nil
+}
+
 // Create makes a MultiNetworkPolicy in cluster and stores the created object in struct.
 func (builder *MultiNetworkPolicyBuilder) Create() (*MultiNetworkPolicyBuilder, error) {
 	if valid, err := builder.validate(); !valid {
@@ -228,9 +280,16 @@ func (builder *MultiNetworkPolicyBuilder) Create() (*MultiNetworkPolicyBuilder, 
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.MultiNetworkPolicies(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create MultiNetworkPolicy object")
+
+			return nil, err
+		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -245,8 +304,7 @@ func (builder *MultiNetworkPolicyBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.MultiNetworkPolicies(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -266,8 +324,7 @@ func (builder *MultiNetworkPolicyBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.MultiNetworkPolicies(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return fmt.Errorf("cannot delete MultiNetworkPolicy: %w", err)
@@ -287,9 +344,15 @@ func (builder *MultiNetworkPolicyBuilder) Update() (*MultiNetworkPolicyBuilder, 
 	glog.V(100).Infof("Updating MultiNetworkPolicy %s in %s namespace ",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	builder.Object, err = builder.apiClient.MultiNetworkPolicies(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if !builder.Exists() {
+		return nil, fmt.Errorf("failed to update MultiNetworkPolicy, object does not exist on cluster")
+	}
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }

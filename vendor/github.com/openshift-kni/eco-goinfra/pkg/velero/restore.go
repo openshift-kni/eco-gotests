@@ -8,9 +8,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
-	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // RestoreBuilder provides a struct for restore object from the cluster and a restore definition.
@@ -22,7 +22,7 @@ type RestoreBuilder struct {
 	// Used to store latest error message upon defining or mutating restore definition.
 	errorMsg string
 	// api client to interact with the cluster.
-	apiClient veleroClient.Interface
+	apiClient goclient.Client
 }
 
 // NewRestoreBuilder creates a new instance of RestoreBuilder.
@@ -31,8 +31,21 @@ func NewRestoreBuilder(apiClient *clients.Settings, name, nsname, backupName str
 		"Initializing new restore structure with the following params: "+
 			"name: %s, namespace: %s, restoreName: %s", name, nsname, backupName)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(velerov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add velero v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &RestoreBuilder{
-		apiClient: apiClient.VeleroClient,
+		apiClient: apiClient.Client,
 		Definition: &velerov1.Restore{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -69,8 +82,21 @@ func NewRestoreBuilder(apiClient *clients.Settings, name, nsname, backupName str
 func PullRestore(apiClient *clients.Settings, name, nsname string) (*RestoreBuilder, error) {
 	glog.V(100).Infof("Pulling existing restore name: %s under namespace: %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(velerov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add velero v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := RestoreBuilder{
-		apiClient: apiClient.VeleroClient,
+		apiClient: apiClient.Client,
 		Definition: &velerov1.Restore{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -125,6 +151,28 @@ func (builder *RestoreBuilder) WithStorageLocation(location string) *RestoreBuil
 	return builder
 }
 
+// Get returns Backup object if found.
+func (builder *RestoreBuilder) Get() (*velerov1.Restore, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Collecting Restore object %s", builder.Definition.Name)
+
+	restore := &velerov1.Restore{}
+	err := builder.apiClient.Get(
+		context.TODO(),
+		goclient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace}, restore)
+
+	if err != nil {
+		glog.V(100).Infof("Restore object %s does not exist", builder.Definition.Name)
+
+		return nil, err
+	}
+
+	return restore, err
+}
+
 // Exists checks whether the given restore object exists.
 func (builder *RestoreBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -135,8 +183,7 @@ func (builder *RestoreBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.VeleroV1().Restores(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -152,8 +199,10 @@ func (builder *RestoreBuilder) Create() (*RestoreBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.VeleroV1().Restores(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
+		}
 	}
 
 	return builder, err
@@ -167,9 +216,11 @@ func (builder *RestoreBuilder) Update() (*RestoreBuilder, error) {
 
 	glog.V(100).Infof("Updating restore %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	builder.Object, err = builder.apiClient.VeleroV1().Restores(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -187,8 +238,7 @@ func (builder *RestoreBuilder) Delete() (*RestoreBuilder, error) {
 		return builder, fmt.Errorf("restore cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.VeleroV1().Restores(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete restore: %w", err)

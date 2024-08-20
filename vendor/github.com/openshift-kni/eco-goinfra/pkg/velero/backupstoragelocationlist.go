@@ -6,16 +6,24 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ListBackupStorageLocationBuilder returns backupstoragelocation inventory in the given namespace.
 func ListBackupStorageLocationBuilder(
-	apiClient *clients.Settings, nsname string, options ...metav1.ListOptions) ([]*BackupStorageLocationBuilder, error) {
+	apiClient *clients.Settings, nsname string, options ...client.ListOptions) ([]*BackupStorageLocationBuilder, error) {
 	if apiClient == nil {
 		glog.V(100).Infof("The apiClient cannot be nil")
 
 		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
+	err := apiClient.AttachScheme(velerov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nmstate v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	if nsname == "" {
@@ -25,7 +33,7 @@ func ListBackupStorageLocationBuilder(
 	}
 
 	logMessage := fmt.Sprintf("Listing backupstoragelocations in the nsname %s", nsname)
-	passedOptions := metav1.ListOptions{}
+	passedOptions := client.ListOptions{}
 
 	if len(options) == 1 {
 		passedOptions = options[0]
@@ -38,7 +46,8 @@ func ListBackupStorageLocationBuilder(
 
 	glog.V(100).Infof(logMessage)
 
-	bslList, err := apiClient.BackupStorageLocations(nsname).List(context.TODO(), passedOptions)
+	bslList := &velerov1.BackupStorageLocationList{}
+	err = apiClient.Client.List(context.TODO(), bslList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list backupstoragelocations in the nsname %s due to %s", nsname, err.Error())
@@ -51,7 +60,7 @@ func ListBackupStorageLocationBuilder(
 	for _, runningBsl := range bslList.Items {
 		copiedBsl := runningBsl
 		bslBuilder := &BackupStorageLocationBuilder{
-			apiClient:  apiClient.VeleroClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedBsl,
 			Definition: &copiedBsl,
 		}

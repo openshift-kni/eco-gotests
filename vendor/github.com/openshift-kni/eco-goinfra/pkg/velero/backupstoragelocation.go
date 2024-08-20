@@ -9,10 +9,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
-	veleroClient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // BackupStorageLocationBuilder provides a struct for backupstoragelocation
@@ -25,7 +25,7 @@ type BackupStorageLocationBuilder struct {
 	// Used to store latest error message upon defining or mutating backupstoragelocation definition.
 	errorMsg string
 	// api client to interact with the cluster.
-	apiClient veleroClient.Interface
+	apiClient goclient.Client
 }
 
 // NewBackupStorageLocationBuilder creates a new instance of BackupStorageLocationBuilder.
@@ -45,8 +45,15 @@ func NewBackupStorageLocationBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(velerov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add velero v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &BackupStorageLocationBuilder{
-		apiClient: apiClient.VeleroClient,
+		apiClient: apiClient.Client,
 		Definition: &velerov1.BackupStorageLocation{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -99,8 +106,15 @@ func PullBackupStorageLocationBuilder(
 		return nil, fmt.Errorf("the apiClient is nil")
 	}
 
+	err := apiClient.AttachScheme(velerov1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add velero v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := BackupStorageLocationBuilder{
-		apiClient: apiClient.VeleroClient,
+		apiClient: apiClient.Client,
 		Definition: &velerov1.BackupStorageLocation{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -166,9 +180,7 @@ func (builder *BackupStorageLocationBuilder) WaitUntilAvailable(
 			glog.V(100).Infof("Waiting for the backupstoragelocation %s in %s to become available",
 				builder.Definition.Name, builder.Definition.Namespace)
 
-			builder.Object, err = builder.apiClient.VeleroV1().
-				BackupStorageLocations(builder.Definition.Namespace).Get(
-				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			builder.Object, err = builder.Get()
 
 			if err != nil {
 				return false, err
@@ -201,9 +213,7 @@ func (builder *BackupStorageLocationBuilder) WaitUntilUnavailable(
 			glog.V(100).Infof("Waiting for the backupstoragelocation %s in %s to become unavailable",
 				builder.Definition.Name, builder.Definition.Namespace)
 
-			builder.Object, err = builder.apiClient.VeleroV1().
-				BackupStorageLocations(builder.Definition.Namespace).Get(
-				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			builder.Object, err = builder.Get()
 
 			if err != nil {
 				return false, err
@@ -219,6 +229,28 @@ func (builder *BackupStorageLocationBuilder) WaitUntilUnavailable(
 	return nil, fmt.Errorf("error waiting for backupstoragelocation to become unavailable: %w", err)
 }
 
+// Get returns Backup object if found.
+func (builder *BackupStorageLocationBuilder) Get() (*velerov1.BackupStorageLocation, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Collecting BackupStorageLocation object %s", builder.Definition.Name)
+
+	backupStorageLocation := &velerov1.BackupStorageLocation{}
+	err := builder.apiClient.Get(
+		context.TODO(),
+		goclient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace}, backupStorageLocation)
+
+	if err != nil {
+		glog.V(100).Infof("BackupStorageLocation object %s does not exist", builder.Definition.Name)
+
+		return nil, err
+	}
+
+	return backupStorageLocation, err
+}
+
 // Exists checks whether the given backupstoragelocation exists.
 func (builder *BackupStorageLocationBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -229,8 +261,7 @@ func (builder *BackupStorageLocationBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.VeleroV1().BackupStorageLocations(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -247,8 +278,10 @@ func (builder *BackupStorageLocationBuilder) Create() (*BackupStorageLocationBui
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.VeleroV1().BackupStorageLocations(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
+		}
 	}
 
 	return builder, err
@@ -267,9 +300,11 @@ func (builder *BackupStorageLocationBuilder) Update() (*BackupStorageLocationBui
 		return builder, fmt.Errorf("cannot update non-existent backupstoragelocation")
 	}
 
-	var err error
-	builder.Object, err = builder.apiClient.VeleroV1().BackupStorageLocations(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -287,8 +322,7 @@ func (builder *BackupStorageLocationBuilder) Delete() error {
 		return fmt.Errorf("backupstoragelocation cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.VeleroV1().BackupStorageLocations(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return fmt.Errorf("can not delete backupstoragelocation: %w", err)

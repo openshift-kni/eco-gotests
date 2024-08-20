@@ -8,12 +8,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
-	clientCgu "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var conditionComplete = metav1.Condition{Type: "Succeeded", Status: metav1.ConditionTrue}
@@ -26,7 +26,7 @@ type CguBuilder struct {
 	// created cgu object.
 	Object *v1alpha1.ClusterGroupUpgrade
 	// api client to interact with the cluster.
-	apiClient clientCgu.Interface
+	apiClient goclient.Client
 	// used to store latest error message upon defining or mutating application definition.
 	errorMsg string
 }
@@ -37,7 +37,21 @@ func NewCguBuilder(apiClient *clients.Settings, name, nsname string, maxConcurre
 		"Initializing new CGU structure with the following params: name: %s, nsname: %s, maxConcurrency: %d",
 		name, nsname, maxConcurrency)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient for the CGU is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(v1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add cgu v1alpha1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &CguBuilder{
+		apiClient: apiClient.Client,
 		Definition: &v1alpha1.ClusterGroupUpgrade{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -50,16 +64,6 @@ func NewCguBuilder(apiClient *clients.Settings, name, nsname string, maxConcurre
 			},
 		},
 	}
-
-	if apiClient == nil {
-		glog.V(100).Info("The apiClient for the CGU is nil")
-
-		builder.errorMsg = "CGU 'apiClient' cannot be nil"
-
-		return builder
-	}
-
-	builder.apiClient = apiClient.ClientCgu
 
 	if name == "" {
 		glog.V(100).Infof("The name of the CGU is empty")
@@ -156,8 +160,15 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*CguBuilder, error)
 		return nil, fmt.Errorf("cgu 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(v1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add cgu v1alpha1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := CguBuilder{
-		apiClient: apiClient.ClientCgu,
+		apiClient: apiClient.Client,
 		Definition: &v1alpha1.ClusterGroupUpgrade{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -187,6 +198,32 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*CguBuilder, error)
 	return &builder, nil
 }
 
+// Get returns ClusterGroupUpgrade object if found.
+func (builder *CguBuilder) Get() (*v1alpha1.ClusterGroupUpgrade, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting clusterGroupUpgrade object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	clusterGroupUpgrade := &v1alpha1.ClusterGroupUpgrade{}
+	err := builder.apiClient.Get(context.TODO(),
+		goclient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		clusterGroupUpgrade)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"clusterGroupUpgrade object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return clusterGroupUpgrade, nil
+}
+
 // Exists checks whether the given cgu exists.
 func (builder *CguBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -197,8 +234,7 @@ func (builder *CguBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -214,9 +250,15 @@ func (builder *CguBuilder) Create() (*CguBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err != nil {
+			glog.V(100).Infof("Failed to create clusterGroupUpgrade")
+
+			return nil, err
+		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -234,8 +276,7 @@ func (builder *CguBuilder) Delete() (*CguBuilder, error) {
 		return builder, fmt.Errorf("cgu cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return builder, fmt.Errorf("can not delete cgu: %w", err)
@@ -254,32 +295,27 @@ func (builder *CguBuilder) Update(force bool) (*CguBuilder, error) {
 
 	glog.V(100).Infof("Updating the cgu object", builder.Definition.Name)
 
-	var err error
-	builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
-
-	if err != nil {
-		if force {
-			glog.V(100).Infof(
-				msg.FailToUpdateNotification("cgu", builder.Definition.Name))
-
-			// Deleting the cgu may take time, so wait for it to be deleted before recreating. Otherwise,
-			// the create happens before the delete finishes and this update results in just deletion.
-			builder, err := builder.DeleteAndWait(time.Minute)
-
-			if err != nil {
-				glog.V(100).Infof(
-					msg.FailToUpdateError("cgu", builder.Definition.Name))
-
-				return nil, err
-			}
-
-			return builder.Create()
-		}
-	}
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err == nil {
 		builder.Object = builder.Definition
+	} else if force {
+		glog.V(100).Infof(
+			msg.FailToUpdateNotification("cgu", builder.Definition.Name))
+
+		// Deleting the cgu may take time, so wait for it to be deleted before recreating. Otherwise,
+		// the create happens before the delete finishes and this update results in just deletion.
+		builder, err := builder.DeleteAndWait(time.Minute)
+		builder.Definition.ResourceVersion = ""
+
+		if err != nil {
+			glog.V(100).Infof(
+				msg.FailToUpdateError("cgu", builder.Definition.Name))
+
+			return nil, err
+		}
+
+		return builder.Create()
 	}
 
 	return builder, err
@@ -316,8 +352,7 @@ func (builder *CguBuilder) WaitUntilDeleted(timeout time.Duration) error {
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			_, err := builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
-				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			_, err := builder.Get()
 			if err == nil {
 				glog.V(100).Infof("cgu %s/%s still present", builder.Definition.Name, builder.Definition.Namespace)
 
@@ -354,8 +389,7 @@ func (builder *CguBuilder) WaitForCondition(expected metav1.Condition, timeout t
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
-			builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
-				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			builder.Object, err = builder.Get()
 
 			if err != nil {
 				glog.V(100).Info("failed to get cgu %s/%s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
@@ -426,8 +460,7 @@ func (builder *CguBuilder) WaitUntilClusterInState(cluster, state string, timeou
 	var err error
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
-				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			builder.Object, err = builder.Get()
 			if err != nil {
 				return false, nil
 			}
@@ -478,8 +511,7 @@ func (builder *CguBuilder) WaitUntilBackupStarts(timeout time.Duration) (*CguBui
 
 	var err error
 	err = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, timeout, true, func(context.Context) (bool, error) {
-		builder.Object, err = builder.apiClient.RanV1alpha1().ClusterGroupUpgrades(builder.Definition.Namespace).
-			Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+		builder.Object, err = builder.Get()
 		if err != nil {
 			glog.V(100).Infof(
 				"Failed to get CGU %s in namespace %s due to: %w", builder.Definition.Name, builder.Definition.Namespace, err)

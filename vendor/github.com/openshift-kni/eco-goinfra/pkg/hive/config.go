@@ -36,6 +36,13 @@ func NewConfigBuilder(apiClient *clients.Settings, name string) *ConfigBuilder {
 		return nil
 	}
 
+	err := apiClient.AttachScheme(hiveV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := ConfigBuilder{
 		apiClient: apiClient.Client,
 		Definition: &hiveV1.HiveConfig{
@@ -63,6 +70,13 @@ func PullConfig(apiClient *clients.Settings, name string) (*ConfigBuilder, error
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("hiveconfig 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(hiveV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := ConfigBuilder{

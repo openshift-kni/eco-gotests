@@ -5,19 +5,27 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ListInAllNamespaces returns a cluster-wide cgu inventory.
-func ListInAllNamespaces(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*CguBuilder, error) {
+func ListInAllNamespaces(apiClient *clients.Settings, options ...client.ListOptions) ([]*CguBuilder, error) {
 	logMessage := "Listing CGUS in all namespaces"
-	passedOptions := metav1.ListOptions{}
+	passedOptions := client.ListOptions{}
 
 	if apiClient == nil {
 		glog.V(100).Infof("CGUs 'apiClient' parameter can not be empty")
 
 		return nil, fmt.Errorf("failed to list cgu objects, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(v1alpha1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add cgu v1alpha1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	if len(options) > 1 {
@@ -33,8 +41,8 @@ func ListInAllNamespaces(apiClient *clients.Settings, options ...metav1.ListOpti
 
 	glog.V(100).Infof(logMessage)
 
-	cguList, err := apiClient.ClientCgu.RanV1alpha1().
-		ClusterGroupUpgrades("").List(context.TODO(), passedOptions)
+	cguList := &v1alpha1.ClusterGroupUpgradeList{}
+	err = apiClient.Client.List(context.TODO(), cguList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all CGUs in all namespaces due to %s", err.Error())
@@ -47,7 +55,7 @@ func ListInAllNamespaces(apiClient *clients.Settings, options ...metav1.ListOpti
 	for _, policy := range cguList.Items {
 		copiedCgu := policy
 		cguBuilder := &CguBuilder{
-			apiClient:  apiClient.ClientCgu,
+			apiClient:  apiClient.Client,
 			Object:     &copiedCgu,
 			Definition: &copiedCgu,
 		}

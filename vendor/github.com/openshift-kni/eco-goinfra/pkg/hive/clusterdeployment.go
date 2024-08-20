@@ -22,7 +22,7 @@ type ClusterDeploymentBuilder struct {
 	Definition *hiveV1.ClusterDeployment
 	Object     *hiveV1.ClusterDeployment
 	errorMsg   string
-	apiClient  *clients.Settings
+	apiClient  goclient.Client
 }
 
 // ClusterDeploymentAdditionalOptions additional options for ClusterDeployment object.
@@ -43,8 +43,21 @@ func NewABMClusterDeploymentBuilder(
 		  clusterName: %s, baseDomain: %s, clusterInstallRef: %s, agentSelector: %s`,
 		name, nsname, clusterName, baseDomain, clusterInstallRef, agentSelector)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(hiveV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := ClusterDeploymentBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &hiveV1.ClusterDeployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -181,8 +194,21 @@ func (builder *ClusterDeploymentBuilder) Get() (*hiveV1.ClusterDeployment, error
 func PullClusterDeployment(apiClient *clients.Settings, name, nsname string) (*ClusterDeploymentBuilder, error) {
 	glog.V(100).Infof("Pulling existing clusterdeployment name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(hiveV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := ClusterDeploymentBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &hiveV1.ClusterDeployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -194,13 +220,13 @@ func PullClusterDeployment(apiClient *clients.Settings, name, nsname string) (*C
 	if name == "" {
 		glog.V(100).Infof("The name of the clusterdeployment is empty")
 
-		builder.errorMsg = "clusterdeployment 'name' cannot be empty"
+		return nil, fmt.Errorf("clusterdeployment 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the clusterdeployment is empty")
 
-		builder.errorMsg = "clusterdeployment 'namespace' cannot be empty"
+		return nil, fmt.Errorf("clusterdeployment 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -304,7 +330,9 @@ func (builder *ClusterDeploymentBuilder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return fmt.Errorf("clusterdeployment cannot be deleted because it does not exist")
+		glog.V(100).Infof("clusterdeployment cannot be deleted because it does not exist")
+
+		return nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
