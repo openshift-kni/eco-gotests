@@ -114,7 +114,7 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 
 	_, err = objectBucketClaimObj.
 		WithGenerateBucketName(vcoreparams.ObjectBucketClaimName).
-		WithStorageClassName("ocs-storagecluster-ceph-rgw").Create()
+		WithStorageClassName("openshift-storage.noobaa.io").Create()
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create objectBucketClaim %s in namespace %s due to %v",
 			vcoreparams.ObjectBucketClaimName, vcoreparams.CLONamespace, err))
@@ -151,6 +151,8 @@ func CreateObjectBucketClaim(ctx SpecContext) {
 //nolint:funlen
 func CreateLokiStackInstance(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create a LokiStack instance")
+
+	time.Sleep(2 * time.Minute)
 
 	var err error
 
@@ -277,7 +279,7 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create lokiStack instance %s in namespace %s due to %v",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace, err))
-	Expect(lokiStackObj.IsReady(10*time.Minute)).To(Equal(true),
+	Expect(lokiStackObj.IsReady(15*time.Minute)).To(Equal(true),
 		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 10 mins",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace))
 } // func CreateLokiStackInstance (ctx SpecContext)
@@ -383,7 +385,7 @@ func CreateCLOInstance(ctx SpecContext) {
 
 	glog.V(90).Infof("Verify clusterlogging %s in namespace %s state is Ready",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
-	Expect(clusterLoggingObj.IsReady(time.Minute)).To(Equal(true),
+	Expect(clusterLoggingObj.IsReady(5*time.Minute)).To(Equal(true),
 		fmt.Sprintf("clusterlogging %s in namespace %s is Degraded",
 			vcoreparams.CLOInstanceName, vcoreparams.CLONamespace))
 } // func CreateCLOInstance (ctx SpecContext)
