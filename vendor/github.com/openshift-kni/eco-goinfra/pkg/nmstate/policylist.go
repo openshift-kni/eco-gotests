@@ -15,6 +15,19 @@ func ListPolicy(apiClient *clients.Settings, options ...goclient.ListOptions) ([
 	passedOptions := goclient.ListOptions{}
 	logMessage := "Listing NodeNetworkConfigurationPolicy"
 
+	if apiClient == nil {
+		glog.V(100).Infof("sriov network 'apiClient' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list sriov networks, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(nmstateV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nmstate v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")
 
@@ -29,7 +42,7 @@ func ListPolicy(apiClient *clients.Settings, options ...goclient.ListOptions) ([
 	glog.V(100).Infof(logMessage)
 
 	policyList := &nmstateV1.NodeNetworkConfigurationPolicyList{}
-	err := apiClient.Client.List(context.TODO(), policyList, &passedOptions)
+	err = apiClient.Client.List(context.TODO(), policyList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list NodeNetworkConfigurationPolicy due to %s", err.Error())
@@ -42,7 +55,7 @@ func ListPolicy(apiClient *clients.Settings, options ...goclient.ListOptions) ([
 	for _, policy := range policyList.Items {
 		copiedPolicy := policy
 		policyBuilder := &PolicyBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Definition: &copiedPolicy,
 			Object:     &copiedPolicy}
 

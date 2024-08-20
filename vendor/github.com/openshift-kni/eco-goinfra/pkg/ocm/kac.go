@@ -3,6 +3,7 @@ package ocm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -10,6 +11,7 @@ import (
 	kacv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -123,6 +125,32 @@ func PullKAC(apiClient *clients.Settings, name, nsname string) (*KACBuilder, err
 	return builder, nil
 }
 
+// Get returns the KlusterletAddonConfig object if found.
+func (builder *KACBuilder) Get() (*kacv1.KlusterletAddonConfig, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Getting KlusterletAddonConfig object %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+	klusterletAddonConfig := &kacv1.KlusterletAddonConfig{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
+		Name:      builder.Definition.Name,
+		Namespace: builder.Definition.Namespace,
+	}, klusterletAddonConfig)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"KlusterletAddonConfig object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return klusterletAddonConfig, nil
+}
+
 // Exists checks whether the given KlusterletAddonConfig exists on the cluster.
 func (builder *KACBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -132,15 +160,8 @@ func (builder *KACBuilder) Exists() bool {
 	glog.V(100).Infof(
 		"Checking if KlusterletAddonConfig %s exists in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
-	klusterletAddonConfig := &kacv1.KlusterletAddonConfig{}
-	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
-		Name:      builder.Definition.Name,
-		Namespace: builder.Definition.Namespace,
-	}, klusterletAddonConfig)
-
-	if err == nil {
-		builder.Object = klusterletAddonConfig
-	}
+	var err error
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -239,6 +260,39 @@ func (builder *KACBuilder) Delete() error {
 	builder.Object = nil
 
 	return nil
+}
+
+// WaitUntilSearchCollectorEnabled waits up to the specified timeout until the search collector config has been enabled.
+func (builder *KACBuilder) WaitUntilSearchCollectorEnabled(timeout time.Duration) (*KACBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Waiting until KlusterletAddonConfig %s in namespace %s has search collector enabled",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf(
+			"klusterletAddonConfig object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	var err error
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, timeout, true, func(context.Context) (bool, error) {
+		builder.Object, err = builder.Get()
+		if err != nil {
+			return false, nil
+		}
+
+		return builder.Object.Spec.SearchCollectorConfig.Enabled, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return builder, nil
 }
 
 // validate checks that the builder, definition, and apiClient are properly initialized and there is no errorMsg.

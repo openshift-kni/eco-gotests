@@ -17,6 +17,19 @@ func ListClusterDeploymentsInAllNamespaces(
 	passedOptions := goclient.ListOptions{}
 	logMessage := "Listing all clusterdeployments"
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(hiveV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	if len(options) > 1 {
 		glog.V(100).Infof("'options' parameter must be empty or single-valued")
 
@@ -31,7 +44,7 @@ func ListClusterDeploymentsInAllNamespaces(
 	glog.V(100).Infof(logMessage)
 
 	clusterDeployments := new(hiveV1.ClusterDeploymentList)
-	err := apiClient.List(context.TODO(), clusterDeployments, &passedOptions)
+	err = apiClient.List(context.TODO(), clusterDeployments, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all clusterDeployments due to %s", err.Error())
@@ -44,7 +57,7 @@ func ListClusterDeploymentsInAllNamespaces(
 	for _, clusterDeployment := range clusterDeployments.Items {
 		copiedClusterDeployment := clusterDeployment
 		clusterDeploymentBuilder := &ClusterDeploymentBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedClusterDeployment,
 			Definition: &copiedClusterDeployment,
 		}

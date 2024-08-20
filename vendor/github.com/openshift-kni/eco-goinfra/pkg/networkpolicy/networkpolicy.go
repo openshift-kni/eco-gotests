@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	netv1 "k8s.io/api/networking/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	netv1Typed "k8s.io/client-go/kubernetes/typed/networking/v1"
 )
 
 // NetworkPolicyBuilder provides struct for networkPolicy object.
@@ -20,7 +21,7 @@ type NetworkPolicyBuilder struct {
 	// Created networkPolicy object on the cluster.
 	Object *netv1.NetworkPolicy
 	// api client to interact with the cluster.
-	apiClient netv1Typed.NetworkingV1Interface
+	apiClient runtimeClient.Client
 	// errorMsg is processed before NetworkPolicy object is created.
 	errorMsg string
 }
@@ -30,8 +31,21 @@ func NewNetworkPolicyBuilder(apiClient *clients.Settings, name, nsname string) *
 	glog.V(100).Infof("Initializing new NetworkPolicyBuilder structure with the following params: name: %s, namespace: %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(netv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add NetworkPolicy v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &NetworkPolicyBuilder{
-		apiClient: apiClient.NetworkingV1Interface,
+		apiClient: apiClient.Client,
 		Definition: &netv1.NetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -164,16 +178,23 @@ func (builder *NetworkPolicyBuilder) WithPodSelector(podSelectorMatchLabels map[
 
 // Pull loads an existing networkPolicy into the Builder struct.
 func Pull(apiClient *clients.Settings, name, nsname string) (*NetworkPolicyBuilder, error) {
+	glog.V(100).Infof("Pulling existing networkPolicy name: %s namespace:%s", name, nsname)
+
 	if apiClient == nil {
 		glog.V(100).Infof("The apiClient is nil")
 
 		return nil, fmt.Errorf("apiClient cannot be nil")
 	}
 
-	glog.V(100).Infof("Pulling existing networkPolicy name: %s namespace:%s", name, nsname)
+	err := apiClient.AttachScheme(netv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add NetworkPolicy v1 scheme to client schemes")
+
+		return nil, err
+	}
 
 	builder := &NetworkPolicyBuilder{
-		apiClient: apiClient.NetworkingV1Interface,
+		apiClient: apiClient.Client,
 		Definition: &netv1.NetworkPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -206,6 +227,32 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*NetworkPolicyBuild
 	return builder, nil
 }
 
+// Get returns MultiNetworkPolicy object if found.
+func (builder *NetworkPolicyBuilder) Get() (*netv1.NetworkPolicy, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting NetworkPolicy object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	netPolicy := &netv1.NetworkPolicy{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		netPolicy)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"NetworkPolicy object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return netPolicy, nil
+}
+
 // Create makes a networkPolicy in cluster and stores the created object in struct.
 func (builder *NetworkPolicyBuilder) Create() (*NetworkPolicyBuilder, error) {
 	if valid, err := builder.validate(); !valid {
@@ -217,9 +264,16 @@ func (builder *NetworkPolicyBuilder) Create() (*NetworkPolicyBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.NetworkPolicies(builder.Definition.Namespace).Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create NetworkPolicy object")
+
+			return nil, err
+		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -234,8 +288,7 @@ func (builder *NetworkPolicyBuilder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.NetworkPolicies(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -257,8 +310,7 @@ func (builder *NetworkPolicyBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.NetworkPolicies(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return fmt.Errorf("cannot delete networkPolicy: %w", err)
@@ -278,9 +330,15 @@ func (builder *NetworkPolicyBuilder) Update() (*NetworkPolicyBuilder, error) {
 	glog.V(100).Infof("Updating networkPolicy %s in %s namespace ",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	builder.Object, err = builder.apiClient.NetworkPolicies(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if !builder.Exists() {
+		return nil, fmt.Errorf("failed to update NetworkPolicy, object does not exist on cluster")
+	}
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }

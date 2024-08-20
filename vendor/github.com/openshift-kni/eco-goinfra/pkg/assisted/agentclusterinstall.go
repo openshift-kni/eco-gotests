@@ -54,6 +54,13 @@ func NewAgentClusterInstallBuilder(
 		return nil
 	}
 
+	err := apiClient.AttachScheme(hiveextV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1beta1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := AgentClusterInstallBuilder{
 		apiClient: apiClient.Client,
 		Definition: &hiveextV1Beta1.AgentClusterInstall{
@@ -519,6 +526,13 @@ func PullAgentClusterInstall(apiClient *clients.Settings, name, nsname string) (
 		glog.V(100).Infof("The apiClient cannot be nil")
 
 		return nil, fmt.Errorf("the apiClient is nil")
+	}
+
+	err := apiClient.AttachScheme(hiveextV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1beta1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := AgentClusterInstallBuilder{

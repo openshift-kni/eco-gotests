@@ -4,34 +4,49 @@ import (
 	"context"
 	"fmt"
 
-	argocdoperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
+	argocdoperator "github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	goclient "sigs.k8s.io/controller-runtime/pkg/client"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Builder provides struct for the argocd object containing connection to
 // the cluster and the argocd definitions.
 type Builder struct {
 	// argocd Definition, used to create the argocd object.
-	Definition *argocdoperatorv1alpha1.ArgoCD
+	Definition *argocdoperator.ArgoCD
 	// created argocd object.
-	Object *argocdoperatorv1alpha1.ArgoCD
+	Object *argocdoperator.ArgoCD
 	// api client to interact with the cluster.
-	apiClient goclient.Client
+	apiClient runtimeclient.Client
 	// used to store latest error message upon defining the argocd definition.
 	errorMsg string
 }
 
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
+	glog.V(100).Infof("Initializing new ArgoCD structure with the following params: name: %s, nsname: %s", name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient is empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(argocdoperator.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add ArgoCD scheme to client schemes")
+
+		return nil
+	}
+
 	builder := Builder{
 		apiClient: apiClient.Client,
-		Definition: &argocdoperatorv1alpha1.ArgoCD{
-			Spec: argocdoperatorv1alpha1.ArgoCDSpec{},
+		Definition: &argocdoperator.ArgoCD{
+			Spec: argocdoperator.ArgoCDSpec{},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -43,6 +58,8 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 		glog.V(100).Infof("The name of the argocd is empty")
 
 		builder.errorMsg = "argocd 'name' cannot be empty"
+
+		return &builder
 	}
 
 	if nsname == "" {
@@ -64,9 +81,16 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		return nil, fmt.Errorf("argocd 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(argocdoperator.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add ArgoCD scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := Builder{
 		apiClient: apiClient.Client,
-		Definition: &argocdoperatorv1alpha1.ArgoCD{
+		Definition: &argocdoperator.ArgoCD{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -111,7 +135,7 @@ func (builder *Builder) Exists() bool {
 }
 
 // Get returns argocd object if found.
-func (builder *Builder) Get() (*argocdoperatorv1alpha1.ArgoCD, error) {
+func (builder *Builder) Get() (*argocdoperator.ArgoCD, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -119,8 +143,8 @@ func (builder *Builder) Get() (*argocdoperatorv1alpha1.ArgoCD, error) {
 	glog.V(100).Infof("Getting argocd %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	argocd := &argocdoperatorv1alpha1.ArgoCD{}
-	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
+	argocd := &argocdoperator.ArgoCD{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
 		Name:      builder.Definition.Name,
 		Namespace: builder.Definition.Namespace,
 	}, argocd)

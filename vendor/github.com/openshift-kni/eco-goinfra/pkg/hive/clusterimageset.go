@@ -19,7 +19,7 @@ type ClusterImageSetBuilder struct {
 	Definition *hiveV1.ClusterImageSet
 	Object     *hiveV1.ClusterImageSet
 	errorMsg   string
-	apiClient  *clients.Settings
+	apiClient  goclient.Client
 }
 
 // ClusterImageSetAdditionalOptions additional options for ClusterImageSet object.
@@ -37,8 +37,15 @@ func NewClusterImageSetBuilder(apiClient *clients.Settings, name, releaseImage s
 		return nil
 	}
 
+	err := apiClient.AttachScheme(hiveV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := ClusterImageSetBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &hiveV1.ClusterImageSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -74,8 +81,15 @@ func PullClusterImageSet(apiClient *clients.Settings, name string) (*ClusterImag
 		return nil, fmt.Errorf("clusterImageSet 'apiClient' cannot be empty")
 	}
 
+	err := apiClient.AttachScheme(hiveV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add hive v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := ClusterImageSetBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &hiveV1.ClusterImageSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,

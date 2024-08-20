@@ -39,7 +39,7 @@ type PolicyBuilder struct {
 	// Created srIovPolicy object
 	Object *nmstateV1.NodeNetworkConfigurationPolicy
 	// apiClient opens API connection to the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	// errorMsg is processed before the srIovPolicy object is created.
 	errorMsg string
 }
@@ -49,8 +49,21 @@ func NewPolicyBuilder(apiClient *clients.Settings, name string, nodeSelector map
 	glog.V(100).Infof(
 		"Initializing new NodeNetworkConfigurationPolicy structure with the following params: %s", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(nmstateV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nmstate v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PolicyBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &nmstateV1.NodeNetworkConfigurationPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -63,13 +76,13 @@ func NewPolicyBuilder(apiClient *clients.Settings, name string, nodeSelector map
 	if name == "" {
 		glog.V(100).Infof("The name of the NodeNetworkConfigurationPolicy is empty")
 
-		builder.errorMsg = "NodeNetworkConfigurationPolicy 'name' cannot be empty"
+		builder.errorMsg = "nodeNetworkConfigurationPolicy 'name' cannot be empty"
 	}
 
 	if len(nodeSelector) == 0 {
 		glog.V(100).Infof("The nodeSelector of the NodeNetworkConfigurationPolicy is empty")
 
-		builder.errorMsg = "NodeNetworkConfigurationPolicy 'nodeSelector' cannot be empty map"
+		builder.errorMsg = "nodeNetworkConfigurationPolicy 'nodeSelector' cannot be empty map"
 	}
 
 	return &builder
@@ -143,7 +156,12 @@ func (builder *PolicyBuilder) Delete() (*PolicyBuilder, error) {
 	glog.V(100).Infof("Deleting the NodeNetworkConfigurationPolicy object %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("NodeNetworkConfigurationPolicy cannot be deleted because it does not exist")
+		glog.V(100).Infof("NodeNetworkConfigurationPolicy %s cannot be deleted because it does not exist",
+			builder.Definition.Name)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
@@ -170,7 +188,9 @@ func (builder *PolicyBuilder) Update(force bool) (*PolicyBuilder, error) {
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
-	if err != nil {
+	if err == nil {
+		builder.Object = builder.Definition
+	} else if force {
 		if force {
 			glog.V(100).Infof(
 				msg.FailToUpdateNotification("NodeNetworkConfigurationPolicy", builder.Definition.Name))
@@ -206,7 +226,7 @@ func (builder *PolicyBuilder) WithInterfaceAndVFs(sriovInterface string, numberO
 	if sriovInterface == "" {
 		glog.V(100).Infof("The sriovInterface  can not be empty string")
 
-		builder.errorMsg = "The sriovInterface is empty sting"
+		builder.errorMsg = "The sriovInterface is empty string"
 
 		return builder
 	}

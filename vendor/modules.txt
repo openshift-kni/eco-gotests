@@ -388,20 +388,10 @@ github.com/json-iterator/go
 ## explicit; go 1.13
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta1
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/apis/k8s.cni.cncf.io/v1beta2
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/fake
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/scheme
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta1/fake
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta2
-github.com/k8snetworkplumbingwg/multi-networkpolicy/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1beta2/fake
 # github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.0
 ## explicit; go 1.21
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
-github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/scheme
-github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
 # github.com/k8snetworkplumbingwg/sriov-network-operator v1.2.0 => github.com/openshift/sriov-network-operator v0.0.0-20240508132640-2b61056c9758
 ## explicit; go 1.21
@@ -545,17 +535,10 @@ github.com/onsi/gomega/types
 ## explicit; go 1.20
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/applyconfiguration/clustergroupupgrades/v1alpha1
-github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned
-github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/fake
-github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
-github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
-github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240813134610-7cfb14e1ce75
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240819205434-62b2119d4777
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
-github.com/openshift-kni/eco-goinfra/pkg/argocd/argocdtypes
 github.com/openshift-kni/eco-goinfra/pkg/assisted
 github.com/openshift-kni/eco-goinfra/pkg/bmc
 github.com/openshift-kni/eco-goinfra/pkg/bmh
@@ -602,6 +585,12 @@ github.com/openshift-kni/eco-goinfra/pkg/rbac
 github.com/openshift-kni/eco-goinfra/pkg/reportxml
 github.com/openshift-kni/eco-goinfra/pkg/route
 github.com/openshift-kni/eco-goinfra/pkg/scc
+github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator
+github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperatorcommon
+github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes
+github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/gitopsengine/health
+github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/gitopsengine/synccommon
 github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/common
 github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1
@@ -993,13 +982,7 @@ github.com/vishvananda/netns
 github.com/vmware-tanzu/velero/pkg/apis/velero/shared
 github.com/vmware-tanzu/velero/pkg/apis/velero/v1
 github.com/vmware-tanzu/velero/pkg/apis/velero/v2alpha1
-github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned
-github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/fake
 github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/scheme
-github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/typed/velero/v1
-github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/typed/velero/v1/fake
-github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/typed/velero/v2alpha1
-github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/typed/velero/v2alpha1/fake
 # github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
 ## explicit
 github.com/walle/targz

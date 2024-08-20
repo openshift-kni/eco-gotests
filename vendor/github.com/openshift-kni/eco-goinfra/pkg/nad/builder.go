@@ -8,6 +8,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"context"
 	"encoding/json"
@@ -19,7 +20,7 @@ type Builder struct {
 	Definition        *nadV1.NetworkAttachmentDefinition
 	Object            *nadV1.NetworkAttachmentDefinition
 	metaPluginConfigs []Plugin
-	apiClient         *clients.Settings
+	apiClient         runtimeClient.Client
 	errorMsg          string
 }
 
@@ -35,6 +36,19 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 		"Initializing new NetworkAttachmentDefinition structure with the following params: "+
 			"name: %s, namespace: %s",
 		name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(nadV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nad v1 scheme to client schemes")
+
+		return nil
+	}
 
 	builder := Builder{
 		apiClient: apiClient,
@@ -63,7 +77,21 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 
 // Pull pulls existing networkattachmentdefinition from cluster.
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
-	glog.V(100).Infof("Pulling existing networkattachmentdefinition name %s under namespace %s from cluster", name, nsname)
+	glog.V(100).Infof(
+		"Pulling existing networkattachmentdefinition name %s under namespace %s from cluster", name, nsname)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(nadV1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add nad v1 scheme to client schemes")
+
+		return nil, fmt.Errorf("failed to add nad v1 scheme to client schemes")
+	}
 
 	builder := Builder{
 		apiClient: apiClient,
@@ -78,13 +106,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	if name == "" {
 		glog.V(100).Infof("The name of the networkattachmentdefinition is empty")
 
-		builder.errorMsg = "networkattachmentdefinition 'name' cannot be empty"
+		return nil, fmt.Errorf("networkattachmentdefinition 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the networkattachmentdefinition is empty")
 
-		builder.errorMsg = "networkattachmentdefinition 'namespace' cannot be empty"
+		return nil, fmt.Errorf("networkattachmentdefinition 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -94,6 +122,32 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	builder.Definition = builder.Object
 
 	return &builder, nil
+}
+
+// Get returns CatalogSource object if found.
+func (builder *Builder) Get() (*nadV1.NetworkAttachmentDefinition, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Collecting NetworkAttachmentDefinition object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	network := &nadV1.NetworkAttachmentDefinition{}
+	err := builder.apiClient.Get(context.TODO(),
+		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
+		network)
+
+	if err != nil {
+		glog.V(100).Infof(
+			"NetworkAttachmentDefinition object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, err
+	}
+
+	return network, nil
 }
 
 // Create builds a NetworkAttachmentDefinition resource with the builder configuration.
@@ -118,12 +172,16 @@ func (builder *Builder) Create() (*Builder, error) {
 	}
 
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).
-			Create(context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
+
 		if err != nil {
-			return builder, fmt.Errorf("fail to create NAD object due to: " + err.Error())
+			glog.V(100).Infof("Failed to create NAD object")
+
+			return nil, err
 		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, nil
 }
@@ -140,11 +198,12 @@ func (builder *Builder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("NetworkAttachmentDefinition cannot be deleted because it does not exist")
+
 		return nil
 	}
 
-	err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Namespace, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {
 		return fmt.Errorf("fail to delete NAD object due to: %w", err)
@@ -164,13 +223,17 @@ func (builder *Builder) Update() (*Builder, error) {
 	glog.V(100).Infof("Updating NetworkAttachmentDefinition %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
+	if !builder.Exists() {
+		return nil, fmt.Errorf("failed to update NetworkAttachmentDefinition, object does not exist on cluster")
+	}
 
 	builder.Definition.CreationTimestamp = metav1.Time{}
 	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
-	builder.Object, err = builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -187,8 +250,8 @@ func (builder *Builder) Exists() bool {
 	glog.V(100).Infof("Checking if NetworkAttachmentDefinition %s exists in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	_, err := builder.apiClient.NetworkAttachmentDefinitions(builder.Definition.Namespace).Get(context.TODO(),
-		builder.Definition.Name, metav1.GetOptions{})
+	var err error
+	builder.Object, err = builder.Get()
 
 	return nil == err || !k8serrors.IsNotFound(err)
 }
@@ -247,6 +310,10 @@ func (builder *Builder) fillConfigureString() error {
 func (builder *Builder) WithMasterPlugin(masterPlugin *MasterPlugin) *Builder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
+	}
+
+	if masterPlugin == nil {
+		builder.errorMsg = "error 'masterPlugin' is empty"
 	}
 
 	glog.V(100).Infof("Adding masterPlugin %v to NAD %s", masterPlugin, builder.Definition.Name)
