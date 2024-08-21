@@ -268,10 +268,10 @@ func ExecCommandOnSNOWithRetries(client *clients.Settings, retries uint,
 	return "", fmt.Errorf("found unreachable code in ExecCommandOnSNO")
 }
 
-// WaitForClusterRecover waits up to timeout for all pods in namespaces on a provided node to recover.
-func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeout time.Duration) error {
+// WaitForRecover waits up to timeout for all pods in namespaces on a provided node to recover.
+func WaitForRecover(client *clients.Settings, namespaces []string, timeout time.Duration) error {
 	glog.V(90).Infof("Wait for cluster to recover for namespaces: %v timeout: %v", namespaces, timeout)
-	err := waitForClusterReachable(client, timeout)
+	err := waitForReachable(client, timeout)
 
 	if err != nil {
 		return err
@@ -297,9 +297,25 @@ func SoftRebootSNO(apiClient *clients.Settings, retries uint, interval time.Dura
 	return err
 }
 
-// waitForClusterReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
+// WaitForUnreachable waits up to timeout for the cluster to become unavailable
+// by attempting to list nodes in the cluster.
+func WaitForUnreachable(client *clients.Settings, timeout time.Duration) error {
+	glog.V(90).Infof("Wait for cluster unreachable with timeout: %v", timeout)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := nodes.List(client, metav1.ListOptions{TimeoutSeconds: ptr.To[int64](3)})
+			if err != nil {
+				return true, nil
+			}
+
+			return false, nil
+		})
+}
+
+// waitForReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
 // cluster.
-func waitForClusterReachable(client *clients.Settings, timeout time.Duration) error {
+func waitForReachable(client *clients.Settings, timeout time.Duration) error {
 	glog.V(90).Infof("Wait for cluster reachable with timeout: %v", timeout)
 
 	return wait.PollUntilContextTimeout(

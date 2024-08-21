@@ -412,7 +412,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 			Expect(err).ToNot(HaveOccurred(), "Failed to power on spoke 1")
 
 			By("waiting until all spoke 1 pods are ready")
-			err = cluster.WaitForClusterRecover(Spoke1APIClient, []string{}, 45*time.Minute)
+			err = cluster.WaitForRecover(Spoke1APIClient, []string{}, 45*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
 		})
 
