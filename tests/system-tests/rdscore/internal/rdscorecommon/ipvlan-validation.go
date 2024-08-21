@@ -105,7 +105,7 @@ func VerifyIPVlanOnDifferentNodes() {
 	deployTwo := defineIPVlanDeployment(ipvlanDeploy11Name,
 		RDSCoreConfig.IPVlanNSOne,
 		ipvlanDeploy11Label,
-		RDSCoreConfig.IPVlanNADOneName,
+		RDSCoreConfig.IPVlanNADTwoName,
 		ipvlanDeploy2CMName,
 		deployContainerTwoCfg,
 		RDSCoreConfig.IPVlanDeployNodeSelectorTwo)
@@ -231,7 +231,7 @@ func VerifyIPVlanOnSameNode() {
 	deployOne := defineIPVlanDeployment(ipvlanDeploy20Name,
 		RDSCoreConfig.IPVlanNSOne,
 		ipvlanDeploy20Label,
-		RDSCoreConfig.IPVlanNADOneName,
+		RDSCoreConfig.IPVlanNADThreeName,
 		ipvlanDeploy3CMName,
 		deployContainerCfg,
 		RDSCoreConfig.IPVlanDeployNodeSelectorOne)
@@ -239,7 +239,7 @@ func VerifyIPVlanOnSameNode() {
 	deployTwo := defineIPVlanDeployment(ipvlanDeploy21Name,
 		RDSCoreConfig.IPVlanNSOne,
 		ipvlanDeploy21Label,
-		RDSCoreConfig.IPVlanNADOneName,
+		RDSCoreConfig.IPVlanNADFourName,
 		ipvlanDeploy4CMName,
 		deployContainerTwoCfg,
 		RDSCoreConfig.IPVlanDeployNodeSelectorOne)

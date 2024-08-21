@@ -158,6 +158,9 @@ type CoreConfig struct {
 	IPVlanNSTwo          string `yaml:"rdscore_ipvlan_ns_two" envconfig:"ECO_RDSCORE_IPVLAN_NS_TWO"`
 	IPVlanDeployImageOne string `yaml:"rdscore_ipvlan_deploy_img_one" envconfig:"ECO_SYSTEM_RDSCORE_DEPLOY_IMG_ONE"`
 	IPVlanNADOneName     string `yaml:"rdscore_ipvlan_nad_one_name" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_NAD_ONE_NAME"`
+	IPVlanNADTwoName     string `yaml:"rdscore_ipvlan_nad_two_name" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_NAD_TWO_NAME"`
+	IPVlanNADThreeName   string `yaml:"rdscore_ipvlan_nad_three_name" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_NAD_THREE_NAME"`
+	IPVlanNADFourName    string `yaml:"rdscore_ipvlan_nad_four_name" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_NAD_FOUR_NAME"`
 	//nolint:lll
 	PerformanceProfileHTName string `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
 	//nolint:lll
