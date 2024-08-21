@@ -19,16 +19,23 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
 
+//nolint:funlen
 func crashNodeKDump(nodeLabel string) {
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Find nodes matching label %q", nodeLabel)
-
 	var (
 		nodeList []*nodes.Builder
 		err      error
 		ctx      SpecContext
 	)
 
+	if nodeLabel == "" {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node Label is empty. Skipping...")
+
+		Skip("Empty node selector label")
+	}
+
 	By("Retrieve nodes list")
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Find nodes matching label %q", nodeLabel)
 
 	Eventually(func() bool {
 		nodeList, err = nodes.List(
@@ -54,7 +61,7 @@ func crashNodeKDump(nodeLabel string) {
 		err = reboot.KernelCrashKdump(node.Definition.Name)
 		Expect(err).ToNot(HaveOccurred(), "Error triggering a kernel crash on the node.")
 
-		By("Waiting for node to go into NotReady state")
+		By("Waiting for node to go into Ready state")
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Checking node %q got into Ready state",
 			node.Definition.Name)
@@ -103,7 +110,7 @@ func crashNodeKDump(nodeLabel string) {
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("\tGenerated VMCore dumps: %v", coreDumps)
 
 			return len(strings.Fields(coreDumps)) >= 1
-		}).WithContext(ctx).WithTimeout(1*time.Minute).WithPolling(5*time.Second).Should(BeTrue(),
+		}).WithContext(ctx).WithTimeout(5*time.Minute).WithPolling(15*time.Second).Should(BeTrue(),
 			"error: vmcore dump was not generated")
 	}
 }
