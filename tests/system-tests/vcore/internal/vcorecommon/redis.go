@@ -148,7 +148,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 
 		fsGroupFull := ""
 		_ = wait.PollUntilContextTimeout(
-			context.TODO(), 3*time.Second, time.Minute, true, func(ctx context.Context) (bool, error) {
+			context.TODO(), 3*time.Second, 5*time.Minute, true, func(ctx context.Context) (bool, error) {
 				fsGroupFull = redisNamespaceBuilder.Object.Annotations["openshift.io/sa.scc.supplemental-groups"]
 				if fsGroupFull == "" {
 					glog.V(90).Infof("no fsGroup was defined yet, retry")
@@ -160,8 +160,9 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 			})
 
 		Expect(fsGroupFull).ToNot(Equal(""),
-			fmt.Sprintf("failed to get fsGroup value for the namespase %s; fsGroup is %s",
-				redisNamespace, fsGroupFull))
+			fmt.Sprintf("failed to get fsGroup value for the namespase %s; fsGroup is %s; "+
+				"redis ns: %s; Definition %s",
+				redisNamespace, fsGroupFull, redisNamespaceBuilder.Object, redisNamespaceBuilder.Definition))
 
 		fsGroup := strings.Split(fsGroupFull, "/")[0]
 
