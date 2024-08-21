@@ -63,7 +63,7 @@ var _ = Describe("TPM2", func() {
 		}
 
 		By("waiting until all spoke 1 pods are ready")
-		err = cluster.WaitForClusterRecover(APIClient, []string{
+		err = cluster.WaitForRecover(APIClient, []string{
 			DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 
 		if err != nil {
@@ -77,7 +77,7 @@ var _ = Describe("TPM2", func() {
 				"power cycling node should succeed")
 
 			By("waiting cluster recovery")
-			Eventually(cluster.WaitForClusterRecover).WithTimeout(tsparams.TimeoutClusterRecovery).
+			Eventually(cluster.WaitForRecover).WithTimeout(tsparams.TimeoutClusterRecovery).
 				WithPolling(tsparams.RetryInterval).
 				WithArguments(APIClient, []string{
 					DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery).
@@ -165,11 +165,11 @@ var _ = Describe("TPM2", func() {
 
 	AfterEach(func() {
 		By("waiting for the cluster to become unreachable")
-		err = cluster.WaitForClusterUnreachable(APIClient, tsparams.TimeoutClusterUnreachable)
+		err = cluster.WaitForUnreachable(APIClient, tsparams.TimeoutClusterUnreachable)
 		Expect(err).ToNot(HaveOccurred(), "error waiting for cluster to be unreachable")
 
 		By("waiting for cluster recovery after test")
-		Eventually(cluster.WaitForClusterRecover).WithTimeout(tsparams.TimeoutClusterRecovery).
+		Eventually(cluster.WaitForRecover).WithTimeout(tsparams.TimeoutClusterRecovery).
 			WithPolling(tsparams.RetryInterval).
 			WithArguments(APIClient, []string{
 				DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery).
@@ -356,7 +356,7 @@ var _ = Describe("TPM2", func() {
 		Expect(matchIndex).To(Equal(1), "WaitForRegex should match pcr-rebind-boot (1)")
 
 		By("waiting for cluster to recover")
-		err = cluster.WaitForClusterRecover(APIClient, []string{DiskEncryptionTestConfig.GeneralConfig.MCONamespace,
+		err = cluster.WaitForRecover(APIClient, []string{DiskEncryptionTestConfig.GeneralConfig.MCONamespace,
 			DiskEncryptionTestConfig.GeneralConfig.MCONamespace}, tsparams.TimeoutClusterRecovery)
 		Expect(err).ToNot(HaveOccurred(), "cluster should recover without error")
 

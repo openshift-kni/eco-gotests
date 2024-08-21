@@ -268,10 +268,10 @@ func ExecCommandOnSNOWithRetries(client *clients.Settings, retries uint,
 	return "", fmt.Errorf("found unreachable code in ExecCommandOnSNO")
 }
 
-// WaitForClusterRecover waits up to timeout for all pods in namespaces on a provided node to recover.
-func WaitForClusterRecover(client *clients.Settings, namespaces []string, timeout time.Duration) error {
+// WaitForRecover waits up to timeout for all pods in namespaces on a provided node to recover.
+func WaitForRecover(client *clients.Settings, namespaces []string, timeout time.Duration) error {
 	glog.V(90).Infof("Wait for cluster to recover for namespaces: %v timeout: %v", namespaces, timeout)
-	err := waitForClusterReachable(client, timeout)
+	err := waitForReachable(client, timeout)
 
 	if err != nil {
 		return err
@@ -297,9 +297,9 @@ func SoftRebootSNO(apiClient *clients.Settings, retries uint, interval time.Dura
 	return err
 }
 
-// WaitForClusterUnreachable waits up to timeout for the cluster to become unavailable
+// WaitForUnreachable waits up to timeout for the cluster to become unavailable
 // by attempting to list nodes in the cluster.
-func WaitForClusterUnreachable(client *clients.Settings, timeout time.Duration) error {
+func WaitForUnreachable(client *clients.Settings, timeout time.Duration) error {
 	glog.V(90).Infof("Wait for cluster unreachable with timeout: %v", timeout)
 
 	return wait.PollUntilContextTimeout(
@@ -313,9 +313,9 @@ func WaitForClusterUnreachable(client *clients.Settings, timeout time.Duration) 
 		})
 }
 
-// waitForClusterReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
+// waitForReachable waits up to timeout for the cluster to become available by attempting to list nodes in the
 // cluster.
-func waitForClusterReachable(client *clients.Settings, timeout time.Duration) error {
+func waitForReachable(client *clients.Settings, timeout time.Duration) error {
 	glog.V(90).Infof("Wait for cluster reachable with timeout: %v", timeout)
 
 	return wait.PollUntilContextTimeout(
