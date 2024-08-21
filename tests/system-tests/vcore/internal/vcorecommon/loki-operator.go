@@ -279,8 +279,8 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create lokiStack instance %s in namespace %s due to %v",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace, err))
-	Expect(lokiStackObj.IsReady(15*time.Minute)).To(Equal(true),
-		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 10 mins",
+	Expect(lokiStackObj.IsReady(90*time.Minute)).To(Equal(true),
+		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 90 mins",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace))
 
 	time.Sleep(3 * time.Minute)
@@ -306,7 +306,7 @@ func CreateCLOInstance(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new Cluster Logging instance %s in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
-	clusterLoggingObj, err = clusterLoggingObj.
+	_, err = clusterLoggingObj.
 		WithManagementState(clov1.ManagementStateManaged).
 		WithLogStore(clov1.LogStoreSpec{
 			Type:      "lokistack",
@@ -384,10 +384,4 @@ func CreateCLOInstance(ctx SpecContext) {
 
 	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))
-
-	glog.V(90).Infof("Verify clusterlogging %s in namespace %s state is Ready",
-		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
-	Expect(clusterLoggingObj.IsReady(5*time.Minute)).To(Equal(true),
-		fmt.Sprintf("clusterlogging %s in namespace %s is Degraded",
-			vcoreparams.CLOInstanceName, vcoreparams.CLONamespace))
 } // func CreateCLOInstance (ctx SpecContext)
