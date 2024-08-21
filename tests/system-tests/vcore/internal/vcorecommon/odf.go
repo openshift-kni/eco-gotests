@@ -126,7 +126,7 @@ func VerifyODFConsoleConfig(ctx SpecContext) {
 			odfConsolePlugin, newPluginsList))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Wait for the console enablement")
-	time.Sleep(3 * time.Minute)
+	time.Sleep(7 * time.Minute)
 } // func VerifyODFConsoleConfig (ctx SpecContext)
 
 // VerifyODFTaints asserts ODF nodes taints configuration.
@@ -146,6 +146,8 @@ func VerifyODFTaints(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to execute %s script due to %v",
 			applyTaintsCmd, err))
 	}
+
+	time.Sleep(3 * time.Minute)
 } // func VerifyODFTaints (ctx SpecContext)
 
 // VerifyODFStorageSystemConfig asserts ODF storage cluster system successfully configured.
@@ -233,6 +235,8 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 	Expect(storageclusterObj.Exists()).To(Equal(true),
 		fmt.Sprintf("Failed to createstorageCluster %s instance in namespace %s due",
 			vcoreparams.StorageClusterName, vcoreparams.ODFNamespace))
+
+	time.Sleep(5 * time.Minute)
 } // func VerifyODFStorageSystemConfig (ctx SpecContext)
 
 // VerifyOperatorsConfigForODFNodes asserts operators configuration for ODF nodes.
@@ -316,4 +320,6 @@ func VerifyOperatorsConfigForODFNodes(ctx SpecContext) {
 	_, err = pod.WaitForAllPodsInNamespaceRunning(APIClient, vcoreparams.ODFNamespace, 7*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("not all storage pods in namespace %s succeeded to "+
 		"recover after deletion due to %v", vcoreparams.ODFNamespace, err))
+
+	time.Sleep(10 * time.Minute)
 } // func VerifyOperatorsConfigForODFNodes (ctx SpecContext)

@@ -45,7 +45,7 @@ func VerifyLSONamespaceExists(ctx SpecContext) {
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Short sleep to stabilize nodes to avoid pv creation failure")
 
-	time.Sleep(10 * time.Minute)
+	time.Sleep(15 * time.Minute)
 } // func VerifyLSONamespaceExists (ctx SpecContext)
 
 // VerifyLSODeployment asserts Local Storage Operator successfully installed.
@@ -70,6 +70,8 @@ func VerifyLSODeployment(ctx SpecContext) {
 
 	lsoPod := lsoPods[0]
 	lsoPodName := lsoPod.Object.Name
+
+	time.Sleep(10 * time.Minute)
 
 	err = lsoPod.WaitUntilReady(time.Second)
 	if err != nil {

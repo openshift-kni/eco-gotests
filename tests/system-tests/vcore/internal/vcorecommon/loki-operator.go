@@ -282,6 +282,8 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	Expect(lokiStackObj.IsReady(15*time.Minute)).To(Equal(true),
 		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 10 mins",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace))
+
+	time.Sleep(3 * time.Minute)
 } // func CreateLokiStackInstance (ctx SpecContext)
 
 // CreateCLOInstance asserts ClusterLogging instance can be created and running.
