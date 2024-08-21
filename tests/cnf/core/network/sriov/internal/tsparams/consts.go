@@ -7,4 +7,6 @@ const (
 	TestNamespaceName = "sriov-tests"
 	// LabelExternallyManagedTestCases represents ExternallyManaged label that can be used for test cases selection.
 	LabelExternallyManagedTestCases = "externallymanaged"
+	// LabelParallelDrainingTestCases represents parallel draining label that can be used for test cases selection.
+	LabelParallelDrainingTestCases = "paralleldraining"
 )

@@ -973,6 +973,26 @@ func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	return builder
 }
 
+// WithTerminationGracePeriodSeconds configures TerminationGracePeriodSeconds on the pod.
+func (builder *Builder) WithTerminationGracePeriodSeconds(terminationGracePeriodSeconds int64) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Applying terminationGracePeriodSeconds flag to the configuration of pod: %s in namespace: %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.isMutationAllowed("terminationGracePeriodSeconds")
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.TerminationGracePeriodSeconds = &terminationGracePeriodSeconds
+
+	return builder
+}
+
 // GetLog connects to a pod and fetches log.
 func (builder *Builder) GetLog(logStartTime time.Duration, containerName string) (string, error) {
 	if valid, err := builder.validate(); !valid {
