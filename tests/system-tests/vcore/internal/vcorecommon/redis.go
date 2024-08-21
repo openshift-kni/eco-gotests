@@ -159,8 +159,9 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 				return true, nil
 			})
 
-		Expect(fsGroupFull).ToNot(Equal(""), fmt.Sprintf("failed to get fsGroup value for the namespase %s",
-			redisNamespace))
+		Expect(fsGroupFull).ToNot(Equal(""),
+			fmt.Sprintf("failed to get fsGroup value for the namespase %s; fsGroup is %s",
+				redisNamespace, fsGroupFull))
 
 		fsGroup := strings.Split(fsGroupFull, "/")[0]
 
