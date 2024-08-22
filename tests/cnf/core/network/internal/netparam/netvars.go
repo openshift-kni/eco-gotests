@@ -27,4 +27,6 @@ var (
 	VtySh = []string{"vtysh", "-c"}
 	// MlxDeviceID is the Mellanox SRIOV device ID.
 	MlxDeviceID = "1017"
+	// MlxBFDeviceID is the Mellanox Bluefield SRIOV Device ID.
+	MlxBFDeviceID = "a2d6"
 )
