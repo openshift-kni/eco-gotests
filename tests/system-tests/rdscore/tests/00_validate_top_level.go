@@ -37,6 +37,18 @@ var _ = Describe(
 				Label("kdump", "kdump-cnf"), reportxml.ID("75622"),
 				rdscorecommon.VerifyKDumpOnCNFMCP)
 
+			It("Verifies mount namespace service on Control Plane node",
+				Label("mount-ns", "mount-ns-cp"), reportxml.ID("75048"),
+				rdscorecommon.VerifyMountNamespaceOnControlPlane)
+
+			It("Verifies mount namespace service on Worker node",
+				Label("mount-ns", "mount-ns-worker"), reportxml.ID("75832"),
+				rdscorecommon.VerifyMountNamespaceOnWorkerMCP)
+
+			It("Verifies mount namespace service on CNF node",
+				Label("mount-ns", "mount-ns-cnf"), reportxml.ID("75833"),
+				rdscorecommon.VerifyMountNamespaceOnCNFMCP)
+
 			It("Verifies SR-IOV workloads on same node and different networks",
 				Label("sriov", "sriov-same-node-different-nets"),
 				reportxml.ID("72258"), MustPassRepeatedly(3),
