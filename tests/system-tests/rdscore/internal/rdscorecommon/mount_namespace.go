@@ -8,11 +8,9 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/reboot"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
@@ -20,7 +18,7 @@ import (
 )
 
 func mountNamespaceEncapsulation(nodeLabel string) {
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check propagation of directory containing namespace mount pin")
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check encapsulation for nodes %s", nodeLabel)
 
 	var (
 		nodeList []*nodes.Builder
@@ -47,64 +45,64 @@ func mountNamespaceEncapsulation(nodeLabel string) {
 		fmt.Sprintf("Failed to find pods matching label: %q", nodeLabel))
 
 	for _, node := range nodeList {
-		By("Trigger kernel crash")
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Trigerring kernel crash on %q",
-			node.Definition.Name)
+		By("Open debug pod and check the systemd, kubelet and CRI-O mount namespaces")
 
-		err = reboot.KernelCrashKdump(node.Definition.Name)
-		Expect(err).ToNot(HaveOccurred(), "Error triggering a kernel crash on the node.")
+		nodeName := node.Definition.Name
 
-		By("Waiting for node to go into NotReady state")
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check the systemd mount namespace on node %s", nodeName)
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Checking node %q got into Ready state",
-			node.Definition.Name)
+		systemdMountNsCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "readlink /proc/1/ns/mnt"}
 
-		Eventually(func() bool {
-			currentNode, err := nodes.Pull(APIClient, node.Definition.Name)
-			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to pull in node %q due to %v",
-					node.Definition.Name, err)
+		systemdMountNsOutput, err := remote.ExecuteOnNodeWithDebugPod(systemdMountNsCmd, nodeName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
+			systemdMountNsCmd, nodeName, err))
 
-				return false
-			}
+		systemdMountNs := strings.Split(systemdMountNsOutput, ":")[1]
 
-			for _, condition := range currentNode.Object.Status.Conditions {
-				if condition.Type == rdscoreparams.ConditionTypeReadyString {
-					if condition.Status == rdscoreparams.ConstantTrueString {
-						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node %q is Ready", currentNode.Definition.Name)
-						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("  Reason: %s", condition.Reason)
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check the kubelet mount namespace on node %s", nodeName)
 
-						return true
-					}
-				}
-			}
+		kubeletMountNsCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "readlink /proc/$(pgrep kubelet)/ns/mnt"}
 
-			return false
-		}).WithTimeout(5*time.Minute).WithPolling(15*time.Second).WithContext(ctx).Should(BeTrue(),
-			"Node hasn't reached Ready state")
+		kubeletMountNsOutput, err := remote.ExecuteOnNodeWithDebugPod(kubeletMountNsCmd, nodeName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
+			kubeletMountNsCmd, nodeName, err))
 
-		By("Assert vmcore dump was generated")
+		kubeletMountNs := strings.Split(kubeletMountNsOutput, ":")[1]
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Checking if vmcore dump was generated")
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check the CRI-O mount namespace on node %s", nodeName)
 
-		cmdToExec := []string{"chroot", "/rootfs", "ls", "/var/crash"}
+		crioMountNsCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "readlink /proc/$(pgrep crio)/ns/mnt"}
 
-		Eventually(func() bool {
-			coreDumps, err := remote.ExecuteOnNodeWithDebugPod(cmdToExec, node.Definition.Name)
+		crioMountNsOutput, err := remote.ExecuteOnNodeWithDebugPod(crioMountNsCmd, nodeName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
+			crioMountNsCmd, nodeName, err))
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Executing command: %q", strings.Join(cmdToExec, " "))
+		crioMountNs := strings.Split(crioMountNsOutput, ":")[1]
 
-			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to execute command: %v", err)
+		By("Check that encapsulation is in effect")
 
-				return false
-			}
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Checking if kubelet and CRI-O are in the same mount namespace")
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("\tGenerated VMCore dumps: %v", coreDumps)
+		Expect(kubeletMountNs == crioMountNs).To(Equal(true),
+			fmt.Sprintf("General mount namespace failure; kubelet and CRI-O have to be in the same mount namespace;"+
+				"kubelet mount namespace: %s; CRI-O mount namespace: %s", kubeletMountNs, crioMountNs))
 
-			return len(strings.Fields(coreDumps)) >= 1
-		}).WithContext(ctx).WithTimeout(1*time.Minute).WithPolling(5*time.Second).Should(BeTrue(),
-			"error: vmcore dump was not generated")
+		Expect(systemdMountNs != crioMountNs).To(Equal(true),
+			fmt.Sprintf("Encapsulation is not in effect; systemd have to be in a different mount namespace to "+
+				"kubelet and CRI-O; systemd mount namespace: %s; kubelet mount namespace: %s; CRI-O mount namespace: %s",
+				systemdMountNs, kubeletMountNs, crioMountNs))
+
+		By("Inspecting encapsulated namespaces")
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check the systemd mount namespace on node %s", nodeName)
+
+		inspectingCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "findmnt -n -oPROPAGATION /run/kubens"}
+
+		out, err := remote.ExecuteOnNodeWithDebugPod(inspectingCmd, nodeName)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
+			inspectingCmd, nodeName, err))
+		Expect(strings.Contains(out, "private,slave")).To(BeTrue(),
+			fmt.Sprintf("propagation of the directory does not contain a namespace mount pin for the node %s; %s",
+				nodeName, out))
 	}
 }
 
