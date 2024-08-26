@@ -11,7 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/setup"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/tests"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
@@ -28,19 +28,19 @@ func TestTalm(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	err := helper.VerifyTalmIsInstalled()
+	err := setup.VerifyTalmIsInstalled()
 	Expect(err).ToNot(HaveOccurred(), "Failed to verify that TALM is installed")
 
 	By("deleting and recreating TALM test namespace to ensure a blank slate")
-	err = helper.DeleteTalmTestNamespace()
+	err = setup.DeleteTalmTestNamespace()
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete TALM test namespace")
-	err = helper.CreateTalmTestNamespace()
+	err = setup.CreateTalmTestNamespace()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create TALM test namespace")
 })
 
 var _ = AfterSuite(func() {
 	// Deleting the namespace after the suite finishes ensures all the CGUs created are deleted
-	err := helper.DeleteTalmTestNamespace()
+	err := setup.DeleteTalmTestNamespace()
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete TALM test namespace")
 })
 

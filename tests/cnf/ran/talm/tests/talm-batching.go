@@ -17,6 +17,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/setup"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,11 +43,11 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 
 	AfterEach(func() {
 		By("cleaning up resources on hub")
-		errorList := helper.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, "")
+		errorList := setup.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, "")
 		Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on hub")
 
 		By("cleaning up resources on spokes")
-		errorList = helper.CleanupTestResourcesOnSpokes(
+		errorList = setup.CleanupTestResourcesOnSpokes(
 			[]*clients.Settings{Spoke1APIClient, Spoke2APIClient}, "")
 		Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on spokes")
 	})
@@ -64,12 +65,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(err).ToNot(HaveOccurred(), "Failed to create CGU")
 
 			By("waiting for the error condition to match")
-			err = helper.WaitForCguInCondition(
-				cguBuilder,
-				metav1.Condition{
-					Type:    tsparams.ClustersSelectedType,
-					Message: tsparams.TalmNonExistentClusterMessage},
-				3*tsparams.TalmDefaultReconcileTime)
+			_, err = cguBuilder.WaitForCondition(tsparams.CguNonExistentClusterCondition, 3*tsparams.TalmDefaultReconcileTime)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to have matching condition")
 		})
 	})
@@ -88,10 +84,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 
 			By("waiting for the CGU status to report the missing policy")
 			// This should immediately error out so we don't need a long timeout
-			err = helper.WaitForCguInCondition(
-				cguBuilder,
-				metav1.Condition{Type: tsparams.ValidatedType, Message: tsparams.TalmNonExistentPolicyMessage},
-				2*time.Minute)
+			_, err = cguBuilder.WaitForCondition(tsparams.CguNonExistentPolicyCondition, 2*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to have matching condition")
 		})
 	})
@@ -125,7 +118,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
-			err = helper.WaitForCguTimeout(cguBuilder, 11*time.Minute)
+			cguBuilder, err = cguBuilder.WaitForCondition(tsparams.CguTimeoutReasonCondition, 11*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to timeout")
 
 			By("validating that the policy failed on spoke1")
@@ -155,7 +148,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(elapsed).To(BeNumerically("~", tsparams.TalmDefaultReconcileTime, 10*time.Second))
 
 			By("validating that the timeout message matched the abort message")
-			err = helper.WaitForCguTimeoutMessage(cguBuilder, 1*time.Minute)
+			_, err = cguBuilder.WaitForCondition(tsparams.CguTimeoutMessageCondition, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to have matching condition")
 		})
 
@@ -186,7 +179,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
-			err = helper.WaitForCguTimeout(cguBuilder, 16*time.Minute)
+			_, err = cguBuilder.WaitForCondition(tsparams.CguTimeoutReasonCondition, 16*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to timeout")
 
 			By("validating that the policy succeeded on spoke1")
@@ -228,7 +221,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
-			err = helper.WaitForCguTimeout(cguBuilder, 16*time.Minute)
+			_, err = cguBuilder.WaitForCondition(tsparams.CguTimeoutReasonCondition, 16*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to timeout")
 
 			By("validating that the policy succeeded on spoke2")
@@ -272,7 +265,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 				Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 				By("waiting for the CGU to timeout")
-				err = helper.WaitForCguTimeout(cguBuilder, 21*time.Minute)
+				cguBuilder, err = cguBuilder.WaitForCondition(tsparams.CguTimeoutReasonCondition, 21*time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to timeout")
 
 				By("validating that the policy succeeded on spoke1")
@@ -328,7 +321,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to timeout")
-			err = helper.WaitForCguTimeout(cguBuilder, 11*time.Minute)
+			cguBuilder, err = cguBuilder.WaitForCondition(tsparams.CguTimeoutReasonCondition, 11*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for CGU to timeout")
 
 			By("validating that the timeout should have occurred after just the first reconcile")
@@ -408,7 +401,7 @@ var _ = Describe("TALM Batching Tests", Label(tsparams.LabelBatchingTestCases), 
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait and enable the CGU")
 
 			By("waiting for the CGU to finish successfully")
-			err = helper.WaitForCguSuccessfulFinish(cguBuilder, 21*time.Minute)
+			_, err = cguBuilder.WaitForCondition(tsparams.CguSuccessfulFinishCondition, 21*time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for the CGU to finish successfully")
 
 			By("verifying the test policy was deleted upon CGU expiration")
