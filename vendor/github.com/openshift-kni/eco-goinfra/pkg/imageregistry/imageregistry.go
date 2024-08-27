@@ -3,6 +3,8 @@ package imageregistry
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -10,6 +12,7 @@ import (
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -177,6 +180,59 @@ func (builder *Builder) WithStorage(expectedStorage imageregistryv1.ImageRegistr
 	builder.Definition.Spec.Storage = expectedStorage
 
 	return builder
+}
+
+// WaitForCondition waits until the imageRegistry has a condition that matches the expected, checking only the Type,
+// Status, Reason, and Message fields. For the messages field, it matches if the message contains the expected. Zero
+// value fields in the expected condition are ignored.
+func (builder *Builder) WaitForCondition(
+	expected operatorv1.OperatorCondition, timeout time.Duration) (*Builder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Waiting until condition of imageRegistry %s matches %v", builder.Definition.Name, expected)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("imageRegistry object %s does not exist", builder.Definition.Name)
+	}
+
+	var err error
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
+			if err != nil {
+				return false, nil
+			}
+
+			for _, condition := range builder.Object.Status.Conditions {
+				if expected.Type != "" && condition.Type != expected.Type {
+					continue
+				}
+
+				if expected.Status != "" && condition.Status != expected.Status {
+					continue
+				}
+
+				if expected.Reason != "" && condition.Reason != expected.Reason {
+					continue
+				}
+
+				if expected.Message != "" && !strings.Contains(condition.Message, expected.Message) {
+					continue
+				}
+
+				return true, nil
+			}
+
+			return false, nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return builder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before

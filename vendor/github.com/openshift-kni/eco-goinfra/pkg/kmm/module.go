@@ -23,7 +23,7 @@ type ModuleBuilder struct {
 	Object *moduleV1Beta1.Module
 	// Used in functions that define or mutate Module definition. errorMsg is processed before the Module
 	// object is created.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	errorMsg  string
 }
 
@@ -36,8 +36,21 @@ func NewModuleBuilder(
 	glog.V(100).Infof(
 		"Initializing new Module structure with following params: %s, %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(moduleV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := ModuleBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &moduleV1Beta1.Module{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -49,13 +62,13 @@ func NewModuleBuilder(
 	if name == "" {
 		glog.V(100).Infof("The name of the Module is empty")
 
-		builder.errorMsg = "Module 'name' cannot be empty"
+		builder.errorMsg = "module 'name' cannot be empty"
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the module is empty")
 
-		builder.errorMsg = "Module 'namespace' cannot be empty"
+		builder.errorMsg = "module 'namespace' cannot be empty"
 	}
 
 	return &builder
@@ -251,8 +264,21 @@ func (builder *ModuleBuilder) WithOptions(options ...ModuleAdditionalOptions) *M
 func Pull(apiClient *clients.Settings, name, nsname string) (*ModuleBuilder, error) {
 	glog.V(100).Infof("Pulling existing module name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("module 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(moduleV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := ModuleBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &moduleV1Beta1.Module{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -264,13 +290,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*ModuleBuilder, err
 	if name == "" {
 		glog.V(100).Infof("The name of the module is empty")
 
-		builder.errorMsg = "module 'name' cannot be empty"
+		return nil, fmt.Errorf("module 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the module is empty")
 
-		builder.errorMsg = "module 'namespace' cannot be empty"
+		return nil, fmt.Errorf("module 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -295,6 +321,10 @@ func (builder *ModuleBuilder) Create() (*ModuleBuilder, error) {
 	var err error
 	if !builder.Exists() {
 		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+
+		if err == nil {
+			builder.Object = builder.Definition
+		}
 	}
 
 	return builder, err
@@ -311,6 +341,10 @@ func (builder *ModuleBuilder) Update() (*ModuleBuilder, error) {
 		builder.Definition.Namespace)
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -340,7 +374,9 @@ func (builder *ModuleBuilder) Delete() (*ModuleBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("module cannot be deleted because it does not exist")
+		glog.V(100).Infof("module cannot be deleted because it does not exist")
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)

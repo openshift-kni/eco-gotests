@@ -20,7 +20,7 @@ type ManagedClusterModuleBuilder struct {
 	Definition *mcmV1Beta1.ManagedClusterModule
 	Object     *mcmV1Beta1.ManagedClusterModule
 	errorMsg   string
-	apiClient  *clients.Settings
+	apiClient  goclient.Client
 }
 
 // ManagedClusterModuleAdditionalOptions additional options for managedclustermodule object.
@@ -32,8 +32,21 @@ func NewManagedClusterModuleBuilder(apiClient *clients.Settings, name, nsname st
 	glog.V(100).Infof(
 		"Initializing new ManagedClusterModule structure with following params: %s, %s", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(mcmV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := ManagedClusterModuleBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mcmV1Beta1.ManagedClusterModule{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -45,13 +58,13 @@ func NewManagedClusterModuleBuilder(apiClient *clients.Settings, name, nsname st
 	if name == "" {
 		glog.V(100).Infof("The name of the ManagedClusterModule is empty")
 
-		builder.errorMsg = "ManagedClusterModule 'name' cannot be empty"
+		builder.errorMsg = "managedClusterModule 'name' cannot be empty"
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the ManagedClusterModule is empty")
 
-		builder.errorMsg = "ManagedClusterModule 'nsname' cannot be empty"
+		builder.errorMsg = "managedClusterModule 'nsname' cannot be empty"
 	}
 
 	return &builder
@@ -139,8 +152,21 @@ func (builder *ManagedClusterModuleBuilder) WithOptions(
 func PullManagedClusterModule(apiClient *clients.Settings, name, nsname string) (*ManagedClusterModuleBuilder, error) {
 	glog.V(100).Infof("Pulling existing module name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil, fmt.Errorf("managedclustermodule 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(mcmV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := ManagedClusterModuleBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mcmV1Beta1.ManagedClusterModule{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -152,13 +178,13 @@ func PullManagedClusterModule(apiClient *clients.Settings, name, nsname string) 
 	if name == "" {
 		glog.V(100).Infof("The name of the managedclustermodule is empty")
 
-		builder.errorMsg = "managedclustermodule 'name' cannot be empty"
+		return nil, fmt.Errorf("managedclustermodule 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the managedclustermodule is empty")
 
-		builder.errorMsg = "managedclustermodule 'namespace' cannot be empty"
+		return nil, fmt.Errorf("managedclustermodule 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -235,7 +261,9 @@ func (builder *ManagedClusterModuleBuilder) Delete() (*ManagedClusterModuleBuild
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("managedclustermodule cannot be deleted because it does not exist")
+		glog.V(100).Infof("managedclustermodule cannot be deleted because it does not exist")
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
