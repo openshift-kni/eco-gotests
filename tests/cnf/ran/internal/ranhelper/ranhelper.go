@@ -7,10 +7,15 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // DoesContainerExistInPod checks if a given container exists in a given pod.
@@ -37,6 +42,48 @@ func AreClustersPresent(clusters []*clients.Settings) bool {
 	}
 
 	return true
+}
+
+// ListNodesByLabel returns a list of nodes that have the specified label.
+func ListNodesByLabel(client *clients.Settings, labelMap map[string]string) ([]*nodes.Builder, error) {
+	return nodes.List(client, metav1.ListOptions{
+		LabelSelector: labels.Set(labelMap).String(),
+	})
+}
+
+// IsClusterStable checks if the provided cluster does not have any unschedulable nodes.
+func IsClusterStable(client *clients.Settings) (bool, error) {
+	nodeList, err := nodes.List(client)
+	if err != nil {
+		return false, err
+	}
+
+	for _, node := range nodeList {
+		if node.Definition.Spec.Unschedulable {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+// WaitForNumberOfNodes waits up to timeout until the number of nodes on the cluster matches the expected.
+func WaitForNumberOfNodes(client *clients.Settings, expected int, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			nodeList, err := nodes.List(client)
+			if err != nil {
+				return false, err
+			}
+
+			if len(nodeList) == expected {
+				return true, nil
+			}
+
+			glog.V(tsparams.LogLevel).Infof("Expected %d nodes but found %d nodes", expected, len(nodeList))
+
+			return false, nil
+		})
 }
 
 // UnmarshalRaw converts raw bytes for a K8s CR into the actual type.

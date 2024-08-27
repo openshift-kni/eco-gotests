@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/helper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/tests"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
@@ -36,7 +36,7 @@ var _ = BeforeSuite(func() {
 		Skip("not all of the required clusters are present")
 	}
 
-	err := helper.GetArgoCdAppGitDetails()
+	err := gitdetails.GetArgoCdAppGitDetails()
 	Expect(err).ToNot(HaveOccurred(), "Failed to get current data from ArgoCD")
 
 	By("deleting and recreating ZTP test namespace to ensure a blank state")
