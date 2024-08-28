@@ -3,6 +3,8 @@ package argocd
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -10,6 +12,7 @@ import (
 	argocdtypes "github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -245,6 +248,58 @@ func (builder *ApplicationBuilder) WithGitDetails(gitRepo, gitBranch, gitPath st
 	builder.Definition.Spec.Source.Path = gitPath
 
 	return builder
+}
+
+// WaitForCondition waits until the Application has a condition that matches the expected, checking only the Type and
+// Message fields. For the messages field, it matches if the message contains the expected. Zero value fields in the
+// expected condition are ignored.
+func (builder *ApplicationBuilder) WaitForCondition(
+	expected argocdtypes.ApplicationCondition, timeout time.Duration) (*ApplicationBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof(
+		"Waiting until condition of Argo CD Application %s in namespace %s matches %v",
+		builder.Definition.Name, builder.Definition.Namespace, expected)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf(
+			"application object %s in namespace %s does not exist", builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	var err error
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
+			if err != nil {
+				glog.V(100).Infof(
+					"Failed to get Argo CD Application %s in namespace %s: %s",
+					builder.Definition.Name, builder.Definition.Namespace, err.Error())
+
+				return false, nil
+			}
+
+			for _, condition := range builder.Object.Status.Conditions {
+				if expected.Type != "" && condition.Type != expected.Type {
+					continue
+				}
+
+				if expected.Message != "" && !strings.Contains(condition.Message, expected.Message) {
+					continue
+				}
+
+				return true, nil
+			}
+
+			return false, nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return builder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before

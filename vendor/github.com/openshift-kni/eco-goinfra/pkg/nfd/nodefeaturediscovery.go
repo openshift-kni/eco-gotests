@@ -33,6 +33,19 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 	glog.V(100).Infof(
 		"Initializing new Builder structure from almExample string")
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the Policy is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(nfdv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add nfd v1 scheme to client schemes")
+
+		return nil
+	}
+
 	nodeFeatureDiscovery, err := getNodeFeatureDiscoveryFromAlmExample(almExample)
 
 	glog.V(100).Infof(
@@ -60,6 +73,54 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 	return &builder
 }
 
+// Pull loads an existing NodeFeatureDiscovery into Builder struct.
+func Pull(apiClient *clients.Settings, name, namespace string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing nodeFeatureDiscovery name: %s in namespace: %s", name, namespace)
+
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the Policy is nil")
+
+		return nil, fmt.Errorf("the apiClient of the Policy is nil")
+	}
+
+	err := apiClient.AttachScheme(nfdv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Info("Failed to add nfd v1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	builder := Builder{
+		apiClient: apiClient,
+		Definition: &nfdv1.NodeFeatureDiscovery{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: namespace,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("NodeFeatureDiscovery name is empty")
+
+		return nil, fmt.Errorf("nodeFeatureDiscovery 'name' cannot be empty")
+	}
+
+	if namespace == "" {
+		glog.V(100).Infof("NodeFeatureDiscovery namespace is empty")
+
+		return nil, fmt.Errorf("nodeFeatureDiscovery 'namespace' cannot be empty")
+	}
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf("NodeFeatureDiscovery object %s does not exist in namespace %s", name, namespace)
+	}
+
+	builder.Definition = builder.Object
+
+	return &builder, nil
+}
+
 // Get returns NodeFeatureDiscovery object if found.
 func (builder *Builder) Get() (*nfdv1.NodeFeatureDiscovery, error) {
 	if valid, err := builder.validate(); !valid {
@@ -83,41 +144,6 @@ func (builder *Builder) Get() (*nfdv1.NodeFeatureDiscovery, error) {
 	}
 
 	return nodeFeatureDiscovery, err
-}
-
-// Pull loads an existing NodeFeatureDiscovery into Builder struct.
-func Pull(apiClient *clients.Settings, name, namespace string) (*Builder, error) {
-	glog.V(100).Infof("Pulling existing nodeFeatureDiscovery name: %s in namespace: %s", name, namespace)
-
-	builder := Builder{
-		apiClient: apiClient,
-		Definition: &nfdv1.NodeFeatureDiscovery{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: namespace,
-			},
-		},
-	}
-
-	if name == "" {
-		glog.V(100).Infof("NodeFeatureDiscovery name is empty")
-
-		builder.errorMsg = "NodeFeatureDiscovery 'name' cannot be empty"
-	}
-
-	if namespace == "" {
-		glog.V(100).Infof("NodeFeatureDiscovery namespace is empty")
-
-		builder.errorMsg = "NodeFeatureDiscovery 'namespace' cannot be empty"
-	}
-
-	if !builder.Exists() {
-		return nil, fmt.Errorf("NodeFeatureDiscovery object %s does not exist in namespace %s", name, namespace)
-	}
-
-	builder.Definition = builder.Object
-
-	return &builder, nil
 }
 
 // Exists checks whether the given NodeFeatureDiscovery exists.
@@ -150,7 +176,9 @@ func (builder *Builder) Delete() (*Builder, error) {
 		builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("NodeFeatureDiscovery cannot be deleted because it does not exist")
+		glog.V(100).Infof("nodeFeatureDiscovery cannot be deleted because it does not exist")
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)

@@ -36,6 +36,19 @@ func NewPreflightValidationOCPBuilder(
 	glog.V(100).Infof("Initializing new PreflightValidationOCP structure with following params: %s, %s",
 		name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is empty")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(moduleV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := PreflightValidationOCPBuilder{
 		apiClient: apiClient,
 		Definition: &moduleV1Beta1.PreflightValidationOCP{
@@ -143,6 +156,13 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("preflightvalidation 'apiClient' cannot be empty")
+	}
+
+	err := apiClient.AttachScheme(moduleV1Beta1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+
+		return nil, err
 	}
 
 	builder := PreflightValidationOCPBuilder{

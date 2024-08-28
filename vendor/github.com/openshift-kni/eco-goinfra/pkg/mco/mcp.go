@@ -9,28 +9,27 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
-	fiveScds          time.Duration = 5 * time.Second
-	isTrue                          = "True"
-	machineConfigPool               = "MachineConfigPool"
+	fiveScds time.Duration = 5 * time.Second
 )
 
 // MCPBuilder provides struct for MachineConfigPool object which contains connection to cluster
 // and MachineConfigPool definitions.
 type MCPBuilder struct {
 	// MachineConfigPool definition. Used to create MachineConfigPool object with minimum set of required elements.
-	Definition *mcov1.MachineConfigPool
+	Definition *mcv1.MachineConfigPool
 	// Created MachineConfigPool object on the cluster.
-	Object *mcov1.MachineConfigPool
+	Object *mcv1.MachineConfigPool
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// errorMsg is processed before MachineConfigPool object is created.
 	errorMsg string
 }
@@ -43,9 +42,22 @@ func NewMCPBuilder(apiClient *clients.Settings, mcpName string) *MCPBuilder {
 	glog.V(100).Infof(
 		"Initializing new MCPBuilder structure with the following params: %s", mcpName)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the MachineConfigPool is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(mcv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add machineconfig v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := &MCPBuilder{
-		apiClient: apiClient,
-		Definition: &mcov1.MachineConfigPool{
+		apiClient: apiClient.Client,
+		Definition: &mcv1.MachineConfigPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: mcpName,
 			},
@@ -55,7 +67,7 @@ func NewMCPBuilder(apiClient *clients.Settings, mcpName string) *MCPBuilder {
 	if mcpName == "" {
 		glog.V(100).Infof("The name of the MachineConfigPool is empty")
 
-		builder.errorMsg = "MachineConfigPool 'name' cannot be empty"
+		builder.errorMsg = "machineconfigpool 'name' cannot be empty"
 	}
 
 	return builder
@@ -65,9 +77,22 @@ func NewMCPBuilder(apiClient *clients.Settings, mcpName string) *MCPBuilder {
 func Pull(apiClient *clients.Settings, name string) (*MCPBuilder, error) {
 	glog.V(100).Infof("Pulling existing machineconfigpool name %s from cluster", name)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the MachineConfigPool is nil")
+
+		return nil, fmt.Errorf("machineconfigpool 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(mcv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add machineconfig v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := MCPBuilder{
-		apiClient: apiClient,
-		Definition: &mcov1.MachineConfigPool{
+		apiClient: apiClient.Client,
+		Definition: &mcv1.MachineConfigPool{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
@@ -77,7 +102,7 @@ func Pull(apiClient *clients.Settings, name string) (*MCPBuilder, error) {
 	if name == "" {
 		glog.V(100).Infof("The name of the machineconfigpool is empty")
 
-		builder.errorMsg = "machineconfigpool 'name' cannot be empty"
+		return nil, fmt.Errorf("machineconfigpool 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -87,6 +112,26 @@ func Pull(apiClient *clients.Settings, name string) (*MCPBuilder, error) {
 	builder.Definition = builder.Object
 
 	return &builder, nil
+}
+
+// Get returns the MachineConfigPool object if found.
+func (builder *MCPBuilder) Get() (*mcv1.MachineConfigPool, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting MachineConfigPool object %s", builder.Definition.Name)
+
+	machineConfigPool := &mcv1.MachineConfigPool{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{Name: builder.Definition.Name}, machineConfigPool)
+
+	if err != nil {
+		glog.V(100).Infof("MachineConfigPool object %s does not exist", builder.Definition.Name)
+
+		return nil, err
+	}
+
+	return machineConfigPool, nil
 }
 
 // Create makes a MachineConfigPool in cluster and stores the created object in struct.
@@ -100,8 +145,10 @@ func (builder *MCPBuilder) Create() (*MCPBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.MachineConfigPools().Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
+		}
 	}
 
 	return builder, err
@@ -117,15 +164,19 @@ func (builder *MCPBuilder) Delete() error {
 		builder.Definition.Name)
 
 	if !builder.Exists() {
-		return fmt.Errorf("MachineConfigPool cannot be deleted because it does not exist")
+		glog.V(100).Infof("MachineConfigPool %s cannot be deleted because it does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
+		return nil
 	}
 
-	err := builder.apiClient.MachineConfigPools().Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
-
+	err := builder.apiClient.Delete(context.TODO(), builder.Object)
 	if err != nil {
-		return fmt.Errorf("cannot delete MachineConfigPool: %w", err)
+		return fmt.Errorf("cannot delete machineconfigpool: %w", err)
 	}
+
+	builder.Object = nil
 
 	return err
 }
@@ -140,8 +191,7 @@ func (builder *MCPBuilder) Exists() bool {
 		builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.MachineConfigPools().Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -156,11 +206,13 @@ func (builder *MCPBuilder) WithMcSelector(mcSelector map[string]string) *MCPBuil
 		"machineConfigSelector label: %v", mcSelector)
 
 	if len(mcSelector) == 0 {
-		builder.errorMsg = "'machineConfigSelector MatchLabels' field cannot be empty"
+		builder.errorMsg = "machineConfigSelector 'MatchLabels' field cannot be empty"
+
+		return builder
 	}
 
-	if builder.errorMsg != "" {
-		return builder
+	if builder.Definition.Spec.MachineConfigSelector == nil {
+		builder.Definition.Spec.MachineConfigSelector = &metav1.LabelSelector{}
 	}
 
 	builder.Definition.Spec.MachineConfigSelector.MatchLabels = mcSelector
@@ -171,7 +223,7 @@ func (builder *MCPBuilder) WithMcSelector(mcSelector map[string]string) *MCPBuil
 // WaitToBeInCondition waits for a specific time duration until the MachineConfigPool will have a
 // specified condition type with the expected status.
 func (builder *MCPBuilder) WaitToBeInCondition(
-	conditionType mcov1.MachineConfigPoolConditionType,
+	conditionType mcv1.MachineConfigPoolConditionType,
 	conditionStatus corev1.ConditionStatus,
 	timeout time.Duration,
 ) error {
@@ -184,9 +236,7 @@ func (builder *MCPBuilder) WaitToBeInCondition(
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
-			mcp, err := builder.apiClient.MachineConfigPools().Get(context.TODO(),
-				builder.Object.Name, metav1.GetOptions{})
-
+			mcp, err := builder.Get()
 			if err != nil {
 				return false, nil
 			}
@@ -210,26 +260,22 @@ func (builder *MCPBuilder) WaitForUpdate(timeout time.Duration) error {
 	glog.V(100).Infof("WaitForUpdate waits up to specified time %v until updating"+
 		" machineConfigPool object is updated", timeout)
 
-	mcpUpdating, err := builder.apiClient.MachineConfigPools().Get(context.TODO(),
-		builder.Object.Name, metav1.GetOptions{})
-
+	mcpUpdating, err := builder.Get()
 	if err != nil {
 		return err
 	}
 
 	for _, condition := range mcpUpdating.Status.Conditions {
-		if condition.Type == "Updating" && condition.Status == isTrue {
+		if condition.Type == "Updating" && condition.Status == corev1.ConditionTrue {
 			err := wait.PollUntilContextTimeout(
 				context.TODO(), fiveScds, timeout, true, func(ctx context.Context) (bool, error) {
-					mcpUpdated, err := builder.apiClient.MachineConfigPools().Get(context.TODO(),
-						builder.Object.Name, metav1.GetOptions{})
-
+					mcpUpdated, err := builder.Get()
 					if err != nil {
 						return false, nil
 					}
 
 					for _, condition := range mcpUpdated.Status.Conditions {
-						if condition.Type == "Updated" && condition.Status == isTrue {
+						if condition.Type == "Updated" && condition.Status == corev1.ConditionTrue {
 							return true, nil
 						}
 					}
@@ -339,7 +385,7 @@ func (builder *MCPBuilder) WithOptions(options ...MCPAdditionalOptions) *MCPBuil
 
 // IsInCondition parses MachineConfigPool conditions.
 // Returns true if given MachineConfigPool is in given condition, otherwise false.
-func (builder *MCPBuilder) IsInCondition(mcpConditionType mcov1.MachineConfigPoolConditionType) bool {
+func (builder *MCPBuilder) IsInCondition(mcpConditionType mcv1.MachineConfigPoolConditionType) bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
 	}
@@ -349,7 +395,7 @@ func (builder *MCPBuilder) IsInCondition(mcpConditionType mcov1.MachineConfigPoo
 
 	if builder.Exists() {
 		for _, condition := range builder.Object.Status.Conditions {
-			if condition.Type == mcpConditionType && condition.Status == isTrue {
+			if condition.Type == mcpConditionType && condition.Status == corev1.ConditionTrue {
 				return true
 			}
 		}

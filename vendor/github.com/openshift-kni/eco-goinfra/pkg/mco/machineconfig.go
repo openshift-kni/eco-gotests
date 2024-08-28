@@ -10,6 +10,7 @@ import (
 	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // MCBuilder provides struct for MachineConfig Object which contains connection to cluster
@@ -20,7 +21,7 @@ type MCBuilder struct {
 	// Created MachineConfig object on the cluster.
 	Object *mcv1.MachineConfig
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// errorMsg is processed before MachineConfig object is created.
 	errorMsg string
 }
@@ -33,8 +34,21 @@ type MCAdditionalOptions func(builder *MCBuilder) (*MCBuilder, error)
 func NewMCBuilder(apiClient *clients.Settings, name string) *MCBuilder {
 	glog.V(100).Infof("Initializing new MCBuilder structure with following params: %s", name)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the MachineConfig is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(mcv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add machineconfig v1 scheme to client schemes")
+
+		return nil
+	}
+
 	builder := MCBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mcv1.MachineConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -45,7 +59,7 @@ func NewMCBuilder(apiClient *clients.Settings, name string) *MCBuilder {
 	if name == "" {
 		glog.V(100).Infof("The name of the MachineConfig is empty")
 
-		builder.errorMsg = "MachineConfig 'name' cannot be empty"
+		builder.errorMsg = "machineconfig 'name' cannot be empty"
 	}
 
 	return &builder
@@ -55,8 +69,21 @@ func NewMCBuilder(apiClient *clients.Settings, name string) *MCBuilder {
 func PullMachineConfig(apiClient *clients.Settings, name string) (*MCBuilder, error) {
 	glog.V(100).Infof("Pulling existing machineconfig name %s from cluster", name)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the MachineConfig is nil")
+
+		return nil, fmt.Errorf("machineconfig 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(mcv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add machineconfig v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := MCBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &mcv1.MachineConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -67,7 +94,7 @@ func PullMachineConfig(apiClient *clients.Settings, name string) (*MCBuilder, er
 	if name == "" {
 		glog.V(100).Infof("The name of the machineconfig is empty")
 
-		builder.errorMsg = "machineconfig 'name' cannot be empty"
+		return nil, fmt.Errorf("machineconfig 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -77,6 +104,26 @@ func PullMachineConfig(apiClient *clients.Settings, name string) (*MCBuilder, er
 	builder.Definition = builder.Object
 
 	return &builder, nil
+}
+
+// Get returns the MachineConfig object if found.
+func (builder *MCBuilder) Get() (*mcv1.MachineConfig, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting MachineConfig object %s", builder.Definition.Name)
+
+	machineConfig := &mcv1.MachineConfig{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{Name: builder.Definition.Name}, machineConfig)
+
+	if err != nil {
+		glog.V(100).Infof("MachineConfig object %s does not exist", builder.Definition.Name)
+
+		return nil, err
+	}
+
+	return machineConfig, nil
 }
 
 // Create generates a machineconfig in the cluster and stores the created object in struct.
@@ -89,8 +136,10 @@ func (builder *MCBuilder) Create() (*MCBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.MachineConfigs().Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
+		}
 	}
 
 	return builder, err
@@ -105,14 +154,16 @@ func (builder *MCBuilder) Delete() error {
 	glog.V(100).Infof("Deleting the MachineConfig object %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return fmt.Errorf("MachineConfig cannot be deleted because it does not exist")
+		glog.V(100).Infof("MachineConfig %s cannot be deleted because it does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
+		return nil
 	}
 
-	err := builder.apiClient.MachineConfigs().Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
-
+	err := builder.apiClient.Delete(context.TODO(), builder.Object)
 	if err != nil {
-		return fmt.Errorf("cannot delete MachineConfig: %w", err)
+		return fmt.Errorf("cannot delete machineconfig: %w", err)
 	}
 
 	builder.Object = nil
@@ -128,9 +179,10 @@ func (builder *MCBuilder) Update() (*MCBuilder, error) {
 
 	glog.V(100).Infof("Updating machineconfig %s", builder.Definition.Name)
 
-	var err error
-	builder.Object, err = builder.apiClient.MachineConfigs().Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	if err == nil {
+		builder.Object = builder.Definition
+	}
 
 	return builder, err
 }
@@ -144,8 +196,7 @@ func (builder *MCBuilder) Exists() bool {
 	glog.V(100).Infof("Checking if the MachineConfig object %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.MachineConfigs().Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

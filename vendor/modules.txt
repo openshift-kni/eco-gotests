@@ -535,7 +535,7 @@ github.com/onsi/gomega/types
 ## explicit; go 1.20
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240819205434-62b2119d4777
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240827150327-fe103730d840
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -856,10 +856,8 @@ github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.opens
 github.com/openshift/machine-config-operator/pkg/controller/common
 github.com/openshift/machine-config-operator/pkg/daemon/constants
 github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned
-github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/fake
 github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1
-github.com/openshift/machine-config-operator/pkg/generated/clientset/versioned/typed/machineconfiguration.openshift.io/v1/fake
 github.com/openshift/machine-config-operator/pkg/generated/informers/externalversions
 github.com/openshift/machine-config-operator/pkg/generated/informers/externalversions/internalinterfaces
 github.com/openshift/machine-config-operator/pkg/generated/informers/externalversions/machineconfiguration.openshift.io
@@ -1685,7 +1683,7 @@ k8s.io/kube-openapi/pkg/spec3
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/proto/validation
 k8s.io/kube-openapi/pkg/validation/spec
-# k8s.io/kubectl v0.29.3 => k8s.io/kubectl v0.29.4
+# k8s.io/kubectl v0.29.4 => k8s.io/kubectl v0.29.4
 ## explicit; go 1.21
 k8s.io/kubectl/pkg/cmd/util
 k8s.io/kubectl/pkg/drain

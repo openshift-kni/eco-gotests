@@ -7,14 +7,28 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // ListMCP returns a list of MachineConfigPoolBuilder.
-func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCPBuilder, error) {
-	passedOptions := metav1.ListOptions{}
+func ListMCP(apiClient *clients.Settings, options ...runtimeclient.ListOptions) ([]*MCPBuilder, error) {
+	if apiClient == nil {
+		glog.V(100).Info("MachineConfigPool 'apiClient' can not be empty")
+
+		return nil, fmt.Errorf("failed to list MachineConfigPools, 'apiClient' parameter is empty")
+	}
+
+	err := apiClient.AttachScheme(mcv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add machineconfig v1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	passedOptions := runtimeclient.ListOptions{}
 	logMessage := "Listing all MCP resources"
 
 	if len(options) > 1 {
@@ -30,7 +44,8 @@ func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCP
 
 	glog.V(100).Infof(logMessage)
 
-	mcpList, err := apiClient.MachineConfigPools().List(context.TODO(), passedOptions)
+	mcpList := new(mcv1.MachineConfigPoolList)
+	err = apiClient.Client.List(context.TODO(), mcpList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list MCP objects due to %s", err.Error())
@@ -43,7 +58,7 @@ func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCP
 	for _, mcp := range mcpList.Items {
 		copiedMcp := mcp
 		mcpBuilder := &MCPBuilder{
-			apiClient:  apiClient,
+			apiClient:  apiClient.Client,
 			Object:     &copiedMcp,
 			Definition: &copiedMcp,
 		}
@@ -56,7 +71,7 @@ func ListMCP(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*MCP
 
 // ListMCPByMachineConfigSelector returns a list of MachineConfigurationPoolBuilders for given selector.
 func ListMCPByMachineConfigSelector(
-	apiClient *clients.Settings, mcpLabel string, options ...metav1.ListOptions) (*MCPBuilder, error) {
+	apiClient *clients.Settings, mcpLabel string, options ...runtimeclient.ListOptions) (*MCPBuilder, error) {
 	glog.V(100).Infof("GetByLabel returns MachineConfigPool with the specified label: %v", mcpLabel)
 
 	mcpList, err := ListMCP(apiClient, options...)
@@ -66,6 +81,10 @@ func ListMCPByMachineConfigSelector(
 	}
 
 	for _, mcp := range mcpList {
+		if mcp.Object.Spec.MachineConfigSelector == nil {
+			continue
+		}
+
 		for _, label := range mcp.Object.Spec.MachineConfigSelector.MatchExpressions {
 			for _, value := range label.Values {
 				if value == mcpLabel {
@@ -86,7 +105,13 @@ func ListMCPByMachineConfigSelector(
 
 // ListMCPWaitToBeStableFor waits for a given MachineConfigurationPool to be stable for a given period.
 func ListMCPWaitToBeStableFor(
-	apiClient *clients.Settings, stableDuration, timeout time.Duration, options ...metav1.ListOptions) error {
+	apiClient *clients.Settings, stableDuration, timeout time.Duration, options ...runtimeclient.ListOptions) error {
+	if apiClient == nil {
+		glog.V(100).Info("MachineConfigPool 'apiClient' can not be empty")
+
+		return fmt.Errorf("failed to list MachineConfigPools, 'apiClient' parameter is empty")
+	}
+
 	glog.V(100).Infof("WaitForMcpListToBeStableFor waits up to duration of %v for "+
 		"MachineConfigPoolList to be stable for %v", timeout, stableDuration)
 

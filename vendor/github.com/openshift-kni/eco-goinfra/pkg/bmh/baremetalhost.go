@@ -649,6 +649,51 @@ func (builder *BmhBuilder) WaitUntilDeleted(timeout time.Duration) error {
 	return err
 }
 
+// WaitUntilAnnotationExists waits up to the specified timeout until the annotation exists.
+func (builder *BmhBuilder) WaitUntilAnnotationExists(annotation string, timeout time.Duration) (*BmhBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	if annotation == "" {
+		glog.V(100).Info("BMH annotation key cannot be empty")
+
+		return nil, fmt.Errorf("bmh annotation key cannot be empty")
+	}
+
+	glog.V(100).Infof(
+		"Waiting until BMH %s in namespace %s has annotation %s",
+		builder.Definition.Name, builder.Definition.Namespace, annotation)
+
+	if !builder.Exists() {
+		return nil, fmt.Errorf(
+			"baremetalhost object %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	var err error
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			builder.Object, err = builder.Get()
+			if err != nil {
+				glog.V(100).Infof("failed to get bmh %s/%s: %v", builder.Definition.Namespace, builder.Definition.Name, err)
+
+				return false, nil
+			}
+
+			if _, ok := builder.Object.Annotations[annotation]; !ok {
+				return false, nil
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return builder, nil
+}
+
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *BmhBuilder) validate() (bool, error) {
