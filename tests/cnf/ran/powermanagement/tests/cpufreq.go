@@ -10,9 +10,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
@@ -64,7 +64,7 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 		When("reserved and isolated core frequency is configured via PerformanceProfile", func() {
 			It("sets the reserved and isolated core frequency correctly on the DUT", func() {
 
-				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.Spoke1OCPVersion, "4.16", "")
+				versionInRange, err := version.IsVersionStringInRange(RANConfig.Spoke1OCPVersion, "4.16", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare OCP version string")
 
 				if !versionInRange {

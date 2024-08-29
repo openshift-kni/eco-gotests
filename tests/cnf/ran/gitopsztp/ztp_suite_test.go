@@ -15,7 +15,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/tests"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 )
@@ -32,7 +32,7 @@ func TestZtp(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	By("checking that the required clusters are present")
-	if !ranhelper.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient}) {
+	if !rancluster.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient}) {
 		Skip("not all of the required clusters are present")
 	}
 

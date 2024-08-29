@@ -9,63 +9,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
-
-// IsSnoPlusOne checks if the specified cluster has one control plane and one worker node.
-func IsSnoPlusOne(client *clients.Settings) (bool, error) {
-	controlPlanes, err := ranhelper.ListNodesByLabel(client, RANConfig.ControlPlaneLabelMap)
-	if err != nil {
-		return false, err
-	}
-
-	if len(controlPlanes) != 1 {
-		return false, nil
-	}
-
-	glog.V(tsparams.LogLevel).Info("Exactly one control plane node found")
-
-	workers, err := ranhelper.ListNodesByLabel(client, RANConfig.WorkerLabelMap)
-	if err != nil {
-		return false, err
-	}
-
-	trueWorkers := 0
-
-	for _, worker := range workers {
-		if !isNodeControlPlane(worker) {
-			trueWorkers++
-		}
-	}
-
-	if trueWorkers != 1 {
-		return false, nil
-	}
-
-	glog.V(tsparams.LogLevel).Info("Exactly one worker node found")
-
-	return true, nil
-}
-
-// GetPlusOneWorkerName gets the name of the one worker in a SNO+1 cluster.
-func GetPlusOneWorkerName(client *clients.Settings) (string, error) {
-	workers, err := ranhelper.ListNodesByLabel(client, RANConfig.WorkerLabelMap)
-	if err != nil {
-		return "", err
-	}
-
-	for _, worker := range workers {
-		if !isNodeControlPlane(worker) {
-			return worker.Definition.Name, nil
-		}
-	}
-
-	return "", fmt.Errorf("could not find a worker node for cluster")
-}
 
 // GetBmhNamespace returns the namespace for the specified BareMetalHost, if it exists.
 func GetBmhNamespace(client *clients.Settings, bmhName string) (string, error) {
@@ -102,11 +48,4 @@ func WaitForBMHDeprovisioning(client *clients.Settings, name, namespace string, 
 
 			return true, nil
 		})
-}
-
-// isNodeControlPlane checks whether the provided node is a control plane node.
-func isNodeControlPlane(node *nodes.Builder) bool {
-	_, exists := node.Definition.Labels[RANConfig.ControlPlaneLabel]
-
-	return exists
 }

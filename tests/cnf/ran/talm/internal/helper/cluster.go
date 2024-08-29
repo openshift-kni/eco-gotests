@@ -4,8 +4,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,7 +35,7 @@ func GetClusterVersionDefinition(client *clients.Settings, config string) (*conf
 
 	// channel and upstream specs are required when desiredUpdate.version is used
 	if config != "Image" {
-		version, err := ranhelper.GetOCPVersion(client)
+		version, err := version.GetOCPVersion(client)
 		if err != nil {
 			return nil, err
 		}

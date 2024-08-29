@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/setup"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/tsparams"
@@ -189,7 +190,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 59948 - Configurable filters for precache images.
 			It("tests precache image filtering", reportxml.ID("59948"), func() {
-				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.13", "")
+				versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.13", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
@@ -233,7 +234,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 64746 - Precache User-Specified Image
 			It("tests custom image precaching using a PreCachingConfig CR", reportxml.ID("64746"), func() {
-				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
+				versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
@@ -308,7 +309,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 64747 Precache Invalid User-Specified Image
 			It("tests custom image precaching using an invalid image", reportxml.ID("64747"), func() {
-				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
+				versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
@@ -345,7 +346,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 64751 - Precache with Large Disk
 			It("tests precaching disk space checks using preCachingConfig", reportxml.ID("64751"), func() {
-				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
+				versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.14", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {

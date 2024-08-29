@@ -9,9 +9,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/mount"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/setup"
@@ -27,7 +28,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 
 	BeforeEach(func() {
 		By("checking that the talm version is at least 4.11")
-		versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.11", "")
+		versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.11", "")
 		Expect(err).ToNot(HaveOccurred(), "Failed to compared talm version string")
 
 		if !versionInRange {
@@ -35,7 +36,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 		}
 
 		By("checking that the talm version is at most 4.15")
-		versionInRange, err = ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "", "4.15")
+		versionInRange, err = version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "", "4.15")
 		Expect(err).ToNot(HaveOccurred(), "Failed to compare talm version string")
 
 		if !versionInRange {
@@ -46,8 +47,8 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 	When("there is a single spoke", func() {
 		BeforeEach(func() {
 			By("checking that the hub and spoke 1 are present")
-			Expect([]*clients.Settings{HubAPIClient, Spoke1APIClient}).
-				ToNot(ContainElement(BeNil()), "Failed due to missing API client")
+			Expect(rancluster.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient})).
+				To(BeTrue(), "Failed due to missing API client")
 		})
 
 		AfterEach(func() {
@@ -92,7 +93,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 		Context("with CGU disabled", func() {
 			BeforeEach(func() {
 				By("checking that the talm version is at least 4.12")
-				versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.12", "")
+				versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.12", "")
 				Expect(err).ToNot(HaveOccurred(), "Failed to compare talm version string")
 
 				if !versionInRange {
@@ -137,8 +138,8 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 	When("there are two spokes", func() {
 		BeforeEach(func() {
 			By("checking that hub and two spokes are present")
-			Expect([]*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient}).
-				ToNot(ContainElement(BeNil()), "Failed due to missing API client")
+			Expect(rancluster.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient})).
+				To(BeTrue(), "Failed due to missing API client")
 
 			By("setting up filesystem to simulate low space")
 			loopbackDevicePath, err = mount.PrepareEnvWithSmallMountPoint(Spoke1APIClient)

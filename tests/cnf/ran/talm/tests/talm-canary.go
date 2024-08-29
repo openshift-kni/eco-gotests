@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/setup"
@@ -21,8 +22,8 @@ var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func
 
 	BeforeEach(func() {
 		By("checking that hub and two spokes are present")
-		Expect([]*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient}).
-			ToNot(ContainElement(BeNil()), "Failed due to missing API client")
+		Expect(rancluster.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient})).
+			To(BeTrue(), "Failed due to missing API client")
 	})
 
 	AfterEach(func() {

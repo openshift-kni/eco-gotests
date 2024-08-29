@@ -11,8 +11,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/internal/cnfconfig"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"gopkg.in/yaml.v2"
 )
@@ -112,7 +112,7 @@ func (ranconfig *RANConfig) newHubConfig(configFile string) {
 
 	ranconfig.HubConfig.HubAPIClient = clients.New(ranconfig.HubConfig.HubKubeconfig)
 
-	ranconfig.HubConfig.HubOCPVersion, err = ranhelper.GetOCPVersion(ranconfig.HubConfig.HubAPIClient)
+	ranconfig.HubConfig.HubOCPVersion, err = version.GetOCPVersion(ranconfig.HubConfig.HubAPIClient)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get OCP version from hub: %v", err)
 	}
@@ -121,25 +121,25 @@ func (ranconfig *RANConfig) newHubConfig(configFile string) {
 
 	ranconfig.HubConfig.HubOperatorVersions = make(map[ranparam.HubOperatorName]string)
 
-	ranconfig.HubConfig.HubOperatorVersions[ranparam.ACM], err = ranhelper.GetOperatorVersionFromCsv(
+	ranconfig.HubConfig.HubOperatorVersions[ranparam.ACM], err = version.GetOperatorVersionFromCsv(
 		ranconfig.HubConfig.HubAPIClient, string(ranparam.ACM), ranparam.AcmOperatorNamespace)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get ACM version from hub: %v", err)
 	}
 
-	ranconfig.HubConfig.HubOperatorVersions[ranparam.GitOps], err = ranhelper.GetOperatorVersionFromCsv(
+	ranconfig.HubConfig.HubOperatorVersions[ranparam.GitOps], err = version.GetOperatorVersionFromCsv(
 		ranconfig.HubConfig.HubAPIClient, string(ranparam.GitOps), ranparam.OpenshiftGitOpsNamespace)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get GitOps version from hub: %v", err)
 	}
 
-	ranconfig.HubConfig.HubOperatorVersions[ranparam.MCE], err = ranhelper.GetOperatorVersionFromCsv(
+	ranconfig.HubConfig.HubOperatorVersions[ranparam.MCE], err = version.GetOperatorVersionFromCsv(
 		ranconfig.HubConfig.HubAPIClient, string(ranparam.MCE), ranparam.MceOperatorNamespace)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get MCE version from hub: %v", err)
 	}
 
-	ranconfig.HubConfig.HubOperatorVersions[ranparam.TALM], err = ranhelper.GetOperatorVersionFromCsv(
+	ranconfig.HubConfig.HubOperatorVersions[ranparam.TALM], err = version.GetOperatorVersionFromCsv(
 		ranconfig.HubConfig.HubAPIClient, string(ranparam.TALM), ranparam.OpenshiftOperatorNamespace)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get TALM version from hub: %v", err)
@@ -147,7 +147,7 @@ func (ranconfig *RANConfig) newHubConfig(configFile string) {
 
 	glog.V(ranparam.LogLevel).Infof("Found operator versions on hub: %v", ranconfig.HubConfig.HubOperatorVersions)
 
-	ranconfig.HubConfig.ZTPVersion, err = ranhelper.GetZTPVersionFromArgoCd(
+	ranconfig.HubConfig.ZTPVersion, err = version.GetZTPVersionFromArgoCd(
 		ranconfig.HubConfig.HubAPIClient, ranparam.OpenshiftGitopsRepoServer, ranparam.OpenshiftGitOpsNamespace)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get ZTP version from hub: %v", err)
@@ -170,7 +170,7 @@ func (ranconfig *RANConfig) newSpoke1Config(configFile string) {
 
 	spoke1Kubeconfig := os.Getenv("KUBECONFIG")
 	if spoke1Kubeconfig != "" {
-		ranconfig.Spoke1Config.Spoke1Name, err = ranhelper.GetClusterName(spoke1Kubeconfig)
+		ranconfig.Spoke1Config.Spoke1Name, err = version.GetClusterName(spoke1Kubeconfig)
 
 		if err != nil {
 			glog.V(ranparam.LogLevel).Infof("Failed to get spoke 1 name from kubeconfig at %s: %v", spoke1Kubeconfig, err)
@@ -179,7 +179,7 @@ func (ranconfig *RANConfig) newSpoke1Config(configFile string) {
 		glog.V(ranparam.LogLevel).Infof("No spoke 1 kubeconfig specified in KUBECONFIG environment variable")
 	}
 
-	ranconfig.Spoke1Config.Spoke1OCPVersion, err = ranhelper.GetOCPVersion(ranconfig.Spoke1Config.Spoke1APIClient)
+	ranconfig.Spoke1Config.Spoke1OCPVersion, err = version.GetOCPVersion(ranconfig.Spoke1Config.Spoke1APIClient)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get OCP version from spoke 1: %v", err)
 	}
@@ -218,13 +218,13 @@ func (ranconfig *RANConfig) newSpoke2Config(configFile string) {
 
 	ranconfig.Spoke2Config.Spoke2APIClient = clients.New(ranconfig.Spoke2Config.Spoke2Kubeconfig)
 
-	ranconfig.Spoke2Config.Spoke2Name, err = ranhelper.GetClusterName(ranconfig.Spoke2Config.Spoke2Kubeconfig)
+	ranconfig.Spoke2Config.Spoke2Name, err = version.GetClusterName(ranconfig.Spoke2Config.Spoke2Kubeconfig)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof(
 			"Failed to get spoke 2 name from kubeconfig at %s: %v", ranconfig.Spoke2Config.Spoke2Kubeconfig, err)
 	}
 
-	ranconfig.Spoke2Config.Spoke2OCPVersion, err = ranhelper.GetOCPVersion(ranconfig.Spoke2Config.Spoke2APIClient)
+	ranconfig.Spoke2Config.Spoke2OCPVersion, err = version.GetOCPVersion(ranconfig.Spoke2Config.Spoke2APIClient)
 	if err != nil {
 		glog.V(ranparam.LogLevel).Infof("Failed to get OCP version from spoke 2: %v", err)
 	}
