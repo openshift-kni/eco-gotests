@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
-	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/dpdkenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/dpdk/internal/tsparams"
@@ -23,7 +22,7 @@ import (
 var (
 	_, currentFile, _, _ = runtime.Caller(0)
 	testNS               = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName)
-	perfProfileName      = "automationdpdk"
+	perfProfileName      = "performance-profile-dpdk"
 )
 
 func TestLB(t *testing.T) {
@@ -62,12 +61,6 @@ var _ = AfterSuite(func() {
 	By("Deleting test namespace")
 	err := testNS.DeleteAndWait(tsparams.WaitTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Fail to delete test namespace")
-
-	By("Removing performanceProfile")
-	perfProfile, err := nto.Pull(APIClient, perfProfileName)
-	Expect(err).ToNot(HaveOccurred(), "Fail to pull test PerformanceProfile")
-	_, err = perfProfile.Delete()
-	Expect(err).ToNot(HaveOccurred(), "Fail to delete PerformanceProfile")
 
 	By("Waiting until cluster is stable")
 	mcp, err := mco.Pull(APIClient, NetConfig.CnfMcpLabel)

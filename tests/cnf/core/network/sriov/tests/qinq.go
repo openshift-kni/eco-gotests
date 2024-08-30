@@ -10,7 +10,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
-	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
@@ -549,11 +548,6 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 					testOutPutString)
 			})
 		AfterAll(func() {
-			By("Removing performanceProfile")
-			perfProfile, err := nto.Pull(APIClient, perfProfileName)
-			Expect(err).ToNot(HaveOccurred(), "Fail to pull test PerformanceProfile")
-			_, err = perfProfile.Delete()
-			Expect(err).ToNot(HaveOccurred(), "Fail to delete PerformanceProfile")
 
 			By("Clean the test env of sriov and pod deployments")
 			cleanTestEnvSRIOVConfiguration()
