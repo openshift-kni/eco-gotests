@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
@@ -45,7 +46,7 @@ var _ = Describe("ZTP Argo CD ACM CR Tests", Label(tsparams.LabelArgoCdAcmCrsTes
 
 	AfterEach(func() {
 		By("resetting the policies app back to the original settings")
-		err := helper.SetGitDetailsInArgoCd(
+		err := gitdetails.SetGitDetailsInArgoCd(
 			tsparams.ArgoCdPoliciesAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName], true, false)
 		Expect(err).ToNot(HaveOccurred(), "Failed to reset the git details for the policies app")
 	})
@@ -53,7 +54,7 @@ var _ = Describe("ZTP Argo CD ACM CR Tests", Label(tsparams.LabelArgoCdAcmCrsTes
 	// 54236 - Evaluating use of ACM's version of PolicyGenTemplates with our ZTP flow. This enables user created
 	// content that does not depend on our ZTP container but works "seamlessly" with it.
 	It("should use ACM CRs to template a policy, deploy it, and validate it succeeded", reportxml.ID("54236"), func() {
-		exists, err := helper.UpdateArgoCdAppGitPath(tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathAcmCrs, true)
+		exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathAcmCrs, true)
 		if !exists {
 			Skip(err.Error())
 		}

@@ -1,9 +1,10 @@
 package tsparams
 
 import (
-	argocdoperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	sriovv1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	cguv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
@@ -46,7 +47,8 @@ var (
 		{Cr: &cguv1alpha1.ClusterGroupUpgradeList{}},
 		{Cr: &corev1.ConfigMapList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &corev1.SecretList{}, Namespace: ptr.To(TestNamespace)},
-		{Cr: &argocdoperatorv1alpha1.ArgoCDList{}},
+		{Cr: &argocdoperator.ArgoCDList{}},
+		{Cr: &v1alpha1.ApplicationList{}},
 	}
 
 	// ReporterSpokeCRsToDump is the CRs the reporter should dump on the spokes.

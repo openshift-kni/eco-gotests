@@ -6,19 +6,22 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/imageregistry"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 )
 
@@ -35,7 +38,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 
 	AfterEach(func() {
 		By("resetting the policies app to the original settings")
-		err := helper.SetGitDetailsInArgoCd(
+		err := gitdetails.SetGitDetailsInArgoCd(
 			tsparams.ArgoCdPoliciesAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName], true, false)
 		Expect(err).ToNot(HaveOccurred(), "Failed to reset policies app git details")
 	})
@@ -44,7 +47,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 		// 54241 - User override of policy intervals
 		It("should specify new intervals and verify they were applied", reportxml.ID("54241"), func() {
 			By("updating Argo CD policies app")
-			exists, err := helper.UpdateArgoCdAppGitPath(
+			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathCustomInterval, true)
 			if !exists {
 				Skip(err.Error())
@@ -85,7 +88,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 		// 54242 - Invalid time duration string for user override of policy intervals
 		It("should specify an invalid interval format and verify the app error", reportxml.ID("54242"), func() {
 			By("updating Argo CD policies app")
-			exists, err := helper.UpdateArgoCdAppGitPath(
+			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathInvalidInterval, false)
 			if !exists {
 				Skip(err.Error())
@@ -94,13 +97,12 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
 
 			By("checking the Argo CD conditions for the expected error")
-			expectedMessage := "evaluationInterval.compliant 'time: invalid duration"
-			err = helper.WaitForConditionInArgoCdApp(
-				HubAPIClient,
-				tsparams.ArgoCdPoliciesAppName,
-				ranparam.OpenshiftGitOpsNamespace,
-				expectedMessage,
-				tsparams.ArgoCdChangeTimeout)
+			app, err := argocd.PullApplication(HubAPIClient, tsparams.ArgoCdPoliciesAppName, ranparam.OpenshiftGitOpsNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to pull Argo CD policies app")
+
+			_, err = app.WaitForCondition(v1alpha1.ApplicationCondition{
+				Message: "evaluationInterval.compliant 'time: invalid duration",
+			}, tsparams.ArgoCdChangeTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to check Argo CD conditions for expected error")
 		})
 	})
@@ -111,7 +113,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 		AfterEach(func() {
 			// Reset the policies app before doing later restore actions so that they're not affected.
 			By("resetting the policies app to the original settings")
-			err := helper.SetGitDetailsInArgoCd(
+			err := gitdetails.SetGitDetailsInArgoCd(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName], true, false)
 			Expect(err).ToNot(HaveOccurred(), "Failed to reset policies app git details")
 
@@ -131,7 +133,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 		// 54354 - Ability to configure local registry via du profile
 		It("verifies the image registry exists", reportxml.ID("54354"), func() {
 			By("updating Argo CD policies app")
-			exists, err := helper.UpdateArgoCdAppGitPath(
+			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathImageRegistry, true)
 			if !exists {
 				Skip(err.Error())
@@ -164,10 +166,11 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			imageRegistryBuilder, err := imageregistry.Pull(Spoke1APIClient, tsparams.ImageRegistryName)
 			Expect(err).ToNot(HaveOccurred(), "Failed to pull image registry config")
 
-			err = helper.WaitForConditionInImageRegistry(
-				imageRegistryBuilder,
-				metav1.Condition{Type: "Available", Reason: "Ready", Status: metav1.ConditionTrue},
-				tsparams.ArgoCdChangeTimeout)
+			_, err = imageRegistryBuilder.WaitForCondition(operatorv1.OperatorCondition{
+				Type:   "Available",
+				Reason: "Ready",
+				Status: operatorv1.ConditionTrue,
+			}, tsparams.ArgoCdChangeTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for image registry config to be Available")
 		})
 	})
@@ -214,7 +217,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			Expect(err).To(HaveOccurred(), "Service account already exists before test")
 
 			By("updating Argo CD policies app")
-			exists, err := helper.UpdateArgoCdAppGitPath(
+			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathCustomSourceNewCr, true)
 			if !exists {
 				Skip(err.Error())
@@ -232,7 +235,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for policy to be Compliant")
 
 			By("waiting for service account to exist")
-			err = helper.WaitForServiceAccountToExist(
+			_, err = helper.WaitForServiceAccountToExist(
 				Spoke1APIClient,
 				tsparams.CustomSourceCrName,
 				tsparams.CustomSourceTestNamespace,
@@ -252,7 +255,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			}
 
 			By("updating Argo CD policies app")
-			exists, err := helper.UpdateArgoCdAppGitPath(
+			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathCustomSourceReplaceExisting, true)
 			if !exists {
 				Skip(err.Error())
@@ -286,7 +289,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			}
 
 			By("updating Argo CD policies app")
-			exists, err := helper.UpdateArgoCdAppGitPath(
+			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathCustomSourceNoCrFile, false)
 			if !exists {
 				Skip(err.Error())
@@ -295,12 +298,12 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
 
 			By("checking the Argo CD conditions for the expected error")
-			err = helper.WaitForConditionInArgoCdApp(
-				HubAPIClient,
-				tsparams.ArgoCdPoliciesAppName,
-				ranparam.OpenshiftGitOpsNamespace,
-				"test/NoCustomCr.yaml is not found",
-				tsparams.ArgoCdChangeTimeout)
+			app, err := argocd.PullApplication(HubAPIClient, tsparams.ArgoCdPoliciesAppName, ranparam.OpenshiftGitOpsNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to pull Argo CD policies app")
+
+			_, err = app.WaitForCondition(v1alpha1.ApplicationCondition{
+				Message: "test/NoCustomCr.yaml is not found",
+			}, tsparams.ArgoCdChangeTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to check Argo CD conditions for expected error")
 		})
 
@@ -323,7 +326,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			Expect(err).To(HaveOccurred(), "Storage class already exists before test")
 
 			By("updating Argo CD policies app")
-			exists, err := helper.UpdateArgoCdAppGitPath(
+			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathCustomSourceSearchPath, true)
 			if !exists {
 				Skip(err.Error())

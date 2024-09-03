@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
@@ -41,7 +42,7 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 
 	AfterEach(func() {
 		By("resetting the policies app back to the original settings")
-		err := helper.SetGitDetailsInArgoCd(
+		err := gitdetails.SetGitDetailsInArgoCd(
 			tsparams.ArgoCdPoliciesAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName], true, false)
 		Expect(err).ToNot(HaveOccurred(), "Failed to reset the git details for the policies app")
 
@@ -69,11 +70,12 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 		assertTalmPodLog(HubAPIClient, "policy has hub template error")
 
 		By("validating the specific error using the policy message")
-		err := helper.WaitForPolicyMessageToContainSubstring(
-			HubAPIClient,
-			tsparams.TestNamespace+"."+tsparams.HubTemplatingPolicyName,
-			RANConfig.Spoke1Name,
-			"wrong type for value; expected string; got int")
+		policy, err := ocm.PullPolicy(
+			HubAPIClient, tsparams.TestNamespace+"."+tsparams.HubTemplatingPolicyName, RANConfig.Spoke1Name)
+		Expect(err).ToNot(HaveOccurred(), "Failed to pull hub side templating policy")
+
+		_, err = policy.WaitForStatusMessageToContain(
+			"wrong type for value; expected string; got int", tsparams.ArgoCdChangeTimeout)
 		Expect(err).ToNot(HaveOccurred(), "Failed to validate error using policy message")
 	})
 
@@ -117,7 +119,7 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 func setupHubTemplateTest(ztpTestPath string) {
 	By("updating the Argo CD git path")
 
-	exists, err := helper.UpdateArgoCdAppGitPath(tsparams.ArgoCdPoliciesAppName, ztpTestPath, true)
+	exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdPoliciesAppName, ztpTestPath, true)
 	if !exists {
 		Skip(err.Error())
 	}

@@ -29,11 +29,6 @@ github.com/PaesslerAG/jsonpath
 # github.com/ajeddeloh/go-json v0.0.0-20200220154158-5ae607161559
 ## explicit
 github.com/ajeddeloh/go-json
-# github.com/argoproj-labs/argocd-operator v0.10.0
-## explicit; go 1.21
-github.com/argoproj-labs/argocd-operator/api/v1alpha1
-github.com/argoproj-labs/argocd-operator/api/v1beta1
-github.com/argoproj-labs/argocd-operator/common
 # github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 ## explicit; go 1.13
 github.com/asaskevich/govalidator
