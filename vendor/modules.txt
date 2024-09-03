@@ -530,7 +530,7 @@ github.com/onsi/gomega/types
 ## explicit; go 1.20
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240827150327-fe103730d840
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240904143516-4fdc10f8e368
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -628,6 +628,8 @@ github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/api/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/pkg/common
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/velero/api/v1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/velero/pkg/restore
+github.com/openshift-kni/eco-goinfra/pkg/schemes/ocm/clusterv1
+github.com/openshift-kni/eco-goinfra/pkg/schemes/ocm/kacv1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1
@@ -950,14 +952,6 @@ github.com/stmcginnis/gofish
 github.com/stmcginnis/gofish/common
 github.com/stmcginnis/gofish/redfish
 github.com/stmcginnis/gofish/swordfish
-# github.com/stolostron/cluster-lifecycle-api v0.0.0-20240109072430-f5fe6043d1f8
-## explicit; go 1.19
-github.com/stolostron/cluster-lifecycle-api/helpers/imageregistry
-github.com/stolostron/cluster-lifecycle-api/imageregistry/v1alpha1
-# github.com/stolostron/klusterlet-addon-controller v0.0.0-20240606130554-01338045271a
-## explicit; go 1.21
-github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1
-github.com/stolostron/klusterlet-addon-controller/version
 # github.com/stretchr/testify v1.9.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert

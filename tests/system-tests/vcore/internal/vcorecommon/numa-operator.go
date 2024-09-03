@@ -248,7 +248,7 @@ func VerifyNROPSchedulingWorkload(ctx SpecContext) {
 		vcoreparams.NumaWorkloadName,
 		vcoreparams.NROPNamespace,
 		workloadSelector,
-		&corev1.Container{
+		corev1.Container{
 			Name:            "ctnr",
 			Image:           workloadImage,
 			ImagePullPolicy: "IfNotPresent",

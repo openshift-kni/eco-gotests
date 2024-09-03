@@ -6,7 +6,7 @@
 // Copyright (c) Red Hat, Inc.
 // Copyright Contributors to the Open Cluster Management project
 
-package v1
+package kacv1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -32,7 +32,7 @@ func Workload(apiClient *clients.Settings, workloadImage string) (*deployment.Bu
 	workloadDeployment, err := deployment.NewBuilder(
 		upgradeinittools.HubAPIClient, upgradeparams.DeploymentName, upgradeparams.TestNamespaceName, map[string]string{
 			"app": upgradeparams.DeploymentName,
-		}, containerConfig).WithLabel("app", upgradeparams.DeploymentName).CreateAndWaitUntilReady(time.Second * 120)
+		}, *containerConfig).WithLabel("app", upgradeparams.DeploymentName).CreateAndWaitUntilReady(time.Second * 120)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workload with error: %w", err)

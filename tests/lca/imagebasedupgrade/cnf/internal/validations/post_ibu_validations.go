@@ -388,7 +388,7 @@ func ValidateSeedRefLogs() {
 				"kcat",
 				"default",
 				map[string]string{"kcat": ""},
-				deployCfg,
+				*deployCfg,
 			)
 			_, err = createDeploy.CreateAndWaitUntilReady(2 * time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to create kcat deployment")

@@ -505,7 +505,7 @@ func startTestWorkload() {
 	_, err = deployment.NewBuilder(
 		APIClient, mgmtparams.LCAWorkloadName, mgmtparams.LCAWorkloadName, map[string]string{
 			"app": mgmtparams.LCAWorkloadName,
-		}, &v1.Container{
+		}, v1.Container{
 			Name:  mgmtparams.LCAWorkloadName,
 			Image: MGMTConfig.IBUWorkloadImage,
 			Ports: []v1.ContainerPort{

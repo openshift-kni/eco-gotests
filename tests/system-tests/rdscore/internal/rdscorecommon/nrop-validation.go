@@ -75,7 +75,7 @@ func defineNROPDeployment(containerConfig *corev1.Container, deployName, deployN
 
 	By("Defining NROP deployment")
 
-	deployNROP := deployment.NewBuilder(APIClient, deployName, deployNs, deployLabels, containerConfig)
+	deployNROP := deployment.NewBuilder(APIClient, deployName, deployNs, deployLabels, *containerConfig)
 
 	By("Adding NodeSelector to the deployment")
 

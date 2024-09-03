@@ -383,7 +383,7 @@ func defineDeployment(containerConfig *corev1.Container, deployName, deployNs, s
 	deployLabels, nodeSelector map[string]string) *deployment.Builder {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining deployment %q in %q ns", deployName, deployNs)
 
-	deploy := deployment.NewBuilder(APIClient, deployName, deployNs, deployLabels, containerConfig)
+	deploy := deployment.NewBuilder(APIClient, deployName, deployNs, deployLabels, *containerConfig)
 
 	By("Defining SR-IOV annotations")
 

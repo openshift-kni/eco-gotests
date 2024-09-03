@@ -327,6 +327,27 @@ func (builder *MCBuilder) WithKernelType(kernelType string) *MCBuilder {
 	return builder
 }
 
+// WithRawConfig sets the specified Config to the MachineConfig.
+func (builder *MCBuilder) WithRawConfig(config []byte) *MCBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if len(config) == 0 {
+		glog.V(100).Infof("The Config.Raw cannot be empty")
+
+		builder.errorMsg = "'Config.Raw' cannot be empty"
+
+		return builder
+	}
+
+	glog.V(100).Infof("Setting Config.Raw: %s", string(config))
+
+	builder.Definition.Spec.Config.Raw = config
+
+	return builder
+}
+
 func (builder *MCBuilder) validate() (bool, error) {
 	resourceCRD := "MachineConfig"
 

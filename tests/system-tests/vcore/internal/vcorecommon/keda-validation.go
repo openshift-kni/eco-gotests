@@ -169,7 +169,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create test application deployment %s in namespace %s",
 		vcoreparams.KedaWatchAppName, vcoreparams.KedaWatchNamespace)
 
-	prometeusImageURL, err := getImageURL(prometheusOriginMirrorURL, prometheusImageName, prometheusImageTag)
+	prometheusImageURL, err := getImageURL(prometheusOriginMirrorURL, prometheusImageName, prometheusImageTag)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to generate prometheus image URL for %s/%s:%s due to: %v",
 			prometheusOriginMirrorURL, prometheusImageName, prometheusImageTag, err))
@@ -187,9 +187,9 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 		},
 	}
 
-	appConteiner := corev1.Container{
+	appContainer := corev1.Container{
 		Name:            "prom-test-app",
-		Image:           prometeusImageURL,
+		Image:           prometheusImageURL,
 		ImagePullPolicy: "IfNotPresent",
 		SecurityContext: &securityContext,
 	}
@@ -198,7 +198,7 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 		vcoreparams.KedaWatchAppName,
 		vcoreparams.KedaWatchNamespace,
 		map[string]string{"app": vcoreparams.KedaWatchAppName},
-		&appConteiner,
+		appContainer,
 	).WithLabel("type", "keda-testing").WithReplicas(int32(1)).Create()
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create test application %s in namespace %s due to: %v",

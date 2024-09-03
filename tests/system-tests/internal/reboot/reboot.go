@@ -45,7 +45,7 @@ func HardRebootNode(nodeName string, nsName string) error {
 	}
 
 	createDeploy := deployment.NewBuilder(APIClient, systemtestsparams.HardRebootDeploymentName, nsName,
-		map[string]string{"test": "hardreboot"}, deployContainerCfg)
+		map[string]string{"test": "hardreboot"}, *deployContainerCfg)
 	createDeploy = createDeploy.WithNodeSelector(map[string]string{"kubernetes.io/hostname": nodeName})
 
 	_, err = createDeploy.CreateAndWaitUntilReady(300 * time.Second)
