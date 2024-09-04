@@ -11,8 +11,9 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/nodedelete"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 )
 
 var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNodeDeletionTestCases), func() {
@@ -24,7 +25,7 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 
 	BeforeEach(func() {
 		By("checking the ZTP version")
-		versionInRange, err := ranhelper.IsVersionStringInRange(RANConfig.ZTPVersion, "4.14", "")
+		versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.14", "")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if ZTP version is in range")
 
 		if !versionInRange {
@@ -32,7 +33,7 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		}
 
 		By("checking that the cluster contains a control-plane and worker node")
-		snoPlusOne, err := nodedelete.IsSnoPlusOne(Spoke1APIClient)
+		snoPlusOne, err := rancluster.IsSnoPlusOne(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if cluster is SNO+1")
 
 		if !snoPlusOne {
@@ -46,7 +47,7 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull 'worker' MCP")
 		Expect(mcp.Definition.Status.ReadyMachineCount).To(BeNumerically(">", 0), "Node deletion requires ready 'worker' MCP")
 
-		plusOneNodeName, err = nodedelete.GetPlusOneWorkerName(Spoke1APIClient)
+		plusOneNodeName, err = rancluster.GetPlusOneWorkerName(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get SNO+1 worker name")
 
 		bmhNamespace, err = nodedelete.GetBmhNamespace(HubAPIClient, plusOneNodeName)
@@ -65,10 +66,10 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		Expect(err).ToNot(HaveOccurred(), "Failed to reset clusters app git details")
 
 		By("checking that the cluster is back to SNO+1")
-		err = ranhelper.WaitForNumberOfNodes(Spoke1APIClient, 2, 45*time.Minute)
+		err = rancluster.WaitForNumberOfNodes(Spoke1APIClient, 2, 45*time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for cluster to return to 2 nodes")
 
-		snoPlusOne, err := nodedelete.IsSnoPlusOne(Spoke1APIClient)
+		snoPlusOne, err := rancluster.IsSnoPlusOne(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if cluster is SNO+1")
 		Expect(snoPlusOne).To(BeTrue(), "Cluster is no longer SNO+1")
 	})
@@ -105,7 +106,7 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for worker BMH to be deprovisioned")
 
 		By("checking that the cluster is healthy")
-		healthy, err := ranhelper.IsClusterStable(Spoke1APIClient)
+		healthy, err := rancluster.IsClusterStable(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if spoke cluster is healthy")
 		Expect(healthy).To(BeTrue(), "Spoke cluster was not healthy")
 	})

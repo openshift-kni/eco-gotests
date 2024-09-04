@@ -1,4 +1,4 @@
-package ranhelper
+package version
 
 import (
 	"fmt"
