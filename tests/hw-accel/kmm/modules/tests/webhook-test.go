@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-version"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	"github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
@@ -219,7 +221,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 					},
 				}
 				module.Spec.Selector = GeneralConfig.WorkerLabelMap
-				kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something"}
+				kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something:latest"}
 				var KerMapList []v1beta1.KernelMapping
 				mappings := append(KerMapList, kerMap)
 				module.Spec.ModuleLoader.Container.KernelMappings = mappings
@@ -230,6 +232,35 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
 				Expect(err.Error()).To(ContainSubstring("load and unload rawArgs must be set when moduleName is unset"))
 			})
+		})
+
+		It("should require image tag or digest for container image", reportxml.ID("75990"), func() {
+			By("Checking if version is greater than 2.2.0")
+			currentVersion, err := get.KmmOperatorVersion(APIClient)
+			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
+			featureFromVersion, _ := version.NewVersion("2.2.0")
+			if currentVersion.LessThan(featureFromVersion) {
+				Skip("Test not supported for versions lower than 2.2.0")
+			}
+
+			By("Preparing module")
+			module := &v1beta1.Module{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "nomodule-raw",
+					Namespace: nSpace,
+				},
+			}
+			module.Spec.Selector = GeneralConfig.WorkerLabelMap
+			kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something"}
+			var KerMapList []v1beta1.KernelMapping
+			mappings := append(KerMapList, kerMap)
+			module.Spec.ModuleLoader.Container.KernelMappings = mappings
+
+			By("Create Module")
+			err = APIClient.Create(context.TODO(), module)
+			Expect(err).To(HaveOccurred(), "error creating module")
+			glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
+			Expect(err.Error()).To(ContainSubstring("container image must explicitely set a tag or digest")) //nolint:misspell
 		})
 	})
 })
