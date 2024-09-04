@@ -98,7 +98,7 @@ func VerifyDNSResolutionFromNewDeploy(ctx SpecContext) {
 		SPKConfig.WorkloadDeploymentName,
 		SPKConfig.Namespace,
 		map[string]string{strings.Split(wlkdDeployLabel, "=")[0]: strings.Split(wlkdDeployLabel, "=")[1]},
-		deployContainerCfg)
+		*deployContainerCfg)
 
 	By("Creating deployment")
 

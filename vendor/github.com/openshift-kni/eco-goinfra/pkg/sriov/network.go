@@ -526,7 +526,13 @@ func (builder *NetworkBuilder) withCapabilities(capability string) *NetworkBuild
 		return builder
 	}
 
-	builder.Definition.Spec.Capabilities = fmt.Sprintf(`{ "%s": true }`, capability)
+	if len(builder.Definition.Spec.Capabilities) == 0 {
+		builder.Definition.Spec.Capabilities = fmt.Sprintf(`{ "%s": true }`, capability)
+	} else {
+		builder.Definition.Spec.Capabilities =
+			"{" + builder.Definition.Spec.Capabilities[1:len(builder.Definition.Spec.Capabilities)-2] +
+				fmt.Sprintf(`, "%s": true `, capability) + "}"
+	}
 
 	return builder
 }

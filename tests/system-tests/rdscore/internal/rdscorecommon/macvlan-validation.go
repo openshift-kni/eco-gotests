@@ -374,7 +374,7 @@ func defineMacVlanDeployment(dName, nsName, dLabels, netDefName, volName string,
 		dName,
 		nsName,
 		map[string]string{strings.Split(dLabels, "=")[0]: strings.Split(dLabels, "=")[1]},
-		dContainer)
+		*dContainer)
 
 	By("Adding MACVLAN annotations")
 

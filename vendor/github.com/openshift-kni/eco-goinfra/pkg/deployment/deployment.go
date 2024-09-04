@@ -37,7 +37,7 @@ type AdditionalOptions func(builder *Builder) (*Builder, error)
 
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(
-	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec *corev1.Container) *Builder {
+	apiClient *clients.Settings, name, nsname string, labels map[string]string, containerSpec corev1.Container) *Builder {
 	glog.V(100).Infof(
 		"Initializing new deployment structure with the following params: "+
 			"name: %s, namespace: %s, labels: %s, containerSpec %v",
@@ -63,7 +63,7 @@ func NewBuilder(
 		},
 	}
 
-	builder.WithAdditionalContainerSpecs([]corev1.Container{*containerSpec})
+	builder.WithAdditionalContainerSpecs([]corev1.Container{containerSpec})
 
 	if name == "" {
 		glog.V(100).Infof("The name of the deployment is empty")

@@ -128,7 +128,7 @@ func CreateWorkload(apiClient *clients.Settings,
 		deploymentName,
 		ipsecparams.TestNamespaceName,
 		workloadLabels,
-		deployContainerCfg)
+		*deployContainerCfg)
 	createDeploy = createDeploy.WithNodeSelector(map[string]string{"kubernetes.io/hostname": nodeName})
 
 	_, err = createDeploy.CreateAndWaitUntilReady(300 * time.Second)

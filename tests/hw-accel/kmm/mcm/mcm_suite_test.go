@@ -85,7 +85,7 @@ var _ = BeforeSuite(func() {
 			WithSecurityContext(kmmparams.PrivilegedSC).GetContainerCfg()
 
 		deploymentCfg := deployment.NewBuilder(ModulesConfig.SpokeAPIClient, deploymentName, kmmparams.KmmOperatorNamespace,
-			map[string]string{kmmparams.KmmTestHelperLabelName: ""}, containerCfg)
+			map[string]string{kmmparams.KmmTestHelperLabelName: ""}, *containerCfg)
 		deploymentCfg.WithLabel(kmmparams.KmmTestHelperLabelName, "").
 			WithNodeSelector(map[string]string{"kubernetes.io/hostname": node.Object.Name}).
 			WithServiceAccountName("kmm-operator-module-loader")

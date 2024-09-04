@@ -491,7 +491,8 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 			Expect(err).ToNot(HaveOccurred(), "Fail to get deployment container config")
 
 			_, err = deployment.NewBuilder(
-				APIClient, "deployment-one", tsparams.TestNamespaceName, map[string]string{"test": "dpdk"}, deploymentContainerCfg).
+				APIClient, "deployment-one", tsparams.TestNamespaceName, map[string]string{"test": "dpdk"},
+				*deploymentContainerCfg).
 				WithNodeSelector(map[string]string{"kubernetes.io/hostname": workerNodes[1].Definition.Name}).
 				WithSecurityContext(&clientPodSC).
 				WithLabel("test", "dpdk").

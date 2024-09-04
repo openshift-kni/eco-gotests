@@ -326,7 +326,7 @@ func createBackendDeployment() {
 		SPKBackendDeployName,
 		SPKConfig.Namespace,
 		deployLabels,
-		deployContainerCfg)
+		*deployContainerCfg)
 
 	By("Adding Volume to the deployment")
 
@@ -406,7 +406,7 @@ func createBackendUDPDeployment() {
 		SPKBackendUDPDeployName,
 		SPKConfig.Namespace,
 		deployLabels,
-		deployContainerCfg)
+		*deployContainerCfg)
 
 	By("Setting Replicas count")
 

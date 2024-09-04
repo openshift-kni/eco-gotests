@@ -174,7 +174,7 @@ func createWorkloadWithPVC(fNamespace string, fStorageClass string, fPVCName str
 		wlkdODFDeployName,
 		fNamespace,
 		map[string]string{strings.Split(labelsWlkdOneString, "=")[0]: strings.Split(labelsWlkdOneString, "=")[1]},
-		deployContainerCfg)
+		*deployContainerCfg)
 
 	By("Adding Volume to the deployment")
 

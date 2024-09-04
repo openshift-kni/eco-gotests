@@ -263,7 +263,7 @@ var _ = Describe("", Ordered,
 					Expect(err).ToNot(HaveOccurred(), "Fail to collect container configuration")
 					deploymentBuilder := deployment.NewBuilder(
 						APIClient, "deployment-one",
-						tsparams.TestNamespaceName, map[string]string{"test": "tap"}, deploymentContainer)
+						tsparams.TestNamespaceName, map[string]string{"test": "tap"}, *deploymentContainer)
 
 					var deploymentNetCfg []*types.NetworkSelectionElement
 
@@ -333,7 +333,7 @@ var _ = Describe("", Ordered,
 						"deployment-one",
 						tsparams.TestNamespaceName,
 						map[string]string{"test": "tap"},
-						deploymentContainer).WithSecondaryNetwork(deploymentNetCfg).
+						*deploymentContainer).WithSecondaryNetwork(deploymentNetCfg).
 						CreateAndWaitUntilReady(tsparams.DefaultTimeout)
 					Expect(err).ToNot(HaveOccurred(), "Fail to create deployment")
 
