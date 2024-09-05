@@ -30,4 +30,13 @@ const (
 
 	// LabelValidateSRIOV a label to select tests for SR-IOV validation.
 	LabelValidateSRIOV = "rds-core-validate-sriov"
+
+	// MetalLBOperatorNamespace MetalLB operator namespace.
+	MetalLBOperatorNamespace = "metallb-system"
+
+	// MetalLBFRRPodSelector pod selector for MetalLB-FRR pods.
+	MetalLBFRRPodSelector = "app=frr-k8s"
+
+	// MetalLBFRRContainerName name of the FRR container within a pod.
+	MetalLBFRRContainerName = "frr"
 )
