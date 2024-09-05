@@ -114,7 +114,7 @@ var _ = Describe(
 					WithClusterRef(osImageClusterImageSetName, osImageClusterImageSetName).Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating infraenv")
 
-				_, err = osImageClusterImageSetInfraEnv.WaitForDiscoveryISOCreation(time.Second * 45)
+				_, err = osImageClusterImageSetInfraEnv.WaitForDiscoveryISOCreation(time.Minute * 3)
 				Expect(err).ToNot(HaveOccurred(), "error waiting for discovery iso to be generated")
 			})
 

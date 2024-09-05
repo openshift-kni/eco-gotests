@@ -367,7 +367,7 @@ func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...stri
 	if len(mismatchCPUArchitecture) == 0 {
 		By("Wait until the discovery iso is created for the infraenv")
 
-		_, err = infraEnvBuilder.WaitForDiscoveryISOCreation(300 * time.Second)
+		_, err = infraEnvBuilder.WaitForDiscoveryISOCreation(time.Minute * 3)
 		Expect(err).ToNot(HaveOccurred(), "error waiting for the discovery iso creation")
 	} else {
 		By("Wait until infraenv shows an error for the mismatching image architecture")
