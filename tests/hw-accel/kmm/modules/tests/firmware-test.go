@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -60,21 +61,26 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 			By("Delete Namespace")
 			_ = namespace.NewBuilder(APIClient, kmmparams.FirmwareTestNamespace).Delete()
 
-			By("Delete machine configuration that sets Kernel Arguments on workers")
-			kernelArgsMc, err := mco.PullMachineConfig(APIClient, machineConfigName)
-			Expect(err).ToNot(HaveOccurred(), "error fetching machine configuration object")
-			_ = kernelArgsMc.Delete()
+			By("Checking if version is greater than 2.2.0")
+			currentVersion, err := get.KmmOperatorVersion(APIClient)
+			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
+			featureFromVersion, _ := version.NewVersion("2.2.0")
+			if currentVersion.LessThan(featureFromVersion) {
+				By("Delete machine configuration that sets Kernel Arguments on workers")
+				kernelArgsMc, err := mco.PullMachineConfig(APIClient, machineConfigName)
+				Expect(err).ToNot(HaveOccurred(), "error fetching machine configuration object")
+				_ = kernelArgsMc.Delete()
 
-			By("Waiting machine config pool to update")
-			mcp, err := mco.Pull(APIClient, mcpName)
-			Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
+				By("Waiting machine config pool to update")
+				mcp, err := mco.Pull(APIClient, mcpName)
+				Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
 
-			err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
-			Expect(err).To(HaveOccurred(), "the machine configuration did not trigger a mcp update")
+				err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
+				Expect(err).To(HaveOccurred(), "the machine configuration did not trigger a mcp update")
 
-			err = mcp.WaitForUpdate(30 * time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
-
+				err = mcp.WaitForUpdate(30 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
+			}
 		})
 
 		It("should properly build a module with firmware support", reportxml.ID("56675"), func() {
@@ -101,22 +107,28 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 			_, err = crb.Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating clusterrolebinding")
 
-			By("Creating machine configuration that sets the kernelArguments")
-			kernelArgsMc := mco.NewMCBuilder(APIClient, machineConfigName).
-				WithLabel(machineConfigRole, mcpName).
-				WithKernelArguments(workerKernelArgs)
-			_, err = kernelArgsMc.Create()
-			Expect(err).ToNot(HaveOccurred(), "error creating machine configuration")
+			By("Checking if version is greater than 2.2.0")
+			currentVersion, err := get.KmmOperatorVersion(APIClient)
+			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
+			featureFromVersion, _ := version.NewVersion("2.2.0")
+			if currentVersion.LessThan(featureFromVersion) {
+				By("Creating machine configuration that sets the kernelArguments")
+				kernelArgsMc := mco.NewMCBuilder(APIClient, machineConfigName).
+					WithLabel(machineConfigRole, mcpName).
+					WithKernelArguments(workerKernelArgs)
+				_, err = kernelArgsMc.Create()
+				Expect(err).ToNot(HaveOccurred(), "error creating machine configuration")
 
-			By("Waiting machine config pool to update")
-			mcp, err := mco.Pull(APIClient, "worker")
-			Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
+				By("Waiting machine config pool to update")
+				mcp, err := mco.Pull(APIClient, "worker")
+				Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
 
-			err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
-			Expect(err).To(HaveOccurred(), "the machineconfiguration did not trigger a mcp update")
+				err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
+				Expect(err).To(HaveOccurred(), "the machineconfiguration did not trigger a mcp update")
 
-			err = mcp.WaitForUpdate(30 * time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
+				err = mcp.WaitForUpdate(30 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
+			}
 
 			By("Create KernelMapping")
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
