@@ -15,7 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
+	ocsoperatorv1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/ocs/operatorv1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/strings/slices"
