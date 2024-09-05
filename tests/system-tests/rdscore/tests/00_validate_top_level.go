@@ -25,6 +25,10 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verifies workload reachable over BGP route",
+				Label("frr"), reportxml.ID("76009"),
+				rdscorecommon.ReachURLviaFRRroute)
+
 			It("Verifies KDump service on Control Plane node",
 				Label("kdump", "kdump-cp"), reportxml.ID("75620"),
 				rdscorecommon.VerifyKDumpOnControlPlane)
@@ -279,6 +283,10 @@ var _ = Describe(
 			It("Verifies IPVLAN workloads on different nodes post hard reboot",
 				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75059"),
 				rdscorecommon.VerifyIPVLANConnectivityBetweenDifferentNodes)
+
+			It("Verifies workload reachable over BGP route post hard reboot",
+				Label("frr"), reportxml.ID("76010"),
+				rdscorecommon.ReachURLviaFRRroute)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -409,5 +417,9 @@ var _ = Describe(
 			It("Verifies IPVLAN workloads on different nodes post soft reboot",
 				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75058"),
 				rdscorecommon.VerifyIPVLANConnectivityBetweenDifferentNodes)
+
+			It("Verifies workload reachable over BGP route post soft reboot",
+				Label("frr"), reportxml.ID("76011"),
+				rdscorecommon.ReachURLviaFRRroute)
 		})
 	})

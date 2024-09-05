@@ -186,6 +186,10 @@ type CoreConfig struct {
 	WlkdSRIOVTwoSa          string      `yaml:"rdscore_wlkd_sriov_two_sa" envconfig:"ECO_RDSCORE_WLKD_SRIOV_TWO_SA"`
 	NROPSchedulerName       string      `yaml:"rdscore_nrop_scheduler_name" envconfig:"ECO_RDSCORE_NROP_SCHEDULER_NAME"`
 	//nolint:lll
+	MetalLBFRRTestURLIPv4 string `yaml:"rdscore_metallb_frr_test_url_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_TEST_URL_IPV4"`
+	//nolint:lll
+	MetalLBFRRTestURLIPv6 string `yaml:"rdscore_metallb_frr_test_url_ipv6" envconfig:"ECO_RDSCORE_METALLB_FRR_TEST_URL_IPV6"`
+	//nolint:lll
 	WlkdSRIOVConfigMapDataOne EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_one" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_ONE"`
 	//nolint:lll
 	WlkdSRIOVConfigMapDataTwo EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_two" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_TWO"`
