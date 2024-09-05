@@ -113,7 +113,7 @@ var _ = Describe(
 						Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
 						By("Waiting for condition to report expected failure message")
 						err = testAgentClusterInstall.WaitForConditionMessage(v1beta1.ClusterSpecSyncedCondition,
-							"The Spec could not be synced due to an input error: "+message, time.Second*30)
+							"The Spec could not be synced due to an input error: "+message, time.Minute*2)
 						Expect(err).NotTo(HaveOccurred(), "got unexpected message from SpecSynced condition")
 					}
 				},

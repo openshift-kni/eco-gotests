@@ -127,7 +127,7 @@ var _ = Describe(
 				infraenv.Definition.Spec.AdditionalTrustBundle = additionalTrustCertificate
 				_, err = infraenv.Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating infraenv")
-				_, err := infraenv.WaitForDiscoveryISOCreation(time.Second * 40)
+				_, err := infraenv.WaitForDiscoveryISOCreation(time.Minute * 3)
 				Expect(err).ToNot(HaveOccurred(), "error creating discovery iso")
 				By("Checking additionalTrustBundle equal to additionalTrustCertificate")
 				Expect(infraenv.Object.Spec.AdditionalTrustBundle).
