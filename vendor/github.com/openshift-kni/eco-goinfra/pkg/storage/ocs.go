@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	ocsoperatorv1 "github.com/red-hat-storage/ocs-operator/api/v1"
+	ocsoperatorv1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/ocs/operatorv1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
