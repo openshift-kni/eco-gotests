@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
@@ -50,5 +49,5 @@ var _ = JustAfterEach(func() {
 		currentFile,
 		tsparams.ReporterNamespacesToDump,
 		tsparams.ReporterCRDsToDump,
-		clients.SetScheme)
+		tsparams.SetReporterSchemes)
 })
