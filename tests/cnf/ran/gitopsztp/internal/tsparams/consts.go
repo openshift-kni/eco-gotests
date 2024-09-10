@@ -25,6 +25,8 @@ const (
 	LabelMachineConfigTestCases = "ztp-machine-config"
 	// LabelSpokeCheckerTests is the label for a particular set of test cases.
 	LabelSpokeCheckerTests = "ztp-spoke-checker"
+	// LabelSiteconfigOperatorTestCases is the label for the Siteconfig operator test cases.
+	LabelSiteconfigOperatorTestCases = "ztp-siteconfig-operator"
 
 	// MultiClusterHubOperator is the name of the multi cluster hub operator.
 	MultiClusterHubOperator = "multiclusterhub-operator"
