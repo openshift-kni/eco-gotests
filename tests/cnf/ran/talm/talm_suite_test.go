@@ -8,7 +8,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/talm/internal/setup"
@@ -53,7 +52,7 @@ var _ = JustAfterEach(func() {
 	)
 
 	reporter.ReportIfFailed(
-		report, currentFile, tsparams.ReporterSpokeNamespacesToDump, tsparams.ReporterSpokeCRsToDump, clients.SetScheme)
+		report, currentFile, tsparams.ReporterSpokeNamespacesToDump, tsparams.ReporterSpokeCRsToDump)
 
 	if HubAPIClient != nil {
 		reporter.ReportIfFailedOnCluster(
@@ -61,8 +60,7 @@ var _ = JustAfterEach(func() {
 			report,
 			hubReportPath,
 			tsparams.ReporterHubNamespacesToDump,
-			tsparams.ReporterHubCRsToDump,
-			clients.SetScheme)
+			tsparams.ReporterHubCRsToDump)
 	}
 
 	if Spoke2APIClient != nil {
@@ -71,8 +69,7 @@ var _ = JustAfterEach(func() {
 			report,
 			spoke2ReportPath,
 			tsparams.ReporterSpokeNamespacesToDump,
-			tsparams.ReporterSpokeCRsToDump,
-			clients.SetScheme)
+			tsparams.ReporterSpokeCRsToDump)
 	}
 })
 

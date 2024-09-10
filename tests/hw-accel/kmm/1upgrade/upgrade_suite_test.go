@@ -4,7 +4,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/1upgrade/tests"
@@ -32,5 +31,5 @@ var _ = ReportAfterSuite("1upgrade", func(report Report) {
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, map[string]string{kmmparams.KmmOperatorNamespace: "op"}, nil, clients.SetScheme)
+		CurrentSpecReport(), currentFile, map[string]string{kmmparams.KmmOperatorNamespace: "op"}, nil)
 })

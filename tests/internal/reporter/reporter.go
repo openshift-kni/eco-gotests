@@ -52,9 +52,8 @@ func ReportIfFailed(
 	report types.SpecReport,
 	testSuite string,
 	nSpaces map[string]string,
-	cRDs []k8sreporter.CRData,
-	apiScheme func(scheme *runtime.Scheme) error) {
-	ReportIfFailedOnCluster("", report, testSuite, nSpaces, cRDs, apiScheme)
+	cRDs []k8sreporter.CRData) {
+	ReportIfFailedOnCluster("", report, testSuite, nSpaces, cRDs)
 }
 
 // ReportIfFailedOnCluster dumps the requested cluster CRs on the cluster specified by kubeconfig if TC is failed to the
@@ -64,8 +63,7 @@ func ReportIfFailedOnCluster(
 	report types.SpecReport,
 	testSuite string,
 	nSpaces map[string]string,
-	cRDs []k8sreporter.CRData,
-	apiScheme func(scheme *runtime.Scheme) error) {
+	cRDs []k8sreporter.CRData) {
 	if !types.SpecStateFailureStates.Is(report.State) {
 		return
 	}
@@ -73,7 +71,7 @@ func ReportIfFailedOnCluster(
 	dumpDir := GeneralConfig.GetDumpFailedTestReportLocation(testSuite)
 
 	if dumpDir != "" {
-		reporter, err := newReporter(dumpDir, kubeconfig, nSpaces, apiScheme, cRDs)
+		reporter, err := newReporter(dumpDir, kubeconfig, nSpaces, setReporterSchemes, cRDs)
 
 		if err != nil {
 			glog.Fatalf("Failed to create log reporter due to %s", err)

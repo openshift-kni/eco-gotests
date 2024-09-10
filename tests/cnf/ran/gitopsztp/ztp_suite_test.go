@@ -60,7 +60,7 @@ var _ = JustAfterEach(func() {
 	)
 
 	reporter.ReportIfFailed(
-		report, currentFile, tsparams.ReporterSpokeNamespacesToDump, tsparams.ReporterSpokeCRsToDump, clients.SetScheme)
+		report, currentFile, tsparams.ReporterSpokeNamespacesToDump, tsparams.ReporterSpokeCRsToDump)
 
 	if HubAPIClient != nil {
 		reporter.ReportIfFailedOnCluster(
@@ -68,8 +68,7 @@ var _ = JustAfterEach(func() {
 			report,
 			hubReportPath,
 			tsparams.ReporterHubNamespacesToDump,
-			tsparams.ReporterHubCRsToDump,
-			clients.SetScheme)
+			tsparams.ReporterHubCRsToDump)
 	}
 })
 

@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/2upgrade/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/2upgrade/tests"
@@ -32,5 +31,5 @@ var _ = ReportAfterSuite(tsparams.NfdUpgradeLabel, func(report Report) {
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, map[string]string{nfdparams.NFDNamespace: "op"}, nil, clients.SetScheme)
+		CurrentSpecReport(), currentFile, map[string]string{nfdparams.NFDNamespace: "op"}, nil)
 })

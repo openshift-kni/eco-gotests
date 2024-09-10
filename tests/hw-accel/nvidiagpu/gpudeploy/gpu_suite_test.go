@@ -4,7 +4,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
@@ -33,5 +32,5 @@ var _ = ReportAfterSuite("", func(report Report) {
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump, clients.SetScheme)
+		CurrentSpecReport(), currentFile, tsparams.ReporterNamespacesToDump, tsparams.ReporterCRDsToDump)
 })

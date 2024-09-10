@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
@@ -27,8 +26,7 @@ func TestRDSCore(t *testing.T) {
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, rdscoreparams.ReporterNamespacesToDump,
-		rdscoreparams.ReporterCRDsToDump, clients.SetScheme)
+		CurrentSpecReport(), currentFile, rdscoreparams.ReporterNamespacesToDump, rdscoreparams.ReporterCRDsToDump)
 })
 
 var _ = ReportAfterSuite("", func(report Report) {
