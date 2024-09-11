@@ -13,4 +13,6 @@ const (
 	LabelQinQTestCases = "qinq"
 	// LabelExposeMTUTestCases represents Expose MTU label that can be used for test cases selection.
 	LabelExposeMTUTestCases = "exposemtu"
+	// LabelSriovMetricsTestCases represents Sriov Metrics Exporter label that can be used for test cases selection.
+	LabelSriovMetricsTestCases = "sriovmetrics"
 )
