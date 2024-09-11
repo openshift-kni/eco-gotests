@@ -287,7 +287,7 @@ func (builder *ContainerBuilder) WithCustomResourcesRequests(resourceList corev1
 	if len(resourceList) == 0 {
 		glog.V(100).Infof("Container's resource limit var 'resourceList' is empty")
 
-		builder.errorMsg = "container's resource limit var 'resourceList' is empty"
+		builder.errorMsg = "container's resource requests var 'resourceList' is empty"
 
 		return builder
 	}

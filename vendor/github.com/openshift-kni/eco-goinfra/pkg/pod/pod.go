@@ -64,19 +64,25 @@ func NewBuilder(apiClient *clients.Settings, name, nsname, image string) *Builde
 	if name == "" {
 		glog.V(100).Infof("The name of the pod is empty")
 
-		builder.errorMsg = "pod's name is empty"
+		builder.errorMsg = "pod 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the pod is empty")
 
-		builder.errorMsg = "namespace's name is empty"
+		builder.errorMsg = "pod 'namespace' cannot be empty"
+
+		return builder
 	}
 
 	if image == "" {
 		glog.V(100).Infof("The image of the pod is empty")
 
-		builder.errorMsg = "pod's image is empty"
+		builder.errorMsg = "pod 'image' cannot be empty"
+
+		return builder
 	}
 
 	defaultContainer, err := NewContainerBuilder("test", image, []string{"/bin/bash", "-c", "sleep INF"}).GetContainerCfg()
@@ -85,6 +91,8 @@ func NewBuilder(apiClient *clients.Settings, name, nsname, image string) *Builde
 		glog.V(100).Infof("Failed to define the default container settings")
 
 		builder.errorMsg = err.Error()
+
+		return builder
 	}
 
 	builder.Definition.Spec.Containers = append(builder.Definition.Spec.Containers, *defaultContainer)
@@ -115,17 +123,13 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	if name == "" {
 		glog.V(100).Infof("The name of the pod is empty")
 
-		builder.errorMsg = "pod 'name' cannot be empty"
+		return nil, fmt.Errorf("pod 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the pod is empty")
 
-		builder.errorMsg = "pod 'namespace' cannot be empty"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf("faield to pull pod object due to the following error: %s", builder.errorMsg)
+		return nil, fmt.Errorf("pod 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -197,7 +201,13 @@ func (builder *Builder) Delete() (*Builder, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("pod cannot be deleted because it does not exist")
+		glog.V(100).Infof(
+			"Pod %s in namespaces %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Pods(builder.Definition.Namespace).Delete(
@@ -373,8 +383,8 @@ func (builder *Builder) WaitUntilInOneOfStatuses(statuses []corev1.PodPhase,
 
 	return &foundPhase, wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-				context.TODO(), builder.Object.Name, metav1.GetOptions{})
+			updatePod, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}

@@ -18,6 +18,12 @@ const (
 
 // List returns node inventory.
 func List(apiClient *clients.Settings, options ...metav1.ListOptions) ([]*Builder, error) {
+	if apiClient == nil {
+		glog.V(100).Infof("Nodes 'apiClient' parameter can not be empty")
+
+		return nil, fmt.Errorf("failed to list node objects, 'apiClient' parameter is empty")
+	}
+
 	passedOptions := metav1.ListOptions{}
 	logMessage := "Listing all node resources"
 

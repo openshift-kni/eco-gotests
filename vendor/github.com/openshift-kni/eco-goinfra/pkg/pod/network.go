@@ -33,14 +33,15 @@ func StaticIPAnnotation(name string, ipAddr []string) []*multus.NetworkSelection
 
 		return nil
 	}
+	// Add new function that doesn't use IP address.
+	// Uncomment the following validation when the new function is added.
+	// if len(ipAddr) == 0 {
+	//	glog.V(100).Infof("The ip address list of the StaticIPAnnotation is empty")
+	//
+	//	return nil
+	//}
 
-	if len(ipAddr) == 0 {
-		glog.V(100).Infof("The ip address list of the StaticIPAnnotation is empty")
-
-		return nil
-	}
-
-	if !ipValid(ipAddr) {
+	if len(ipAddr) > 0 && !ipValid(ipAddr) {
 		return nil
 	}
 
@@ -83,13 +84,15 @@ func StaticIPAnnotationWithMacAddress(name string, ipAddr []string, macAddr stri
 
 	baseAnnotation := StaticIPAnnotation(name, ipAddr)
 
+	// Add new function that doesn't use mac address.
+	// Uncomment the following validation when the new function is added.
+	// if macAddr == "" {
+	//	glog.V(100).Infof("The mac address of the pod's static IP annotation empty")
+	//
+	//	return nil
+	//}
+
 	if baseAnnotation == nil {
-		return nil
-	}
-
-	if macAddr == "" {
-		glog.V(100).Infof("The mac address of the pod's static IP annotation empty")
-
 		return nil
 	}
 
@@ -126,11 +129,13 @@ func StaticIPAnnotationWithMacAndNamespace(name, namespace, macAddr string) []*m
 	glog.V(100).Infof("Build static ip network annotation for pod object with "+
 		"name: %s, namespace: %s, mac address: %s", name, namespace, macAddr)
 
-	if macAddr == "" {
-		glog.V(100).Infof("The mac address of the pod's static IP annotation empty")
-
-		return nil
-	}
+	// Add new function that doesn't use mac address.
+	// Uncomment the following validation when the new function is added.
+	// if macAddr == "" {
+	//	glog.V(100).Infof("The mac address of the pod's static IP annotation empty")
+	//
+	//	return nil
+	//}
 
 	if namespace == "" {
 		glog.V(100).Infof("The namespace of the pod's static IP annotation with namespace is empty")
