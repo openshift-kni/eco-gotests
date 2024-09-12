@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
@@ -26,8 +25,7 @@ func TestNMO(t *testing.T) {
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, nmoparams.ReporterNamespacesToDump,
-		nmoparams.ReporterCRDsToDump, clients.SetScheme)
+		CurrentSpecReport(), currentFile, nmoparams.ReporterNamespacesToDump, nmoparams.ReporterCRDsToDump)
 })
 
 var _ = ReportAfterSuite("", func(report Report) {

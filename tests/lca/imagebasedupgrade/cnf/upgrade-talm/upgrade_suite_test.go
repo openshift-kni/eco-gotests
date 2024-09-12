@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/upgrade-talm/internal/tsparams"
@@ -48,6 +47,5 @@ var _ = JustAfterEach(func() {
 		CurrentSpecReport(),
 		currentFile,
 		tsparams.ReporterNamespacesToDump,
-		tsparams.ReporterCRDsToDump,
-		clients.SetScheme)
+		tsparams.ReporterCRDsToDump)
 })

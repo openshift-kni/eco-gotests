@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
@@ -26,8 +25,7 @@ func TestRanDu(t *testing.T) {
 
 var _ = JustAfterEach(func() {
 	reporter.ReportIfFailed(
-		CurrentSpecReport(), currentFile, spkparams.ReporterNamespacesToDump,
-		spkparams.ReporterCRDsToDump, clients.SetScheme)
+		CurrentSpecReport(), currentFile, spkparams.ReporterNamespacesToDump, spkparams.ReporterCRDsToDump)
 })
 
 var _ = ReportAfterSuite("", func(report Report) {

@@ -48,6 +48,5 @@ var _ = JustAfterEach(func() {
 		CurrentSpecReport(),
 		currentFile,
 		tsparams.ReporterNamespacesToDump,
-		tsparams.ReporterCRDsToDump,
-		tsparams.SetReporterSchemes)
+		tsparams.ReporterCRDsToDump)
 })
