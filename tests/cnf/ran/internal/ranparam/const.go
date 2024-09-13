@@ -50,3 +50,13 @@ const (
 	// MCE is the name of the multicluster engine operator.
 	MCE HubOperatorName = "multicluster-engine"
 )
+
+// ClusterType represents spoke cluster type.
+type ClusterType string
+
+const (
+	// SNOCluster represents spoke cluster type as single-node openshift (SNO) cluster.
+	SNOCluster ClusterType = "SNO"
+	// HighlyAvailableCluster represents spoke cluster type as multi-node openshift (MNO) cluster.
+	HighlyAvailableCluster ClusterType = "HighlyAvailable"
+)

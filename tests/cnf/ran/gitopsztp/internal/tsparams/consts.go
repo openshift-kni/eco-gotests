@@ -25,6 +25,8 @@ const (
 	LabelMachineConfigTestCases = "ztp-machine-config"
 	// LabelSpokeCheckerTests is the label for a particular set of test cases.
 	LabelSpokeCheckerTests = "ztp-spoke-checker"
+	// LabelClusterInstanceDeleteTestCases is the label for the siteconfig operator's cluster instance delete test cases.
+	LabelClusterInstanceDeleteTestCases = "ztp-cluster-instance-delete"
 
 	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
 	LabelBiosDayZeroTests = "ztp-bios-day-zero"
@@ -84,6 +86,10 @@ const (
 	ZtpTestPathCustomSourceNoCrFile = "ztp-test/custom-source-crs/no-cr-file"
 	// ZtpTestPathCustomSourceSearchPath is the git path for the policies app custome source search path test.
 	ZtpTestPathCustomSourceSearchPath = "ztp-test/custom-source-crs/search-path"
+	// ZtpTestPathDetachAIMNO is the git path for the siteconfig operator detach AI MNO cluster instance test.
+	ZtpTestPathDetachAIMNO = "ztp-test/siteconfig-operator/detach-ai-mno"
+	// ZtpTestPathDetachAISNO is the git path for the siteconfig operator detach AI SNO cluster instance test.
+	ZtpTestPathDetachAISNO = "ztp-test/siteconfig-operator/detach-ai-sno"
 	// ZtpKustomizationPath is the path to the kustomization file in the ztp test.
 	ZtpKustomizationPath = "/kustomization.yaml"
 
@@ -124,6 +130,12 @@ const (
 	ImageRegistryPVC = "image-registry-pvc"
 	// ImageRegistryPath is the path to where the image registry PV will be.
 	ImageRegistryPath = "/var/imageregistry"
+	// DefaultAIClusterTemplatesConfigMapName is the name of default AI cluster templates config map.
+	DefaultAIClusterTemplatesConfigMapName = "ai-cluster-templates-v1"
+	// DefaultAINodeTemplatesConfigMapName is the name of default AI node templates config map.
+	DefaultAINodeTemplatesConfigMapName = "ai-node-templates-v1"
+	// SiteconfigOperatorPodLabel is the name of siteconfig operator pod label selector.
+	SiteconfigOperatorPodLabel = "app.kubernetes.io/name=siteconfig-controller"
 
 	// LogLevel is the verbosity of glog statements in this test suite.
 	LogLevel glog.Level = 90

@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -124,4 +125,18 @@ func WaitForNumberOfNodes(client *clients.Settings, expected int, timeout time.D
 
 			return false, nil
 		})
+}
+
+// CheckSpokeClusterType checks and returns a spoke cluster type based on number of control plane nodes.
+func CheckSpokeClusterType(client *clients.Settings) (ranparam.ClusterType, error) {
+	controlPlaneNodesList, err := ListNodesByLabel(client, RANConfig.ControlPlaneLabelMap)
+	if err != nil {
+		return "", err
+	}
+
+	if len(controlPlaneNodesList) == 1 {
+		return ranparam.SNOCluster, nil
+	}
+
+	return ranparam.HighlyAvailableCluster, fmt.Errorf("could not determine spoke cluster type")
 }
