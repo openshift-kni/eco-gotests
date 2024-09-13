@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const redefiningMsg = "Redefining SecurityContextConstraints"
@@ -37,7 +38,20 @@ func NewBuilder(apiClient *clients.Settings, name, runAsUser, selinuxContext str
 		"Initializing new SecurityContextConstraints structure with the following params: "+
 			"name: %s, runAsUser type: %s, selinuxContext type: %s", name, runAsUser, selinuxContext)
 
-	builder := Builder{
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(securityV1.Install)
+	if err != nil {
+		glog.V(100).Infof("Failed to add security v1 scheme to client schemes")
+
+		return nil
+	}
+
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &securityV1.SecurityContextConstraints{
 			ObjectMeta: metav1.ObjectMeta{
@@ -55,27 +69,46 @@ func NewBuilder(apiClient *clients.Settings, name, runAsUser, selinuxContext str
 	if name == "" {
 		glog.V(100).Infof("The name of the SecurityContextConstraints is empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'name' cannot be empty"
+		builder.errorMsg = "securityContextConstraints 'name' cannot be empty"
+
+		return builder
 	}
 
 	if runAsUser == "" {
 		glog.V(100).Infof("The runAsUser of the SecurityContextConstraints is empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'runAsUser' cannot be empty"
+		builder.errorMsg = "securityContextConstraints 'runAsUser' cannot be empty"
+
+		return builder
 	}
 
 	if selinuxContext == "" {
 		glog.V(100).Infof("The selinuxContext of the SecurityContextConstraints is empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'selinuxContext' cannot be empty"
+		builder.errorMsg = "securityContextConstraints 'selinuxContext' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull pulls existing SecurityContextConstraints from cluster.
 func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing SecurityContextConstraints object name %s from cluster", name)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(securityV1.Install)
+	if err != nil {
+		glog.V(100).Infof("Failed to add security v1 scheme to client schemes")
+
+		return nil, fmt.Errorf("failed to add security v1 scheme to client schemes")
+	}
 
 	builder := Builder{
 		apiClient: apiClient,
@@ -89,11 +122,11 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	if name == "" {
 		glog.V(100).Infof("The name of the SecurityContextConstraints is empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'name' cannot be empty"
+		return nil, fmt.Errorf("securityContextConstraints 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("SecurityContextConstraints object %s does not exist", name)
+		return nil, fmt.Errorf("securityContextConstraints object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object
@@ -224,7 +257,7 @@ func (builder *Builder) WithDropCapabilities(requiredDropCapabilities []corev1.C
 	if len(requiredDropCapabilities) == 0 {
 		glog.V(100).Infof("SecurityContextConstraints 'requiredDropCapabilities' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'requiredDropCapabilities' cannot be empty list"
+		builder.errorMsg = "securityContextConstraints 'requiredDropCapabilities' cannot be empty list"
 
 		return builder
 	}
@@ -253,7 +286,7 @@ func (builder *Builder) WithAllowCapabilities(allowCapabilities []corev1.Capabil
 	if len(allowCapabilities) == 0 {
 		glog.V(100).Infof("SecurityContextConstraints 'allowCapabilities' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'allowCapabilities' cannot be empty list"
+		builder.errorMsg = "securityContextConstraints 'allowCapabilities' cannot be empty list"
 
 		return builder
 	}
@@ -281,7 +314,7 @@ func (builder *Builder) WithDefaultAddCapabilities(defaultAddCapabilities []core
 	if len(defaultAddCapabilities) == 0 {
 		glog.V(100).Infof("SecurityContextConstraints 'defaultAddCapabilities' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'defaultAddCapabilities' cannot be empty list"
+		builder.errorMsg = "securityContextConstraints 'defaultAddCapabilities' cannot be empty list"
 
 		return builder
 	}
@@ -322,7 +355,7 @@ func (builder *Builder) WithFSGroup(fsGroup string) *Builder {
 	if fsGroup == "" {
 		glog.V(100).Infof("SecurityContextConstraints 'fsGroup' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'fsGroup' cannot be empty string"
+		builder.errorMsg = "securityContextConstraints 'fsGroup' cannot be empty string"
 
 		return builder
 	}
@@ -344,7 +377,7 @@ func (builder *Builder) WithFSGroupRange(fsGroupMin, fsGroupMax int64) *Builder 
 	if fsGroupMin > fsGroupMax {
 		glog.V(100).Infof("SecurityContextConstraints 'fsGroupMin' argument can not be greater than fsGroupMax")
 
-		builder.errorMsg = "SecurityContextConstraints 'fsGroupMin' argument can not be greater than fsGroupMax"
+		builder.errorMsg = "securityContextConstraints 'fsGroupMin' argument can not be greater than fsGroupMax"
 
 		return builder
 	}
@@ -372,7 +405,7 @@ func (builder *Builder) WithGroups(groups []string) *Builder {
 	if len(groups) == 0 {
 		glog.V(100).Infof("SecurityContextConstraints 'groups' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'fsGroupType' cannot be empty string"
+		builder.errorMsg = "securityContextConstraints 'fsGroupType' cannot be empty string"
 
 		return builder
 	}
@@ -400,7 +433,7 @@ func (builder *Builder) WithSeccompProfiles(seccompProfiles []string) *Builder {
 	if len(seccompProfiles) == 0 {
 		glog.V(100).Infof("SecurityContextConstraints 'seccompProfiles' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'seccompProfiles' cannot be empty list"
+		builder.errorMsg = "securityContextConstraints 'seccompProfiles' cannot be empty list"
 
 		return builder
 	}
@@ -428,7 +461,7 @@ func (builder *Builder) WithSupplementalGroups(supplementalGroupsType string) *B
 	if supplementalGroupsType == "" {
 		glog.V(100).Infof("SecurityContextConstraints 'SupplementalGroups' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'SupplementalGroups' cannot be empty string"
+		builder.errorMsg = "securityContextConstraints 'SupplementalGroups' cannot be empty string"
 
 		return builder
 	}
@@ -449,7 +482,7 @@ func (builder *Builder) WithUsers(users []string) *Builder {
 	if len(users) == 0 {
 		glog.V(100).Infof("SecurityContextConstraints 'users' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'users' cannot be empty list"
+		builder.errorMsg = "securityContextConstraints 'users' cannot be empty list"
 
 		return builder
 	}
@@ -476,7 +509,7 @@ func (builder *Builder) WithVolumes(volumes []securityV1.FSType) *Builder {
 	if len(volumes) == 0 {
 		glog.V(100).Infof("SecurityContextConstraints 'volumes' argument cannot be empty")
 
-		builder.errorMsg = "SecurityContextConstraints 'volumes' cannot be empty list"
+		builder.errorMsg = "securityContextConstraints 'volumes' cannot be empty list"
 
 		return builder
 	}
@@ -502,9 +535,16 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.SecurityContextConstraints().Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to create SecurityContextConstraints")
+
+			return nil, err
+		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -521,8 +561,7 @@ func (builder *Builder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.SecurityContextConstraints().Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	builder.Object = nil
 
@@ -537,11 +576,33 @@ func (builder *Builder) Update() (*Builder, error) {
 
 	glog.V(100).Infof("Updating SecurityContextConstraints %s ", builder.Definition.Name)
 
-	var err error
-	builder.Object, err = builder.apiClient.SecurityContextConstraints().Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	if !builder.Exists() {
+		return nil, fmt.Errorf("failed to update SecurityContextConstraints, object does not exist on cluster")
+	}
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	return builder, err
+}
+
+// Get returns NMState object if found.
+func (builder *Builder) Get() (*securityV1.SecurityContextConstraints, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Collecting SecurityContextConstraints object %s", builder.Definition.Name)
+
+	scc := &securityV1.SecurityContextConstraints{}
+	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{Name: builder.Definition.Name}, scc)
+
+	if err != nil {
+		glog.V(100).Infof("SecurityContextConstraints object %s does not exist", builder.Definition.Name)
+
+		return nil, err
+	}
+
+	return scc, err
 }
 
 // Exists checks whether the given SecurityContextConstraints exists.
@@ -553,8 +614,11 @@ func (builder *Builder) Exists() bool {
 	glog.V(100).Infof("Checking if SecurityContextConstraints %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.SecurityContextConstraints().Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
+
+	if err != nil {
+		glog.V(100).Infof("Failed to collect SecurityContextConstraints object due to %s", err.Error())
+	}
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

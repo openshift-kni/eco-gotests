@@ -34,7 +34,7 @@ func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule v1.Po
 		"Initializing new role structure with the following params: "+
 			"name: %s, namespace: %s, rule %v", name, nsname, rule)
 
-	builder := RoleBuilder{
+	builder := &RoleBuilder{
 		apiClient: apiClient,
 		Definition: &v1.Role{
 			ObjectMeta: metav1.ObjectMeta{
@@ -47,18 +47,22 @@ func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule v1.Po
 	if name == "" {
 		glog.V(100).Infof("The name of the role is empty")
 
-		builder.errorMsg = "Role 'name' cannot be empty"
+		builder.errorMsg = "role 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the role is empty")
 
-		builder.errorMsg = "Role 'nsname' cannot be empty"
+		builder.errorMsg = "role 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	builder.WithRules([]v1.PolicyRule{rule})
 
-	return &builder
+	return builder
 }
 
 // WithRules adds the specified PolicyRule to the Role.
@@ -143,6 +147,12 @@ func (builder *RoleBuilder) WithOptions(
 func PullRole(apiClient *clients.Settings, name, nsname string) (*RoleBuilder, error) {
 	glog.V(100).Infof("Pulling existing role name %s under namespace %s from cluster", name, nsname)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
 	builder := RoleBuilder{
 		apiClient: apiClient,
 		Definition: &v1.Role{
@@ -156,13 +166,13 @@ func PullRole(apiClient *clients.Settings, name, nsname string) (*RoleBuilder, e
 	if name == "" {
 		glog.V(100).Infof("The name of the role is empty")
 
-		builder.errorMsg = "role 'name' cannot be empty"
+		return nil, fmt.Errorf("role 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the role is empty")
 
-		builder.errorMsg = "role 'namespace' cannot be empty"
+		return nil, fmt.Errorf("role 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -226,6 +236,10 @@ func (builder *RoleBuilder) Update() (*RoleBuilder, error) {
 	glog.V(100).Infof("Updating role %s under namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
+	if !builder.Exists() {
+		return nil, fmt.Errorf("role object %s does not exist, fail to update", builder.Definition.Name)
+	}
+
 	var err error
 	builder.Object, err = builder.apiClient.Roles(builder.Definition.Namespace).Update(
 		context.TODO(), builder.Definition, metav1.UpdateOptions{})
@@ -252,7 +266,7 @@ func (builder *RoleBuilder) Exists() bool {
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *RoleBuilder) validate() (bool, error) {
-	resourceCRD := "Role"
+	resourceCRD := "role"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)

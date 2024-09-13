@@ -79,3 +79,23 @@ var KlusterletAddonImageNames = map[string][]string{
 	PolicyFrameworkAddonName: {"governance_policy_framework_addon", "kube_rbac_proxy"},
 	SearchAddonName:          {"search_collector"},
 }
+
+// image env names
+const (
+	EnvMulticlusterOperatorSubscription = "MULTICLUSTER_OPERATOR_SUBSCRIPTION"
+	EnvConfigPolicyController           = "CONFIG_POLICY_CONTROLLER"
+	EnvKubeRBACProxy                    = "KUBE_RBAC_PROXY"
+	EnvCertPolicyController             = "CERT_POLICY_CONTROLLER"
+	EnvGovernancePolicyFrameworkAddon   = "GOVERNANCE_POLICY_FRAMEWORK_ADDON"
+	EnvSearchCollector                  = "SEARCH_COLLECTOR"
+)
+
+// EnvImageNameMap is the image env names map
+var EnvImageNameMap = map[string]string{
+	EnvMulticlusterOperatorSubscription: "multicluster_operators_subscription",
+	EnvKubeRBACProxy:                    "kube_rbac_proxy",
+	EnvCertPolicyController:             "cert_policy_controller",
+	EnvConfigPolicyController:           "config_policy_controller",
+	EnvGovernancePolicyFrameworkAddon:   "governance_policy_framework_addon",
+	EnvSearchCollector:                  "search_collector",
+}
