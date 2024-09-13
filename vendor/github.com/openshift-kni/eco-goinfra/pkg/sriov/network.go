@@ -152,6 +152,17 @@ func (builder *NetworkBuilder) WithMetaPluginAllMultiFlag(allMultiFlag bool) *Ne
 	return builder
 }
 
+// WithMetaPluginRdma activates rdma plugin on a SriovNetwork configuration.
+func (builder *NetworkBuilder) WithMetaPluginRdma() *NetworkBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	builder.Definition.Spec.MetaPluginsConfig = `{ "type": "rdma" }`
+
+	return builder
+}
+
 // WithLinkState sets linkState parameters in the SrIovNetwork definition spec.
 func (builder *NetworkBuilder) WithLinkState(linkState string) *NetworkBuilder {
 	if valid, _ := builder.validate(); !valid {

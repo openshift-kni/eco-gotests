@@ -29,4 +29,6 @@ var (
 	MlxDeviceID = "1017"
 	// MlxBFDeviceID is the Mellanox Bluefield SRIOV Device ID.
 	MlxBFDeviceID = "a2d6"
+	// ClusterMonitoringNSLabel represents Cluster Monitoring label for a NS to enable Prometheus Scraping.
+	ClusterMonitoringNSLabel = map[string]string{"openshift.io/cluster-monitoring": "true"}
 )

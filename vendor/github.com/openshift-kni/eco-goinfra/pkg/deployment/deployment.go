@@ -69,18 +69,24 @@ func NewBuilder(
 		glog.V(100).Infof("The name of the deployment is empty")
 
 		builder.errorMsg = "deployment 'name' cannot be empty"
+
+		return &builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the deployment is empty")
 
 		builder.errorMsg = "deployment 'namespace' cannot be empty"
+
+		return &builder
 	}
 
 	if len(labels) == 0 {
 		glog.V(100).Infof("There are no labels for the deployment")
 
 		builder.errorMsg = "deployment 'labels' cannot be empty"
+
+		return &builder
 	}
 
 	return &builder
@@ -436,7 +442,7 @@ func (builder *Builder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // CreateAndWaitUntilReady creates a deployment in the cluster and waits until the deployment is available.
@@ -451,7 +457,7 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 	if _, err := builder.Create(); err != nil {
 		glog.V(100).Infof("Failed to create deployment. Error is: '%s'", err.Error())
 
-		return nil, fmt.Errorf(err.Error())
+		return nil, err
 	}
 
 	if builder.IsReady(timeout) {
@@ -485,7 +491,7 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 			if err != nil {
 				glog.V(100).Infof("Failed to get deployment from cluster. Error is: '%s'", err.Error())
 
-				return false, fmt.Errorf(err.Error())
+				return false, err
 			}
 
 			if builder.Object.Status.ReadyReplicas > 0 && builder.Object.Status.Replicas == builder.Object.Status.ReadyReplicas {
