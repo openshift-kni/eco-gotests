@@ -302,6 +302,8 @@ func createSpokeClusterNamespace() {
 
 // createSpokeClusterResources is a helper function that creates
 // spoke cluster resources required for the test.
+//
+//nolint:funlen
 func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...string) {
 	By("Create pull-secret in the new namespace")
 
@@ -367,8 +369,15 @@ func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...stri
 	if len(mismatchCPUArchitecture) == 0 {
 		By("Wait until the discovery iso is created for the infraenv")
 
-		_, err = infraEnvBuilder.WaitForDiscoveryISOCreation(time.Minute * 3)
-		Expect(err).ToNot(HaveOccurred(), "error waiting for the discovery iso creation")
+		Eventually(func() (string, error) {
+			infraEnvBuilder.Object, err = infraEnvBuilder.Get()
+			if err != nil {
+				return "", err
+			}
+
+			return infraEnvBuilder.Object.Status.ISODownloadURL, nil
+		}).WithTimeout(time.Minute*3).ProbeEvery(time.Second*3).
+			Should(Not(BeEmpty()), "error waiting for download url to be created")
 	} else {
 		By("Wait until infraenv shows an error for the mismatching image architecture")
 

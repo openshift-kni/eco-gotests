@@ -58,8 +58,15 @@ var _ = Describe(
 					WithDefaultIPv4AgentClusterInstall().WithDefaultInfraEnv().Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating %s spoke resources", rootfsSpokeName)
 
-				_, err = rootfsSpokeResources.InfraEnv.WaitForDiscoveryISOCreation(time.Minute * 3)
-				Expect(err).ToNot(HaveOccurred(), "error waiting for download url to be created")
+				Eventually(func() (string, error) {
+					rootfsSpokeResources.InfraEnv.Object, err = rootfsSpokeResources.InfraEnv.Get()
+					if err != nil {
+						return "", err
+					}
+
+					return rootfsSpokeResources.InfraEnv.Object.Status.ISODownloadURL, nil
+				}).WithTimeout(time.Minute*3).ProbeEvery(time.Second*3).
+					Should(Not(BeEmpty()), "error waiting for download url to be created")
 
 				if _, err = os.Stat(rootfsDownloadDir); err != nil {
 					err = os.RemoveAll(rootfsDownloadDir)
