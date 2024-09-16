@@ -44,7 +44,6 @@ func NewClusterRoleBuilder(apiClient *clients.Settings, name string, rule v1.Pol
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
-			Rules: []v1.PolicyRule{rule},
 		},
 	}
 
@@ -130,6 +129,12 @@ func (builder *ClusterRoleBuilder) WithOptions(options ...ClusterRoleAdditionalO
 func PullClusterRole(apiClient *clients.Settings, name string) (*ClusterRoleBuilder, error) {
 	glog.V(100).Infof("Pulling existing clusterrole name %s from cluster", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient cannot be nil")
+
+		return nil, fmt.Errorf("the apiClient cannot be nil")
+	}
+
 	builder := ClusterRoleBuilder{
 		apiClient: apiClient,
 		Definition: &v1.ClusterRole{
@@ -142,7 +147,7 @@ func PullClusterRole(apiClient *clients.Settings, name string) (*ClusterRoleBuil
 	if name == "" {
 		glog.V(100).Infof("The name of the clusterrole is empty")
 
-		builder.errorMsg = "clusterrole 'name' cannot be empty"
+		return nil, fmt.Errorf("clusterrole 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -206,6 +211,10 @@ func (builder *ClusterRoleBuilder) Update() (*ClusterRoleBuilder, error) {
 	glog.V(100).Infof("Updating clusterrole %s",
 		builder.Definition.Name)
 
+	if !builder.Exists() {
+		return nil, fmt.Errorf("clusterrole object %s does not exist, fail to update", builder.Definition.Name)
+	}
+
 	var err error
 	builder.Object, err = builder.apiClient.ClusterRoles().Update(
 		context.TODO(), builder.Definition, metav1.UpdateOptions{})
@@ -232,7 +241,7 @@ func (builder *ClusterRoleBuilder) Exists() bool {
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *ClusterRoleBuilder) validate() (bool, error) {
-	resourceCRD := "ClusterRole"
+	resourceCRD := "clusterRole"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)

@@ -117,6 +117,12 @@ type AdditionalOptions func(builder *Builder) (*Builder, error)
 func Pull(apiClient *clients.Settings, nodeName string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing node object: %s", nodeName)
 
+	if apiClient == nil {
+		glog.V(100).Info("The node apiClient is nil")
+
+		return nil, fmt.Errorf("node 'apiClient' cannot be nil")
+	}
+
 	builder := Builder{
 		apiClient: apiClient.K8sClient,
 		Definition: &corev1.Node{
@@ -124,6 +130,12 @@ func Pull(apiClient *clients.Settings, nodeName string) (*Builder, error) {
 				Name: nodeName,
 			},
 		},
+	}
+
+	if nodeName == "" {
+		glog.V(100).Info("The name of the node is empty")
+
+		return nil, fmt.Errorf("node 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -181,7 +193,11 @@ func (builder *Builder) Delete() error {
 	glog.V(100).Infof("Deleting the node %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return fmt.Errorf("node cannot be deleted because it does not exist")
+		glog.V(100).Info("Cannot delete node %s if it does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.CoreV1().Nodes().Delete(
@@ -285,11 +301,11 @@ func (builder *Builder) ExternalIPv4Network() (string, error) {
 	glog.V(100).Infof("Collecting node's external ipv4 addresses")
 
 	if builder.Object == nil {
-		builder.errorMsg = "error to collect external networks from node"
+		return "", fmt.Errorf("cannot collect external networks when node object is nil")
 	}
 
-	if builder.errorMsg != "" {
-		return "", fmt.Errorf(builder.errorMsg)
+	if _, ok := builder.Object.Annotations[ovnExternalAddresses]; !ok {
+		return "", fmt.Errorf("node %s does not have external addresses annotation", builder.Definition.Name)
 	}
 
 	var extNetwork ExternalNetworks
@@ -312,7 +328,7 @@ func (builder *Builder) IsReady() (bool, error) {
 	glog.V(100).Infof("Verify %s node availability", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return false, fmt.Errorf("%s node object does not exist", builder.Definition.Name)
+		return false, fmt.Errorf("node object %s does not exist", builder.Definition.Name)
 	}
 
 	for _, condition := range builder.Object.Status.Conditions {
@@ -331,7 +347,7 @@ func (builder *Builder) WaitUntilConditionTrue(
 		return err
 	}
 
-	err := wait.PollUntilContextTimeout(
+	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			if !builder.Exists() {
 				return false, fmt.Errorf("node %s object does not exist", builder.Definition.Name)
@@ -344,25 +360,19 @@ func (builder *Builder) WaitUntilConditionTrue(
 			}
 
 			return false, fmt.Errorf("the %s condition could not be found for node %s",
-				builder.Definition.Name, conditionType)
+				conditionType, builder.Definition.Name)
 		})
-
-	if err == nil {
-		return nil
-	}
-
-	return fmt.Errorf("%s node condition %s never became True due to %w",
-		builder.Definition.Name, conditionType, err)
 }
 
-// WaitUntilConditionUnknown waits for timeout duration or until node change specific status.
+// WaitUntilConditionUnknown waits for timeout duration or until the provided condition type does not have status
+// Unknown.
 func (builder *Builder) WaitUntilConditionUnknown(
 	conditionType corev1.NodeConditionType, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err
 	}
 
-	err := wait.PollUntilContextTimeout(
+	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			if !builder.Exists() {
 				return false, fmt.Errorf("node %s object does not exist", builder.Definition.Name)
@@ -375,15 +385,8 @@ func (builder *Builder) WaitUntilConditionUnknown(
 			}
 
 			return false, fmt.Errorf("the %s condition could not be found for node %s",
-				builder.Definition.Name, conditionType)
+				conditionType, builder.Definition.Name)
 		})
-
-	if err == nil {
-		return nil
-	}
-
-	return fmt.Errorf("%s node condition %s never became Unknown due to %w",
-		builder.Definition.Name, conditionType, err)
 }
 
 // WaitUntilReady waits for timeout duration or until node is Ready.
@@ -399,7 +402,7 @@ func (builder *Builder) WaitUntilNotReady(timeout time.Duration) error {
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {
-	resourceCRD := "Node"
+	resourceCRD := "node"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
