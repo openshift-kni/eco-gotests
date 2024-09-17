@@ -21,11 +21,10 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 	var (
 		spokeClusterName string
 		nodeNames        []string
-		// earlyReturnNonSNO = true
 	)
 
-	// 99999 - Check if spoke has required BIOS setting values applied
-	FIt("Check if SNO spoke has required BIOS setting values applied", reportxml.ID("99999"), func() {
+	// 75196 - Check if spoke has required BIOS setting values applied
+	It("Check if SNO spoke has required BIOS setting values applied", reportxml.ID("75196"), func() {
 		versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.17", "")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if ZTP version is in range")
 
@@ -54,22 +53,17 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 			fmt.Sprintf("Failed to get HFS Obj for spoke %s in cluster %s", nodeNames[0], spokeClusterName),
 		)
 
-		//By(fmt.Sprintf("BEBUG# hfs_obj=%v", hfs_obj))
 		hfs_req_settings := hfs_obj.Spec.Settings
 		hfs_status_settings := hfs_obj.Status.Settings
-		// By(fmt.Sprintf("BEBUG# hfs_req_settings=%v", hfs_req_settings))
-		// By(fmt.Sprintf("BEBUG# hfs_status_settings=%v", hfs_status_settings))
 		rc := true
 		if len(hfs_req_settings) > 0 {
 			Expect(len(hfs_status_settings) > 0).To(
 				BeTrueBecause("hfs.spec.settings map is not empty, but hfs.status.settings map is empty"))
+
 			for param, value := range hfs_req_settings {
-				// By(fmt.Sprintf("DEBUG# param=%s=%v", param, value))
 				setting, ok := hfs_status_settings[param]
 				if ok {
-					// By(fmt.Sprintf("DEBUG# Current settings has %s=%v", param, setting))
 					req_setting := value.String()
-					// By(fmt.Sprintf("DEBUG# Requested setting string %s=%s", param, req_setting))
 					if req_setting == setting {
 						By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
 					} else {
@@ -81,6 +75,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 					By(fmt.Sprintf("Current settings does not have param %s", param))
 				}
 			}
+
 			Expect(rc).To(BeTrueBecause("One or more requested settings does not match current settings"))
 		} else {
 			Skip("hfs.spec.settings map is empty")
