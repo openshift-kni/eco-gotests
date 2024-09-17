@@ -237,7 +237,7 @@ var _ = Describe(
 // unAuthenticatedDefaultRegistriesList return the list of default registries.
 func unAuthenticatedDefaultRegistriesList() []string {
 	return []string{
-		"registry.svc.ci.openshift.org",
+		"registry.ci.openshift.org",
 		"quay.io",
 	}
 }
@@ -246,7 +246,7 @@ func unAuthenticatedDefaultRegistriesList() []string {
 func unAuthenticatedNonDefaultRegistriesList() []string {
 	return []string{
 		"registry.redhat.io",
-		"registry.ci.openshift.org",
+		"registry.svc.ci.openshift.org",
 		"docker.io",
 	}
 }
