@@ -47,36 +47,36 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 			fmt.Sprintf("Failed to get HFS for spoke %s in cluster %s", nodeNames[0], spokeClusterName),
 		)
 
-		hfs_obj, err := hfs.Get()
+		hfsObject, err := hfs.Get()
 		Expect(err).ToNot(
 			HaveOccurred(),
 			fmt.Sprintf("Failed to get HFS Obj for spoke %s in cluster %s", nodeNames[0], spokeClusterName),
 		)
 
-		hfs_req_settings := hfs_obj.Spec.Settings
-		hfs_status_settings := hfs_obj.Status.Settings
-		rc := true
-		if len(hfs_req_settings) > 0 {
-			Expect(len(hfs_status_settings) > 0).To(
+		hfsRequstedSettings := hfsObject.Spec.Settings
+		hfsCurrentSettings := hfsObject.Status.Settings
+		allSettingsMatch := true
+		if len(hfsRequstedSettings) > 0 {
+			Expect(len(hfsCurrentSettings) > 0).To(
 				BeTrueBecause("hfs.spec.settings map is not empty, but hfs.status.settings map is empty"))
 
-			for param, value := range hfs_req_settings {
-				setting, ok := hfs_status_settings[param]
+			for param, value := range hfsRequstedSettings {
+				setting, ok := hfsCurrentSettings[param]
 				if ok {
-					req_setting := value.String()
-					if req_setting == setting {
+					requestedSetting := value.String()
+					if requestedSetting == setting {
 						By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
 					} else {
 						By(
-							fmt.Sprintf("Requested setting %s value %s does not match current value %s", param, req_setting, setting))
-						rc = false
+							fmt.Sprintf("Requested setting %s value %s does not match current value %s", param, requestedSetting, setting))
+						allSettingsMatch = false
 					}
 				} else {
 					By(fmt.Sprintf("Current settings does not have param %s", param))
 				}
 			}
 
-			Expect(rc).To(BeTrueBecause("One or more requested settings does not match current settings"))
+			Expect(allSettingsMatch).To(BeTrueBecause("One or more requested settings does not match current settings"))
 		} else {
 			Skip("hfs.spec.settings map is empty")
 		}
@@ -84,6 +84,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 
 })
 
+// GetSpokeClusterName gets the spoke cluster name as string.
 func GetSpokeClusterName(hubAPIClient, spokeAPIClient *clients.Settings) (string, error) {
 	spokeClusterVersion, err := cluster.GetOCPClusterVersion(spokeAPIClient)
 	if err != nil {
@@ -107,6 +108,7 @@ func GetSpokeClusterName(hubAPIClient, spokeAPIClient *clients.Settings) (string
 	return "", fmt.Errorf("could not find ClusterDeployment from provided API clients")
 }
 
+// GetNodeNames gets node names in cluster.
 func GetNodeNames(spokeAPIClient *clients.Settings) ([]string, error) {
 	nodeList, err := nodes.List(
 		spokeAPIClient,
