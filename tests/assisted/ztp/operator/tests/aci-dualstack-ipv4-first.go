@@ -55,10 +55,22 @@ var _ = Describe(
 				agentClusterInstallBuilder := createDualstackSpokeClusterResources()
 
 				By("Waiting for specific error message from SpecSynced condition")
-				err = agentClusterInstallBuilder.WaitForConditionMessage(v1beta1.ClusterSpecSyncedCondition,
-					"The Spec could not be synced due to an input error: First machine network has to be IPv4 subnet", time.Second*30)
-				Expect(err).NotTo(HaveOccurred(), "didn't get the expected message from SpecSynced condition")
+				Eventually(func() (string, error) {
+					agentClusterInstallBuilder.Object, err = agentClusterInstallBuilder.Get()
+					if err != nil {
+						return "", err
+					}
 
+					for _, condition := range agentClusterInstallBuilder.Object.Status.Conditions {
+						if condition.Type == v1beta1.ClusterSpecSyncedCondition {
+							return condition.Message, nil
+						}
+					}
+
+					return "", nil
+				}).WithTimeout(time.Minute*2).Should(
+					Equal("The Spec could not be synced due to an input error: First machine network has to be IPv4 subnet"),
+					"didn't get the expected message from SpecSynced condition")
 			})
 
 		})
