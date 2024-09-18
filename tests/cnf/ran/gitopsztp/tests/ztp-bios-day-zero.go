@@ -35,13 +35,12 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 		spokeClusterName, err = GetSpokeClusterName(HubAPIClient, Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get SNO cluster name")
 		glog.V(tsparams.LogLevel).Infof("cluster name: %s", spokeClusterName)
-		By(fmt.Sprintf("Cluster name: %s", spokeClusterName))
 
 		nodeNames, err = GetNodeNames(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get node names")
 		glog.V(tsparams.LogLevel).Infof("Node names: %v", nodeNames)
 
-		// By(fmt.Sprintf("cluster=%s SNO spoke=%s", spokeClusterName, nodeNames[0]))
+		By("Get HFS for spoke")
 		hfs, err := bmh.PullHFS(HubAPIClient, nodeNames[0], spokeClusterName)
 		Expect(err).ToNot(
 			HaveOccurred(),
@@ -58,6 +57,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 			spokeClusterName,
 		)
 
+		By("Compare requsted BIOS settings to actual BIOS settings")
 		hfsRequestedSettings := hfsObject.Spec.Settings
 		hfsCurrentSettings := hfsObject.Status.Settings
 
@@ -74,22 +74,29 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 		for param, value := range hfsRequestedSettings {
 			setting, ok := hfsCurrentSettings[param]
 			if !ok {
-				By(fmt.Sprintf("Current settings does not have param %s", param))
+				// By(fmt.Sprintf("Current settings does not have param %s", param))
+				glog.V(tsparams.LogLevel).Info("Current settings does not have param %s", param)
 
 				continue
 			}
 
 			requestedSetting := value.String()
 			if requestedSetting == setting {
-				By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
+				// By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
+				glog.V(tsparams.LogLevel).Info("Requested setting matches current: %s=%s", param, setting)
 			} else {
-				By(
-					fmt.Sprintf(
-						"Requested setting %s value %s does not match current value %s",
-						param,
-						requestedSetting,
-						setting,
-					))
+				glog.V(tsparams.LogLevel).Info(
+					"Requested setting %s value %s does not match current value %s",
+					param,
+					requestedSetting,
+					setting)
+				/* 	By(
+				fmt.Sprintf(
+					"Requested setting %s value %s does not match current value %s",
+					param,
+					requestedSetting,
+					setting,
+				)) */
 				allSettingsMatch = false
 			}
 
