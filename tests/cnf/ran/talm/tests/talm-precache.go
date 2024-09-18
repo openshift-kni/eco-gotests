@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -38,7 +39,10 @@ import (
 var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func() {
 	When("there is a single spoke", func() {
 		Context("precache operator", func() {
-			var suffixes []string
+			var (
+				policies []string
+				suffixes []string
+			)
 
 			BeforeEach(func() {
 				By("verifying TalmPrecachePolicies from config are available on hub")
@@ -48,7 +52,11 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 					Skip("could not find all policies in TalmPreCachePolicies in config on hub")
 				}
 
-				suffixes = copyPoliciesWithSubscription(preCachePolicies)
+				policies, suffixes = copyPoliciesWithSubscription(preCachePolicies)
+
+				for _, suffix := range suffixes {
+					policies = append(policies, tsparams.PolicyName+suffix)
+				}
 			})
 
 			AfterEach(func() {
@@ -60,11 +68,6 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 
 			// 48902 Tests image precaching - operators
 			It("tests for precache operator with multiple sources", reportxml.ID("48902"), func() {
-				var policies []string
-				for _, suffix := range suffixes {
-					policies = append(policies, tsparams.PolicyName+suffix)
-				}
-
 				By("creating CGU with created operator upgrade policy")
 				cguBuilder := getPrecacheCGU(policies, []string{RANConfig.Spoke1Name})
 				_, err := cguBuilder.Create()
@@ -607,16 +610,26 @@ func checkPrecachePodLog(client *clients.Settings) error {
 }
 
 // checkPoliciesExist returns the PolicyBuilder for all the provided policyNames, regardless of namespace, and whether
-// all policyNames could be found on the hub.
+// all policyNames could be found on the hub. It takes the policyNames as valid regular expressions and uses a match to
+// determine if a policy exists.
 func checkPoliciesExist(client *clients.Settings, policyNames []string) ([]*ocm.PolicyBuilder, bool) {
+	var policyRegexps []*regexp.Regexp
+
+	for _, policyName := range policyNames {
+		policyRegexp, err := regexp.Compile(policyName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to compile policy name regex %s", policyName)
+
+		policyRegexps = append(policyRegexps, policyRegexp)
+	}
+
 	allPolicies, err := ocm.ListPoliciesInAllNamespaces(client)
 	Expect(err).ToNot(HaveOccurred(), "Failed to list policies in all namespaces")
 
 	var expectedPolicies []*ocm.PolicyBuilder
 
-	for _, policyName := range policyNames {
+	for _, policyRegexp := range policyRegexps {
 		for _, policy := range allPolicies {
-			if policy.Object.Name == policyName {
+			if policyRegexp.MatchString(policy.Object.Name) {
 				expectedPolicies = append(expectedPolicies, policy)
 
 				break
@@ -627,8 +640,14 @@ func checkPoliciesExist(client *clients.Settings, policyNames []string) ([]*ocm.
 	return expectedPolicies, len(expectedPolicies) == len(policyNames)
 }
 
-func copyPoliciesWithSubscription(policies []*ocm.PolicyBuilder) []string {
-	var suffixes []string
+// copyPoliciesWithSubscription copies the policies that have a subscription and makes them NonCompliant. Policies
+// without a subscription have their names returned first and then the second return is the suffixes for policies that
+// were copied.
+func copyPoliciesWithSubscription(policies []*ocm.PolicyBuilder) ([]string, []string) {
+	var (
+		originals []string
+		suffixes  []string
+	)
 
 	for index, policy := range policies {
 		glog.V(tsparams.LogLevel).Infof(
@@ -637,6 +656,8 @@ func copyPoliciesWithSubscription(policies []*ocm.PolicyBuilder) []string {
 		template := policy.Object.Spec.PolicyTemplates[0]
 		configPolicy, err := ranhelper.UnmarshalRaw[configurationPolicyv1.ConfigurationPolicy](template.ObjectDefinition.Raw)
 		Expect(err).ToNot(HaveOccurred(), "Failed to unmarshal config policy")
+
+		hadSubscription := false
 
 		for _, objectTemplate := range configPolicy.Spec.ObjectTemplates {
 			untyped := &unstructured.Unstructured{}
@@ -647,6 +668,8 @@ func copyPoliciesWithSubscription(policies []*ocm.PolicyBuilder) []string {
 			if untyped.GetObjectKind().GroupVersionKind().Kind != "Subscription" {
 				continue
 			}
+
+			hadSubscription = true
 
 			// if the current policy has a subscription then copy the policy and force it to be non-compliant
 			suffix := fmt.Sprintf("-with-subscription-%d", index)
@@ -692,7 +715,11 @@ func copyPoliciesWithSubscription(policies []*ocm.PolicyBuilder) []string {
 
 			break
 		}
+
+		if !hadSubscription {
+			originals = append(originals, policy.Definition.Name)
+		}
 	}
 
-	return suffixes
+	return originals, suffixes
 }
