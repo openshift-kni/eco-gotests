@@ -75,7 +75,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 			setting, ok := hfsCurrentSettings[param]
 			if !ok {
 				// By(fmt.Sprintf("Current settings does not have param %s", param))
-				glog.V(tsparams.LogLevel).Info("Current settings does not have param %s", param)
+				glog.V(tsparams.LogLevel).Infof("Current settings does not have param %s", param)
 
 				continue
 			}
@@ -83,9 +83,9 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 			requestedSetting := value.String()
 			if requestedSetting == setting {
 				// By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
-				glog.V(tsparams.LogLevel).Info("Requested setting matches current: %s=%s", param, setting)
+				glog.V(tsparams.LogLevel).Infof("Requested setting matches current: %s=%s", param, setting)
 			} else {
-				glog.V(tsparams.LogLevel).Info(
+				glog.V(tsparams.LogLevel).Infof(
 					"Requested setting %s value %s does not match current value %s",
 					param,
 					requestedSetting,
