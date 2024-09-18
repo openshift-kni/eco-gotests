@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
@@ -14,7 +15,6 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZeroTests), func() {
@@ -24,7 +24,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 	)
 
 	// 75196 - Check if spoke has required BIOS setting values applied
-	It("Check if SNO spoke has required BIOS setting values applied", reportxml.ID("75196"), func() {
+	It("Verifies SNO spoke has required BIOS setting values applied", reportxml.ID("75196"), func() {
 		versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.17", "")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if ZTP version is in range")
 
@@ -34,52 +34,67 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 
 		spokeClusterName, err = GetSpokeClusterName(HubAPIClient, Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get SNO cluster name")
+		glog.V(tsparams.LogLevel).Infof("cluster name: %s", spokeClusterName)
 		By(fmt.Sprintf("Cluster name: %s", spokeClusterName))
 
 		nodeNames, err = GetNodeNames(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get node names")
-		By(fmt.Sprintf("Node names: %v", nodeNames))
+		glog.V(tsparams.LogLevel).Infof("Node names: %v", nodeNames)
 
-		By(fmt.Sprintf("cluster=%s SNO spoke=%s", spokeClusterName, nodeNames[0]))
+		// By(fmt.Sprintf("cluster=%s SNO spoke=%s", spokeClusterName, nodeNames[0]))
 		hfs, err := bmh.PullHFS(HubAPIClient, nodeNames[0], spokeClusterName)
 		Expect(err).ToNot(
 			HaveOccurred(),
-			fmt.Sprintf("Failed to get HFS for spoke %s in cluster %s", nodeNames[0], spokeClusterName),
+			"Failed to get HFS for spoke %s in cluster %s",
+			nodeNames[0],
+			spokeClusterName,
 		)
 
 		hfsObject, err := hfs.Get()
 		Expect(err).ToNot(
 			HaveOccurred(),
-			fmt.Sprintf("Failed to get HFS Obj for spoke %s in cluster %s", nodeNames[0], spokeClusterName),
+			"Failed to get HFS Obj for spoke %s in cluster %s",
+			nodeNames[0],
+			spokeClusterName,
 		)
 
-		hfsRequstedSettings := hfsObject.Spec.Settings
+		hfsRequestedSettings := hfsObject.Spec.Settings
 		hfsCurrentSettings := hfsObject.Status.Settings
-		allSettingsMatch := true
-		if len(hfsRequstedSettings) > 0 {
-			Expect(len(hfsCurrentSettings) > 0).To(
-				BeTrueBecause("hfs.spec.settings map is not empty, but hfs.status.settings map is empty"))
 
-			for param, value := range hfsRequstedSettings {
-				setting, ok := hfsCurrentSettings[param]
-				if ok {
-					requestedSetting := value.String()
-					if requestedSetting == setting {
-						By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
-					} else {
-						By(
-							fmt.Sprintf("Requested setting %s value %s does not match current value %s", param, requestedSetting, setting))
-						allSettingsMatch = false
-					}
-				} else {
-					By(fmt.Sprintf("Current settings does not have param %s", param))
-				}
-			}
-
-			Expect(allSettingsMatch).To(BeTrueBecause("One or more requested settings does not match current settings"))
-		} else {
+		if len(hfsRequestedSettings) == 0 {
 			Skip("hfs.spec.settings map is empty")
 		}
+
+		Expect(hfsCurrentSettings).ToNot(
+			BeEmpty(),
+			"hfs.spec.settings map is not empty, but hfs.status.settings map is empty",
+		)
+
+		allSettingsMatch := true
+		for param, value := range hfsRequestedSettings {
+			setting, ok := hfsCurrentSettings[param]
+			if !ok {
+				By(fmt.Sprintf("Current settings does not have param %s", param))
+				continue
+			}
+
+			requestedSetting := value.String()
+			if requestedSetting == setting {
+				By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
+			} else {
+				By(
+					fmt.Sprintf(
+						"Requested setting %s value %s does not match current value %s",
+						param,
+						requestedSetting,
+						setting,
+					))
+				allSettingsMatch = false
+			}
+
+		}
+
+		Expect(allSettingsMatch).To(BeTrueBecause("One or more requested settings does not match current settings"))
 	})
 
 })
@@ -112,8 +127,8 @@ func GetSpokeClusterName(hubAPIClient, spokeAPIClient *clients.Settings) (string
 func GetNodeNames(spokeAPIClient *clients.Settings) ([]string, error) {
 	nodeList, err := nodes.List(
 		spokeAPIClient,
-		metav1.ListOptions{},
 	)
+
 	if err != nil {
 		return nil, err
 	}
