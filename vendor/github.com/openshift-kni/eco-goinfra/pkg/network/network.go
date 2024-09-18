@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,9 +19,9 @@ const (
 // ConfigBuilder provides a struct for network object from the cluster and a network definition.
 type ConfigBuilder struct {
 	// network definition, used to create the network object.
-	Definition *v1.Network
+	Definition *configv1.Network
 	// Created network object.
-	Object *v1.Network
+	Object *configv1.Network
 	// api client to interact with the cluster.
 	apiClient *clients.Settings
 }
@@ -32,7 +32,7 @@ func PullConfig(apiClient *clients.Settings) (*ConfigBuilder, error) {
 
 	builder := ConfigBuilder{
 		apiClient: apiClient,
-		Definition: &v1.Network{
+		Definition: &configv1.Network{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterNetworkName,
 			},
