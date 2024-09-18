@@ -75,6 +75,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 			setting, ok := hfsCurrentSettings[param]
 			if !ok {
 				By(fmt.Sprintf("Current settings does not have param %s", param))
+
 				continue
 			}
 
