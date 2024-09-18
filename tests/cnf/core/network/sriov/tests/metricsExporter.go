@@ -12,6 +12,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -406,6 +407,13 @@ func createTestResources(testRes testResource) *pod.Builder {
 
 	_, err = testRes.network.Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
+
+	By("Verify NAD is created to proceed with Pod creation")
+	Eventually(func() error {
+		_, err = nad.Pull(APIClient, testRes.network.Object.Name, tsparams.TestNamespaceName)
+
+		return err
+	}, 10*time.Second, 1*time.Second).Should(BeNil(), "Failed to pull NAD created by SriovNetwork")
 
 	By(fmt.Sprintf("Creating %s Pod", testRes.pod.Definition.Name))
 
