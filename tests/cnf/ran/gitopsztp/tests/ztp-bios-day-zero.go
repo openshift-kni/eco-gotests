@@ -40,7 +40,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 		Expect(err).ToNot(HaveOccurred(), "Failed to get node names")
 		glog.V(tsparams.LogLevel).Infof("Node names: %v", nodeNames)
 
-		By("Get HFS for spoke")
+		By("getting HFS for spoke")
 		hfs, err := bmh.PullHFS(HubAPIClient, nodeNames[0], spokeClusterName)
 		Expect(err).ToNot(
 			HaveOccurred(),
@@ -57,7 +57,7 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 			spokeClusterName,
 		)
 
-		By("Compare requsted BIOS settings to actual BIOS settings")
+		By("comparing requsted BIOS settings to actual BIOS settings")
 		hfsRequestedSettings := hfsObject.Spec.Settings
 		hfsCurrentSettings := hfsObject.Status.Settings
 
@@ -74,7 +74,6 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 		for param, value := range hfsRequestedSettings {
 			setting, ok := hfsCurrentSettings[param]
 			if !ok {
-				// By(fmt.Sprintf("Current settings does not have param %s", param))
 				glog.V(tsparams.LogLevel).Infof("Current settings does not have param %s", param)
 
 				continue
@@ -82,7 +81,6 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 
 			requestedSetting := value.String()
 			if requestedSetting == setting {
-				// By(fmt.Sprintf("Requested setting matches current: %s=%s", param, setting))
 				glog.V(tsparams.LogLevel).Infof("Requested setting matches current: %s=%s", param, setting)
 			} else {
 				glog.V(tsparams.LogLevel).Infof(
@@ -90,13 +88,6 @@ var _ = Describe("ZTP BIOS Configuration Tests", Label(tsparams.LabelBiosDayZero
 					param,
 					requestedSetting,
 					setting)
-				/* 	By(
-				fmt.Sprintf(
-					"Requested setting %s value %s does not match current value %s",
-					param,
-					requestedSetting,
-					setting,
-				)) */
 				allSettingsMatch = false
 			}
 
