@@ -457,7 +457,6 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 	var (
 		nmstateHandlerDs         *daemonset.Builder
 		nmstateWebhookDeployment *deployment.Builder
-		nmstateCertDeployment    *deployment.Builder
 		err                      error
 	)
 
@@ -483,15 +482,6 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 				return false, nil
 			}
 
-			nmstateCertDeployment, err = deployment.Pull(
-				APIClient, netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
-			if err != nil {
-				glog.V(90).Infof("Error to pull deployment %s namespace %s, retry",
-					netparam.NMStateCertDeploymentName, NetConfig.NMStateOperatorNamespace)
-
-				return false, nil
-			}
-
 			return true, nil
 		})
 
@@ -510,10 +500,6 @@ func isNMStateDeployedAndReady(timeout time.Duration) error {
 
 	if !nmstateWebhookDeployment.IsReady(timeout) {
 		return fmt.Errorf("nmstate webhook deployment is not ready")
-	}
-
-	if !nmstateCertDeployment.IsReady(timeout) {
-		return fmt.Errorf("nmstate cert-manager deployment is not ready")
 	}
 
 	return nil
