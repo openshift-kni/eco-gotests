@@ -132,10 +132,14 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 
 		// 54354 - Ability to configure local registry via du profile
 		It("verifies the image registry exists", reportxml.ID("54354"), func() {
+			By("saving image registry config before modification")
+			imageRegistryConfig, _ = imageregistry.Pull(Spoke1APIClient, tsparams.ImageRegistryName)
+
 			By("updating Argo CD policies app")
 			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathImageRegistry, true)
 			if !exists {
+				imageRegistryConfig = nil
 				Skip(err.Error())
 			}
 
@@ -148,9 +152,6 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			_, err = cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient, ranparam.RetryCount, ranparam.RetryInterval,
 				fmt.Sprintf("ls %s", tsparams.ImageRegistryPath))
 			Expect(err).ToNot(HaveOccurred(), "Image registry directory '%s' does not exist", tsparams.ImageRegistryPath)
-
-			imageRegistryConfig, err = imageregistry.Pull(Spoke1APIClient, tsparams.ImageRegistryName)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull image registry config")
 
 			By("waiting for the policies to exist and be compliant")
 			for _, policyName := range tsparams.ImageRegistryPolicies {
