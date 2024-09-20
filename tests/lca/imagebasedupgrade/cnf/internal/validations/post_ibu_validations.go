@@ -345,7 +345,7 @@ func ValidateNoImagesPulled() {
 			}
 
 			logCmd := "journalctl -l --system | grep Pulling | grep image:"
-			logRes, err := cluster.ExecCmdWithStdout(TargetSNOAPIClient, logCmd+excludeImages)
+			logRes, err := cluster.ExecCmdWithStdout(TargetSNOAPIClient, logCmd+excludeImages+" || true")
 			Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
 
 			for _, stdout := range logRes {
