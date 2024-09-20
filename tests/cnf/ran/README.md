@@ -48,36 +48,36 @@ For the optional inputs listed below, see [default.yaml](internal/ranconfig/defa
 
 Currently, only the TALM tests need more than the first spoke kubeconfig.
 
-- `KUBECONFIG`: Global input that refers to the first spoke cluster.
-- `ECO_CNF_RAN_KUBECONFIG_HUB`: For tests that need a hub cluster, this is the path to its kubeconfig.
-- `ECO_CNF_RAN_KUBECONFIG_SPOKE2`: For tests that need a second spoke cluster, this is the path to its kubeconfig.
+* `KUBECONFIG`: Global input that refers to the first spoke cluster.
+* `ECO_CNF_RAN_KUBECONFIG_HUB`: For tests that need a hub cluster, this is the path to its kubeconfig.
+* `ECO_CNF_RAN_KUBECONFIG_SPOKE2`: For tests that need a second spoke cluster, this is the path to its kubeconfig.
 
 #### BMC credentials
 
 Only the powermanagement and TALM pre-cache tests need BMC credentials.
 
-- `ECO_CNF_RAN_BMC_USERNAME`: Username used for the Redfish API.
-- `ECO_CNF_RAN_BMC_PASSWORD`: Password used for the Redfish API.
-- `ECO_CNF_RAN_BMC_HOSTS`: IP address (without the leading `https://`) used for the Redfish API. Can be comma separated, but only the first host IP will be used.
-- `ECO_CNF_RAN_BMC_TIMEOUT`: Timeout in the form of a Go duration string to use when connecting to the Redfish API. Defaults to 15s which should usually be plenty.
+* `ECO_CNF_RAN_BMC_USERNAME`: Username used for the Redfish API.
+* `ECO_CNF_RAN_BMC_PASSWORD`: Password used for the Redfish API.
+* `ECO_CNF_RAN_BMC_HOSTS`: IP address (without the leading `https://`) used for the Redfish API. Can be comma separated, but only the first host IP will be used.
+* `ECO_CNF_RAN_BMC_TIMEOUT`: Timeout in the form of a Go duration string to use when connecting to the Redfish API. Defaults to 15s which should usually be plenty.
 
 #### Power management inputs
 
 All of these inputs are optional.
 
-- `ECO_CNF_RAN_METRIC_SAMPLING_INTERVAL`: Time between samples when gathering power usage metrics.
-- `ECO_CNF_RAN_NO_WORKLOAD_DURATION`: Duration to sample power usage metrics for the no workload scenario.
-- `ECO_CNF_RAN_WORKLOAD_DURATION`: Duration to sample power usage metrics for the workload scenario.
-- `ECO_CNF_RAN_STRESSNG_TEST_IMAGE`: Container image to use for the workload pods during the workload scenario.
-- `ECO_CNF_RAN_TEST_IMAGE`: Container image to use for testing container resource limits.
+* `ECO_CNF_RAN_METRIC_SAMPLING_INTERVAL`: Time between samples when gathering power usage metrics.
+* `ECO_CNF_RAN_NO_WORKLOAD_DURATION`: Duration to sample power usage metrics for the no workload scenario.
+* `ECO_CNF_RAN_WORKLOAD_DURATION`: Duration to sample power usage metrics for the workload scenario.
+* `ECO_CNF_RAN_STRESSNG_TEST_IMAGE`: Container image to use for the workload pods during the workload scenario.
+* `ECO_CNF_RAN_TEST_IMAGE`: Container image to use for testing container resource limits.
 
 #### TALM pre-cache inputs
 
 These inputs are all specific to the TALM pre-cache tests. They are also all optional.
 
-- `ECO_CNF_RAN_OCP_UPGRADE_UPSTREAM_URL`: URL of upstream upgrade graph.
-- `ECO_CNF_RAN_PTP_OPERATOR_NAMESPACE`: Namespace that the PTP operator uses.
-- `ECO_CNF_RAN_TALM_PRECACHE_POLICIES`: List of policies to copy for the precache operator tests.
+* `ECO_CNF_RAN_OCP_UPGRADE_UPSTREAM_URL`: URL of upstream upgrade graph.
+* `ECO_CNF_RAN_PTP_OPERATOR_NAMESPACE`: Namespace that the PTP operator uses.
+* `ECO_CNF_RAN_TALM_PRECACHE_POLICIES`: List of policies to copy for the precache operator tests.
 
 #### ZTP generator inputs
 
@@ -91,7 +91,7 @@ Except for the container namespace hiding tests, a dump of relevant CRs will be 
 
 #### Running the container namespace hiding test suite
 
-```
+```bash
 # export KUBECONFIG=</path/to/spoke/kubeconfig>
 # export ECO_TEST_FEATURES=containernshide
 # make run-tests
@@ -99,7 +99,7 @@ Except for the container namespace hiding tests, a dump of relevant CRs will be 
 
 #### Running the power management test suite
 
-```
+```bash
 # export KUBECONFIG=</path/to/spoke/kubeconfig>
 # export ECO_TEST_FEATURES=powermanagement
 # export ECO_CNF_RAN_BMC_USERNAME=<bmc username>
@@ -112,7 +112,7 @@ If using more selective labels that do not include the powersaving tests, such a
 
 #### Running the TALM test suite
 
-```
+```bash
 # export KUBECONFIG=</path/to/spoke/kubeconfig>
 # export ECO_TEST_FEATURES=talm
 # export ECO_CNF_RAN_KUBECONFIG_HUB=</path/to/hub/kubeconfig>

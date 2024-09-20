@@ -26,6 +26,9 @@ const (
 	// LabelSpokeCheckerTests is the label for a particular set of test cases.
 	LabelSpokeCheckerTests = "ztp-spoke-checker"
 
+	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
+	LabelBiosDayZeroTests = "ztp-bios-day-zero"
+
 	// MultiClusterHubOperator is the name of the multi cluster hub operator.
 	MultiClusterHubOperator = "multiclusterhub-operator"
 	// AcmPolicyGeneratorName is the name of the ACM policy generator container.
