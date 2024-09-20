@@ -13,7 +13,7 @@ bmcTimeout: "15s"
 ocpUpgradeUpstreamUrl: "https://api.openshift.com/api/upgrades_info/v1/graph"
 ptpOperatorNamespace: "openshift-ptp"
 talmPreCachePolicies:
-  - "common-config-policy"
-  - "common-subscriptions-policy"
+  - "^common(-v4\\.\\d\\d)?-config-policy"
+  - "^common(-v4\\.\\d\\d)?-subscriptions-policy"
 ztpSiteGenerateImage: "registry-proxy.engineering.redhat.com/rh-osbs/openshift4-ztp-site-generate"
 ...
