@@ -91,12 +91,22 @@ func createConfigMap(
 	return masterConfigMap
 }
 
-func createExternalNad() {
+func createHubConfigMap(name string) *configmap.Builder {
+	frrBFDConfig := frr.DefineBGPConfig(
+		tsparams.LocalBGPASN, tsparams.LocalBGPASN, []string{"10.10.0.10"}, false, false)
+	configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
+	hubConfigMap, err := configmap.NewBuilder(APIClient, name, tsparams.TestNamespaceName).WithData(configMapData).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create hub config map")
+
+	return hubConfigMap
+}
+
+func createExternalNad(name string) {
 	By("Creating external BR-EX NetworkAttachmentDefinition")
 
 	macVlanPlugin, err := define.MasterNadPlugin(coreparams.OvnExternalBridge, "bridge", nad.IPAMStatic())
 	Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
-	externalNad, err = nad.NewBuilder(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName).
+	externalNad, err = nad.NewBuilder(APIClient, name, tsparams.TestNamespaceName).
 		WithMasterPlugin(macVlanPlugin).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
 	Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
@@ -195,19 +205,47 @@ func createFrrPod(
 
 	By("Creating FRR container")
 
-	if configmapName != "" {
-		frrContainer := pod.NewContainerBuilder(
-			tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
-			WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
+	frrContainer := pod.NewContainerBuilder(
+		tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
+		WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
 
-		frrCtr, err := frrContainer.GetContainerCfg()
-		Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
-		frrPod.WithAdditionalContainer(frrCtr).WithLocalVolume(configmapName, "/etc/frr")
-	}
+	frrCtr, err := frrContainer.GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
+	frrPod.WithAdditionalContainer(frrCtr).WithLocalVolume(configmapName, "/etc/frr")
 
 	By("Creating FRR pod in the test namespace")
 
-	frrPod, err := frrPod.WithPrivilegedFlag().CreateAndWaitUntilRunning(time.Minute)
+	frrPod, err = frrPod.WithPrivilegedFlag().CreateAndWaitUntilRunning(time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Failed to create FRR test pod")
+
+	return frrPod
+}
+
+func createFrrHubPod(name, nodeName, configmapName string, defaultCMD []string,
+	secondaryNetConfig []*types.NetworkSelectionElement, podName ...string) *pod.Builder {
+	if len(podName) > 0 {
+		name = podName[0]
+	}
+
+	frrPod := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName, NetConfig.FrrImage).
+		DefineOnNode(nodeName).
+		WithTolerationToMaster().
+		WithSecondaryNetwork(secondaryNetConfig).
+		RedefineDefaultCMD(defaultCMD)
+
+	By("Creating FRR container")
+
+	frrContainer := pod.NewContainerBuilder(
+		tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
+		WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
+
+	frrCtr, err := frrContainer.GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
+	frrPod.WithAdditionalContainer(frrCtr).WithLocalVolume(configmapName, "/etc/frr")
+
+	By("Creating FRR pod in the test namespace")
+
+	frrPod, err = frrPod.WithPrivilegedFlag().CreateAndWaitUntilRunning(5 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create FRR test pod")
 
 	return frrPod

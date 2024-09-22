@@ -79,7 +79,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		setupMetalLbService(netparam.IPV4Family, ipAddressPool, "Cluster")
 
 		By("Creating external Network Attachment Definition")
-		createExternalNad()
+		createExternalNad(tsparams.ExternalMacVlanNADName)
 
 		By("Creating client test pod")
 		clientTestPod, err = pod.NewBuilder(

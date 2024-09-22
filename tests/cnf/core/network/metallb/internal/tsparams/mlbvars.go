@@ -40,10 +40,14 @@ var (
 	MetalLbIo = "metallb"
 	// MetalLbDsName default metalLb speaker daemonset names.
 	MetalLbDsName = "speaker"
+	// FrrDsName default metalLb frr daemonset name.
+	FrrDsName = "frr-k8s"
 	// FRRK8sDefaultLabel represents the default metalLb FRRK8S pod label.
 	FRRK8sDefaultLabel = "component=frr-k8s"
 	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	ExternalMacVlanNADName = "external"
+	// HubMacVlanNADName represents default external NetworkAttachmentDefinition name.
+	HubMacVlanNADName = "nad-hub"
 	// SleepCMD represents shel sleep command.
 	SleepCMD = []string{"/bin/bash", "-c", "sleep INF"}
 	// FRRContainerName represents default FRR's container name.
