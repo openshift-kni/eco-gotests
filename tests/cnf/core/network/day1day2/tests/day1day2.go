@@ -27,12 +27,12 @@ import (
 
 var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFailure, func() {
 	var (
-		workerNodeList          []*nodes.Builder
-		bondName                string
-		bondInterfaceVlanSlaves []string
-		juniperSession          *juniper.JunosSession
-		switchInterfaces        []string
-		switchLagNames          []string
+		workerNodeList   []*nodes.Builder
+		bondName         string
+		bondSlaves       []string
+		juniperSession   *juniper.JunosSession
+		switchInterfaces []string
+		switchLagNames   []string
 	)
 
 	BeforeAll(func() {
@@ -47,9 +47,8 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		err = netnmstate.CreateNewNMStateAndWaitUntilItsRunning(7 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
-		By("Verifying that the cluster deployed via bond interface" +
-			" with enslaved Vlan interfaces which based on SR-IOV VFs")
-		bondName, bondInterfaceVlanSlaves, _, err = netnmstate.CheckThatWorkersDeployedWithBondVlanVfs(
+		By("Verifying that the cluster deployed via bond interface with enslaved SR-IOV VFs")
+		bondName, bondSlaves, err = netnmstate.CheckThatWorkersDeployedWithBondVfs(
 			workerNodeList, tsparams.TestNamespaceName)
 		if err != nil {
 			Skip(fmt.Sprintf("Day1Day2 tests skipped. Cluster is not suitable due to: %s", err.Error()))
@@ -65,7 +64,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		Expect(err).ToNot(HaveOccurred(), "Failed to open a switch session")
 
 		By("Collecting switch interfaces")
-		switchInterfaces, err = NetConfig.GetSwitchInterfaces()
+		switchInterfaces, err = NetConfig.GetPrimarySwitchInterfaces()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get switch interfaces")
 
 		By("Collecting switch LAG names")
@@ -93,7 +92,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
 	})
 
-	It("Day1: Validate cluster deployed via bond interface with 2 interface vlan VFs enslaved and fail-over",
+	It("Day1: Validate cluster deployed via bond interface with 2 VFs enslaved and fail-over",
 		reportxml.ID("63928"), func() {
 			err := juniper.DumpInterfaceConfigs(juniperSession, switchInterfaces)
 			Expect(err).ToNot(HaveOccurred(), "Failed to save initial switch interfaces configs")
@@ -104,10 +103,8 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 	It("VF: change QOS configuration", reportxml.ID("63926"), func() {
 		By("Collecting information about test interfaces")
-		vfInterface, err := netnmstate.GetBaseVlanInterface(bondInterfaceVlanSlaves[0], workerNodeList[0].Definition.Name)
-		Expect(err).ToNot(HaveOccurred(), "Failed to get VF base interface")
-		pfUnderTest, err := cmd.GetSrIovPf(vfInterface, tsparams.TestNamespaceName, workerNodeList[0].Definition.Name)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get SR-IOV PF for VF %s", vfInterface))
+		pfUnderTest, err := cmd.GetSrIovPf(bondSlaves[0], tsparams.TestNamespaceName, workerNodeList[0].Definition.Name)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get SR-IOV PF for VF %s", bondSlaves[0]))
 
 		By(fmt.Sprintf("Saving MaxTxRate value on the first VF of interface %s before the test", pfUnderTest))
 		defaultMaxTxRate, err := day1day2env.GetFirstVfInterfaceMaxTxRate(workerNodeList[0].Definition.Name, pfUnderTest)
@@ -152,12 +149,6 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 	})
 
 	It("Day2 Bond: change miimon configuration", reportxml.ID("63881"), func() {
-		By("Collecting information about test interfaces")
-		bondName, err := netnmstate.GetPrimaryInterfaceBond(workerNodeList[0].Definition.Name)
-		Expect(err).ToNot(HaveOccurred(), "Failed to get Bond primary interface name")
-		bondInterfaceVlanSlaves, err := netnmstate.GetBondSlaves(bondName, workerNodeList[0].Definition.Name)
-		Expect(err).ToNot(HaveOccurred(), "Failed to get bond slave interfaces")
-
 		By("Saving miimon value on the bond interface before the test")
 		defaultMiimonValue, err := day1day2env.GetBondInterfaceMiimon(workerNodeList[0].Definition.Name, bondName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get miimon configuration")
@@ -166,7 +157,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		By("Configuring miimon on the bond interface")
 
 		nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, "miimon", NetConfig.WorkerLabelMap).
-			WithBondInterface(bondInterfaceVlanSlaves, bondName, "active-backup").
+			WithBondInterface(bondSlaves, bondName, "active-backup").
 			WithOptions(netnmstate.WithBondOptionMiimon(uint64(newExpectedMiimonValue), bondName))
 		err = netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
@@ -185,7 +176,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 
 		By("Restoring miimon configuration")
 		nmstatePolicy = nmstate.NewPolicyBuilder(APIClient, "restoremiimon", NetConfig.WorkerLabelMap).
-			WithBondInterface(bondInterfaceVlanSlaves, bondName, "active-backup").
+			WithBondInterface(bondSlaves, bondName, "active-backup").
 			WithOptions(netnmstate.WithBondOptionMiimon(uint64(defaultMiimonValue), bondName))
 		err = netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
@@ -218,7 +209,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		AfterEach(func() {
 			By("Reverting active-backup bond mode on the bond interfaces")
 			nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, policyNameBondMode, NetConfig.WorkerLabelMap).
-				WithBondInterface(bondInterfaceVlanSlaves, bondName, "active-backup").
+				WithBondInterface(bondSlaves, bondName, "active-backup").
 				WithOptions(netnmstate.WithBondOptionFailOverMac("none", bondName))
 			err := netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 			Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
@@ -230,7 +221,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		It("Day2 Bond: change mode configuration", reportxml.ID("63882"), func() {
 			By("Creating NMState policy to change a bond mode")
 			nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, policyNameBondMode, NetConfig.WorkerLabelMap).
-				WithBondInterface(bondInterfaceVlanSlaves, bondName, "balance-rr").
+				WithBondInterface(bondSlaves, bondName, "balance-rr").
 				WithOptions(netnmstate.WithBondOptionFailOverMac("active", bondName))
 			err := netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
 			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")

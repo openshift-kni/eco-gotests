@@ -23,17 +23,18 @@ const (
 // NetworkConfig type keeps network configuration.
 type NetworkConfig struct {
 	*coreconfig.CoreConfig
-	CnfNetTestContainer  string `yaml:"cnf_net_test_container" envconfig:"ECO_CNF_CORE_NET_TEST_CONTAINER"`
-	DpdkTestContainer    string `yaml:"dpdk_test_container" envconfig:"ECO_CNF_CORE_NET_DPDK_TEST_CONTAINER"`
-	MlbOperatorNamespace string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
-	CnfMcpLabel          string `yaml:"cnf_mcp_label" envconfig:"ECO_CNF_CORE_NET_CNF_MCP_LABEL"`
-	MultusNamesapce      string `yaml:"multus_namespace" envconfig:"ECO_CNF_CORE_NET_MULTUS_NAMESPACE"`
-	SwitchUser           string `envconfig:"ECO_CNF_CORE_NET_SWITCH_USER"`
-	SwitchPass           string `envconfig:"ECO_CNF_CORE_NET_SWITCH_PASS"`
-	SwitchIP             string `envconfig:"ECO_CNF_CORE_NET_SWITCH_IP"`
-	SwitchInterfaces     string `envconfig:"ECO_CNF_CORE_NET_SWITCH_INTERFACES"`
-	SwitchLagNames       string `envconfig:"ECO_CNF_CORE_NET_SWITCH_LAGS"`
-	ClusterVlan          string `envconfig:"ECO_CNF_CORE_NET_CLUSTER_VLAN"`
+	CnfNetTestContainer     string `yaml:"cnf_net_test_container" envconfig:"ECO_CNF_CORE_NET_TEST_CONTAINER"`
+	DpdkTestContainer       string `yaml:"dpdk_test_container" envconfig:"ECO_CNF_CORE_NET_DPDK_TEST_CONTAINER"`
+	MlbOperatorNamespace    string `yaml:"metal_lb_operator_namespace" envconfig:"ECO_CNF_CORE_NET_MLB_OPERATOR_NAMESPACE"`
+	CnfMcpLabel             string `yaml:"cnf_mcp_label" envconfig:"ECO_CNF_CORE_NET_CNF_MCP_LABEL"`
+	MultusNamesapce         string `yaml:"multus_namespace" envconfig:"ECO_CNF_CORE_NET_MULTUS_NAMESPACE"`
+	SwitchUser              string `envconfig:"ECO_CNF_CORE_NET_SWITCH_USER"`
+	SwitchPass              string `envconfig:"ECO_CNF_CORE_NET_SWITCH_PASS"`
+	SwitchIP                string `envconfig:"ECO_CNF_CORE_NET_SWITCH_IP"`
+	SwitchInterfaces        string `envconfig:"ECO_CNF_CORE_NET_SWITCH_INTERFACES"`
+	PrimarySwitchInterfaces string `envconfig:"ECO_CNF_CORE_NET_PRIMARY_SWITCH_INTERFACES"`
+	SwitchLagNames          string `envconfig:"ECO_CNF_CORE_NET_SWITCH_LAGS"`
+	ClusterVlan             string `envconfig:"ECO_CNF_CORE_NET_CLUSTER_VLAN"`
 	//nolint:lll
 	PrometheusOperatorNamespace string `yaml:"prometheus_operator_namespace" envconfig:"ECO_CNF_CORE_NET_PROMETHEUS_OPERATOR_NAMESPACE"`
 	MlbAddressPoolIP            string `envconfig:"ECO_CNF_CORE_NET_MLB_ADDR_LIST"`
@@ -151,8 +152,21 @@ func (netConfig *NetworkConfig) GetSwitchInterfaces() ([]string, error) {
 	envValue := strings.Split(netConfig.SwitchInterfaces, ",")
 
 	if len(envValue) != 4 {
-		return nil, fmt.Errorf("the number of the switch interfaces is not equal 4," +
+		return nil, fmt.Errorf("the number of the switch interfaces is not equal to 4," +
 			" check ECO_CNF_CORE_NET_SWITCH_INTERFACES env var")
+	}
+
+	return envValue, nil
+}
+
+// GetPrimarySwitchInterfaces checks the environmental variable ECO_CNF_CORE_NET_PRIMARY_SWITCH_INTERFACES
+// and returns the value in []string.
+func (netConfig *NetworkConfig) GetPrimarySwitchInterfaces() ([]string, error) {
+	envValue := strings.Split(netConfig.PrimarySwitchInterfaces, ",")
+
+	if len(envValue) != 4 {
+		return nil, fmt.Errorf("the number of the switch interfaces is not equal to 4," +
+			" check ECO_CNF_CORE_NET_PRIMARY_SWITCH_INTERFACES env var")
 	}
 
 	return envValue, nil
@@ -164,7 +178,7 @@ func (netConfig *NetworkConfig) GetSwitchLagNames() ([]string, error) {
 	envValue := strings.Split(netConfig.SwitchLagNames, ",")
 
 	if len(envValue) != 2 {
-		return nil, fmt.Errorf("the number of the switch lag names is not equal 2," +
+		return nil, fmt.Errorf("the number of the switch lag names is not equal to 2," +
 			" check ECO_CNF_CORE_NET_SWITCH_LAGS env var")
 	}
 
