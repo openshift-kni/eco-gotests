@@ -978,7 +978,7 @@ func redfishConnect(
 		Insecure: true,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), sessionTimeout)
+	ctx, cancel := context.WithTimeout(context.TODO(), sessionTimeout)
 
 	client, err := gofish.ConnectContext(ctx, gofishConfig)
 	if err != nil {

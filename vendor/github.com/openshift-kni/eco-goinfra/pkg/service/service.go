@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	corev1Typed "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // Builder provides struct for service object containing connection to the cluster and the service definitions.
@@ -24,7 +25,7 @@ type Builder struct {
 	// Used in functions that define or mutate the service definition.
 	// errorMsg is processed before the service object is created
 	errorMsg  string
-	apiClient *clients.Settings
+	apiClient corev1Typed.CoreV1Interface
 }
 
 // AdditionalOptions additional options for service object.
@@ -43,7 +44,7 @@ func NewBuilder(
 		"Initializing new service structure with the following params: %s, %s", name, nsname)
 
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.CoreV1Interface,
 		Definition: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -60,12 +61,16 @@ func NewBuilder(
 		glog.V(100).Infof("The name of the service is empty")
 
 		builder.errorMsg = "Service 'name' cannot be empty"
+
+		return &builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the service is empty")
 
 		builder.errorMsg = "Service 'nsname' cannot be empty"
+
+		return &builder
 	}
 
 	return &builder
@@ -101,7 +106,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	}
 
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.CoreV1Interface,
 		Definition: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -170,11 +175,13 @@ func (builder *Builder) Delete() error {
 	glog.V(100).Infof("Deleting the service %s from namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		builder.Object = nil
+
 		return nil
 	}
 
 	err := builder.apiClient.Services(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -182,7 +189,7 @@ func (builder *Builder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update renovates the existing service object with service definition in builder.
@@ -242,9 +249,7 @@ func (builder *Builder) WithExternalTrafficPolicy(policyType corev1.ServiceExter
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.errorMsg = "ExternalTrafficPolicy can not be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -331,6 +336,8 @@ func (builder *Builder) WithAnnotation(annotation map[string]string) *Builder {
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.errorMsg = "annotation can not be empty map"
+
+		return builder
 	}
 
 	for key := range annotation {
@@ -341,10 +348,6 @@ func (builder *Builder) WithAnnotation(annotation map[string]string) *Builder {
 
 			return builder
 		}
-	}
-
-	if builder.errorMsg != "" {
-		return builder
 	}
 
 	builder.Definition.Annotations = annotation
@@ -365,6 +368,8 @@ func (builder *Builder) WithIPFamily(ipFamily []corev1.IPFamily, ipStackPolicy c
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.errorMsg = "failed to set empty ipFamily"
+
+		return builder
 	}
 
 	if ipStackPolicy == "" {
@@ -372,9 +377,7 @@ func (builder *Builder) WithIPFamily(ipFamily []corev1.IPFamily, ipStackPolicy c
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.errorMsg = "failed to set empty ipStackPolicy"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -408,10 +411,16 @@ func DefineServicePort(port, targetPort int32, protocol corev1.Protocol) (*corev
 }
 
 // GetServiceGVR returns service's GroupVersionResource which could be used for Clean function.
+// Deprecated: This function is being name-changed to GetGVR in the future and will be deprecated.
 func GetServiceGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group: "", Version: "v1", Resource: "services",
 	}
+}
+
+// GetGVR returns service's GroupVersionResource which could be used for Clean function.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
 }
 
 // isValidPort checks if a port is valid.
@@ -437,13 +446,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

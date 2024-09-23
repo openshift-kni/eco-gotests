@@ -203,7 +203,7 @@ func (builder *RoleBindingBuilder) Delete() error {
 	}
 
 	err := builder.apiClient.RoleBindings(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	builder.Object = nil
 

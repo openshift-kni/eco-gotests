@@ -197,8 +197,8 @@ func (builder *SetBuilder) Delete() error {
 		return fmt.Errorf("machineSet cannot be deleted because it does not exist")
 	}
 
-	err := builder.apiClient.MachineSets(builder.Object.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.MachineSets(builder.Definition.Namespace).Delete(
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return fmt.Errorf("cannot delete MachineSet: %w", err)

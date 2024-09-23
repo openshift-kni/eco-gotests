@@ -182,7 +182,7 @@ func (builder *Builder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.Namespaces().Delete(context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+	err := builder.apiClient.Namespaces().Delete(context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err

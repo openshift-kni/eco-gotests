@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,8 +20,8 @@ import (
 // BGPPeerBuilder provides struct for the BGPPeer object containing connection to
 // the cluster and the BGPPeer definitions.
 type BGPPeerBuilder struct {
-	Definition *mlbtypes.BGPPeer
-	Object     *mlbtypes.BGPPeer
+	Definition *mlbtypesv1beta2.BGPPeer
+	Object     *mlbtypesv1beta2.BGPPeer
 	apiClient  runtimeClient.Client
 	errorMsg   string
 }
@@ -35,7 +36,7 @@ func NewBPGPeerBuilder(
 		"Initializing new BGPPeer structure with the following params: %s, %s %s %d %d",
 		name, nsname, peerIP, asn, remoteASN)
 
-	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	err := apiClient.AttachScheme(mlbtypesv1beta2.AddToScheme)
 	if err != nil {
 		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
 
@@ -44,11 +45,11 @@ func NewBPGPeerBuilder(
 
 	builder := BGPPeerBuilder{
 		apiClient: apiClient.Client,
-		Definition: &mlbtypes.BGPPeer{
+		Definition: &mlbtypesv1beta2.BGPPeer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
-			}, Spec: mlbtypes.BGPPeerSpec{
+			}, Spec: mlbtypesv1beta2.BGPPeerSpec{
 				MyASN:   asn,
 				ASN:     remoteASN,
 				Address: peerIP,
@@ -78,7 +79,7 @@ func NewBPGPeerBuilder(
 }
 
 // Get returns BGPPeer object if found.
-func (builder *BGPPeerBuilder) Get() (*mlbtypes.BGPPeer, error) {
+func (builder *BGPPeerBuilder) Get() (*mlbtypesv1beta2.BGPPeer, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -87,7 +88,7 @@ func (builder *BGPPeerBuilder) Get() (*mlbtypes.BGPPeer, error) {
 		"Collecting BGPPeer object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	bgpPeer := &mlbtypes.BGPPeer{}
+	bgpPeer := &mlbtypesv1beta2.BGPPeer{}
 	err := builder.apiClient.Get(context.TODO(),
 		runtimeClient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace},
 		bgpPeer)
@@ -129,7 +130,7 @@ func PullBGPPeer(apiClient *clients.Settings, name, nsname string) (*BGPPeerBuil
 		return nil, fmt.Errorf("bgppeer 'apiClient' cannot be empty")
 	}
 
-	err := apiClient.AttachScheme(mlbtypes.AddToScheme)
+	err := apiClient.AttachScheme(mlbtypesv1beta2.AddToScheme)
 	if err != nil {
 		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
 
@@ -138,7 +139,7 @@ func PullBGPPeer(apiClient *clients.Settings, name, nsname string) (*BGPPeerBuil
 
 	builder := BGPPeerBuilder{
 		apiClient: apiClient.Client,
-		Definition: &mlbtypes.BGPPeer{
+		Definition: &mlbtypesv1beta2.BGPPeer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -377,6 +378,33 @@ func (builder *BGPPeerBuilder) WithKeepalive(keepalive metav1.Duration) *BGPPeer
 	return builder
 }
 
+// WithConnectTime defines the reconnect timer between BGP neighbors.
+func (builder *BGPPeerBuilder) WithConnectTime(connectTime metav1.Duration) *BGPPeerBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Creating BGPPeer %s in namespace %s with this connectTime: %s",
+		builder.Definition.Name, builder.Definition.Namespace, connectTime)
+
+	duration := connectTime.Duration
+
+	if duration < time.Second || duration > 65535*time.Second {
+		glog.V(100).Infof("A valid connect time is between 1-65535")
+
+		builder.errorMsg = "bgppeer 'connectTime' value is not valid"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.ConnectTime = &connectTime
+
+	return builder
+}
+
 // WithNodeSelector defines the nodeSelector placed in the BGPPeer spec.
 func (builder *BGPPeerBuilder) WithNodeSelector(nodeSelector map[string]string) *BGPPeerBuilder {
 	if valid, _ := builder.validate(); !valid {
@@ -397,8 +425,9 @@ func (builder *BGPPeerBuilder) WithNodeSelector(nodeSelector map[string]string) 
 		return builder
 	}
 
-	ndSelector := []mlbtypes.NodeSelector{{MatchLabels: nodeSelector}}
-	builder.Definition.Spec.NodeSelectors = ndSelector
+	builder.Definition.Spec.NodeSelectors = []metav1.LabelSelector{{
+		MatchLabels: nodeSelector,
+	}}
 
 	return builder
 }

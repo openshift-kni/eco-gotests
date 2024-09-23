@@ -12,6 +12,7 @@ import (
 	netv1 "k8s.io/api/networking/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // NetworkPolicyBuilder provides struct for networkPolicy object.
@@ -373,4 +374,9 @@ func (builder *NetworkPolicyBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+// GetGVR returns networkPolicy's GroupVersionResource which could be used for Clean function.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: "networking.k8s.io", Version: "v1", Resource: "networkpolicies"}
 }

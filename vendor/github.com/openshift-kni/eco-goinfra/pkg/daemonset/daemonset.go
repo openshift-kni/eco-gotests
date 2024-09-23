@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	appsv1Typed "k8s.io/client-go/kubernetes/typed/apps/v1"
 )
@@ -296,7 +297,7 @@ func (builder *Builder) Delete() error {
 	}
 
 	err := builder.apiClient.Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err
@@ -430,6 +431,15 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 		})
 
 	return err == nil
+}
+
+// GetGVR returns the GroupVersionResource for the daemonset.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "daemonsets",
+	}
 }
 
 // validate will check that the builder and builder definition are properly initialized before

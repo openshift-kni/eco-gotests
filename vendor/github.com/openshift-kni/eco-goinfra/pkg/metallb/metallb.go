@@ -3,6 +3,7 @@ package metallb
 import (
 	"context"
 	"fmt"
+	"net"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -332,6 +333,37 @@ func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 			}
 		}
 	}
+
+	return builder
+}
+
+// WithFRRConfigAlwaysBlock adds specific routes to block from being advertised to the FRR nodes.
+func (builder *Builder) WithFRRConfigAlwaysBlock(prefixes []string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding prefixes to block in the metallb.io object %s", builder.Definition.Name)
+
+	if len(prefixes) < 1 {
+		glog.V(100).Infof("the frrConfiguration prefixes list is empty")
+
+		builder.errorMsg = "can not accept empty prefix list for the metallb alwaysBlock mode"
+
+		return builder
+	}
+
+	// Validate CIDR prefixes
+	for _, prefix := range prefixes {
+		if _, _, err := net.ParseCIDR(prefix); err != nil {
+			glog.V(100).Infof("the frrConfiguration prefix %s is not a valid CIDR", prefix)
+			builder.errorMsg = fmt.Sprintf("the prefix %s is not a valid CIDR", prefix)
+
+			return builder
+		}
+	}
+
+	builder.Definition.Spec.FRRK8SConfig = &mlbtypes.FRRK8SConfig{AlwaysBlock: prefixes}
 
 	return builder
 }

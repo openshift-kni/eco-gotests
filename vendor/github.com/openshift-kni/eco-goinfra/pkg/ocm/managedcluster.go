@@ -171,7 +171,7 @@ func (builder *ManagedClusterBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.Delete(context.TODO(), builder.Object)
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 	if err != nil {
 		return fmt.Errorf("cannot delete managedCluster: %w", err)
 	}
