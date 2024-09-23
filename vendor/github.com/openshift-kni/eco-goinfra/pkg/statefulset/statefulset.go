@@ -205,6 +205,34 @@ func (builder *Builder) Exists() bool {
 	return err == nil || !k8serrors.IsNotFound(err)
 }
 
+// Delete a statefulset from the cluster.
+func (builder *Builder) Delete() error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Deleting statefulset %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("Statefulset %s cannot be deleted because it does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
+		return nil
+	}
+
+	err := builder.apiClient.StatefulSets(builder.Definition.Namespace).Delete(
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	builder.Object = nil
+
+	return nil
+}
+
 // IsReady periodically checks if statefulset is in ready status.
 func (builder *Builder) IsReady(timeout time.Duration) bool {
 	if valid, _ := builder.validate(); !valid {

@@ -428,13 +428,16 @@ func (builder *Builder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("Deployment %s in namespace %s does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
 		builder.Object = nil
 
 		return nil
 	}
 
 	err := builder.apiClient.Deployments(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Object.Name, metav1.DeleteOptions{})
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
 		return err

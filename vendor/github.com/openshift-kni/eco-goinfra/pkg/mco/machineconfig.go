@@ -161,7 +161,7 @@ func (builder *MCBuilder) Delete() error {
 		return nil
 	}
 
-	err := builder.apiClient.Delete(context.TODO(), builder.Object)
+	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 	if err != nil {
 		return fmt.Errorf("cannot delete machineconfig: %w", err)
 	}

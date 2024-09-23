@@ -521,7 +521,7 @@ github.com/onsi/gomega/types
 ## explicit; go 1.20
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240916124124-609263ee94e9
+# github.com/openshift-kni/eco-goinfra v0.0.0-20240923191831-557d10071977
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -607,6 +607,7 @@ github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/openstack
 github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/ovirt
 github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/vsphere
 github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/scheme
+github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/frrtypes
 github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlboperator
 github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes
 github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2
