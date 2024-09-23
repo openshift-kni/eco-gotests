@@ -75,7 +75,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		Expect(len(frrk8sPods)).To(BeNumerically(">", 0),
 			"Failed the number of frr speaker pods is 0")
 		createBGPPeerAndVerifyIfItsReady(
-			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, frrk8sPods)
+			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0, frrk8sPods)
 	})
 
 	AfterEach(func() {
@@ -110,7 +110,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				}
 
 				createBGPPeerAndVerifyIfItsReady(
-					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, frrk8sPods)
+					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
+					frrk8sPods)
 
 				By("Setting test iteration parameters")
 				_, subMask, mlbAddressList, nodeAddrList, addressPool, _, err :=
@@ -172,7 +173,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 			createBGPPeerAndVerifyIfItsReady(
-				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, frrk8sPods)
+				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
+				frrk8sPods)
 
 			By("Checking that BGP session is established and up")
 			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))

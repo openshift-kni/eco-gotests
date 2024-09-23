@@ -25,6 +25,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // test cases variables that are accessible across entire package.
@@ -102,7 +103,8 @@ func createExternalNad() {
 }
 
 func createBGPPeerAndVerifyIfItsReady(
-	peerIP, bfdProfileName string, remoteAsn uint32, eBgpMultiHop bool, frrk8sPods []*pod.Builder) {
+	peerIP, bfdProfileName string, remoteAsn uint32, eBgpMultiHop bool, connectTime int,
+	frrk8sPods []*pod.Builder) {
 	By("Creating BGP Peer")
 
 	bgpPeer := metallb.NewBPGPeerBuilder(APIClient, "testpeer", NetConfig.MlbOperatorNamespace,
@@ -110,6 +112,11 @@ func createBGPPeerAndVerifyIfItsReady(
 
 	if bfdProfileName != "" {
 		bgpPeer.WithBFDProfile(bfdProfileName)
+	}
+
+	if connectTime != 0 {
+		// Convert connectTime int to time.Duration in seconds
+		bgpPeer.WithConnectTime(metav1.Duration{Duration: time.Duration(connectTime) * time.Second})
 	}
 
 	_, err := bgpPeer.Create()

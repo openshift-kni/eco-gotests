@@ -45,6 +45,54 @@ type (
 			Bestpath bool `json:"bestpath,omitempty"`
 		} `json:"routes"`
 	}
+
+	advertisedRoute struct {
+		AddrPrefix    string `json:"addrPrefix"`
+		PrefixLen     int    `json:"prefixLen"`
+		Network       string `json:"network"`
+		NextHop       string `json:"nextHop"`
+		Metric        int    `json:"metric"`
+		LocPrf        int    `json:"locPrf"`
+		Weight        int    `json:"weight"`
+		Path          string `json:"path"`
+		BGPOriginCode string `json:"bgpOriginCode"`
+	}
+	// BgpAdvertisedRoutes creates struct from json output.
+	BgpAdvertisedRoutes struct {
+		BGPTableVersion  int                        `json:"bgpTableVersion"`
+		BGPLocalRouterID string                     `json:"bgpLocalRouterId"`
+		DefaultLocPrf    int                        `json:"defaultLocPrf"`
+		LocalAS          int                        `json:"localAS"`
+		AdvertisedRoutes map[string]advertisedRoute `json:"advertisedRoutes"`
+	}
+	// BgpReceivedRoutes struct includes Routes map.
+	BgpReceivedRoutes struct {
+		Routes map[string][]RouteInfo `json:"routes"`
+	}
+	// RouteInfo struct includes route info.
+	RouteInfo struct {
+		Prefix    string    `json:"prefix"`
+		PrefixLen int       `json:"prefixLen"`
+		Protocol  string    `json:"protocol"`
+		Metric    int       `json:"metric"`
+		Uptime    string    `json:"uptime"`
+		Nexthops  []Nexthop `json:"nexthops"`
+	}
+	// Nexthop struct includes nexthop route info.
+	Nexthop struct {
+		Flags          int    `json:"flags"`
+		Fib            bool   `json:"fib"`
+		IP             string `json:"ip"`
+		Afi            string `json:"afi"`
+		InterfaceIndex int    `json:"interfaceIndex"`
+		InterfaceName  string `json:"interfaceName"`
+		Active         bool   `json:"active"`
+		Weight         int    `json:"weight"`
+	}
+	// BGPConnectionInfo struct includes the connectRetryTimer.
+	BGPConnectionInfo struct {
+		ConnectRetryTimer int `json:"connectRetryTimer"`
+	}
 )
 
 // DefineBaseConfig defines minimal required FRR configuration.
@@ -229,4 +277,41 @@ func runningConfig(frrPod *pod.Builder) (string, error) {
 	}
 
 	return bgpStateOut.String(), nil
+}
+
+// FetchBGPConnectTimeValue fetches and returns the ConnectRetryTimer value for the specified BGP peer.
+func FetchBGPConnectTimeValue(frrk8sPods []*pod.Builder, bgpPeerIP string) (int, error) {
+	for _, frrk8sPod := range frrk8sPods {
+		// Run the "show bgp neighbor <bgpPeerIP> json" command on each pod
+		output, err := frrk8sPod.ExecCommand(append(netparam.VtySh,
+			fmt.Sprintf("show bgp neighbor %s json", bgpPeerIP)), "frr")
+		if err != nil {
+			return 0, fmt.Errorf("error collecting BGP neighbor info from pod %s: %w",
+				frrk8sPod.Definition.Name, err)
+		}
+
+		// Parsing JSON
+		var bgpData map[string]BGPConnectionInfo
+		err = json.Unmarshal(output.Bytes(), &bgpData)
+
+		if err != nil {
+			return 0, fmt.Errorf("error parsing BGP neighbor JSON for pod %s: %w", frrk8sPod.Definition.Name, err)
+		}
+
+		// Extracting ConnectRetryTimer from the parsed JSON
+		for _, bgpInfo := range bgpData {
+			return bgpInfo.ConnectRetryTimer, nil
+		}
+	}
+
+	return 0, fmt.Errorf("no BGP neighbor data found for peer %s", bgpPeerIP)
+}
+
+// ResetBGPConnection restarts the TCP connection.
+func ResetBGPConnection(frrPod *pod.Builder) error {
+	glog.V(90).Infof("Resetting BGP session to all neighbors: %s", frrPod.Definition.Name)
+
+	_, err := frrPod.ExecCommand(append(netparam.VtySh, "clear ip bgp *"))
+
+	return err
 }
