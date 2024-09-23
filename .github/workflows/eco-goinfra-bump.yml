@@ -12,6 +12,8 @@ jobs:
 
       - name: Setup agent and add repo ssh key
         run: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/eco-gotests.id_rsa
           echo "${{ secrets.REPO_ACCESS_KEY }}" > ~/.ssh/eco-gotests.id_rsa
           chmod 0600 ~/.ssh/eco-gotests.id_rsa
       
