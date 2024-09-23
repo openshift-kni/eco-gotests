@@ -123,3 +123,27 @@ rdscore_kdump_worker_node_label: 'node-role.kubernetes.io/standard=""'
 rdscore_kdump_cnf_node_label: 'node-role.kubernetes.io/customcnf=""'
 rdscore_metallb_frr_test_url_ipv4: ''
 rdscore_metallb_frr_test_url_ipv6: ''
+# Egress Service
+rdscore_egress_service_ns: rds-egress-ns
+rdscore_egress_service_remote_ip: ''
+rdscore_egress_service_remote_port: 9090
+#
+rdscore_egress_service_deploy_1_cmd:
+- /agnhost
+- netexec
+- --http-port=9090
+rdscore_egress_service_vrf_1_net: '1001'
+rdscore_egress_service_1_node_selector:
+  node-role.kubernetes.io/worker: ''
+rdscore_egress_service_deploy_1_img: ''
+rdscore_egress_service_deploy_1_ipaddr_pool: 'rds-cluster-pool'
+#
+rdscore_egress_service_deploy_2_cmd:
+- /agnhost
+- netexec
+- --http-port=9090
+rdscore_egress_service_vrf_2_net: '1001'
+rdscore_egress_service_2_node_selector:
+  node-role.kubernetes.io/worker: ''
+rdscore_egress_service_deploy_2_img: ''
+rdscore_egress_service_deploy_2_ipaddr_pool: 'rds-local-pool'
