@@ -70,6 +70,7 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/nutanix-cloud-native/prism-go-client v0.2.1-0.20220804130801-c8a253627c64 // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 // indirect
+	github.com/ovn-org/ovn-kubernetes/go-controller v0.0.0-20240614144800-61d5c5937bd4 // indirect
 	github.com/red-hat-storage/odf-operator v0.0.0-20240703093545-0e22236e2160 // indirect
 	github.com/stmcginnis/gofish v0.15.1-0.20231121142100-22a60a77be91 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
