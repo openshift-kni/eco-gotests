@@ -46,7 +46,7 @@ var _ = Describe(
 		FIt("Upgrade prep abort flow", reportxml.ID("68956"), func() {
 
 			By("Creating IBGU and monitoring IBU status to report completed", func() {
-				
+
 				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
 					tsparams.IbguName, tsparams.IbuCguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
