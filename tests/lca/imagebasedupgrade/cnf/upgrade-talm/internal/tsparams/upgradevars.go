@@ -50,6 +50,6 @@ var (
 	// TargetSnoClusterName is the name of target sno cluster.
 	TargetSnoClusterName string
 
-	// clusterLabelSelector is the cluster label passed to IBGUs
+	// ClusterLabelSelector is the cluster label passed to IBGUs.
 	ClusterLabelSelector = map[string]string{"CITarget": "true"}
 )

@@ -1,7 +1,6 @@
 package upgrade_test
 
 import (
-	"github.com/openshift-kni/eco-goinfra/pkg/ibgu"
 	"strings"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
+	"github.com/openshift-kni/eco-goinfra/pkg/ibgu"
 	"github.com/openshift-kni/eco-goinfra/pkg/lca"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"

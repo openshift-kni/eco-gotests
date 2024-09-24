@@ -15,10 +15,10 @@ const (
 	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
 	IbuCguNamespace = "default"
 
-	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
+	// IbguCguNamespace is the namespace where IBU CGUs created on target hub.
 	IbguCguNamespace = "default"
 
-	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
+	// IbguName is the namespace where IBU CGUs created on target hub.
 	IbguName = "testIBGU"
 
 	// PrePrepCguName is the name of pre-prep cgu.
