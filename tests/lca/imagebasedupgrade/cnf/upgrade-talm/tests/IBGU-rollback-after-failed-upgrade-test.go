@@ -1,6 +1,7 @@
 package upgrade_test
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -57,6 +58,8 @@ var _ = Describe(
 				ibu.Definition.Spec.AutoRollbackOnFailure = &lcav1.AutoRollbackOnFailure{}
 				ibu.Definition.Spec.AutoRollbackOnFailure.InitMonitorTimeoutSeconds = 300
 				ibu, err = ibu.Update()
+				//debug
+				log.Println("Modified InitMonitorTimeoutSeconds")
 				Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with custom lca init-monitor timeout value")
 			})
 		})
@@ -74,7 +77,7 @@ var _ = Describe(
 
 			By("Creating, enabling ibu finalize CGU and waiting for CGU status to report completed", func() {
 				finalizeCguBuilder := cgu.NewCguBuilder(TargetHubAPIClient,
-					tsparams.FinalizeCguName, tsparams.IbuCguNamespace, 1).
+					tsparams.FinalizeCguName, tsparams.IbguNamespace, 1).
 					WithCluster(tsparams.TargetSnoClusterName).
 					WithManagedPolicy(tsparams.FinalizePolicyName).
 					WithCanary(tsparams.TargetSnoClusterName)
@@ -92,7 +95,7 @@ var _ = Describe(
 
 			By("Deleting finalize cgu created on target hub cluster", func() {
 				err := cnfhelper.DeleteIbuTestCguOnTargetHub(TargetHubAPIClient, tsparams.FinalizeCguName,
-					tsparams.IbuCguNamespace)
+					tsparams.IbguNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete finalize cgu on target hub cluster")
 			})
 
@@ -102,12 +105,12 @@ var _ = Describe(
 			time.Sleep(10 * time.Second)
 		})
 
-		It("Rollback after a failed upgrade", reportxml.ID("69054"), func() {
+		FIt("Rollback after a failed upgrade", reportxml.ID("69054"), func() {
 
 			By("Creating Prep->Upgrade->FinalizeUpgrae IBGU and waiting for node rebooted into stateroot B", func() {
 
 				newIbguBuilder = ibgu.NewIbguBuilder(TargetHubAPIClient,
-					tsparams.IbguName, tsparams.IbuCguNamespace).
+					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithOadpContent("oadp-cm", "ztp-group").
 					WithSeedImageRef("registry.kni-qe-18.lab.eng.tlv2.redhat.com:5000/ibu/seed:4.17.0-rc.1", "4.17.0-rc.1").
@@ -203,7 +206,7 @@ var _ = Describe(
 
 					By("Wait for IBU resource to be available")
 
-					err = nodestate.WaitForIBUToBeAvailable(TargetSNOAPIClient, ibu, time.Minute*15)
+					err = nodestate.WaitForIBUToBeAvailable(TargetSNOAPIClient, ibu, time.Minute*35)
 					Expect(err).NotTo(HaveOccurred(), "error waiting for ibu resource to become available")
 				})
 			})

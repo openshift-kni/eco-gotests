@@ -43,12 +43,12 @@ var _ = Describe(
 			time.Sleep(10 * time.Second)
 		})
 
-		FIt("Upgrade prep abort flow", reportxml.ID("68956"), func() {
+		It("Upgrade prep abort flow", reportxml.ID("68956"), func() {
 
 			By("Creating IBGU and monitoring IBU status to report completed", func() {
 
 				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
-					tsparams.IbguName, tsparams.IbuCguNamespace).
+					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithOadpContent("oadp-cm", "ztp-group").
 					WithSeedImageRef("registry.kni-qe-18.lab.eng.tlv2.redhat.com:5000/ibu/seed:4.17.0-rc.1", "4.17.0-rc.1").

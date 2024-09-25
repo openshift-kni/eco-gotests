@@ -17,6 +17,7 @@ var _ = Describe(
 	"Validating abort at IBU upgrade stage",
 	Label(tsparams.LabelUpgradeAbortFlow), func() {
 		var newIbguBuilder *ibgu.IbguBuilder
+		var abortIbguBuilder *ibgu.IbguBuilder
 
 		BeforeEach(func() {
 			By("Fetching target sno cluster name", func() {
@@ -31,9 +32,12 @@ var _ = Describe(
 		})
 
 		AfterEach(func() {
-			By("Deleting IBGU on target hub cluster", func() {
+			By("Deleting IBGUs on target hub cluster", func() {
 				_, err := newIbguBuilder.DeleteAndWait(1 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete IBGU cgu on target hub cluster")
+
+				_, err = abortIbguBuilder.DeleteAndWait(1 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete Abort IBGU cgu on target hub cluster")
 			})
 
 			// Sleep for 10 seconds to allow talm to reconcile state.
@@ -46,7 +50,7 @@ var _ = Describe(
 			By("Creating an upgrade IBGU", func() {
 
 				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
-					tsparams.IbguName, tsparams.IbuCguNamespace).
+					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithOadpContent("oadp-cm", "ztp-group").
 					WithSeedImageRef("registry.kni-qe-18.lab.eng.tlv2.redhat.com:5000/ibu/seed:4.17.0-rc.1", "4.17.0-rc.1").
@@ -64,14 +68,14 @@ var _ = Describe(
 				_, err = ibu.WaitUntilStageComplete("Prep")
 				Expect(err).NotTo(HaveOccurred(), "error waiting for prep stage to complete")
 
-				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
-					tsparams.IbguName, tsparams.IbuCguNamespace).
+				newIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+					tsparams.AbortIbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithOadpContent("oadp-cm", "ztp-group").
 					WithSeedImageRef("registry.kni-qe-18.lab.eng.tlv2.redhat.com:5000/ibu/seed:4.17.0-rc.1", "4.17.0-rc.1").
 					WithPlan([]string{"Abort"}, 20, 20)
 
-				newIbguBuilder, err = newIbguBuilder.Create()
+				abortIbguBuilder, err = newIbguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create IBGU")
 				// Wait for 10 seconds to avoid upgrade and finalize CGUs getting created simultaneously.
 				time.Sleep(10 * time.Second)
