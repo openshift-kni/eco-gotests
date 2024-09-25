@@ -1,7 +1,6 @@
 package upgrade_test
 
 import (
-	"log"
 	"strings"
 	"time"
 
@@ -58,8 +57,7 @@ var _ = Describe(
 				ibu.Definition.Spec.AutoRollbackOnFailure = &lcav1.AutoRollbackOnFailure{}
 				ibu.Definition.Spec.AutoRollbackOnFailure.InitMonitorTimeoutSeconds = 300
 				ibu, err = ibu.Update()
-				//debug
-				log.Println("Modified InitMonitorTimeoutSeconds")
+
 				Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with custom lca init-monitor timeout value")
 			})
 		})
