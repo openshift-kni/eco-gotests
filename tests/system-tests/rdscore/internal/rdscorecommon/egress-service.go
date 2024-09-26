@@ -339,12 +339,6 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Created EgressService %q in %q namespace",
 		egrSVCBuilder.Object.Name, egrSVCBuilder.Object.Namespace)
 
-	By("Getting status of service")
-
-	refreshSVC := svcBuilder.Exists()
-
-	Expect(refreshSVC).To(BeTrue(), fmt.Sprintf("Error refressing service %q", svcBuilder.Definition.Name))
-
 	By("Finding pod from app deployment")
 
 	clientPods := findPodWithSelector(RDSCoreConfig.EgressServiceNS, egressSVC1Labels)
@@ -353,11 +347,34 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 		fmt.Sprintf("Application pods matching %q label not found in %q namespace",
 			RDSCoreConfig.EgressServiceNS, egressSVC1Labels))
 
+	By("Getting status of service")
+
+	Eventually(func() bool {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check service %q in %q namespace has LoadBalancer IP",
+			svcBuilder.Definition.Name, svcBuilder.Definition.Namespace)
+
+		refreshSVC := svcBuilder.Exists()
+
+		if !refreshSVC {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to refresh service status")
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Service has %d IP addresses",
+			len(svcBuilder.Object.Status.LoadBalancer.Ingress))
+
+		return len(svcBuilder.Object.Status.LoadBalancer.Ingress) != 0
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(3*time.Minute).Should(BeTrue(),
+		"Service does not have LoadBalancer IP address")
+
+	loadBalancerIP := svcBuilder.Object.Status.LoadBalancer.Ingress[0].IP
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("LoadBalancer IP address: %q", loadBalancerIP)
+
 	cmdToRun := []string{"/bin/bash", "-c",
 		fmt.Sprintf("curl --connect-timeout 3 -Ls http://%s:%s/clientip",
 			RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
-
-	loadBalancerIP := svcBuilder.Object.Status.LoadBalancer.Ingress[0].IP
 
 	verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP)
 }
@@ -483,9 +500,24 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 
 	By("Getting status of service")
 
-	refreshSVC := svcBuilder.Exists()
+	Eventually(func() bool {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check service %q in %q namespace has LoadBalancer IP",
+			svcBuilder.Definition.Name, svcBuilder.Definition.Namespace)
 
-	Expect(refreshSVC).To(BeTrue(), fmt.Sprintf("Error refressing service %q", svcBuilder.Definition.Name))
+		refreshSVC := svcBuilder.Exists()
+
+		if !refreshSVC {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to refresh service status")
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Service has %d IP addresses",
+			len(svcBuilder.Object.Status.LoadBalancer.Ingress))
+
+		return len(svcBuilder.Object.Status.LoadBalancer.Ingress) != 0
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(3*time.Minute).Should(BeTrue(),
+		"Service does not have LoadBalancer IP address")
 
 	By("Finding pod from app deployment")
 
@@ -500,6 +532,8 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 			RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
 
 	loadBalancerIP := svcBuilder.Object.Status.LoadBalancer.Ingress[0].IP
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("LoadBalancer IP address: %q", loadBalancerIP)
 
 	verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP)
 
