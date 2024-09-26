@@ -81,7 +81,7 @@ var _ = Describe(
 			time.Sleep(10 * time.Second)
 		})
 
-		FIt("Rollback after a failed upgrade", reportxml.ID("69054"), func() {
+		It("Rollback after a failed upgrade", reportxml.ID("69054"), func() {
 
 			By("Creating Prep->Upgrade->FinalizeUpgrae IBGU and waiting for node rebooted into stateroot B", func() {
 
@@ -182,7 +182,7 @@ var _ = Describe(
 
 					By("Wait for IBU resource to be available")
 
-					err = nodestate.WaitForIBUToBeAvailable(TargetSNOAPIClient, ibu, time.Minute*35)
+					err = nodestate.WaitForIBUToBeAvailable(TargetSNOAPIClient, ibu, time.Minute*15)
 					Expect(err).NotTo(HaveOccurred(), "error waiting for ibu resource to become available")
 				})
 			})
