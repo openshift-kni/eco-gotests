@@ -645,10 +645,12 @@ github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/package-server/operators
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/package-server/operators/v1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/version
+github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/secret
 github.com/openshift-kni/eco-goinfra/pkg/service
 github.com/openshift-kni/eco-goinfra/pkg/serviceaccount
 github.com/openshift-kni/eco-goinfra/pkg/servicemesh
+github.com/openshift-kni/eco-goinfra/pkg/siteconfig
 github.com/openshift-kni/eco-goinfra/pkg/sriov
 github.com/openshift-kni/eco-goinfra/pkg/sriov-fec
 github.com/openshift-kni/eco-goinfra/pkg/statefulset

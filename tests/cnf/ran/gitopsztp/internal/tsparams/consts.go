@@ -26,6 +26,9 @@ const (
 	// LabelSpokeCheckerTests is the label for a particular set of test cases.
 	LabelSpokeCheckerTests = "ztp-spoke-checker"
 
+	// LabelSiteconfigFailoverTestCases is the label for the siteconfig operator's failover test cases.
+	LabelSiteconfigFailoverTestCases = "ztp-siteconfig-failover"
+
 	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
 	LabelBiosDayZeroTests = "ztp-bios-day-zero"
 
@@ -84,6 +87,10 @@ const (
 	ZtpTestPathCustomSourceNoCrFile = "ztp-test/custom-source-crs/no-cr-file"
 	// ZtpTestPathCustomSourceSearchPath is the git path for the policies app custome source search path test.
 	ZtpTestPathCustomSourceSearchPath = "ztp-test/custom-source-crs/search-path"
+	// ZtpTestPathNoClusterTemplateCm is the git path for the siteconfig operator non-existent cluster template cm test.
+	ZtpTestPathNoClusterTemplateCm = "ztp-test/siteconfig-operator/non-existent-cluster-template-cm"
+	// ZtpTestPathNoExtraManifestsCm is the git path for the siteconfig operator non-existent extra manifests cm test.
+	ZtpTestPathNoExtraManifestsCm = "ztp-test/siteconfig-operator/non-existent-extra-manifests-cm"
 	// ZtpKustomizationPath is the path to the kustomization file in the ztp test.
 	ZtpKustomizationPath = "/kustomization.yaml"
 
