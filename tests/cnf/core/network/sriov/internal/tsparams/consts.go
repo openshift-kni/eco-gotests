@@ -15,4 +15,6 @@ const (
 	LabelExposeMTUTestCases = "exposemtu"
 	// LabelSriovMetricsTestCases represents Sriov Metrics Exporter label that can be used for test cases selection.
 	LabelSriovMetricsTestCases = "sriovmetrics"
+	// LabelRdmaMetricsTestCases represents Rdma Metrics label that can be used for test cases selection.
+	LabelRdmaMetricsTestCases = "rdmametrics"
 )
