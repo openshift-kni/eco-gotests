@@ -25,6 +25,14 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verify EgressService with Cluster ExternalTrafficPolicy",
+				Label("egress", "egress-etp-cluster"), reportxml.ID("76485"),
+				rdscorecommon.VerifyEgressServiceWithClusterETP)
+
+			It("Verify EgressService with Local ExternalTrafficPolicy",
+				Label("egress", "egress-etp-local"), reportxml.ID("76484"),
+				rdscorecommon.VerifyEgressServiceWithLocalETP)
+
 			It("Verifies workload reachable over BGP route",
 				Label("frr"), reportxml.ID("76009"),
 				rdscorecommon.ReachURLviaFRRroute)

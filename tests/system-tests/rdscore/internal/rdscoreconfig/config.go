@@ -351,6 +351,29 @@ type CoreConfig struct {
 	IPVlanDeplon4CMD     EnvSliceString `yaml:"rdscore_ipvlan_deploy_4_cmd" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_DEPLOY_4_CMD"`
 	StorageCephFSSCName  string         `yaml:"rdscore_sc_cephfs_name" envconfig:"ECO_RDSCORE_SC_CEPHFS_NAME"`
 	StorageCephRBDSCName string         `yaml:"rdscore_sc_cephrbd_name" envconfig:"ECO_RDSCORE_SC_CEPHRBD_NAME"`
+	EgressServiceNS      string         `yaml:"rdscore_egress_service_ns" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_NS"`
+	//nolint:lll,nolintlint
+	EgressServiceRemoteIP string `yaml:"rdscore_egress_service_remote_ip" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_REMOTE_IP"`
+	//nolint:lll,nolintlint
+	EgressServiceRemotePort string `yaml:"rdscore_egress_service_remote_port" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_REMOTE_PORT"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy1CMD EnvSliceString `yaml:"rdscore_egress_service_deploy_1_cmd" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_DEPLOY_1_CMD"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy1Image string `yaml:"rdscore_egress_service_deploy_1_img" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_1_IMG"`
+	EgressServiceVRF1Network  string `yaml:"rdscore_egress_service_vrf_1_net" envconfig:"ECO_RDSCORE_EGRESS_SVC_VRF_1_NET"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy1IPAddrPool string `yaml:"rdscore_egress_service_deploy_1_ipaddr_pool" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_1_IPADDR_POOL"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy1NodeSelector EnvMapString `yaml:"rdscore_egress_service_1_node_selector" envconfig:"ECO_RDSCORE_EGRESS_SVC_1_NODE_SELECTOR"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy2CMD EnvSliceString `yaml:"rdscore_egress_service_deploy_2_cmd" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_DEPLOY_2_CMD"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy2Image string `yaml:"rdscore_egress_service_deploy_2_img" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_2_IMG"`
+	EgressServiceVRF2Network  string `yaml:"rdscore_egress_service_vrf_2_net" envconfig:"ECO_RDSCORE_EGRESS_SVC_VRF_2_NET"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy2NodeSelector EnvMapString `yaml:"rdscore_egress_service_2_node_selector" envconfig:"ECO_RDSCORE_EGRESS_SVC_2_NODE_SELECTOR"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy2IPAddrPool string `yaml:"rdscore_egress_service_deploy_2_ipaddr_pool" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_2_IPADDR_POOL"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
