@@ -18,6 +18,7 @@ var (
 // access to all vars within init function. It is recommended to import this package using dot import.
 func init() {
 	CNFConfig = cnfconfig.NewCNFConfig()
+
 	if CNFConfig.TargetHubKubeConfig != "" {
 		TargetHubAPIClient = clients.New(CNFConfig.TargetHubKubeConfig)
 	}

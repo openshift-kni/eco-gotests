@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe(
-
 	"Performing upgrade prep abort flow",
 	Label(tsparams.LabelPrepAbortFlow), func() {
 		var newIbguBuilder *ibgu.IbguBuilder
