@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -320,6 +321,14 @@ func defineAndCreatePod(netName1, netName2 string) *pod.Builder {
 			MacRequest: tsparams.ClientMacAddress,
 			IPRequest:  []string{tsparams.ClientIPv4IPAddress},
 		})
+	}
+
+	for _, net := range netAnnotations {
+		Eventually(func() error {
+			_, err := nad.Pull(APIClient, net.Name, tsparams.TestNamespaceName)
+
+			return err
+		}, 10*time.Second, 1*time.Second).Should(BeNil(), fmt.Sprintf("Failed to pull NAD %s", net.Name))
 	}
 
 	tPod, err := pod.NewBuilder(APIClient, "testpod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
