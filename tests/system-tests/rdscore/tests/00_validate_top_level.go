@@ -123,6 +123,12 @@ var _ = Describe(
 
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
+				By("Creating EgressService with ETP=Cluster")
+				rdscorecommon.VerifyEgressServiceWithClusterETP(ctx)
+
+				By("Creating EgressService with ETP=Local")
+				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+
 				By("Creating a workload with CephFS PVC")
 				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
 
@@ -240,6 +246,14 @@ var _ = Describe(
 			It("Verifies all policies are compliant after hard reboot", reportxml.ID("72355"),
 				Label("validate-policies"), rdscorecommon.ValidateAllPoliciesCompliant)
 
+			It("Verify EgressService with Cluster ExternalTrafficPolicy after ungraceful reboot",
+				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("76503"),
+				rdscorecommon.VerifyEgressServiceConnectivityETPCluster)
+
+			It("Verify EgressService with Local ExternalTrafficPolicy after ungraceful reboot",
+				Label("egress-validate-local-etp", "egress"), reportxml.ID("76504"),
+				rdscorecommon.VerifyEgressServiceIngressConnectivity)
+
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
 				rdscorecommon.VerifyNROPWorkloadAvailable)
@@ -299,6 +313,12 @@ var _ = Describe(
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
+				By("Creating EgressService with ETP=Cluster")
+				rdscorecommon.VerifyEgressServiceWithClusterETP(ctx)
+
+				By("Creating EgressService with ETP=Local")
+				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+
 				By("Creating a workload with CephFS PVC")
 				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
 
@@ -365,6 +385,14 @@ var _ = Describe(
 
 			It("Verifies all policies are compliant after soft reboot", reportxml.ID("72357"),
 				Label("validate-policies"), rdscorecommon.ValidateAllPoliciesCompliant)
+
+			It("Verify EgressService with Cluster ExternalTrafficPolicy after graceful reboot",
+				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("76505"),
+				rdscorecommon.VerifyEgressServiceConnectivityETPCluster)
+
+			It("Verify EgressService with Local ExternalTrafficPolicy after graceful reboot",
+				Label("egress-validate-local-etp", "egress"), reportxml.ID("76506"),
+				rdscorecommon.VerifyEgressServiceIngressConnectivity)
 
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),
