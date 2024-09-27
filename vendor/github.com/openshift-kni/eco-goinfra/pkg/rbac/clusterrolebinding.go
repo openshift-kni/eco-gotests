@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	"golang.org/x/exp/slices"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -17,9 +17,9 @@ import (
 // containing connection to the cluster and the clusterrolebinding definitions.
 type ClusterRoleBindingBuilder struct {
 	// Clusterrolebinding definition. Used to create a clusterrolebinding object.
-	Definition *v1.ClusterRoleBinding
+	Definition *rbacv1.ClusterRoleBinding
 	// Created clusterrolebinding object
-	Object *v1.ClusterRoleBinding
+	Object *rbacv1.ClusterRoleBinding
 	// Used in functions that define or mutate clusterrolebinding definition.
 	// errorMsg is processed before the clusterrolebinding object is created.
 	errorMsg  string
@@ -31,7 +31,7 @@ type ClusterRoleBindingAdditionalOptions func(builder *ClusterRoleBindingBuilder
 
 // NewClusterRoleBindingBuilder creates a new instance of ClusterRoleBindingBuilder.
 func NewClusterRoleBindingBuilder(
-	apiClient *clients.Settings, name, clusterRole string, subject v1.Subject) *ClusterRoleBindingBuilder {
+	apiClient *clients.Settings, name, clusterRole string, subject rbacv1.Subject) *ClusterRoleBindingBuilder {
 	glog.V(100).Infof(
 		"Initializing new clusterrolebinding structure with the following params: "+
 			"name: %s, clusterrole: %s, subject %v",
@@ -39,11 +39,11 @@ func NewClusterRoleBindingBuilder(
 
 	builder := ClusterRoleBindingBuilder{
 		apiClient: apiClient,
-		Definition: &v1.ClusterRoleBinding{
+		Definition: &rbacv1.ClusterRoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
-			RoleRef: v1.RoleRef{
+			RoleRef: rbacv1.RoleRef{
 				APIGroup: "rbac.authorization.k8s.io",
 				Name:     clusterRole,
 				Kind:     "ClusterRole",
@@ -51,7 +51,7 @@ func NewClusterRoleBindingBuilder(
 		},
 	}
 
-	builder.WithSubjects([]v1.Subject{subject})
+	builder.WithSubjects([]rbacv1.Subject{subject})
 
 	if name == "" {
 		glog.V(100).Infof("The name of the clusterrolebinding is empty")
@@ -63,7 +63,7 @@ func NewClusterRoleBindingBuilder(
 }
 
 // WithSubjects appends additional subjects to clusterrolebinding definition.
-func (builder *ClusterRoleBindingBuilder) WithSubjects(subjects []v1.Subject) *ClusterRoleBindingBuilder {
+func (builder *ClusterRoleBindingBuilder) WithSubjects(subjects []rbacv1.Subject) *ClusterRoleBindingBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -136,7 +136,7 @@ func PullClusterRoleBinding(apiClient *clients.Settings, name string) (*ClusterR
 
 	builder := ClusterRoleBindingBuilder{
 		apiClient: apiClient,
-		Definition: &v1.ClusterRoleBinding{
+		Definition: &rbacv1.ClusterRoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},

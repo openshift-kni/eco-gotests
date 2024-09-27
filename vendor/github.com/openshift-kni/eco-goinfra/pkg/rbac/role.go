@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,9 +15,9 @@ import (
 // RoleBuilder provides a struct for role object containing connection to the cluster and the role definitions.
 type RoleBuilder struct {
 	// Role definition. Used to create a role object
-	Definition *v1.Role
+	Definition *rbacv1.Role
 	// Created role object
-	Object *v1.Role
+	Object *rbacv1.Role
 
 	// Used in functions that define or mutate role definition. errorMsg is processed
 	// before the role object is created
@@ -29,14 +29,14 @@ type RoleBuilder struct {
 type RoleAdditionalOptions func(builder *RoleBuilder) (*RoleBuilder, error)
 
 // NewRoleBuilder create a new instance of RoleBuilder.
-func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule v1.PolicyRule) *RoleBuilder {
+func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule rbacv1.PolicyRule) *RoleBuilder {
 	glog.V(100).Infof(
 		"Initializing new role structure with the following params: "+
 			"name: %s, namespace: %s, rule %v", name, nsname, rule)
 
 	builder := &RoleBuilder{
 		apiClient: apiClient,
-		Definition: &v1.Role{
+		Definition: &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -60,13 +60,13 @@ func NewRoleBuilder(apiClient *clients.Settings, name, nsname string, rule v1.Po
 		return builder
 	}
 
-	builder.WithRules([]v1.PolicyRule{rule})
+	builder.WithRules([]rbacv1.PolicyRule{rule})
 
 	return builder
 }
 
 // WithRules adds the specified PolicyRule to the Role.
-func (builder *RoleBuilder) WithRules(rules []v1.PolicyRule) *RoleBuilder {
+func (builder *RoleBuilder) WithRules(rules []rbacv1.PolicyRule) *RoleBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -155,7 +155,7 @@ func PullRole(apiClient *clients.Settings, name, nsname string) (*RoleBuilder, e
 
 	builder := RoleBuilder{
 		apiClient: apiClient,
-		Definition: &v1.Role{
+		Definition: &rbacv1.Role{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,

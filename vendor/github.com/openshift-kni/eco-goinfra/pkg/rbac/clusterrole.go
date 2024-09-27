@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,9 +19,9 @@ ClusterRoleBuilder provides struct for clusterrole object
 */
 type ClusterRoleBuilder struct {
 	// Clusterrole definition. Used to create a clusterrole object.
-	Definition *v1.ClusterRole
+	Definition *rbacv1.ClusterRole
 	// Created clusterrole object
-	Object *v1.ClusterRole
+	Object *rbacv1.ClusterRole
 	// Used in functions that define or mutate clusterrole definition. errorMsg is processed before clusterrole
 	// object is created.
 	errorMsg  string
@@ -32,7 +32,7 @@ type ClusterRoleBuilder struct {
 type ClusterRoleAdditionalOptions func(builder *ClusterRoleBuilder) (*ClusterRoleBuilder, error)
 
 // NewClusterRoleBuilder creates new instance of ClusterRoleBuilder.
-func NewClusterRoleBuilder(apiClient *clients.Settings, name string, rule v1.PolicyRule) *ClusterRoleBuilder {
+func NewClusterRoleBuilder(apiClient *clients.Settings, name string, rule rbacv1.PolicyRule) *ClusterRoleBuilder {
 	glog.V(100).Infof(
 		"Initializing new clusterrole structure with the following params: "+
 			"name: %s, policy rule: %v",
@@ -40,7 +40,7 @@ func NewClusterRoleBuilder(apiClient *clients.Settings, name string, rule v1.Pol
 
 	builder := ClusterRoleBuilder{
 		apiClient: apiClient,
-		Definition: &v1.ClusterRole{
+		Definition: &rbacv1.ClusterRole{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
@@ -53,13 +53,13 @@ func NewClusterRoleBuilder(apiClient *clients.Settings, name string, rule v1.Pol
 		builder.errorMsg = "clusterrole 'name' cannot be empty"
 	}
 
-	builder.WithRules([]v1.PolicyRule{rule})
+	builder.WithRules([]rbacv1.PolicyRule{rule})
 
 	return &builder
 }
 
 // WithRules appends additional rules to the clusterrole definition.
-func (builder *ClusterRoleBuilder) WithRules(rules []v1.PolicyRule) *ClusterRoleBuilder {
+func (builder *ClusterRoleBuilder) WithRules(rules []rbacv1.PolicyRule) *ClusterRoleBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -137,7 +137,7 @@ func PullClusterRole(apiClient *clients.Settings, name string) (*ClusterRoleBuil
 
 	builder := ClusterRoleBuilder{
 		apiClient: apiClient,
-		Definition: &v1.ClusterRole{
+		Definition: &rbacv1.ClusterRole{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},

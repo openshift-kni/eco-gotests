@@ -43,7 +43,7 @@ func NewClassBuilder(apiClient *clients.Settings, name, provisioner string) *Cla
 		return nil
 	}
 
-	builder := ClassBuilder{
+	builder := &ClassBuilder{
 		apiClient: apiClient,
 		Definition: &storageV1.StorageClass{
 			ObjectMeta: metav1.ObjectMeta{
@@ -57,15 +57,19 @@ func NewClassBuilder(apiClient *clients.Settings, name, provisioner string) *Cla
 		glog.V(100).Infof("The name of the storageclass is empty")
 
 		builder.errorMsg = "storageclass 'name' cannot be empty"
+
+		return builder
 	}
 
 	if provisioner == "" {
 		glog.V(100).Infof("The provisioner of the storageclass is empty")
 
 		builder.errorMsg = "storageclass 'provisioner' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithReclaimPolicy adds a reclaimPolicy to the storageclass definition.
@@ -79,9 +83,7 @@ func (builder *ClassBuilder) WithReclaimPolicy(
 		glog.V(100).Infof("The reclaimPolicy of the storageclass is empty")
 
 		builder.errorMsg = "storageclass 'reclaimPolicy' cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -101,9 +103,7 @@ func (builder *ClassBuilder) WithVolumeBindingMode(
 		glog.V(100).Infof("The bindingMode of the storageclass is empty")
 
 		builder.errorMsg = "storageclass 'bindingMode' cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -122,15 +122,15 @@ func (builder *ClassBuilder) WithParameter(parameterKey, parameterValue string) 
 		glog.V(100).Infof("The parameter key of the storageclass is empty")
 
 		builder.errorMsg = "storageclass parameter key cannot be empty"
+
+		return builder
 	}
 
 	if parameterValue == "" {
 		glog.V(100).Infof("The parameter value of the storageclass is empty")
 
 		builder.errorMsg = "storageclass parameter value cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -246,6 +246,10 @@ func (builder *ClassBuilder) Delete() error {
 	glog.V(100).Infof("Deleting storageclass %s", builder.Definition.Name)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("storageclass %s does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -320,11 +324,7 @@ func (builder *ClassBuilder) Update(force bool) (*ClassBuilder, error) {
 		glog.V(100).Infof("storageclass %s does not exist",
 			builder.Definition.Name)
 
-		builder.errorMsg = "Cannot update non-existent storageclass"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("cannot update non-existent storageclass")
 	}
 
 	var err error
@@ -359,7 +359,7 @@ func (builder *ClassBuilder) Update(force bool) (*ClassBuilder, error) {
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *ClassBuilder) validate() (bool, error) {
-	resourceCRD := "StorageClass"
+	resourceCRD := "storageClass"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
@@ -370,13 +370,13 @@ func (builder *ClassBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

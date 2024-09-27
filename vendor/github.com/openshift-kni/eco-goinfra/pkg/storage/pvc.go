@@ -14,6 +14,7 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -372,6 +373,15 @@ func (builder *PVCBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
+}
+
+// GetGVR returns the GroupVersionResource for the PersistentVolumeClaim.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "persistentvolumeclaims",
+	}
 }
 
 // validateVolumeMode validates if requested volume mode is valid for PVC.
