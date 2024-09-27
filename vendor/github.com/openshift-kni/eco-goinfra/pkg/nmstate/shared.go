@@ -1,5 +1,7 @@
 package nmstate
 
+import "net"
+
 // DesiredState provides struct for the NMState desired state object containing all NMState configuration.
 type DesiredState struct {
 	Interfaces []NetworkInterface `yaml:"interfaces,omitempty"`
@@ -14,6 +16,28 @@ type NetworkInterface struct {
 	Bridge          Bridge          `yaml:"bridge,omitempty"`
 	LinkAggregation LinkAggregation `yaml:"link-aggregation,omitempty"`
 	Vlan            Vlan            `yaml:"vlan,omitempty"`
+	Ipv4            InterfaceIpv4   `yaml:"ipv4,omitempty"`
+	Ipv6            InterfaceIpv6   `yaml:"ipv6,omitempty"`
+}
+
+// InterfaceIpv4 enables an IPv4 address on an interface.
+type InterfaceIpv4 struct {
+	Enabled bool                 `yaml:"enabled,omitempty"`
+	Dhcp    bool                 `yaml:"dhcp,omitempty"`
+	Address []InterfaceIPAddress `yaml:"address,omitempty"`
+}
+
+// InterfaceIpv6 enables an IPv6 address on an interface.
+type InterfaceIpv6 struct {
+	Enabled bool                 `yaml:"enabled,omitempty"`
+	Dhcp    bool                 `json:"dhcp,omitempty"`
+	Address []InterfaceIPAddress `yaml:"address,omitempty"`
+}
+
+// InterfaceIPAddress is a struct for constructing an IP with prefix.
+type InterfaceIPAddress struct {
+	IP        net.IP `yaml:"ip,omitempty"`
+	PrefixLen uint8  `yaml:"prefix-length,omitempty"`
 }
 
 // Ethernet provides struct for the NMState Interface Ethernet state object containing interface Ethernet information.

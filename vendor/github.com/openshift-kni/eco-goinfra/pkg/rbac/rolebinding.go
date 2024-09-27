@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	"golang.org/x/exp/slices"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -17,9 +17,9 @@ import (
 // to the cluster RoleBinding definition.
 type RoleBindingBuilder struct {
 	// Rolebinding definition. Used to create rolebinding object
-	Definition *v1.RoleBinding
+	Definition *rbacv1.RoleBinding
 	// Created rolebinding object
-	Object *v1.RoleBinding
+	Object *rbacv1.RoleBinding
 
 	// Used in functions that define or mutate rolebinding definition. errorMsg is processed
 	// before the rolebinding object is created
@@ -33,19 +33,19 @@ type RoleBindingAdditionalOptions func(builder *RoleBindingBuilder) (*RoleBindin
 // NewRoleBindingBuilder creates new instance of RoleBindingBuilder.
 func NewRoleBindingBuilder(apiClient *clients.Settings,
 	name, nsname, role string,
-	subject v1.Subject) *RoleBindingBuilder {
+	subject rbacv1.Subject) *RoleBindingBuilder {
 	glog.V(100).Infof(
 		"Initializing new rolebinding structure with the following params: "+
 			"name: %s, namespace: %s, role: %s, subject %v", name, nsname, role, subject)
 
 	builder := RoleBindingBuilder{
 		apiClient: apiClient,
-		Definition: &v1.RoleBinding{
+		Definition: &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
-			RoleRef: v1.RoleRef{
+			RoleRef: rbacv1.RoleRef{
 				APIGroup: "rbac.authorization.k8s.io",
 				Name:     role,
 				Kind:     "Role",
@@ -65,13 +65,13 @@ func NewRoleBindingBuilder(apiClient *clients.Settings,
 		builder.errorMsg = "RoleBinding 'nsname' cannot be empty"
 	}
 
-	builder.WithSubjects([]v1.Subject{subject})
+	builder.WithSubjects([]rbacv1.Subject{subject})
 
 	return &builder
 }
 
 // WithSubjects adds specified Subject to the RoleBinding.
-func (builder *RoleBindingBuilder) WithSubjects(subjects []v1.Subject) *RoleBindingBuilder {
+func (builder *RoleBindingBuilder) WithSubjects(subjects []rbacv1.Subject) *RoleBindingBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -142,7 +142,7 @@ func PullRoleBinding(apiClient *clients.Settings, name, nsname string) (*RoleBin
 
 	builder := RoleBindingBuilder{
 		apiClient: apiClient,
-		Definition: &v1.RoleBinding{
+		Definition: &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,

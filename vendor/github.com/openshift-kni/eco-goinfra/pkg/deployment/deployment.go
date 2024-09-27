@@ -581,6 +581,28 @@ func (builder *Builder) WaitUntilCondition(condition appsv1.DeploymentConditionT
 		})
 }
 
+// WaitUntilDeleted waits for the duration of the defined timeout or until the deployment is deleted.
+func (builder *Builder) WaitUntilDeleted(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Waiting for the defined period until deployment %s in namespace %s is deleted",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := builder.apiClient.Deployments(builder.Definition.Namespace).Get(
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+
+			if k8serrors.IsNotFound(err) {
+				return true, nil
+			}
+
+			return false, nil
+		})
+}
+
 // GetGVR returns deployment's GroupVersionResource which could be used for Clean function.
 func GetGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
