@@ -146,6 +146,10 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 					24)
 				Expect(err).ToNot(HaveOccurred(), "Fail to deploy PerformanceProfile")
 			})
+			BeforeEach(func() {
+				By("Clear MAC Table entry on switch for the test mac address")
+				clearClientServerMacTableFromSwitch()
+			})
 			It("Same PF", reportxml.ID("74797"), func() {
 				runNettoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
 					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovDeviceID)
@@ -171,6 +175,11 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 					"0,2,4,6,8,10,12,14,16,18,20",
 					24)
 				Expect(err).ToNot(HaveOccurred(), "Fail to deploy PerformanceProfile")
+			})
+			BeforeEach(func() {
+				By("Clear MAC Table entries of test mac addresses from Switch")
+				clearClientServerMacTableFromSwitch()
+
 			})
 			It("Same PF", reportxml.ID("74800"), func() {
 				runVfiotoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
@@ -198,8 +207,7 @@ func runNettoNetTests(clientPf, serverPf, clientWorker, serverWorker, devID stri
 		serverPf, devID, "netdevice",
 		serverWorker, 1, false)
 
-	cPod := createTestResources(clientResources)
-	_ = createTestResources(serverResources)
+	cPod, _ := createTestResources(clientResources, serverResources)
 
 	By("ICMP check between client and server pods")
 	Eventually(func() error {
@@ -219,8 +227,7 @@ func runNettoVfioTests(clientPf, serverPf, clientWorker, serverWorker, devID str
 		serverPf, devID, "vfiopci",
 		serverWorker, 1, true)
 
-	cPod := createTestResources(clientResources)
-	_ = createTestResources(serverResources)
+	cPod, _ := createTestResources(clientResources, serverResources)
 
 	By("update ARP table to add server mac address in client pod")
 
@@ -247,8 +254,7 @@ func runVfiotoVfioTests(clientPf, serverPf, clientWorker, serverWorker, devID st
 		serverPf, devID, "vfiopci",
 		serverWorker, 1, true)
 
-	_ = createTestResources(clientResources)
-	_ = createTestResources(serverResources)
+	_, _ = createTestResources(clientResources, serverResources)
 
 	checkMetricsWithPromQL()
 }
@@ -397,30 +403,44 @@ func defineDPDKPod(role, devType, worker string) *pod.Builder {
 	return dpdkPod
 }
 
-func createTestResources(testRes testResource) *pod.Builder {
-	By(fmt.Sprintf("Creating SriovNetworkNodePolicy %s", testRes.policy.Definition.Name))
+func createTestResources(cRes, sRes testResource) (*pod.Builder, *pod.Builder) {
+	for _, res := range []testResource{cRes, sRes} {
+		By("Create SriovNetworkNodePolicy")
 
-	err := sriovenv.CreateSriovPolicyAndWaitUntilItsApplied(testRes.policy, tsparams.MCOWaitTimeout)
-	Expect(err).ToNot(HaveOccurred(), "Failed to create SriovNetworkNodePolicy")
+		_, err := res.policy.Create()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Failed to Create SriovNetworkNodePolicy %s", res.policy.Definition.Name))
 
-	By(fmt.Sprintf("Creating SriovNetwork %s", testRes.network.Definition.Name))
+		By("Create SriovNetwork")
 
-	_, err = testRes.network.Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
+		_, err = res.network.Create()
+		Expect(err).ToNot(HaveOccurred(), "Failed to Create SriovNetwork")
+	}
 
-	By("Verify NAD is created to proceed with Pod creation")
-	Eventually(func() error {
-		_, err = nad.Pull(APIClient, testRes.network.Object.Name, tsparams.TestNamespaceName)
+	err := netenv.WaitForSriovAndMCPStable(APIClient, tsparams.MCOWaitTimeout, tsparams.DefaultStableDuration,
+		NetConfig.CnfMcpLabel, NetConfig.SriovOperatorNamespace)
 
-		return err
-	}, 10*time.Second, 1*time.Second).Should(BeNil(), "Failed to pull NAD created by SriovNetwork")
+	By("Wait for NAD Creation")
 
-	By(fmt.Sprintf("Creating %s Pod", testRes.pod.Definition.Name))
+	for _, res := range []testResource{cRes, sRes} {
+		Eventually(func() error {
+			_, err = nad.Pull(APIClient, res.network.Object.Name, tsparams.TestNamespaceName)
 
-	createdPod, err := testRes.pod.CreateAndWaitUntilRunning(2 * time.Minute)
+			return err
+		}, 10*time.Second, 1*time.Second).Should(BeNil(), "Failed to pull NAD created by SriovNetwork")
+	}
+
+	By(fmt.Sprintf("Creating %s Pod", cRes.pod.Definition.Name))
+
+	cPod, err := cRes.pod.CreateAndWaitUntilRunning(2 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create Pod")
 
-	return createdPod
+	By(fmt.Sprintf("Creating %s Pod", sRes.pod.Definition.Name))
+
+	sPod, err := sRes.pod.CreateAndWaitUntilRunning(2 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Failed to create Pod")
+
+	return cPod, sPod
 }
 
 func checkMetricsWithPromQL() {
@@ -428,13 +448,13 @@ func checkMetricsWithPromQL() {
 	Eventually(func() bool {
 		return strings.Contains(execPromQLandReturnString(serverPodRXPromQL), "serverpod")
 	},
-		90*time.Second, 30*time.Second).Should(BeTrue(), "PromQL output does not contain server pod metrics")
+		130*time.Second, 30*time.Second).Should(BeTrue(), "PromQL output does not contain server pod metrics")
 
 	By("Verify RX and TX packets counters are > 0")
-	Eventually(func() bool { return fetchScalarFromPromQLoutput(execPromQLandReturnString(serverPodRXPromQL)) > 0 },
-		2*time.Minute, 30*time.Second).Should(BeTrue(), "RX counters are zero")
-	Eventually(func() bool { return fetchScalarFromPromQLoutput(execPromQLandReturnString(serverPodTXPromQL)) > 0 },
-		2*time.Minute, 30*time.Second).Should(BeTrue(), "TX counters are zero")
+	Eventually(func() int { return fetchScalarFromPromQLoutput(execPromQLandReturnString(serverPodRXPromQL)) },
+		2*time.Minute, 30*time.Second).Should(BeNumerically(">", 0), "RX counters are zero")
+	Eventually(func() int { return fetchScalarFromPromQLoutput(execPromQLandReturnString(serverPodTXPromQL)) },
+		2*time.Minute, 30*time.Second).Should(BeNumerically(">", 0), "TX counters are zero")
 }
 
 func execPromQLandReturnString(query []string) string {
@@ -487,4 +507,20 @@ func setMetricsExporter(flag bool) {
 
 	_, err = defaultOperatorConfig.Update()
 	Expect(err).ToNot(HaveOccurred(), "Failed to update metricsExporter flag in default Sriov Operator Config")
+}
+
+func clearClientServerMacTableFromSwitch() {
+	switchCredentials, err := sriovenv.NewSwitchCredentials()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get switch credentials")
+
+	jnpr, err := cmd.NewSession(switchCredentials.SwitchIP, switchCredentials.User, switchCredentials.Password)
+	Expect(err).ToNot(HaveOccurred(), "Failed to fetch Switch Credentials")
+
+	defer jnpr.Close()
+
+	_, err = jnpr.RunCommand(fmt.Sprintf("clear ethernet-switching table %s", tsparams.ServerMacAddress))
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to clear mac table for %s", tsparams.ServerMacAddress))
+
+	_, err = jnpr.RunCommand(fmt.Sprintf("clear ethernet-switching table %s", tsparams.ClientMacAddress))
+	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to clear mac table for %s", tsparams.ClientMacAddress))
 }
