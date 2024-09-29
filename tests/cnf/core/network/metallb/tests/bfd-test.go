@@ -73,7 +73,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
 			createBGPPeerAndVerifyIfItsReady(
-				ipv4metalLbIPList[0], bfdProfile.Definition.Name, tsparams.RemoteBGPASN, false, frrk8sPods)
+				ipv4metalLbIPList[0], bfdProfile.Definition.Name, tsparams.RemoteBGPASN, false, 0,
+				frrk8sPods)
 
 			By("Creating MetalLb configMap")
 			bfdConfigMap := createConfigMap(tsparams.RemoteBGPASN, ipv4NodeAddrList, false, true)
@@ -239,7 +240,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					eBgpMultiHop = true
 				}
 				createBGPPeerAndVerifyIfItsReady(
-					masterClientPodIP, bfdProfile.Definition.Name, neighbourASN, eBgpMultiHop, frrk8sPods)
+					masterClientPodIP, bfdProfile.Definition.Name, neighbourASN, eBgpMultiHop, 0, frrk8sPods)
 
 				prefixLen := int32(32)
 				if ipStack == netparam.IPV6Family {
