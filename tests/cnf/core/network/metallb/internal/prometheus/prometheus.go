@@ -26,6 +26,7 @@ type metric struct {
 // PodMetricsPresentInDB returns true if the given metrics are present for the given pod in a prometheus database.
 func PodMetricsPresentInDB(prometheusPod *pod.Builder, podName string, uniqueMetricKeys []string) (bool, error) {
 	for _, metricsKey := range uniqueMetricKeys {
+		metricsKey = strings.Replace(metricsKey, "frrk8s", "metallb", 1)
 		metricFound := false
 		command := []string{
 			"curl",
