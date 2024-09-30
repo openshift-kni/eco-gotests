@@ -38,7 +38,6 @@ func getImageURL(repository, name, tag string) (string, error) {
 			VCoreConfig.Host,
 			VCoreConfig.User,
 			VCoreConfig.Pass,
-			VCoreConfig.CombinedPullSecretFile,
 			VCoreConfig.RegistryRepository,
 			VCoreConfig.KubeconfigPath)
 
