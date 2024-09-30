@@ -94,17 +94,10 @@ func GetLocalMirrorRegistryURL(apiClient *clients.Settings) (string, error) {
 		return "", err
 	}
 
-	lastIndex := len(mirrorRegistryMap) - 1
-	iter := 0
-
 	for registryURL, auth := range mirrorRegistryMap {
 		glog.V(90).Infof("registry URL: %s, auth: %s", registryURL, auth)
 
-		if iter == lastIndex {
-			return registryURL, nil
-		}
-
-		iter++
+		return registryURL, nil
 	}
 
 	return "", fmt.Errorf("local mirror registry url not found")
