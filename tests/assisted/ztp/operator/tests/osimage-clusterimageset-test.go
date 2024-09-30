@@ -112,8 +112,15 @@ var _ = Describe(
 					WithClusterRef(osImageClusterImageSetName, osImageClusterImageSetName).Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating infraenv")
 
-				_, err = osImageClusterImageSetInfraEnv.WaitForDiscoveryISOCreation(time.Second * 20)
-				Expect(err).ToNot(HaveOccurred(), "error waiting for discovery iso to be generated")
+				Eventually(func() (string, error) {
+					osImageClusterImageSetInfraEnv.Object, err = osImageClusterImageSetInfraEnv.Get()
+					if err != nil {
+						return "", err
+					}
+
+					return osImageClusterImageSetInfraEnv.Object.Status.ISODownloadURL, nil
+				}).WithTimeout(time.Minute*3).ProbeEvery(time.Second*3).
+					Should(Not(BeEmpty()), "error waiting for download url to be created")
 			})
 
 			AfterAll(func() {
