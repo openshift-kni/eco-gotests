@@ -253,13 +253,11 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	}
 
 	template := lokiv1.LokiTemplateSpec{
-		Compactor:     &lokiComponent,
 		Distributor:   &lokiComponent,
 		Querier:       &lokiComponent,
 		QueryFrontend: &lokiComponent,
 		Gateway:       &lokiComponent,
 		IndexGateway:  &lokiComponent,
-		Ruler:         &lokiComponent,
 	}
 
 	lokiStackObj, err = lokiStackObj.
@@ -279,8 +277,8 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("failed to create lokiStack instance %s in namespace %s due to %v",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace, err))
-	Expect(lokiStackObj.IsReady(90*time.Minute)).To(Equal(true),
-		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 90 mins",
+	Expect(lokiStackObj.IsReady(5*time.Minute)).To(Equal(true),
+		fmt.Sprintf("lokiStack instance %s in namespace %s failed to reach Ready state after 5 mins",
 			vcoreparams.LokiStackName, vcoreparams.CLONamespace))
 
 	time.Sleep(3 * time.Minute)
