@@ -126,9 +126,15 @@ var _ = Describe(
 					testSecret.Definition.Name)
 				infraenv.Definition.Spec.AdditionalTrustBundle = additionalTrustCertificate
 				_, err = infraenv.Create()
-				Expect(err).ToNot(HaveOccurred(), "error creating infraenv")
-				_, err := infraenv.WaitForDiscoveryISOCreation(time.Second * 20)
-				Expect(err).ToNot(HaveOccurred(), "error creating discovery iso")
+				Eventually(func() (string, error) {
+					infraenv.Object, err = infraenv.Get()
+					if err != nil {
+						return "", err
+					}
+
+					return infraenv.Object.Status.ISODownloadURL, nil
+				}).WithTimeout(time.Minute*3).ProbeEvery(time.Second*3).
+					Should(Not(BeEmpty()), "error waiting for download url to be created")
 				By("Checking additionalTrustBundle equal to additionalTrustCertificate")
 				Expect(infraenv.Object.Spec.AdditionalTrustBundle).
 					To(Equal(additionalTrustCertificate), "infraenv was created with wrong certificate")
@@ -154,8 +160,15 @@ var _ = Describe(
 				infraenv.Definition.Spec.AdditionalTrustBundle = additionalTrustCertificateEmpty
 				_, err = infraenv.Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating infraenv")
-				_, err := infraenv.WaitForDiscoveryISOCreation(time.Second * 20)
-				Expect(err).To(HaveOccurred(), "error: infraenv successfully created with empty additionalTrustBundle")
+				Eventually(func() (string, error) {
+					infraenv.Object, err = infraenv.Get()
+					if err != nil {
+						return "", err
+					}
+
+					return infraenv.Object.Status.ISODownloadURL, nil
+				}).WithTimeout(time.Minute*3).ProbeEvery(time.Second*3).
+					Should(BeEmpty(), "error waiting for download url to be created")
 				By("Getting Infraenv")
 				infraenv, err = assisted.PullInfraEnvInstall(HubAPIClient, "testinfraenv", trustBundleTestNS)
 				Expect(err).ToNot(HaveOccurred(), "error in retrieving infraenv")
