@@ -112,9 +112,21 @@ var _ = Describe(
 					} else {
 						Expect(err).ToNot(HaveOccurred(), "error creating agentclusterinstall")
 						By("Waiting for condition to report expected failure message")
-						err = testAgentClusterInstall.WaitForConditionMessage(v1beta1.ClusterSpecSyncedCondition,
-							"The Spec could not be synced due to an input error: "+message, time.Second*10)
-						Expect(err).NotTo(HaveOccurred(), "got unexpected message from SpecSynced condition")
+						Eventually(func() (string, error) {
+							testAgentClusterInstall.Object, err = testAgentClusterInstall.Get()
+							if err != nil {
+								return "", err
+							}
+
+							for _, condition := range testAgentClusterInstall.Object.Status.Conditions {
+								if condition.Type == v1beta1.ClusterSpecSyncedCondition {
+									return condition.Message, nil
+								}
+							}
+
+							return "", nil
+						}).WithTimeout(time.Minute*2).Should(Equal("The Spec could not be synced due to an input error: "+message),
+							"got unexpected message from SpecSynced condition")
 					}
 				},
 				Entry("that is SNO with VSphere platform", v1beta1.VSpherePlatformType, true, 1, 0,
