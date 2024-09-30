@@ -287,8 +287,6 @@ func CreateLokiStackInstance(ctx SpecContext) {
 } // func CreateLokiStackInstance (ctx SpecContext)
 
 // CreateCLOInstance asserts ClusterLogging instance can be created and running.
-//
-//nolint:funlen
 func CreateCLOInstance(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify clusterLogging instance %s is running in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
