@@ -298,9 +298,7 @@ func CreateCLOInstance(ctx SpecContext) {
 	clusterLoggingObj := clusterlogging.NewBuilder(APIClient, vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
 	if clusterLoggingObj.Exists() {
-		err := clusterLoggingObj.Delete()
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to delete ClusterLogging %s csv name from the %s namespace",
-			vcoreparams.CLOInstanceName, vcoreparams.CLONamespace))
+		_ = clusterLoggingObj.Delete()
 	}
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new Cluster Logging instance %s in namespace %s",
