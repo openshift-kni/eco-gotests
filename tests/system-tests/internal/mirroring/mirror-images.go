@@ -18,7 +18,6 @@ func MirrorImageToTheLocalRegistry(
 	host,
 	user,
 	pass,
-	combinedPullSecretFile,
 	localRegistryRepository,
 	kubeconfigPath string) (string, string, error) {
 	if originServerURL == "" {
@@ -62,9 +61,8 @@ func MirrorImageToTheLocalRegistry(
 
 	glog.Infof("Mirror image %s to the local registry %s", originalImageURL, localRegistryURL)
 
-	imageMirrorCmd := fmt.Sprintf("oc image mirror --insecure=true --registry-config=%s %s:%s=%s:%s "+
-		"--kubeconfig=%s",
-		combinedPullSecretFile, originalImageURL, imageTag, localImageURL, imageTag, kubeconfigPath)
+	imageMirrorCmd := fmt.Sprintf("oc --kubeconfig %s image mirror --insecure=true %s:%s %s:%s",
+		kubeconfigPath, originalImageURL, imageTag, localImageURL, imageTag)
 	_, err = remote.ExecCmdOnHost(host, user, pass, imageMirrorCmd)
 
 	if err != nil {
