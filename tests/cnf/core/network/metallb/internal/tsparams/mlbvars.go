@@ -48,6 +48,8 @@ var (
 	ExternalMacVlanNADName = "external"
 	// HubMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	HubMacVlanNADName = "nad-hub"
+	// HubMacVlanNADSecIntName represents a NetworkAttachmentDefinition that includes the master interface.
+	HubMacVlanNADSecIntName = "nad-hub-sec-int"
 	// SleepCMD represents shel sleep command.
 	SleepCMD = []string{"/bin/bash", "-c", "sleep INF"}
 	// FRRContainerName represents default FRR's container name.
