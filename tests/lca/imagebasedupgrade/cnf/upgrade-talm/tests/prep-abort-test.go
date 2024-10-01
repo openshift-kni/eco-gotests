@@ -57,10 +57,11 @@ var _ = Describe(
 				newIbguBuilder, err = newIbguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create IBGU")
 
-				testCondition, err
-
 				_, err = ibu.WaitUntilStageComplete("Prep")
 				Expect(err).NotTo(HaveOccurred(), "error waiting for prep stage to complete")
+
+				_, err = newIbguBuilder.WaitUntilComplete(time.Minute * 10)
+				Expect(err).ToNot(HaveOccurred(), "error waiting for IBGU  complete")
 
 			})
 

@@ -81,10 +81,13 @@ var _ = Describe(
 				time.Sleep(10 * time.Second)
 			})
 
-			By("Waiting until the IBU has reached the idle stage", func() {
+			By("Waiting until the IBU and IBGU have completed without errors", func() {
 
 				_, err = ibu.WaitUntilStageComplete("Idle")
 				Expect(err).NotTo(HaveOccurred(), "error waiting for idle stage to complete")
+
+				_, err = newIbguBuilder.WaitUntilComplete(time.Minute * 10)
+				Expect(err).ToNot(HaveOccurred(), "error waiting for IBGU  complete")
 
 			})
 		})
