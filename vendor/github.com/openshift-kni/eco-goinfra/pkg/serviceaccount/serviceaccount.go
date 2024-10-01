@@ -10,6 +10,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	corev1Typed "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // Builder provides struct for serviceaccount object containing connection to the cluster and the
@@ -22,7 +24,7 @@ type Builder struct {
 	// Used in functions that defines or mutates configmap definition. errorMsg is processed before the configmap
 	// object is created.
 	errorMsg  string
-	apiClient *clients.Settings
+	apiClient corev1Typed.ServiceAccountInterface
 }
 
 // AdditionalOptions additional options for ServiceAccount object.
@@ -32,8 +34,8 @@ type AdditionalOptions func(builder *Builder) (*Builder, error)
 func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 	glog.V(100).Infof("Initializing new serviceaccount structure with the following params: %s, %s", name, nsname)
 
-	builder := Builder{
-		apiClient: apiClient,
+	builder := &Builder{
+		apiClient: apiClient.ServiceAccounts(nsname),
 		Definition: &corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -46,23 +48,27 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 		glog.V(100).Infof("The name of the serviceaccount is empty")
 
 		builder.errorMsg = "serviceaccount 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the serviceaccount is empty")
 
 		builder.errorMsg = "serviceaccount 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull loads an existing serviceaccount into Builder struct.
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing serviceaccount name: %s under namespace: %s", name, nsname)
 
-	builder := Builder{
-		apiClient: apiClient,
+	builder := &Builder{
+		apiClient: apiClient.ServiceAccounts(nsname),
 		Definition: &corev1.ServiceAccount{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -73,10 +79,14 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	if name == "" {
 		builder.errorMsg = "serviceaccount 'name' cannot be empty"
+
+		return builder, fmt.Errorf("serviceaccount 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		builder.errorMsg = "serviceaccount 'namespace' cannot be empty"
+
+		return builder, fmt.Errorf("serviceaccount 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -85,7 +95,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create makes a serviceaccount in cluster and stores the created object in struct.
@@ -100,7 +110,7 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	var err error
 	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.ServiceAccounts(builder.Definition.Namespace).Create(
+		builder.Object, err = builder.apiClient.Create(
 			context.TODO(), builder.Definition, metav1.CreateOptions{})
 	}
 
@@ -118,10 +128,15 @@ func (builder *Builder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("ServiceAccount %s namespace %s does not exist and cannot be deleted",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
 		return nil
 	}
 
-	err := builder.apiClient.ServiceAccounts(builder.Definition.Namespace).Delete(
+	err := builder.apiClient.Delete(
 		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
 	if err != nil {
@@ -130,7 +145,7 @@ func (builder *Builder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Exists checks whether the given serviceaccount exists.
@@ -144,7 +159,7 @@ func (builder *Builder) Exists() bool {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
-	builder.Object, err = builder.apiClient.ServiceAccounts(builder.Definition.Namespace).Get(
+	builder.Object, err = builder.apiClient.Get(
 		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
 	return err == nil || !k8serrors.IsNotFound(err)
@@ -175,6 +190,11 @@ func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	return builder
 }
 
+// GetGVR returns service's GroupVersionResource which could be used for Clean function.
+func GetGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "serviceaccounts"}
+}
+
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {
@@ -189,13 +209,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

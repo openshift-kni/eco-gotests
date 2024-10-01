@@ -375,8 +375,8 @@ func (builder *PVCBuilder) validate() (bool, error) {
 	return true, nil
 }
 
-// GetGVR returns the GroupVersionResource for the PersistentVolumeClaim.
-func GetGVR() schema.GroupVersionResource {
+// GetPersistentVolumeClaimGVR returns the GroupVersionResource for the PersistentVolumeClaim.
+func GetPersistentVolumeClaimGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
