@@ -3,6 +3,7 @@ package ibgu
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -15,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var conditionComplete = metav1.Condition{Type: "Progressing", Status: metav1.ConditionFalse, Reason: "Completed"}
 
 // IbguBuilder provides struct for the ibgu object containing connection to
 // the cluster and the ibgu definitions.
@@ -410,6 +413,65 @@ func (builder *IbguBuilder) WaitUntilDeleted(timeout time.Duration) error {
 
 			return false, err
 		})
+}
+
+// WaitForCondition waits until the IBGU has a condition that matches the expected, checking only the Type, Status,
+// Reason, and Message fields. For the message field, it matches if the message contains the expected. Zero fields in
+// the expected condition are ignored.
+func (builder *IbguBuilder) WaitForCondition(expected metav1.Condition, timeout time.Duration) (*IbguBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	if !builder.Exists() {
+		glog.V(100).Infof("The IBGU does not exist on the cluster")
+
+		return builder, fmt.Errorf(
+			"ibgu object %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 10*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			builder.Object, err = builder.Get()
+
+			if err != nil {
+				glog.V(100).Info("failed to get ibgu %s/%s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
+
+				return false, nil
+			}
+
+			builder.Definition = builder.Object
+
+			for _, condition := range builder.Object.Status.Conditions {
+				if expected.Type != "" && condition.Type != expected.Type {
+					continue
+				}
+
+				if expected.Status != "" && condition.Status != expected.Status {
+					continue
+				}
+
+				if expected.Reason != "" && condition.Reason != expected.Reason {
+					continue
+				}
+
+				if expected.Message != "" && !strings.Contains(condition.Message, expected.Message) {
+					continue
+				}
+
+				return true, nil
+			}
+
+			return false, nil
+		})
+
+	return builder, err
+}
+
+// WaitUntilComplete waits the specified timeout for the IBGU to complete.
+func (builder *IbguBuilder) WaitUntilComplete(timeout time.Duration) (*IbguBuilder, error) {
+	return builder.WaitForCondition(conditionComplete, timeout)
 }
 
 // validate will check that the builder and builder definition are properly initialized before

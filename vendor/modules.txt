@@ -540,6 +540,7 @@ github.com/openshift-kni/eco-goinfra/pkg/deployment
 github.com/openshift-kni/eco-goinfra/pkg/egressservice
 github.com/openshift-kni/eco-goinfra/pkg/events
 github.com/openshift-kni/eco-goinfra/pkg/hive
+github.com/openshift-kni/eco-goinfra/pkg/ibgu
 github.com/openshift-kni/eco-goinfra/pkg/imageregistry
 github.com/openshift-kni/eco-goinfra/pkg/infrastructure
 github.com/openshift-kni/eco-goinfra/pkg/ingress
@@ -608,6 +609,8 @@ github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/openstack
 github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/ovirt
 github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/vsphere
 github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/scheme
+github.com/openshift-kni/eco-goinfra/pkg/schemes/imagebasedgroupupgrades
+github.com/openshift-kni/eco-goinfra/pkg/schemes/imagebasedgroupupgrades/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/frrtypes
 github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlboperator
 github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypes
