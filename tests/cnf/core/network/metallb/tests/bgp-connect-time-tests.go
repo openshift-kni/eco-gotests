@@ -80,7 +80,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			metallb.GetBGPPeerGVR(),
 			metallb.GetBGPAdvertisementGVR(),
 			metallb.GetIPAddressPoolGVR(),
-			metallb.GetMetalLbIoGVR())
+			metallb.GetMetalLbIoGVR(),
+			metallb.GetFrrConfigurationGVR())
 		Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
 		By("Cleaning test namespace")
@@ -181,7 +182,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 func createAndDeployFRRPod() *pod.Builder {
 	By("Creating External NAD")
-	createExternalNad()
+	createExternalNad(tsparams.ExternalMacVlanNADName)
 
 	By("Creating static ip annotation")
 

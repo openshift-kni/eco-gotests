@@ -9,8 +9,13 @@ const (
 	LabelBGPTestCases = "bgp"
 	// LabelLayer2TestCases represents layer2 label that can be used for test cases selection.
 	LabelLayer2TestCases = "layer2"
+	// LabelFRRTestCases represents frrk8 label that can be used for test cases selection.
+	LabelFRRTestCases = "frrk8s"
 	// BGPPassword var is used to set password for BGP session between FRR speakers.
 	BGPPassword = "bgp-test"
+	// MlbAddressListError an error message when the ECO_CNF_CORE_NET_MLB_ADDR_LIST is incorrect.
+	MlbAddressListError = "An unexpected error occurred while " +
+		"determining the IP addresses from the ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable."
 	// DaemonsFile represents FRR default daemon configuration template.
 	DaemonsFile = `
 	# This file tells the frr package which daemons to start.
