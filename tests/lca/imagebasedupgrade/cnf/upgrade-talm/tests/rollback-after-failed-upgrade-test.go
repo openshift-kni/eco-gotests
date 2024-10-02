@@ -88,8 +88,8 @@ var _ = Describe(
 				newIbguBuilder = ibgu.NewIbguBuilder(TargetHubAPIClient,
 					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
-					WithOadpContent("oadp-cm", "ztp-group").
-					WithSeedImageRef("registry.kni-qe-18.lab.eng.tlv2.redhat.com:5000/ibu/seed:4.17.0-rc.1", "4.17.0-rc.1").
+					WithOadpContent(CNFConfig.IbguOadpCmName, CNFConfig.IbguOadpCmNamespace).
+					WithSeedImageRef(CNFConfig.IbguSeedImage, CNFConfig.IbguSeedImageVersion).
 					WithPlan([]string{"Prep"}, 20, 20).
 					WithPlan([]string{"Upgrade"}, 20, 20).
 					WithPlan([]string{"FinalizeUpgrade"}, 20, 20)

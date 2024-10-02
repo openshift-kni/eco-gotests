@@ -49,8 +49,8 @@ var _ = Describe(
 				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
 					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
-					WithOadpContent("oadp-cm", "ztp-group").
-					WithSeedImageRef("registry.kni-qe-18.lab.eng.tlv2.redhat.com:5000/ibu/seed:4.17.0-rc.1", "4.17.0-rc.1").
+					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
+					WithSeedImageRef(cnfinittools.CNFConfig.IbguSeedImage, cnfinittools.CNFConfig.IbguSeedImageVersion).
 					WithPlan([]string{"Prep"}, 20, 20).
 					WithPlan([]string{"Abort"}, 20, 20)
 

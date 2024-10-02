@@ -51,5 +51,5 @@ var (
 	TargetSnoClusterName string
 
 	// ClusterLabelSelector is the cluster label passed to IBGUs.
-	ClusterLabelSelector = map[string]string{"CITarget": "true"}
+	ClusterLabelSelector = map[string]string{"common": "true"}
 )
