@@ -15,7 +15,7 @@ const (
 	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
 	IbuCguNamespace = "default"
 
-	// IbguNamespace is the namespace where IBU CGUs created on target hub.
+	// IbguNamespace is the namespace where the IBGUs get created on target hub.
 	IbguNamespace = "default"
 
 	// IbguName is the namespace where IBU CGUs created on target hub.
