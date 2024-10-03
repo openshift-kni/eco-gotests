@@ -15,6 +15,15 @@ const (
 	// IbuCguNamespace is the namespace where IBU CGUs created on target hub.
 	IbuCguNamespace = "default"
 
+	// IbguNamespace is the namespace where IBU CGUs created on target hub.
+	IbguNamespace = "default"
+
+	// IbguName is the namespace where IBU CGUs created on target hub.
+	IbguName = "testibgu"
+
+	// AbortIbguName is the namespace where IBU CGUs created on target hub.
+	AbortIbguName = "abortibgu"
+
 	// PrePrepCguName is the name of pre-prep cgu.
 	PrePrepCguName = "cgu-ibu-pre-prep"
 	// PrePrepPolicyName is the name of managed policy used to create oadp configmap.

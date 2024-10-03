@@ -30,6 +30,10 @@ type CNFConfig struct {
 	IbuKcatImage          string `yaml:"ibu_kcat_image" envconfig:"ECO_LCA_IBU_CNF_KCAT_IMAGE"`
 	IbuKcatBroker         string `yaml:"ibu_kcat_broker" envconfig:"ECO_LCA_IBU_CNF_KCAT_BROKER"`
 	IbuKcatTopic          string `yaml:"ibu_kcat_topic" envconfig:"ECO_LCA_IBU_CNF_KCAT_TOPIC"`
+	IbguSeedImage         string `yaml:"ibgu_seed_image" envconfig:"ECO_LCA_IBGU_SEED_IMAGE"`
+	IbguSeedImageVersion  string `yaml:"ibgu_seed_image_version" envconfig:"ECO_LCA_IBGU_SEED_IMAGE_VERSION"`
+	IbguOadpCmName        string `yaml:"ibgu_oadp_cm_name" envconfig:"ECO_LCA_IBGU_ODAP_CM_NAME"`
+	IbguOadpCmNamespace   string `yaml:"ibgu_oadp_cm_namespace" envconfig:"ECO_LCA_IBGU_ODAP_CM_NAMESPACE"`
 }
 
 // NewCNFConfig returns instance of CNFConfig type.

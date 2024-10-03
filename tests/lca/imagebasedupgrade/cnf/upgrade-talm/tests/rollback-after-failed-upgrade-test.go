@@ -4,18 +4,15 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/utils/ptr"
-
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
+	"github.com/openshift-kni/eco-goinfra/pkg/ibgu"
 	"github.com/openshift-kni/eco-goinfra/pkg/lca"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfclusterinfo"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/upgrade-talm/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
@@ -31,6 +28,7 @@ var (
 var _ = Describe(
 	"Validating rollback stage after a failed upgrade",
 	Label(tsparams.LabelRollbackFlow), func() {
+		var newIbguBuilder *ibgu.IbguBuilder
 
 		BeforeEach(func() {
 			By("Saving target sno cluster info before the test", func() {
@@ -60,47 +58,21 @@ var _ = Describe(
 		})
 
 		AfterEach(func() {
-			// Deleting CGUs created for validating the test case.
-			By("Deleting pre-prep cgu created on target hub cluster", func() {
-				err = cnfhelper.DeleteIbuTestCguOnTargetHub(TargetHubAPIClient, tsparams.PrePrepCguName,
-					tsparams.IbuCguNamespace)
-				Expect(err).NotTo(HaveOccurred(), "Failed to delete pre-prep cgu on target hub cluster")
+			By("Deleting IBGU on target hub cluster", func() {
+				_, err := newIbguBuilder.DeleteAndWait(1 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete IBGU on target hub cluster")
+
+				// Sleep for 10 seconds to allow talm to reconcile state.
+				// Sometimes if the next test re-creates the IBGUs too quickly,
+				// the policies compliance status is not updated correctly.
+				time.Sleep(10 * time.Second)
 			})
 
-			By("Deleting prep cgu created on target hub cluster", func() {
-				err = cnfhelper.DeleteIbuTestCguOnTargetHub(TargetHubAPIClient, tsparams.PrepCguName,
-					tsparams.IbuCguNamespace)
-				Expect(err).NotTo(HaveOccurred(), "Failed to delete prep cgu on target hub cluster")
-			})
-
-			By("Deleting upgrade cgu created on target hub cluster", func() {
-				err = cnfhelper.DeleteIbuTestCguOnTargetHub(TargetHubAPIClient, tsparams.UpgradeCguName,
-					tsparams.IbuCguNamespace)
-				Expect(err).NotTo(HaveOccurred(), "Failed to delete upgrade cgu on target hub cluster")
-			})
-
-			By("Creating, enabling ibu finalize CGU and waiting for CGU status to report completed", func() {
-				finalizeCguBuilder := cgu.NewCguBuilder(TargetHubAPIClient,
-					tsparams.FinalizeCguName, tsparams.IbuCguNamespace, 1).
-					WithCluster(tsparams.TargetSnoClusterName).
-					WithManagedPolicy(tsparams.FinalizePolicyName).
-					WithCanary(tsparams.TargetSnoClusterName)
-				finalizeCguBuilder.Definition.Spec.Enable = ptr.To(true)
-
-				finalizeCguBuilder, err := finalizeCguBuilder.Create()
-				Expect(err).ToNot(HaveOccurred(), "Failed to create finalize CGU.")
+			By("Creating, enabling ibu finalize", func() {
 
 				_, err = ibu.WaitUntilStageComplete("Idle")
 				Expect(err).NotTo(HaveOccurred(), "error waiting for idle stage to complete")
 
-				_, err = finalizeCguBuilder.WaitUntilComplete(5 * time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "Finalize CGU did not complete in time.")
-			})
-
-			By("Deleting finalize cgu created on target hub cluster", func() {
-				err := cnfhelper.DeleteIbuTestCguOnTargetHub(TargetHubAPIClient, tsparams.FinalizeCguName,
-					tsparams.IbuCguNamespace)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete finalize cgu on target hub cluster")
 			})
 
 			// Sleep for 10 seconds to allow talm to reconcile state.
@@ -111,52 +83,19 @@ var _ = Describe(
 
 		It("Rollback after a failed upgrade", reportxml.ID("69054"), func() {
 
-			By("Creating, enabling ibu pre-prep CGU and waiting for CGU status to report completed", func() {
-				prePrepCguBuilder := cgu.NewCguBuilder(TargetHubAPIClient,
-					tsparams.PrePrepCguName, tsparams.IbuCguNamespace, 1).
-					WithCluster(tsparams.TargetSnoClusterName).
-					WithManagedPolicy(tsparams.PrePrepPolicyName).
-					WithCanary(tsparams.TargetSnoClusterName)
-				prePrepCguBuilder.Definition.Spec.Enable = ptr.To(true)
+			By("Creating Prep->Upgrade->FinalizeUpgrae IBGU and waiting for node rebooted into stateroot B", func() {
 
-				prePrepCguBuilder, err = prePrepCguBuilder.Create()
-				Expect(err).NotTo(HaveOccurred(), "Failed to create pre-prep CGU.")
+				newIbguBuilder = ibgu.NewIbguBuilder(TargetHubAPIClient,
+					tsparams.IbguName, tsparams.IbguNamespace).
+					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
+					WithOadpContent(CNFConfig.IbguOadpCmName, CNFConfig.IbguOadpCmNamespace).
+					WithSeedImageRef(CNFConfig.IbguSeedImage, CNFConfig.IbguSeedImageVersion).
+					WithPlan([]string{"Prep"}, 20, 20).
+					WithPlan([]string{"Upgrade"}, 20, 20).
+					WithPlan([]string{"FinalizeUpgrade"}, 20, 20)
 
-				_, err = prePrepCguBuilder.WaitUntilComplete(10 * time.Minute)
-				Expect(err).NotTo(HaveOccurred(), "Pre-prep CGU did not complete in time.")
-			})
-
-			By("Creating, enabling ibu prep CGU and waiting for CGU status to report completed", func() {
-				prepCguBuilder := cgu.NewCguBuilder(TargetHubAPIClient,
-					tsparams.PrepCguName, tsparams.IbuCguNamespace, 1).
-					WithCluster(tsparams.TargetSnoClusterName).
-					WithManagedPolicy(tsparams.PrepPolicyName).
-					WithCanary(tsparams.TargetSnoClusterName)
-				prepCguBuilder.Definition.Spec.Enable = ptr.To(true)
-
-				prepCguBuilder, err = prepCguBuilder.Create()
-				Expect(err).NotTo(HaveOccurred(), "Failed to create prep CGU.")
-
-				_, err = ibu.WaitUntilStageComplete("Prep")
-				Expect(err).NotTo(HaveOccurred(), "error waiting for prep stage to complete")
-
-				_, err = prepCguBuilder.WaitUntilComplete(25 * time.Minute)
-				Expect(err).NotTo(HaveOccurred(), "Prep CGU did not complete in time.")
-			})
-
-			By("Creating, enabling ibu upgrade CGU, and waiting for node rebooted into stateroot B", func() {
-
-				By("Creating and enabling ibu upgrade CGU")
-
-				upgradeCguBuilder := cgu.NewCguBuilder(TargetHubAPIClient,
-					tsparams.UpgradeCguName, tsparams.IbuCguNamespace, 1).
-					WithCluster(tsparams.TargetSnoClusterName).
-					WithManagedPolicy(tsparams.UpgradePolicyName).
-					WithCanary(tsparams.TargetSnoClusterName)
-				upgradeCguBuilder.Definition.Spec.Enable = ptr.To(true)
-
-				_, err = upgradeCguBuilder.Create()
-				Expect(err).NotTo(HaveOccurred(), "Failed to create upgrade CGU.")
+				newIbguBuilder, err = newIbguBuilder.Create()
+				Expect(err).ToNot(HaveOccurred(), "Failed to create IBGU")
 
 				By("Get list of node to be upgraded")
 
