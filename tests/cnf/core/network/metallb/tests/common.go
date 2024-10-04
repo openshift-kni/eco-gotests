@@ -205,17 +205,19 @@ func createFrrPod(
 
 	By("Creating FRR container")
 
-	frrContainer := pod.NewContainerBuilder(
-		tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
-		WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
+	if configmapName != "" {
+		frrContainer := pod.NewContainerBuilder(
+			tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
+			WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
 
-	frrCtr, err := frrContainer.GetContainerCfg()
-	Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
-	frrPod.WithAdditionalContainer(frrCtr).WithLocalVolume(configmapName, "/etc/frr")
+		frrCtr, err := frrContainer.GetContainerCfg()
+		Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
+		frrPod.WithAdditionalContainer(frrCtr).WithLocalVolume(configmapName, "/etc/frr")
+	}
 
 	By("Creating FRR pod in the test namespace")
 
-	frrPod, err = frrPod.WithPrivilegedFlag().CreateAndWaitUntilRunning(time.Minute)
+	frrPod, err := frrPod.WithPrivilegedFlag().CreateAndWaitUntilRunning(time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create FRR test pod")
 
 	return frrPod
