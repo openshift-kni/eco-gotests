@@ -112,6 +112,17 @@ func createExternalNad(name string) {
 	Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
 }
 
+func createExternalNadWithMasterInterface(name, masterInterface string) {
+	By("Creating external BR-EX NetworkAttachmentDefinition")
+
+	macVlanPlugin, err := define.MasterNadPlugin(name, "bridge", nad.IPAMStatic(), masterInterface)
+	Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
+	externalNad, err = nad.NewBuilder(APIClient, name, tsparams.TestNamespaceName).
+		WithMasterPlugin(macVlanPlugin).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
+	Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
+}
+
 func createBGPPeerAndVerifyIfItsReady(
 	peerIP, bfdProfileName string, remoteAsn uint32, eBgpMultiHop bool, connectTime int,
 	frrk8sPods []*pod.Builder) {
@@ -224,11 +235,7 @@ func createFrrPod(
 }
 
 func createFrrHubPod(name, nodeName, configmapName string, defaultCMD []string,
-	secondaryNetConfig []*types.NetworkSelectionElement, podName ...string) *pod.Builder {
-	if len(podName) > 0 {
-		name = podName[0]
-	}
-
+	secondaryNetConfig []*types.NetworkSelectionElement) *pod.Builder {
 	frrPod := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName, NetConfig.FrrImage).
 		DefineOnNode(nodeName).
 		WithTolerationToMaster().
