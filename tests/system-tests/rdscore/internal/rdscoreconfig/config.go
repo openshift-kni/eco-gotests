@@ -355,6 +355,8 @@ type CoreConfig struct {
 	//nolint:lll,nolintlint
 	EgressServiceRemoteIP string `yaml:"rdscore_egress_service_remote_ip" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_REMOTE_IP"`
 	//nolint:lll,nolintlint
+	EgressServiceRemoteIPv6 string `yaml:"rdscore_egress_service_remote_ipv6" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_REMOTE_IPV6"`
+	//nolint:lll,nolintlint
 	EgressServiceRemotePort string `yaml:"rdscore_egress_service_remote_port" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_REMOTE_PORT"`
 	//nolint:lll,nolintlint
 	EgressServiceDeploy1CMD EnvSliceString `yaml:"rdscore_egress_service_deploy_1_cmd" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_DEPLOY_1_CMD"`
