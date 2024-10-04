@@ -94,7 +94,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
 			tsparams.DefaultTimeout,
 			pod.GetGVR(),
-			service.GetServiceGVR(),
+			service.GetGVR(),
 			configmap.GetGVR(),
 			nad.GetGVR())
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
@@ -217,7 +217,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
 				tsparams.DefaultTimeout,
 				pod.GetGVR(),
-				service.GetServiceGVR(),
+				service.GetGVR(),
 				configmap.GetGVR(),
 				nad.GetGVR())
 			Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")

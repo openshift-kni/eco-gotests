@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,9 +19,9 @@ const (
 // Builder provides a struct for infrastructure object from the cluster and a infrastructure definition.
 type Builder struct {
 	// infrastructure definition, used to create the infrastructure object.
-	Definition *v1.Infrastructure
+	Definition *configv1.Infrastructure
 	// Created infrastructure object.
-	Object *v1.Infrastructure
+	Object *configv1.Infrastructure
 	// api client to interact with the cluster.
 	apiClient *clients.Settings
 }
@@ -32,7 +32,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Infrastructure{
+		Definition: &configv1.Infrastructure{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: infrastructureName,
 			},
