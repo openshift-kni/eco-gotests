@@ -126,6 +126,7 @@ rdscore_metallb_frr_test_url_ipv6: ''
 # Egress Service
 rdscore_egress_service_ns: rds-egress-ns
 rdscore_egress_service_remote_ip: ''
+rdscore_egress_service_remote_ipv6: ''
 rdscore_egress_service_remote_port: 9090
 #
 rdscore_egress_service_deploy_1_cmd:
