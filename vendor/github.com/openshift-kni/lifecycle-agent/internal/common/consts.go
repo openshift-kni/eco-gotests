@@ -76,13 +76,22 @@ const (
 	// Only acceptable value is AutoRollbackDisableValue. Any other value is treated as "Enabled".
 	AutoRollbackOnFailurePostRebootConfigAnnotation = "auto-rollback-on-failure.lca.openshift.io/post-reboot-config"
 	// AutoRollbackOnFailureUpgradeCompletionAnnotation configure automatic rollback after the Lifecycle Agent reports a failed upgrade upon completion.
-	// Only acceptable value is AutoRollbackOnFailureDisableValue. Any other value is treated as "Enabled".
+	// Only acceptable value is AutoRollbackDisableValue. Any other value is treated as "Enabled".
 	AutoRollbackOnFailureUpgradeCompletionAnnotation = "auto-rollback-on-failure.lca.openshift.io/upgrade-completion"
 	// AutoRollbackOnFailureInitMonitorAnnotation configure automatic rollback LCA Init Monitor watchdog, which triggers auto-rollback if timeout occurs before upgrade completion
 	// Only acceptable value is AutoRollbackDisableValue. Any other value is treated as "Enabled".
 	AutoRollbackOnFailureInitMonitorAnnotation = "auto-rollback-on-failure.lca.openshift.io/init-monitor"
 	// AutoRollbackDisableValue value that decides if rollback is disabled
 	AutoRollbackDisableValue = "Disabled"
+	// ContainerStorageUsageThresholdPercentAnnotation overrides default /var/lib/containers disk usage threshold for image cleanup
+	ContainerStorageUsageThresholdPercentAnnotation = "image-cleanup.lca.openshift.io/disk-usage-threshold-percent"
+	// ContainerStorageUsageThresholdPercentDefault is the default /var/lib/containers disk usage threshold for image cleanu
+	ContainerStorageUsageThresholdPercentDefault = 50
+	// ImageCleanupOnPrepAnnotation configures automatic image cleanup during IBU Prep, if disk usage threshold is exceeded
+	// Only acceptable value is ImageCleanupDisabledValue. Any other value is treated as "Enabled".
+	ImageCleanupOnPrepAnnotation = "image-cleanup.lca.openshift.io/on-prep"
+	// ImageCleanupDisabledValue value to disable image cleanup
+	ImageCleanupDisabledValue = "Disabled"
 
 	LcaNamespace = "openshift-lifecycle-agent"
 	Host         = "/host"
@@ -117,7 +126,10 @@ const (
 	CaBundleDataKey                  = "ca-bundle.crt"
 	ClusterAdditionalTrustBundleName = "user-ca-bundle"
 
-	IBIPSFile = "/var/tmp/pull-secret.json"
+	IBIPSFile                = "/var/tmp/pull-secret.json"
+	PostDeploymentScriptPath = "/var/tmp/post.sh"
+
+	ContainerStoragePath = "/var/lib/containers"
 )
 
 // Annotation names and values related to extra manifest

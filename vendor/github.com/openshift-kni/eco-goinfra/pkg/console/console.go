@@ -9,16 +9,16 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Builder provides a struct for console object from the cluster and a console definition.
 type Builder struct {
 	// Console definition, used to create the pod object.
-	Definition *v1.Console
+	Definition *configv1.Console
 	// Created console object.
-	Object *v1.Console
+	Object *configv1.Console
 	// api client to interact with the cluster.
 	apiClient *clients.Settings
 	// errorMsg is processed before console object is created.
@@ -31,7 +31,7 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Console{
+		Definition: &configv1.Console{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
@@ -51,7 +51,7 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Console{
+		Definition: &configv1.Console{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},

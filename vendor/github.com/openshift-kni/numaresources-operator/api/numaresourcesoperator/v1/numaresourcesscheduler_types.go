@@ -114,6 +114,10 @@ type NUMAResourcesSchedulerSpec struct {
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Scheduler scoring strategy setting",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	ScoringStrategy *ScoringStrategyParams `json:"scoringStrategy,omitempty"`
+	// Replicas control how many scheduler pods must be configured for High Availability (HA)
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Scheduler replicas",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:int"}
+	Replicas *int32 `json:"replicas,omitempty"`
 }
 
 // NUMAResourcesSchedulerStatus defines the observed state of NUMAResourcesScheduler

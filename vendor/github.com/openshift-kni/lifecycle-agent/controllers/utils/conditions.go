@@ -126,10 +126,6 @@ func SetStatusCondition(existingConditions *[]metav1.Condition, conditionType Co
 	)
 }
 
-func ClearStatusCondition(existingConditions *[]metav1.Condition, conditionType ConditionType) {
-	meta.RemoveStatusCondition(existingConditions, string(conditionType))
-}
-
 // ClearInvalidTransitionStatusConditions clears any invalid transitions if exist
 func ClearInvalidTransitionStatusConditions(ibu *ibuv1.ImageBasedUpgrade) {
 	for _, condition := range ibu.Status.Conditions {
@@ -277,19 +273,6 @@ func GetCompletedConditionType(stage ibuv1.ImageBasedUpgradeStage) (conditionTyp
 		conditionType = ConditionTypes.RollbackCompleted
 	}
 	return
-}
-
-// GetPreviousStage returns the previous stage for the one passed in
-func GetPreviousStage(stage ibuv1.ImageBasedUpgradeStage) ibuv1.ImageBasedUpgradeStage {
-	switch stage {
-	case ibuv1.Stages.Prep:
-		return ibuv1.Stages.Idle
-	case ibuv1.Stages.Upgrade:
-		return ibuv1.Stages.Prep
-	case ibuv1.Stages.Rollback:
-		return ibuv1.Stages.Upgrade
-	}
-	return ""
 }
 
 // SetStatusInvalidTransition updates the given stage status to invalid transition with message

@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,9 +19,9 @@ const (
 // Builder provides a struct for proxy object from the cluster and a proxy definition.
 type Builder struct {
 	// proxy definition, used to create the proxy object.
-	Definition *v1.Proxy
+	Definition *configv1.Proxy
 	// Created proxy object.
-	Object *v1.Proxy
+	Object *configv1.Proxy
 	// api client to interact with the cluster.
 	apiClient *clients.Settings
 }
@@ -32,7 +32,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.Proxy{
+		Definition: &configv1.Proxy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterProxyName,
 			},

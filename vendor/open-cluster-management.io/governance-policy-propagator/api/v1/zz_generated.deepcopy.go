@@ -105,13 +105,13 @@ func (in *PlacementBinding) DeepCopyInto(out *PlacementBinding) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.BindingOverrides = in.BindingOverrides
 	out.PlacementRef = in.PlacementRef
 	if in.Subjects != nil {
 		in, out := &in.Subjects, &out.Subjects
 		*out = make([]Subject, len(*in))
 		copy(*out, *in)
 	}
+	out.BindingOverrides = in.BindingOverrides
 	out.Status = in.Status
 }
 

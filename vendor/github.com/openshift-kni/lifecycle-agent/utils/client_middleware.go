@@ -54,11 +54,11 @@ func (r *retryRoundTripper) RoundTrip(req *http.Request) (resp *http.Response, e
 	if errRetryOnError := retry.OnError(r.backoff, isRetriable, func() error {
 		resp, err = r.transport.RoundTrip(req)
 		if err != nil && isRetriable(err) {
-			r.log.Info("WARNING: retrying", "req.method", req.Method, "req.url", req.URL.String(), "error", err)
+			r.log.Info("DEBUG: retrying", "req.method", req.Method, "req.url", req.URL.String(), "error", err)
 		}
 		return err //nolint:wrapcheck
 	}); errRetryOnError != nil {
-		r.log.Info("WARNING: retrying failed", "error", errRetryOnError)
+		r.log.Info("DEBUG: retrying failed", "error", errRetryOnError)
 	}
 
 	return resp, err //nolint:wrapcheck

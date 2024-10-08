@@ -10,7 +10,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -24,9 +24,9 @@ const (
 // Builder provides a struct for clusterversion object from the cluster and a clusterversion definition.
 type Builder struct {
 	// clusterversion definition, used to create the clusterversion object.
-	Definition *v1.ClusterVersion
+	Definition *configv1.ClusterVersion
 	// Created clusterversion object.
-	Object *v1.ClusterVersion
+	Object *configv1.ClusterVersion
 	// api client to interact with the cluster.
 	apiClient *clients.Settings
 	// Used in functions that define or mutate clusterversion definition. errorMsg is processed before the
@@ -40,7 +40,7 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 
 	builder := Builder{
 		apiClient: apiClient,
-		Definition: &v1.ClusterVersion{
+		Definition: &configv1.ClusterVersion{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterVersionName,
 			},
@@ -90,7 +90,7 @@ func (builder *Builder) WithDesiredUpdateImage(desiredUpdateImage string, force 
 		return builder
 	}
 
-	builder.Definition.Spec.DesiredUpdate = &v1.Update{Image: desiredUpdateImage, Force: force}
+	builder.Definition.Spec.DesiredUpdate = &configv1.Update{Image: desiredUpdateImage, Force: force}
 
 	return builder
 }
@@ -150,7 +150,7 @@ func (builder *Builder) WaitUntilAvailable(timeout time.Duration) error {
 
 // WaitUntilConditionTrue waits for timeout duration or until clusterversion gets to a specific status.
 func (builder *Builder) WaitUntilConditionTrue(
-	conditionType v1.ClusterStatusConditionType, timeout time.Duration) error {
+	conditionType configv1.ClusterStatusConditionType, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err
 	}
@@ -193,7 +193,7 @@ func (builder *Builder) WaitUntilUpdateIsCompleted(timeout time.Duration) error 
 
 // WaitUntilUpdateHistoryStateTrue waits until there is a history entry indicating an updateHistoryState.
 func (builder *Builder) WaitUntilUpdateHistoryStateTrue(
-	updateHistoryState v1.UpdateState, timeout time.Duration) error {
+	updateHistoryState configv1.UpdateState, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
 		return err
 	}
