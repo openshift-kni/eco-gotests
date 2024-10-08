@@ -2,12 +2,16 @@ package ranhelper
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -58,4 +62,23 @@ func ExecLocalCommand(timeout time.Duration, command string, args ...string) (st
 	output, err := exec.CommandContext(ctx, command, args...).Output()
 
 	return string(output), err
+}
+
+// GetPodNameWithLabel returns a pod name matching pod label selector in a given namespace.
+func GetPodNameWithLabel(client *clients.Settings, podNamespace, podLabelSelector string) (string, error) {
+	podList, err := pod.List(client, podNamespace, metav1.ListOptions{LabelSelector: podLabelSelector})
+	if err != nil {
+		return "", err
+	}
+
+	glog.V(ranparam.LogLevel).Infof("Length of podList matching podLabelSelector is '%v'", len(podList))
+
+	if len(podList) < 1 {
+		return "", fmt.Errorf("no pod found with label %s under namespace %s", podLabelSelector, podNamespace)
+	}
+
+	glog.V(ranparam.LogLevel).Infof("podList[0] matching podLabelSelector is '%v'",
+		podList[0].Definition.Name)
+
+	return podList[0].Definition.Name, nil
 }
