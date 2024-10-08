@@ -1,5 +1,5 @@
 # Build testcmd bin
-FROM docker.io/library/golang:1.22 AS builder
+FROM docker.io/library/golang:1.23 AS builder
 RUN git clone https://github.com/kononovn/testcmd.git
 WORKDIR ./testcmd
 ENV CGO_ENABLED=0

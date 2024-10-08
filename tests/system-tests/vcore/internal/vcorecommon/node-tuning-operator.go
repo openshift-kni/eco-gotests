@@ -15,7 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
+	"github.com/openshift-kni/eco-goinfra/pkg/nto"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
@@ -40,28 +40,28 @@ var (
 // VerifyNTOSuite container that contains tests for Node Tuning Operator verification.
 func VerifyNTOSuite() {
 	Describe(
-		"NTO validation", //nolint:misspell
+		"NTO validation",
 		Label(vcoreparams.LabelVCoreOperators), func() {
 			It(fmt.Sprintf("Verifies %s namespace exists", vcoreparams.NTONamespace),
-				Label("nto"), VerifyNTONamespaceExists) //nolint:misspell
+				Label("nto"), VerifyNTONamespaceExists)
 
 			It("Verify Node Tuning Operator successfully installed",
-				Label("nto"), reportxml.ID("63656"), VerifyNTODeployment) //nolint:misspell
+				Label("nto"), reportxml.ID("63656"), VerifyNTODeployment)
 
 			It("Create new performanceprofile",
-				Label("nto"), reportxml.ID("63741"), CreatePerformanceProfile) //nolint:misspell
+				Label("nto"), reportxml.ID("63741"), CreatePerformanceProfile)
 
 			It("Create new nodes tuning",
-				Label("nto"), reportxml.ID("63740"), CreateNodesTuning) //nolint:misspell
+				Label("nto"), reportxml.ID("63740"), CreateNodesTuning)
 
 			It("Verify CPU Manager config",
-				Label("nto"), reportxml.ID("63809"), VerifyCPUManagerConfig) //nolint:misspell
+				Label("nto"), reportxml.ID("63809"), VerifyCPUManagerConfig)
 
 			It("Verify Node Tuning Operator Huge Pages configuration",
-				Label("nto"), reportxml.ID("60062"), VerifyHugePagesConfig) //nolint:misspell
+				Label("nto"), reportxml.ID("60062"), VerifyHugePagesConfig)
 
 			It("Verify System Reserved memory for user-plane-worker nodes configuration",
-				Label("nto"), //nolint:misspell
+				Label("nto"),
 				reportxml.ID("60047"), SetSystemReservedMemoryForWorkers)
 		})
 }
@@ -88,7 +88,7 @@ func VerifyNTODeployment(ctx SpecContext) {
 			vcoreparams.NTODeploymentName, vcoreparams.NTONamespace, err))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof(
-		"Confirm that NTO %s pod was deployed and running in %s namespace", //nolint:misspell
+		"Confirm that NTO %s pod was deployed and running in %s namespace",
 		vcoreparams.NTODeploymentName, vcoreparams.NTONamespace)
 
 	ntoPods, err := pod.ListByNamePattern(APIClient, vcoreparams.NTODeploymentName, vcoreparams.NTONamespace)
@@ -107,7 +107,7 @@ func VerifyNTODeployment(ctx SpecContext) {
 			ntoPodName, vcoreparams.NTONamespace, ntoPodLog)
 	}
 
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify NTO service %s created in the namespace %s", //nolint:misspell
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify NTO service %s created in the namespace %s",
 		ntoServiceName, vcoreparams.NTONamespace)
 
 	ntoService, err := service.Pull(APIClient, ntoServiceName, vcoreparams.NTONamespace)
@@ -116,7 +116,7 @@ func VerifyNTODeployment(ctx SpecContext) {
 	Expect(ntoService.Exists()).To(Equal(true), fmt.Sprintf("no service %s was found in the namespace %s",
 		ntoServiceName, vcoreparams.NTONamespace))
 
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify NTO service %s created in the namespace %s", //nolint:misspell
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify NTO service %s created in the namespace %s",
 		ntoServiceName, vcoreparams.NTONamespace)
 
 	paoService, err := service.Pull(APIClient, paoServiceName, vcoreparams.NTONamespace)

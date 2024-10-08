@@ -428,9 +428,9 @@ func defineIterationParams(ipFamily string) (clientIPs, serverIPs []string, err 
 			[]string{tsparams.ServerIPv4IPAddress, tsparams.ServerIPv6IPAddress}, nil
 	}
 
-	return nil, nil, fmt.Errorf(fmt.Sprintf(
+	return nil, nil, fmt.Errorf(
 		"ipStack parameter %s is invalid; allowed values are %s, %s, %s ",
-		ipFamily, netparam.IPV4Family, netparam.IPV6Family, netparam.DualIPFamily))
+		ipFamily, netparam.IPV4Family, netparam.IPV6Family, netparam.DualIPFamily)
 }
 
 func getVlanIDAndMaxTxRateForVf(nodeName, sriovInterfaceName string) (maxTxRate, vlanID int) {

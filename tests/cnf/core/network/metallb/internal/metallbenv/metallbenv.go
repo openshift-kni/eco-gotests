@@ -216,8 +216,8 @@ func DefineIterationParams(
 			doesIPListsHaveEnoughAddresses(ipv6AddrList, nodeExtIPv6AddrList, ipFamily)
 	}
 
-	return "", "", nil, nil, nil, nil, fmt.Errorf(fmt.Sprintf(
-		"ipStack parameter is invalid allowed values are %s, %s ", netparam.IPV4Family, netparam.IPV6Family))
+	return "", "", nil, nil, nil, nil, fmt.Errorf(
+		"ipStack parameter is invalid allowed values are %s, %s ", netparam.IPV4Family, netparam.IPV6Family)
 }
 
 func doesIPListsHaveEnoughAddresses(mlbAddrList, nodeExtAddrList []string, ipFamily string) error {
