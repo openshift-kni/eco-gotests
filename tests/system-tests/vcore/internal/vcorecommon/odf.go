@@ -240,8 +240,6 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 } // func VerifyODFStorageSystemConfig (ctx SpecContext)
 
 // VerifyOperatorsConfigForODFNodes asserts operators configuration for ODF nodes.
-//
-//nolint:goconst
 func VerifyOperatorsConfigForODFNodes(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Configuring operators for ODF nodes")
 

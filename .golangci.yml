@@ -5,6 +5,9 @@ run:
 #  modules-download-mode: readonly
 
 linters-settings:
+  misspell:
+    ignore-words:
+      - "nto"
   revive:
     rules:
       - name: indent-error-flow
@@ -63,7 +66,7 @@ linters-settings:
     statements: 40
   unused:
     check-exported: true
-    go: "1.22"
+    go: "1.23"
   stylecheck:
     dot-import-whitelist:
       - github.com/onsi/gomega
@@ -86,7 +89,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/diskencryptioninittools
     # Select the Go version to target. The default is '1.13'.
-    go: "1.22"
+    go: "1.23"
     # https://staticcheck.io/docs/options#checks
     checks:
       - all

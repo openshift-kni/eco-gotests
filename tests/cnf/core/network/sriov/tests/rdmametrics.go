@@ -180,7 +180,7 @@ var _ = Describe("rdmaMetrics", Ordered, Label(tsparams.LabelRdmaMetricsTestCase
 					fmt.Sprintf("Failed to run command %s on node %s",
 						fmt.Sprintf("ls /sys/bus/pci/devices/%s/infiniband/%s/ports/1/hw_counters",
 							pciAddress, rdmaDevice), testPod.Object.Spec.NodeName))
-				Expect(nodeOutput[fmt.Sprintf(testPod.Object.Spec.NodeName)]).To(ContainSubstring("out_of_buffer"),
+				Expect(nodeOutput[testPod.Object.Spec.NodeName]).To(ContainSubstring("out_of_buffer"),
 					fmt.Sprintf("Failed to find the counters in the output %s", nodeOutput[testPod.Object.Spec.NodeName]))
 			})
 
