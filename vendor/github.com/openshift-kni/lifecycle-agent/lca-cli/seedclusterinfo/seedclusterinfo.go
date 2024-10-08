@@ -84,6 +84,9 @@ type SeedClusterInfo struct {
 	HasFIPS bool `json:"has_fips"`
 
 	AdditionalTrustBundle *AdditionalTrustBundle `json:"additionalTrustBundle"`
+
+	// The target for the /var/lib/containers mountpoint, if setup.
+	ContainerStorageMountpointTarget string `json:"container_storage_mountpoint_target,omitempty"`
 }
 
 type AdditionalTrustBundle struct {
@@ -100,6 +103,7 @@ func NewFromClusterInfo(clusterInfo *utils.ClusterInfo,
 	hasProxy,
 	hasFIPS bool,
 	additionalTrustBundle *AdditionalTrustBundle,
+	containerStorageMountpointTarget string,
 ) *SeedClusterInfo {
 	return &SeedClusterInfo{
 		SeedClusterOCPVersion:    clusterInfo.OCPVersion,
@@ -113,6 +117,8 @@ func NewFromClusterInfo(clusterInfo *utils.ClusterInfo,
 		HasProxy:                 hasProxy,
 		HasFIPS:                  hasFIPS,
 		AdditionalTrustBundle:    additionalTrustBundle,
+
+		ContainerStorageMountpointTarget: containerStorageMountpointTarget,
 	}
 }
 

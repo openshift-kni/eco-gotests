@@ -408,7 +408,7 @@ func (builder *AgentClusterInstallBuilder) WithOptions(
 
 // WaitForConditionMessage waits the specified timeout for the given condition to report the specified message.
 func (builder *AgentClusterInstallBuilder) WaitForConditionMessage(
-	conditionType, message string, timeout time.Duration) error {
+	conditionType v1.ClusterInstallConditionType, message string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
@@ -422,7 +422,7 @@ func (builder *AgentClusterInstallBuilder) WaitForConditionMessage(
 
 // WaitForConditionStatus waits the specified timeout for the given condition to report the specified status.
 func (builder *AgentClusterInstallBuilder) WaitForConditionStatus(
-	conditionType string, status corev1.ConditionStatus, timeout time.Duration) error {
+	conditionType v1.ClusterInstallConditionType, status corev1.ConditionStatus, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
@@ -436,7 +436,7 @@ func (builder *AgentClusterInstallBuilder) WaitForConditionStatus(
 
 // WaitForConditionReason waits the specified timeout for the given condition to report the specified reason.
 func (builder *AgentClusterInstallBuilder) WaitForConditionReason(
-	conditionType, reason string, timeout time.Duration) error {
+	conditionType v1.ClusterInstallConditionType, reason string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
@@ -694,7 +694,8 @@ func (builder *AgentClusterInstallBuilder) Exists() bool {
 }
 
 // getCondition returns the agentclusterinstall condition discovered based on specified conditionType.
-func (builder *AgentClusterInstallBuilder) getCondition(conditionType string) (*v1.ClusterInstallCondition, error) {
+func (builder *AgentClusterInstallBuilder) getCondition(
+	conditionType v1.ClusterInstallConditionType) (*v1.ClusterInstallCondition, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}

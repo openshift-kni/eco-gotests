@@ -128,6 +128,12 @@ type ArgoCDApplicationControllerSpec struct {
 
 	// VolumeMounts adds volumeMounts to the Argo CD Controller container.
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
+
+	// Custom annotations to pods deployed by the operator
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Custom labels to pods deployed by the operator
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 func (a *ArgoCDApplicationControllerSpec) IsEnabled() bool {
@@ -195,6 +201,12 @@ type ArgoCDApplicationSet struct {
 
 	// SCMProviders defines the list of allowed custom SCM provider API URLs
 	SCMProviders []string `json:"scmProviders,omitempty"`
+
+	// Custom annotations to pods deployed by the operator
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Custom labels to pods deployed by the operator
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 func (a *ArgoCDApplicationSet) IsEnabled() bool {
@@ -465,6 +477,10 @@ func (a *ArgoCDRedisSpec) IsEnabled() bool {
 	return a.Enabled == nil || (a.Enabled != nil && *a.Enabled)
 }
 
+func (a *ArgoCDRedisSpec) IsRemote() bool {
+	return a.Remote != nil && *a.Remote != ""
+}
+
 // ArgoCDRepoSpec defines the desired state for the Argo CD repo server component.
 type ArgoCDRepoSpec struct {
 
@@ -529,10 +545,20 @@ type ArgoCDRepoSpec struct {
 
 	// Remote specifies the remote URL of the Repo Server container. (optional, by default, a local instance managed by the operator is used.)
 	Remote *string `json:"remote,omitempty"`
+
+	// Custom annotations to pods deployed by the operator
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Custom labels to pods deployed by the operator
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 func (a *ArgoCDRepoSpec) IsEnabled() bool {
 	return a.Enabled == nil || (a.Enabled != nil && *a.Enabled)
+}
+
+func (a *ArgoCDRepoSpec) IsRemote() bool {
+	return a.Remote != nil && *a.Remote != ""
 }
 
 // ArgoCDRouteSpec defines the desired state for an OpenShift Route.
@@ -638,6 +664,12 @@ type ArgoCDServerSpec struct {
 
 	// VolumeMounts adds volumeMounts to the Argo CD Server container.
 	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
+
+	// Custom annotations to pods deployed by the operator
+	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Custom labels to pods deployed by the operator
+	Labels map[string]string `json:"labels,omitempty"`
 }
 
 func (a *ArgoCDServerSpec) IsEnabled() bool {
@@ -1109,4 +1141,12 @@ func ParseResourceTrackingMethod(name string) ResourceTrackingMethod {
 func (p SSOProviderType) ToLower() SSOProviderType {
 	str := string(p)
 	return SSOProviderType(strings.ToLower(str))
+}
+
+// UseExternalCertificate return true if .route.tls.externalCertificate is set
+func (r *ArgoCDRouteSpec) UseExternalCertificate() bool {
+	if r != nil && r.TLS != nil && r.TLS.ExternalCertificate != nil {
+		return true
+	}
+	return false
 }

@@ -19,6 +19,7 @@ const (
 	ConfigDaemonPath                   = "./bindata/manifests/daemon"
 	InjectorWebHookPath                = "./bindata/manifests/webhook"
 	OperatorWebHookPath                = "./bindata/manifests/operator-webhook"
+	MetricsExporterPath                = "./bindata/manifests/metrics-exporter"
 	SystemdServiceOcpPath              = "./bindata/manifests/sriov-config-service/openshift"
 	SystemdServiceOcpMachineConfigName = "sriov-config-service"
 	ServiceCAConfigMapAnnotation       = "service.beta.openshift.io/inject-cabundle"
@@ -43,6 +44,11 @@ const (
 	LinkTypeIB  = "IB"
 	LinkTypeETH = "ETH"
 
+	LinkAdminStateUp   = "up"
+	LinkAdminStateDown = "down"
+
+	UninitializedNodeGUID = "0000:0000:0000:0000"
+
 	DeviceTypeVfioPci   = "vfio-pci"
 	DeviceTypeNetDevice = "netdevice"
 	VdpaTypeVirtio      = "virtio"
@@ -55,6 +61,7 @@ const (
 	PfAppliedConfig            = SriovConfBasePath + "/pci"
 	SriovSwitchDevConfPath     = SriovConfBasePath + "/sriov_config.json"
 	SriovHostSwitchDevConfPath = Host + SriovSwitchDevConfPath
+	ManagedOVSBridgesPath      = SriovConfBasePath + "/managed-ovs-bridges.json"
 
 	MachineConfigPoolPausedAnnotation       = "sriovnetwork.openshift.io/state"
 	MachineConfigPoolPausedAnnotationIdle   = "Idle"
@@ -125,6 +132,15 @@ const (
 	// ResourceInjectorMatchConditionFeatureGate: switch injector to fail policy and add mactch condition
 	// this will make the mutating webhook to be called only when a pod has 'k8s.v1.cni.cncf.io/networks' annotation
 	ResourceInjectorMatchConditionFeatureGate = "resourceInjectorMatchCondition"
+
+	// MetricsExporterFeatureGate: enable SriovNetworkMetricsExporter on the same node as where the config-daemon run
+	MetricsExporterFeatureGate = "metricsExporter"
+
+	// ManageSoftwareBridgesFeatureGate: enables management of software bridges by the operator
+	ManageSoftwareBridgesFeatureGate = "manageSoftwareBridges"
+
+	// The path to the file on the host filesystem that contains the IB GUID distribution for IB VFs
+	InfinibandGUIDConfigFilePath = SriovConfBasePath + "/infiniband/guids"
 )
 
 const (

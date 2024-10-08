@@ -44,6 +44,7 @@ import (
 	machinev1beta1client "github.com/openshift/client-go/machine/clientset/versioned/typed/machine/v1beta1"
 	operatorv1alpha1 "github.com/openshift/client-go/operator/clientset/versioned/typed/operator/v1alpha1"
 	dynamicFake "k8s.io/client-go/dynamic/fake"
+	policyv1clientTyped "k8s.io/client-go/kubernetes/typed/policy/v1"
 )
 
 // Settings provides the struct to talk with relevant API.
@@ -62,6 +63,7 @@ type Settings struct {
 	operatorv1alpha1.OperatorV1alpha1Interface
 	machinev1beta1client.MachineV1beta1Interface
 	storageV1Client.StorageV1Interface
+	policyv1clientTyped.PolicyV1Interface
 	scheme *runtime.Scheme
 }
 
@@ -104,6 +106,7 @@ func New(kubeconfig string) *Settings {
 	clientSet.OperatorV1alpha1Interface = operatorv1alpha1.NewForConfigOrDie(config)
 	clientSet.MachineV1beta1Interface = machinev1beta1client.NewForConfigOrDie(config)
 	clientSet.StorageV1Interface = storageV1Client.NewForConfigOrDie(config)
+	clientSet.PolicyV1Interface = policyv1clientTyped.NewForConfigOrDie(config)
 	clientSet.K8sClient = kubernetes.NewForConfigOrDie(config)
 	clientSet.Config = config
 
@@ -158,6 +161,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 	}
 
 	if err := routev1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
+	if err := policyv1.AddToScheme(crScheme); err != nil {
 		return err
 	}
 
@@ -299,6 +306,7 @@ func GetModifiableTestClients(tcp TestClientParams) (*Settings, *fakeRuntimeClie
 	clientSet.NetworkingV1Interface = clientSet.K8sClient.NetworkingV1()
 	clientSet.RbacV1Interface = clientSet.K8sClient.RbacV1()
 	clientSet.StorageV1Interface = clientSet.K8sClient.StorageV1()
+	clientSet.PolicyV1Interface = clientSet.K8sClient.PolicyV1()
 
 	// Update the generic client with schemes of generic resources
 	clientSet.scheme = runtime.NewScheme()

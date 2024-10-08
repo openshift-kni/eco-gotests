@@ -290,7 +290,7 @@ func InitIBU(ctx context.Context, c client.Client, log *logr.Logger) error {
 
 	log.Info("Saved IBU CR found, restoring ...")
 	if err := c.Delete(ctx, ibu); err != nil {
-		if !k8serrors.IsAlreadyExists(err) {
+		if !k8serrors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete IBU during restore: %w", err)
 		}
 	}
