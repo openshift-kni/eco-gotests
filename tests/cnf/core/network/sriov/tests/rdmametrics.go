@@ -133,7 +133,7 @@ var _ = Describe("rdmaMetrics", Ordered, Label(tsparams.LabelRdmaMetricsTestCase
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete rdma exclusive mode machine config")
 
 				err = netenv.WaitForMcpStable(
-					APIClient, tsparams.MCOWaitTimeout, tsparams.DefaultStableDuration, NetConfig.CnfMcpLabel)
+					APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
 				Expect(err).ToNot(HaveOccurred(), "Failed to wait for MCP update")
 
 			})
