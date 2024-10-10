@@ -123,11 +123,13 @@ var _ = Describe(
 
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
-				By("Creating EgressService with ETP=Cluster")
-				rdscorecommon.VerifyEgressServiceWithClusterETP(ctx)
+				It("Verify EgressService with Cluster ExternalTrafficPolicy",
+					Label("egress", "egress-etp-cluster"),
+					rdscorecommon.VerifyEgressServiceWithClusterETP)
 
-				By("Creating EgressService with ETP=Local")
-				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+				It("Verify EgressService with Local ExternalTrafficPolicy",
+					Label("egress", "egress-etp-local"),
+					rdscorecommon.VerifyEgressServiceWithLocalETP)
 
 				By("Creating a workload with CephFS PVC")
 				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
