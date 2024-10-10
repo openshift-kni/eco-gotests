@@ -122,48 +122,56 @@ var _ = Describe(
 		})
 
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
-			BeforeAll(func(ctx SpecContext) {
-				It("Verify EgressService with Cluster ExternalTrafficPolicy",
-					Label("egress", "egress-etp-cluster"),
-					rdscorecommon.VerifyEgressServiceWithClusterETP)
+			It("Creating EgressService with ETP=Cluster",
+				Label("egress", "egress-etp-cluster"),
+				rdscorecommon.VerifyEgressServiceWithClusterETP)
 
-				It("Verify EgressService with Local ExternalTrafficPolicy",
-					Label("egress", "egress-etp-local"),
-					rdscorecommon.VerifyEgressServiceWithLocalETP)
+			It("Creating EgressService with ETP=Local",
+				Label("egress", "egress-etp-local"),
+				rdscorecommon.VerifyEgressServiceWithLocalETP)
 
-				By("Creating a workload with CephFS PVC")
-				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
+			It("Creating a workload with CephFS PVC",
+				Label("persistent-storage", "odf-cephfs-pvc"),
+				rdscorecommon.DeployWorkflowCephFSPVC)
 
-				By("Creating a workload with CephRBD PVC")
-				rdscorecommon.DeployWorkloadCephRBDPVC(ctx)
+			It("Creating a workload with CephRBD PVC",
+				Label("persistent-storage", "odf-cephrbd-pvc"),
+				rdscorecommon.DeployWorkloadCephRBDPVC)
 
-				By("Creating SR-IOV workloads on the same node")
-				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)
+			It("Creating SR-IOV workloads on the same node",
+				Label("sriov", "sriov-same-node"),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNode)
 
-				By("Creating SR-IOV workloads on different nodes")
-				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodes(ctx)
+			It("Creating SR-IOV workloads on different nodes",
+				Label("sriov", "sriov-different-node"),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodes)
 
-				By("Creating MACVLAN workloads on the same node")
-				rdscorecommon.VerifyMacVlanOnSameNode()
+			It("Creating MACVLAN workload on different nodes",
+				Label("macvlan", "validate-new-macvlan-different-nodes"),
+				rdscorecommon.VerifyMacVlanOnDifferentNodes)
 
-				By("Creating MACVLAN workloads on different nodes")
-				rdscorecommon.VerifyMacVlanOnDifferentNodes()
+			It("Creating MACVLAN workloads on the same node",
+				Label("macvlan", "validate-new-macvlan-same-node"),
+				rdscorecommon.VerifyMacVlanOnSameNode)
 
-				By("Creating IPVLAN workloads on the same node")
-				rdscorecommon.VerifyIPVlanOnSameNode()
+			It("Creating IPVLAN workload on different nodes",
+				Label("ipvlan", "validate-new-ipvlan-different-nodes"),
+				rdscorecommon.VerifyIPVlanOnDifferentNodes)
 
-				By("Creating IPVLAN workloads on different nodes")
-				rdscorecommon.VerifyIPVlanOnDifferentNodes()
+			It("Creating IPVLAN workloads on the same node",
+				Label("ipvlan", "validate-new-ipvlan-same-node"),
+				rdscorecommon.VerifyIPVlanOnSameNode)
 
-				By("Creating NUMA aware workload")
-				rdscorecommon.VerifyNROPWorkload(ctx)
+			It("Creating NUMA-aware workload", Label("nrop"),
+				rdscorecommon.VerifyNROPWorkload)
 
-				By("Creating SR-IOV workload on same node and different SR-IOV networks")
-				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx)
+			It("Creating SR-IOV workload on same node and different SR-IOV networks",
+				Label("sriov", "sriov-same-node-different-nets"),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet)
 
-				By("Creating SR-IOV workload on different nodes and different SR-IOV networks")
-				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx)
-			})
+			It("Creating SR-IOV workload on different nodes and different SR-IOV networks",
+				Label("sriov", "sriov-different-nodes-different-nets"),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet)
 
 			It("Verifies ungraceful cluster reboot",
 				Label("rds-core-hard-reboot"), reportxml.ID("30020"),
@@ -318,46 +326,56 @@ var _ = Describe(
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
-			BeforeAll(func(ctx SpecContext) {
-				By("Creating EgressService with ETP=Cluster")
-				rdscorecommon.VerifyEgressServiceWithClusterETP(ctx)
+			It("Creating EgressService with ETP=Local",
+				Label("egress", "egress-etp-local"),
+				rdscorecommon.VerifyEgressServiceWithLocalETP)
 
-				By("Creating EgressService with ETP=Local")
-				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+			It("Creating a workload with CephFS PVC",
+				Label("persistent-storage", "odf-cephfs-pvc"),
+				rdscorecommon.DeployWorkflowCephFSPVC)
 
-				By("Creating a workload with CephFS PVC")
-				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
+			It("Creating a workload with CephFS PVC",
+				Label("persistent-storage", "odf-cephfs-pvc"),
+				rdscorecommon.DeployWorkflowCephFSPVC)
 
-				By("Creating a workload with CephRBD PVC")
-				rdscorecommon.DeployWorkloadCephRBDPVC(ctx)
+			It("Creating a workload with CephRBD PVC",
+				Label("persistent-storage", "odf-cephrbd-pvc"),
+				rdscorecommon.DeployWorkloadCephRBDPVC)
 
-				By("Creating SR-IOV worklods that run on same node")
-				rdscorecommon.VerifySRIOVWorkloadsOnSameNode(ctx)
+			It("Creating SR-IOV workloads on the same node",
+				Label("sriov", "sriov-same-node"),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNode)
 
-				By("Verifying SR-IOV workloads on different nodes")
-				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodes(ctx)
+			It("Creating SR-IOV workloads on different nodes",
+				Label("sriov", "sriov-different-node"),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodes)
 
-				By("Creating MACVLAN workloads on the same node")
-				rdscorecommon.VerifyMacVlanOnSameNode()
+			It("Creating MACVLAN workload on different nodes",
+				Label("macvlan", "validate-new-macvlan-different-nodes"),
+				rdscorecommon.VerifyMacVlanOnDifferentNodes)
 
-				By("Creating MACVLAN workloads on different nodes")
-				rdscorecommon.VerifyMacVlanOnDifferentNodes()
+			It("Creating MACVLAN workloads on the same node",
+				Label("macvlan", "validate-new-macvlan-same-node"),
+				rdscorecommon.VerifyMacVlanOnSameNode)
 
-				By("Creating IPVLAN workloads on the same node")
-				rdscorecommon.VerifyIPVlanOnSameNode()
+			It("Creating IPVLAN workload on different nodes",
+				Label("ipvlan", "validate-new-ipvlan-different-nodes"),
+				rdscorecommon.VerifyIPVlanOnDifferentNodes)
 
-				By("Creating IPVLAN workloads on different nodes")
-				rdscorecommon.VerifyIPVlanOnDifferentNodes()
+			It("Creating IPVLAN workloads on the same node",
+				Label("ipvlan", "validate-new-ipvlan-same-node"),
+				rdscorecommon.VerifyIPVlanOnSameNode)
 
-				By("Creating NUMA aware workload")
-				rdscorecommon.VerifyNROPWorkload(ctx)
+			It("Creating NUMA-aware workload", Label("nrop"),
+				rdscorecommon.VerifyNROPWorkload)
 
-				By("Creating SR-IOV workload on same node and different SR-IOV networks")
-				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx)
+			It("Creating SR-IOV workload on same node and different SR-IOV networks",
+				Label("sriov", "sriov-same-node-different-nets"),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet)
 
-				By("Creating SR-IOV workload on different nodes and different SR-IOV networks")
-				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx)
-			})
+			It("Creating SR-IOV workload on different nodes and different SR-IOV networks",
+				Label("sriov", "sriov-different-nodes-different-nets"),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet)
 
 			It("Verifies graceful cluster reboot",
 				Label("rds-core-soft-reboot"), reportxml.ID("30021"), rdscorecommon.VerifySoftReboot)
