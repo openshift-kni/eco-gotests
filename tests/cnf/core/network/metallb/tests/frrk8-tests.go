@@ -75,6 +75,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			"Failed to detect master nodes")
 	})
 
+	AfterAll(func() {
+		if len(cnfWorkerNodeList) > 2 {
+			By("Remove custom metallb test label from nodes")
+			removeNodeLabel(workerNodeList, metalLbTestsLabel)
+		}
+	})
+
 	Context("IBGP Single hop", func() {
 
 		var (
