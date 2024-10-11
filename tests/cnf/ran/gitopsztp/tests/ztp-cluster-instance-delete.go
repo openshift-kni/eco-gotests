@@ -27,6 +27,8 @@ import (
 
 var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 	Label(tsparams.LabelClusterInstanceDeleteTestCases), func() {
+		var earlyReturnSkip = true
+
 		// These tests use the hub and spoke architecture.
 		BeforeEach(func() {
 			By("verifying that ZTP meets the minimum version")
@@ -36,10 +38,13 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 			if !versionInRange {
 				Skip("ZTP Siteconfig operator tests require ZTP 4.17 or later")
 			}
-
 		})
 
 		AfterEach(func() {
+			if earlyReturnSkip {
+				return
+			}
+
 			// Recreate the ClusterInstance custom resource.
 			By("resetting the clusters app back to the original settings")
 			err := gitdetails.SetGitDetailsInArgoCd(
@@ -83,6 +88,8 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 			if spokeClusterType == ranparam.SNOCluster {
 				Skip("This test only applies to standard or multi-node openshift spoke cluster")
 			}
+
+			earlyReturnSkip = false
 
 			// Test step 1-Delete default assisted installer template reference ConfigMap CRs after spoke cluster installed.
 			By("deleting default assisted installer template reference ConfigMap custom resources")
@@ -186,6 +193,7 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 				Skip(err.Error())
 			}
 
+			earlyReturnSkip = false
 			Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD clusters app with new git path")
 
 			// Test step 1 expected results validation.
