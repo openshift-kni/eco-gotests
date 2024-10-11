@@ -45,7 +45,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 
 	When("overriding the PGT policy's compliance and non-compliance intervals", func() {
 		// 54241 - User override of policy intervals
-		It("should specify new intervals and verify they were applied", reportxml.ID("54241"), func() {
+		It("specifies new intervals and verifies they were applied", reportxml.ID("54241"), func() {
 			By("updating Argo CD policies app")
 			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathCustomInterval, true)
@@ -86,7 +86,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 		})
 
 		// 54242 - Invalid time duration string for user override of policy intervals
-		It("should specify an invalid interval format and verify the app error", reportxml.ID("54242"), func() {
+		It("specifies an invalid interval format and verifies the app error", reportxml.ID("54242"), func() {
 			By("updating Argo CD policies app")
 			exists, err := gitdetails.UpdateArgoCdAppGitPath(
 				tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathInvalidInterval, false)
@@ -279,7 +279,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 		})
 
 		// 63516 - Reference non-existence source CR yaml file
-		It("verifies a proper error is returned in ArgoCD app when a non-existent "+
+		It("verifies a proper error is returned in Argo CD app when a non-existent "+
 			"source-cr is used in PGT", reportxml.ID("63516"), func() {
 			By("checking the ZTP version")
 			versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.14", "")

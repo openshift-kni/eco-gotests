@@ -36,7 +36,6 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 			if !versionInRange {
 				Skip("ZTP Siteconfig operator tests require ZTP 4.17 or later")
 			}
-
 		})
 
 		AfterEach(func() {
@@ -75,7 +74,7 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 		})
 
 		// 75374 - Detaching the AI multi-node openshift (MNO) spoke cluster.
-		It("Validate detaching the AI multi-node openshift spoke cluster", reportxml.ID("75374"), func() {
+		It("validates detaching the AI multi-node openshift spoke cluster", reportxml.ID("75374"), func() {
 			By("checking spoke cluster type")
 			spokeClusterType, err := rancluster.CheckSpokeClusterType(RANConfig.Spoke1APIClient)
 			Expect(err).ToNot(HaveOccurred(), "Failed to fetch spoke cluster type")
@@ -169,7 +168,7 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 		})
 
 		// 75376 - Detaching the AI single-node openshift (SNO) spoke cluster.
-		It("Validate detaching the AI single-node openshift spoke cluster", reportxml.ID("75376"), func() {
+		It("validates detaching the AI single-node openshift spoke cluster", reportxml.ID("75376"), func() {
 			By("checking spoke cluster type")
 			spokeClusterType, err := rancluster.CheckSpokeClusterType(RANConfig.Spoke1APIClient)
 			Expect(err).ToNot(HaveOccurred(), "Failed to fetch spoke cluster type")

@@ -420,7 +420,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for all spoke 1 pods to be ready")
 		})
 
-		Context("precaching with one managed cluster powered off and unavailable", func() {
+		When("precaching with one managed cluster powered off and unavailable", func() {
 			AfterEach(func() {
 				By("cleaning up resources on hub")
 				errorList := setup.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, "")
@@ -459,7 +459,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 			})
 		})
 
-		Context("batching with one managed cluster powered off and unavailable", Ordered, func() {
+		When("batching with one managed cluster powered off and unavailable", Ordered, func() {
 			var cguBuilder *cgu.CguBuilder
 
 			BeforeAll(func() {
@@ -568,7 +568,7 @@ func assertPrecacheStatus(spokeName, expected string) {
 			cguBuilder.Object.Name, spokeName, cguBuilder.Object.Status.Precaching.Status[spokeName])
 
 		return cguBuilder.Object.Status.Precaching.Status[spokeName]
-	}, 20*time.Minute, 15*time.Second).Should(Equal(expected))
+	}).WithTimeout(20 * time.Minute).WithPolling(15 * time.Second).Should(Equal(expected))
 }
 
 // checkPrecachePodLog checks that the pre cache pod has a log that says the pre cache is done.
@@ -585,7 +585,7 @@ func checkPrecachePodLog(client *clients.Settings) error {
 			}
 
 			if len(podList) == 0 {
-				glog.V(tsparams.LogLevel).Info("precache pod does not exist on spoke - skip pod log check.")
+				glog.V(tsparams.LogLevel).Info("Precache pod does not exist on spoke - skip pod log check.")
 
 				return true, nil
 			}
@@ -603,7 +603,7 @@ func checkPrecachePodLog(client *clients.Settings) error {
 		})
 
 	if err != nil && plog != "" {
-		glog.V(tsparams.LogLevel).Infof("generated pod logs: ", plog)
+		glog.V(tsparams.LogLevel).Infof("Generated pod logs: ", plog)
 	}
 
 	return err
@@ -651,7 +651,7 @@ func copyPoliciesWithSubscription(policies []*ocm.PolicyBuilder) ([]string, []st
 
 	for index, policy := range policies {
 		glog.V(tsparams.LogLevel).Infof(
-			"checking for subscriptions on policy %s in namespace %s", policy.Definition.Name, policy.Definition.Namespace)
+			"Checking for subscriptions on policy %s in namespace %s", policy.Definition.Name, policy.Definition.Namespace)
 
 		template := policy.Object.Spec.PolicyTemplates[0]
 		configPolicy, err := ranhelper.UnmarshalRaw[configurationPolicyv1.ConfigurationPolicy](template.ObjectDefinition.Raw)

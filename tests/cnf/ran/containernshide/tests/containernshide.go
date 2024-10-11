@@ -15,19 +15,19 @@ import (
 )
 
 var _ = Describe("Container Namespace Hiding", Label(tsparams.LabelContainerNSHideTestCases), func() {
-	It("should not have kubelet and crio using the same inode as systemd", reportxml.ID("53681"), func() {
-		By("Getting systemd inodes on cluster nodes")
+	It("verifies kubelet and crio are not using the same inode as systemd", reportxml.ID("53681"), func() {
+		By("getting systemd inodes on cluster nodes")
 		systemdInodes, err := cluster.ExecCmdWithStdoutWithRetries(Spoke1APIClient,
 			ranparam.RetryCount, ranparam.RetryInterval, "readlink /proc/1/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check systemd inodes")
 
-		By("Getting kubelet inodes on cluster nodes")
+		By("getting kubelet inodes on cluster nodes")
 		kubeletInodes, err := cluster.ExecCmdWithStdoutWithRetries(
 			Spoke1APIClient, ranparam.RetryCount, ranparam.RetryInterval,
 			"readlink /proc/$(pidof kubelet)/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check kubelet inodes")
 
-		By("Getting crio inodes on cluster nodes")
+		By("getting crio inodes on cluster nodes")
 		crioInodes, err := cluster.ExecCmdWithStdoutWithRetries(Spoke1APIClient, ranparam.RetryCount,
 			ranparam.RetryInterval, "readlink /proc/$(pidof crio)/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check crio inodes")
@@ -38,7 +38,7 @@ var _ = Describe("Container Namespace Hiding", Label(tsparams.LabelContainerNSHi
 			"Collected systemd inodes from different number of nodes than crio inodes")
 
 		for host, systemdInode := range systemdInodes {
-			By(fmt.Sprintf("Checking inodes on host %s", host))
+			By(fmt.Sprintf("checking inodes on host %s", host))
 			kubeletInode, ok := kubeletInodes[host]
 			Expect(ok).To(BeTrue(), "Found systemd inode but not kubelet inode on node %s", host)
 

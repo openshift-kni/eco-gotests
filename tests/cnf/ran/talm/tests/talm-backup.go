@@ -27,20 +27,20 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 	)
 
 	BeforeEach(func() {
-		By("checking that the talm version is at least 4.11")
+		By("checking that the TALM version is at least 4.11")
 		versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.11", "")
-		Expect(err).ToNot(HaveOccurred(), "Failed to compared talm version string")
+		Expect(err).ToNot(HaveOccurred(), "Failed to compared TALM version string")
 
 		if !versionInRange {
-			Skip("backup tests require talm 4.11 or higher")
+			Skip("backup tests require TALM 4.11 or higher")
 		}
 
-		By("checking that the talm version is at most 4.15")
+		By("checking that the TALM version is at most 4.15")
 		versionInRange, err = version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "", "4.15")
-		Expect(err).ToNot(HaveOccurred(), "Failed to compare talm version string")
+		Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 		if !versionInRange {
-			Skip("backup tests are deprecated for talm 4.16 and higher")
+			Skip("backup tests are deprecated for TALM 4.16 and higher")
 		}
 	})
 
@@ -61,7 +61,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 			Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on spoke 1")
 		})
 
-		Context("with full disk for spoke1", func() {
+		When("spoke 1 has a full disk", func() {
 			BeforeEach(func() {
 				By("setting up filesystem to simulate low space")
 				loopbackDevicePath, err = mount.PrepareEnvWithSmallMountPoint(Spoke1APIClient)
@@ -75,7 +75,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 			})
 
 			// 50835 - Insufficient Backup Partition Size
-			It("should have a failed cgu for single spoke", reportxml.ID("50835"), func() {
+			It("has a failed cgu for spoke 1", reportxml.ID("50835"), func() {
 				By("applying all the required CRs for backup")
 				cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 1).
 					WithCluster(RANConfig.Spoke1Name).
@@ -90,14 +90,14 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 			})
 		})
 
-		Context("with CGU disabled", func() {
+		When("the CGU is disabled", func() {
 			BeforeEach(func() {
-				By("checking that the talm version is at least 4.12")
+				By("checking that the TALM version is at least 4.12")
 				versionInRange, err := version.IsVersionStringInRange(RANConfig.HubOperatorVersions[ranparam.TALM], "4.12", "")
-				Expect(err).ToNot(HaveOccurred(), "Failed to compare talm version string")
+				Expect(err).ToNot(HaveOccurred(), "Failed to compare TALM version string")
 
 				if !versionInRange {
-					Skip("CGU disabled requires talm 4.12 or higher")
+					Skip("CGU disabled requires TALM 4.12 or higher")
 				}
 			})
 
@@ -162,7 +162,7 @@ var _ = Describe("TALM backup tests", Label(tsparams.LabelBackupTestCases), func
 		})
 
 		// 74752 Unblock Backup in Batch OCP Upgrade
-		It("should not affect backup on second spoke in same batch", reportxml.ID("74752"), func() {
+		It("successfully backs up on second spoke in same batch", reportxml.ID("74752"), func() {
 			By("applying all the required CRs for backup")
 			// max concurrency of 2 so both spokes are in the same batch
 			cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 2).
@@ -192,19 +192,19 @@ func assertBackupStatus(spokeName, expected string) {
 			"Failed to pull cgu %s in namespace %s", tsparams.CguName, tsparams.TestNamespace)
 
 		if cguBuilder.Object.Status.Backup == nil {
-			glog.V(tsparams.LogLevel).Info("backup struct not ready yet")
+			glog.V(tsparams.LogLevel).Info("Backup struct not ready yet")
 
 			return ""
 		}
 
 		_, ok := cguBuilder.Object.Status.Backup.Status[spokeName]
 		if !ok {
-			glog.V(tsparams.LogLevel).Info("cluster name as key did not appear yet")
+			glog.V(tsparams.LogLevel).Info("Cluster name as key did not appear yet")
 
 			return ""
 		}
 
-		glog.V(tsparams.LogLevel).Infof("[%s] %s backup status: %s\n", cguBuilder.Object.Name, spokeName,
+		glog.V(tsparams.LogLevel).Infof("[%s] %s backup status: %s", cguBuilder.Object.Name, spokeName,
 			cguBuilder.Object.Status.Backup.Status[spokeName])
 
 		return cguBuilder.Object.Status.Backup.Status[spokeName]

@@ -59,7 +59,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			return
 		}
 
-		By("Restoring performance profile to original specs")
+		By("restoring performance profile to original specs")
 		perfProfile.Definition.Spec = originalPerfProfileSpec
 
 		_, err = perfProfile.Update(true)
@@ -75,39 +75,39 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 	})
 
 	// 54571 - Install SNO node with standard DU profile that does not include WorkloadHints
-	It("Verifies expected kernel parameters with no workload hints specified in PerformanceProfile",
-		reportxml.ID("54571"), func() {
-			workloadHints := perfProfile.Definition.Spec.WorkloadHints
-			if workloadHints != nil {
-				Skip("WorkloadHints already present in perfProfile.Spec")
-			}
+	It("verifies expected kernel parameters with no workload hints "+
+		"specified in PerformanceProfile", reportxml.ID("54571"), func() {
+		workloadHints := perfProfile.Definition.Spec.WorkloadHints
+		if workloadHints != nil {
+			Skip("WorkloadHints already present in perfProfile.Spec")
+		}
 
-			By("Checking for expected kernel parameters")
-			cmdline, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient,
-				ranparam.RetryCount, ranparam.RetryInterval, "cat /proc/cmdline")
-			Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
+		By("checking for expected kernel parameters")
+		cmdline, err := cluster.ExecCommandOnSNOWithRetries(Spoke1APIClient,
+			ranparam.RetryCount, ranparam.RetryInterval, "cat /proc/cmdline")
+		Expect(err).ToNot(HaveOccurred(), "Failed to cat /proc/cmdline")
 
-			// Expected default set of kernel parameters when no WorkloadHints are specified in PerformanceProfile
-			requiredKernelParms := []string{
-				"nohz_full=[0-9,-]+",
-				"tsc=nowatchdog",
-				"nosoftlockup",
-				"nmi_watchdog=0",
-				"mce=off",
-				"skew_tick=1",
-				"intel_pstate=disable",
-			}
-			for _, parameter := range requiredKernelParms {
-				By(fmt.Sprintf("Checking /proc/cmdline for %s", parameter))
-				rePattern := regexp.MustCompile(parameter)
-				Expect(rePattern.FindStringIndex(cmdline)).
-					ToNot(BeNil(), "Kernel parameter %s is missing from cmdline", parameter)
-			}
-		})
+		// Expected default set of kernel parameters when no WorkloadHints are specified in PerformanceProfile
+		requiredKernelParms := []string{
+			"nohz_full=[0-9,-]+",
+			"tsc=nowatchdog",
+			"nosoftlockup",
+			"nmi_watchdog=0",
+			"mce=off",
+			"skew_tick=1",
+			"intel_pstate=disable",
+		}
+		for _, parameter := range requiredKernelParms {
+			By(fmt.Sprintf("checking /proc/cmdline for %s", parameter))
+			rePattern := regexp.MustCompile(parameter)
+			Expect(rePattern.FindStringIndex(cmdline)).
+				ToNot(BeNil(), "Kernel parameter %s is missing from cmdline", parameter)
+		}
+	})
 
 	// 54572 - Enable powersave at node level and then enable performance at node level
-	It("Enables powersave at node level and then enable performance at node level", reportxml.ID("54572"), func() {
-		By("Patching the performance profile with the workload hints")
+	It("enables powersave at node level and then enables performance at node level", reportxml.ID("54572"), func() {
+		By("patching the performance profile with the workload hints")
 		err := helper.SetPowerModeAndWaitForMcpUpdate(perfProfile, *nodeList[0], true, false, true)
 		Expect(err).ToNot(HaveOccurred(), "Failed to set power mode")
 
@@ -122,72 +122,72 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 
 	// 54574 - Enable powersave at node level and then enable high performance at node level, check power
 	// consumption with no workload pods.
-	It("Enable powersave, and then enable high performance at node level, check power consumption with no workload pods.",
-		reportxml.ID("54574"), func() {
-			testPodAnnotations := map[string]string{
-				"cpu-load-balancing.crio.io": "disable",
-				"cpu-quota.crio.io":          "disable",
-				"irq-load-balancing.crio.io": "disable",
-				"cpu-c-states.crio.io":       "disable",
-				"cpu-freq-governor.crio.io":  "performance",
+	It("enables powersave, enables high performance at node level, "+
+		"and checks power consumption with no workload pods", reportxml.ID("54574"), func() {
+		testPodAnnotations := map[string]string{
+			"cpu-load-balancing.crio.io": "disable",
+			"cpu-quota.crio.io":          "disable",
+			"irq-load-balancing.crio.io": "disable",
+			"cpu-c-states.crio.io":       "disable",
+			"cpu-freq-governor.crio.io":  "performance",
+		}
+
+		cpuLimit := resource.MustParse("2")
+		memLimit := resource.MustParse("100Mi")
+
+		By("defining the test pod")
+		testpod, err := helper.DefineQoSTestPod(
+			tsparams.TestingNamespace, nodeName, cpuLimit.String(), cpuLimit.String(), memLimit.String(), memLimit.String())
+		Expect(err).ToNot(HaveOccurred(), "Failed to define test pod")
+
+		testpod.Definition.Annotations = testPodAnnotations
+		runtimeClass := fmt.Sprintf("%s-%s", components.ComponentNamePrefix, perfProfile.Definition.Name)
+		testpod.Definition.Spec.RuntimeClassName = &runtimeClass
+
+		DeferCleanup(func() {
+			// Delete the test pod if it's still around when the function returns, like in a test case failure.
+			if testpod.Exists() {
+				By("deleting the test pod in case of a failure")
+				_, err = testpod.DeleteAndWait(tsparams.PowerSaveTimeout)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete test pod in case of failure")
 			}
-
-			cpuLimit := resource.MustParse("2")
-			memLimit := resource.MustParse("100Mi")
-
-			By("Define test pod")
-			testpod, err := helper.DefineQoSTestPod(
-				tsparams.TestingNamespace, nodeName, cpuLimit.String(), cpuLimit.String(), memLimit.String(), memLimit.String())
-			Expect(err).ToNot(HaveOccurred(), "Failed to define test pod")
-
-			testpod.Definition.Annotations = testPodAnnotations
-			runtimeClass := fmt.Sprintf("%s-%s", components.ComponentNamePrefix, perfProfile.Definition.Name)
-			testpod.Definition.Spec.RuntimeClassName = &runtimeClass
-
-			DeferCleanup(func() {
-				// Delete the test pod if it's still around when the function returns, like in a test case failure.
-				if testpod.Exists() {
-					By("Delete pod in case of a failure")
-					_, err = testpod.DeleteAndWait(tsparams.PowerSaveTimeout)
-					Expect(err).ToNot(HaveOccurred(), "Failed to delete test pod in case of failure")
-				}
-			})
-
-			By("Create test pod")
-			testpod, err = testpod.CreateAndWaitUntilRunning(tsparams.PowerSaveTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to create pod")
-			Expect(testpod.Object.Status.QOSClass).To(Equal(corev1.PodQOSGuaranteed),
-				"Test pod does not have QoS class of Guaranteed")
-
-			cpusetOutput, err := testpod.ExecCommand([]string{"sh", `-c`, "taskset -c -p $$ | cut -d: -f2"})
-			Expect(err).ToNot(HaveOccurred(), "Failed to get cpuset")
-
-			By("Verify powersetting of cpus used by the pod")
-			trimmedOutput := strings.TrimSpace(cpusetOutput.String())
-			cpusUsed, err := cpuset.Parse(trimmedOutput)
-			Expect(err).ToNot(HaveOccurred(), "Failed to parse cpuset output")
-
-			targetCpus := cpusUsed.List()
-			checkCPUGovernorsAndResumeLatency(targetCpus, "n/a", "performance")
-
-			By("Verify the rest of cpus have default power setting")
-			allCpus := nodeList[0].Object.Status.Capacity.Cpu()
-			cpus, err := cpuset.Parse(fmt.Sprintf("0-%d", allCpus.Value()-1))
-			Expect(err).ToNot(HaveOccurred(), "Failed to parse cpuset")
-
-			otherCPUs := cpus.Difference(cpusUsed)
-			// Verify cpus not assigned to the pod have default power settings.
-			checkCPUGovernorsAndResumeLatency(otherCPUs.List(), "0", "performance")
-
-			By("Delete the pod")
-			_, err = testpod.DeleteAndWait(tsparams.PowerSaveTimeout)
-			Expect(err).ToNot(HaveOccurred(), "Failed to delete test pod")
-
-			By("Verify after pod was deleted cpus assigned to container have default powersave settings")
-			checkCPUGovernorsAndResumeLatency(targetCpus, "0", "performance")
 		})
 
-	Context("Collect power usage metrics", Ordered, func() {
+		By("creating the test pod")
+		testpod, err = testpod.CreateAndWaitUntilRunning(tsparams.PowerSaveTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create pod")
+		Expect(testpod.Object.Status.QOSClass).To(Equal(corev1.PodQOSGuaranteed),
+			"Test pod does not have QoS class of Guaranteed")
+
+		cpusetOutput, err := testpod.ExecCommand([]string{"sh", `-c`, "taskset -c -p $$ | cut -d: -f2"})
+		Expect(err).ToNot(HaveOccurred(), "Failed to get cpuset")
+
+		By("verifying powersetting of cpus used by the test pod")
+		trimmedOutput := strings.TrimSpace(cpusetOutput.String())
+		cpusUsed, err := cpuset.Parse(trimmedOutput)
+		Expect(err).ToNot(HaveOccurred(), "Failed to parse cpuset output")
+
+		targetCpus := cpusUsed.List()
+		checkCPUGovernorsAndResumeLatency(targetCpus, "n/a", "performance")
+
+		By("verifying the rest of cpus have default power setting")
+		allCpus := nodeList[0].Object.Status.Capacity.Cpu()
+		cpus, err := cpuset.Parse(fmt.Sprintf("0-%d", allCpus.Value()-1))
+		Expect(err).ToNot(HaveOccurred(), "Failed to parse cpuset")
+
+		otherCPUs := cpus.Difference(cpusUsed)
+		// Verify cpus not assigned to the pod have default power settings.
+		checkCPUGovernorsAndResumeLatency(otherCPUs.List(), "0", "performance")
+
+		By("deleting the test pod")
+		_, err = testpod.DeleteAndWait(tsparams.PowerSaveTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Failed to delete test pod")
+
+		By("verifying after the test pod was deleted cpus assigned to container have default powersave settings")
+		checkCPUGovernorsAndResumeLatency(targetCpus, "0", "performance")
+	})
+
+	When("collecting power usage metrics", Ordered, func() {
 		var (
 			samplingInterval time.Duration
 			powerState       string
@@ -206,7 +206,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			Expect(err).ToNot(HaveOccurred(), "Failed to get power state for the performance profile")
 		})
 
-		It("Checks power usage for 'noworkload' scenario", func() {
+		It("checks power usage for 'noworkload' scenario", func() {
 			duration, err := time.ParseDuration(RANConfig.NoWorkloadDuration)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse no workload duration")
 
@@ -219,7 +219,7 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 			}
 		})
 
-		It("Checks power usage for 'steadyworkload' scenario", func() {
+		It("checks power usage for 'steadyworkload' scenario", func() {
 			duration, err := time.ParseDuration(RANConfig.WorkloadDuration)
 			Expect(err).ToNot(HaveOccurred(), "Failed to parse steady workload duration")
 

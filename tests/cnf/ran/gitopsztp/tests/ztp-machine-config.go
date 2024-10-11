@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("ZTP Machine Config Tests", Label(tsparams.LabelMachineConfigTestCases), func() {
 	// 54239 - Annotation on generated CRs for traceability
-	It("should find the ztp annotation present in the machine configs", reportxml.ID("54239"), func() {
+	It("finds the ztp annotation present in the machine configs", reportxml.ID("54239"), func() {
 		machineConfigsToCheck := []string{
 			"container-mount-namespace-and-kubelet-conf-master",
 			"container-mount-namespace-and-kubelet-conf-worker",

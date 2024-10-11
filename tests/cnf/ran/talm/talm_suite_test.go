@@ -39,6 +39,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	// Deleting the namespace after the suite finishes ensures all the CGUs created are deleted
+	By("deleting TALM test namespace to ensure test suite is cleaned up")
 	err := setup.DeleteTalmTestNamespace()
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete TALM test namespace")
 })

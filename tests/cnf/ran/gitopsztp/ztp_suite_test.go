@@ -48,6 +48,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	By("deleting ZTP test namespace to clean up test suite")
 	err := namespace.NewBuilder(HubAPIClient, tsparams.TestNamespace).DeleteAndWait(5 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete ZTP test namespace")
 })
