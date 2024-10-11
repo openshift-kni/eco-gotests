@@ -218,7 +218,9 @@ func createFrrPod(
 
 	if configmapName != "" {
 		frrContainer := pod.NewContainerBuilder(
-			tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
+			tsparams.FRRSecondContainerName,
+			NetConfig.CnfNetTestContainer,
+			[]string{"/bin/bash", "-c", "ip route del default && sleep INF"}).
 			WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
 
 		frrCtr, err := frrContainer.GetContainerCfg()
