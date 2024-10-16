@@ -27,6 +27,8 @@ const (
 	LabelSpokeCheckerTests = "ztp-spoke-checker"
 	// LabelClusterInstanceDeleteTestCases is the label for the siteconfig operator's cluster instance delete test cases.
 	LabelClusterInstanceDeleteTestCases = "ztp-cluster-instance-delete"
+	// LabelSiteconfigFailoverTestCases is the label for the siteconfig operator's failover test cases.
+	LabelSiteconfigFailoverTestCases = "ztp-siteconfig-failover"
 
 	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
 	LabelBiosDayZeroTests = "ztp-bios-day-zero"
@@ -90,6 +92,10 @@ const (
 	ZtpTestPathDetachAIMNO = "ztp-test/siteconfig-operator/detach-ai-mno"
 	// ZtpTestPathDetachAISNO is the git path for the siteconfig operator detach AI SNO cluster instance test.
 	ZtpTestPathDetachAISNO = "ztp-test/siteconfig-operator/detach-ai-sno"
+	// ZtpTestPathNoClusterTemplateCm is the git path for the siteconfig operator non-existent cluster template cm test.
+	ZtpTestPathNoClusterTemplateCm = "ztp-test/siteconfig-operator/non-existent-cluster-template-cm"
+	// ZtpTestPathNoExtraManifestsCm is the git path for the siteconfig operator non-existent extra manifests cm test.
+	ZtpTestPathNoExtraManifestsCm = "ztp-test/siteconfig-operator/non-existent-extra-manifests-cm"
 	// ZtpKustomizationPath is the path to the kustomization file in the ztp test.
 	ZtpKustomizationPath = "/kustomization.yaml"
 
@@ -136,6 +142,17 @@ const (
 	DefaultAINodeTemplatesConfigMapName = "ai-node-templates-v1"
 	// SiteconfigOperatorPodLabel is the name of siteconfig operator pod label selector.
 	SiteconfigOperatorPodLabel = "app.kubernetes.io/name=siteconfig-controller"
+
+	// ClusterInstanceValidatedType is one of the type of ClusterInstance condition types.
+	ClusterInstanceValidatedType = "ClusterInstanceValidated"
+	// ClusterInstanceFailReason is the reason for a failure of all ClusterInstance condition types.
+	ClusterInstanceFailReason = "Failed"
+	// NonExistentExtraManifestConfigMapFailMessage is the message for ClusterInstanceValidated condition type.
+	NonExistentExtraManifestConfigMapFailMessage = "Validation failed: failed to retrieve ExtraManifest"
+	// NonExistentClusterTemplateConfigMapFailMessage is the message for ClusterInstanceValidated condition type.
+	NonExistentClusterTemplateConfigMapFailMessage = "Validation failed: failed to validate cluster-level TemplateRef"
+	// SiteconfigOperatorDefaultReconcileTime is the default time for siteconfig controller to reconcile.
+	SiteconfigOperatorDefaultReconcileTime = 5 * time.Minute
 
 	// LogLevel is the verbosity of glog statements in this test suite.
 	LogLevel glog.Level = 90

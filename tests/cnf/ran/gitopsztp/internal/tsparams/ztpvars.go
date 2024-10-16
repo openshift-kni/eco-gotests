@@ -11,6 +11,7 @@ import (
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
@@ -79,5 +80,23 @@ var (
 		"image-registry-policy-pvc",
 		"image-registry-policy-pv",
 		"image-registry-policy-config",
+	}
+
+	// CINonExistentExtraManifestConfigMapCondition is the condition when referencing non-existent.
+	// extra-manifest config map in ClusterInstance CR.
+	CINonExistentExtraManifestConfigMapCondition = metav1.Condition{
+		Type:    ClusterInstanceValidatedType,
+		Status:  metav1.ConditionFalse,
+		Message: NonExistentExtraManifestConfigMapFailMessage,
+		Reason:  ClusterInstanceFailReason,
+	}
+
+	// CINonExistentClusterTemplateConfigMapCondition is the condition when referencing non-existent.
+	// cluster templates config map in ClusterInstance CR.
+	CINonExistentClusterTemplateConfigMapCondition = metav1.Condition{
+		Type:    ClusterInstanceValidatedType,
+		Status:  metav1.ConditionFalse,
+		Message: NonExistentClusterTemplateConfigMapFailMessage,
+		Reason:  ClusterInstanceFailReason,
 	}
 )
