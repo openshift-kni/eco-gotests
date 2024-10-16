@@ -29,6 +29,8 @@ const (
 	LabelClusterInstanceDeleteTestCases = "ztp-cluster-instance-delete"
 	// LabelSiteconfigFailoverTestCases is the label for the siteconfig operator's failover test cases.
 	LabelSiteconfigFailoverTestCases = "ztp-siteconfig-failover"
+	// LabelSiteconfigNegativeTestCases is the label for the siteconfig operator's negative test cases.
+	LabelSiteconfigNegativeTestCases = "ztp-siteconfig-negative"
 
 	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
 	LabelBiosDayZeroTests = "ztp-bios-day-zero"
@@ -96,6 +98,14 @@ const (
 	ZtpTestPathNoClusterTemplateCm = "ztp-test/siteconfig-operator/non-existent-cluster-template-cm"
 	// ZtpTestPathNoExtraManifestsCm is the git path for the siteconfig operator non-existent extra manifests cm test.
 	ZtpTestPathNoExtraManifestsCm = "ztp-test/siteconfig-operator/non-existent-extra-manifests-cm"
+	// ZtpTestPathInvalidTemplateRef is the git path for the siteconfig operator invalid template reference test.
+	ZtpTestPathInvalidTemplateRef = "ztp-test/siteconfig-operator/invalid-template-ref"
+	// ZtpTestPathValidTemplateRef is the git path for the siteconfig operator valid template reference test.
+	ZtpTestPathValidTemplateRef = "ztp-test/siteconfig-operator/valid-template-ref"
+	// ZtpTestPathUniqueClusterName is the git path for the siteconfig operator unique cluster name test.
+	ZtpTestPathUniqueClusterName = "ztp-test/siteconfig-operator/unique-cluster-name"
+	// ZtpTestPathDuplicateClusterName is the git path for the siteconfig operator duplicate cluster name test.
+	ZtpTestPathDuplicateClusterName = "ztp-test/siteconfig-operator/duplicate-cluster-name"
 	// ZtpKustomizationPath is the path to the kustomization file in the ztp test.
 	ZtpKustomizationPath = "/kustomization.yaml"
 
@@ -145,12 +155,24 @@ const (
 
 	// ClusterInstanceValidatedType is one of the type of ClusterInstance condition types.
 	ClusterInstanceValidatedType = "ClusterInstanceValidated"
+	// ProvisionedType is one of the type of ClusterInstance condition types.
+	ProvisionedType = "Provisioned"
+	// RenderedTemplatesValidatedType is one of the type of ClusterInstance condition types.
+	RenderedTemplatesValidatedType = "RenderedTemplatesValidated"
 	// ClusterInstanceFailReason is the reason for a failure of all ClusterInstance condition types.
 	ClusterInstanceFailReason = "Failed"
+	// ClusterInstanceInProgressReason is the reason for in-progress cluster provisioning.
+	ClusterInstanceInProgressReason = "InProgress"
 	// NonExistentExtraManifestConfigMapFailMessage is the message for ClusterInstanceValidated condition type.
 	NonExistentExtraManifestConfigMapFailMessage = "Validation failed: failed to retrieve ExtraManifest"
 	// NonExistentClusterTemplateConfigMapFailMessage is the message for ClusterInstanceValidated condition type.
 	NonExistentClusterTemplateConfigMapFailMessage = "Validation failed: failed to validate cluster-level TemplateRef"
+	// InvalidTemplateRefFailMessage is the message for invalid template reference condition.
+	InvalidTemplateRefFailMessage = "Validation failed: failed to validate node-level TemplateRef"
+	// ValidTemplateRefSuccessMessage is the message for valid template reference condition.
+	ValidTemplateRefSuccessMessage = "Provisioning cluster"
+	// RenderedManifestsFailMessage is the message for rendered manifests dry-run validation failure.
+	RenderedManifestsFailMessage = "Rendered manifests failed dry-run validation"
 	// SiteconfigOperatorDefaultReconcileTime is the default time for siteconfig controller to reconcile.
 	SiteconfigOperatorDefaultReconcileTime = 5 * time.Minute
 

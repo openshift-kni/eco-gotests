@@ -99,4 +99,31 @@ var (
 		Message: NonExistentClusterTemplateConfigMapFailMessage,
 		Reason:  ClusterInstanceFailReason,
 	}
+
+	// CIInvalidTemplateRefCondition is the condition when referencing invalid.
+	// node level template in ClusterInstance CR.
+	CIInvalidTemplateRefCondition = metav1.Condition{
+		Type:    ClusterInstanceValidatedType,
+		Status:  metav1.ConditionFalse,
+		Message: InvalidTemplateRefFailMessage,
+		Reason:  ClusterInstanceFailReason,
+	}
+
+	// CIValidTemplateRefCondition is the condition when referencing valid.
+	// cluster & node level template in ClusterInstance CR.
+	CIValidTemplateRefCondition = metav1.Condition{
+		Type:    ProvisionedType,
+		Status:  metav1.ConditionFalse,
+		Message: ValidTemplateRefSuccessMessage,
+		Reason:  ClusterInstanceInProgressReason,
+	}
+
+	// CIDuplicateClusterNameCondition is the condition when referencing duplicate.
+	// cluster name in ClusterInstance CR.
+	CIDuplicateClusterNameCondition = metav1.Condition{
+		Type:    RenderedTemplatesValidatedType,
+		Status:  metav1.ConditionFalse,
+		Message: RenderedManifestsFailMessage,
+		Reason:  ClusterInstanceFailReason,
+	}
 )
