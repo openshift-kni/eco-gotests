@@ -16,7 +16,6 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/upgrade-talm/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
-	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 )
 
 var (
@@ -46,14 +45,6 @@ var _ = Describe(
 			By("Retrieve seed image version and updating LCA init-monitor watchdog timer ", func() {
 				ibu, err = lca.PullImageBasedUpgrade(TargetSNOAPIClient)
 				Expect(err).NotTo(HaveOccurred(), "error pulling ibu resource from cluster")
-
-				seedImageVersion = ibu.Definition.Spec.SeedImageRef.Version
-
-				By("Setting LCA init-monitor watchdog timer to 5 minutes")
-				ibu.Definition.Spec.AutoRollbackOnFailure = &lcav1.AutoRollbackOnFailure{}
-				ibu.Definition.Spec.AutoRollbackOnFailure.InitMonitorTimeoutSeconds = 300
-				ibu, err = ibu.Update()
-				Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with custom lca init-monitor timeout value")
 			})
 		})
 
@@ -61,6 +52,20 @@ var _ = Describe(
 			By("Deleting IBGU on target hub cluster", func() {
 				_, err := newIbguBuilder.DeleteAndWait(1 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete IBGU on target hub cluster")
+
+				abortIbguBuilder := ibgu.NewIbguBuilder(TargetHubAPIClient, "abortibgu", tsparams.IbguNamespace).
+					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
+					WithSeedImageRef(CNFConfig.IbguSeedImage, CNFConfig.IbguSeedImageVersion).
+					WithPlan([]string{"Abort"}, 5, 10)
+
+				abortIbguBuilder, err = abortIbguBuilder.Create()
+				Expect(err).ToNot(HaveOccurred(), "Failed to create abort Ibgu.")
+
+				_, err = abortIbguBuilder.WaitUntilComplete(5 * time.Minute)
+				Expect(err).NotTo(HaveOccurred(), "abort IBGU did not complete in time.")
+
+				_, err = abortIbguBuilder.DeleteAndWait(1 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete abort ibgu on target hub cluster")
 
 				// Sleep for 10 seconds to allow talm to reconcile state.
 				// Sometimes if the next test re-creates the IBGUs too quickly,
@@ -88,8 +93,9 @@ var _ = Describe(
 				newIbguBuilder = ibgu.NewIbguBuilder(TargetHubAPIClient,
 					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
-					WithOadpContent(CNFConfig.IbguOadpCmName, CNFConfig.IbguOadpCmNamespace).
 					WithSeedImageRef(CNFConfig.IbguSeedImage, CNFConfig.IbguSeedImageVersion).
+					WithOadpContent(CNFConfig.IbguOadpCmName, CNFConfig.IbguOadpCmNamespace).
+					WithAutoRollbackOnFailure(300).
 					WithPlan([]string{"Prep"}, 20, 20).
 					WithPlan([]string{"Upgrade"}, 20, 20).
 					WithPlan([]string{"FinalizeUpgrade"}, 20, 20)
@@ -102,10 +108,19 @@ var _ = Describe(
 				ibuNode, err := nodes.List(TargetSNOAPIClient)
 				Expect(err).NotTo(HaveOccurred(), "error listing node")
 
+				By("Wait until Prep stage is completed")
+				_, err = ibu.WaitUntilStageComplete("Prep")
+				Expect(err).NotTo(HaveOccurred(), "error waiting for prep stage to complete")
+
 				By("Wait for node to become unreachable")
 
 				for _, node := range ibuNode {
-					unreachable, err := nodestate.WaitForNodeToBeUnreachable(node.Object.Name, "6443", time.Minute*10)
+					kubeAPIUnreachable, err := nodestate.WaitForNodeToBeUnreachable(node.Object.Name, "6443", time.Minute*10)
+
+					Expect(err).To(BeNil(), "error waiting for %s kube-api to become unreachable", node.Object.Name)
+					Expect(kubeAPIUnreachable).To(BeTrue(), "error: kube-api %s is still reachable", node.Object.Name)
+
+					unreachable, err := nodestate.WaitForNodeToBeUnreachable(node.Object.Name, "22", time.Minute*10)
 
 					Expect(err).To(BeNil(), "error waiting for %s node to shutdown", node.Object.Name)
 					Expect(unreachable).To(BeTrue(), "error: node %s is still reachable", node.Object.Name)
@@ -127,20 +142,38 @@ var _ = Describe(
 			})
 
 			By("Verifying booted stateroot name on target sno cluster node", func() {
+				ibu, err = lca.PullImageBasedUpgrade(TargetSNOAPIClient)
+				Expect(err).NotTo(HaveOccurred(), "error pulling ibu resource from cluster")
+
+				seedImageVersion = ibu.Definition.Spec.SeedImageRef.Version
+
 				var seedVersionFound bool
+				retries := 3
 
-				getDeploymentIndexCmd := "rpm-ostree status --json | jq '.deployments[0].osname'"
-				getDesiredStaterootName, err := cluster.ExecCmdWithStdout(TargetSNOAPIClient, getDeploymentIndexCmd)
-				Expect(err).NotTo(HaveOccurred(), "could not execute command: %s", err)
+				// retry 3 times to get the stateroot name
+				for attempt := 1; attempt <= retries; attempt++ {
+					getDeploymentIndexCmd := "rpm-ostree status --json | jq '.deployments[0].osname'"
+					getDesiredStaterootName, err := cluster.ExecCmdWithStdout(TargetSNOAPIClient, getDeploymentIndexCmd)
+					Expect(err).NotTo(HaveOccurred(), "could not execute command: %s", err)
 
-				for _, stdout := range getDesiredStaterootName {
-					bootedStaterootNameRes := strings.ReplaceAll(stdout, "_", "-")
-					if bootedStaterootNameRes != "" {
-						if strings.Contains(bootedStaterootNameRes, seedImageVersion) {
-							glog.V(100).Infof("Found "+seedImageVersion+" in %s", bootedStaterootNameRes)
+					for _, stdout := range getDesiredStaterootName {
+						bootedStaterootNameRes := strings.ReplaceAll(stdout, "_", "-")
+						if bootedStaterootNameRes != "" {
+							if strings.Contains(bootedStaterootNameRes, seedImageVersion) {
+								glog.V(100).Infof("Found "+seedImageVersion+" in %s", bootedStaterootNameRes)
+								seedVersionFound = true
 
-							seedVersionFound = true
+								break
+							}
 						}
+					}
+
+					if seedVersionFound {
+						break
+					}
+
+					if attempt < retries {
+						time.Sleep(time.Second * 5) // Wait for 5 seconds before retrying
 					}
 				}
 
