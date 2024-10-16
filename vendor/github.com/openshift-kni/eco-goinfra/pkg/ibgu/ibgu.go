@@ -113,6 +113,32 @@ func (builder *IbguBuilder) WithClusterLabelSelectors(labels map[string]string) 
 	return builder
 }
 
+// WithAutoRollbackOnFailure appends the AutoRollbackOnFailure InitMonitorTimeout to the ibuSpec.
+func (builder *IbguBuilder) WithAutoRollbackOnFailure(initMonitorTimeout int) *IbguBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Creating IBGU with AutoRollbackOnFailure and InitMonitorTimeout set to %d seconds",
+		initMonitorTimeout)
+
+	if initMonitorTimeout < 0 {
+		glog.V(100).Info("The 'initMonitorTimeout' parameter is undefined")
+
+		builder.errorMsg = "initMonitorTimeout cannot be undefined"
+
+		return builder
+	}
+
+	autoRollbackOnFailure := lcav1.AutoRollbackOnFailure{
+		InitMonitorTimeoutSeconds: initMonitorTimeout,
+	}
+
+	builder.Definition.Spec.IBUSpec.AutoRollbackOnFailure = &autoRollbackOnFailure
+
+	return builder
+}
+
 // WithSeedImageRef appends the SeedImageRef to the ibuSpec.
 func (builder *IbguBuilder) WithSeedImageRef(seedImage string, seedVersion string) *IbguBuilder {
 	if valid, _ := builder.validate(); !valid {
