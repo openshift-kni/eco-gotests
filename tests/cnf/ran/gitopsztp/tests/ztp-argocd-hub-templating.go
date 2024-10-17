@@ -63,7 +63,7 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 	})
 
 	// 54240 - Hub-side ACM templating with TALM
-	It("should report an error for using autoindent function where not allowed", reportxml.ID("54240"), func() {
+	It("reports an error for using autoindent function where not allowed", reportxml.ID("54240"), func() {
 		setupHubTemplateTest(tsparams.ZtpTestPathTemplatingAutoIndent)
 
 		By("validating TALM reported a policy error")
@@ -81,7 +81,7 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 
 	When("supported ACM hub side templating is used", func() {
 		// 54240 - Hub-side ACM templating with TALM
-		It("should create the policy successfully with a valid template", reportxml.ID("54240"), func() {
+		It("creates the policy successfully with a valid template", reportxml.ID("54240"), func() {
 			By("checking the ZTP version")
 			versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.16", "")
 			Expect(err).ToNot(HaveOccurred(), "Failed to check if ZTP version is in range")
@@ -167,6 +167,8 @@ func assertTalmPodLog(client *clients.Settings, expectedSubstring string) {
 		}
 
 		return podLog
-	}, tsparams.ArgoCdChangeTimeout, tsparams.ArgoCdChangeInterval).
+	}).
+		WithTimeout(tsparams.ArgoCdChangeTimeout).
+		WithPolling(tsparams.ArgoCdChangeInterval).
 		Should(ContainSubstring(expectedSubstring), "Failed to assert TALM pod log contains %s", expectedSubstring)
 }

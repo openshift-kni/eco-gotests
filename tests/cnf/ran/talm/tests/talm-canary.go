@@ -18,8 +18,6 @@ import (
 )
 
 var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func() {
-	var err error
-
 	BeforeEach(func() {
 		By("checking that hub and two spokes are present")
 		Expect(rancluster.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient})).
@@ -38,7 +36,7 @@ var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func
 	})
 
 	// 47954 - Tests upgrade aborted due to short timeout.
-	It("should stop the CGU where first canary fails", reportxml.ID("47954"), func() {
+	It("stops the CGU when first canary fails", reportxml.ID("47954"), func() {
 		var err error
 
 		By("verifying the temporary namespace does not exist on spoke 1 and 2")
@@ -84,7 +82,9 @@ var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func
 	})
 
 	// 47947 - Tests successful ocp and operator upgrade with canaries and multiple batches.
-	It("should complete the CGU where all canaries are successful", reportxml.ID("47947"), func() {
+	It("completes the CGU when all canaries are successful", reportxml.ID("47947"), func() {
+		var err error
+
 		By("creating the CGU and associated resources")
 		cguBuilder := cgu.NewCguBuilder(HubAPIClient, tsparams.CguName, tsparams.TestNamespace, 1).
 			WithCluster(RANConfig.Spoke1Name).
@@ -99,7 +99,7 @@ var _ = Describe("TALM Canary Tests", Label(tsparams.LabelCanaryTestCases), func
 		cguBuilder, err = cguBuilder.WaitUntilClusterInProgress(RANConfig.Spoke2Name, 3*tsparams.TalmDefaultReconcileTime)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for batch remediation for spoke 2 to be in progress")
 
-		By("Making sure the non-canary cluster (spoke 1) has not started yet")
+		By("making sure the non-canary cluster (spoke 1) has not started yet")
 		progress, ok := cguBuilder.Object.Status.Status.CurrentBatchRemediationProgress[RANConfig.Spoke1Name]
 		if ok {
 			Expect(progress.State).ToNot(Equal("InProgress"), "Batch remediation for non-canary cluster has already started")

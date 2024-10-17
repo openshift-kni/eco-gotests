@@ -18,10 +18,7 @@ import (
 )
 
 var _ = Describe("ZTP Argo CD ACM CR Tests", Label(tsparams.LabelArgoCdAcmCrsTestCases), func() {
-	var (
-		acmPolicyGeneratorImage string
-		// oldAcmPolicyGeneratorContainer corev1.Container
-	)
+	var acmPolicyGeneratorImage string
 
 	BeforeEach(func() {
 		By("verifying that ZTP meets the minimum version")
@@ -53,7 +50,7 @@ var _ = Describe("ZTP Argo CD ACM CR Tests", Label(tsparams.LabelArgoCdAcmCrsTes
 
 	// 54236 - Evaluating use of ACM's version of PolicyGenTemplates with our ZTP flow. This enables user created
 	// content that does not depend on our ZTP container but works "seamlessly" with it.
-	It("should use ACM CRs to template a policy, deploy it, and validate it succeeded", reportxml.ID("54236"), func() {
+	It("uses ACM CRs to template a policy, deploy it, and validate it succeeded", reportxml.ID("54236"), func() {
 		exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathAcmCrs, true)
 		if !exists {
 			Skip(err.Error())
