@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func prepareRapidastConfig(destinationPath string) error {
+func PrepareRapidastConfig(destinationPath string) error {
 
 	workingDir, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred(), err)
