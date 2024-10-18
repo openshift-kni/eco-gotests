@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/far-operator/internal/farparams"
+	"github.com/openshift-kni/eco-gotests/tests/rhwa/internal/dast"
 	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
 	"github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwaparams"
 
@@ -78,7 +79,7 @@ var _ = Describe(
 			Expect(kubeconfigPath).NotTo(BeNil())
 
 			By("Creating rapidast configuration")
-			err = prepareRapidastConfig(dirname)
+			err = dast.PrepareRapidastConfig(dirname)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating podman command")
