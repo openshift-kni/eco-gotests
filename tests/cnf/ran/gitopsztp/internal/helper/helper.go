@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/imageregistry"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
 	"github.com/openshift-kni/eco-goinfra/pkg/storage"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
@@ -156,4 +157,17 @@ func CleanupImageRegistryConfig(client *clients.Settings) error {
 	}
 
 	return nil
+}
+
+// DoesCIExtraLabelsExists looks for a extraLabels on a cluster instance CR and returns true if it exists.
+func DoesCIExtraLabelsExists(
+	client *clients.Settings, name string, namespace string, testKey string, testLabelKey string) (bool, error) {
+	clusterInstance, err := siteconfig.PullClusterInstance(client, name, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	_, exists := clusterInstance.Object.Spec.ExtraLabels[testKey][testLabelKey]
+
+	return exists, nil
 }
