@@ -16,7 +16,6 @@ import (
 var _ = Describe(
 	"Performing upgrade prep abort flow",
 	Label(tsparams.LabelPrepAbortFlow), func() {
-		var newIbguBuilder *ibgu.IbguBuilder
 
 		BeforeEach(func() {
 			By("Fetching target sno cluster name", func() {
@@ -32,10 +31,16 @@ var _ = Describe(
 
 		AfterEach(func() {
 			By("Deleting IBGU on target hub cluster", func() {
-				_, err := newIbguBuilder.DeleteAndWait(1 * time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete IBGU on target hub cluster")
-			})
+				newIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+					tsparams.IbguName, tsparams.IbguNamespace).
+					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
+					WithSeedImageRef(cnfinittools.CNFConfig.IbguSeedImage, cnfinittools.CNFConfig.IbguSeedImageVersion).
+					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
+					WithPlan([]string{"Prep", "Upgrade"}, 5, 30)
 
+				_, err = newIbguBuilder.DeleteAndWait(1 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete prep-upgrade ibgu on target hub cluster")
+			})
 			// Sleep for 10 seconds to allow talm to reconcile state.
 			// Sometimes if the next test re-creates the IBGUs too quickly,
 			// the policies compliance status is not updated correctly.
@@ -46,7 +51,7 @@ var _ = Describe(
 
 			By("Creating IBGU and monitoring IBU status to report completed", func() {
 
-				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+				newIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
 					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).

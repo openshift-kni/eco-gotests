@@ -27,7 +27,6 @@ var (
 var _ = Describe(
 	"Validating rollback stage after a failed upgrade",
 	Label(tsparams.LabelRollbackFlow), func() {
-		var newIbguBuilder *ibgu.IbguBuilder
 
 		BeforeEach(func() {
 			By("Saving target sno cluster info before the test", func() {
@@ -50,8 +49,15 @@ var _ = Describe(
 
 		AfterEach(func() {
 			By("Deleting IBGU on target hub cluster", func() {
-				_, err := newIbguBuilder.DeleteAndWait(1 * time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete IBGU on target hub cluster")
+				newIbguBuilder := ibgu.NewIbguBuilder(TargetHubAPIClient,
+					tsparams.IbguName, tsparams.IbguNamespace).
+					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
+					WithSeedImageRef(CNFConfig.IbguSeedImage, CNFConfig.IbguSeedImageVersion).
+					WithOadpContent(CNFConfig.IbguOadpCmName, CNFConfig.IbguOadpCmNamespace).
+					WithPlan([]string{"Prep", "Upgrade"}, 5, 30)
+
+				_, err = newIbguBuilder.DeleteAndWait(1 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete prep-upgrade ibgu on target hub cluster")
 
 				abortIbguBuilder := ibgu.NewIbguBuilder(TargetHubAPIClient, "abortibgu", tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
@@ -90,7 +96,7 @@ var _ = Describe(
 
 			By("Creating Prep->Upgrade->FinalizeUpgrae IBGU and waiting for node rebooted into stateroot B", func() {
 
-				newIbguBuilder = ibgu.NewIbguBuilder(TargetHubAPIClient,
+				newIbguBuilder := ibgu.NewIbguBuilder(TargetHubAPIClient,
 					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithSeedImageRef(CNFConfig.IbguSeedImage, CNFConfig.IbguSeedImageVersion).

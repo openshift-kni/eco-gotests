@@ -16,7 +16,6 @@ import (
 var _ = Describe(
 	"Validating abort at IBU upgrade stage",
 	Label(tsparams.LabelUpgradeAbortFlow), func() {
-		var newIbguBuilder *ibgu.IbguBuilder
 		var abortIbguBuilder *ibgu.IbguBuilder
 
 		BeforeEach(func() {
@@ -33,8 +32,22 @@ var _ = Describe(
 
 		AfterEach(func() {
 			By("Deleting IBGUs on target hub cluster", func() {
-				_, err := newIbguBuilder.DeleteAndWait(1 * time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete IBGU cgu on target hub cluster")
+				newIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+					tsparams.IbguName, tsparams.IbguNamespace).
+					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
+					WithSeedImageRef(cnfinittools.CNFConfig.IbguSeedImage, cnfinittools.CNFConfig.IbguSeedImageVersion).
+					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
+					WithPlan([]string{"Prep", "Upgrade"}, 5, 30)
+
+				_, err = newIbguBuilder.DeleteAndWait(1 * time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete prep-upgrade ibgu on target hub cluster")
+
+				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+					tsparams.AbortIbguName, tsparams.IbguNamespace).
+					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
+					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
+					WithSeedImageRef(cnfinittools.CNFConfig.IbguSeedImage, cnfinittools.CNFConfig.IbguSeedImageVersion).
+					WithPlan([]string{"Abort"}, 20, 20)
 
 				_, err = abortIbguBuilder.DeleteAndWait(1 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete Abort IBGU cgu on target hub cluster")
@@ -49,7 +62,7 @@ var _ = Describe(
 		It("Aborts an upgrade at IBU upgrade stage", reportxml.ID("69055"), func() {
 			By("Creating an upgrade IBGU", func() {
 
-				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+				newIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
 					tsparams.IbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
@@ -58,7 +71,7 @@ var _ = Describe(
 					WithPlan([]string{"Upgrade"}, 20, 20).
 					WithPlan([]string{"FinalizeUpgrade"}, 20, 20)
 
-				newIbguBuilder, err = newIbguBuilder.Create()
+				newIbguBuilder, err := newIbguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create IBGU")
 
 			})
@@ -86,7 +99,7 @@ var _ = Describe(
 				_, err = ibu.WaitUntilStageComplete("Idle")
 				Expect(err).NotTo(HaveOccurred(), "error waiting for idle stage to complete")
 
-				_, err = newIbguBuilder.WaitUntilComplete(time.Minute * 10)
+				_, err = abortIbguBuilder.WaitUntilComplete(time.Minute * 10)
 				Expect(err).ToNot(HaveOccurred(), "error waiting for IBGU  complete")
 
 			})
