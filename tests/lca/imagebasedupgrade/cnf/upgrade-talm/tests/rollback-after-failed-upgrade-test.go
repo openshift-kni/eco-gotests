@@ -106,7 +106,7 @@ var _ = Describe(
 					WithPlan([]string{"Upgrade"}, 20, 20).
 					WithPlan([]string{"FinalizeUpgrade"}, 20, 20)
 
-				newIbguBuilder, err = newIbguBuilder.Create()
+				_, err = newIbguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create IBGU")
 
 				By("Get list of node to be upgraded")

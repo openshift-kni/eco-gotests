@@ -42,7 +42,7 @@ var _ = Describe(
 				_, err = newIbguBuilder.DeleteAndWait(1 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete prep-upgrade ibgu on target hub cluster")
 
-				newIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+				abortIbguBuilder = ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
 					tsparams.AbortIbguName, tsparams.IbguNamespace).
 					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
 					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
@@ -71,9 +71,11 @@ var _ = Describe(
 					WithPlan([]string{"Upgrade"}, 20, 20).
 					WithPlan([]string{"FinalizeUpgrade"}, 20, 20)
 
-				newIbguBuilder, err := newIbguBuilder.Create()
+				_, err := newIbguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create IBGU")
 
+				// Wait for 10 seconds to avoid upgrade and finalize CGUs getting created simultaneously.
+				time.Sleep(10 * time.Second)
 			})
 
 			By("Aborting the upgrade phase once prep phase has finished", func() {
@@ -90,8 +92,7 @@ var _ = Describe(
 
 				abortIbguBuilder, err = newIbguBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create IBGU")
-				// Wait for 10 seconds to avoid upgrade and finalize CGUs getting created simultaneously.
-				time.Sleep(10 * time.Second)
+
 			})
 
 			By("Waiting until the IBU and IBGU have completed without errors", func() {
