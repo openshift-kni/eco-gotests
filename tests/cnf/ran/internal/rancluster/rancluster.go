@@ -8,6 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
@@ -139,4 +140,16 @@ func CheckSpokeClusterType(client *clients.Settings) (ranparam.ClusterType, erro
 	}
 
 	return ranparam.HighlyAvailableCluster, fmt.Errorf("could not determine spoke cluster type")
+}
+
+// DoesClusterLabelExist looks for a label on a managed cluster and returns true if it exists.
+func DoesClusterLabelExist(client *clients.Settings, clusterName string, label string) (bool, error) {
+	managedCluster, err := ocm.PullManagedCluster(client, clusterName)
+	if err != nil {
+		return false, err
+	}
+
+	_, exists := managedCluster.Object.Labels[label]
+
+	return exists, nil
 }

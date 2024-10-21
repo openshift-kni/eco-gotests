@@ -31,6 +31,8 @@ const (
 	LabelSiteconfigFailoverTestCases = "ztp-siteconfig-failover"
 	// LabelSiteconfigNegativeTestCases is the label for the siteconfig operator's negative test cases.
 	LabelSiteconfigNegativeTestCases = "ztp-siteconfig-negative"
+	// LabelSiteconfigDayTwoConfigTestCase is the label for the siteconfig operator's day 2 configuration test.
+	LabelSiteconfigDayTwoConfigTestCase = "ztp-siteconfig-day-two"
 
 	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
 	LabelBiosDayZeroTests = "ztp-bios-day-zero"
@@ -106,6 +108,8 @@ const (
 	ZtpTestPathUniqueClusterName = "ztp-test/siteconfig-operator/unique-cluster-name"
 	// ZtpTestPathDuplicateClusterName is the git path for the siteconfig operator duplicate cluster name test.
 	ZtpTestPathDuplicateClusterName = "ztp-test/siteconfig-operator/duplicate-cluster-name"
+	// ZtpTestPathNewClusterLabel is the git path for the siteconfig operator new cluster label test.
+	ZtpTestPathNewClusterLabel = "ztp-test/siteconfig-operator/new-cluster-label"
 	// ZtpKustomizationPath is the path to the kustomization file in the ztp test.
 	ZtpKustomizationPath = "/kustomization.yaml"
 
@@ -152,6 +156,10 @@ const (
 	DefaultAINodeTemplatesConfigMapName = "ai-node-templates-v1"
 	// SiteconfigOperatorPodLabel is the name of siteconfig operator pod label selector.
 	SiteconfigOperatorPodLabel = "app.kubernetes.io/name=siteconfig-controller"
+	// CIExtraLabelsKey is the key name of 'extraLabels:' field in ClusterInstance CR.
+	CIExtraLabelsKey = "ManagedCluster"
+	// TestLabelKey represents day-2 cluster label key in ClusterInstance CR.
+	TestLabelKey = "custom-test"
 
 	// ClusterInstanceValidatedType is one of the type of ClusterInstance condition types.
 	ClusterInstanceValidatedType = "ClusterInstanceValidated"
