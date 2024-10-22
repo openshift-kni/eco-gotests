@@ -31,14 +31,9 @@ var _ = Describe(
 
 		AfterEach(func() {
 			By("Deleting IBGU on target hub cluster", func() {
-				newIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
-					tsparams.IbguName, tsparams.IbguNamespace).
-					WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
-					WithSeedImageRef(cnfinittools.CNFConfig.IbguSeedImage, cnfinittools.CNFConfig.IbguSeedImageVersion).
-					WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
-					WithPlan([]string{"Prep", "Upgrade"}, 5, 30)
+				_, err := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+					tsparams.IbguName, tsparams.IbguNamespace).DeleteAndWait(1 * time.Minute)
 
-				_, err = newIbguBuilder.DeleteAndWait(1 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete prep-upgrade ibgu on target hub cluster")
 			})
 			// Sleep for 10 seconds to allow talm to reconcile state.
