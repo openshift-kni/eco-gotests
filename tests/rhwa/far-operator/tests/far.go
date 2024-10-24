@@ -51,11 +51,12 @@ var _ = Describe(
 			Expect(err).ToNot(HaveOccurred(), "Pod is not ready")
 		})
 
-		It("Verify Fence Agents Remediation Operator passes trivy scan without vulnerabilities", reportxml.ID("76877"), func() {
+		It("Verify FAR Operator passes trivy scan without vulnerabilities", reportxml.ID("76877"), func() {
 
 			By("Creating temp directory")
 			dirname, err := os.MkdirTemp("", "case76877_*")
-			os.Chmod(dirname, 0755)
+			Expect(err).NotTo(HaveOccurred())
+			err = os.Chmod(dirname, 0755)
 			Expect(err).NotTo(HaveOccurred())
 			defer os.RemoveAll(dirname)
 
@@ -83,7 +84,11 @@ var _ = Describe(
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Creating podman command")
-			rapiDastCmd := fmt.Sprintf("podman run -it --rm -v %s:/home/rapidast/.kube/config:Z -v %s:/test:Z -v %s:/opt/rapidast/results:Z %s rapidast.py --config /test/%s",
+			rapiDastCmd := fmt.Sprintf("podman run -it --rm "+
+				"-v %s:/home/rapidast/.kube/config:Z "+
+				"-v %s:/test:Z "+
+				"-v %s:/opt/rapidast/results:Z "+
+				"%s rapidast.py --config /test/%s",
 				kubeconfigPath,
 				dirname,
 				resultsDirname,
@@ -92,7 +97,7 @@ var _ = Describe(
 			)
 			By("Running podman command")
 			rapiDastOutput, err := exec.Command("bash", "-c", rapiDastCmd).Output()
-			Expect(err).NotTo(HaveOccurred(), "Error occured during execution of RapiDast test")
+			Expect(err).NotTo(HaveOccurred(), "Error occurred during execution of RapiDast test")
 			glog.V(rhwaparams.RhwaLogLevel).Infof("RapiDast test execution output is %s\n", rapiDastOutput)
 
 			By("Checking output of trivy scan")
