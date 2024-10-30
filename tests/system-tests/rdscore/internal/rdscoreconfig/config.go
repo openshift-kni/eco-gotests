@@ -162,6 +162,8 @@ type CoreConfig struct {
 	IPVlanNADThreeName   string `yaml:"rdscore_ipvlan_nad_three_name" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_NAD_THREE_NAME"`
 	IPVlanNADFourName    string `yaml:"rdscore_ipvlan_nad_four_name" envconfig:"ECO_SYSTEM_RDSCORE_IPVLAN_NAD_FOUR_NAME"`
 	//nolint:lll
+	GracefulRestartAppLabel string `yaml:"rdscore_graceful_restart_app_label" envconfig:"ECO_RDSCORE_GRACEFUL_RESTART_APP_LABEL"`
+	//nolint:lll
 	PerformanceProfileHTName string `yaml:"rdscore_performance_profile_ht_name" envconfig:"ECO_RDS_CORE_PERFORMANCE_PROFILE_HT_NAME"`
 	//nolint:lll
 	KDumpWorkerMCPNodeLabel string         `yaml:"rdscore_kdump_worker_node_label" envconfig:"ECO_RDSCORE_KDUMP_WORKER_NODE_LABEL"`
@@ -352,6 +354,12 @@ type CoreConfig struct {
 	StorageCephFSSCName  string         `yaml:"rdscore_sc_cephfs_name" envconfig:"ECO_RDSCORE_SC_CEPHFS_NAME"`
 	StorageCephRBDSCName string         `yaml:"rdscore_sc_cephrbd_name" envconfig:"ECO_RDSCORE_SC_CEPHRBD_NAME"`
 	EgressServiceNS      string         `yaml:"rdscore_egress_service_ns" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_NS"`
+	//nolint:lll,nolintlint
+	GracefulRestartServiceNS string `yaml:"rdscore_graceful_restart_service_ns" envconfig:"ECO_RDSCORE_GRACEFUL_RESTART_SERVICE_NS"`
+	//nolint:lll,nolintlint
+	GracefulRestartServiceName string `yaml:"rdscore_graceful_restart_service_name" envconfig:"ECO_RDSCORE_GRACEFUL_RESTART_SERVICE_NAME"`
+	//nolint:lll,nolintlint
+	GracefulRestartAppServicePort string `yaml:"rdscore_graceful_restart_service_port" envconfig:"ECO_RDSCORE_GRACEFUL_RESTART_SERVICE_PORT"`
 	//nolint:lll,nolintlint
 	EgressServiceRemoteIP string `yaml:"rdscore_egress_service_remote_ip" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_REMOTE_IP"`
 	//nolint:lll,nolintlint
