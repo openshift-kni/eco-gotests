@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
+
+	"github.com/golang/glog"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,15 +19,18 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
+	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/lca"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/proxy"
+	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/route"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/internal/url"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
@@ -35,6 +41,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/internal/tsparams"
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	kmmv1beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	k8sScheme "k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -46,6 +54,13 @@ const (
 
 	extraManifestNamespaceConfigmapName = "extra-manifests-cm0"
 	extraManifesConfigmapConfigmapName  = "extra-manifests-cm1"
+
+	kmmManifestsConfigmapName  = "kmm-manifests-cm0"
+	kmmModuleName              = "simple-kmod-existing-quay"
+	kmmModuleNamespaceName     = "simple-kmod"
+	kmmModuleServiceAccoutName = "simple-kmod-manager"
+	kmmClusterRoleBindingName  = "simple-kmod-module-manager-rolebinding"
+	kmmClusterRoleName         = "system:openshift:scc:privileged"
 )
 
 var (
@@ -65,6 +80,7 @@ var _ = Describe(
 		)
 
 		BeforeAll(func() {
+
 			By("Get target cluster proxy configuration")
 			originalTargetProxy, err = proxy.Pull(APIClient)
 			Expect(err).NotTo(HaveOccurred(), "error pulling target cluster proxy")
@@ -78,6 +94,84 @@ var _ = Describe(
 			ibu.Definition.Spec.OADPContent = []lcav1.ConfigMapRef{}
 			ibu, err := ibu.Update()
 			Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with empty values")
+
+			if findInstalledCSV("kernel-module-management") {
+				glog.V(mgmtparams.MGMTLogLevel).Infof("KMM was installed")
+
+				By("Create namespace definition for KMM module")
+				kmmNamespace := namespace.NewBuilder(APIClient, kmmModuleNamespaceName)
+				kmmNamespace.Definition.Annotations = map[string]string{
+					"lca.openshift.io/apply-wave": "4",
+				}
+
+				By("Create string from the KMM module namespace definition")
+				kmmNamespaceString, err := brutil.NewBackRestoreObject(
+					kmmNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM namespace")
+
+				By("Create serviceaccount definition for KMM module")
+				kmmServiceAccount := serviceaccount.NewBuilder(APIClient, kmmModuleServiceAccoutName,
+					kmmModuleNamespaceName)
+				kmmServiceAccount.Definition.Annotations = map[string]string{
+					"lca.openshift.io/apply-wave": "5",
+				}
+
+				By("Create string from the KMM module serviceaccount definition")
+				kmmServiceAccountString, err := brutil.NewBackRestoreObject(
+					kmmServiceAccount.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM serviceaccount")
+
+				By("Create clusterrolebinding definition for KMM module")
+				kmmClusterRoleBinding := rbac.NewClusterRoleBindingBuilder(APIClient, kmmClusterRoleBindingName,
+					kmmClusterRoleName,
+					rbacv1.Subject{
+						Name:      kmmModuleServiceAccoutName,
+						Kind:      "ServiceAccount",
+						Namespace: kmmModuleNamespaceName,
+					},
+				)
+				kmmClusterRoleBinding.Definition.Annotations = map[string]string{
+					"lca.openshift.io/apply-wave": "6",
+				}
+
+				By("Create string from the KMM module clusterrolebinding definition")
+				kmmClusterRoleBindingString, err := brutil.NewBackRestoreObject(
+					kmmClusterRoleBinding.Definition, k8sScheme.Scheme, rbacv1.SchemeGroupVersion).String()
+				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM clusterrolebinding")
+
+				By("Create module definition for KMM")
+				kmmKernelMappings := kmmv1beta1.KernelMapping{Regexp: "^.+$",
+					ContainerImage: "quay.io/ocp-edge-qe/simple-kmod:$KERNEL_FULL_VERSION"}
+				var kmmKernelMappingsList []kmmv1beta1.KernelMapping
+				kmmMappings := append(kmmKernelMappingsList, kmmKernelMappings)
+
+				kmmModule := kmm.NewModuleBuilder(APIClient, kmmModuleName, kmmModuleNamespaceName)
+				kmmModule.Definition.Spec.ModuleLoader.ServiceAccountName = kmmModuleServiceAccoutName
+				kmmModule.Definition.Spec.ModuleLoader.Container.Modprobe.ModuleName = kmmModuleNamespaceName
+				kmmModule.Definition.Spec.ModuleLoader.Container.ImagePullPolicy = "Always"
+				kmmModule.Definition.Spec.ModuleLoader.Container.KernelMappings = kmmMappings
+				kmmModule.Definition.Spec.Selector = map[string]string{"node-role.kubernetes.io/worker": ""}
+
+				By("Create string from the KMM module namespace definition")
+				kmmModuleString, err := brutil.NewBackRestoreObject(
+					kmmModule.Definition, APIClient.Scheme(), kmmv1beta1.GroupVersion).String()
+				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM module")
+
+				By("Create configmap with the KMM module manifests")
+				kmmManifestsConfigmap, err := configmap.NewBuilder(
+					APIClient, kmmManifestsConfigmapName, mgmtparams.LCANamespace).WithData(map[string]string{
+					"namespace.yaml":          kmmNamespaceString,
+					"serviceaccount.yaml":     kmmServiceAccountString,
+					"clusterrolebinding.yaml": kmmClusterRoleBindingString,
+					"kmmmodule.yaml":          kmmModuleString,
+				}).Create()
+				Expect(err).NotTo(HaveOccurred(), "error creating configmap with KMM module manifests")
+
+				By("Update IBU with KMM module manifests")
+				_, err = ibu.WithExtraManifests(
+					kmmManifestsConfigmap.Object.Name, kmmManifestsConfigmap.Object.Namespace).Update()
+				Expect(err).NotTo(HaveOccurred(), "error updating image based upgrade with kmm module manifests")
+			}
 
 			if MGMTConfig.ExtraManifests {
 				By("Include user-defined catalogsources in IBU extraManifests")
@@ -334,6 +428,24 @@ var _ = Describe(
 			Expect(err.Error()).To(ContainSubstring("the stage transition is not permitted"),
 				"error: ibu seedimage updated with wrong next stage")
 		})
+
+		It("successfully loads kmm module", reportxml.ID("73457"), func() {
+			if !findInstalledCSV("kernel-module-management") {
+				Skip("Target was not installed with KMM")
+			}
+
+			By("Validate KMM module is loaded after upgrade", func() {
+				execCmd := "lsmod"
+				cmdOutput, err := cluster.ExecCmdWithStdout(APIClient, execCmd)
+				Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
+
+				for _, stdout := range cmdOutput {
+					Expect(strings.ReplaceAll(stdout, "\n", "")).To(ContainSubstring("simple_kmod"),
+						"error: simple_kmod wasn't loaded")
+
+				}
+			})
+		})
 	})
 
 //nolint:funlen
@@ -556,4 +668,17 @@ func verifyIBUWorkloadReachable() {
 	)
 
 	Expect(err).NotTo(HaveOccurred(), "error reaching ibu workload")
+}
+
+func findInstalledCSV(expectedCSV string) bool {
+	csvList, err := olm.ListClusterServiceVersionInAllNamespaces(APIClient)
+	Expect(err).NotTo(HaveOccurred(), "error retrieving the list of CSV")
+
+	for _, csv := range csvList {
+		if strings.Contains(csv.Object.Name, expectedCSV) {
+			return true
+		}
+	}
+
+	return false
 }
