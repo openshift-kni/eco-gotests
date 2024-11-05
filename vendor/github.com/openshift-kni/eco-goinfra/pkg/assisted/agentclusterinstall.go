@@ -638,12 +638,17 @@ func (builder *AgentClusterInstallBuilder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return fmt.Errorf("agentclusterinstall cannot be deleted because it does not exist")
+		glog.V(100).Infof("agentclusterinstall %s in namespace %s does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return fmt.Errorf("cannot delete agentclusterinstall: %w", err)
 	}
 

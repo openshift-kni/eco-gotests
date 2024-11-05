@@ -10,6 +10,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -23,15 +24,28 @@ type Builder struct {
 	// Created infrastructure object.
 	Object *configv1.Infrastructure
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 }
 
 // Pull loads an existing infrastructure into Builder struct.
 func Pull(apiClient *clients.Settings) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing infrastructure name: %s", infrastructureName)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the Infrastructure is nil")
+
+		return nil, fmt.Errorf("infrastructure 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(configv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add config v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &configv1.Infrastructure{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: infrastructureName,
@@ -40,12 +54,34 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
+		glog.V(100).Infof("The Infrastructure %s does not exist", infrastructureName)
+
 		return nil, fmt.Errorf("infrastructure object %s does not exist", infrastructureName)
 	}
 
 	builder.Definition = builder.Object
 
 	return &builder, nil
+}
+
+// Get returns the Infrastructure object if found.
+func (builder *Builder) Get() (*configv1.Infrastructure, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting Infrastructure object %s", builder.Definition.Name)
+
+	infrastructure := &configv1.Infrastructure{}
+	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{Name: builder.Definition.Name}, infrastructure)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to get Infrastructure object %s: %v", builder.Definition.Name, err)
+
+		return nil, err
+	}
+
+	return infrastructure, nil
 }
 
 // Exists checks whether the given infrastructure exists.
@@ -57,8 +93,7 @@ func (builder *Builder) Exists() bool {
 	glog.V(100).Infof("Checking if infrastructure %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.ConfigV1Interface.Infrastructures().Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

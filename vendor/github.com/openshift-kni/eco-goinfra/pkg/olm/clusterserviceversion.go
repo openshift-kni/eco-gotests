@@ -128,7 +128,10 @@ func (builder *ClusterServiceVersionBuilder) Delete() error {
 		builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		glog.V(100).Infof("clusterserviceversion cannot be deleted because it does not exist")
+		glog.V(100).Infof("clusterserviceversion %s namespace %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
 
 		return nil
 	}
@@ -141,7 +144,7 @@ func (builder *ClusterServiceVersionBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // GetAlmExamples extracts and returns the alm-examples block from the clusterserviceversion.

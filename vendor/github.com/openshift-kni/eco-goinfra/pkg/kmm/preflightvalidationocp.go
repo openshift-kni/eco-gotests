@@ -264,6 +264,11 @@ func (builder *PreflightValidationOCPBuilder) Delete() (*PreflightValidationOCPB
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("preflightvalidationocp %s namespace %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
 		return builder, nil
 	}
 
@@ -276,7 +281,7 @@ func (builder *PreflightValidationOCPBuilder) Delete() (*PreflightValidationOCPB
 	builder.Object = nil
 	builder.Definition.ResourceVersion = ""
 
-	return builder, err
+	return builder, nil
 }
 
 // Get fetches the defined preflightvalidationocp from the cluster.

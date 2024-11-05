@@ -246,7 +246,7 @@ func (builder *PVCBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // DeleteAndWait deletes PersistentVolumeClaim and waits until it is removed from the cluster.

@@ -153,12 +153,7 @@ func (builder *Builder) DefineOnNode(nodeName string) *Builder {
 	glog.V(100).Infof("Adding nodeName %s to the definition of pod %s in namespace %s",
 		nodeName, builder.Definition.Name, builder.Definition.Namespace)
 
-	if builder.Object != nil {
-		glog.V(100).Infof("The pod is already running on node %s", builder.Object.Spec.NodeName)
-
-		builder.errorMsg = fmt.Sprintf(
-			"can not redefine running pod. pod already running on node %s", builder.Object.Spec.NodeName)
-	}
+	builder.isMutationAllowed("nodeName")
 
 	if nodeName == "" {
 		glog.V(100).Infof("The node name is empty")
@@ -202,7 +197,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 
 	if !builder.Exists() {
 		glog.V(100).Infof(
-			"Pod %s in namespaces %s cannot be deleted because it does not exist",
+			"Pod %s in namespace %s cannot be deleted because it does not exist",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.Object = nil
@@ -255,7 +250,13 @@ func (builder *Builder) DeleteImmediate() (*Builder, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("pod cannot be deleted because it does not exist")
+		glog.V(100).Infof(
+			"Pod %s in namespace %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Pods(builder.Definition.Namespace).Delete(
@@ -457,8 +458,8 @@ func (builder *Builder) WaitUntilCondition(condition corev1.PodConditionType, ti
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			updatePod, err := builder.apiClient.Pods(builder.Object.Namespace).Get(
-				context.TODO(), builder.Object.Name, metav1.GetOptions{})
+			updatePod, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
+				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, nil
 			}
@@ -807,7 +808,7 @@ func (builder *Builder) WithVolume(volume corev1.Volume) *Builder {
 	if volume.Name == "" {
 		glog.V(100).Infof("The volume's Name cannot be empty")
 
-		builder.errorMsg = "The volume's Name cannot be empty"
+		builder.errorMsg = "the volume's name cannot be empty"
 	}
 
 	if builder.errorMsg != "" {

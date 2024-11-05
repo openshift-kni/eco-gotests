@@ -176,7 +176,10 @@ func (builder *Builder) Delete() (*Builder, error) {
 		builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		glog.V(100).Infof("nodeFeatureDiscovery cannot be deleted because it does not exist")
+		glog.V(100).Infof("nodeFeatureDiscovery %s namespace %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
 
 		return builder, nil
 	}

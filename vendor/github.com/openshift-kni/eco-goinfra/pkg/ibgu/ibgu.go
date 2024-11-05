@@ -265,8 +265,8 @@ func (builder *IbguBuilder) Get() (*v1alpha1.ImageBasedGroupUpgrade, error) {
 		return nil, err
 	}
 
-	glog.V(100).Infof("Getting imagebasedgroupupgrade %s",
-		builder.Definition.Name)
+	glog.V(100).Infof("Getting imagebasedgroupupgrade %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
 
 	imagebasedgroupupgrade := &v1alpha1.ImageBasedGroupUpgrade{}
 
@@ -276,6 +276,9 @@ func (builder *IbguBuilder) Get() (*v1alpha1.ImageBasedGroupUpgrade, error) {
 	}, imagebasedgroupupgrade)
 
 	if err != nil {
+		glog.V(100).Infof("Failed to get imagebasedgroupupgrade %s in namespace %s: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
+
 		return nil, err
 	}
 
@@ -288,8 +291,8 @@ func (builder *IbguBuilder) Exists() bool {
 		return false
 	}
 
-	glog.V(100).Infof("Checking if imagebasedgroupupgrade %s exists",
-		builder.Definition.Name)
+	glog.V(100).Infof("Checking if imagebasedgroupupgrade %s in namespace %s exists",
+		builder.Definition.Name, builder.Definition.Namespace)
 
 	var err error
 	builder.Object, err = builder.Get()
@@ -462,7 +465,7 @@ func (builder *IbguBuilder) WaitForCondition(expected metav1.Condition, timeout 
 			builder.Object, err = builder.Get()
 
 			if err != nil {
-				glog.V(100).Info("failed to get ibgu %s/%s: %w", builder.Definition.Name, builder.Definition.Namespace, err)
+				glog.V(100).Info("failed to get ibgu %s/%s: %w", builder.Definition.Namespace, builder.Definition.Name, err)
 
 				return false, nil
 			}

@@ -273,7 +273,12 @@ func (builder *CguBuilder) Delete() (*CguBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("cgu cannot be deleted because it does not exist")
+		glog.V(100).Infof("cgu %s in namespace %s does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)

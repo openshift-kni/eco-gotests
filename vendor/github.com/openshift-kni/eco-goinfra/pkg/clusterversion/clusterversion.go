@@ -14,12 +14,10 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	clusterVersionName = "version"
-	isTrue             = "True"
-)
+const clusterVersionName = "version"
 
 // Builder provides a struct for clusterversion object from the cluster and a clusterversion definition.
 type Builder struct {
@@ -28,7 +26,7 @@ type Builder struct {
 	// Created clusterversion object.
 	Object *configv1.ClusterVersion
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// Used in functions that define or mutate clusterversion definition. errorMsg is processed before the
 	// clusterversion object is created.
 	errorMsg string
@@ -38,8 +36,21 @@ type Builder struct {
 func Pull(apiClient *clients.Settings) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing clusterversion name: %s", clusterVersionName)
 
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the ClusterVersion is nil")
+
+		return nil, fmt.Errorf("clusterversion 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(configv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add config v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := Builder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &configv1.ClusterVersion{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterVersionName,
@@ -56,19 +67,36 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 	return &builder, nil
 }
 
+// Get returns the ClusterVersion object from the cluster if it exists.
+func (builder *Builder) Get() (*configv1.ClusterVersion, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting ClusterVersion object %s", builder.Definition.Name)
+
+	clusterVersion := &configv1.ClusterVersion{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{Name: builder.Definition.Name}, clusterVersion)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to get ClusterVersion %s: %s", builder.Definition.Name, err)
+
+		return nil, err
+	}
+
+	return clusterVersion, nil
+}
+
 // Exists checks whether the given clusterversion exists.
 func (builder *Builder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
 	}
 
-	glog.V(100).Infof(
-		"Checking if clusterversion %s exists",
-		builder.Definition.Name)
+	glog.V(100).Infof("Checking if ClusterVersion %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.ConfigV1Interface.ClusterVersions().Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -79,13 +107,13 @@ func (builder *Builder) WithDesiredUpdateImage(desiredUpdateImage string, force 
 		return builder
 	}
 
-	glog.V(100).Info("Adding the desired image %s to clusterversion %s",
+	glog.V(100).Info("Adding the desired image %s to ClusterVersion %s",
 		desiredUpdateImage, builder.Definition.Name)
 
 	if desiredUpdateImage == "" {
 		glog.V(100).Infof("The desiredUpdateImage is empty")
 
-		builder.errorMsg = "'desiredUpdateImage' cannot be empty"
+		builder.errorMsg = "clusterversion 'desiredUpdateImage' cannot be empty"
 
 		return builder
 	}
@@ -101,13 +129,13 @@ func (builder *Builder) WithDesiredUpdateChannel(updateChannel string) *Builder 
 		return builder
 	}
 
-	glog.V(100).Info("Adding the desired updateChannel %s to clusterversion %s",
+	glog.V(100).Info("Adding the desired updateChannel %s to ClusterVersion %s",
 		updateChannel, builder.Definition.Name)
 
 	if updateChannel == "" {
 		glog.V(100).Infof("The updateChannel is empty")
 
-		builder.errorMsg = "'updateChannel' cannot be empty"
+		builder.errorMsg = "clusterversion 'updateChannel' cannot be empty"
 
 		return builder
 	}
@@ -123,29 +151,35 @@ func (builder *Builder) Update() (*Builder, error) {
 		return builder, err
 	}
 
-	glog.V(100).Infof("Updating clusterversion %s", builder.Definition.Name)
+	glog.V(100).Infof("Updating ClusterVersion %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("clusterversion object does not exist")
+		return nil, fmt.Errorf("clusterversion object %s does not exist", builder.Definition.Name)
 	}
 
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	builder.Definition.CreationTimestamp = metav1.Time{}
 
-	var err error
-	builder.Object, err = builder.apiClient.ConfigV1Interface.ClusterVersions().Update(
-		context.TODO(), builder.Definition, metav1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	if err != nil {
+		glog.V(100).Infof("Failed to update ClusterVersion %s: %s", builder.Definition.Name, err)
 
-	return builder, err
+		return nil, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // WaitUntilProgressing waits for timeout duration or until clusterversion is in Progressing state.
 func (builder *Builder) WaitUntilProgressing(timeout time.Duration) error {
-	return builder.WaitUntilConditionTrue("Progressing", timeout)
+	return builder.WaitUntilConditionTrue(configv1.OperatorProgressing, timeout)
 }
 
 // WaitUntilAvailable waits for timeout duration or until clusterversion is in Available state.
 func (builder *Builder) WaitUntilAvailable(timeout time.Duration) error {
-	return builder.WaitUntilConditionTrue("Available", timeout)
+	return builder.WaitUntilConditionTrue(configv1.OperatorAvailable, timeout)
 }
 
 // WaitUntilConditionTrue waits for timeout duration or until clusterversion gets to a specific status.
@@ -156,24 +190,23 @@ func (builder *Builder) WaitUntilConditionTrue(
 	}
 
 	if !builder.Exists() {
-		return fmt.Errorf("%s clusterversion not found", builder.Definition.Name)
+		return fmt.Errorf("clusterversion object %s does not exist", builder.Definition.Name)
 	}
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
-			builder.Object, err = builder.apiClient.ConfigV1Interface.ClusterVersions().Get(context.TODO(),
-				builder.Definition.Name, metav1.GetOptions{})
+			builder.Object, err = builder.Get()
 
 			if err != nil {
-				glog.V(100).Infof("Failed to get the clusterversion with error %s", err)
+				glog.V(100).Infof("Failed to get the ClusterVersion with error %s", err)
 
 				return false, nil
 			}
 
 			for _, condition := range builder.Object.Status.Conditions {
 				if condition.Type == conditionType {
-					return condition.Status == isTrue, nil
+					return condition.Status == configv1.ConditionTrue, nil
 				}
 			}
 
@@ -183,12 +216,12 @@ func (builder *Builder) WaitUntilConditionTrue(
 
 // WaitUntilUpdateIsStarted waits until there is a history entry indicating the update start.
 func (builder *Builder) WaitUntilUpdateIsStarted(timeout time.Duration) error {
-	return builder.WaitUntilUpdateHistoryStateTrue("Partial", timeout)
+	return builder.WaitUntilUpdateHistoryStateTrue(configv1.PartialUpdate, timeout)
 }
 
 // WaitUntilUpdateIsCompleted waits until there is a history entry indicating the update completed.
 func (builder *Builder) WaitUntilUpdateIsCompleted(timeout time.Duration) error {
-	return builder.WaitUntilUpdateHistoryStateTrue("Completed", timeout)
+	return builder.WaitUntilUpdateHistoryStateTrue(configv1.CompletedUpdate, timeout)
 }
 
 // WaitUntilUpdateHistoryStateTrue waits until there is a history entry indicating an updateHistoryState.
@@ -199,17 +232,16 @@ func (builder *Builder) WaitUntilUpdateHistoryStateTrue(
 	}
 
 	if !builder.Exists() {
-		return fmt.Errorf("%s clusterversion not found", builder.Definition.Name)
+		return fmt.Errorf("clusterversion object %s does not exist", builder.Definition.Name)
 	}
 
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			var err error
-			builder.Object, err = builder.apiClient.ConfigV1Interface.ClusterVersions().Get(context.TODO(),
-				builder.Definition.Name, metav1.GetOptions{})
+			builder.Object, err = builder.Get()
 
 			if err != nil {
-				glog.V(100).Infof("Failed to get the clusterversion with error %s", err)
+				glog.V(100).Infof("Failed to get the ClusterVersion with error %s", err)
 
 				return false, nil
 			}
@@ -235,12 +267,12 @@ func (builder *Builder) GetNextUpdateVersionImage(stream string, acceptCondition
 	glog.V(100).Infof("Getting the update version image in stream %s for clusterversion %s",
 		stream, builder.Definition.Name)
 
-	if !builder.Exists() {
-		return "", fmt.Errorf("%s clusterversion not found", builder.Definition.Name)
-	}
-
 	if stream == "" {
 		return "", fmt.Errorf("stream can not be empty")
+	}
+
+	if !builder.Exists() {
+		return "", fmt.Errorf("clusterversion object %s does not exist", builder.Definition.Name)
 	}
 
 	currentVersion := builder.Object.Status.Desired.Version
