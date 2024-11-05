@@ -43,6 +43,34 @@ func NewABMClusterDeploymentBuilder(
 		  clusterName: %s, baseDomain: %s, clusterInstallRef: %s, agentSelector: %s`,
 		name, nsname, clusterName, baseDomain, clusterInstallRef, agentSelector)
 
+	return NewClusterDeploymentByInstallRefBuilder(apiClient, name, nsname, clusterName, baseDomain,
+		hiveV1.ClusterInstallLocalReference{
+			Group:   hiveextV1Beta1.Group,
+			Version: hiveextV1Beta1.Version,
+			Kind:    "AgentClusterInstall",
+			Name:    clusterInstallRef,
+		}, hiveV1.Platform{
+			AgentBareMetal: &agent.BareMetalPlatform{
+				AgentSelector: agentSelector,
+			},
+		})
+}
+
+// NewClusterDeploymentByInstallRefBuilder creates a new instance of
+// ClusterDeploymentBuilder with the provided install reference and platform.
+func NewClusterDeploymentByInstallRefBuilder(
+	apiClient *clients.Settings,
+	name string,
+	nsname string,
+	clusterName string,
+	baseDomain string,
+	clusterInstallRef hiveV1.ClusterInstallLocalReference,
+	platform hiveV1.Platform) *ClusterDeploymentBuilder {
+	glog.V(100).Infof(
+		`Initializing new agentbaremetal clusterdeployment structure with the following params: name: %s, namespace: %s,
+		  clusterName: %s, baseDomain: %s, clusterInstallRef: %v, platform: %v`,
+		name, nsname, clusterName, baseDomain, clusterInstallRef, platform)
+
 	if apiClient == nil {
 		glog.V(100).Infof("The apiClient cannot be nil")
 
@@ -64,19 +92,10 @@ func NewABMClusterDeploymentBuilder(
 				Namespace: nsname,
 			},
 			Spec: hiveV1.ClusterDeploymentSpec{
-				ClusterName: clusterName,
-				BaseDomain:  baseDomain,
-				ClusterInstallRef: &hiveV1.ClusterInstallLocalReference{
-					Group:   hiveextV1Beta1.Group,
-					Version: hiveextV1Beta1.Version,
-					Kind:    "AgentClusterInstall",
-					Name:    clusterInstallRef,
-				},
-				Platform: hiveV1.Platform{
-					AgentBareMetal: &agent.BareMetalPlatform{
-						AgentSelector: agentSelector,
-					},
-				},
+				ClusterName:       clusterName,
+				BaseDomain:        baseDomain,
+				ClusterInstallRef: &clusterInstallRef,
+				Platform:          platform,
 			},
 		},
 	}
@@ -85,30 +104,40 @@ func NewABMClusterDeploymentBuilder(
 		glog.V(100).Infof("The name of the clusterdeployment is empty")
 
 		builder.errorMsg = "clusterdeployment 'name' cannot be empty"
+
+		return &builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the clusterdeployment is empty")
 
 		builder.errorMsg = "clusterdeployment 'namespace' cannot be empty"
+
+		return &builder
 	}
 
 	if clusterName == "" {
 		glog.V(100).Infof("The clusterName of the clusterdeployment is empty")
 
 		builder.errorMsg = "clusterdeployment 'clusterName' cannot be empty"
+
+		return &builder
 	}
 
 	if baseDomain == "" {
 		glog.V(100).Infof("The baseDomain of the clusterdeployment is empty")
 
 		builder.errorMsg = "clusterdeployment 'baseDomain' cannot be empty"
+
+		return &builder
 	}
 
-	if clusterInstallRef == "" {
-		glog.V(100).Infof("The clusterInstallRef of the clusterdeployment is empty")
+	if clusterInstallRef.Name == "" {
+		glog.V(100).Infof("The clusterInstallRef name of the clusterdeployment is empty")
 
-		builder.errorMsg = "clusterdeployment 'clusterInstallRef' cannot be empty"
+		builder.errorMsg = "clusterdeployment 'clusterInstallRef.name' cannot be empty"
+
+		return &builder
 	}
 
 	return &builder
@@ -330,7 +359,10 @@ func (builder *ClusterDeploymentBuilder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		glog.V(100).Infof("clusterdeployment cannot be deleted because it does not exist")
+		glog.V(100).Infof("clusterdeployment %s in namespace %s does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
 
 		return nil
 	}

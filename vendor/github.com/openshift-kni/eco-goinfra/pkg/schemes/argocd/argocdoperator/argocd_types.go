@@ -207,6 +207,12 @@ type ArgoCDApplicationSet struct {
 
 	// Custom labels to pods deployed by the operator
 	Labels map[string]string `json:"labels,omitempty"`
+
+	// Volumes adds volumes to the Argo CD ApplicationSet Controller container.
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// VolumeMounts adds volumeMounts to the Argo CD ApplicationSet Controller container.
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 func (a *ArgoCDApplicationSet) IsEnabled() bool {
@@ -608,6 +614,9 @@ type ArgoCDServerGRPCSpec struct {
 type ArgoCDServerSpec struct {
 	// Autoscale defines the autoscale options for the Argo CD Server component.
 	Autoscale ArgoCDServerAutoscaleSpec `json:"autoscale,omitempty"`
+
+	// EnableRolloutsUI will add the Argo Rollouts UI extension in ArgoCD Dashboard.
+	EnableRolloutsUI bool `json:"enableRolloutsUI,omitempty"`
 
 	// GRPC defines the state for the Argo CD Server GRPC options.
 	GRPC ArgoCDServerGRPCSpec `json:"grpc,omitempty"`

@@ -200,7 +200,12 @@ func (builder *IPAddressPoolBuilder) Delete() (*IPAddressPoolBuilder, error) {
 	)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("IPAddressPool cannot be deleted because it does not exist")
+		glog.V(100).Infof("IPAddressPool %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)

@@ -194,6 +194,16 @@ func (builder *StorageClusterBuilder) Delete() error {
 	glog.V(100).Infof("Deleting the storageCluster object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
+	if !builder.Exists() {
+		glog.V(100).Infof("storageCluster %s in namespace %s cannot be deleted"+
+			" because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return nil
+	}
+
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
 
 	if err != nil {

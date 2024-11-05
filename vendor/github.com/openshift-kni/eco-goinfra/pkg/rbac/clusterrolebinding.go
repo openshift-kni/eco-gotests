@@ -186,6 +186,11 @@ func (builder *ClusterRoleBindingBuilder) Delete() error {
 		builder.Definition.Name)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("ClusterRoleBinding object %s does not exist",
+			builder.Definition.Name)
+
+		builder.Object = nil
+
 		return nil
 	}
 

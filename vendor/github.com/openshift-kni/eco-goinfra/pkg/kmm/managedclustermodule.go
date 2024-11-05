@@ -263,6 +263,8 @@ func (builder *ManagedClusterModuleBuilder) Delete() (*ManagedClusterModuleBuild
 	if !builder.Exists() {
 		glog.V(100).Infof("managedclustermodule cannot be deleted because it does not exist")
 
+		builder.Object = nil
+
 		return builder, nil
 	}
 
@@ -274,7 +276,7 @@ func (builder *ManagedClusterModuleBuilder) Delete() (*ManagedClusterModuleBuild
 
 	builder.Object = nil
 
-	return builder, err
+	return builder, nil
 }
 
 // Get fetches the defined managedclustermodule from the cluster.

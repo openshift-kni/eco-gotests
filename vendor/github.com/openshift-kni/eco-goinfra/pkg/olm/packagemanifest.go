@@ -191,6 +191,11 @@ func (builder *PackageManifestBuilder) Delete() error {
 		builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("PackageManifest object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -202,7 +207,7 @@ func (builder *PackageManifestBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before
