@@ -74,10 +74,5 @@ func PrepareRapidastConfig(destinationPath string) error {
 		return err
 	}
 
-	err = rapidastConfig.Close()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
