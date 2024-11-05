@@ -558,14 +558,21 @@ func (builder *Builder) Delete() error {
 	glog.V(100).Infof("Removing SecurityContextConstraints %s", builder.Definition.Name)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("SecurityContextConstraints %s does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
 		return nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
+	if err != nil {
+		return err
+	}
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update modifies an existing SecurityContextConstraints in the cluster.

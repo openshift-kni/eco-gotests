@@ -187,6 +187,10 @@ func (builder *ClusterRoleBuilder) Delete() error {
 		builder.Definition.Name)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("Clusterrole %s does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -199,7 +203,7 @@ func (builder *ClusterRoleBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update modifies a clusterrole object in the cluster.

@@ -241,6 +241,11 @@ func (builder *SubscriptionBuilder) Delete() error {
 		builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("Subscription object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -252,7 +257,7 @@ func (builder *SubscriptionBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update modifies the existing Subscription with the Subscription definition in SubscriptionBuilder.

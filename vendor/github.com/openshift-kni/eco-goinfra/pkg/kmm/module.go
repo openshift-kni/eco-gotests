@@ -376,6 +376,8 @@ func (builder *ModuleBuilder) Delete() (*ModuleBuilder, error) {
 	if !builder.Exists() {
 		glog.V(100).Infof("module cannot be deleted because it does not exist")
 
+		builder.Object = nil
+
 		return builder, nil
 	}
 

@@ -96,7 +96,12 @@ func (builder *MutatingConfigurationBuilder) Delete() (*MutatingConfigurationBui
 	glog.V(100).Infof("Deleting the MutatingWebhookConfiguration %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("MutatingWebhookConfiguration cannot be deleted because it does not exist")
+		glog.V(100).Infof("MutatingWebhookConfiguration %s cannot be deleted because it does not exist",
+			builder.Definition.Name)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)

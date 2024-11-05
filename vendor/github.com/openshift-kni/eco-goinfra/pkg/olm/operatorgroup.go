@@ -150,6 +150,11 @@ func (builder *OperatorGroupBuilder) Delete() error {
 		builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("OperatorGroup %s namespace %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -161,7 +166,7 @@ func (builder *OperatorGroupBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update modifies the existing OperatorGroup with the OperatorGroup definition in OperatorGroupBuilder.

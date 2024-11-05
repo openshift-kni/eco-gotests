@@ -174,7 +174,12 @@ func (builder *Builder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return fmt.Errorf("clusterLogging cannot be deleted because it does not exist")
+		glog.V(100).Infof("clusterLogging %s in namespace %s does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)

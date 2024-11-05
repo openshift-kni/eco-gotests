@@ -235,6 +235,8 @@ func (builder *CatalogSourceBuilder) Delete() error {
 	if !builder.Exists() {
 		glog.V(100).Infof("catalogsource cannot be deleted because it does not exist")
 
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -246,7 +248,7 @@ func (builder *CatalogSourceBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before

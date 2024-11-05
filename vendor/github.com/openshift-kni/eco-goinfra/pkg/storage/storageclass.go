@@ -262,7 +262,7 @@ func (builder *ClassBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // DeleteAndWait deletes the StorageClass and waits up to timeout until it has been removed.

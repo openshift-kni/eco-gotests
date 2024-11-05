@@ -116,7 +116,11 @@ func (builder *Builder) Delete() error {
 	glog.V(100).Infof("Deleting the console object %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		return fmt.Errorf("console cannot be deleted because it does not exist")
+		glog.V(100).Infof("The console object %s does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
+		return nil
 	}
 
 	err := builder.apiClient.Consoles().Delete(context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
@@ -127,7 +131,7 @@ func (builder *Builder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update renovates the existing cluster console object with cluster console definition in builder.

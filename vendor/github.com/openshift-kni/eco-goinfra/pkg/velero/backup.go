@@ -355,7 +355,12 @@ func (builder *BackupBuilder) Delete() (*BackupBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
-		return builder, fmt.Errorf("backup cannot be deleted because it does not exist")
+		glog.V(100).Infof("Backup %s in namespace %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return builder, nil
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
