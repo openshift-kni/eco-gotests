@@ -1,54 +1,40 @@
 name: 'Eco-GoInfra Module Bump'
 on:
   workflow_dispatch:
-env:
-  GIT_SSH_COMMAND: "ssh -i ~/.ssh/eco-gotests.id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  schedule:
+    - cron: "0 0 * * *"
+permissions:
+  contents: read
 jobs:
   main:
     name: Eco-goinfra module bump
+
+    permissions:
+      contents: write  # for peter-evans/create-pull-request to create branch
+      pull-requests: write  # for peter-evans/create-pull-request to create a PR
+
     runs-on: ubuntu-latest
+    env:
+      SHELL: /bin/bash
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup agent and add repo ssh key
-        run: |
-          mkdir -p ~/.ssh
-          touch ~/.ssh/eco-gotests.id_rsa
-          echo "${{ secrets.REPO_ACCESS_KEY }}" > ~/.ssh/eco-gotests.id_rsa
-          chmod 0600 ~/.ssh/eco-gotests.id_rsa
-      
-      - name: Set up Go 1.22
-        uses: actions/setup-go@v3
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.22.6
+          go-version: 1.23.2
 
-      - name: Check for eco-goinfra module updates
-        id: new_mods
+      - name: Run sync script
+        run: make sync-eco-goinfra
+
+      - name: Create PR
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         env:
-          ECO_GOTESTS_CLONE_URL: git@github.com:openshift-kni/eco-gotests.git
-        run: |
-          git remote set-url origin $ECO_GOTESTS_CLONE_URL
-          git pull origin
-          if [[ ! `git branch -a | grep eco-goinfra-dep-bump` ]]; then
-            git config user.name 'GitHub Actions'
-            git config user.email 'noreply@example.com'
-            go get github.com/openshift-kni/eco-goinfra
-            go mod tidy
-            go mod vendor
-          fi
-
-          if [[ ! -z `git diff-index --name-only HEAD --` ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "Nothing to update"
-          fi
-      
-      - name: Push changes to new branch
-        if: steps.new_mods.outputs.changed == 'true'
-        run: |
-          export MODULE=$(go list -m -f '{{.Version}}' github.com/openshift-kni/eco-goinfra)
-          git checkout -b eco-goinfra-dep-bump-$MODULE
-          git add go.mod go.sum vendor
-          git commit -m "deps: bumping eco-goinfra module to ${MODULE}"
-          git push origin eco-goinfra-dep-bump-$MODULE
+          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_KEY }}
+        with:
+          commit-message: "deps: bump github.com/openshift-kni/eco-goinfra"
+          author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
+          title: Bump eco-goinfra dependency
+          branch: eco-goinfra-bump
+          delete-branch: true
