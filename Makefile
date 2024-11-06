@@ -19,6 +19,11 @@ deps-update:
 	go mod tidy && \
 	go mod vendor
 
+sync-eco-goinfra:
+	go get github.com/openshift-kni/eco-goinfra
+	go mod tidy
+	go mod vendor
+
 install-ginkgo:
 	scripts/install-ginkgo.sh
 
