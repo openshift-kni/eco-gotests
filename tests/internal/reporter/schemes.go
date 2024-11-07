@@ -15,6 +15,7 @@ import (
 	hiveextv1beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1"
 	agentinstallv1beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
 	hivev1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1"
+	ibiv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/imagebasedinstall/api/hiveextensions/v1alpha1"
 	olmv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1"
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	configv1 "github.com/openshift/api/config/v1"
@@ -57,6 +58,7 @@ var reporterSchemes = []clients.SchemeAttacher{
 	nfdv1.AddToScheme,
 	nvidiagpuv1.AddToScheme,
 	lcav1.AddToScheme,
+	ibiv1alpha1.AddToScheme,
 }
 
 func setReporterSchemes(scheme *runtime.Scheme) error {
