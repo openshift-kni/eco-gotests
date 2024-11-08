@@ -521,7 +521,7 @@ github.com/onsi/gomega/types
 ## explicit; go 1.22.0
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20241106135846-6ab06a3a8f4b
+# github.com/openshift-kni/eco-goinfra v0.0.0-20241107135834-8cdb9cd573a3
 ## explicit; go 1.23
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -673,7 +673,6 @@ github.com/openshift-kni/eco-goinfra/pkg/sriov-fec
 github.com/openshift-kni/eco-goinfra/pkg/statefulset
 github.com/openshift-kni/eco-goinfra/pkg/storage
 github.com/openshift-kni/eco-goinfra/pkg/velero
-github.com/openshift-kni/eco-goinfra/pkg/webhook
 # github.com/openshift-kni/k8sreporter v1.0.6
 ## explicit; go 1.20
 github.com/openshift-kni/k8sreporter

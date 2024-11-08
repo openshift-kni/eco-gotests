@@ -107,6 +107,11 @@ func (builder *PoolConfigBuilder) Delete() error {
 		builder.Definition.Name, builder.Definition.Namespace)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("SriovNetworkPoolConfig %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
 		return nil
 	}
 
