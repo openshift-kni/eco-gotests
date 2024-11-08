@@ -409,6 +409,8 @@ func (builder *NetworkBuilder) Delete() error {
 	if !builder.Exists() {
 		glog.V(100).Infof("SriovNetwork cannot be deleted because it does not exist")
 
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -420,7 +422,7 @@ func (builder *NetworkBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // DeleteAndWait deletes the SrIovNetwork resource and waits until it is deleted.

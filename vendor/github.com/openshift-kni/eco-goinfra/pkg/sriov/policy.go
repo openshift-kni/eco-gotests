@@ -335,6 +335,11 @@ func (builder *PolicyBuilder) Delete() error {
 	}
 
 	if !builder.Exists() {
+		glog.V(100).Infof("SriovNetworkNodePolicy %s in namespace %s cannot be deleted because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -346,7 +351,7 @@ func (builder *PolicyBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Exists checks whether the given SriovNetworkNodePolicy object exists in the cluster.
