@@ -63,6 +63,19 @@ func NewManagedClusterBuilder(apiClient *clients.Settings, name string) *Managed
 	return builder
 }
 
+// WithHubAcceptsClient sets the hubAcceptsClient field in the managedcluster resource.
+func (builder *ManagedClusterBuilder) WithHubAcceptsClient(accept bool) *ManagedClusterBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting ManagedCluster hubAcceptsClient field to %t", accept)
+
+	builder.Definition.Spec.HubAcceptsClient = accept
+
+	return builder
+}
+
 // WithOptions creates ManagedCluster with generic mutation options.
 func (builder *ManagedClusterBuilder) WithOptions(options ...ManagedClusterAdditionalOptions) *ManagedClusterBuilder {
 	if valid, _ := builder.validate(); !valid {
@@ -199,6 +212,26 @@ func (builder *ManagedClusterBuilder) Exists() bool {
 	}
 
 	return err == nil || !k8serrors.IsNotFound(err)
+}
+
+// Create makes a managedcluster in the cluster and stores the created object in struct.
+func (builder *ManagedClusterBuilder) Create() (*ManagedClusterBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	glog.V(100).Infof("Creating the managedcluster %s",
+		builder.Definition.Name)
+
+	var err error
+	if !builder.Exists() {
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
+		}
+	}
+
+	return builder, err
 }
 
 // validate will check that the builder and builder definition are properly initialized before
