@@ -3,12 +3,14 @@ package siteconfig
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
+	aiv1beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
 	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -127,6 +129,220 @@ func PullClusterInstance(apiClient *clients.Settings, name, nsname string) (*CIB
 	builder.Definition = builder.Object
 
 	return builder, nil
+}
+
+// WithPullSecretRef sets a reference to the pull-secret to be used by the clusterinstance.
+func (builder *CIBuilder) WithPullSecretRef(secretRef string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding pullSecretRef %s to clusterinstance %s in namespace %s",
+		secretRef, builder.Definition.Name, builder.Definition.Namespace)
+
+	if secretRef == "" {
+		glog.V(100).Infof("The clusterinstance secretRef is empty")
+
+		builder.errorMsg = "clusterinstance secretRef cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.PullSecretRef = corev1.LocalObjectReference{
+		Name: secretRef,
+	}
+
+	return builder
+}
+
+// WithClusterTemplateRef specifies the cluster template to use for the clusterinstance.
+func (builder *CIBuilder) WithClusterTemplateRef(clusterTemplateName, clusterTemplateNamespace string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding clusterTemplateRef %s in namespace %s to clusterinstance %s in namespace %s",
+		clusterTemplateName, clusterTemplateNamespace, builder.Definition.Name, builder.Definition.Namespace)
+
+	if clusterTemplateName == "" {
+		glog.V(100).Infof("The clusterinstance clusterTemplateName is empty")
+
+		builder.errorMsg = "clusterinstance clusterTemplateName cannot be empty"
+
+		return builder
+	}
+
+	if clusterTemplateNamespace == "" {
+		glog.V(100).Infof("The clusterinstance clusterTemplateNamespace is empty")
+
+		builder.errorMsg = "clusterinstance clusterTemplateNamespace cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.TemplateRefs = append(builder.Definition.Spec.TemplateRefs, siteconfigv1alpha1.TemplateRef{
+		Name:      clusterTemplateName,
+		Namespace: clusterTemplateNamespace,
+	})
+
+	return builder
+}
+
+// WithBaseDomain sets the base domain for the clusterinstance.
+func (builder *CIBuilder) WithBaseDomain(baseDomain string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding baseDomain %s to clusterinstance %s in namespace %s",
+		baseDomain, builder.Definition.Name, builder.Definition.Namespace)
+
+	if baseDomain == "" {
+		glog.V(100).Infof("The clusterinstance baseDomain is empty")
+
+		builder.errorMsg = "clusterinstance baseDomain cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.BaseDomain = baseDomain
+
+	return builder
+}
+
+// WithClusterImageSetRef sets the clusterimageset used for installation in the clusterinstance.
+func (builder *CIBuilder) WithClusterImageSetRef(imageSet string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding imageSet %s to clusterinstance %s in namespace %s",
+		imageSet, builder.Definition.Name, builder.Definition.Namespace)
+
+	if imageSet == "" {
+		glog.V(100).Infof("The clusterinstance imageSet is empty")
+
+		builder.errorMsg = "clusterinstance imageSet cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.ClusterImageSetNameRef = imageSet
+
+	return builder
+}
+
+// WithClusterName adds a cluster name to the clusterinstance.
+func (builder *CIBuilder) WithClusterName(clusterName string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding clusterName %s to clusterinstance %s in namespace %s",
+		clusterName, builder.Definition.Name, builder.Definition.Namespace)
+
+	if clusterName == "" {
+		glog.V(100).Infof("The clusterinstance clusterName is empty")
+
+		builder.errorMsg = "clusterinstance clusterName cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.ClusterName = clusterName
+
+	return builder
+}
+
+// WithSSHPubKey adds the provided public SSH key for accessing the nodes.
+func (builder *CIBuilder) WithSSHPubKey(sshPubKey string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding sshPubKey %s to clusterinstance %s in namespace %s",
+		sshPubKey, builder.Definition.Name, builder.Definition.Namespace)
+
+	if sshPubKey == "" {
+		glog.V(100).Infof("The clusterinstance sshPubKey is empty")
+
+		builder.errorMsg = "clusterinstance sshPubKey cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.SSHPublicKey = sshPubKey
+
+	return builder
+}
+
+// WithMachineNetwork adds the machineNetwork belonging to the node(s) to the clusterinstance.
+func (builder *CIBuilder) WithMachineNetwork(machineNetwork string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding machineNetwork %s to clusterinstance %s in namespace %s",
+		machineNetwork, builder.Definition.Name, builder.Definition.Namespace)
+
+	if _, _, err := net.ParseCIDR(machineNetwork); err != nil {
+		glog.V(100).Infof("The clusterinstance machineNetwork cidr %s is invalid cidr", machineNetwork)
+
+		builder.errorMsg = "clusterinstance contains invalid machineNetwork cidr"
+
+		return builder
+	}
+
+	builder.Definition.Spec.MachineNetwork =
+		append(builder.Definition.Spec.MachineNetwork, siteconfigv1alpha1.MachineNetworkEntry{
+			CIDR: machineNetwork,
+		})
+
+	return builder
+}
+
+// WithProxy adds the specified proxy to the clusterinstance.
+func (builder *CIBuilder) WithProxy(proxy *aiv1beta1.Proxy) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding proxy %v to clusterinstance %s in namespace %s",
+		proxy, builder.Definition.Name, builder.Definition.Namespace)
+
+	if proxy == nil {
+		glog.V(100).Infof("The clusterinstance proxy is nil")
+
+		builder.errorMsg = "clusterinstance proxy cannot be nil"
+
+		return builder
+	}
+
+	builder.Definition.Spec.Proxy = proxy
+
+	return builder
+}
+
+// WithNode adds the specified node spec to the clusterinstance.
+func (builder *CIBuilder) WithNode(node *siteconfigv1alpha1.NodeSpec) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if node == nil {
+		glog.V(100).Infof("The clusterinstance node is nil")
+
+		builder.errorMsg = "clusterinstance node cannot be nil"
+
+		return builder
+	}
+
+	glog.V(100).Infof("Adding node %s to clusterinstance %s in namespace %s",
+		node.HostName, builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Nodes = append(builder.Definition.Spec.Nodes, *node)
+
+	return builder
 }
 
 // WithExtraManifests includes manifests via configmap name.
