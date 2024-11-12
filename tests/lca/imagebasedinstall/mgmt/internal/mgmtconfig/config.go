@@ -39,7 +39,7 @@ type Cluster struct {
 				Gateway struct {
 					IPv4 string `yaml:"ipv4"`
 					IPv6 string `yaml:"ipv6"`
-				} `yaml:"gateway"`
+				} `yaml:"default_gateway"`
 				DNS struct {
 					IPv4 string `yaml:"ipv4"`
 					IPv6 string `yaml:"ipv6"`
@@ -59,12 +59,13 @@ type Cluster struct {
 // MGMTConfig type contains mgmt configuration.
 type MGMTConfig struct {
 	*ibiconfig.IBIConfig
-	Cluster         *Cluster
-	ClusterInfoPath string `envconfig:"ECO_LCA_IBI_MGMT_CLUSTER_INFO"`
-	SeedImage       string `envconfig:"ECO_LCA_IBI_MGMT_SEED_IMAGE" default:"quay.io/ocp-edge-qe/ib-seedimage-public:ci"`
-	SeedClusterInfo *seedimage.SeedImageContent
-	SSHKeyPath      string `envconfig:"ECO_LCA_IBI_MGMT_SSHKEY_PATH"`
-	PublicSSHKey    string
+	Cluster          *Cluster
+	ClusterInfoPath  string `envconfig:"ECO_LCA_IBI_MGMT_CLUSTER_INFO"`
+	SeedImage        string `envconfig:"ECO_LCA_IBI_MGMT_SEED_IMAGE" default:"quay.io/ocp-edge-qe/ib-seedimage-public:ci"`
+	SeedClusterInfo  *seedimage.SeedImageContent
+	SSHKeyPath       string `envconfig:"ECO_LCA_IBI_MGMT_SSHKEY_PATH"`
+	PublicSSHKey     string
+	StaticNetworking bool `envconfig:"ECO_LCA_IBI_MGMT_STATIC_NETWORK" default:"false"`
 }
 
 // NewMGMTConfig returns instance of MGMTConfig type.
