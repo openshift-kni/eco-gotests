@@ -17,7 +17,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
-	github.com/openshift-kni/eco-goinfra v0.0.0-20241108193616-4931c700a37a // latest
+	github.com/openshift-kni/eco-goinfra v0.0.0-20241112160836-8e2c2dae9516 // latest
 	github.com/openshift-kni/k8sreporter v1.0.6
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/cluster-nfd-operator v0.0.0-20240902145504-f70d1389d329 // release-4.17
@@ -206,7 +206,7 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.24.5 // indirect
 	k8s.io/apiextensions-apiserver v0.30.5 // indirect
 	k8s.io/apiserver v0.30.5 // indirect
