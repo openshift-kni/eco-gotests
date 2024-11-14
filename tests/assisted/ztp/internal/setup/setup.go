@@ -210,7 +210,7 @@ func (spoke *SpokeClusterResources) Delete() error {
 	}
 
 	if spoke.Namespace != nil {
-		spoke.err = spoke.Namespace.DeleteAndWait(time.Second * 30)
+		spoke.err = spoke.Namespace.DeleteAndWait(time.Second * 120)
 	}
 
 	return spoke.err
