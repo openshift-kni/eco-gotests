@@ -1,9 +1,9 @@
 package deploy_test
 
 import (
-	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +11,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/ibi"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -25,12 +27,20 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/networkconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools"
+	"github.com/openshift-kni/eco-gotests/tests/lca/internal/brutil"
+	k8sScheme "k8s.io/client-go/kubernetes/scheme"
 
 	v1 "k8s.io/api/core/v1"
 )
 
 const (
 	interfaceName = "enp1s0"
+
+	extraManifestNamespace = "extranamespace"
+	extraManifestConfigmap = "extra-configmap"
+
+	extraManifestNamespaceConfigmapName = "extra-manifests-cm0"
+	extraManifestConfigmapConfigmapName = "extra-manifests-cm1"
 )
 
 var _ = Describe(
@@ -158,6 +168,7 @@ var _ = Describe(
 					hostBMH := bmh.NewBuilder(
 						APIClient, host, MGMTConfig.Cluster.Info.ClusterName, info.BMC.URLv4, host, info.BMC.MACAddress, "UEFI")
 					hostBMH.Definition.Spec.AutomatedCleaningMode = "disabled"
+					hostBMH.Definition.Spec.ExternallyProvisioned = true
 					hostBMH.Definition.Spec.PreprovisioningNetworkDataName = fmt.Sprintf("%s-nmstate-config", host)
 
 					_, err = hostBMH.Create()
@@ -172,11 +183,45 @@ var _ = Describe(
 					break
 				}
 
-				By("Create imageclusterinstall for IBI installation")
 				imageClusterInstall := ibi.NewImageClusterInstallBuilder(
 					APIClient, MGMTConfig.Cluster.Info.ClusterName, MGMTConfig.Cluster.Info.ClusterName, ibiImageSetName).
 					WithClusterDeployment(MGMTConfig.Cluster.Info.ClusterName).WithHostname(snoNodeName).
 					WithMachineNetwork(MGMTConfig.Cluster.Info.MachineCIDR.IPv4)
+
+				if MGMTConfig.ExtraManifests {
+					By("Create namespace builder for extramanifests")
+					extraNamespace := namespace.NewBuilder(APIClient, extraManifestNamespace)
+
+					By("Create configmap for extra manifests namespace")
+					extraNamespaceString, err := brutil.NewBackRestoreObject(
+						extraNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+					Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest namespace")
+					_, err = configmap.NewBuilder(
+						APIClient, extraManifestNamespaceConfigmapName, MGMTConfig.Cluster.Info.ClusterName).WithData(map[string]string{
+						"00-namespace.yaml": extraNamespaceString,
+					}).Create()
+					Expect(err).NotTo(HaveOccurred(), "error creating configmap for extra manifests namespace")
+
+					imageClusterInstall.WithExtraManifests(extraManifestNamespaceConfigmapName)
+
+					By("Create configmap builder for extramanifests")
+					extraConfigmap := configmap.NewBuilder(
+						APIClient, extraManifestConfigmap, extraManifestNamespace).WithData(map[string]string{
+						"hello": "world",
+					})
+
+					By("Create configmap for extramanifests configmap")
+					extraConfigmapString, err := brutil.NewBackRestoreObject(
+						extraConfigmap.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+					Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest configmap")
+					_, err = configmap.NewBuilder(
+						APIClient, extraManifestConfigmapConfigmapName, MGMTConfig.Cluster.Info.ClusterName).WithData(map[string]string{
+						"01-configmap.yaml": extraConfigmapString,
+					}).Create()
+					Expect(err).NotTo(HaveOccurred(), "error creating configmap for extra manifests configmap")
+
+					imageClusterInstall.WithExtraManifests(extraManifestConfigmapConfigmapName)
+				}
 
 				if MGMTConfig.PublicSSHKey != "" {
 					imageClusterInstall.WithSSHKey(MGMTConfig.PublicSSHKey)
@@ -187,9 +232,12 @@ var _ = Describe(
 						MGMTConfig.SeedClusterInfo.MirrorConfig.Spec.ImageDigestMirrors
 				}
 
-				imageClusterInstall.Definition.Spec.BareMetalHostRef = &ibiv1alpha1.BareMetalHostReference{}
-				imageClusterInstall.Definition.Spec.BareMetalHostRef.Name = snoNodeName
-				imageClusterInstall.Definition.Spec.BareMetalHostRef.Namespace = MGMTConfig.Cluster.Info.ClusterName
+				imageClusterInstall.Definition.Spec.BareMetalHostRef = &ibiv1alpha1.BareMetalHostReference{
+					Name:      snoNodeName,
+					Namespace: MGMTConfig.Cluster.Info.ClusterName,
+				}
+
+				By("Create imageclusterinstall for IBI installation")
 				_, err = imageClusterInstall.Create()
 				Expect(err).NotTo(HaveOccurred(), "error creating imageclusterinstall")
 
@@ -209,15 +257,8 @@ var _ = Describe(
 				Expect(err).NotTo(HaveOccurred(), "error creating cluster deployment")
 
 				By("Create managedcluster for IBI cluster")
-				managedCluster := ocm.NewManagedClusterBuilder(APIClient, MGMTConfig.Cluster.Info.ClusterName).
-					WithOptions(withHubAcceptsClient)
-
-				if !managedCluster.Exists() {
-					err = APIClient.Create(context.TODO(), managedCluster.Definition)
-					if err == nil {
-						managedCluster.Object = managedCluster.Definition
-					}
-				}
+				_, err = ocm.NewManagedClusterBuilder(APIClient, MGMTConfig.Cluster.Info.ClusterName).
+					WithHubAcceptsClient(true).Create()
 				Expect(err).NotTo(HaveOccurred(), "error creating managedcluster resource")
 
 				Eventually(func() (bool, error) {
@@ -236,14 +277,36 @@ var _ = Describe(
 				}).WithTimeout(time.Minute*20).WithPolling(time.Second*5).Should(
 					BeTrue(), "error waiting for imageclusterinstall to complete")
 			})
+
+		It("successfully creates extramanifests", reportxml.ID("76643"), func() {
+			if !MGMTConfig.ExtraManifests {
+				Skip("Cluster not configured with extra manifests")
+			}
+
+			By("Pull spoke admin kubeconfig")
+			adminKubeconfigSecret, err := secret.Pull(APIClient,
+				fmt.Sprintf("%s-admin-kubeconfig", MGMTConfig.Cluster.Info.ClusterName), MGMTConfig.Cluster.Info.ClusterName)
+			Expect(err).NotTo(HaveOccurred(), "error pulling spoke kubeconfig secret")
+
+			adminKubeconfigContent, ok := adminKubeconfigSecret.Object.Data["kubeconfig"]
+			Expect(ok).To(BeTrue(), "error checking for kubeconfig key from admin kubeconfig secret")
+
+			By("Writing spoke admin kubeconfig to file")
+			err = os.WriteFile("/tmp/spoke-kubeconfig", adminKubeconfigContent, 0755)
+			Expect(err).NotTo(HaveOccurred(), "error writing spoke kubeconfig to file")
+
+			spokeClient := clients.New("/tmp/spoke-kubeconfig")
+			Expect(spokeClient).NotTo(BeNil(), "error creating client from spoke spoke kubeconfig file")
+
+			By("Pull namespace created by extra manifests")
+			extraNamespace, err := namespace.Pull(spokeClient, extraManifestNamespace)
+			Expect(err).NotTo(HaveOccurred(), "error pulling namespace created by extra manifests")
+
+			By("Pull configmap created by extra manifests")
+			extraConfigmap, err := configmap.Pull(spokeClient, extraManifestConfigmap, extraNamespace.Object.Name)
+			Expect(err).NotTo(HaveOccurred(), "error pulling configmap created by extra manifests")
+			Expect(len(extraConfigmap.Object.Data)).To(Equal(1), "error: got unexpected data in configmap")
+			Expect(extraConfigmap.Object.Data["hello"]).To(Equal("world"),
+				"error: extra manifest configmap has incorrect content")
+		})
 	})
-
-func withHubAcceptsClient(builder *ocm.ManagedClusterBuilder) (*ocm.ManagedClusterBuilder, error) {
-	if builder == nil || builder.Definition == nil {
-		return builder, fmt.Errorf("managedcluster builder and definition cannot be nil")
-	}
-
-	builder.Definition.Spec.HubAcceptsClient = true
-
-	return builder, nil
-}
