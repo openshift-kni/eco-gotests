@@ -122,7 +122,7 @@ var _ = Describe(
 
 				ns, err := namespace.Pull(HubAPIClient, nsname)
 				Expect(err).ToNot(HaveOccurred(), "could not pull namespace")
-				err = ns.DeleteAndWait(time.Second * 60)
+				err = ns.DeleteAndWait(time.Second * 120)
 				Expect(err).ToNot(HaveOccurred(), "could not delete namespace")
 
 				By("Deleting the test agentserviceconfig")
