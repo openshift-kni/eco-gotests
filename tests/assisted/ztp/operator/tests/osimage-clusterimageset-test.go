@@ -141,7 +141,7 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "error deleting secret")
 
 				By("Deleting osimage-clusterimageset-test namespace")
-				err = osImageClusterImageSetNS.DeleteAndWait(time.Second * 30)
+				err = osImageClusterImageSetNS.DeleteAndWait(time.Second * 120)
 				Expect(err).ToNot(HaveOccurred(), "error deleting namespace")
 			})
 		})
