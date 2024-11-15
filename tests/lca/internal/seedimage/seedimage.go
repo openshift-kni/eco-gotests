@@ -6,11 +6,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/BurntSushi/toml"
+	"github.com/containers/image/v5/pkg/sysregistriesv2"
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/lifecycle-agent/lca-cli/seedclusterinfo"
+	configv1 "github.com/openshift/api/config/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -91,39 +94,19 @@ func GetContent(apiClient *clients.Settings, seedImageLocation string) (*SeedIma
 		return nil, err
 	}
 
+	var mountedFilePath string
+
+	var unmount func()
+
 	if seedInfo.HasProxy {
-		podmanPullCmd := fmt.Sprintf("%s podman pull %s", connectionString, seedImageLocation)
+		podmanPullCmd := fmt.Sprintf("%s podman pull", connectionString)
 
-		_, err = cluster.ExecCmdWithStdout(
-			apiClient, podmanPullCmd, metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode),
-			})
-
+		mountedFilePath, unmount, err = pullAndMountImage(apiClient, seedNode, podmanPullCmd, seedImageLocation)
 		if err != nil {
 			return nil, err
 		}
 
-		mountedFilePathOutput, err := cluster.ExecCmdWithStdout(
-			apiClient, fmt.Sprintf("sudo podman image mount %s", seedImageLocation), metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode),
-			})
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer func() {
-			_, err := cluster.ExecCmdWithStdout(
-				apiClient, fmt.Sprintf("sudo podman image unmount %s", seedImageLocation), metav1.ListOptions{
-					FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode),
-				})
-
-			if err != nil {
-				glog.V(100).Info("Error occurred while unmounting image")
-			}
-		}()
-
-		mountedFilePath := regexp.MustCompile(`\n`).ReplaceAllString(mountedFilePathOutput[seedNode], "")
+		defer unmount()
 
 		proxyEnvOutput, err := cluster.ExecCmdWithStdout(
 			apiClient, fmt.Sprintf("sudo tar xzf %s/etc.tgz -O etc/mco/proxy.env", mountedFilePath), metav1.ListOptions{
@@ -137,6 +120,38 @@ func GetContent(apiClient *clients.Settings, seedImageLocation string) (*SeedIma
 		proxyEnv := proxyEnvOutput[seedNode]
 
 		seedInfo.ParseProxyEnv(proxyEnv)
+	}
+
+	if seedInfo.MirrorRegistryConfigured {
+		if mountedFilePath == "" {
+			podmanPullCmd := fmt.Sprintf("%s podman pull", connectionString)
+
+			mountedFilePath, unmount, err = pullAndMountImage(apiClient, seedNode, podmanPullCmd, seedImageLocation)
+			if err != nil {
+				return nil, err
+			}
+
+			defer unmount()
+		}
+
+		mirrorConfigOutput, err := cluster.ExecCmdWithStdout(
+			apiClient, fmt.Sprintf("sudo tar xzf %s/etc.tgz -O etc/containers/registries.conf",
+				mountedFilePath), metav1.ListOptions{FieldSelector: fmt.Sprintf("metadata.name=%s", seedNode)})
+
+		if err != nil {
+			return nil, err
+		}
+
+		mirrorConfig := mirrorConfigOutput[seedNode]
+
+		var registriesConfig sysregistriesv2.V2RegistriesConf
+
+		err = toml.Unmarshal([]byte(mirrorConfig), &registriesConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		seedInfo.ParseMirrorConf(registriesConfig)
 	}
 
 	return seedInfo, nil
@@ -173,4 +188,58 @@ func (s *SeedImageContent) ParseProxyEnv(config string) {
 			s.Proxy.NOProxy = noProxyKeyVal[1]
 		}
 	}
+}
+
+// ParseMirrorConf reads a registries.conf config and sets SeedImageContent.MirrorConfig accordingly.
+func (s *SeedImageContent) ParseMirrorConf(config sysregistriesv2.V2RegistriesConf) {
+	s.MirrorConfig = &configv1.ImageDigestMirrorSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "seed-image-digest-mirror",
+		},
+	}
+
+	for _, reg := range config.Registries {
+		var registryMirrors []configv1.ImageMirror
+		for _, mirror := range reg.Mirrors {
+			registryMirrors = append(registryMirrors, configv1.ImageMirror(mirror.Location))
+		}
+
+		s.MirrorConfig.Spec.ImageDigestMirrors = append(s.MirrorConfig.Spec.ImageDigestMirrors, configv1.ImageDigestMirrors{
+			Source:  reg.Location,
+			Mirrors: registryMirrors,
+		})
+	}
+}
+
+func pullAndMountImage(apiClient *clients.Settings, node, pullCommand, image string) (string, func(), error) {
+	_, err := cluster.ExecCmdWithStdout(
+		apiClient, fmt.Sprintf("%s %s", pullCommand, image), metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("metadata.name=%s", node),
+		})
+
+	if err != nil {
+		return "", nil, err
+	}
+
+	mountedFilePathOutput, err := cluster.ExecCmdWithStdout(
+		apiClient, fmt.Sprintf("sudo podman image mount %s", image), metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("metadata.name=%s", node),
+		})
+
+	if err != nil {
+		return "", nil, err
+	}
+
+	mountedFilePath := regexp.MustCompile(`\n`).ReplaceAllString(mountedFilePathOutput[node], "")
+
+	return mountedFilePath, func() {
+		_, err := cluster.ExecCmdWithStdout(
+			apiClient, fmt.Sprintf("sudo podman image unmount %s", image), metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", node),
+			})
+
+		if err != nil {
+			glog.V(100).Info("Error occurred while unmounting image")
+		}
+	}, nil
 }

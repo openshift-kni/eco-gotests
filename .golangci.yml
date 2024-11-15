@@ -57,6 +57,8 @@ linters-settings:
         - $gostd
         - "github.com/stretchr/testify"
         - "github.com/stmcginnis/gofish"
+        - "github.com/BurntSushi/toml"
+        - "github.com/containers/image/v5/pkg/sysregistriesv2"
   wsl:
     strict-append: false
   gofmt:
