@@ -182,6 +182,11 @@ var _ = Describe(
 					imageClusterInstall.WithSSHKey(MGMTConfig.PublicSSHKey)
 				}
 
+				if MGMTConfig.SeedClusterInfo.MirrorRegistryConfigured {
+					imageClusterInstall.Definition.Spec.ImageDigestSources =
+						MGMTConfig.SeedClusterInfo.MirrorConfig.Spec.ImageDigestMirrors
+				}
+
 				imageClusterInstall.Definition.Spec.BareMetalHostRef = &ibiv1alpha1.BareMetalHostReference{}
 				imageClusterInstall.Definition.Spec.BareMetalHostRef.Name = snoNodeName
 				imageClusterInstall.Definition.Spec.BareMetalHostRef.Namespace = MGMTConfig.Cluster.Info.ClusterName
