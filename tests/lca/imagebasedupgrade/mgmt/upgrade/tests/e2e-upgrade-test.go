@@ -35,10 +35,10 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/url"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/nodestate"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/safeapirequest"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/brutil"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/upgrade/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/lca/internal/brutil"
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	kmmv1beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
@@ -226,24 +226,24 @@ var _ = Describe(
 			var oadpConfigmapData = make(map[string]string)
 
 			By("Add workload app backup oadp configmap")
-			workloadBackup, err := brutil.WorkloadBackup.String()
+			workloadBackup, err := mgmtparams.WorkloadBackup.String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data for workload app backup")
 			oadpConfigmapData["workload_app_backup.yaml"] = workloadBackup
 
 			By("Add workload app restore to oadp configmap")
-			workloadRestore, err := brutil.WorkloadRestore.String()
+			workloadRestore, err := mgmtparams.WorkloadRestore.String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data for workload app restore")
 			oadpConfigmapData["workload_app_restore.yaml"] = workloadRestore
 
 			_, err = namespace.Pull(APIClient, mgmtparams.LCAKlusterletNamespace)
 			if err == nil {
 				By("Add klusterlet backup oadp configmap")
-				klusterletBackup, err := brutil.KlusterletBackup.String()
+				klusterletBackup, err := mgmtparams.KlusterletBackup.String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for klusterlet backup content")
 				oadpConfigmapData["klusterlet_backup.yaml"] = klusterletBackup
 
 				By("Add klusterlet restore oadp configmap")
-				klusterletRestore, err := brutil.KlusterletRestore.String()
+				klusterletRestore, err := mgmtparams.KlusterletRestore.String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for klusterlet restire content")
 				oadpConfigmapData["klusterlet_restore.yaml"] = klusterletRestore
 			}
