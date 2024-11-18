@@ -11,7 +11,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/oadp"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/velero"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/brutil"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/internal/mgmtparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/mgmt/negative/internal/tsparams"
@@ -52,11 +51,11 @@ var _ = Describe(
 			Expect(err).NotTo(HaveOccurred(), "error deleting original dataprotectionapplication")
 
 			By("Get klusterlet backup string")
-			klusterletBackup, err := brutil.KlusterletBackup.String()
+			klusterletBackup, err := mgmtparams.KlusterletBackup.String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data for klusterlet backup")
 
 			By("Get klusterlet restore string")
-			klusterletRestore, err := brutil.KlusterletRestore.String()
+			klusterletRestore, err := mgmtparams.KlusterletRestore.String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data for klusterlet restore")
 
 			oadpConfigmap, err = configmap.NewBuilder(
