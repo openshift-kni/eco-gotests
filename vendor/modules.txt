@@ -716,6 +716,7 @@ github.com/openshift-kni/eco-goinfra/pkg/sriov-fec
 github.com/openshift-kni/eco-goinfra/pkg/statefulset
 github.com/openshift-kni/eco-goinfra/pkg/storage
 github.com/openshift-kni/eco-goinfra/pkg/velero
+github.com/openshift-kni/eco-goinfra/pkg/webhook
 # github.com/openshift-kni/k8sreporter v1.0.6
 ## explicit; go 1.20
 github.com/openshift-kni/k8sreporter
