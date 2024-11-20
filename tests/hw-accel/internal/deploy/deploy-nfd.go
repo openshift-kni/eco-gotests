@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -260,8 +261,31 @@ func newNfdBuilder(namespace string, enableTopology bool, image string) (*nodefe
 		return nil, fmt.Errorf("no csv in %s namespace", namespace)
 	}
 
-	nfdcsv, err := olm.PullClusterServiceVersion(APIClient, clusters[0].Object.Name, namespace)
+	csvNames := make([]string, 0)
+	nfdCsvIndex := 0
+	csvFound := false
 
+	for i, csv := range clusters {
+		csvNames = append(csvNames, csv.Object.Name)
+
+		if strings.Contains(csv.Object.Name, "nfd") {
+			nfdCsvIndex = i
+			csvFound = true
+
+			break
+		}
+	}
+
+	if !csvFound {
+		glog.V(logLevel).Info("nfd csv not found")
+
+		return nil, fmt.Errorf("nfd csv not found")
+	}
+
+	glog.V(logLevel).Infof("all clustes %v", csvNames)
+	glog.V(logLevel).Infof("pulling nfd csv %s", csvNames[nfdCsvIndex])
+
+	nfdcsv, err := olm.PullClusterServiceVersion(APIClient, csvNames[nfdCsvIndex], namespace)
 	if err != nil {
 		return nil, err
 	}
