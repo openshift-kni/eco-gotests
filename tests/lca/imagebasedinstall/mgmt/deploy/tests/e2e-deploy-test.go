@@ -18,10 +18,15 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
 	hiveV1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1/none"
 	ibiv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/imagebasedinstall/api/hiveextensions/v1alpha1"
+	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
 	"gopkg.in/yaml.v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/networkconfig"
@@ -42,6 +47,9 @@ const (
 
 	extraManifestNamespaceConfigmapName = "extra-manifests-cm0"
 	extraManifestConfigmapConfigmapName = "extra-manifests-cm1"
+
+	ibiClusterTemplateName = "ibi-cluster-templates-v1"
+	ibiNodeTemplateName    = "ibi-node-templates-v1"
 
 	ipv4AddrFamily = "ipv4"
 	ipv6AddrFamily = "ipv6"
@@ -76,12 +84,35 @@ var _ = Describe(
 		It("through IBI operator is successful in a connected environment with static networking",
 			reportxml.ID("76641"), func() {
 				if !MGMTConfig.StaticNetworking {
-					Skip("Cluster must use static networking")
+					Skip("Cluster is deployed without static networking")
+				}
+
+				if MGMTConfig.SiteConfig {
+					Skip("Cluster is deployed with siteconfig operator")
 				}
 
 				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = "spoke namespace"
 
 				createIBIOResouces(ipv4AddrFamily)
+			})
+
+		It("through siteconfig operator is successful in an IPv6 proxy-enabled environment with DHCP networking",
+			reportxml.ID("76642"), func() {
+				if MGMTConfig.StaticNetworking {
+					Skip("Cluster is deployed with static networking")
+				}
+
+				if !MGMTConfig.SiteConfig {
+					Skip("Cluster is deployed without siteconfig operator")
+				}
+
+				if MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy == "" && MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy == "" {
+					Skip("Cluster not installed with proxy")
+				}
+
+				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = "spoke namespace"
+
+				createSiteConfigResouces(ipv6AddrFamily)
 			})
 
 		It("successfully creates extramanifests", reportxml.ID("76643"), func() {
@@ -303,6 +334,128 @@ func createIBIOResouces(addressFamily string) {
 
 	}).WithTimeout(time.Minute*20).WithPolling(time.Second*5).Should(
 		BeTrue(), "error waiting for imageclusterinstall to complete")
+}
+
+//nolint:funlen
+func createSiteConfigResouces(addressFamily string) {
+	createSharedResources()
+
+	By("Find cluster template configmap")
+
+	clusterTemplateConfigmap, err := configmap.ListInAllNamespaces(APIClient, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", ibiClusterTemplateName),
+	})
+	Expect(err).To(BeNil(), "error encountered when listing configmaps mactching cluster template name")
+	Expect(len(clusterTemplateConfigmap)).To(Equal(1),
+		"error: received unexpected configmap count: %d", len(clusterTemplateConfigmap))
+
+	By("Find node template configmap")
+
+	nodeTemplateConfigmap, err := configmap.ListInAllNamespaces(APIClient, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", ibiNodeTemplateName),
+	})
+	Expect(err).To(BeNil(), "error encountered when listing configmaps mactching node template name")
+	Expect(len(nodeTemplateConfigmap)).To(Equal(1),
+		"error: received unexpected configmap count: %d", len(nodeTemplateConfigmap))
+
+	clusterInstanceBuilder := siteconfig.NewCIBuilder(
+		APIClient, MGMTConfig.Cluster.Info.ClusterName, MGMTConfig.Cluster.Info.ClusterName).
+		WithPullSecretRef(MGMTConfig.Cluster.Info.ClusterName).
+		WithClusterTemplateRef(ibiClusterTemplateName, clusterTemplateConfigmap[0].Object.Namespace).
+		WithBaseDomain(MGMTConfig.Cluster.Info.BaseDomain).
+		WithClusterImageSetRef(ibiImageSetName).
+		WithClusterName(MGMTConfig.Cluster.Info.ClusterName)
+
+	if addressFamily == ipv4AddrFamily {
+		clusterInstanceBuilder.WithMachineNetwork(MGMTConfig.Cluster.Info.MachineCIDR.IPv4)
+	} else {
+		clusterInstanceBuilder.WithMachineNetwork(MGMTConfig.Cluster.Info.MachineCIDR.IPv6)
+	}
+
+	if MGMTConfig.PublicSSHKey != "" {
+		clusterInstanceBuilder.WithSSHPubKey(MGMTConfig.PublicSSHKey)
+	}
+
+	if MGMTConfig.ExtraManifests {
+		clusterInstanceBuilder.WithExtraManifests(extraManifestNamespaceConfigmapName).
+			WithExtraManifests(extraManifestConfigmapConfigmapName)
+	}
+
+	if MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy != "" || MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy != "" {
+		clusterInstanceBuilder.WithProxy(&v1beta1.Proxy{
+			HTTPProxy:  MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy,
+			HTTPSProxy: MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy,
+			NoProxy:    MGMTConfig.SeedClusterInfo.Proxy.NOProxy,
+		})
+	}
+
+	Expect(len(MGMTConfig.Cluster.Info.Hosts)).To(Equal(1), "error: can only support SNO deployments")
+
+	for host, info := range MGMTConfig.Cluster.Info.Hosts {
+		var bmcAddress string
+
+		if addressFamily == ipv4AddrFamily {
+			bmcAddress = info.BMC.URLv4
+		} else {
+			bmcAddress = info.BMC.URLv6
+		}
+
+		By("Add node entry for " + host)
+
+		siteconfigNode := siteconfig.NewNodeBuilder(host, bmcAddress, info.BMC.MACAddress, host, ibiNodeTemplateName,
+			nodeTemplateConfigmap[0].Object.Namespace).WithAutomatedCleaningMode("disabled")
+
+		if MGMTConfig.StaticNetworking {
+			if len(info.Network.Interfaces) != 1 {
+				Skip("Cannot support nodes with more than one network interface")
+			}
+
+			nodeNetwork := &v1beta1.NMStateConfigSpec{}
+
+			nodeNetworkingConfig := createNetworkConfig(*MGMTConfig.Cluster, addressFamily)
+
+			for _, iface := range nodeNetworkingConfig.Interfaces {
+				nodeNetwork.Interfaces = append(nodeNetwork.Interfaces, &v1beta1.Interface{
+					Name:       iface.Name,
+					MacAddress: iface.MACAddress,
+				})
+			}
+
+			rawNetwork, err := yaml.Marshal(&nodeNetworkingConfig)
+			Expect(err).NotTo(HaveOccurred(), "error marshaling network configuration")
+
+			nodeNetwork.NetConfig = v1beta1.NetConfig{
+				Raw: rawNetwork,
+			}
+
+			siteconfigNode.WithNodeNetwork(nodeNetwork)
+		}
+
+		nodeSpec, err := siteconfigNode.Generate()
+		Expect(err).NotTo(HaveOccurred(), "error generating node spec for clusterinstance")
+
+		clusterInstanceBuilder.WithNode(nodeSpec)
+	}
+
+	_, err = clusterInstanceBuilder.Create()
+	Expect(err).NotTo(HaveOccurred(), "error creating clusterinstance")
+
+	Eventually(func() (bool, error) {
+		clusterInstanceBuilder.Object, err = clusterInstanceBuilder.Get()
+		if err != nil {
+			return false, err
+		}
+
+		for _, condition := range clusterInstanceBuilder.Object.Status.Conditions {
+			if condition.Type == string(siteconfigv1alpha1.ClusterProvisioned) {
+				return condition.Status == "True" && condition.Reason == string(siteconfigv1alpha1.Completed), nil
+
+			}
+		}
+
+		return false, nil
+	}).WithTimeout(time.Minute*20).WithPolling(time.Second*5).Should(
+		BeTrue(), "error waiting for clusterinstance to finish provisioning")
 }
 
 func createNetworkConfig(config mgmtconfig.Cluster, addressFamily string) networkconfig.NetworkConfig {

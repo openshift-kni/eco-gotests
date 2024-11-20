@@ -68,6 +68,7 @@ type MGMTConfig struct {
 	PublicSSHKey     string
 	StaticNetworking bool `envconfig:"ECO_LCA_IBI_MGMT_STATIC_NETWORK" default:"false"`
 	ExtraManifests   bool `envconfig:"ECO_LCA_IBI_EXTRA_MANIFESTS" default:"true"`
+	SiteConfig       bool `envconfig:"ECO_LCA_IBI_SITECONFIG" default:"true"`
 }
 
 // NewMGMTConfig returns instance of MGMTConfig type.

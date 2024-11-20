@@ -13,6 +13,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator"
 	argocdv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
 	hiveextv1beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1"
+	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
+
 	agentinstallv1beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
 	hivev1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1"
 	ibiv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/imagebasedinstall/api/hiveextensions/v1alpha1"
@@ -59,6 +61,7 @@ var reporterSchemes = []clients.SchemeAttacher{
 	nvidiagpuv1.AddToScheme,
 	lcav1.AddToScheme,
 	ibiv1alpha1.AddToScheme,
+	siteconfigv1alpha1.AddToScheme,
 }
 
 func setReporterSchemes(scheme *runtime.Scheme) error {
