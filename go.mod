@@ -248,7 +248,7 @@ require (
 
 replace (
 	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
-	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20241007120942-40fc75e827a1 // release-4.17
+	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20241111131739-45f22daa4ca8 // release-4.17
 	github.com/kubernetes-incubator/external-storage => github.com/libopenstorage/external-storage v1.8.1-0.20211117215743-47ffded9c408
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.6.2
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20240830023148-b7d0481c9094 // release-4.16

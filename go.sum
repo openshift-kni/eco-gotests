@@ -1287,8 +1287,8 @@ github.com/openshift/local-storage-operator v0.0.0-20240712213037-f7a4384c92bb h
 github.com/openshift/local-storage-operator v0.0.0-20240712213037-f7a4384c92bb/go.mod h1:Xd0acgr/PW7GbqjF/vM9cK0h+0XZyQgZj5w4GJ3GKoU=
 github.com/openshift/machine-config-operator v0.0.1-0.20231024085435-7e1fb719c1ba h1:WM6K+m2xMAwbQDetKGhV/Rd8yukF3AsU1z74cqoWrz0=
 github.com/openshift/machine-config-operator v0.0.1-0.20231024085435-7e1fb719c1ba/go.mod h1:mSt3ACow31pa1hTRONn+yT5e+KFkgi7G2bFEx5Nj+n0=
-github.com/openshift/sriov-network-operator v0.0.0-20241007120942-40fc75e827a1 h1:eOONPWetpAKkcVjoki9HhhSkLpe47sxuKh/uAaUgInw=
-github.com/openshift/sriov-network-operator v0.0.0-20241007120942-40fc75e827a1/go.mod h1:YL5Y2SIHqmR52FXrt4JyIaodWJyOnEK5n7PW4bL320Q=
+github.com/openshift/sriov-network-operator v0.0.0-20241111131739-45f22daa4ca8 h1:IfgOgyfzDy8Z3kUlRQxFP5+iGjqExlsdZu5e/xnFL/0=
+github.com/openshift/sriov-network-operator v0.0.0-20241111131739-45f22daa4ca8/go.mod h1:eCMvvm0oS0HnfrjOCNcqvrSsf0mzQJ2k+0M+r/5M2ho=
 github.com/operator-framework/api v0.23.0 h1:kHymOwcHBpBVujT49SKOCd4EVG7Odwj4wl3NbOR2LLA=
 github.com/operator-framework/api v0.23.0/go.mod h1:oKcFOz+Xc1UhMi2Pzcp6qsO7wjS4r+yP7EQprQBXrfM=
 github.com/otiai10/copy v1.14.0 h1:dCI/t1iTdYGtkvCuBG2BgR6KZa83PTclw4U5n2wAllU=
