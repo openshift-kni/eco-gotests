@@ -383,6 +383,20 @@ func (builder *Builder) WithAffinity(affinity *corev1.Affinity) *Builder {
 	return builder
 }
 
+// WithHostNetwork applies a hostnetwork state to the deployment definition.
+func (builder *Builder) WithHostNetwork(enableHostnetwork bool) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Setting hostnetwork %v to deployment %s in namespace %s",
+		enableHostnetwork, builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.HostNetwork = enableHostnetwork
+
+	return builder
+}
+
 // WithOptions creates deployment with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {

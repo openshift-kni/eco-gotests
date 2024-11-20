@@ -12,7 +12,8 @@ import (
 
 var (
 	// AllowedSCList list of allowed SecurityCapabilities.
-	AllowedSCList          = []string{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK", "ALL"}
+	AllowedSCList = []string{"NET_RAW", "NET_ADMIN", "SYS_ADMIN", "IPC_LOCK", "ALL",
+		"SETFCAP", "CAP_NET_RAW", "CAP_NET_ADMIN"}
 	falseVar               = false
 	trueVar                = true
 	capabilityAll          = []corev1.Capability{"ALL"}
@@ -407,6 +408,24 @@ func (builder *ContainerBuilder) WithPorts(ports []corev1.ContainerPort) *Contai
 	}
 
 	builder.definition.Ports = ports
+
+	return builder
+}
+
+// WithTTY applies TTY value on container.
+func (builder *ContainerBuilder) WithTTY(enableTTY bool) *ContainerBuilder {
+	glog.V(100).Infof("Applying TTY value to container: %v", enableTTY)
+
+	builder.definition.TTY = enableTTY
+
+	return builder
+}
+
+// WithStdin applies Stdin value on container.
+func (builder *ContainerBuilder) WithStdin(enableStdin bool) *ContainerBuilder {
+	glog.V(100).Infof("Applying TTY value to container: %v", enableStdin)
+
+	builder.definition.Stdin = enableStdin
 
 	return builder
 }
