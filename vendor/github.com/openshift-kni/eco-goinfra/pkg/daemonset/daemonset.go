@@ -174,6 +174,28 @@ func (builder *Builder) WithHostNetwork() *Builder {
 	return builder
 }
 
+// WithPodAffinity applies pod's Affinity to daemonset definition.
+func (builder *Builder) WithPodAffinity(podAffinity *corev1.Affinity) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if podAffinity == nil {
+		glog.V(100).Infof("The Affinity parameter is empty")
+
+		builder.errorMsg = "affinity parameter is empty"
+
+		return builder
+	}
+
+	glog.V(100).Infof("Adding pod affinity to daemonset %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.Affinity = podAffinity
+
+	return builder
+}
+
 // WithVolume defines Volume of daemonset under PodTemplateSpec.
 func (builder *Builder) WithVolume(dsVolume corev1.Volume) *Builder {
 	if valid, _ := builder.validate(); !valid {
