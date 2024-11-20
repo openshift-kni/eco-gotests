@@ -2,7 +2,6 @@ package clients
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/golang/glog"
@@ -82,16 +81,18 @@ func New(kubeconfig string) *Settings {
 	}
 
 	if kubeconfig != "" {
-		log.Printf("Loading kube client config from path %q", kubeconfig)
+		glog.V(100).Infof("Loading kube client config from path %s", kubeconfig)
 
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	} else {
-		log.Print("Using in-cluster kube client config")
+		glog.V(100).Info("Using in-cluster kube client config")
 
 		config, err = rest.InClusterConfig()
 	}
 
 	if err != nil {
+		glog.V(100).Infof("Failed to load kubeconfig: %v", err)
+
 		return nil
 	}
 
@@ -114,7 +115,7 @@ func New(kubeconfig string) *Settings {
 	err = SetScheme(clientSet.scheme)
 
 	if err != nil {
-		log.Print("Error to load apiClient scheme")
+		glog.V(100).Info("Error to load apiClient scheme")
 
 		return nil
 	}
@@ -124,7 +125,7 @@ func New(kubeconfig string) *Settings {
 	})
 
 	if err != nil {
-		log.Print("Error to create apiClient")
+		glog.V(100).Info("Error to create apiClient")
 
 		return nil
 	}
