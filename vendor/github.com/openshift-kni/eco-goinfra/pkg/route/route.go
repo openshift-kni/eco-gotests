@@ -164,6 +164,30 @@ func (builder *Builder) WithTargetPortName(portName string) *Builder {
 	return builder
 }
 
+// WithHostDomain adds a route host domain to the route.
+func (builder *Builder) WithHostDomain(hostDomain string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding route host domain %s to route %s in namespace %s",
+		hostDomain, builder.Definition.Name, builder.Definition.Namespace)
+
+	if hostDomain == "" {
+		glog.V(100).Infof("Received empty route hostDomain")
+
+		builder.errorMsg = "route host domain cannot be empty string"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.Host = hostDomain
+
+	return builder
+}
+
 // WithWildCardPolicy adds the specified wildCardPolicy to the route.
 func (builder *Builder) WithWildCardPolicy(wildcardPolicy string) *Builder {
 	if valid, _ := builder.validate(); !valid {
