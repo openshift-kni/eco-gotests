@@ -4,6 +4,8 @@ import (
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	hivev1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/hive/api/v1"
 	ibiv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/imagebasedinstall/api/hiveextensions/v1alpha1"
+	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
+
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtparams"
 	"github.com/openshift-kni/k8sreporter"
 	appsv1 "k8s.io/api/apps/v1"
@@ -29,6 +31,7 @@ var (
 		{Cr: &ibiv1alpha1.ImageClusterInstallList{}},
 		{Cr: &hivev1.ClusterImageSetList{}},
 		{Cr: &hivev1.ClusterDeploymentList{}},
+		{Cr: &siteconfigv1alpha1.ClusterInstanceList{}},
 		{Cr: &bmhv1alpha1.BareMetalHostList{}},
 	}
 )
