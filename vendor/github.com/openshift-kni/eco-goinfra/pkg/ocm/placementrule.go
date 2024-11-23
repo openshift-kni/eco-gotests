@@ -150,6 +150,9 @@ func (builder *PlacementRuleBuilder) Get() (*placementrulev1.PlacementRule, erro
 	}, placementRule)
 
 	if err != nil {
+		glog.V(100).Infof("Failed to get placementrule %s in namespace %s: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
+
 		return nil, err
 	}
 

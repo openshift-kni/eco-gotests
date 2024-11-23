@@ -160,6 +160,9 @@ func (builder *PlacementBindingBuilder) Get() (*policiesv1.PlacementBinding, err
 	}, placementBinding)
 
 	if err != nil {
+		glog.V(100).Infof("Failed to get placementBinding %s in namespace %s: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
+
 		return nil, err
 	}
 

@@ -163,6 +163,9 @@ func (builder *PolicyBuilder) Get() (*policiesv1.Policy, error) {
 	}, policy)
 
 	if err != nil {
+		glog.V(100).Infof("Failed to get policy %s in namespace %s: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
+
 		return nil, err
 	}
 

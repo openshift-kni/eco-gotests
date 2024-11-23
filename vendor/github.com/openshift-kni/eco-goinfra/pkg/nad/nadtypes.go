@@ -1,7 +1,7 @@
 package nad
 
-// Capability tells if the plugin supports MAC.
 type (
+	// Capability tells if the plugin supports MAC.
 	Capability struct {
 		Mac bool `json:"mac,omitempty"`
 		IPs bool `json:"ips,omitempty"`
@@ -68,6 +68,12 @@ type (
 		Gateway string `json:"gateway,omitempty"`
 	}
 
+	// Routes represent routing entries for IPAM plugin.
+	Routes struct {
+		Dst string `json:"dst,omitempty"`
+		Gw  string `json:"gw,omitempty"`
+	}
+
 	// IPAM container the IPAM configuration for a NAD.
 	IPAM struct {
 		Type       string     `json:"type,omitempty"`
@@ -76,6 +82,7 @@ type (
 		RangeEnd   string     `json:"range_end,omitempty"`
 		Gateway    string     `json:"gateway,omitempty"`
 		Exclude    []string   `json:"exclude,omitempty"`
+		Routes     []Routes   `json:"routes,omitempty"`
 		IPRanges   []IPRanges `json:"ipRanges,omitempty"`
 	}
 )
