@@ -31,6 +31,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/networkconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/installconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/brutil"
@@ -57,6 +58,8 @@ const (
 
 var (
 	ibiImageSetName string
+
+	spokeClient *clients.Settings
 )
 
 var _ = Describe(
@@ -120,20 +123,8 @@ var _ = Describe(
 				Skip("Cluster not configured with extra manifests")
 			}
 
-			By("Pull spoke admin kubeconfig")
-			adminKubeconfigSecret, err := secret.Pull(APIClient,
-				fmt.Sprintf("%s-admin-kubeconfig", MGMTConfig.Cluster.Info.ClusterName), MGMTConfig.Cluster.Info.ClusterName)
-			Expect(err).NotTo(HaveOccurred(), "error pulling spoke kubeconfig secret")
-
-			adminKubeconfigContent, ok := adminKubeconfigSecret.Object.Data["kubeconfig"]
-			Expect(ok).To(BeTrue(), "error checking for kubeconfig key from admin kubeconfig secret")
-
-			By("Writing spoke admin kubeconfig to file")
-			err = os.WriteFile("/tmp/spoke-kubeconfig", adminKubeconfigContent, 0755)
-			Expect(err).NotTo(HaveOccurred(), "error writing spoke kubeconfig to file")
-
-			spokeClient := clients.New("/tmp/spoke-kubeconfig")
-			Expect(spokeClient).NotTo(BeNil(), "error creating client from spoke spoke kubeconfig file")
+			By("Get spoke client")
+			spokeClient = getSpokeClient()
 
 			By("Pull namespace created by extra manifests")
 			extraNamespace, err := namespace.Pull(spokeClient, extraManifestNamespace)
@@ -145,6 +136,27 @@ var _ = Describe(
 			Expect(len(extraConfigmap.Object.Data)).To(Equal(1), "error: got unexpected data in configmap")
 			Expect(extraConfigmap.Object.Data["hello"]).To(Equal("world"),
 				"error: extra manifest configmap has incorrect content")
+		})
+
+		It("successfully configured using FIPs", reportxml.ID("76644"), func() {
+			if !MGMTConfig.SeedClusterInfo.HasFIPS {
+				Skip("Cluster not using FIPS enabled seed image")
+			}
+
+			By("Get spoke client")
+			spokeClient = getSpokeClient()
+
+			By("Get spoke cluster-config configmap")
+			clusterConifgMap, err := configmap.Pull(spokeClient, "cluster-config-v1", "kube-system")
+			Expect(err).NotTo(HaveOccurred(), "error pulling cluster-config configmap from spoke cluster")
+
+			installConfigData, ok := clusterConifgMap.Object.Data["install-config"]
+			Expect(ok).To(BeTrue(), "error: cluster-config does not contain appropriate install-config key")
+
+			spokeInstallConfig, err := installconfig.NewInstallConfigFromString(installConfigData)
+			Expect(err).NotTo(HaveOccurred(), "error creating InstallConfig struct from configmap data")
+			Expect(spokeInstallConfig.FIPS).To(BeTrue(),
+				"error: installed spoke does not have expected FIPS value set in install-config")
 		})
 	})
 
@@ -546,4 +558,27 @@ func createNetworkConfig(config mgmtconfig.Cluster, addressFamily string) networ
 	}
 
 	return nodeNetworkingConfig
+}
+
+func getSpokeClient() *clients.Settings {
+	if spokeClient == nil {
+		By("Get spoke admin kubeconfig")
+
+		adminKubeconfigSecret, err := secret.Pull(APIClient,
+			fmt.Sprintf("%s-admin-kubeconfig", MGMTConfig.Cluster.Info.ClusterName), MGMTConfig.Cluster.Info.ClusterName)
+		Expect(err).NotTo(HaveOccurred(), "error pulling spoke kubeconfig secret")
+
+		adminKubeconfigContent, ok := adminKubeconfigSecret.Object.Data["kubeconfig"]
+		Expect(ok).To(BeTrue(), "error checking for kubeconfig key from admin kubeconfig secret")
+
+		By("Writing spoke admin kubeconfig to file")
+
+		err = os.WriteFile("/tmp/spoke-kubeconfig", adminKubeconfigContent, 0755)
+		Expect(err).NotTo(HaveOccurred(), "error writing spoke kubeconfig to file")
+
+		spokeClient = clients.New("/tmp/spoke-kubeconfig")
+		Expect(spokeClient).NotTo(BeNil(), "error creating client from spoke kubeconfig file")
+	}
+
+	return spokeClient
 }
