@@ -33,6 +33,14 @@ var _ = Describe(
 				Label("egress", "egress-etp-local"), reportxml.ID("76484"),
 				rdscorecommon.VerifyEgressServiceWithLocalETP)
 
+			It("Verify Egress traffic works with egressIP applied for the external target",
+				Label("egressip", "egressip-single-ns"), reportxml.ID("75060"),
+				rdscorecommon.VerifyEgressIPWithSingleNamespace)
+
+			It("Verify Egress traffic works with egressIP applied for the external target",
+				Label("egressip", "egressip-mixed-targets"), reportxml.ID("77927"),
+				rdscorecommon.VerifyEgressIPDifferentNodesAndNamespaces)
+
 			It("Verifies workload reachable over BGP route",
 				Label("frr"), reportxml.ID("76009"),
 				rdscorecommon.ReachURLviaFRRroute)
@@ -128,6 +136,9 @@ var _ = Describe(
 
 				By("Creating EgressService with ETP=Local")
 				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+
+				By("Creating EgressIP workload config")
+				rdscorecommon.CreateEgressIPWithSingleNamespace()
 
 				By("Creating a workload with CephFS PVC")
 				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
@@ -258,6 +269,10 @@ var _ = Describe(
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76672"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
 
+			//It("Verify EgressIP connectivity after ungraceful reboot",
+			//	Label("egressip", "egressip-single-ns"), reportxml.ID("75061"),
+			//	rdscorecommon.VerifyEgressIPConnectivityMixedNodesAndNamespaces)
+
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
 				rdscorecommon.VerifyNROPWorkloadAvailable)
@@ -322,6 +337,9 @@ var _ = Describe(
 
 				By("Creating EgressService with ETP=Local")
 				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+
+				By("Creating EgressIP workload config")
+				rdscorecommon.CreateEgressIPWithSingleNamespace()
 
 				By("Creating a workload with CephFS PVC")
 				rdscorecommon.DeployWorkflowCephFSPVC(ctx)
@@ -401,6 +419,10 @@ var _ = Describe(
 			It("Verify EgressService ingress with Local ExternalTrafficPolicy after graceful reboot",
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76673"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
+
+			//It("Verify EgressIP connectivity after graceful reboot",
+			//	Label("egressip", "egressip-single-ns"), reportxml.ID("75062"),
+			//	rdscorecommon.VerifyEgressIPConnectivityMixedNodesAndNamespaces)
 
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),

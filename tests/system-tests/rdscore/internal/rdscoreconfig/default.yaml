@@ -148,3 +148,15 @@ rdscore_egress_service_2_node_selector:
   node-role.kubernetes.io/worker: ''
 rdscore_egress_service_deploy_2_img: ''
 rdscore_egress_service_deploy_2_ipaddr_pool: 'rds-local-pool'
+# EgressIP
+rdscore_egressip_name: 'egressip-qe'
+rdscore_egressip_sniffer_namespace: 'rds-egressip-sniffer-ns'
+rdscore_wlkd_egressip_image: ''
+rdscore_wlkd_egressip_node_one: ''
+rdscore_wlkd_egressip_node_two: ''
+rdscore_wlkd_non_egressip_node: ''
+rdscore_egressip_ns_label: 'env=qe'
+rdscore_egressip_pod_label: 'app=egressip-qe'
+rdscore_egressip_ns_one: rds-egressip-grp1
+rdscore_egressip_ns_two: rds-egressip-grp2
+rdscore_egressip_ns_three: rds-egressip-grp3

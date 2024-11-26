@@ -376,6 +376,51 @@ type CoreConfig struct {
 	EgressServiceDeploy2NodeSelector EnvMapString `yaml:"rdscore_egress_service_2_node_selector" envconfig:"ECO_RDSCORE_EGRESS_SVC_2_NODE_SELECTOR"`
 	//nolint:lll,nolintlint
 	EgressServiceDeploy2IPAddrPool string `yaml:"rdscore_egress_service_deploy_2_ipaddr_pool" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_2_IPADDR_POOL"`
+	EgressIPName                   string `yaml:"rdscore_egressip_name" envconfig:"ECO_RDSCORE_EGRESSIP_NAME"`
+	//nolint:lll,nolintlint
+	EgressIPSnifferNamespace string `yaml:"rdscore_egressip_sniffer_namespace" envconfig:"ECO_RDSCORE_EGRESSIP_SNIFFER_NAMESPACE"`
+	//nolint:lll,nolintlint
+	EgressIPDeploymentImage string `yaml:"rdscore_wlkd_egressip_image" envconfig:"ECO_RDSCORE_EGRESSIP_DEPLOY_IMG"`
+	//nolint:lll,nolintlint
+	EgressIPNodeOne string `yaml:"rdscore_wlkd_egressip_node_one" envconfig:"ECO_SYSTEM_RDSCORE_EGRESSIP_NODE_ONE"`
+	//nolint:lll,nolintlint
+	EgressIPNodeTwo string `yaml:"rdscore_wlkd_egressip_node_two" envconfig:"ECO_SYSTEM_RDSCORE_EGRESSIP_NODE_TWO"`
+	//nolint:lll,nolintlint
+	NonEgressIPNodeOne string `yaml:"rdscore_wlkd_non_egressip_node_one" envconfig:"ECO_SYSTEM_RDSCORE_NON_EGRESSIP_NODE_ONE"`
+	//nolint:lll,nolintlint
+	NonEgressIPNodeTwo string `yaml:"rdscore_wlkd_non_egressip_node_two" envconfig:"ECO_SYSTEM_RDSCORE_NON_EGRESSIP_NODE_TWO"`
+	//nolint:lll,nolintlint
+	EgressIPNamespaceLabel string `yaml:"rdscore_egressip_ns_label" envconfig:"ECO_RDSCORE_EGRESSIP_NS_LABEL"`
+	//nolint:lll,nolintlint
+	EgressIPPodLabel string `yaml:"rdscore_egressip_pod_label" envconfig:"ECO_RDSCORE_EGRESSIP_POD_LABEL"`
+	//nolint:lll,nolintlint
+	EgressIPNamespaceOne string `yaml:"rdscore_egressip_ns_one" envconfig:"ECO_RDSCORE_EGRESSIP_NS_ONE"`
+	//nolint:lll,nolintlint
+	EgressIPNamespaceTwo string `yaml:"rdscore_egressip_ns_two" envconfig:"ECO_RDSCORE_EGRESSIP_NS_TWO"`
+	//nolint:lll,nolintlint
+	EgressIPNamespaceThree string `yaml:"rdscore_egressip_ns_three" envconfig:"ECO_RDSCORE_EGRESSIP_NS_TREE"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPOne string `yaml:"rdscore_egressip_remote_ip_one" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IP_ONE"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPTwo string `yaml:"rdscore_egressip_remote_ip_two" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IP_TWO"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPThree string `yaml:"rdscore_egressip_remote_ip_three" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IP_THREE"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPFour string `yaml:"rdscore_egressip_remote_ip_four" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IP_FOUR"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPv6One string `yaml:"rdscore_egressip_remote_ipv6_one" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6_ONE"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPv6Two string `yaml:"rdscore_egressip_remote_ipv6_two" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6_TWO"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPv6Three string `yaml:"rdscore_egressip_remote_ipv6_three" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6_THREE"`
+	//nolint:lll,nolintlint
+	EgressIPRemoteIPv6Four string `yaml:"rdscore_egressip_remote_ipv6_four" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6_FOUR"`
+	//nolint:lll,nolintlint
+	EgressIPPacketSnifferInterface string `yaml:"rdscore_egressip_packet_sniffer_interface" envconfig:"ECO_RDSCORE_EGRESSIP_PACKET_SNIFFER_INTERFACE"`
+	//nolint:lll,nolintlint
+	EgressIPTcpPort int `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
+	//nolint:lll,nolintlint
+	EgressIPUdpPort int `yaml:"rdscore_egressip_udp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_UDP_PORT_NUMBER"` //nolint:lll
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.

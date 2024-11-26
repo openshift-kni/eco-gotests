@@ -1,4 +1,4 @@
-package packetsniffer
+package sniffer
 
 import (
 	"bufio"
@@ -11,22 +11,30 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
 	"github.com/golang/glog"
-	"github.com/google/uuid"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
+	"github.com/openshift-kni/eco-goinfra/pkg/imagestream"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	scc "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/scc"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
+	httpProtocol           = "http"
+	udpProtocol            = "udp"
 	snifferDeployRBACName  = "privileged-rdscore-sniffer"
-	snifferDeploySAName    = "rdscore-sniffer-sa"
+	snifferDeploySAName    = "default"
 	snifferRBACRole        = "system:openshift:scc:privileged"
 	snifferDeploymentLabel = "rds-core=sniffer-deploy"
+
+	tcpCaptureScript = `#!/bin/bash
+tcpdump -s 0 -A -v -i %s | egrep -i 'Host:'
+`
+	udpCaptureScript = `#!/bin/bash
+tcpdump -n -s0  -i %s port %d and udp
+`
 )
 
 // CreatePacketSnifferDeployment creates packet sniffer pods on the nodes specified in scheduleOnNodes.
@@ -37,19 +45,19 @@ func CreatePacketSnifferDeployment(
 	packetCaptureInterface,
 	snifferNamespace string,
 	scheduleOnNodes []string) (*deployment.Builder, error) {
-	glog.V(100).Infof("Getting the image and tag for network-tools from the release image")
+	glog.V(100).Infof("Getting the image and tag for tools from the release image")
 
-	/*tcpdumpImage, err := determineNetworkToolsImage(apiClient)
+	tcpdumpImage, err := determineNetworkToolsImage(apiClient)
 	if err != nil {
 		return nil, err
-	}*/
+	}
 	//nolint:lll,nolintlint
-	tcpdumpImage := "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:c8bc1d7bd21b45d3b81f54e4a13003ef9930159f77538653ff1cd40d9bfa00f0"
+	// tcpdumpImage := "quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:7a45219398feb4bc69ed32ec855b07ce16fef264af74d571b230cb339a700210"
 	snifferDeploymentName := fmt.Sprintf("%s-packet-sniffer", snifferNamespace)
 
 	glog.V(100).Infof("Adding SCC privileged to the sniffer namespace")
 
-	err := scc.AddPrivilegedSCCtoDefaultSA(snifferNamespace)
+	err = scc.AddPrivilegedSCCtoDefaultSA(snifferNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add SCC privileged to the sniffer namespace %s: %w",
 			snifferNamespace, err)
@@ -93,10 +101,10 @@ func CreatePacketSnifferDeployment(
 }
 
 // determineNetworkToolsImage will get the image and tag for network-tools from the release image.
-/*func determineNetworkToolsImage(apiClient *clients.Settings) (string, error) {
-	glog.V(100).Infof("Gathering the image and tag for network-tools")
+func determineNetworkToolsImage(apiClient *clients.Settings) (string, error) {
+	glog.V(100).Infof("Gathering the image and tag for tools")
 
-	imageName := "network-tools"
+	imageName := "tools"
 	imageNamespace := "openshift"
 
 	imageStreamObj, err := imagestream.Pull(apiClient, imageName, imageNamespace)
@@ -106,7 +114,7 @@ func CreatePacketSnifferDeployment(
 			imageName, imageNamespace, err)
 	}
 
-	dockerImageString, err := imageStreamObj.GetDockerImage()
+	dockerImageString, err := imageStreamObj.GetDockerImage("latest")
 
 	if err != nil {
 		return "", fmt.Errorf("could not find dockerImage definition for the imageStream %s in namespace %s; %w",
@@ -115,7 +123,7 @@ func CreatePacketSnifferDeployment(
 
 	return dockerImageString, nil
 }
-*/
+
 // createHostNetworkedPacketSnifferDeployment creates a host networked pod in namespace <namespace> on node <nodeName>.
 // It will start a packet sniffer, and it will log all GET request's source IP and the actual request string.
 //
@@ -141,6 +149,10 @@ func createHostNetworkedPacketSnifferDeployment(
 		cmd = udpCaptureScript
 	}
 
+	if strings.Contains(packetCaptureInterface, ".") {
+		packetCaptureInterface = strings.Split(packetCaptureInterface, ".")[0]
+	}
+
 	containerCmd := []string{
 		"/bin/bash",
 		"-c",
@@ -158,8 +170,8 @@ func createHostNetworkedPacketSnifferDeployment(
 			snifferDeploymentName, snifferNamespace)
 	}
 
-	glog.V(100).Infof("Sleeping 30 seconds")
-	time.Sleep(30 * time.Second)
+	glog.V(100).Infof("Sleeping 10 seconds")
+	time.Sleep(10 * time.Second)
 
 	glog.V(100).Infof("Removing ServiceAccount")
 
@@ -237,9 +249,9 @@ func createHostNetworkedPacketSnifferDeployment(
 	return snifferDeployment, err
 }
 
-// sendProbesAndCheckPacketSnifferLogs sends requests with a unique search string from the prober pod. It then
+// sendProbesAndCheckPacketSnifferLogs sends requests from the prober pod. It then
 // makes sure that the expectedHits number of requests were seen in the packetSnifferDeployment's pod logs.
-// We are only interested in sending our searchString (a unique UUID per query).
+// We are only interested in sending our searchString.
 // We do not care about the response because:
 // a) We inspect the traffic that we are sending, and we search for the unique searchString
 // b) We make sure that the request leaves from one of the target IPs
@@ -249,14 +261,13 @@ func createHostNetworkedPacketSnifferDeployment(
 func sendProbesAndCheckPacketSnifferLogs(
 	apiClient *clients.Settings,
 	proberPod *pod.Builder,
-	routeName,
+	snifferNamespace,
+	snifferSelectorLabel,
 	targetProtocol,
 	targetHost string,
 	targetPort,
 	probeCount,
 	expectedHits int,
-	packetSnifferDeployment *deployment.Builder,
-	targetIPSet map[string]string,
 	logScanMaxTries int) (bool, error) {
 	timeStart := time.Now()
 
@@ -265,7 +276,6 @@ func sendProbesAndCheckPacketSnifferLogs(
 
 	searchString, err := sendProbesToHostPort(
 		proberPod,
-		routeName,
 		targetProtocol,
 		targetHost,
 		targetPort,
@@ -274,18 +284,21 @@ func sendProbesAndCheckPacketSnifferLogs(
 		return false, err
 	}
 
-	glog.V(100).Infof("%d requests with a unique search string sended from "+
-		"prober pod %s/%s", probeCount, proberPod.Definition.Namespace, proberPod.Definition.Name)
+	glog.V(100).Infof("%d requests sended from prober pod %s/%s",
+		probeCount, proberPod.Definition.Namespace, proberPod.Definition.Name)
+
+	time.Sleep(time.Minute)
 
 	for i := 0; i < logScanMaxTries; i++ {
-		glog.V(100).Infof("Making sure that %d requests with search string %s and "+
-			"target IPs %v were seen (try %d of %d)", expectedHits, searchString, targetIPSet, i+1, logScanMaxTries)
+		glog.V(100).Infof("Making sure that %d requests with search string %s were seen (try %d of %d)",
+			expectedHits, searchString, i+1, logScanMaxTries)
 
-		numberFound := 0
-		found, err := scanPacketSnifferDeploymentPodLogs(
+		numberFound, err := scanPacketSnifferDeploymentPodLogs(
 			apiClient,
-			packetSnifferDeployment,
+			proberPod,
 			targetProtocol,
+			snifferNamespace,
+			snifferSelectorLabel,
 			searchString,
 			timeStart,
 		)
@@ -294,16 +307,7 @@ func sendProbesAndCheckPacketSnifferLogs(
 			return false, err
 		}
 
-		glog.V(100).Infof("Found map is: %v", found)
-
-		for targetIP := range targetIPSet {
-			if n, ok := found[targetIP]; ok {
-				glog.V(100).Infof("Found target IP %s for string %s %d times",
-					targetIP, searchString, n)
-
-				numberFound += n
-			}
-		}
+		glog.V(100).Infof("Found number of %s is: %v", searchString, numberFound)
 
 		if numberFound == expectedHits {
 			return true, nil
@@ -312,10 +316,6 @@ func sendProbesAndCheckPacketSnifferLogs(
 		if numberFound > expectedHits {
 			return false, nil
 		}
-
-		glog.V(100).Infof("Sleeping for 1 seconds to give container logs and " +
-			"tcpdump some more time to refresh")
-		time.Sleep(1 * time.Second)
 	}
 
 	return false, nil
@@ -327,58 +327,69 @@ func sendProbesAndCheckPacketSnifferLogs(
 //nolint:funlen
 func scanPacketSnifferDeploymentPodLogs(
 	apiClient *clients.Settings,
-	snifferDeployment *deployment.Builder,
+	proberPod *pod.Builder,
 	targetProtocol,
+	snifferNamespace,
+	snifferSelectorLabel,
 	searchString string,
-	timeSpan time.Time) (map[string]int, error) {
-	if snifferDeployment == nil {
-		return nil, fmt.Errorf("nil pointer to the sniffer deployment was provided")
-	}
-
+	timeSpan time.Time) (int, error) {
 	if targetProtocol != httpProtocol && targetProtocol != udpProtocol {
-		return nil, fmt.Errorf("scanPacketSnifferDeploymentPodLogs supports only %s and %s protocols",
+		return 0, fmt.Errorf("scanPacketSnifferDeploymentPodLogs supports only %s and %s protocols",
 			httpProtocol, udpProtocol)
 	}
 
-	pods, err := pod.List(apiClient, snifferDeployment.Definition.Namespace,
-		metav1.ListOptions{LabelSelector: labels.Set(snifferDeployment.Definition.Spec.Selector.MatchLabels).String()})
+	snifferPodObjects, err := pod.List(apiClient, snifferNamespace,
+		metav1.ListOptions{LabelSelector: snifferSelectorLabel})
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	matchedIPs := make(map[string]int)
+	matchesFound := 0
 
-	for _, podObj := range pods {
-		logStartTimestamp := time.Since(timeSpan)
-		glog.V(100).Infof("\tTime duration is %s", logStartTimestamp)
+	var snifferPodObj *pod.Builder
 
-		if logStartTimestamp.Abs().Seconds() < 1 {
-			logStartTimestamp, err = time.ParseDuration("1s")
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse time duration: %w", err)
-			}
+	for _, podObj := range snifferPodObjects {
+		if podObj.Object.Spec.NodeName == proberPod.Object.Spec.NodeName {
+			glog.V(100).Infof("sniffer pod: %s", podObj.Definition.Name)
+			snifferPodObj = podObj
 		}
+	}
 
-		logs, err := podObj.GetLog(logStartTimestamp, podObj.Definition.Name)
+	if snifferPodObj == nil {
+		return 0, fmt.Errorf("sniffer pod not found running on the %s node", proberPod.Object.Spec.NodeName)
+	}
 
+	logStartTimestamp := time.Since(timeSpan)
+	glog.V(100).Infof("\tTime duration is %s", logStartTimestamp)
+
+	if logStartTimestamp.Abs().Seconds() < 1 {
+		logStartTimestamp, err = time.ParseDuration("1s")
 		if err != nil {
-			glog.V(100).Infof("Failed to get logs from pod %q: %v",
-				podObj.Definition.Name, err)
-
-			return nil, fmt.Errorf("failed to get logs from pod %q: %w",
-				podObj.Definition.Name, err)
+			return 0, fmt.Errorf("failed to parse time duration: %w", err)
 		}
+	}
 
+	logs, err := snifferPodObj.GetLog(logStartTimestamp, snifferPodObj.Definition.Spec.Containers[0].Name)
+
+	glog.V(100).Infof("debug log for %s: %s", snifferPodObj.Definition.Name, logs)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to get logs from pod %q: %v",
+			snifferPodObj.Definition.Name, err)
+
+		return 0, fmt.Errorf("failed to get logs from pod %q: %w",
+			snifferPodObj.Definition.Name, err)
+	}
+
+	if len(logs) != 0 {
 		buf := new(bytes.Buffer)
 		_, err = buf.WriteString(logs)
 
 		if err != nil {
-			return nil, fmt.Errorf("error in copying info from pod logs to buffer")
+			return 0, fmt.Errorf("error in copying info from pod logs to buffer")
 		}
 
 		_ = buf.String()
-
-		var ipAddr string
 
 		scanner := bufio.NewScanner(buf)
 		for scanner.Scan() {
@@ -388,33 +399,23 @@ func scanPacketSnifferDeploymentPodLogs(
 				logLineExploded := strings.Fields(logLine)
 
 				if len(logLineExploded) != 2 {
-					return nil, fmt.Errorf("unexpected logline content: %s", logLine)
+					return 0, fmt.Errorf("unexpected logline content: %s", logLine)
 				}
 
-				ipAddressPortExploded := strings.Split(logLineExploded[0], ".")
-				switch len(ipAddressPortExploded) {
-				case 2:
-					ipAddr = ipAddressPortExploded[0]
-				case 5:
-					ipAddr = strings.Join(ipAddressPortExploded[:len(ipAddressPortExploded)-1], ".")
-				default:
-					return nil, fmt.Errorf("unexpected logline content, invalid IP/Port: %s", logLine)
-				}
-
-				matchedIPs[ipAddr]++
+				matchesFound++
 			}
 		}
+
+		return matchesFound, nil
 	}
 
-	return matchedIPs, nil
+	return 0, fmt.Errorf("no matches found in sniffer log")
 }
 
-// sendProbesToHostPort generates a random string and runs curl against
-// http://%s/dial?host=%s&port=%d&request=<random-string> for the specified number of iterations.
-// Returns the random string that was used as a request.
+// sendProbesToHostPort runs curl against a http://targetHost:targetPort for the specified number of iterations.
+// Returns the "targetHost:targetPort" string that will be used for the requests search.
 func sendProbesToHostPort(
 	proberPod *pod.Builder,
-	url,
 	targetProtocol,
 	targetHost string,
 	targetPort,
@@ -428,21 +429,10 @@ func sendProbesToHostPort(
 			httpProtocol, udpProtocol)
 	}
 
-	randomID := uuid.New()
+	targetURL := fmt.Sprintf("%s:%d", targetHost, targetPort)
+	request := fmt.Sprintf("http://%s", targetURL)
 
-	randomIDStr := randomID.String()
-	if targetProtocol == udpProtocol {
-		randomIDStr = fmt.Sprintf("START%sEOF", randomIDStr)
-	}
-
-	// Connect to the url, instruct the netexec server running on the other side to dial
-	// targetProtocol/targetHost/targetPort and insert the randomIDStr in the request.
-	// Run these tests in their own go routines to speed this up (for UDP, agnhost unfortunately has a
-	// 7 second or so wait time before it returns and the delay here compounds a lot when running several iterations).
-	request := fmt.Sprintf("http://%s/dial?protocol=%s&host=%s&port=%d&request=%s", url, targetProtocol,
-		targetHost, targetPort, randomIDStr)
-
-	cmdToRun := []string{"/bin/bash", "-c", "curl --max-time 15 -s", request}
+	cmdToRun := []string{"/bin/bash", "-c", fmt.Sprintf("curl --max-time 10 -s %s", request)}
 	errChan := make(chan error, iterations)
 
 	timeout := time.Minute * 3
@@ -452,19 +442,21 @@ func sendProbesToHostPort(
 		timeout,
 		true,
 		func(ctx context.Context) (bool, error) {
-			output, err := proberPod.ExecCommand(cmdToRun, proberPod.Object.Spec.Containers[0].Name)
+			for i := 0; i < iterations; i++ {
+				output, err := proberPod.ExecCommand(cmdToRun, proberPod.Object.Spec.Containers[0].Name)
 
-			if err != nil {
-				glog.V(100).Infof("query failed. Request: %s, Output: %q, Error: %v", request, output, err)
+				if err != nil {
+					glog.V(100).Infof("query failed. Request: %s, Output: %q, Error: %v", request, output, err)
 
-				errChan <- fmt.Errorf("query failed. Request: %s, Output: %q, Error: %w", request, output, err)
+					errChan <- fmt.Errorf("query failed. Request: %s, Output: %q, Error: %w", request, output, err)
 
-				return false, nil
+					return false, nil
+				}
+
+				glog.V(100).Infof("Successfully executed command from within a pod %q: %v",
+					proberPod.Object.Name, cmdToRun)
+				glog.V(100).Infof("Command's output:\n\t%v", output.String())
 			}
-
-			glog.V(100).Infof("Successfully executed command from within a pod %q: %v",
-				proberPod.Object.Name, err)
-			glog.V(100).Infof("Command's output:\n\t%v", output.String())
 
 			return true, nil
 		})
@@ -483,23 +475,22 @@ func sendProbesToHostPort(
 		return "", errList
 	}
 
-	return randomID.String(), nil
+	return targetURL, nil
 }
 
-// SpawnProberSendTrafficCheckLogs is a wrapper function to reduce code duplication when probing for target IPs.
+// SendTrafficCheckLogs is a wrapper function to reduce code duplication when probing for target IPs.
 // It sends <iterations> of requests with a unique search string on the launched a new prober pod.
 // It then makes sure that <expectedHits> number of hits were seen.
-func SpawnProberSendTrafficCheckLogs(
+func SendTrafficCheckLogs(
 	apiClient *clients.Settings,
 	proberPodObj *pod.Builder,
-	routeName,
-	targetProtocol,
-	targetHost string,
+	snifferNamespace,
+	snifferSelectorLabel,
+	targetHost,
+	targetProtocol string,
 	targetPort,
 	iterations,
-	expectedHits int,
-	packetSnifferDeployment *deployment.Builder,
-	targetIPSet map[string]string) error {
+	expectedHits int) error {
 	timeout := 3 * time.Minute
 	err := wait.PollUntilContextTimeout(
 		context.TODO(),
@@ -513,14 +504,13 @@ func SpawnProberSendTrafficCheckLogs(
 			result, err := sendProbesAndCheckPacketSnifferLogs(
 				apiClient,
 				proberPodObj,
-				routeName,
+				snifferNamespace,
+				snifferSelectorLabel,
 				targetProtocol,
 				targetHost,
 				targetPort,
 				iterations,
 				expectedHits,
-				packetSnifferDeployment,
-				targetIPSet,
 				10)
 
 			if err == nil && result {
@@ -552,16 +542,17 @@ func defineTCPDumpContainer(cImage string, cCmd []string) *pod.ContainerBuilder 
 
 	*userUID = 0
 
-	readinessProbe := &corev1.Probe{
-		ProbeHandler: corev1.ProbeHandler{
-			Exec: &corev1.ExecAction{
-				Command: []string{
-					"echo",
-					"ready",
-				},
-			},
-		},
-	}
+	// readinessProbe := &corev1.Probe{
+	// 	ProbeHandler: corev1.ProbeHandler{
+	// 		Exec: &corev1.ExecAction{
+	// 			Command: []string{
+	// 				"echo",
+	// 				"ready",
+	// 			},
+	// 		},
+	// 	},
+	// }
+
 	securityContext := &corev1.SecurityContext{
 		RunAsUser:  userUID,
 		Privileged: &trueFlag,
@@ -585,9 +576,9 @@ func defineTCPDumpContainer(cImage string, cCmd []string) *pod.ContainerBuilder 
 
 	deployContainer = deployContainer.WithDropSecurityCapabilities([]string{"ALL"}, true)
 
-	glog.V(100).Infof("Setting ReadinessProbe")
-
-	deployContainer = deployContainer.WithReadinessProbe(readinessProbe)
+	// glog.V(100).Infof("Setting ReadinessProbe")
+	//
+	// deployContainer = deployContainer.WithReadinessProbe(readinessProbe)
 
 	glog.V(100).Infof("Enable TTY and Stdin; needed for immediate log propagation")
 
