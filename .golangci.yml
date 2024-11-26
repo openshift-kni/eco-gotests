@@ -59,6 +59,7 @@ linters-settings:
         - "github.com/stmcginnis/gofish"
         - "github.com/BurntSushi/toml"
         - "github.com/containers/image/v5/pkg/sysregistriesv2"
+        - "github.com/google/uuid"
   wsl:
     strict-append: false
   gofmt:
