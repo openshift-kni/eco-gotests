@@ -269,9 +269,9 @@ var _ = Describe(
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76672"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
 
-			//It("Verify EgressIP connectivity after ungraceful reboot",
-			//	Label("egressip", "egressip-single-ns"), reportxml.ID("75061"),
-			//	rdscorecommon.VerifyEgressIPConnectivityMixedNodesAndNamespaces)
+			It("Verify EgressIP connectivity after ungraceful reboot",
+				Label("egressip", "egressip-single-ns"), reportxml.ID("75061"),
+				rdscorecommon.VerifyEgressIPConnectivityMixedNodesAndNamespaces)
 
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
@@ -420,9 +420,9 @@ var _ = Describe(
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76673"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
 
-			//It("Verify EgressIP connectivity after graceful reboot",
-			//	Label("egressip", "egressip-single-ns"), reportxml.ID("75062"),
-			//	rdscorecommon.VerifyEgressIPConnectivityMixedNodesAndNamespaces)
+			It("Verify EgressIP connectivity after graceful reboot",
+				Label("egressip", "egressip-single-ns"), reportxml.ID("75062"),
+				rdscorecommon.VerifyEgressIPConnectivityMixedNodesAndNamespaces)
 
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),
