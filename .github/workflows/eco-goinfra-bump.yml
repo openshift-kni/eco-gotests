@@ -38,3 +38,4 @@ jobs:
           title: Bump eco-goinfra dependency
           branch: eco-goinfra-bump
           delete-branch: true
+          reviewers: achuzhoy,cdvultur,klaskosk,kononovn,trewest
