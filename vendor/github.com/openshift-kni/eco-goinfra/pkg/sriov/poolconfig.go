@@ -255,6 +255,33 @@ func (builder *PoolConfigBuilder) WithMaxUnavailable(maxUnavailable intstrutil.I
 	return builder
 }
 
+// WithRDMAMode method sets rdmaMode to shared/exclusive.
+func (builder *PoolConfigBuilder) WithRDMAMode(mode string) *PoolConfigBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if mode == "" {
+		glog.V(100).Info("PoolConfig RdmaMode cannot be empty")
+
+		builder.errorMsg = "rdmaMode cannot be empty"
+
+		return builder
+	}
+
+	if mode != "shared" && mode != "exclusive" {
+		glog.V(100).Info("Invalid RdmaMode. Acceptable values: shared or exclusive")
+
+		builder.errorMsg = "invalid value for rdmaMode. It should be 'shared' or 'exclusive'"
+
+		return builder
+	}
+
+	builder.Definition.Spec.RdmaMode = mode
+
+	return builder
+}
+
 // PullPoolConfig pulls existing SriovNetworkPoolConfig from cluster.
 func PullPoolConfig(apiClient *clients.Settings, name, nsname string) (*PoolConfigBuilder, error) {
 	glog.V(100).Infof("Pulling existing SriovNetworkPoolConfig name %s under namespace %s from cluster", name, nsname)

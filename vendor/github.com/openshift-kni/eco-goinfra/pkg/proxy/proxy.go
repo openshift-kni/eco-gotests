@@ -10,6 +10,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -23,15 +24,28 @@ type Builder struct {
 	// Created proxy object.
 	Object *configv1.Proxy
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 }
 
 // Pull loads an existing proxy into Builder struct.
 func Pull(apiClient *clients.Settings) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing proxy name: %s", clusterProxyName)
 
-	builder := Builder{
-		apiClient: apiClient,
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient of the Proxy is nil")
+
+		return nil, fmt.Errorf("proxy 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(configv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add config v1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	builder := &Builder{
+		apiClient: apiClient.Client,
 		Definition: &configv1.Proxy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterProxyName,
@@ -40,12 +54,34 @@ func Pull(apiClient *clients.Settings) (*Builder, error) {
 	}
 
 	if !builder.Exists() {
+		glog.V(100).Infof("The Proxy %s does not exist", clusterProxyName)
+
 		return nil, fmt.Errorf("proxy object %s does not exist", clusterProxyName)
 	}
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
+}
+
+// Get returns the proxy object from the cluster if found.
+func (builder *Builder) Get() (*configv1.Proxy, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting proxy object %s", builder.Definition.Name)
+
+	proxy := &configv1.Proxy{}
+	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{Name: builder.Definition.Name}, proxy)
+
+	if err != nil {
+		glog.V(100).Infof("Proxy object %s does not exist: %v", builder.Definition.Name, err)
+
+		return nil, err
+	}
+
+	return proxy, nil
 }
 
 // Exists checks whether the given proxy exists.
@@ -54,13 +90,10 @@ func (builder *Builder) Exists() bool {
 		return false
 	}
 
-	glog.V(100).Infof(
-		"Checking if proxy %s exists",
-		builder.Definition.Name)
+	glog.V(100).Infof("Checking if proxy %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.ConfigV1Interface.Proxies().Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -68,7 +101,7 @@ func (builder *Builder) Exists() bool {
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {
-	resourceCRD := "Proxy"
+	resourceCRD := "proxy"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)

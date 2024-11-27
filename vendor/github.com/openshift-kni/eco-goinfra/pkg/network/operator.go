@@ -8,7 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	operatorV1 "github.com/openshift/api/operator/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,11 +18,11 @@ import (
 // OperatorBuilder provides a struct for network.operator object from the cluster and a network.operator definition.
 type OperatorBuilder struct {
 	// network.operator definition, used to create the network.operator object.
-	Definition *operatorV1.Network
+	Definition *operatorv1.Network
 	// Created network.operator object.
-	Object *operatorV1.Network
+	Object *operatorv1.Network
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 	errorMsg  string
 }
 
@@ -30,9 +30,22 @@ type OperatorBuilder struct {
 func PullOperator(apiClient *clients.Settings) (*OperatorBuilder, error) {
 	glog.V(100).Infof("Pulling existing network.operator name: %s", clusterNetworkName)
 
-	builder := OperatorBuilder{
-		apiClient: apiClient,
-		Definition: &operatorV1.Network{
+	if apiClient == nil {
+		glog.V(100).Info("The apiClient is nil")
+
+		return nil, fmt.Errorf("network.operator 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(operatorv1.Install)
+	if err != nil {
+		glog.V(100).Info("Failed to add operator v1 scheme to client schemes")
+
+		return nil, err
+	}
+
+	builder := &OperatorBuilder{
+		apiClient: apiClient.Client,
+		Definition: &operatorv1.Network{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: clusterNetworkName,
 			},
@@ -40,12 +53,14 @@ func PullOperator(apiClient *clients.Settings) (*OperatorBuilder, error) {
 	}
 
 	if !builder.Exists() {
+		glog.V(100).Infof("network.operator object %s does not exist", clusterNetworkName)
+
 		return nil, fmt.Errorf("network.operator object %s does not exist", clusterNetworkName)
 	}
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given network.operator exists.
@@ -54,9 +69,7 @@ func (builder *OperatorBuilder) Exists() bool {
 		return false
 	}
 
-	glog.V(100).Infof(
-		"Checking if network.operator %s exists",
-		builder.Definition.Name)
+	glog.V(100).Infof("Checking if network.operator %s exists", builder.Definition.Name)
 
 	var err error
 	builder.Object, err = builder.Get()
@@ -65,21 +78,21 @@ func (builder *OperatorBuilder) Exists() bool {
 }
 
 // Get returns network.operator object.
-func (builder *OperatorBuilder) Get() (*operatorV1.Network, error) {
+func (builder *OperatorBuilder) Get() (*operatorv1.Network, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
 
-	clusterNetwork := &operatorV1.Network{}
-	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
-		Name: builder.Definition.Name,
-	}, clusterNetwork)
+	clusterNetwork := &operatorv1.Network{}
+	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{Name: builder.Definition.Name}, clusterNetwork)
 
 	if err != nil {
+		glog.V(100).Infof("Failed to get network.operator object %s: %v", builder.Definition.Name, err)
+
 		return nil, err
 	}
 
-	return clusterNetwork, err
+	return clusterNetwork, nil
 }
 
 // Update renovates the existing network.operator object with the new definition in builder.
@@ -88,13 +101,22 @@ func (builder *OperatorBuilder) Update() (*OperatorBuilder, error) {
 		return builder, err
 	}
 
-	glog.V(100).Infof("Updating the network.operator object %s",
-		builder.Definition.Name,
-	)
+	glog.V(100).Infof("Updating the network.operator object %s", builder.Definition.Name)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("network.operator object %s does not exist", builder.Definition.Name)
+
+		return nil, fmt.Errorf("network.operator object %s does not exist", builder.Definition.Name)
+	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	if err != nil {
+		glog.V(100).Infof("Failed to update network.operator object %s: %v", builder.Definition.Name, err)
 
-	return builder, err
+		return nil, err
+	}
+
+	return builder, nil
 }
 
 // SetLocalGWMode switches network.operator OVN mode from/to local mode.
@@ -114,21 +136,21 @@ func (builder *OperatorBuilder) SetLocalGWMode(state bool, timeout time.Duration
 		}
 
 		err = builder.WaitUntilInCondition(
-			operatorV1.OperatorStatusTypeProgressing, 300*time.Second, operatorV1.ConditionTrue)
+			operatorv1.OperatorStatusTypeProgressing, 300*time.Second, operatorv1.ConditionTrue)
 
 		if err != nil {
 			return nil, err
 		}
 
 		err = builder.WaitUntilInCondition(
-			operatorV1.OperatorStatusTypeProgressing, timeout, operatorV1.ConditionFalse)
+			operatorv1.OperatorStatusTypeProgressing, timeout, operatorv1.ConditionFalse)
 
 		if err != nil {
 			return nil, err
 		}
 
 		return builder, builder.WaitUntilInCondition(
-			operatorV1.OperatorStatusTypeAvailable, 60*time.Second, operatorV1.ConditionTrue)
+			operatorv1.OperatorStatusTypeAvailable, 60*time.Second, operatorv1.ConditionTrue)
 	}
 
 	return builder, err
@@ -153,21 +175,21 @@ func (builder *OperatorBuilder) SetMultiNetworkPolicy(state bool, timeout time.D
 		}
 
 		err = builder.WaitUntilInCondition(
-			operatorV1.OperatorStatusTypeProgressing, 60*time.Second, operatorV1.ConditionTrue)
+			operatorv1.OperatorStatusTypeProgressing, 60*time.Second, operatorv1.ConditionTrue)
 
 		if err != nil {
 			return nil, err
 		}
 
 		err = builder.WaitUntilInCondition(
-			operatorV1.OperatorStatusTypeProgressing, timeout, operatorV1.ConditionFalse)
+			operatorv1.OperatorStatusTypeProgressing, timeout, operatorv1.ConditionFalse)
 
 		if err != nil {
 			return nil, err
 		}
 
 		return builder, builder.WaitUntilInCondition(
-			operatorV1.OperatorStatusTypeAvailable, 60*time.Second, operatorV1.ConditionTrue)
+			operatorv1.OperatorStatusTypeAvailable, 60*time.Second, operatorv1.ConditionTrue)
 	}
 
 	return builder, err
@@ -176,7 +198,7 @@ func (builder *OperatorBuilder) SetMultiNetworkPolicy(state bool, timeout time.D
 // WaitUntilInCondition waits for a specific time duration until the network.operator will have a
 // specified condition type with the expected status.
 func (builder *OperatorBuilder) WaitUntilInCondition(
-	condition string, timeout time.Duration, status operatorV1.ConditionStatus) error {
+	condition string, timeout time.Duration, status operatorv1.ConditionStatus) error {
 	if valid, err := builder.validate(); !valid {
 		return err
 	}
@@ -187,7 +209,7 @@ func (builder *OperatorBuilder) WaitUntilInCondition(
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			if !builder.Exists() {
-				return false, fmt.Errorf("network.operator object does not exist")
+				return false, fmt.Errorf("network.operator object %s does not exist", builder.Definition.Name)
 			}
 
 			for _, c := range builder.Object.Status.OperatorStatus.Conditions {
@@ -205,7 +227,7 @@ func (builder *OperatorBuilder) WaitUntilInCondition(
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *OperatorBuilder) validate() (bool, error) {
-	resourceCRD := "Network.Operator"
+	resourceCRD := "network.operator"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)

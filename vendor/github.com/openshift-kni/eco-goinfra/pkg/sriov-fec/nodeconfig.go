@@ -2,7 +2,6 @@ package sriovfec
 
 import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"context"
@@ -12,12 +11,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	sriovfectypes "github.com/openshift-kni/eco-goinfra/pkg/schemes/fec/fectypes"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-)
-
-const (
-	sriovfecnodeconfig = "SriovFecNodeConfig"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NodeConfigBuilder provides struct for the SriovFecNodeConfig object containing connection to
@@ -28,7 +23,7 @@ type NodeConfigBuilder struct {
 	// Create SriovFecNodeConfig object.
 	Object *sriovfectypes.SriovFecNodeConfig
 	// apiClient opens a connection to the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// Used in functions that define SriovFecNodeConfig definitions. errorMsg is processed before SriovFecNodeConfig
 	// object is created.
 	errorMsg string
@@ -46,14 +41,23 @@ func NewNodeConfigBuilder(
 		"Initializing new SriovFecNodeConfig structure with the following params: %s, %s, %v",
 		name, nsname, label)
 
-	builder := NodeConfigBuilder{
-		apiClient: apiClient,
+	if apiClient == nil {
+		glog.V(100).Infof("SriovFecNodeConfig 'apiClient' cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(sriovfectypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriov-fec scheme to client schemes")
+
+		return nil
+	}
+
+	builder := &NodeConfigBuilder{
+		apiClient: apiClient.Client,
 		Definition: &sriovfectypes.SriovFecNodeConfig{
-			TypeMeta: metaV1.TypeMeta{
-				Kind:       sriovfecnodeconfig,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
-			},
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -63,16 +67,20 @@ func NewNodeConfigBuilder(
 	if name == "" {
 		glog.V(100).Infof("The name of the SriovFecNodeConfig is empty")
 
-		builder.errorMsg = "SriovFecNodeConfig 'name' cannot be empty"
+		builder.errorMsg = "sriovFecNodeConfig 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the SriovFecNodeConfig is empty")
 
-		builder.errorMsg = "SriovFecNodeConfig 'nsname' cannot be empty"
+		builder.errorMsg = "sriovFecNodeConfig 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull retrieves an existing SriovFecNodeConfig.io object from the cluster.
@@ -80,10 +88,23 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*NodeConfigBuilder,
 	glog.V(100).Infof(
 		"Pulling SriovFecNodeConfig.io object name: %s in namespace: %s", name, nsname)
 
-	builder := NodeConfigBuilder{
-		apiClient: apiClient,
+	if apiClient == nil {
+		glog.V(100).Infof("SriovFecNodeConfig 'apiClient' cannot be nil")
+
+		return nil, fmt.Errorf("sriovFecNodeConfig 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(sriovfectypes.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add sriov-fec scheme to client schemes")
+
+		return nil, err
+	}
+
+	builder := &NodeConfigBuilder{
+		apiClient: apiClient.Client,
 		Definition: &sriovfectypes.SriovFecNodeConfig{
-			ObjectMeta: metaV1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
 			},
@@ -91,20 +112,26 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*NodeConfigBuilder,
 	}
 
 	if name == "" {
-		return nil, fmt.Errorf("the name of the SriovFecNodeConfig is empty")
+		glog.V(100).Infof("The name of the SriovFecNodeConfig is empty")
+
+		return nil, fmt.Errorf("sriovFecNodeConfig 'name' cannot be empty")
 	}
 
 	if nsname == "" {
-		return nil, fmt.Errorf("the namespace of the SriovFecNodeConfig is empty")
+		glog.V(100).Infof("The namespace of the SriovFecNodeConfig is empty")
+
+		return nil, fmt.Errorf("sriovFecNodeConfig 'nsname' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("SriovFecNodeConfig object %s does not exist in namespace %s", name, nsname)
+		glog.V(100).Infof("Cannot pull non-existent SriovFecNodeConfig object %s in namespace %s", name, nsname)
+
+		return nil, fmt.Errorf("sriovFecNodeConfig object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given SriovFecNodeConfig exists.
@@ -139,28 +166,9 @@ func (builder *NodeConfigBuilder) Create() (*NodeConfigBuilder, error) {
 
 	var err error
 	if !builder.Exists() {
-		unstructuredSriovFecNodeConfig, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to convert structured SriovFecNodeConfig to unstructured object")
-
-			return nil, err
-		}
-
-		unsObject, err := builder.apiClient.Resource(
-			GetSriovFecNodeConfigIoGVR()).Namespace(builder.Definition.Namespace).Create(
-			context.TODO(), &unstructured.Unstructured{Object: unstructuredSriovFecNodeConfig}, metaV1.CreateOptions{})
-
-		if err != nil {
-			glog.V(100).Infof("Failed to create SriovFecNodeConfig")
-
-			return nil, err
-		}
-
-		builder.Object, err = builder.convertToStructured(unsObject)
-
-		if err != nil {
-			return nil, err
+		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		if err == nil {
+			builder.Object = builder.Definition
 		}
 	}
 
@@ -177,18 +185,21 @@ func (builder *NodeConfigBuilder) Get() (*sriovfectypes.SriovFecNodeConfig, erro
 		"Collecting SriovFecNodeConfig object %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	unsObject, err := builder.apiClient.Resource(GetSriovFecNodeConfigIoGVR()).Namespace(builder.Definition.Namespace).Get(
-		context.TODO(), builder.Definition.Name, metaV1.GetOptions{})
+	nodeConfig := &sriovfectypes.SriovFecNodeConfig{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
+		Name:      builder.Definition.Name,
+		Namespace: builder.Definition.Namespace,
+	}, nodeConfig)
 
 	if err != nil {
 		glog.V(100).Infof(
-			"SriovFecNodeConfig object %s does not exist in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
+			"SriovFecNodeConfig object %s does not exist in namespace %s: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
 
 		return nil, err
 	}
 
-	return builder.convertToStructured(unsObject)
+	return nodeConfig, nil
 }
 
 // Delete removes SriovFecNodeConfig object from a cluster.
@@ -202,7 +213,8 @@ func (builder *NodeConfigBuilder) Delete() (*NodeConfigBuilder, error) {
 	)
 
 	if !builder.Exists() {
-		glog.V(100).Infof("SriovFecNodeConfig %s in namespace %s cannot be deleted because it does not exist",
+		glog.V(100).Infof(
+			"SriovFecNodeConfig %s in namespace %s cannot be deleted because it does not exist",
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.Object = nil
@@ -210,12 +222,9 @@ func (builder *NodeConfigBuilder) Delete() (*NodeConfigBuilder, error) {
 		return builder, nil
 	}
 
-	err := builder.apiClient.Resource(
-		GetSriovFecNodeConfigIoGVR()).Namespace(builder.Definition.Namespace).Delete(
-		context.TODO(), builder.Definition.Name, metaV1.DeleteOptions{})
-
+	err := builder.apiClient.Delete(context.TODO(), builder.Object)
 	if err != nil {
-		return builder, fmt.Errorf("can not delete SriovFecNodeConfig: %w", err)
+		return nil, fmt.Errorf("can not delete SriovFecNodeConfig: %w", err)
 	}
 
 	builder.Object = nil
@@ -229,31 +238,18 @@ func (builder *NodeConfigBuilder) Update(force bool) (*NodeConfigBuilder, error)
 		return builder, err
 	}
 
+	glog.V(100).Infof(
+		"Updating the SriovFecNodeConfig object %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+
 	if !builder.Exists() {
-		return nil, fmt.Errorf("failed to update SriovFecNodeConfig, object does not exist on cluster")
-	}
+		glog.V(100).Infof(
+			"SriovFecNodeConfig %s in namespace %s does not exist", builder.Definition.Name, builder.Definition.Namespace)
 
-	glog.V(100).Infof("Updating the SriovFecNodeConfig object %s in namespace %s",
-		builder.Definition.Name, builder.Definition.Namespace,
-	)
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("cannot update non-existent SriovFecNodeConfig")
 	}
 
 	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
-	builder.Definition.ObjectMeta.ResourceVersion = builder.Object.ObjectMeta.ResourceVersion
-
-	unstructuredSriovFecNodeConfig, err := runtime.DefaultUnstructuredConverter.ToUnstructured(builder.Definition)
-	if err != nil {
-		glog.V(100).Infof("Failed to convert structured SriovFecNodeConfig to unstructured object")
-
-		return nil, err
-	}
-
-	_, err = builder.apiClient.Resource(
-		GetSriovFecNodeConfigIoGVR()).Namespace(builder.Definition.Namespace).Update(
-		context.TODO(), &unstructured.Unstructured{Object: unstructuredSriovFecNodeConfig}, metaV1.UpdateOptions{})
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err != nil {
 		if force {
@@ -261,6 +257,7 @@ func (builder *NodeConfigBuilder) Update(force bool) (*NodeConfigBuilder, error)
 				msg.FailToUpdateNotification("SriovFecNodeConfig", builder.Definition.Name, builder.Definition.Namespace))
 
 			builder, err := builder.Delete()
+			builder.Definition.ResourceVersion = ""
 
 			if err != nil {
 				glog.V(100).Infof(
@@ -272,6 +269,8 @@ func (builder *NodeConfigBuilder) Update(force bool) (*NodeConfigBuilder, error)
 			return builder.Create()
 		}
 	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -304,14 +303,14 @@ func (builder *NodeConfigBuilder) WithOptions(options ...AdditionalOptions) *Nod
 // GetSriovFecNodeConfigIoGVR returns SriovFecNodeConfig's GroupVersionResource which could be used for Clean function.
 func GetSriovFecNodeConfigIoGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
-		Group: APIGroup, Version: APIVersion, Resource: "sriovfecnodeconfigs",
+		Group: APIGroup, Version: APIVersion, Resource: NodeConfigsResource,
 	}
 }
 
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *NodeConfigBuilder) validate() (bool, error) {
-	resourceCRD := "SriovFecNodeConfig"
+	resourceCRD := "sriovFecNodeConfig"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
@@ -338,20 +337,4 @@ func (builder *NodeConfigBuilder) validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (builder *NodeConfigBuilder) convertToStructured(unsObject *unstructured.Unstructured) (
-	*sriovfectypes.SriovFecNodeConfig, error) {
-	SriovFecNodeConfig := &sriovfectypes.SriovFecNodeConfig{}
-
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, SriovFecNodeConfig)
-	if err != nil {
-		glog.V(100).Infof(
-			"Failed to convert from unstructured to SriovFecNodeConfig object in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-
-		return nil, err
-	}
-
-	return SriovFecNodeConfig, err
 }

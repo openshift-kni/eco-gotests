@@ -412,6 +412,25 @@ func (builder *ContainerBuilder) WithPorts(ports []corev1.ContainerPort) *Contai
 	return builder
 }
 
+// WithReadinessProbe adds a readinessProbe to the container.
+func (builder *ContainerBuilder) WithReadinessProbe(readinessProbe *corev1.Probe) *ContainerBuilder {
+	glog.V(100).Infof("Adding readinessProbe to the %s container's definition", builder.definition.Name)
+
+	if readinessProbe == nil {
+		glog.V(100).Infof("Container's readinessProbe name cannot be empty")
+
+		builder.errorMsg = "container's readinessProbe is empty"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.definition.ReadinessProbe = readinessProbe
+
+	return builder
+}
+
 // WithTTY applies TTY value on container.
 func (builder *ContainerBuilder) WithTTY(enableTTY bool) *ContainerBuilder {
 	glog.V(100).Infof("Applying TTY value to container: %v", enableTTY)
