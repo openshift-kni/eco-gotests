@@ -568,7 +568,8 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState instance")
 
 			if sriovenv.IsMellanoxDevice(srIovInterfacesUnderTest[0], workerNodeList[0].Object.Name) {
-				configureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, srIovInterfacesUnderTest[0], true, 5)
+				err = sriovenv.ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, srIovInterfacesUnderTest[0], true, 5)
+				Expect(err).ToNot(HaveOccurred(), "Failed to configure Mellanox firmware")
 			}
 
 			By("Creating SR-IOV VFs via NMState")
@@ -646,7 +647,8 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
 
 			if sriovenv.IsMellanoxDevice(srIovInterfacesUnderTest[0], workerNodeList[0].Object.Name) {
-				configureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, srIovInterfacesUnderTest[0], false, 0)
+				err = sriovenv.ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, srIovInterfacesUnderTest[0], false, 0)
+				Expect(err).ToNot(HaveOccurred(), "Failed to configure Mellanox firmware")
 			}
 		})
 	})

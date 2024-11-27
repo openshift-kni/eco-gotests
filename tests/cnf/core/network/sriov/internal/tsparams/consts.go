@@ -17,4 +17,6 @@ const (
 	LabelSriovMetricsTestCases = "sriovmetrics"
 	// LabelRdmaMetricsAPITestCases represents Rdma Metrics label that can be used for test cases selection.
 	LabelRdmaMetricsAPITestCases = "rdmametricsapi"
+	// LabelMlxSecureBoot represents Mellanox secure boot label that can be used for test cases selection.
+	LabelMlxSecureBoot = "mlxsecureboot"
 )
