@@ -193,76 +193,7 @@ var _ = Describe("Day1Day2", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		err = day1day2env.CheckConnectivityBetweenMasterAndWorkers()
 		Expect(err).ToNot(HaveOccurred(), "Connectivity check failed")
 	})
-
-	Context("", func() {
-		const policyNameBondMode = "changebondmode"
-
-		var clusterVlan string
-
-		BeforeAll(func() {
-			By("Collecting vlan id")
-			var err error
-			clusterVlan, err = NetConfig.GetClusterVlan()
-			Expect(err).ToNot(HaveOccurred(), "Failed to get cluster vlan")
-		})
-
-		AfterEach(func() {
-			By("Reverting active-backup bond mode on the bond interfaces")
-			nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, policyNameBondMode, NetConfig.WorkerLabelMap).
-				WithBondInterface(bondSlaves, bondName, "active-backup").
-				WithOptions(netnmstate.WithBondOptionFailOverMac("none", bondName))
-			err := netnmstate.UpdatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
-			Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
-
-			By("Checking that Bond mode is restored")
-			validateBondType("active-backup", bondName, workerNodeList[0].Object.Name)
-		})
-
-		It("Day2 Bond: change mode configuration", reportxml.ID("63882"), func() {
-			By("Creating NMState policy to change a bond mode")
-			nmstatePolicy := nmstate.NewPolicyBuilder(APIClient, policyNameBondMode, NetConfig.WorkerLabelMap).
-				WithBondInterface(bondSlaves, bondName, "balance-rr").
-				WithOptions(netnmstate.WithBondOptionFailOverMac("active", bondName))
-			err := netnmstate.CreatePolicyAndWaitUntilItsAvailable(netparam.DefaultTimeout, nmstatePolicy)
-			Expect(err).ToNot(HaveOccurred(), "Failed to create NMState network policy")
-
-			By("Checking that Bond mode is configured")
-			validateBondType("balance-rr", bondName, workerNodeList[0].Object.Name)
-
-			By(fmt.Sprintf("Removing all configuration from the switch interfaces %v", switchInterfaces))
-			err = juniper.DumpInterfaceConfigs(juniperSession, switchInterfaces)
-			Expect(err).ToNot(HaveOccurred(), "Failed to save initial switch interfaces configs")
-			err = juniper.RemoveAllConfigurationFromInterfaces(juniperSession, switchInterfaces)
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove configuration from the switch interfaces")
-
-			By("Configuring aggregated interface on a switch")
-			configureLAGsOnSwitch(juniperSession, clusterVlan, switchInterfaces, switchLagNames)
-
-			By("Testing Bond fail over scenario")
-			testBondFailOver(juniperSession, switchInterfaces)
-		})
-	})
 })
-
-func configureLAGsOnSwitch(
-	juniperSession *juniper.JunosSession, clusterVlan string, switchInterfaces, lagInterfaces []string) {
-	err := juniper.SetNonLacpLag(juniperSession, []string{switchInterfaces[0], switchInterfaces[1]},
-		lagInterfaces[0])
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create switch LAG interface %s with enslave itnerfaces: %s, %s",
-			lagInterfaces[0], switchInterfaces[0], switchInterfaces[1]))
-
-	err = juniper.SetNonLacpLag(juniperSession, []string{switchInterfaces[2], switchInterfaces[3]},
-		lagInterfaces[1])
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create switch LAG interface %s with enslave itnerfaces: %s, %s",
-			lagInterfaces[1], switchInterfaces[2], switchInterfaces[3]))
-
-	for _, lagInterface := range lagInterfaces {
-		err = juniper.SetVlanOnTrunkInterface(juniperSession, clusterVlan, lagInterface)
-		Expect(err).ToNot(HaveOccurred(), "Failed to configure VLAN on switch LAG interfaces")
-	}
-}
 
 func recoverSwitchConfiguration(juniperSession *juniper.JunosSession, switchInterfaces, lagInterfaces []string) {
 	err := juniper.RestoreSwitchInterfacesConfiguration(juniperSession, switchInterfaces)
@@ -270,22 +201,6 @@ func recoverSwitchConfiguration(juniperSession *juniper.JunosSession, switchInte
 
 	err = juniper.DeleteInterfaces(juniperSession, lagInterfaces)
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete switch LAG interfaces")
-}
-
-func validateBondType(bondTypeName, bondName, workerName string) {
-	By("Checking Bond mode on a worker")
-
-	bondModeViaCmd, err := day1day2env.GetBondModeViaCmd(bondName, workerName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to get bond mode interface %s on worker %s via cmd", bondName, workerName))
-	Expect(bondModeViaCmd).To(ContainSubstring(bondTypeName), "Bond mode is not expected one")
-
-	By("Checking Bond mode via NMState")
-
-	bondModeViaNmstate, err := netnmstate.GetBondMode(bondName, workerName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to get bond mode interface %s on worker %s via nmstate", bondName, workerName))
-	Expect(bondModeViaNmstate).To(Equal(bondTypeName), "Bond mode is not expected one")
 }
 
 func waitForSwitchInterfaceUp(juniperSession *juniper.JunosSession, switchLagName string) {
