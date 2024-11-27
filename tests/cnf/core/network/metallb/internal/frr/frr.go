@@ -92,6 +92,7 @@ type (
 	// BGPConnectionInfo struct includes the connectRetryTimer.
 	BGPConnectionInfo struct {
 		ConnectRetryTimer int `json:"connectRetryTimer"`
+		RemoteAS          int `json:"remoteAS"`
 	}
 )
 
@@ -311,6 +312,39 @@ func FetchBGPConnectTimeValue(frrk8sPods []*pod.Builder, bgpPeerIP string) (int,
 	}
 
 	return 0, fmt.Errorf("no BGP neighbor data found for peer %s", bgpPeerIP)
+}
+
+// ValidateBGPRemoteAS validates the remoteAS value for the specified BGP peer across all FRR pods.
+func ValidateBGPRemoteAS(frrk8sPods []*pod.Builder, bgpPeerIP string, expectedRemoteAS int) error {
+	glog.V(90).Infof("Validating the frr nodes receive the correct remote bgp peer AS : %d", expectedRemoteAS)
+
+	for _, frrk8sPod := range frrk8sPods {
+		// Run the "show bgp neighbor <bgpPeerIP> json" command on each pod
+		output, err := frrk8sPod.ExecCommand(append(netparam.VtySh,
+			fmt.Sprintf("show bgp neighbor %s json", bgpPeerIP)), "frr")
+		if err != nil {
+			return fmt.Errorf("error collecting BGP neighbor info from pod %s: %w",
+				frrk8sPod.Definition.Name, err)
+		}
+
+		// Parsing JSON
+		var bgpData map[string]BGPConnectionInfo
+		err = json.Unmarshal(output.Bytes(), &bgpData)
+
+		if err != nil {
+			return fmt.Errorf("error parsing BGP neighbor JSON for pod %s: %w", frrk8sPod.Definition.Name, err)
+		}
+
+		// Validate RemoteAS
+		for _, bgpInfo := range bgpData {
+			if bgpInfo.RemoteAS == expectedRemoteAS {
+				return nil // Match found
+			}
+		}
+	}
+
+	// If no matches are found across all pods
+	return fmt.Errorf("no BGP neighbor with RemoteAS %d found for peer %s", expectedRemoteAS, bgpPeerIP)
 }
 
 func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bgpStatus, error) {
