@@ -153,3 +153,10 @@ rdscore_graceful_restart_service_ns: rds-graceful-app
 rdscore_graceful_restart_service_name: rds-graceful-app
 rdscore_graceful_restart_app_label: 'rds-app=rds-core-metallb-integration'
 rdscore_graceful_restart_service_port: '8080'
+# EgressIP
+rdscore_egressip_name: 'egressip-qe'
+rdscore_egressip_ns_one: 'rds-egressip-ns-one'
+rdscore_egressip_ns_two: 'rds-egressip-ns-two'
+rdscore_egressip_ns_label: 'env=sys-qa'
+rdscore_egressip_pod_label: 'app=web'
+rdscore_egressip_tcp_port_number: '9090'
