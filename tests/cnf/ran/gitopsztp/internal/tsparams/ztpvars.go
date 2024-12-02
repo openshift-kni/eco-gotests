@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
+	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,6 +65,7 @@ var (
 		{Cr: &sriovv1.SriovNetworkList{}, Namespace: ptr.To(RANConfig.SriovOperatorNamespace)},
 		{Cr: &sriovv1.SriovNetworkList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &imageregistryv1.ConfigList{}},
+		{Cr: &certificatesv1.CertificateSigningRequestList{}},
 	}
 
 	// ArgoCdApps is the slice of the Argo CD app names defined in this package.
