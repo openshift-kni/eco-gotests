@@ -1,9 +1,17 @@
 package rdscorecommon
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
+	"net"
+	"net/netip"
 	"strings"
 	"time"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	scc "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/scc"
@@ -16,78 +24,44 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/egressip"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/sniffer"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	snifferNamespace       = "rds-egress-ns"
-	proberDeployRBACName   = "privileged-rdscore-prober"
-	proberDeploySAName     = "rdscore-prober-sa"
-	proberRBACRole         = "system:openshift:scc:privileged"
-	numberOfRequestsToSend = 10
-	proberTargetProtocol   = "http"
+	proberRBACRole       = "system:openshift:scc:privileged"
+	nonEgressIPPodLabel  = "env=centos"
+	nonEgressIPNamespace = "non-egressip-ns"
 )
 
 var (
-	egressIPNodesList = []string{RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNodeTwo}
-	proberTargetPort  = RDSCoreConfig.EgressIPTcpPort
-
 	egressIPPodLabelsMap = map[string]string{
-		strings.Split(RDSCoreConfig.EgressIPPodLabel,
-			"=")[0]: strings.Split(RDSCoreConfig.EgressIPPodLabel, "=")[1]}
+		strings.Split(RDSCoreConfig.EgressIPPodLabel, "=")[0]: strings.Split(RDSCoreConfig.EgressIPPodLabel, "=")[1]}
 
 	egressIPPodSelector = metav1.ListOptions{
 		LabelSelector: RDSCoreConfig.EgressIPPodLabel,
 	}
+	nonEgressIPPodSelector = metav1.ListOptions{
+		LabelSelector: nonEgressIPPodLabel,
+	}
 )
 
-// createAgnhostDeployment creates the route, service and deployment that will be used as
-// a source for EgressIP tests. Returns the route name that can be queried to run queries against the source pods.
-//
-//nolint:funlen
-func createAgnhostDeployment(
+// createAgnhostRBAC creates the SCC privileged, serviceAccount and RBAC.
+func createAgnhostRBAC(
 	apiClient *clients.Settings,
-	egressIPNamespace string,
-	scheduleOnHosts []string) error {
-	proberServiceName := fmt.Sprintf("%s-service", egressIPNamespace)
-	proberDeploymentName := fmt.Sprintf("%s-deployment", egressIPNamespace)
+	egressIPNamespace string) (string, error) {
+	proberDeploySAName := fmt.Sprintf("rdscore-prober-sa-%s", egressIPNamespace)
+	proberDeployRBACName := fmt.Sprintf("privileged-rdscore-rbac-%s", egressIPNamespace)
 
 	var err error
 
-	glog.V(100).Infof("Checking prober deployment don't exist")
-
-	err = apiobjectshelper.DeleteDeployment(apiClient,
-		proberDeploymentName,
-		egressIPNamespace,
-		RDSCoreConfig.EgressIPPodLabel)
-
-	if err != nil {
-		return fmt.Errorf("failed to delete deployment %s from egressIPNamespace %s",
-			proberDeploymentName, egressIPNamespace)
-	}
-
-	glog.V(100).Infof("Sleeping 10 seconds")
-	time.Sleep(10 * time.Second)
-
-	glog.V(100).Infof("Adding SCC privileged to the prober namespace")
+	glog.V(100).Infof("Adding SCC privileged to the agnhost namespace")
 
 	err = scc.AddPrivilegedSCCtoDefaultSA(egressIPNamespace)
 	if err != nil {
-		return fmt.Errorf("failed to add SCC privileged to the prober namespace %s: %w",
+		return "", fmt.Errorf("failed to add SCC privileged to the agnhost namespace %s: %w",
 			egressIPNamespace, err)
-	}
-
-	glog.V(100).Infof("Removing Service")
-
-	err = apiobjectshelper.DeleteService(apiClient, proberServiceName, egressIPNamespace)
-
-	if err != nil {
-		return fmt.Errorf("failed to remove service %q from egressIPNamespace %q; %w",
-			proberServiceName, egressIPNamespace, err)
 	}
 
 	glog.V(100).Infof("Removing ServiceAccount")
@@ -95,7 +69,7 @@ func createAgnhostDeployment(
 	err = apiobjectshelper.DeleteServiceAccount(apiClient, proberDeploySAName, egressIPNamespace)
 
 	if err != nil {
-		return fmt.Errorf("failed to remove serviceAccount %q from egressIPNamespace %q",
+		return "", fmt.Errorf("failed to remove serviceAccount %q from egressIPNamespace %q",
 			proberDeploySAName, egressIPNamespace)
 	}
 
@@ -104,7 +78,7 @@ func createAgnhostDeployment(
 	err = apiobjectshelper.CreateServiceAccount(apiClient, proberDeploySAName, egressIPNamespace)
 
 	if err != nil {
-		return fmt.Errorf("failed to create serviceAccount %q in egressIPNamespace %q",
+		return "", fmt.Errorf("failed to create serviceAccount %q in egressIPNamespace %q",
 			proberDeploySAName, egressIPNamespace)
 	}
 
@@ -113,7 +87,7 @@ func createAgnhostDeployment(
 	err = apiobjectshelper.DeleteClusterRBAC(apiClient, proberDeployRBACName)
 
 	if err != nil {
-		return fmt.Errorf("failed to delete prober RBAC %q", proberDeployRBACName)
+		return "", fmt.Errorf("failed to delete prober RBAC %q", proberDeployRBACName)
 	}
 
 	glog.V(100).Infof("Creating Cluster RBAC")
@@ -122,9 +96,68 @@ func createAgnhostDeployment(
 		proberDeploySAName, egressIPNamespace)
 
 	if err != nil {
-		return fmt.Errorf("failed to create prober RBAC %q in egressIPNamespace %s",
+		return "", fmt.Errorf("failed to create prober RBAC %q in egressIPNamespace %s",
 			proberDeployRBACName, egressIPNamespace)
 	}
+
+	return proberDeploySAName, nil
+}
+
+// cleanUpDeployments removes all qe deployments leftovers from the cluster according to the label.
+func cleanUpDeployments(apiClient *clients.Settings) error {
+	namespacesList := []string{RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPNamespaceTwo,
+		nonEgressIPNamespace}
+	podLabelsList := []string{RDSCoreConfig.EgressIPPodLabel, nonEgressIPPodLabel}
+
+	for _, nsName := range namespacesList {
+		deploymentsList, err := deployment.List(APIClient, nsName)
+
+		if err != nil {
+			glog.V(100).Infof("Error listing deployments in the namespace %s, %v", nsName, err)
+
+			return err
+		}
+
+		for _, deploy := range deploymentsList {
+			glog.V(100).Infof("Ensure %s deploy don't exist in namespace %s",
+				deploy.Definition.Name, deploy.Definition.Namespace)
+
+			err := apiobjectshelper.DeleteDeployment(
+				apiClient,
+				deploy.Definition.Name,
+				nsName)
+
+			if err != nil {
+				return fmt.Errorf("failed to delete deploy %s from nsname %s",
+					deploy.Definition.Name, nsName)
+			}
+		}
+
+		for _, label := range podLabelsList {
+			err = apiobjectshelper.EnsureAllPodsRemoved(APIClient, nsName, label)
+
+			if err != nil {
+				return fmt.Errorf("failed to delete pods in namespace %s: %w", nsName, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// createAgnhostDeployment creates the agnhost deployment that will be used as a source for EgressIP tests.
+func createAgnhostDeployment(
+	apiClient *clients.Settings,
+	nsName,
+	proberDeploySAName,
+	scheduleOnHost string,
+	podLabelsMap map[string]string) error {
+	replicaCnt := 1
+	nameSuffix := strings.Split(scheduleOnHost, ".")[0]
+	randSuffix := randomString(3)
+	deploymentName := fmt.Sprintf("%s-agnhost-%s-%s", nsName, nameSuffix, randSuffix)
+
+	var err error
 
 	glog.V(100).Infof("Defining container configuration")
 
@@ -132,7 +165,7 @@ func createAgnhostDeployment(
 		"/agnhost",
 		"netexec",
 		"--http-port",
-		fmt.Sprintf("%d", RDSCoreConfig.EgressIPTcpPort),
+		RDSCoreConfig.EgressIPTcpPort,
 	}
 
 	deployContainer := defineProberContainer(RDSCoreConfig.EgressIPDeploymentImage, containerCmd)
@@ -146,36 +179,52 @@ func createAgnhostDeployment(
 
 	glog.V(100).Infof("Defining deployment configuration")
 
-	proberDeployment := defineProberDeployment(
+	proberDeployment := defineTestPodDeployment(
 		apiClient,
 		deployContainerCfg,
-		proberDeploymentName,
-		egressIPNamespace,
+		deploymentName,
+		nsName,
 		proberDeploySAName,
-		scheduleOnHosts,
-		egressIPPodLabelsMap)
+		scheduleOnHost,
+		replicaCnt,
+		podLabelsMap)
 
 	glog.V(100).Infof("Creating deployment")
 
 	proberDeployment, err = proberDeployment.CreateAndWaitUntilReady(5 * time.Minute)
 	if err != nil {
+		glog.V(100).Infof("Failed to create deployment %s in namespace %s: %v",
+			deploymentName, nsName, err)
+
 		return fmt.Errorf("failed to create deployment %s in namespace %s: %w",
-			proberDeploymentName, egressIPNamespace, err)
+			deploymentName, nsName, err)
 	}
 
 	if proberDeployment == nil {
 		return fmt.Errorf("failed to create deployment %s in namespace %s",
-			proberDeploymentName, egressIPNamespace)
+			deploymentName, nsName)
 	}
 
 	return nil
 }
 
-func defineProberDeployment(
+func randomString(length int) string {
+	chars := "abcdefghijklmnopqrstuvwxyz0123456789"
+
+	result := make([]byte, length)
+	for i := range result {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+
+	return string(result)
+}
+
+func defineTestPodDeployment(
 	apiClient *clients.Settings,
 	containerConfig *corev1.Container,
 	deployName, deployNs, saName string,
-	scheduleOnHosts []string,
+	scheduleOnHost string,
+	replicaCnt int,
 	deployLabels map[string]string) *deployment.Builder {
 	glog.V(100).Infof("Defining deployment %q in %q ns", deployName, deployNs)
 
@@ -188,7 +237,7 @@ func defineProberDeployment(
 							{
 								Key:      "kubernetes.io/hostname",
 								Operator: corev1.NodeSelectorOpIn,
-								Values:   scheduleOnHosts,
+								Values:   []string{scheduleOnHost},
 							},
 						},
 					},
@@ -197,21 +246,21 @@ func defineProberDeployment(
 		},
 	}
 
-	proberDeployment := deployment.NewBuilder(apiClient, deployName, deployNs, deployLabels, *containerConfig)
+	podsDeployment := deployment.NewBuilder(apiClient, deployName, deployNs, deployLabels, *containerConfig)
 
 	glog.V(100).Infof("Assigning ServiceAccount %q to the deployment", saName)
 
-	proberDeployment = proberDeployment.WithServiceAccountName(saName)
+	podsDeployment = podsDeployment.WithServiceAccountName(saName)
 
 	glog.V(100).Infof("Setting Replicas count")
 
-	proberDeployment = proberDeployment.WithReplicas(int32(len(scheduleOnHosts)))
+	podsDeployment = podsDeployment.WithReplicas(int32(replicaCnt))
 
-	proberDeployment = proberDeployment.WithHostNetwork(true)
+	podsDeployment = podsDeployment.WithHostNetwork(false)
 
-	proberDeployment = proberDeployment.WithAffinity(&nodeAffinity)
+	podsDeployment = podsDeployment.WithAffinity(&nodeAffinity)
 
-	return proberDeployment
+	return podsDeployment
 }
 
 func defineProberContainer(cImage string, cCmd []string) *pod.ContainerBuilder {
@@ -253,318 +302,404 @@ func defineProberContainer(cImage string, cCmd []string) *pod.ContainerBuilder {
 	return deployContainer
 }
 
-// CreateEgressIPWithSingleNamespace create egressIP test setup to verify connectivity on the same namespace.
-func CreateEgressIPWithSingleNamespace() {
-	By("Creating the packet sniffer deployment with number of pods equals number of EgressIP nodes")
+func sendTrafficCheckIP(clientPods []*pod.Builder, isIPv6 bool, expectedIPs []string) error {
+	By("Validating pods source address")
 
-	_, err :=
-		sniffer.CreatePacketSnifferDeployment(
-			APIClient,
-			proberTargetPort,
-			proberTargetProtocol,
-			RDSCoreConfig.EgressIPPacketSnifferInterface,
-			snifferNamespace,
-			egressIPNodesList)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create sniffer deployment for %s and %s nodes in namespace %s: %v",
-			RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNodeTwo, snifferNamespace, err))
+	targetIP := RDSCoreConfig.EgressIPRemoteIPv4
 
-	By("Creating the EgressIP test source deployment with number of pods equals number of EgressIP nodes")
+	if isIPv6 {
+		targetIP = fmt.Sprintf("[%s]", RDSCoreConfig.EgressIPRemoteIPv6)
+	}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Create prober deployment based on the agnhost image")
+	cmdToRun := []string{"/bin/bash", "-c",
+		fmt.Sprintf("curl --connect-timeout 5 -Ls http://%s:%s/clientip",
+			targetIP, RDSCoreConfig.EgressIPTcpPort)}
 
-	err = createAgnhostDeployment(
-		APIClient,
-		RDSCoreConfig.EgressIPNamespaceOne,
-		egressIPNodesList)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create prober deployment and ingress route for nodes %q: %v",
-			egressIPNodesList, err))
-}
+	for _, clientPod := range clientPods {
+		var parsedIP string
 
-// VerifyEgressIPConnectivityForSingleNamespace verifies egress traffic works with egressIP
-// applied for the external target in the same namespace.
-//
-//nolint:funlen
-func VerifyEgressIPConnectivityForSingleNamespace() {
-	By("Getting a map of source nodes and assigned Egress IPs for these nodes")
+		err := wait.PollUntilContextTimeout(
+			context.TODO(),
+			time.Second,
+			time.Second*5,
+			true,
+			func(ctx context.Context) (bool, error) {
+				result, err := clientPod.ExecCommand(cmdToRun, clientPod.Object.Spec.Containers[0].Name)
 
-	egressIPObj, err := egressip.Pull(APIClient, RDSCoreConfig.EgressIPName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve egressIP %s object: %v", RDSCoreConfig.EgressIPName, err))
+				if err != nil {
+					glog.V(100).Infof("Error running command from within a pod %q: %v",
+						clientPod.Object.Name, err)
 
-	egressIPSet, err := egressIPObj.GetAssignedEgressIPMap()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve egressIP %s assigned egressIPs map: %v", RDSCoreConfig.EgressIPName, err))
-	Expect(len(egressIPSet)).To(Equal(2),
-		fmt.Sprintf("EgressIPs assigned to the wrong number of nodes: %v", egressIPSet))
-
-	By("Spawning the prober pods on the EgressIP assignable hosts")
-
-	for clusterNode, proberTargetHost := range egressIPSet {
-		for i := 0; i < 2; i++ {
-			By(fmt.Sprintf("Sending requests from prober and making sure that %d requests with search string and "+
-				"EgressIPs %v were seen", numberOfRequestsToSend, egressIPSet))
-
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Get prober pod object")
-
-			proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
-			Expect(err).ToNot(HaveOccurred(),
-				fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
-					RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPPodLabel, err))
-
-			var proberPodObj *pod.Builder
-
-			for _, podObj := range proberPodObjects {
-				if podObj.Object.Spec.NodeName == clusterNode {
-					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("pod: %s", podObj.Definition.Name)
-					proberPodObj = podObj
+					return false, nil
 				}
-			}
 
-			Expect(proberPodObj).ToNot(Equal(nil),
-				fmt.Sprintf("prober pod not found running on the %s node", clusterNode))
+				glog.V(100).Infof("Successfully executed command from within a pod %q: %v",
+					clientPod.Object.Name, err)
+				glog.V(100).Infof("Command's output:\n\t%v", result.String())
 
-			err = sniffer.SendTrafficCheckLogs(
-				APIClient,
-				proberPodObj,
-				snifferNamespace,
-				RDSCoreConfig.EgressIPPodLabel,
-				proberTargetHost,
-				proberTargetProtocol,
-				proberTargetPort,
-				numberOfRequestsToSend,
-				numberOfRequestsToSend)
-			Expect(err).ToNot(HaveOccurred(),
-				fmt.Sprintf("Failed to find required number of requests %d: %v", numberOfRequestsToSend, err))
+				parsedIP, _, err = net.SplitHostPort(result.String())
+
+				if err != nil {
+					glog.V(100).Infof("Failed to parse %q for host/port pair", result.String())
+
+					return false, nil
+				}
+
+				glog.V(100).Infof("Verify IP version type correctness")
+
+				myIP, err := netip.ParseAddr(parsedIP)
+
+				if err != nil {
+					glog.V(100).Infof("Failed to parse used ip address %q", parsedIP)
+
+					return false, nil
+				}
+
+				if isIPv6 && myIP.Is4() || !isIPv6 && myIP.Is6() {
+					glog.V(100).Infof("Wrong IP version detected; %q", parsedIP)
+
+					return false, nil
+				}
+
+				glog.V(100).Infof("Comparing %q with expected %q", parsedIP, expectedIPs)
+
+				for _, expectedIP := range expectedIPs {
+					if parsedIP == expectedIP {
+						return true, nil
+					}
+				}
+
+				glog.V(100).Infof("Mismatched IP address. Expected %q got %q", expectedIPs, parsedIP)
+
+				return false, nil
+			})
+
+		if err != nil {
+			return fmt.Errorf("failed to run command from within pod %s: %w", clientPod.Object.Name, err)
 		}
 	}
 
-	By("Verify defined, but not assigned egressIP address is reachable")
+	return nil
+}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Get prober pod object")
+func getExpectedEgressIPList() ([]string, error) {
+	By("Getting a map of source nodes and assigned Egress IPs for these nodes")
 
-	podSelector := metav1.ListOptions{
-		LabelSelector: RDSCoreConfig.EgressIPPodLabel,
+	egressIPObj, err := egressip.Pull(APIClient, RDSCoreConfig.EgressIPName)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to pull egressIP %q object: %v", RDSCoreConfig.EgressIPName, err)
+
+		return nil, fmt.Errorf("failed to retrieve egressIP %s object: %w", RDSCoreConfig.EgressIPName, err)
 	}
 
-	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, podSelector)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
-			RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPPodLabel, err))
+	egressIPSet, err := egressIPObj.GetAssignedEgressIPMap()
 
-	err = sniffer.SendTrafficCheckLogs(
-		APIClient,
-		proberPodObjects[0],
-		snifferNamespace,
-		RDSCoreConfig.EgressIPPodLabel,
-		RDSCoreConfig.EgressIPRemoteIPThree,
-		proberTargetProtocol,
-		proberTargetPort,
-		numberOfRequestsToSend,
-		numberOfRequestsToSend)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to find required number of requests %d: %v", numberOfRequestsToSend, err))
+	if err != nil {
+		glog.V(100).Infof("Failed to retrieve egressIP %s assigned egressIPs map: %v",
+			RDSCoreConfig.EgressIPName, err)
 
-	By("Verify undefined egressIP address is not reachable")
+		return nil, fmt.Errorf("failed to retrieve egressIP %s assigned egressIPs map: %w",
+			RDSCoreConfig.EgressIPName, err)
+	}
 
-	err = sniffer.SendTrafficCheckLogs(
-		APIClient,
-		proberPodObjects[0],
-		snifferNamespace,
-		RDSCoreConfig.EgressIPPodLabel,
-		RDSCoreConfig.EgressIPRemoteIPFour,
-		proberTargetProtocol,
-		proberTargetPort,
-		numberOfRequestsToSend,
-		numberOfRequestsToSend)
-	Expect(err).To(HaveOccurred(), "No packets should be seen for the undefined egressIP address")
+	if len(egressIPSet) != 2 {
+		glog.V(100).Infof("EgressIPs assigned to the wrong number of nodes: %v", egressIPSet)
+
+		return nil, fmt.Errorf("egressIPs assigned to the wrong number of nodes: %v", egressIPSet)
+	}
+
+	for _, nodeName := range []string{RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNodeTwo} {
+		egressIPOne := egressIPSet[RDSCoreConfig.EgressIPNodeOne]
+		egressIPTwo := egressIPSet[RDSCoreConfig.EgressIPNodeTwo]
+
+		if egressIPOne != RDSCoreConfig.EgressIPv4 || egressIPTwo != RDSCoreConfig.EgressIPv6 {
+			return nil, fmt.Errorf("EgressIP address assigned to the node %s not correctly configured; "+
+				"current value: %s, expected values to be set %s or %s", nodeName, egressIPOne,
+				RDSCoreConfig.EgressIPRemoteIPv4, RDSCoreConfig.EgressIPRemoteIPv6)
+		}
+	}
+
+	configuredEgressIPs :=
+		[]string{egressIPSet[RDSCoreConfig.EgressIPNodeOne], egressIPSet[RDSCoreConfig.EgressIPNodeTwo]}
+
+	return configuredEgressIPs, nil
 }
 
-// VerifyEgressIPWithSingleNamespace verifies egress traffic works with egressIP
-// applied for the external target.
-func VerifyEgressIPWithSingleNamespace() {
-	By("Creating egressIP test setup to verify connectivity on the same namespace")
+// CreateEgressIPTestDeployment create egressIP test setup to verify connectivity with the external server.
+func CreateEgressIPTestDeployment() {
+	By("Creating the EgressIP test source deployment")
 
-	CreateEgressIPWithSingleNamespace()
+	err := cleanUpDeployments(APIClient)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to cleanup deployments: %v", err))
 
-	By("Verify egressIP connectivity for the same namespace")
+	glog.V(100).Infof("Creating the EgressIP assigned agnhost probers in namespace %s for node %s and %s",
+		RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNodeTwo)
 
-	VerifyEgressIPConnectivityForSingleNamespace()
-}
+	proberDeploySANameOne, err := createAgnhostRBAC(APIClient, RDSCoreConfig.EgressIPNamespaceOne)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create prober RBAC in namespace %s: %v", RDSCoreConfig.EgressIPNamespaceOne, err))
 
-// CreateEgressIPMixedNodesAndNamespaces create egressIP test setup to verify connectivity on the
-// different namespaces and nodes.
-func CreateEgressIPMixedNodesAndNamespaces() {
-	By("Creating the packet sniffer deployment with number of pods equals number of EgressIP nodes")
-
-	_, err :=
-		sniffer.CreatePacketSnifferDeployment(
+	for _, nodeToAssign := range []string{RDSCoreConfig.EgressIPNodeOne,
+		RDSCoreConfig.EgressIPNodeTwo, RDSCoreConfig.NonEgressIPNode} {
+		err = createAgnhostDeployment(
 			APIClient,
-			proberTargetPort,
-			proberTargetProtocol,
-			RDSCoreConfig.EgressIPPacketSnifferInterface,
-			snifferNamespace,
-			egressIPNodesList)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create sniffer deployment for %s and %s nodes in namespace %s: %v",
-			RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNodeTwo, snifferNamespace, err))
+			RDSCoreConfig.EgressIPNamespaceOne,
+			proberDeploySANameOne,
+			nodeToAssign,
+			egressIPPodLabelsMap)
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Failed to create prober deployment for node %s in namespace %s: %v",
+				nodeToAssign, RDSCoreConfig.EgressIPNamespaceOne, err))
+	}
 
-	By(fmt.Sprintf("Create prober pod deployment in namespace %s on the node %s",
-		RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPNodeOne))
+	glog.V(100).Infof("Creating the EgressIP assigned agnhost probers in namespace %s for node %s",
+		RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPNodeTwo)
+
+	proberDeploySANameTwo, err := createAgnhostRBAC(APIClient, RDSCoreConfig.EgressIPNamespaceTwo)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create prober RBAC in namespace %s: %v", RDSCoreConfig.EgressIPNamespaceTwo, err))
+
+	err = createAgnhostDeployment(
+		APIClient,
+		RDSCoreConfig.EgressIPNamespaceTwo,
+		proberDeploySANameTwo,
+		RDSCoreConfig.EgressIPNodeTwo,
+		egressIPPodLabelsMap)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create prober deployment for node %s in namespace %s: %v",
+			RDSCoreConfig.EgressIPNodeTwo, RDSCoreConfig.EgressIPNamespaceTwo, err))
+
+	glog.V(100).Infof("Creating the non EgressIP assigned agnhost prober in namespace %s for node %s",
+		RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPNodeOne)
+
+	nonEIPPodLabelsMap := map[string]string{
+		strings.Split(nonEgressIPPodLabel, "=")[0]: strings.Split(nonEgressIPPodLabel, "=")[1],
+	}
 
 	err = createAgnhostDeployment(
 		APIClient,
 		RDSCoreConfig.EgressIPNamespaceOne,
-		[]string{RDSCoreConfig.EgressIPNodeOne})
+		proberDeploySANameOne,
+		RDSCoreConfig.EgressIPNodeOne,
+		nonEIPPodLabelsMap)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create prober deployment for node %s: %v", RDSCoreConfig.EgressIPNodeOne, err))
-
-	By(fmt.Sprintf("Create prober pod deployment in namespace %s on the node %s",
-		RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPNodeTwo))
-
-	err = createAgnhostDeployment(
-		APIClient,
-		RDSCoreConfig.EgressIPNamespaceTwo,
-		[]string{RDSCoreConfig.EgressIPNodeTwo})
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create prober deployment in namespace %s for node %s: %v",
-			RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPNodeTwo, err))
-
-	By(fmt.Sprintf("Create prober deployment in namespace %s on the node %s",
-		RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.NonEgressIPNodeOne))
-
-	err = createAgnhostDeployment(
-		APIClient,
-		RDSCoreConfig.EgressIPNamespaceTwo,
-		[]string{RDSCoreConfig.NonEgressIPNodeOne})
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create prober deployment for node %s: %v", RDSCoreConfig.NonEgressIPNodeOne, err))
-
-	By(fmt.Sprintf("Create prober deployment in namespace %s on the node %s",
-		RDSCoreConfig.EgressIPNamespaceThree, RDSCoreConfig.EgressIPNodeOne))
-
-	err = createAgnhostDeployment(
-		APIClient,
-		RDSCoreConfig.EgressIPNamespaceThree,
-		[]string{RDSCoreConfig.EgressIPNodeOne})
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create prober deployment for node %s: %v", RDSCoreConfig.EgressIPNodeOne, err))
+		fmt.Sprintf("Failed to create prober deployment for node %s in namespace %s: %v",
+			RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNamespaceOne, err))
 }
 
-// VerifyEgressIPConnectivityMixedNodesAndNamespaces verifies egress traffic works with egressIP
-// applied for the external target on the different namespaces and nodes.
-//
-//nolint:funlen
-func VerifyEgressIPConnectivityMixedNodesAndNamespaces() {
-	By("Getting a map of source nodes and assigned Egress IPs for these nodes")
+func verifyEgressIPConnectivityBalancedTraffic(isIPv6 bool) {
+	By("Spawning the prober pod on the EgressIP non assignable host")
 
-	egressIPObj, err := egressip.Pull(APIClient, RDSCoreConfig.EgressIPName)
+	expectedIPs, err := getExpectedEgressIPList()
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve egressIP %s object: %v", RDSCoreConfig.EgressIPName, err))
+		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
+			RDSCoreConfig.EgressIPName, err))
 
-	egressIPSet, err := egressIPObj.GetAssignedEgressIPMap()
+	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve egressIP %s assigned egressIPs map: %v", RDSCoreConfig.EgressIPName, err))
-	Expect(len(egressIPSet)).To(Equal(2),
-		fmt.Sprintf("EgressIPs assigned to the wrong number of nodes: %v", egressIPSet))
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %v: %v",
+			RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector, err))
 
-	By(fmt.Sprintf("Sending requests from prober pod in namespace %s "+
-		"on the node %s and making sure that %d requests were seen",
-		RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPNodeOne, numberOfRequestsToSend))
+	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Server response was note received: %v", err))
+}
+
+// VerifyEgressIPConnectivityBalancedTrafficIPv4 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPConnectivityBalancedTrafficIPv4() {
+	verifyEgressIPConnectivityBalancedTraffic(false)
+}
+
+// VerifyEgressIPConnectivityBalancedTrafficIPv6 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPConnectivityBalancedTrafficIPv6() {
+	verifyEgressIPConnectivityBalancedTraffic(true)
+}
+
+func verifyEgressIPConnectivityThreeNodes(isIPv6 bool) {
+	By("Spawning the prober pods on the EgressIP assignable hosts")
+
+	expectedIPs, err := getExpectedEgressIPList()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
+			RDSCoreConfig.EgressIPName, err))
 
 	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
 			RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPPodLabel, err))
 
-	err = sniffer.SendTrafficCheckLogs(
-		APIClient,
-		proberPodObjects[0],
-		snifferNamespace,
-		RDSCoreConfig.EgressIPPodLabel,
-		egressIPSet[RDSCoreConfig.EgressIPNodeOne],
-		proberTargetProtocol,
-		proberTargetPort,
-		numberOfRequestsToSend,
-		numberOfRequestsToSend)
+	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to find required number of requests %d: %v", numberOfRequestsToSend, err))
-
-	By(fmt.Sprintf("Sending requests from prober pod in namespace %s "+
-		"on the node %s and making sure that %d requests were seen",
-		RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPNodeTwo, numberOfRequestsToSend))
+		fmt.Sprintf("Server response was note received: %v", err))
 
 	proberPodObjects, err = pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceTwo, egressIPPodSelector)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
 			RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPPodLabel, err))
 
-	err = sniffer.SendTrafficCheckLogs(
-		APIClient,
-		proberPodObjects[0],
-		snifferNamespace,
-		RDSCoreConfig.EgressIPPodLabel,
-		egressIPSet[RDSCoreConfig.EgressIPNodeTwo],
-		proberTargetProtocol,
-		proberTargetPort,
-		numberOfRequestsToSend,
-		numberOfRequestsToSend)
+	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to find required number of requests %d: %v", numberOfRequestsToSend, err))
-
-	By(fmt.Sprintf("Sending requests from prober pod in namespace %s "+
-		"on the node %s and making sure that %d requests were seen",
-		RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.NonEgressIPNodeOne, numberOfRequestsToSend))
-
-	proberPodObjects, err = pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceTwo, egressIPPodSelector)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
-			RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPPodLabel, err))
-
-	err = sniffer.SendTrafficCheckLogs(
-		APIClient,
-		proberPodObjects[0],
-		snifferNamespace,
-		RDSCoreConfig.EgressIPPodLabel,
-		egressIPSet[RDSCoreConfig.EgressIPNodeTwo],
-		proberTargetProtocol,
-		proberTargetPort,
-		numberOfRequestsToSend,
-		numberOfRequestsToSend)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to find required number of requests %d: %v", numberOfRequestsToSend, err))
-
-	By(fmt.Sprintf("Sending requests from prober pod in namespace %s "+
-		"on the node %s and making sure that %d requests were seen",
-		RDSCoreConfig.EgressIPNamespaceThree, RDSCoreConfig.EgressIPNodeOne, numberOfRequestsToSend))
-
-	proberPodObjects, err = pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceThree, egressIPPodSelector)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
-			RDSCoreConfig.EgressIPNamespaceThree, RDSCoreConfig.EgressIPPodLabel, err))
-
-	err = sniffer.SendTrafficCheckLogs(
-		APIClient,
-		proberPodObjects[0],
-		snifferNamespace,
-		RDSCoreConfig.EgressIPPodLabel,
-		egressIPSet[RDSCoreConfig.EgressIPNodeOne],
-		proberTargetProtocol,
-		proberTargetPort,
-		numberOfRequestsToSend,
-		numberOfRequestsToSend)
-	Expect(err).To(HaveOccurred(), "traffic receive for the pod from the non-egressIP assigned namespace")
+		fmt.Sprintf("Server response was not received: %v", err))
 }
 
-// VerifyEgressIPDifferentNodesAndNamespaces verifies egress traffic works with egressIP applied
-// for the external target with two additional namespaces in use on a different nodes.
-func VerifyEgressIPDifferentNodesAndNamespaces() {
-	By("Creating egressIP test setup to verify connectivity on the different namespaces and nodes")
+// VerifyEgressIPConnectivityThreeNodesIPv4 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPConnectivityThreeNodesIPv4() {
+	verifyEgressIPConnectivityThreeNodes(false)
+}
 
-	CreateEgressIPMixedNodesAndNamespaces()
+// VerifyEgressIPConnectivityThreeNodesIPv6 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPConnectivityThreeNodesIPv6() {
+	verifyEgressIPConnectivityThreeNodes(true)
+}
+
+// VerifyEgressIPForPodWithWrongLabel verifies egress traffic applies only for pods with
+// the correct pod label defined.
+func VerifyEgressIPForPodWithWrongLabel() {
+	By("Spawning the prober pods on the EgressIP assignable hosts")
+
+	expectedIPs, err := getExpectedEgressIPList()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
+			RDSCoreConfig.EgressIPName, err))
+
+	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
+			RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPPodLabel, err))
+
+	err = sendTrafficCheckIP(proberPodObjects, false, expectedIPs)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Server response was note received: %v", err))
+
+	proberPodObjects, err = pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, nonEgressIPPodSelector)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
+			RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPPodLabel, err))
+
+	err = sendTrafficCheckIP(proberPodObjects, false, expectedIPs)
+	Expect(err).To(HaveOccurred(),
+		fmt.Sprintf("Server response was received with the not correct egressIP address: %v", err))
+}
+
+// VerifyEgressIPForNamespaceWithWrongLabel verifies egress traffic applies only for the pods
+// run in the namespace assigned to the eIP service.
+func VerifyEgressIPForNamespaceWithWrongLabel() {
+	glog.V(100).Infof("Create new, not assigned to the eIP service namespace %s", nonEgressIPNamespace)
+
+	_, err := namespace.NewBuilder(APIClient, nonEgressIPNamespace).Create()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create namespace %s: %v", nonEgressIPNamespace, err))
+
+	proberDeploySAName, err := createAgnhostRBAC(APIClient, nonEgressIPNamespace)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create prober RBAC in namespace %s: %v", nonEgressIPNamespace, err))
+
+	err = createAgnhostDeployment(
+		APIClient,
+		nonEgressIPNamespace,
+		proberDeploySAName,
+		RDSCoreConfig.EgressIPNodeOne,
+		egressIPPodLabelsMap)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create prober deployment for node %s in namespace %s: %v",
+			RDSCoreConfig.EgressIPNodeOne, nonEgressIPNamespace, err))
+
+	By("Spawning the prober pods on the EgressIP assignable hosts")
+
+	expectedIPs, err := getExpectedEgressIPList()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
+			RDSCoreConfig.EgressIPName, err))
+
+	proberPodObjects, err := pod.List(APIClient, nonEgressIPNamespace, egressIPPodSelector)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
+			nonEgressIPNamespace, RDSCoreConfig.EgressIPPodLabel, err))
+
+	err = sendTrafficCheckIP(proberPodObjects, false, expectedIPs)
+	Expect(err).To(HaveOccurred(),
+		fmt.Sprintf("Server response was received with the not correct egressIP address: %v", err))
+}
+
+// VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv4 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv4() {
+	By("Creating egressIP test setup: 7 pods run in the 3 different namespaces on 3 nodes")
+
+	CreateEgressIPTestDeployment()
 
 	By("Verify egressIP connectivity for the same namespace")
 
-	VerifyEgressIPConnectivityMixedNodesAndNamespaces()
+	for iter := 0; iter < 5; iter++ {
+		VerifyEgressIPConnectivityBalancedTrafficIPv4()
+	}
+}
+
+// VerifyEgressIPTwoNamespacesThreeNodesIPv4 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPTwoNamespacesThreeNodesIPv4() {
+	By("Creating egressIP test setup to verify connectivity on the two namespaces")
+
+	CreateEgressIPTestDeployment()
+
+	By("Verify egressIP connectivity for the different namespaces")
+
+	VerifyEgressIPConnectivityThreeNodesIPv4()
+}
+
+// VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv6 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv6() {
+	By("Creating egressIP test setup: 7 pods run in the 3 different namespaces on 3 nodes")
+
+	CreateEgressIPTestDeployment()
+
+	By("Verify egressIP connectivity for the same namespace")
+
+	for iter := 0; iter < 5; iter++ {
+		VerifyEgressIPConnectivityBalancedTrafficIPv6()
+	}
+}
+
+// VerifyEgressIPTwoNamespacesThreeNodesIPv6 verifies egress traffic works with egressIP
+// applied for the external target.
+func VerifyEgressIPTwoNamespacesThreeNodesIPv6() {
+	By("Creating egressIP test setup to verify connectivity on the two namespaces")
+
+	CreateEgressIPTestDeployment()
+
+	By("Verify egressIP connectivity for the different namespaces")
+
+	VerifyEgressIPConnectivityThreeNodesIPv6()
+}
+
+// VerifyEgressIPOneNamespaceOneNodeWrongPodLabel verifies egress traffic works with egressIP
+// applied for the external target with the single namespace and wrong pod label.
+func VerifyEgressIPOneNamespaceOneNodeWrongPodLabel() {
+	By("Creating egressIP test setup to verify connectivity on the two namespaces")
+
+	CreateEgressIPTestDeployment()
+
+	By("Verify egressIP connectivity for the pod with the not correctly defined label")
+
+	VerifyEgressIPForPodWithWrongLabel()
+}
+
+// VerifyEgressIPWrongNsLabel verifies egress traffic works with egressIP
+// applied for the external target when two egressIP pods from the different namespaces run on the same node
+// when one of the namespaces not assigned to the egressIP.
+func VerifyEgressIPWrongNsLabel() {
+	By("Creating egressIP test setup to verify connectivity on the two namespaces")
+
+	CreateEgressIPTestDeployment()
+
+	By("Verify egressIP connectivity for the pods run in the namespace not assigned to the eIP")
+
+	VerifyEgressIPForNamespaceWithWrongLabel()
 }
