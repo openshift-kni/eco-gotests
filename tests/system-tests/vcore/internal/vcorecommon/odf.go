@@ -138,7 +138,7 @@ func VerifyODFTaints(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to retrieve node %s object due to %v",
 			odfNodeName, err))
 
-		glog.V(vcoreparams.VCoreLogLevel).Infof("Insure taints applyed to the %s node", odfNode.Definition.Name)
+		glog.V(vcoreparams.VCoreLogLevel).Infof("Ensure taints applyed to the %s node", odfNode.Definition.Name)
 		applyTaintsCmd := fmt.Sprintf(
 			"oc adm taint node %s node.ocs.openshift.io/storage=true:NoSchedule --overwrite=true --kubeconfig=%s",
 			odfNode.Definition.Name, VCoreConfig.KubeconfigPath)
