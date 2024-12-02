@@ -25,6 +25,26 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verify MetalLB Graceful Restart - single IPv4 connection",
+				Label("metallb-graceful", "metallb-gr-single-ipv4"),
+				reportxml.ID("77997"),
+				rdscorecommon.VerifyGRSingleConnectionIPv4ETPLocal)
+
+			It("Verify MetalLB Graceful Restart - single IPv6 connection",
+				Label("metallb-graceful", "metallb-gr-single-ipv6"),
+				reportxml.ID("77998"),
+				rdscorecommon.VerifyGRSingleConnectionIPv6ETPLocal)
+
+			It("Verify MetalLB Graceful Restart - multiple IPv4 connections",
+				Label("metallb-graceful", "metallb-gr-multiple-ipv4"),
+				reportxml.ID("77999"),
+				rdscorecommon.VerifyGRMultipleConnectionIPv4ETPLocal)
+
+			It("Verify MetalLB Graceful Restart - multiple IPv6 connections",
+				Label("metallb-graceful", "metallb-gr-multiple-ipv6"),
+				reportxml.ID("78000"),
+				rdscorecommon.VerifyGRMultipleConnectionIPv6ETPLocal)
+
 			It("Verify EgressService with Cluster ExternalTrafficPolicy",
 				Label("egress", "egress-etp-cluster"), reportxml.ID("76485"),
 				rdscorecommon.VerifyEgressServiceWithClusterETP)
