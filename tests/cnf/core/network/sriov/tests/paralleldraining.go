@@ -73,7 +73,7 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 			removeLabelFromWorkersIfExists(workerNodeList, testLabel1)
 
 			By("Removing SR-IOV configuration")
-			err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+			err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 			err = sriov.CleanAllPoolConfigs(APIClient, NetConfig.SriovOperatorNamespace)
@@ -253,7 +253,7 @@ func createSriovConfigurationParallelDrain(sriovInterfaceName string) {
 }
 
 func removeTestConfiguration() {
-	err := sriovenv.RemoveAllSriovNetworks()
+	err := netenv.RemoveAllSriovNetworks()
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean all SR-IOV Networks")
 	err = sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean all SR-IOV policies")
