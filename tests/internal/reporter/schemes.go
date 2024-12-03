@@ -27,6 +27,7 @@ import (
 	machineconfigv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	mcmv1beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api-hub/v1beta1"
 	modulev1beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
+	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	policiesv1beta1 "open-cluster-management.io/governance-policy-propagator/api/v1beta1"
@@ -62,6 +63,7 @@ var reporterSchemes = []clients.SchemeAttacher{
 	lcav1.AddToScheme,
 	ibiv1alpha1.AddToScheme,
 	siteconfigv1alpha1.AddToScheme,
+	certificatesv1.AddToScheme,
 }
 
 func setReporterSchemes(scheme *runtime.Scheme) error {
