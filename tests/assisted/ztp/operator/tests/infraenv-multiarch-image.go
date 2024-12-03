@@ -138,7 +138,7 @@ var _ = Describe(
 							ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.s390x.iso",
 						"https://mirror.openshift.com/pub/openshift-v4/s390x/dependencies/rhcos/pre-release/latest-"+
 							ZTPConfig.HubOCPXYVersion+"/rhcos-live.s390x.iso"),
-					CPUArchitecture: models.ClusterCPUArchitectureS390x}).
+					CPUArchitecture: models.ClusterCPUArchitectureS390x}).WithUnauthenticatedRegistry("registry.redhat.io").
 					Create()
 				Expect(err).ToNot(HaveOccurred(),
 					"error creating agentserviceconfig with osimages for multiple archs")
