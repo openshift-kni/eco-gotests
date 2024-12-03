@@ -27,8 +27,10 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFailure, func() {
@@ -351,7 +353,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				By("Verify node state updates on worker node 0")
 				Eventually(func() string {
 					// Get the routes
-					frrNodeState, err := metallb.ListFrrNodeState(APIClient)
+					frrNodeState, err := metallb.ListFrrNodeState(APIClient, client.ListOptions{
+						FieldSelector: fields.SelectorFromSet(fields.Set{"metadata.name": "worker-0"})})
 					Expect(err).ToNot(HaveOccurred(), "Failed to verify BGP routes")
 
 					return frrNodeState[0].Object.Status.RunningConfig
@@ -370,10 +373,9 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				By("Verify node state updates on worker node 1")
 				Eventually(func() string {
 					// Get the routes
-					frrNodeState, err := metallb.ListFrrNodeState(APIClient)
+					frrNodeState, err := metallb.ListFrrNodeState(APIClient, client.ListOptions{
+						FieldSelector: fields.SelectorFromSet(fields.Set{"metadata.name": "worker-1"})})
 					Expect(err).ToNot(HaveOccurred(), "Failed to verify BGP routes")
-					fmt.Println("frrNodeState[0].Objects.Status.RunningConfig",
-						frrNodeState[0].Object.Status.RunningConfig)
 
 					return frrNodeState[0].Object.Status.RunningConfig
 
