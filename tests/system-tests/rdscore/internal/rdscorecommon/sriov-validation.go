@@ -585,9 +585,6 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label() still present")
 
-	By("Sleeping 90 seconds")
-	time.Sleep(90 * time.Second)
-
 	By("Removing ConfigMap")
 
 	deleteConfigMap(sriovDeploy1CMName, RDSCoreConfig.WlkdSRIOVOneNS)
@@ -750,9 +747,6 @@ func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
 		return len(oldPods) == 0
 
 	}, 6*time.Minute, 3*time.Second).WithContext(ctx).Should(BeTrue(), "pods matching label() still present")
-
-	By("Sleeping 90 seconds")
-	time.Sleep(90 * time.Second)
 
 	By("Removing ConfigMap")
 
