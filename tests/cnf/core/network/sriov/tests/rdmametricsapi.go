@@ -3,12 +3,11 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"time"
 
-	ignition "github.com/coreos/ignition/v2/config/v3_1/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -22,20 +21,25 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-var _ = Describe("rdmaMetrics", Ordered, Label(tsparams.LabelRdmaMetricsTestCases),
+var _ = Describe("rdmaMetricsAPI", Ordered, Label(tsparams.LabelRdmaMetricsAPITestCases),
 	ContinueOnFailure, func() {
 		var (
 			workerNodeList           []*nodes.Builder
 			sriovInterfacesUnderTest []string
-			rdmaMachineConfig        *mco.MCBuilder
+			sriovNetNodeState        *sriov.PoolConfigBuilder
+			tPol1, tPol2             *sriov.PolicyBuilder
+			tNet1, tNet2             *sriov.NetworkBuilder
 		)
 
 		BeforeAll(func() {
-			By("Verifying if Rdma Metrics tests can be executed on given cluster")
+			By("Verifying if Rdma Metrics API tests can be executed on given cluster")
 			err := netenv.DoesClusterHasEnoughNodes(APIClient, NetConfig, 1, 1)
 			Expect(err).ToNot(HaveOccurred(),
 				"Cluster doesn't support Rdma Metrics test cases as it doesn't have enough nodes")
@@ -59,56 +63,57 @@ var _ = Describe("rdmaMetrics", Ordered, Label(tsparams.LabelRdmaMetricsTestCase
 			if sriovVendor != netparam.MlxVendorID {
 				Skip("Rdma metrics is supported only on Mellanox devices")
 			}
-
 		})
 
 		Context("Rdma metrics in exclusive mode", func() {
 			BeforeAll(func() {
-				By("Enable RDMA exclusive mode")
+				By("Enable RDMA exclusive mode with NetworkPoolConfig")
 
-				rdmaMachineConfig = enableRdmaMode()
+				sriovNetNodeState = setRdmaMode("exclusive")
+
+				By("Create Sriov Node Policy and Network")
+
+				tPol1 = defineAndCreateNodePolicy("rdmapolicy1", "sriovpf1", sriovInterfacesUnderTest[0], 2, 1)
+				tPol2 = defineAndCreateNodePolicy("rdmapolicy2", "sriovpf2", sriovInterfacesUnderTest[1], 2, 1)
+				tNet1 = defineAndCreateSriovNetworkWithRdma("sriovnet1", tPol1.Object.Spec.ResourceName, true)
+				tNet2 = defineAndCreateSriovNetworkWithRdma("sriovnet2", tPol2.Object.Spec.ResourceName, true)
 
 				err := netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
-				Expect(err).ToNot(HaveOccurred(), "Failed to wait for MCP update")
+				Expect(err).ToNot(HaveOccurred(), "Failed to wait for Sriov state to be stable")
 
 				By("Ensure RDMA is in exclusive mode")
 
-				outputNodes, err := cluster.ExecCmdWithStdout(
-					APIClient, "rdma system show", metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-				Expect(err).ToNot(HaveOccurred(), "Failed to get output of rdma system show")
-
-				for node, output := range outputNodes {
-					Expect(output).To(ContainSubstring("exclusive"), fmt.Sprintf("RDMA is not set to shared on node %s", node))
-				}
+				verifyRdmaModeStatus("exclusive", workerNodeList)
 
 			})
-			It("1 Pod with 1 VF", reportxml.ID("75230"), func() {
+			It("1 Pod with 1 VF", reportxml.ID("77651"), func() {
+				By("Define and Create Test Pod")
+				testPod := defineAndCreatePod(tNet1.Object.Name, "")
 
-				By("Define and Create Test Resources")
-				tPol := defineAndCreateNodePolicy("rdmapolicy1", "sriovpf1", sriovInterfacesUnderTest[0], 1, 0)
-				tNet := defineAndCreateSriovNetworkWithRdma("sriovnet1", tPol.Object.Spec.ResourceName, true)
-				testPod := defineAndCreatePod(tNet.Object.Name, "")
+				By("Verify allocatable devices doesn't change after sriov-device-plugin pod restart")
+				verifyAllocatableResouces(testPod, tPol1.Object.Spec.ResourceName)
 
 				By("Verify Rdma metrics are available inside Pod but not on Host")
 				verifyRdmaMetrics(testPod, "net1")
 			})
-			It("1 Pod with 2 VF of same PF", reportxml.ID("75231"), func() {
-				By("Define and Create Test Resources")
-				tPol := defineAndCreateNodePolicy("rdmapolicy1", "sriovpf1", sriovInterfacesUnderTest[0], 2, 1)
-				tNet := defineAndCreateSriovNetworkWithRdma("sriovnet1", tPol.Object.Spec.ResourceName, true)
-				testPod := defineAndCreatePod(tNet.Object.Name, tNet.Object.Name)
+			It("1 Pod with 2 VF of same PF", reportxml.ID("77650"), func() {
+				By("Define and Create Test Pod")
+				testPod := defineAndCreatePod(tNet1.Object.Name, tNet1.Object.Name)
+
+				By("Verify allocatable devices doesn't change after sriov-device-plugin pod restart")
+				verifyAllocatableResouces(testPod, tPol1.Object.Spec.ResourceName)
 
 				By("Verify Rdma metrics are available inside Pod but not on Host")
 				verifyRdmaMetrics(testPod, "net1")
 				verifyRdmaMetrics(testPod, "net2")
 			})
-			It("1 Pod with 2 VF of different PF", reportxml.ID("75232"), func() {
-				By("Define and Create Test Resources")
-				tPol1 := defineAndCreateNodePolicy("rdmapolicy1", "sriovpf1", sriovInterfacesUnderTest[0], 1, 0)
-				tPol2 := defineAndCreateNodePolicy("rdmapolicy2", "sriovpf2", sriovInterfacesUnderTest[1], 1, 0)
-				tNet1 := defineAndCreateSriovNetworkWithRdma("sriovnet1", tPol1.Object.Spec.ResourceName, true)
-				tNet2 := defineAndCreateSriovNetworkWithRdma("sriovnet2", tPol2.Object.Spec.ResourceName, true)
+			It("1 Pod with 2 VF of different PF", reportxml.ID("77649"), func() {
+				By("Define and Create Test Pod")
 				testPod := defineAndCreatePod(tNet1.Object.Name, tNet2.Object.Name)
+
+				By("Verify allocatable devices doesn't change after sriov-device-plugin pod restart")
+				verifyAllocatableResouces(testPod, tPol1.Object.Spec.ResourceName)
+				verifyAllocatableResouces(testPod, tPol2.Object.Spec.ResourceName)
 
 				By("Verify Rdma metrics are available inside Pod but not on Host")
 				verifyRdmaMetrics(testPod, "net1")
@@ -116,48 +121,49 @@ var _ = Describe("rdmaMetrics", Ordered, Label(tsparams.LabelRdmaMetricsTestCase
 			})
 
 			AfterEach(func() {
-				By("Removing SR-IOV configuration")
-				err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
-
 				By("Cleaning test namespace")
-				err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+				err := namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
 					netparam.DefaultTimeout, pod.GetGVR())
 				Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 			})
 
 			AfterAll(func() {
-				By("Disable rdma exclusive mode")
+				By("Delete SriovPoolConfig")
+				err := sriovNetNodeState.Delete()
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete SriovPoolConfig")
 
-				err := rdmaMachineConfig.Delete()
-				Expect(err).ToNot(HaveOccurred(), "Failed to delete rdma exclusive mode machine config")
-
-				err = netenv.WaitForMcpStable(
-					APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
-				Expect(err).ToNot(HaveOccurred(), "Failed to wait for MCP update")
-
+				By("Removing SR-IOV configuration")
+				err = sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 			})
 		})
 
 		Context("Rdma metrics in shared mode", func() {
 			BeforeAll(func() {
+				By("Set Rdma Mode to shared")
+
+				sriovNetNodeState = setRdmaMode("shared")
+
+				By("Create Sriov Node Policy and Network")
+
+				tPol1 = defineAndCreateNodePolicy("rdmapolicy1", "sriovpf1", sriovInterfacesUnderTest[0], 1, 0)
+				tNet1 = defineAndCreateSriovNetworkWithRdma("sriovnet1", tPol1.Object.Spec.ResourceName, false)
+
+				err := netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
+				Expect(err).ToNot(HaveOccurred(), "Failed to wait for Sriov state to be stable")
+
 				By("Ensure RDMA is in shared mode")
 
-				outputNodes, err := cluster.ExecCmdWithStdout(
-					APIClient, "rdma system show", metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-				Expect(err).ToNot(HaveOccurred(), "Failed to get output of rdma system show")
-
-				for node, output := range outputNodes {
-					Expect(output).To(ContainSubstring("shared"), fmt.Sprintf("RDMA is not set to shared on node %s", node))
-				}
+				verifyRdmaModeStatus("shared", workerNodeList)
 
 			})
-			It("1 Pod with 1 VF", reportxml.ID("75353"), func() {
-				By("Define and Create Test Resources")
+			It("1 Pod with 1 VF", reportxml.ID("77653"), func() {
+				By("Define and Create Test Pod")
 
-				tPol := defineAndCreateNodePolicy("rdmapolicy1", "sriovpf1", sriovInterfacesUnderTest[0], 1, 0)
-				tNet := defineAndCreateSriovNetworkWithRdma("sriovnet1", tPol.Object.Spec.ResourceName, false)
-				testPod := defineAndCreatePod(tNet.Object.Name, "")
+				testPod := defineAndCreatePod(tNet1.Object.Name, "")
+
+				By("Verify allocatable devices doesn't change after sriov-device-plugin pod restart")
+				verifyAllocatableResouces(testPod, tPol1.Object.Spec.ResourceName)
 
 				By("Fetch PCI Address and Rdma device from Pod Annotations")
 				pciAddress, rdmaDevice, err := getInterfacePci(testPod, "net1")
@@ -193,51 +199,94 @@ var _ = Describe("rdmaMetrics", Ordered, Label(tsparams.LabelRdmaMetricsTestCase
 				err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
 					netparam.DefaultTimeout, pod.GetGVR())
 				Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
+
+				By("Delete SriovPoolConfig")
+
+				err = sriovNetNodeState.Delete()
+				Expect(err).ToNot(HaveOccurred(), "Failed to delete SriovPoolConfig")
+
+				err = netenv.WaitForMcpStable(
+					APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
+				Expect(err).ToNot(HaveOccurred(), "Failed to wait for SriovNodeState to be stable")
 			})
 		})
 	})
 
-func enableRdmaMode() *mco.MCBuilder {
-	RdmaMachineConfigContents := `
-		[Unit]
-		Description=RDMA exclusive mode
-		Before=kubelet.service crio.service node-valid-hostname.service
-		
-		[Service]
-		# Need oneshot to delay kubelet
-		Type=oneshot
-		ExecStart=/usr/bin/bash -c "rdma system set netns exclusive"
-		StandardOutput=journal+console
-		StandardError=journal+console
-		
-		[Install]
-		WantedBy=network-online.target`
-	truePointer := true
-	ignitionConfig := ignition.Config{
-		Ignition: ignition.Ignition{
-			Version: "3.1.0",
-		},
-		Systemd: ignition.Systemd{
-			Units: []ignition.Unit{
-				{
-					Enabled:  &truePointer,
-					Name:     "rdma.service",
-					Contents: &RdmaMachineConfigContents,
-				},
-			},
-		},
+func setRdmaMode(mode string) *sriov.PoolConfigBuilder {
+	sriovPoolConfig, err := sriov.NewPoolConfigBuilder(APIClient, "rdmasubsystem", NetConfig.SriovOperatorNamespace).
+		WithNodeSelector(NetConfig.WorkerLabelMap).
+		WithMaxUnavailable(intstr.FromInt32(1)).
+		WithRDMAMode(mode).
+		Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create SriovNetworkPoolConfig")
+
+	return sriovPoolConfig
+}
+
+func verifyRdmaModeStatus(mode string, nodelist []*nodes.Builder) {
+	By("Verify RdmaMode status through SriovNetworkNodeState API")
+
+	var allNodes []string
+
+	for _, node := range nodelist {
+		allNodes = append(allNodes, node.Object.Name)
 	}
 
-	finalIgnitionConfig, err := json.Marshal(ignitionConfig)
-	Expect(err).ToNot(HaveOccurred(), "Failed to serialize ignition config")
+	sriovNodeStates, err := sriov.ListNetworkNodeState(APIClient, NetConfig.SriovOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to fetch SriovNetworkNodeStates")
 
-	createdMC, err := mco.NewMCBuilder(APIClient, "02-rdma-netns-exclusive-mode").
-		WithLabel("machineconfiguration.openshift.io/role", NetConfig.CnfMcpLabel).
-		WithRawConfig(finalIgnitionConfig).
-		Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create RDMA machine config")
+	for _, nodeState := range sriovNodeStates {
+		if slices.Contains(allNodes, nodeState.Objects.Name) {
+			Expect(nodeState.Objects.Spec.System.RdmaMode).To(Equal(mode), "SriovNodeState Spec is not correctly updated")
+			Expect(nodeState.Objects.Status.System.RdmaMode).To(Equal(mode), "SriovNodeState Spec is not correctly updated")
+		}
+	}
 
-	return createdMC
+	By("Verify RdmaMode status through host cli")
+
+	outputNodes, err := cluster.ExecCmdWithStdout(
+		APIClient, "rdma system show", metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+	Expect(err).ToNot(HaveOccurred(), "Failed to get output of rdma system show")
+
+	for node, output := range outputNodes {
+		Expect(output).To(ContainSubstring(mode), fmt.Sprintf("RDMA is not set to shared on node %s", node))
+	}
+}
+
+func verifyAllocatableResouces(tPod *pod.Builder, resName string) {
+	testPodNode, err := nodes.Pull(APIClient, tPod.Object.Spec.NodeName)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull test pod's host worker node")
+
+	oldAllocatableSriovDevices := testPodNode.Object.Status.Allocatable[corev1.ResourceName("openshift.io/"+resName)]
+	oldNum, _ := oldAllocatableSriovDevices.AsInt64()
+
+	sriovDevicePluginPods, err := pod.List(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{
+		LabelSelector: labels.Set{"app": "sriov-device-plugin"}.String(),
+		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": tPod.Object.Spec.NodeName}).String()})
+	Expect(err).ToNot(HaveOccurred(), "Failed to list sriov device plugin pods")
+	Expect(len(sriovDevicePluginPods)).To(Equal(1), "Failed to fetch the sriov device plugin pod")
+
+	_, err = sriovDevicePluginPods[0].Delete()
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete the sriov device plugin pod")
+
+	Eventually(func() bool {
+		sriovDevicePluginPods, err := pod.List(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{
+			LabelSelector: labels.Set{"app": "sriov-device-plugin"}.String(),
+			FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": tPod.Object.Spec.NodeName}).String()})
+		Expect(err).ToNot(HaveOccurred(), "Failed to list sriov device plugin pods")
+
+		return len(sriovDevicePluginPods) == 1
+	}, 1*time.Minute, 2*time.Second).Should(BeTrue(), "Failed to find the new sriov device plugin pod")
+
+	Consistently(func() bool {
+		testNode, err := nodes.Pull(APIClient, tPod.Object.Spec.NodeName)
+		Expect(err).NotTo(HaveOccurred(), "Failed to pull test pod's host worker node")
+
+		newAllocatableSriovDevices := testNode.Object.Status.Allocatable[corev1.ResourceName("openshift.io/"+resName)]
+		newNum, _ := newAllocatableSriovDevices.AsInt64()
+
+		return oldNum == newNum
+	}, 1*time.Minute, 2*time.Second).Should(BeTrue(), "New allocatable resource is not same as old")
 }
 
 func getInterfacePci(tPod *pod.Builder, podInterface string) (string, string, error) {
@@ -277,12 +326,13 @@ func getInterfacePci(tPod *pod.Builder, podInterface string) (string, string, er
 }
 
 func defineAndCreateNodePolicy(polName, resName, sriovInterface string, numVfs, endVf int) *sriov.PolicyBuilder {
-	testPolicy := sriov.NewPolicyBuilder(APIClient,
+	testPolicy, err := sriov.NewPolicyBuilder(APIClient,
 		polName, NetConfig.SriovOperatorNamespace, resName, numVfs, []string{sriovInterface}, NetConfig.WorkerLabelMap).
 		WithDevType("netdevice").
 		WithVFRange(0, endVf).
-		WithRDMA(true)
-	err := sriovenv.CreateSriovPolicyAndWaitUntilItsApplied(testPolicy, tsparams.MCOWaitTimeout)
+		WithRDMA(true).
+		Create()
+
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create SriovNodePolicy %s", polName))
 
 	return testPolicy
