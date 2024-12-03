@@ -49,7 +49,7 @@ func mTCPConnect(addr *net.TCPAddr, timeOut int) (*net.TCPConn, error) {
 	result := make(chan myData)
 
 	go func(network string, laddr, raddr *net.TCPAddr, result chan myData) {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Trying to connect to %q at %v", raddr.String(),
+		glog.V(110).Infof("Trying to connect to %q at %v", raddr.String(),
 			time.Now().UnixMilli())
 
 		tConn, err := net.DialTCP(network, laddr, addr)
@@ -61,14 +61,14 @@ func mTCPConnect(addr *net.TCPAddr, timeOut int) (*net.TCPConn, error) {
 			result <- myData{TCPConn: nil, TCPErr: err}
 		}
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Connected to %q", raddr.String())
+		glog.V(110).Infof("Connected to %q", raddr.String())
 
 		result <- myData{TCPConn: tConn, TCPErr: nil}
 	}("tcp", nil, addr, result)
 
 	select {
 	case data := <-result:
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Read from connection: %v\n", data)
+		glog.V(110).Infof("Read from connection: %v\n", data)
 
 		return data.TCPConn, data.TCPErr
 	case <-time.After(time.Duration(timeOut) * time.Millisecond):
@@ -156,7 +156,7 @@ func verifySingleTCPConnection(loadBalancerIP string, servicePort int32,
 
 			stop = true
 		default:
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Writing to the TCP connection at %v", time.Now().UnixMilli())
+			glog.V(110).Infof("Writing to the TCP connection at %v", time.Now().UnixMilli())
 
 			nSent, err := lbConnection.Write(getHTTPMsg)
 
@@ -211,7 +211,7 @@ func verifySingleTCPConnection(loadBalancerIP string, servicePort int32,
 
 				continue
 			} else {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Read %d bytes", bRead)
+				glog.V(110).Infof("Read %d bytes", bRead)
 
 				stats.CounterLock.Lock()
 				stats.Count++
@@ -278,7 +278,7 @@ func verifyMultipleTCPConnections(loadBalancerIP string, servicePort int32,
 
 			stop = true
 		default:
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Dialing to the TCP endpoint %q", endPoint)
+			glog.V(110).Infof("Dialing to the TCP endpoint %q", endPoint)
 
 			lbConnection, err := mTCPConnect(addr, int(300))
 
@@ -299,9 +299,9 @@ func verifyMultipleTCPConnections(loadBalancerIP string, servicePort int32,
 			addrMsg := fmt.Sprintf("-> Successfully connected to %s from %q",
 				lbConnection.RemoteAddr(), lbConnection.LocalAddr())
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("\t%s", addrMsg)
+			glog.V(110).Infof("\t%s", addrMsg)
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Writing to the TCP connection at %v", time.Now().UnixMilli())
+			glog.V(110).Infof("Writing to the TCP connection at %v", time.Now().UnixMilli())
 
 			nSent, err := lbConnection.Write(getHTTPMsg)
 
@@ -356,7 +356,7 @@ func verifyMultipleTCPConnections(loadBalancerIP string, servicePort int32,
 
 				continue
 			} else {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Read %d bytes from TCP connection", bRead)
+				glog.V(110).Infof("Read %d bytes from TCP connection", bRead)
 
 				stats.CounterLock.Lock()
 				stats.Count++
