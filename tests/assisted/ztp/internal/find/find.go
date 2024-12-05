@@ -18,6 +18,10 @@ func ClusterVersion(clusterObj cluster.APIClientGetter) (string, error) {
 		return "", err
 	}
 
+	if !clusterVersion.Exists() {
+		return "", fmt.Errorf("cluster version not found")
+	}
+
 	splitVersion := strings.Split(clusterVersion.Object.Status.Desired.Version, ".")
 
 	return fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1]), nil
@@ -28,6 +32,10 @@ func SpokeClusterName(hubAPIClient, spokeAPIClient *clients.Settings) (string, e
 	spokeClusterVersion, err := cluster.GetOCPClusterVersion(spokeAPIClient)
 	if err != nil {
 		return "", err
+	}
+
+	if !spokeClusterVersion.Exists() {
+		return "", fmt.Errorf("spoke cluster version not found")
 	}
 
 	spokeClusterID := spokeClusterVersion.Object.Spec.ClusterID
