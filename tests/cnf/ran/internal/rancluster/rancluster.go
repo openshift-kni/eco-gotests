@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
@@ -152,4 +153,94 @@ func DoesClusterLabelExist(client *clients.Settings, clusterName string, label s
 	_, exists := managedCluster.Object.Labels[label]
 
 	return exists, nil
+}
+
+// PowerOffAndWait will trigger a power off and poll every 30 seconds for up to 3 minutes until the system is off.
+func PowerOffAndWait(bmcClient *bmc.BMC) error {
+	err := bmcClient.SystemPowerOff()
+	if err != nil {
+		glog.V(ranparam.LogLevel).Infof("Failed to trigger system power off: %v", err)
+
+		return err
+	}
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 30*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+			powerState, err := bmcClient.SystemPowerState()
+			if err != nil {
+				glog.V(ranparam.LogLevel).Infof("Failed to get system power state: %v", err)
+
+				return false, err
+			}
+
+			if powerState != "Off" {
+				glog.V(ranparam.LogLevel).Infof("System power state is not Off: %s", powerState)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+}
+
+// PowerOffWithRetries will attempt to power off and wait until the system is powered off, trying up to retries times if
+// the system does not power off.
+func PowerOffWithRetries(bmcClient *bmc.BMC, retries uint) error {
+	var err error
+
+	for retry := range retries {
+		err = PowerOffAndWait(bmcClient)
+		if err == nil {
+			return nil
+		}
+
+		glog.V(ranparam.LogLevel).Infof("Powering off failed with %d retries left: %v", retries-retry-1, err)
+	}
+
+	return err
+}
+
+// PowerOnAndWait will trigger a power on and poll every 30 seconds for up to 3 minutes until the system is on.
+func PowerOnAndWait(bmcClient *bmc.BMC) error {
+	err := bmcClient.SystemPowerOn()
+	if err != nil {
+		glog.V(ranparam.LogLevel).Infof("Failed to trigger system power off: %v", err)
+
+		return err
+	}
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 30*time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+			powerState, err := bmcClient.SystemPowerState()
+			if err != nil {
+				glog.V(ranparam.LogLevel).Infof("Failed to get system power state: %v", err)
+
+				return false, err
+			}
+
+			if powerState != "On" {
+				glog.V(ranparam.LogLevel).Infof("System power state is not On: %s", powerState)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
+}
+
+// PowerOnWithRetries will attempt to power on and wait until the system is powered on, trying up to retries times if
+// the system does not power on.
+func PowerOnWithRetries(bmcClient *bmc.BMC, retries uint) error {
+	var err error
+
+	for retry := range retries {
+		err = PowerOnAndWait(bmcClient)
+		if err == nil {
+			return nil
+		}
+
+		glog.V(ranparam.LogLevel).Infof("Powering on failed with %d retries left: %v", retries-retry-1, err)
+	}
+
+	return err
 }

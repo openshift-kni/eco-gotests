@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
@@ -392,8 +393,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 		)
 
 		BeforeAll(func() {
-			clusters := []*clients.Settings{
-				HubAPIClient, Spoke1APIClient, Spoke2APIClient}
+			clusters := []*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient}
 			for index, cluster := range clusters {
 				if cluster == nil {
 					glog.V(tsparams.LogLevel).Infof("cluster #%d is nil", index)
@@ -406,13 +406,13 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 			}
 
 			By("powering off spoke 1")
-			err := BMCClient.SystemGracefulShutdown()
+			err := rancluster.PowerOffWithRetries(BMCClient, 3)
 			Expect(err).ToNot(HaveOccurred(), "Failed to power off spoke 1")
 		})
 
 		AfterAll(func() {
 			By("powering on spoke 1")
-			err := BMCClient.SystemPowerOn()
+			err := rancluster.PowerOnWithRetries(BMCClient, 3)
 			Expect(err).ToNot(HaveOccurred(), "Failed to power on spoke 1")
 
 			By("waiting until all spoke 1 pods are ready")
