@@ -50,7 +50,7 @@ func getImageURL(repository, name, tag string) (string, error) {
 	return fmt.Sprintf("%s:%s", imageURL, tag), nil
 }
 
-func insureNamespaceNotExists(nsName string) bool {
+func ensureNamespaceNotExists(nsName string) bool {
 	watchNamespace := namespace.NewBuilder(APIClient, nsName)
 	if watchNamespace.Exists() {
 		err := watchNamespace.Delete()
@@ -80,8 +80,8 @@ func insureNamespaceNotExists(nsName string) bool {
 	return true
 }
 
-func insureNamespaceExists(nsName string) bool {
-	glog.V(vcoreparams.VCoreLogLevel).Infof("Insure namespace %q exists", nsName)
+func ensureNamespaceExists(nsName string) bool {
+	glog.V(vcoreparams.VCoreLogLevel).Infof("Ensure namespace %q exists", nsName)
 
 	createNs := namespace.NewBuilder(APIClient, nsName)
 
