@@ -307,11 +307,19 @@ func createSpokeClusterNamespace() {
 func createSpokeClusterResources(cpuArch string, mismatchCPUArchitecture ...string) {
 	By("Create pull-secret in the new namespace")
 
-	testSecret, err := secret.NewBuilder(
+	testSecret := secret.NewBuilder(
 		HubAPIClient,
 		fmt.Sprintf("%s-pull-secret", infraenvTestSpoke),
 		infraenvTestSpoke,
-		corev1.SecretTypeDockerConfigJson).WithData(ZTPConfig.HubPullSecret.Object.Data).Create()
+		corev1.SecretTypeDockerConfigJson)
+
+	if ZTPConfig.HubPullSecretOverridePath != "" {
+		testSecret.WithData(ZTPConfig.HubPullSecretOverride)
+	} else {
+		testSecret.WithData(ZTPConfig.HubPullSecret.Object.Data)
+	}
+
+	_, err := testSecret.Create()
 	Expect(err).ToNot(HaveOccurred(), "error occurred when creating pull-secret")
 
 	By("Create clusterdeployment in the new namespace")
