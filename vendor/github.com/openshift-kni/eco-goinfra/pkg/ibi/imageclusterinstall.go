@@ -196,6 +196,25 @@ func (builder *ImageClusterInstallBuilder) WithExtraManifests(extraManifestsName
 	return builder
 }
 
+// WithCABundle sets a CA bundle via configmap name.
+func (builder *ImageClusterInstallBuilder) WithCABundle(caBundleConfigMapName string) *ImageClusterInstallBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if caBundleConfigMapName == "" {
+		glog.V(100).Infof("The imageclusterinstall cabundle is empty")
+
+		builder.errorMsg = "imageclusterinstall cabundle cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.CABundleRef = &corev1.LocalObjectReference{Name: caBundleConfigMapName}
+
+	return builder
+}
+
 // WithMachineNetwork specifies the machine network where nodes will be installed.
 func (builder *ImageClusterInstallBuilder) WithMachineNetwork(network string) *ImageClusterInstallBuilder {
 	if valid, _ := builder.validate(); !valid {

@@ -386,7 +386,16 @@ func (builder *Builder) WaitUntilInOneOfStatuses(statuses []corev1.PodPhase,
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			updatePod, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
 				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+			if k8serrors.IsNotFound(err) {
+				glog.V(100).Infof("Pod %s in namespace %s does not exist", builder.Definition.Name, builder.Definition.Namespace)
+
+				return false, err
+			}
+
 			if err != nil {
+				glog.V(100).Infof("Failed to get pod %s in namespace %s: %v",
+					builder.Definition.Name, builder.Definition.Namespace, err)
+
 				return false, nil
 			}
 
