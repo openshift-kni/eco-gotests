@@ -73,7 +73,7 @@ func VerifyKedaSuite() {
 			AfterAll(func() {
 				By("Teardown")
 
-				Expect(insureNamespaceNotExists(vcoreparams.KedaWatchNamespace)).
+				Expect(ensureNamespaceNotExists(vcoreparams.KedaWatchNamespace)).
 					To(Equal(true), fmt.Sprintf("Failed to delete watch namespace %s",
 						vcoreparams.KedaWatchNamespace))
 			})
@@ -159,11 +159,11 @@ func VerifyScaleObjectDeployment(ctx SpecContext) {
 
 	glog.V(vcoreparams.VCoreLogLevel).Info("Deploy application that exposes Prometheus metrics")
 
-	Expect(insureNamespaceNotExists(vcoreparams.KedaWatchNamespace)).
+	Expect(ensureNamespaceNotExists(vcoreparams.KedaWatchNamespace)).
 		To(Equal(true), fmt.Sprintf("Failed to delete watch namespace %s",
 			vcoreparams.KedaWatchNamespace))
 
-	Expect(insureNamespaceExists(vcoreparams.KedaWatchNamespace)).To(Equal(true),
+	Expect(ensureNamespaceExists(vcoreparams.KedaWatchNamespace)).To(Equal(true),
 		fmt.Sprintf("failed to create namespace %s", vcoreparams.KedaWatchNamespace))
 
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create test application deployment %s in namespace %s",

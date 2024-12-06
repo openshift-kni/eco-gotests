@@ -67,7 +67,7 @@ func ScpFileFrom(source, destination, remoteHostname, remoteHostUsername, remote
 		return err
 	}
 
-	glog.V(100).Infof("Insure file %s was transferred", destination)
+	glog.V(100).Infof("Ensure file %s was transferred", destination)
 
 	if _, err := os.Stat(destination); os.IsNotExist(err) {
 		return err
@@ -189,7 +189,7 @@ func ScpDirectoryFrom(source, destination, remoteHostname, remoteHostUsername, r
 		return err
 	}
 
-	glog.V(100).Infof("Insure directory %s was transferred", destination)
+	glog.V(100).Infof("Ensure directory %s was transferred", destination)
 
 	if _, err := os.Stat(destination); os.IsNotExist(err) {
 		return err
@@ -246,7 +246,7 @@ func ScpDirectoryTo(source, destination, remoteHostname, remoteHostUsername, rem
 		return err
 	}
 
-	glog.V(100).Infof("Insure directory %s was transferred", destination)
+	glog.V(100).Infof("Ensure directory %s was transferred", destination)
 
 	if _, err := os.Stat(destination); os.IsNotExist(err) {
 		return err

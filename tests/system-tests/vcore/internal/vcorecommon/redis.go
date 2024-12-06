@@ -90,7 +90,7 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 
 		glog.V(vcoreparams.VCoreLogLevel).Infof("Install redis")
 
-		glog.V(100).Infof("Insure local directory %s exists", vcoreparams.ConfigurationFolderPath)
+		glog.V(100).Infof("Ensure local directory %s exists", vcoreparams.ConfigurationFolderPath)
 
 		err = os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
 
