@@ -215,6 +215,43 @@ const (
 	ClusterTypeHighlyAvailable ClusterType = "HighlyAvailable"
 )
 
+// PreservationMode represents the modes of data preservation for a ClusterInstance during reinstallation.
+type PreservationMode string
+
+// Supported modes of data preservation for reinstallation.
+const (
+	// PreservationModeNone indicates that no data preservation will be performed.
+	PreservationModeNone PreservationMode = "None"
+
+	// PreservationModeAll indicates that all resources labeled with PreservationLabelKey will be preserved.
+	PreservationModeAll PreservationMode = "All"
+
+	// PreservationModeClusterIdentity indicates that only cluster identity resources labeled with
+	// PreservationLabelKey and ClusterIdentityLabelValue will be preserved.
+	PreservationModeClusterIdentity PreservationMode = "ClusterIdentity"
+)
+
+// ReinstallSpec defines the configuration for reinstallation of a ClusterInstance.
+type ReinstallSpec struct {
+	// Generation specifies the desired generation for the reinstallation operation.
+	// Updating this field triggers a new reinstall request.
+	// +required
+	Generation string `json:"generation"`
+
+	// PreservationMode defines the strategy for data preservation during reinstallation.
+	// Supported values:
+	// - None: No data will be preserved.
+	// - All: All Secrets and ConfigMaps in the ClusterInstance namespace labeled with the PreservationLabelKey will be
+	//   preserved.
+	// - ClusterIdentity: Only Secrets and ConfigMaps in the ClusterInstance namespace labeled with both the
+	//   PreservationLabelKey and the ClusterIdentityLabelValue will be preserved.
+	// This field ensures critical cluster identity data is preserved when required.
+	// +kubebuilder:validation:Enum=None;All;ClusterIdentity
+	// +kubebuilder:default=None
+	// +required
+	PreservationMode PreservationMode `json:"preservationMode"`
+}
+
 // ClusterInstanceSpec defines the desired state of ClusterInstance
 type ClusterInstanceSpec struct {
 	// Desired state of cluster
@@ -355,8 +392,13 @@ type ClusterInstanceSpec struct {
 	// +optional
 	CaBundleRef *corev1.LocalObjectReference `json:"caBundleRef,omitempty"`
 
+	// List of node objects
 	// +required
 	Nodes []NodeSpec `json:"nodes"`
+
+	// Reinstall specifications
+	// +optional
+	Reinstall *ReinstallSpec `json:"reinstall,omitempty"`
 }
 
 const (
@@ -406,6 +448,40 @@ type ManifestReference struct {
 	Message string `json:"message,omitempty"`
 }
 
+// ReinstallHistory represents a record of a reinstallation event for a ClusterInstance.
+type ReinstallHistory struct {
+	// Generation specifies the generation of the ClusterInstance at the time of the reinstallation.
+	// This value corresponds to the ReinstallSpec.Generation field associated with the reinstallation request.
+	// +required
+	Generation string `json:"generation"`
+
+	// Timestamp indicates the date and time when the reinstallation occurred.
+	// +required
+	Timestamp metav1.Time `json:"timestamp"`
+
+	// ClusterInstanceSpecDiff provides a JSON representation of the differences between the
+	// ClusterInstance spec at the time of reinstallation and the previous spec.
+	// This field helps in tracking changes that triggered the reinstallation.
+	// +required
+	ClusterInstanceSpecDiff string `json:"clusterInstanceSpecDiff"`
+}
+
+// ReinstallStatus represents the current state and historical details of reinstall operations for a ClusterInstance.
+type ReinstallStatus struct {
+	// ObservedGeneration is the generation of the ClusterInstance that has been processed for reinstallation.
+	// It corresponds to the Generation field in ReinstallSpec and indicates the latest reinstall request that
+	// the controller has acted upon.
+	// +required
+	ObservedGeneration string `json:"observedGeneration"`
+
+	// History maintains a record of all previous reinstallation attempts.
+	// Each entry captures details such as the generation, timestamp, and the differences in the ClusterInstance
+	// specification that triggered the reinstall.
+	// This field is useful for debugging, auditing, and tracking reinstallation events over time.
+	// +optional
+	History []ReinstallHistory `json:"history,omitempty"`
+}
+
 // ClusterInstanceStatus defines the observed state of ClusterInstance
 type ClusterInstanceStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
@@ -428,6 +504,10 @@ type ClusterInstanceStatus struct {
 
 	// Track the observed generation to avoid unnecessary reconciles
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Reinstall status information.
+	// +optional
+	Reinstall *ReinstallStatus `json:"reinstall,omitempty"`
 }
 
 //+kubebuilder:object:root=true

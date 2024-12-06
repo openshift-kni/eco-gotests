@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -274,6 +275,13 @@ func WaitForAllPodsInNamespacesHealthy(
 		}
 
 		err := podObj.WaitUntilHealthy(timeout, includeSucceeded, skipReadinessCheck, ignoreRestartPolicyNever)
+		if k8serrors.IsNotFound(err) {
+			glog.V(100).Infof("Pod %s in namespace %s no longer exists, skipping",
+				podObj.Definition.Name, podObj.Definition.Namespace)
+
+			continue
+		}
+
 		if err != nil {
 			glog.V(100).Infof("Failed to wait for all pods to be healthy due to %s", err.Error())
 
