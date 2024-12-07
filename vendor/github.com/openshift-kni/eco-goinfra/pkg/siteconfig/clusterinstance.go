@@ -369,6 +369,29 @@ func (builder *CIBuilder) WithExtraManifests(extraManifestsName string) *CIBuild
 	return builder
 }
 
+// WithCABundle sets a CA bundle via configmap name.
+func (builder *CIBuilder) WithCABundle(caBundleConfigMapName string) *CIBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Adding CA bundle via configmap %s to ClusterInstance definition", caBundleConfigMapName)
+
+	if caBundleConfigMapName == "" {
+		glog.V(100).Infof("The clusterinstance cabundle is empty")
+
+		builder.errorMsg = "clusterinstance cabundle cannot be empty"
+
+		return builder
+	}
+
+	builder.Definition.Spec.CaBundleRef = &corev1.LocalObjectReference{
+		Name: caBundleConfigMapName,
+	}
+
+	return builder
+}
+
 // WithExtraLabels applies extraLabels to ClusterInstance definition.
 func (builder *CIBuilder) WithExtraLabels(key string, labels map[string]string) *CIBuilder {
 	if valid, _ := builder.validate(); !valid {
