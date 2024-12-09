@@ -2,6 +2,7 @@ package ztpconfig
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
@@ -35,6 +36,8 @@ type HubConfig struct {
 	hubAssistedImageServicePod *pod.Builder
 	HubPullSecret              *secret.Builder
 	HubInstallConfig           *configmap.Builder
+	HubPullSecretOverride      map[string][]byte
+	HubPullSecretOverridePath  string `envconfig:"ECO_ASSISTED_ZTP_HUB_PULL_SECRET_OVERRIDE_PATH"`
 }
 
 // SpokeConfig contains environment information related to the spoke cluster.
@@ -68,6 +71,22 @@ func (ztpconfig *ZTPConfig) newHubConfig() {
 	glog.V(ztpparams.ZTPLogLevel).Info("Creating new HubConfig struct")
 
 	ztpconfig.HubConfig = new(HubConfig)
+
+	err := envconfig.Process("eco_assisted_ztp_hub_", ztpconfig.HubConfig)
+	if err != nil {
+		glog.V(ztpparams.ZTPLogLevel).Infof("failed to instantiate HubConfig: %v", err)
+	}
+
+	if ztpconfig.HubConfig.HubPullSecretOverridePath != "" {
+		content, err := os.ReadFile(ztpconfig.HubConfig.HubPullSecretOverridePath)
+		if err != nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to read hub pull-secret override path: %v", err)
+		}
+
+		ztpconfig.HubConfig.HubPullSecretOverride = map[string][]byte{
+			".dockerconfigjson": content,
+		}
+	}
 
 	ztpconfig.HubConfig.HubOCPVersion, _ = find.ClusterVersion(APIClient)
 
