@@ -96,7 +96,7 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 
 		AfterEach(func() {
 			By("Removing SR-IOV configuration")
-			err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+			err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 			By("Cleaning test namespace")
