@@ -809,8 +809,10 @@ func createFrrConfiguration(name, bgpPeerIP string, remoteAS uint32, filteredIP 
 		frrConfig.WithEBGPMultiHop(0, 0)
 	}
 
-	// Set Password and Port
+	// Set HoldTime, Keepalive, Password, and Port
 	frrConfig.
+		WithHoldTime(metav1.Duration{Duration: 90 * time.Second}, 0, 0).
+		WithKeepalive(metav1.Duration{Duration: 30 * time.Second}, 0, 0).
 		WithBGPPassword("bgp-test", 0, 0).
 		WithPort(179, 0, 0)
 
