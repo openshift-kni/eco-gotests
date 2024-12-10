@@ -7,6 +7,8 @@ const (
 	LabelBFDTestCases = "bfd"
 	// LabelBGPTestCases represents bgp label that can be used for test cases selection.
 	LabelBGPTestCases = "bgp"
+	// LabelDynamicRemoteASTestCases represents dynamic-remote-as label that can be used for test cases selection.
+	LabelDynamicRemoteASTestCases = "dynamic-remote-as"
 	// LabelLayer2TestCases represents layer2 label that can be used for test cases selection.
 	LabelLayer2TestCases = "layer2"
 	// LabelFRRTestCases represents frrk8 label that can be used for test cases selection.
