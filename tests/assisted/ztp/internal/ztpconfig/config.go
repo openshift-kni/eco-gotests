@@ -60,14 +60,27 @@ func NewZTPConfig() *ZTPConfig {
 
 	var ztpconfig ZTPConfig
 	ztpconfig.AssistedConfig = assistedconfig.NewAssistedConfig()
-	ztpconfig.newHubConfig()
-	ztpconfig.newSpokeConfig()
+
+	ztpconfig.HubConfig = new(HubConfig)
+	ztpconfig.SpokeConfig = new(SpokeConfig)
+
+	if err := ztpconfig.newHubConfig(); err != nil {
+		APIClient = nil
+
+		return &ztpconfig
+	}
+
+	if err := ztpconfig.newSpokeConfig(); err != nil {
+		ztpconfig.SpokeConfig.SpokeAPIClient = nil
+
+		return &ztpconfig
+	}
 
 	return &ztpconfig
 }
 
 // newHubConfig creates a new HubConfig member for a ZTPConfig.
-func (ztpconfig *ZTPConfig) newHubConfig() {
+func (ztpconfig *ZTPConfig) newHubConfig() error {
 	glog.V(ztpparams.ZTPLogLevel).Info("Creating new HubConfig struct")
 
 	ztpconfig.HubConfig = new(HubConfig)
@@ -88,37 +101,59 @@ func (ztpconfig *ZTPConfig) newHubConfig() {
 		}
 	}
 
-	ztpconfig.HubConfig.HubOCPVersion, _ = find.ClusterVersion(APIClient)
+	ztpconfig.HubConfig.HubOCPVersion, err = find.ClusterVersion(APIClient)
+	if err != nil {
+		return err
+	}
 
 	splitVersion := strings.Split(ztpconfig.HubConfig.HubOCPVersion, ".")
 	if len(splitVersion) >= 2 {
 		ztpconfig.HubConfig.HubOCPXYVersion = fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1])
 	}
 
-	ztpconfig.HubConfig.HubAgentServiceConfig, _ = assisted.PullAgentServiceConfig(APIClient)
-	if ztpconfig.HubConfig.HubAgentServiceConfig != nil {
-		_ = ztpconfig.HubAssistedServicePod()
-		_ = ztpconfig.HubAssistedImageServicePod()
+	ztpconfig.HubConfig.HubAgentServiceConfig, err = assisted.PullAgentServiceConfig(APIClient)
+	if err != nil {
+		return err
 	}
 
-	ztpconfig.HubConfig.HubPullSecret, _ = cluster.GetOCPPullSecret(APIClient)
+	if ztpconfig.HubConfig.HubAgentServiceConfig != nil {
+		assistedPod := ztpconfig.HubAssistedServicePod()
+		if assistedPod == nil {
+			return fmt.Errorf("failed to find hub assisted service pod")
+		}
+
+		assistedImagePod := ztpconfig.HubAssistedImageServicePod()
+		if assistedImagePod == nil {
+			return fmt.Errorf("failed to find hub assisted image service pod")
+		}
+	}
+
+	ztpconfig.HubConfig.HubPullSecret, err = cluster.GetOCPPullSecret(APIClient)
+	if err != nil {
+		return err
+	}
 
 	if ztpconfig.DryRun {
-		return
+		return nil
 	}
 
-	ztpconfig.HubConfig.HubInstallConfig, _ = configmap.Pull(APIClient, "cluster-config-v1", "kube-system")
+	ztpconfig.HubConfig.HubInstallConfig, err = configmap.Pull(APIClient, "cluster-config-v1", "kube-system")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // newSpokeConfig creates a new SpokeConfig member for a ZTPConfig.
-func (ztpconfig *ZTPConfig) newSpokeConfig() {
+func (ztpconfig *ZTPConfig) newSpokeConfig() error {
 	glog.V(ztpparams.ZTPLogLevel).Info("Creating new SpokeConfig struct")
-
-	ztpconfig.SpokeConfig = new(SpokeConfig)
 
 	err := envconfig.Process("eco_assisted_ztp_spoke_", ztpconfig.SpokeConfig)
 	if err != nil {
 		glog.V(ztpparams.ZTPLogLevel).Infof("failed to instantiate SpokeConfig: %v", err)
+
+		return err
 	}
 
 	if ztpconfig.SpokeConfig.SpokeKubeConfig != "" {
@@ -126,29 +161,63 @@ func (ztpconfig *ZTPConfig) newSpokeConfig() {
 
 		if ztpconfig.SpokeConfig.SpokeAPIClient = clients.New(
 			ztpconfig.SpokeConfig.SpokeKubeConfig); ztpconfig.SpokeConfig.SpokeAPIClient == nil {
-			glog.V(ztpparams.ZTPLogLevel).Infof("failed to load provided spoke kubeconfig: %v", err)
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to load provided spoke kubeconfig: %v",
+				ztpconfig.SpokeConfig.SpokeKubeConfig)
+
+			return fmt.Errorf("failed to load provided spoke kubeconfig: %v", ztpconfig.SpokeConfig.SpokeKubeConfig)
 		}
 
-		ztpconfig.SpokeConfig.SpokeClusterName, _ =
+		ztpconfig.SpokeConfig.SpokeClusterName, err =
 			find.SpokeClusterName(APIClient, ztpconfig.SpokeConfig.SpokeAPIClient)
-		ztpconfig.SpokeConfig.SpokeOCPVersion, _ = find.ClusterVersion(ztpconfig.SpokeConfig.SpokeAPIClient)
+		if err != nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke cluster name: %v", err)
+
+			return err
+		}
+
+		ztpconfig.SpokeConfig.SpokeOCPVersion, err = find.ClusterVersion(ztpconfig.SpokeConfig.SpokeAPIClient)
+		if err != nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke cluster version: %v", err)
+
+			return err
+		}
 
 		splitVersion := strings.Split(ztpconfig.SpokeConfig.SpokeOCPVersion, ".")
 		if len(splitVersion) >= 2 {
 			ztpconfig.SpokeConfig.SpokeOCPXYVersion = fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1])
 		}
 
-		ztpconfig.SpokeConfig.SpokeClusterDeployment, _ = hive.PullClusterDeployment(APIClient,
+		ztpconfig.SpokeConfig.SpokeClusterDeployment, err = hive.PullClusterDeployment(APIClient,
 			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
+		if err != nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke cluster deployment: %v", err)
 
-		ztpconfig.SpokeConfig.SpokeAgentClusterInstall, _ = assisted.PullAgentClusterInstall(APIClient,
+			return err
+		}
+
+		ztpconfig.SpokeConfig.SpokeAgentClusterInstall, err = assisted.PullAgentClusterInstall(APIClient,
 			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
+		if err != nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke agent cluster install: %v", err)
 
-		ztpconfig.SpokeConfig.SpokeInfraEnv, _ = assisted.PullInfraEnvInstall(APIClient,
+			return err
+		}
+
+		ztpconfig.SpokeConfig.SpokeInfraEnv, err = assisted.PullInfraEnvInstall(APIClient,
 			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
+		if err != nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke infra env: %v", err)
 
-		ztpconfig.SpokeConfig.SpokeInstallConfig, _ =
-			configmap.Pull(ztpconfig.SpokeConfig.SpokeAPIClient, "cluster-config-v1", "kube-system")
+			return err
+		}
+
+		ztpconfig.SpokeConfig.SpokeInstallConfig, err = configmap.Pull(ztpconfig.SpokeConfig.SpokeAPIClient,
+			"cluster-config-v1", "kube-system")
+		if err != nil {
+			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke install config: %v", err)
+
+			return err
+		}
 	} else {
 		ztpconfig.SpokeConfig.SpokeAPIClient = nil
 	}
@@ -156,6 +225,8 @@ func (ztpconfig *ZTPConfig) newSpokeConfig() {
 	if ztpconfig.SpokeConfig.SpokeClusterImageSet == "" {
 		ztpconfig.SpokeConfig.SpokeClusterImageSet = ztpconfig.HubOCPXYVersion
 	}
+
+	return nil
 }
 
 // HubAssistedServicePod retrieves the assisted service pod from the hub
