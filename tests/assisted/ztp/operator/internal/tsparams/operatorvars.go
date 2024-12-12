@@ -21,6 +21,7 @@ var (
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
+		{Cr: &corev1.PodList{}},
 		{Cr: &corev1.SecretList{}},
 		{Cr: &agentInstallV1Beta1.AgentServiceConfigList{}},
 		{Cr: &hivev1.ClusterDeploymentList{}},

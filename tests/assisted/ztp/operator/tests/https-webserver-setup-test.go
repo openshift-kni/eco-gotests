@@ -45,6 +45,8 @@ var _ = Describe(
 					Skip(msg)
 				}
 
+				tsparams.ReporterNamespacesToDump[nsname] = "httpdtest namespace"
+
 				By("Creating httpd-test namespace")
 				testNS, err := namespace.NewBuilder(HubAPIClient, nsname).Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating namespace")
