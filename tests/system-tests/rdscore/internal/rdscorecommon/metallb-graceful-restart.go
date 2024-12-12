@@ -1,6 +1,7 @@
 package rdscorecommon
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/netip"
@@ -13,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
@@ -107,12 +109,35 @@ func verifySingleTCPConnection(loadBalancerIP string, servicePort int32,
 
 	getHTTPMsg := []byte(fmt.Sprintf("GET / HTTP/1.1\r\nHost: %s\r\n\r\n", endPoint))
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Resolving TCP endpoint %q", endPoint)
+	var addr *net.TCPAddr
 
-	addr, err := net.ResolveTCPAddr("tcp", endPoint)
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Minute, true,
+		func(context.Context) (bool, error) {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Resolving TCP endpoint %q", endPoint)
+
+			addr, err = net.ResolveTCPAddr("tcp", endPoint)
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed resolve TCP address %q : %v", endPoint, err)
+
+				return false, nil
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully resolved TCP address %q", endPoint)
+
+			return true, nil
+		})
 
 	if err != nil {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed resolve TCP address %q : %v", endPoint, err)
+
+		stats.CounterLock.Lock()
+		stats.Count++
+		stats.Failures = append(stats.Failures,
+			Event{Msg: fmt.Sprintf("Failed to resolve TCP address: %v", err), Timestamp: time.Now()})
+		stats.FailedWrite = append(stats.FailedWrite,
+			Event{Msg: fmt.Sprintf("Failed to resolve TCP address: %v", err), Timestamp: time.Now()})
+		stats.CounterLock.Unlock()
 
 		ready <- true
 
@@ -121,10 +146,33 @@ func verifySingleTCPConnection(loadBalancerIP string, servicePort int32,
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Dialing to the TCP endpoint %q", endPoint)
 
-	lbConnection, err := mTCPConnect(addr, int(1000))
+	var lbConnection *net.TCPConn
+
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Minute, true,
+		func(context.Context) (bool, error) {
+			lbConnection, err = mTCPConnect(addr, int(1000))
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed dailing to %q : %v", endPoint, err)
+
+				return false, nil
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully dailed to %q", endPoint)
+
+			return true, nil
+		})
 
 	if err != nil {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed dailing to %q : %v", endPoint, err)
+
+		stats.CounterLock.Lock()
+		stats.Count++
+		stats.Failures = append(stats.Failures,
+			Event{Msg: fmt.Sprintf("Failed to dial to address %q: %v", endPoint, err), Timestamp: time.Now()})
+		stats.FailedWrite = append(stats.FailedWrite,
+			Event{Msg: fmt.Sprintf("Failed to dial to address %q: %v", endPoint, err), Timestamp: time.Now()})
+		stats.CounterLock.Unlock()
 
 		ready <- true
 
@@ -257,12 +305,35 @@ func verifyMultipleTCPConnections(loadBalancerIP string, servicePort int32,
 
 	getHTTPMsg := []byte(fmt.Sprintf("GET / HTTP/1.1\r\nHost: %s\r\n\r\n", endPoint))
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Resolving TCP endpoint %q", endPoint)
+	var addr *net.TCPAddr
 
-	addr, err := net.ResolveTCPAddr("tcp", endPoint)
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Minute, true,
+		func(context.Context) (bool, error) {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Resolving TCP endpoint %q", endPoint)
+
+			addr, err = net.ResolveTCPAddr("tcp", endPoint)
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed resolve TCP address %q : %v", endPoint, err)
+
+				return false, nil
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully resolved TCP address %q", endPoint)
+
+			return true, nil
+		})
 
 	if err != nil {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed resolve TCP address %q : %v", endPoint, err)
+
+		stats.CounterLock.Lock()
+		stats.Count++
+		stats.Failures = append(stats.Failures,
+			Event{Msg: fmt.Sprintf("Failed to resolve TCP address %q : %v", endPoint, err), Timestamp: time.Now()})
+		stats.FailedDial = append(stats.FailedDial,
+			Event{Msg: fmt.Sprintf("Failed to resolve TCP address %q : %v", endPoint, err), Timestamp: time.Now()})
+		stats.CounterLock.Unlock()
 
 		ready <- true
 
@@ -385,8 +456,24 @@ func verifyMultipleTCPConnections(loadBalancerIP string, servicePort int32,
 func restartMetallbFRRPod(node string, metallbFRRRestartFailed *bool, finished chan bool) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for a metallb-frr pod on %q node", node)
 
-	mPodList, err := pod.List(APIClient, rdscoreparams.MetalLBOperatorNamespace,
-		metav1.ListOptions{LabelSelector: rdscoreparams.MetalLBFRRPodSelector})
+	var (
+		mPodList []*pod.Builder
+		err      error
+	)
+
+	err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Minute, true,
+		func(context.Context) (bool, error) {
+			mPodList, err = pod.List(APIClient, rdscoreparams.MetalLBOperatorNamespace,
+				metav1.ListOptions{LabelSelector: rdscoreparams.MetalLBFRRPodSelector})
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods due to: %v", err)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
 
 	if len(mPodList) == 0 {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to found pod: %v", err)
@@ -442,50 +529,56 @@ func restartMetallbFRRPod(node string, metallbFRRRestartFailed *bool, finished c
 
 	var newPod *pod.Builder
 
-	for i := 0; i < 60; i++ {
-		mPodList, err = pod.List(APIClient, "metallb-system",
-			metav1.ListOptions{LabelSelector: "app=frr-k8s"})
+	err = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 90*time.Second, true,
+		func(context.Context) (bool, error) {
+			mPodList, err = pod.List(APIClient, "metallb-system",
+				metav1.ListOptions{LabelSelector: "app=frr-k8s"})
 
-		if len(mPodList) == 0 {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to found pod: %v", err)
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods due to %v", err)
 
-			*metallbFRRRestartFailed = true
-
-			time.Sleep(1 * time.Second)
-
-			continue
-		}
-
-		for _, _pod := range mPodList {
-			if _pod.Definition.Spec.NodeName == node {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod running on %q", node)
-
-				newPod = _pod
-
-				break
+				return false, nil
 			}
-		}
 
-		if newPod.Definition.Name == prevPod.Definition.Name {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("No new frr-k8s pod found")
+			if len(mPodList) == 0 {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found 0 pods")
 
-			*metallbFRRRestartFailed = true
-			newPod = nil
+				return false, nil
+			}
 
-			time.Sleep(1 * time.Second)
+			for _, _pod := range mPodList {
+				if _pod.Definition.Spec.NodeName == node {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod running on %q", node)
 
-			continue
-		} else {
+					newPod = _pod
+
+					break
+				}
+			}
+
+			if newPod == nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("No pod found running on %q", node)
+
+				newPod = nil
+
+				return false, nil
+			}
+
+			if newPod.Definition.Name == prevPod.Definition.Name {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("No new frr-k8s pod found")
+
+				newPod = nil
+
+				return false, nil
+			}
+
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("\t\t---> New frr-k8s pod found: %q",
 				newPod.Definition.Name)
 
-			*metallbFRRRestartFailed = false
+			return true, nil
+		})
 
-			break
-		}
-	}
-
-	if newPod == nil {
+	if err != nil || newPod == nil {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("No new frr-k8s pod found on %q node", node)
 
 		*metallbFRRRestartFailed = true
