@@ -58,9 +58,11 @@ var _ = Describe(
 					}
 				}
 
-				err = stability.SavePolicyStatus(APIClient, clusterName, policiesOutputFile)
-				if err != nil {
-					fmt.Printf("Error, could not save policies status")
+				if RanDuTestConfig.StabilityPoliciesCheck {
+					err = stability.SavePolicyStatus(APIClient, clusterName, policiesOutputFile)
+					if err != nil {
+						fmt.Printf("Error, could not save policies status")
+					}
 				}
 
 				for _, namespace := range namespaces {
@@ -86,9 +88,11 @@ var _ = Describe(
 
 			// Verify policies
 			By("Check Policy changes")
-			_, err := stability.VerifyStabilityStatusChange(policiesOutputFile)
-			if err != nil {
-				stabilityErrors = append(stabilityErrors, err.Error())
+			if RanDuTestConfig.StabilityPoliciesCheck {
+				_, err := stability.VerifyStabilityStatusChange(policiesOutputFile)
+				if err != nil {
+					stabilityErrors = append(stabilityErrors, err.Error())
+				}
 			}
 
 			// Verify podRestarts
