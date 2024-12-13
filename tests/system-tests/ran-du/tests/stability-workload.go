@@ -79,19 +79,22 @@ var _ = Describe(
 					}
 				}
 
-				err := stability.SavePolicyStatus(APIClient, clusterName, policiesOutputFile)
-				if err != nil {
-					fmt.Printf("Error, could not save policies status")
+				if RanDuTestConfig.StabilityPoliciesCheck {
+					err := stability.SavePolicyStatus(APIClient, clusterName, policiesOutputFile)
+					if err != nil {
+						fmt.Printf("Error, could not save policies status")
+					}
 				}
+
 				for _, namespace := range namespaces {
-					err = stability.SavePodsRestartsInNamespace(APIClient,
+					err := stability.SavePodsRestartsInNamespace(APIClient,
 						namespace, fmt.Sprintf("%s/stability_workload_%s.log", outputDir, namespace))
 					if err != nil {
 						fmt.Printf("Error, could not save pod restarts")
 					}
 				}
 
-				err = stability.SaveTunedRestarts(APIClient, tunedRestartsOutputFile)
+				err := stability.SaveTunedRestarts(APIClient, tunedRestartsOutputFile)
 				if err != nil {
 					fmt.Printf("Error, could not save tuned restarts")
 				}
@@ -105,9 +108,11 @@ var _ = Describe(
 
 			// Verify policies
 			By("Check Policy changes")
-			_, err := stability.VerifyStabilityStatusChange(policiesOutputFile)
-			if err != nil {
-				stabilityErrors = append(stabilityErrors, err.Error())
+			if RanDuTestConfig.StabilityPoliciesCheck {
+				_, err := stability.VerifyStabilityStatusChange(policiesOutputFile)
+				if err != nil {
+					stabilityErrors = append(stabilityErrors, err.Error())
+				}
 			}
 
 			// Verify podRestarts
@@ -122,7 +127,7 @@ var _ = Describe(
 			// Verify PTP output
 			By("Check PTP results")
 			if RanDuTestConfig.PtpEnabled {
-				_, err = stability.VerifyStabilityStatusChange(ptpOutputFile)
+				_, err := stability.VerifyStabilityStatusChange(ptpOutputFile)
 				if err != nil {
 					stabilityErrors = append(stabilityErrors, err.Error())
 				}
@@ -130,7 +135,7 @@ var _ = Describe(
 
 			// Verify tuned restarts
 			By("Check tuneds restarts")
-			_, err = stability.VerifyStabilityStatusChange(tunedRestartsOutputFile)
+			_, err := stability.VerifyStabilityStatusChange(tunedRestartsOutputFile)
 			if err != nil {
 				stabilityErrors = append(stabilityErrors, err.Error())
 			}

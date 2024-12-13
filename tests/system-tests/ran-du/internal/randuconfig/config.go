@@ -33,6 +33,7 @@ type RanDuConfig struct {
 	StabilityNoWorkloadDurMins int    `yaml:"stability_no_workload_duration_mins" envconfig:"ECO_RANDU_STAB_NW_DUR_MINS"`
 	StabilityNoWorkloadIntMins int    `yaml:"stability_no_workload_interval_mins" envconfig:"ECO_RANDU_STAB_NW_INT_MINS"`
 	StabilityOutputPath        string `yaml:"stability_output_path" envconfig:"ECO_RANDU_STABILITY_OUTPUT_PATH"`
+	StabilityPoliciesCheck     bool   `yaml:"stability_policies_check" envconfig:"ECO_RANDU_STABILITY_POLICIES_CHECK"`
 	PtpEnabled                 bool   `yaml:"ptp_enabled" envconfig:"ECO_RANDU_PTP_ENABLED"`
 	RebootRecoveryTime         int    `yaml:"reboot_recovery_time" envconfig:"ECO_RANDU_RECOVERY_TIME"`
 }
