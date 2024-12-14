@@ -53,32 +53,6 @@ var _ = Describe(
 				Label("egress", "egress-etp-local"), reportxml.ID("76484"),
 				rdscorecommon.VerifyEgressServiceWithLocalETP)
 
-			It("Verify eIPv4 address from the list of defined used for the assigned pods in a single eIP namespace",
-				Label("egressip", "egressip-ipv4", "egressip-single-ns"), reportxml.ID("78105"),
-				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv4)
-
-			It("Verify eIPv6 address from the list of defined used for the assigned pods in a single eIP namespace",
-				Label("egressip", "egressip-ipv6", "egressip-single-ns"), reportxml.ID("78135"),
-				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv6)
-
-			It("Verify eIPv4 address from the list of defined used for the assigned pods in two eIP namespaces",
-				Label("egressip", "egressip-ipv4", "egressip-two-ns"), reportxml.ID("75060"),
-				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv4)
-
-			It("Verify eIPv6 address from the list of defined used for the assigned pods in two eIP namespaces",
-				Label("egressip", "egressip-ipv6", "egressip-two-ns"), reportxml.ID("78136"),
-				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv6)
-
-			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
-				"eIP namespace, but with the wrong pod label",
-				Label("egressip", "egressip-single-ns"), reportxml.ID("78106"),
-				rdscorecommon.VerifyEgressIPOneNamespaceOneNodeWrongPodLabel)
-
-			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
-				"eIP namespace with the wrong label",
-				Label("egressip", "egressip-one-ns"), reportxml.ID("78109"),
-				rdscorecommon.VerifyEgressIPWrongNsLabel)
-
 			It("Verifies workload reachable over BGP route",
 				Label("frr"), reportxml.ID("76009"),
 				rdscorecommon.ReachURLviaFRRroute)
@@ -165,6 +139,45 @@ var _ = Describe(
 			It("Verifies CephRBD",
 				Label("persistent-storage", "odf-cephrbd-pvc"), reportxml.ID("71989"), MustPassRepeatedly(3),
 				rdscorecommon.VerifyCephRBDPVC)
+
+			It("Verify eIPv4 address from the list of defined used for the assigned pods in a single eIP namespace",
+				Label("egressip", "egressip-ipv4", "egressip-single-ns"), reportxml.ID("78105"),
+				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv4)
+
+			It("Verify eIPv6 address from the list of defined used for the assigned pods in a single eIP namespace",
+				Label("egressip", "egressip-ipv6", "egressip-single-ns"), reportxml.ID("78135"),
+				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv6)
+
+			It("Verify eIPv4 address from the list of defined used for the assigned pods in two eIP namespaces",
+				Label("egressip", "egressip-ipv4", "egressip-two-ns"), reportxml.ID("75060"),
+				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv4)
+
+			It("Verify eIPv6 address from the list of defined used for the assigned pods in two eIP namespaces",
+				Label("egressip", "egressip-ipv6", "egressip-two-ns"), reportxml.ID("78136"),
+				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv6)
+
+			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
+				"eIP namespace, but with the wrong pod label",
+				Label("egressip", "egressip-single-ns"), reportxml.ID("78106"),
+				rdscorecommon.VerifyEgressIPOneNamespaceOneNodeWrongPodLabel)
+
+			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
+				"eIP namespace with the wrong label",
+				Label("egressip", "egressip-one-ns"), reportxml.ID("78109"),
+				rdscorecommon.VerifyEgressIPWrongNsLabel)
+
+			It("Verify eIPv4 address assigned to the next available node after node reboot; fail-over",
+				Label("egressip", "egressip-ipv4", "egressip-failover"), reportxml.ID("78280"),
+				rdscorecommon.VerifyEgressIPFailOverIPv4)
+
+			It("Verify eIPv6 address assigned to the next available node after node reboot; fail-over",
+				Label("egressip", "egressip-ipv6", "egressip-failover"), reportxml.ID("78283"),
+				rdscorecommon.VerifyEgressIPFailOverIPv6)
+
+			AfterEach(func(ctx SpecContext) {
+				By("Ensure all nodes are Ready and scheduling enabled")
+				rdscorecommon.EnsureInNodeReadiness(ctx)
+			})
 		})
 
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
