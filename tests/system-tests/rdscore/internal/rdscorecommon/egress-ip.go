@@ -9,6 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -382,7 +386,7 @@ func sendTrafficCheckIP(clientPods []*pod.Builder, isIPv6 bool, expectedIPs []st
 	return nil
 }
 
-func getExpectedEgressIPList() ([]string, error) {
+func getEgressIPMap() (map[string]string, error) {
 	By("Getting a map of source nodes and assigned Egress IPs for these nodes")
 
 	egressIPObj, err := egressip.Pull(APIClient, RDSCoreConfig.EgressIPName)
@@ -393,7 +397,7 @@ func getExpectedEgressIPList() ([]string, error) {
 		return nil, fmt.Errorf("failed to retrieve egressIP %s object: %w", RDSCoreConfig.EgressIPName, err)
 	}
 
-	egressIPSet, err := egressIPObj.GetAssignedEgressIPMap()
+	egressIPMap, err := egressIPObj.GetAssignedEgressIPMap()
 
 	if err != nil {
 		glog.V(100).Infof("Failed to retrieve egressIP %s assigned egressIPs map: %v",
@@ -403,27 +407,369 @@ func getExpectedEgressIPList() ([]string, error) {
 			RDSCoreConfig.EgressIPName, err)
 	}
 
-	if len(egressIPSet) != 2 {
-		glog.V(100).Infof("EgressIPs assigned to the wrong number of nodes: %v", egressIPSet)
-
-		return nil, fmt.Errorf("egressIPs assigned to the wrong number of nodes: %v", egressIPSet)
+	if len(egressIPMap) == 0 {
+		return nil, fmt.Errorf("egressIPs configuration failure, no assigned to the nodes ips were found: %v",
+			egressIPMap)
 	}
 
-	for _, nodeName := range []string{RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNodeTwo} {
-		egressIPOne := egressIPSet[RDSCoreConfig.EgressIPNodeOne]
-		egressIPTwo := egressIPSet[RDSCoreConfig.EgressIPNodeTwo]
+	return egressIPMap, nil
+}
 
-		if egressIPOne != RDSCoreConfig.EgressIPv4 || egressIPTwo != RDSCoreConfig.EgressIPv6 {
+func getEgressIPList() ([]string, error) {
+	By("Build an egressIP list")
+
+	var eIPList []string
+
+	egressIPMap, err := getEgressIPMap()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve egressIP map due to %w", err)
+	}
+
+	for eIPNodeName, eIPValue := range egressIPMap {
+		if eIPValue != RDSCoreConfig.EgressIPv4 && eIPValue != RDSCoreConfig.EgressIPv6 {
 			return nil, fmt.Errorf("EgressIP address assigned to the node %s not correctly configured; "+
-				"current value: %s, expected values to be set %s or %s", nodeName, egressIPOne,
-				RDSCoreConfig.EgressIPRemoteIPv4, RDSCoreConfig.EgressIPRemoteIPv6)
+				"current value: %s, expected values to be set %s or %s", eIPNodeName, eIPValue,
+				RDSCoreConfig.EgressIPv4, RDSCoreConfig.EgressIPv6)
+		}
+
+		eIPList = append(eIPList, eIPValue)
+	}
+
+	return eIPList, nil
+}
+
+func verifyEgressIPConnectivityBalancedTraffic(isIPv6 bool) {
+	By("Verifying egress IP connectivity balanced traffic; single namespace")
+
+	expectedIPs, err := getEgressIPList()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
+			RDSCoreConfig.EgressIPName, err))
+
+	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %v: %v",
+			RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector, err))
+
+	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Server response was note received: %v", err))
+}
+
+func verifyEgressIPConnectivityThreeNodes(isIPv6 bool) {
+	By("Verifying egress IP connectivity for the mixed nodes and namespaces")
+
+	expectedIPs, err := getEgressIPList()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
+			RDSCoreConfig.EgressIPName, err))
+
+	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
+			RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPPodLabel, err))
+
+	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Server response was note received: %v", err))
+
+	proberPodObjects, err = pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceTwo, egressIPPodSelector)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
+			RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPPodLabel, err))
+
+	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Server response was not received: %v", err))
+}
+
+//nolint:funlen, gocognit
+func gracefulNodeReboot(nodeName string) error {
+	By("Execute graceful node reboot")
+
+	if len(RDSCoreConfig.NodesCredentialsMap) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("BMC Details not specified")
+		Skip("BMC Details not specified. Skipping...")
+	}
+
+	By("Getting node object")
+
+	nodeObj, err := nodes.Pull(APIClient, nodeName)
+
+	if err != nil {
+		return fmt.Errorf("failed to retrieve node %s object due to: %w", nodeName, err)
+	}
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Cordoning node %q", nodeName)
+
+	err = nodeObj.Cordon()
+
+	if err != nil {
+		return fmt.Errorf("failed to cordon node %q due to %w", nodeName, err)
+	}
+
+	time.Sleep(5 * time.Second)
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Draining node %q", nodeName)
+
+	err = nodeObj.Drain()
+
+	if err != nil {
+		return fmt.Errorf("failed to drain node %q due to %w", nodeName, err)
+	}
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+		fmt.Sprintf("NodesCredentialsMap:\n\t%#v", RDSCoreConfig.NodesCredentialsMap))
+
+	var bmcClient *bmc.BMC
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+		fmt.Sprintf("Creating BMC client for node %s", nodeName))
+
+	if auth, ok := RDSCoreConfig.NodesCredentialsMap[nodeName]; !ok {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			fmt.Sprintf("BMC Details for %q not found", nodeName))
+		Fail(fmt.Sprintf("BMC Details for %q not found", nodeName))
+	} else {
+		bmcClient = bmc.New(auth.BMCAddress).
+			WithRedfishUser(auth.Username, auth.Password).
+			WithRedfishTimeout(6 * time.Minute)
+	}
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(),
+		time.Second*5,
+		time.Minute*5,
+		true,
+		func(ctx context.Context) (bool, error) {
+			if err := bmcClient.SystemForceReset(); err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+					fmt.Sprintf("Failed to power cycle %s -> %v", nodeName, err))
+
+				return false, nil
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+				fmt.Sprintf("Successfully powered cycle %s", nodeName))
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("failed to reboot node %s", nodeName)
+	}
+
+	By(fmt.Sprintf("Checking node %s got into NotReady", nodeName))
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(),
+		time.Second*15,
+		time.Minute*25,
+		true,
+		func(ctx context.Context) (bool, error) {
+			currentNode, err := nodes.Pull(APIClient, nodeName)
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to pull node: %v", err)
+
+				return false, nil
+			}
+
+			for _, condition := range currentNode.Object.Status.Conditions {
+				if condition.Type == rdscoreparams.ConditionTypeReadyString {
+					if condition.Status != rdscoreparams.ConstantTrueString {
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node %q is notReady", currentNode.Definition.Name)
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("  Reason: %s", condition.Reason)
+
+						return true, nil
+					}
+				}
+			}
+
+			return false, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("node %s hasn't reached notReady state", nodeName)
+	}
+
+	By(fmt.Sprintf("Checking node %q got into Ready", nodeName))
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(),
+		time.Second*15,
+		time.Minute*25,
+		true,
+		func(ctx context.Context) (bool, error) {
+			currentNode, err := nodes.Pull(APIClient, nodeName)
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error pulling in node: %v", err)
+
+				return false, nil
+			}
+
+			for _, condition := range currentNode.Object.Status.Conditions {
+				if condition.Type == rdscoreparams.ConditionTypeReadyString {
+					if condition.Status == rdscoreparams.ConstantTrueString {
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node %q is Ready", currentNode.Definition.Name)
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("  Reason: %s", condition.Reason)
+
+						return true, nil
+					}
+				}
+			}
+
+			return false, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("node %s hasn't reached Ready state", nodeName)
+	}
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Uncordoning node %q", nodeName)
+
+	err = nodeObj.Uncordon()
+
+	if err != nil {
+		return fmt.Errorf("failed to uncordon %q due to %w", nodeName, err)
+	}
+
+	time.Sleep(15 * time.Second)
+
+	return nil
+}
+
+func getNodeForReboot(isIPv6 bool) (string, string, error) {
+	By("Find cluster node name to reboot")
+
+	egressIPMap, err := getEgressIPMap()
+
+	if err != nil {
+		return "", "", fmt.Errorf("failed to retrieve egressIP map due to %w", err)
+	}
+
+	for egressIPNode, egressIPValue := range egressIPMap {
+		myIP, err := netip.ParseAddr(egressIPValue)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to parse used ip address %q", egressIPValue)
+
+			return "", "", fmt.Errorf("failed to parse used ip address %q", egressIPValue)
+		}
+
+		if !isIPv6 && myIP.Is4() || isIPv6 && myIP.Is6() {
+			return egressIPValue, egressIPNode, nil
 		}
 	}
 
-	configuredEgressIPs :=
-		[]string{egressIPSet[RDSCoreConfig.EgressIPNodeOne], egressIPSet[RDSCoreConfig.EgressIPNodeTwo]}
+	return "", "", fmt.Errorf("no egress IP address found in egressIP map")
+}
 
-	return configuredEgressIPs, nil
+func verifyEgressIPFailOver(isIPv6 bool) {
+	By("Creating egressIP test setup to verify fail-over procedure validity")
+
+	CreateEgressIPTestDeployment()
+
+	By("Verify egressIP connectivity for the pods run in the namespace not assigned to the eIP")
+
+	verifyEgressIPConnectivityBalancedTraffic(isIPv6)
+
+	By("Execute graceful node reboot")
+
+	egressIPUnderTest, nodeNameForReboot, err := getNodeForReboot(false)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to find a valid node for reboot: %v", err))
+
+	egressIPMap, err := getEgressIPMap()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve egressIP map due to: %v", err))
+
+	glog.V(100).Infof("Retrieve available for eIP assignment node")
+
+	var nodeNameForVerification string
+
+	for _, nodeName := range []string{
+		RDSCoreConfig.EgressIPNodeOne,
+		RDSCoreConfig.EgressIPNodeTwo,
+		RDSCoreConfig.EgressIPNodeThree} {
+		_, nodeUsed := egressIPMap[nodeName]
+
+		if !nodeUsed {
+			nodeNameForVerification = nodeName
+		}
+	}
+
+	Expect(nodeNameForVerification).ToNot(Equal(""),
+		fmt.Sprintf("Available node for the fail-over verification not found; %v", err))
+
+	err = gracefulNodeReboot(nodeNameForReboot)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to reboot node %s: %v", nodeNameForReboot, err))
+
+	egressIPMap, err = getEgressIPMap()
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve new egressIP map due to: %v", err))
+	Expect(egressIPMap[nodeNameForVerification]).To(Equal(egressIPUnderTest),
+		fmt.Sprintf("Released egressIP %s was not assigned to the node %s",
+			egressIPUnderTest, nodeNameForVerification))
+
+	By("Verify egressIP connectivity after egressIP fail-over")
+
+	verifyEgressIPConnectivityBalancedTraffic(isIPv6)
+}
+
+// EnsureInNodeReadiness create egressIP test setup to verify connectivity with the external server.
+func EnsureInNodeReadiness(ctx SpecContext) {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("\t*** Ensure nodes are uncordoned and Ready ***")
+
+	if len(RDSCoreConfig.NodesCredentialsMap) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("BMC Details not specified")
+		Skip("BMC Details not specified. Skipping...")
+	}
+
+	By("Getting list of all nodes")
+
+	allNodes, err := nodes.List(APIClient, metav1.ListOptions{})
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Error listing nodes in the cluster: %v", err))
+	Expect(len(allNodes)).ToNot(Equal(0), "0 nodes found in the cluster")
+
+	for _, _node := range allNodes {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing node %q", _node.Definition.Name)
+
+		By(fmt.Sprintf("Checking node %q got into Ready", _node.Definition.Name))
+
+		Eventually(func(ctx SpecContext) bool {
+			currentNode, err := nodes.Pull(APIClient, _node.Definition.Name)
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error pulling in node: %v", err)
+
+				return false
+			}
+
+			for _, condition := range currentNode.Object.Status.Conditions {
+				if condition.Type == rdscoreparams.ConditionTypeReadyString {
+					if condition.Status == rdscoreparams.ConstantTrueString {
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node %q is Ready", currentNode.Definition.Name)
+						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("  Reason: %s", condition.Reason)
+
+						return true
+					}
+				}
+			}
+
+			return false
+		}).WithTimeout(25*time.Minute).WithPolling(15*time.Second).WithContext(ctx).Should(BeTrue(),
+			"Node hasn't reached Ready state")
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Uncordoning node %q", _node.Definition.Name)
+		err = _node.Uncordon()
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Failed to uncordon %q due to %v", _node.Definition.Name, err))
+
+		time.Sleep(15 * time.Second)
+	}
 }
 
 // CreateEgressIPTestDeployment create egressIP test setup to verify connectivity with the external server.
@@ -489,24 +835,6 @@ func CreateEgressIPTestDeployment() {
 			RDSCoreConfig.EgressIPNodeOne, RDSCoreConfig.EgressIPNamespaceOne, err))
 }
 
-func verifyEgressIPConnectivityBalancedTraffic(isIPv6 bool) {
-	By("Spawning the prober pod on the EgressIP non assignable host")
-
-	expectedIPs, err := getExpectedEgressIPList()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
-			RDSCoreConfig.EgressIPName, err))
-
-	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %v: %v",
-			RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector, err))
-
-	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Server response was note received: %v", err))
-}
-
 // VerifyEgressIPConnectivityBalancedTrafficIPv4 verifies egress traffic works with egressIP
 // applied for the external target.
 func VerifyEgressIPConnectivityBalancedTrafficIPv4() {
@@ -517,33 +845,6 @@ func VerifyEgressIPConnectivityBalancedTrafficIPv4() {
 // applied for the external target.
 func VerifyEgressIPConnectivityBalancedTrafficIPv6() {
 	verifyEgressIPConnectivityBalancedTraffic(true)
-}
-
-func verifyEgressIPConnectivityThreeNodes(isIPv6 bool) {
-	By("Spawning the prober pods on the EgressIP assignable hosts")
-
-	expectedIPs, err := getExpectedEgressIPList()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
-			RDSCoreConfig.EgressIPName, err))
-
-	proberPodObjects, err := pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, egressIPPodSelector)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
-			RDSCoreConfig.EgressIPNamespaceOne, RDSCoreConfig.EgressIPPodLabel, err))
-
-	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Server response was note received: %v", err))
-
-	proberPodObjects, err = pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceTwo, egressIPPodSelector)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
-			RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPPodLabel, err))
-
-	err = sendTrafficCheckIP(proberPodObjects, isIPv6, expectedIPs)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Server response was not received: %v", err))
 }
 
 // VerifyEgressIPConnectivityThreeNodesIPv4 verifies egress traffic works with egressIP
@@ -561,9 +862,9 @@ func VerifyEgressIPConnectivityThreeNodesIPv6() {
 // VerifyEgressIPForPodWithWrongLabel verifies egress traffic applies only for pods with
 // the correct pod label defined.
 func VerifyEgressIPForPodWithWrongLabel() {
-	By("Spawning the prober pods on the EgressIP assignable hosts")
+	By("Verifying no egressIP was used for the pod with the incorrect label assigned")
 
-	expectedIPs, err := getExpectedEgressIPList()
+	expectedIPs, err := getEgressIPList()
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
 			RDSCoreConfig.EgressIPName, err))
@@ -579,8 +880,8 @@ func VerifyEgressIPForPodWithWrongLabel() {
 
 	proberPodObjects, err = pod.List(APIClient, RDSCoreConfig.EgressIPNamespaceOne, nonEgressIPPodSelector)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %s: %v",
-			RDSCoreConfig.EgressIPNamespaceTwo, RDSCoreConfig.EgressIPPodLabel, err))
+		fmt.Sprintf("Failed to retrieve prober pods list from namespace %s with label %v: %v",
+			RDSCoreConfig.EgressIPNamespaceOne, nonEgressIPPodSelector, err))
 
 	err = sendTrafficCheckIP(proberPodObjects, false, expectedIPs)
 	Expect(err).To(HaveOccurred(),
@@ -590,7 +891,7 @@ func VerifyEgressIPForPodWithWrongLabel() {
 // VerifyEgressIPForNamespaceWithWrongLabel verifies egress traffic applies only for the pods
 // run in the namespace assigned to the eIP service.
 func VerifyEgressIPForNamespaceWithWrongLabel() {
-	glog.V(100).Infof("Create new, not assigned to the eIP service namespace %s", nonEgressIPNamespace)
+	glog.V(100).Infof("Create new namespace %s not referenced by EgressIP", nonEgressIPNamespace)
 
 	_, err := namespace.NewBuilder(APIClient, nonEgressIPNamespace).Create()
 	Expect(err).ToNot(HaveOccurred(),
@@ -612,7 +913,7 @@ func VerifyEgressIPForNamespaceWithWrongLabel() {
 
 	By("Spawning the prober pods on the EgressIP assignable hosts")
 
-	expectedIPs, err := getExpectedEgressIPList()
+	expectedIPs, err := getEgressIPList()
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve configured eIP addresses list from the egressIP %s: %v",
 			RDSCoreConfig.EgressIPName, err))
@@ -702,4 +1003,16 @@ func VerifyEgressIPWrongNsLabel() {
 	By("Verify egressIP connectivity for the pods run in the namespace not assigned to the eIP")
 
 	VerifyEgressIPForNamespaceWithWrongLabel()
+}
+
+// VerifyEgressIPFailOverIPv4 verifies egressIP ipv4 address moving to the first available for assignment node
+// after current node goes down, NotReady and egressIP traffic continues to use egressIP configured.
+func VerifyEgressIPFailOverIPv4() {
+	verifyEgressIPFailOver(false)
+}
+
+// VerifyEgressIPFailOverIPv6 verifies egressIP ipv4 address moving to the first available for assignment node
+// after current node goes down, NotReady and egressIP traffic continues to use egressIP configured.
+func VerifyEgressIPFailOverIPv6() {
+	verifyEgressIPFailOver(true)
 }

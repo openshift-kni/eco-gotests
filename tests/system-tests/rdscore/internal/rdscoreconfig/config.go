@@ -392,6 +392,8 @@ type CoreConfig struct {
 	//nolint:lll,nolintlint
 	EgressIPNodeTwo string `yaml:"rdscore_wlkd_egressip_node_two" envconfig:"ECO_SYSTEM_RDSCORE_EGRESSIP_NODE_TWO"`
 	//nolint:lll,nolintlint
+	EgressIPNodeThree string `yaml:"rdscore_wlkd_egressip_node_three" envconfig:"ECO_SYSTEM_RDSCORE_EGRESSIP_NODE_THREE"`
+	//nolint:lll,nolintlint
 	NonEgressIPNode string `yaml:"rdscore_wlkd_non_egressip_node" envconfig:"ECO_SYSTEM_RDSCORE_NON_EGRESSIP_NODE"`
 	//nolint:lll,nolintlint
 	EgressIPNamespaceLabel string `yaml:"rdscore_egressip_ns_label" envconfig:"ECO_RDSCORE_EGRESSIP_NS_LABEL"`
