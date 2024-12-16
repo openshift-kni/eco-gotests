@@ -75,7 +75,7 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 	})
 
 	// 72463 - Delete and re-add a worker node from cluster
-	It("should delete a worker node from the cluster", reportxml.ID("72463"), func() {
+	It("deletes a worker node from the cluster", reportxml.ID("72463"), func() {
 		By("updating the Argo CD git path to apply crAnnotation")
 		exists, err := gitdetails.UpdateArgoCdAppGitPath(
 			tsparams.ArgoCdClustersAppName, tsparams.ZtpTestPathNodeDeleteAddAnnotation, true)
