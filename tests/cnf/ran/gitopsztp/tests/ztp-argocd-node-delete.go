@@ -72,6 +72,11 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		snoPlusOne, err := rancluster.IsSnoPlusOne(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to check if cluster is SNO+1")
 		Expect(snoPlusOne).To(BeTrue(), "Cluster is no longer SNO+1")
+
+		// This is a quick workaround to wait until we're sure the CSRs for the node we just added back have
+		// been approved. It will be replaced by a function to wait for CSRs to be approved.
+		By("waiting 5 minutes to ensure the CSRs are approved")
+		time.Sleep(5 * time.Minute)
 	})
 
 	// 72463 - Delete and re-add a worker node from cluster
