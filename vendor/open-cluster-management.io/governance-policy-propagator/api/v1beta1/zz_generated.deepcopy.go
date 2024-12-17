@@ -26,7 +26,7 @@ func (in *AutomationDef) DeepCopyInto(out *AutomationDef) {
 	}
 	if in.PolicyViolationsLimit != nil {
 		in, out := &in.PolicyViolationsLimit, &out.PolicyViolationsLimit
-		*out = new(uint)
+		*out = new(uint16)
 		**out = **in
 	}
 }
