@@ -92,19 +92,26 @@ func GetSNOMasterNode(ctx context.Context, client runtimeclient.Client) (*corev1
 }
 
 func ReadYamlOrJSONFile(fp string, into any) error {
+	decoder, err := GetYamlOrJsonDecoder(fp)
+	if err != nil {
+		return err
+	}
+	if err := decoder.Decode(into); err != nil {
+		return fmt.Errorf("failed to decode %s: %w", fp, err)
+	}
+	return nil
+}
+
+func GetYamlOrJsonDecoder(fp string) (*yaml.YAMLOrJSONDecoder, error) {
 	fp = filepath.Clean(fp)
 
 	data, err := os.ReadFile(fp)
 	if err != nil {
-		return err // nolint:wrapcheck
+		return nil, err // nolint:wrapcheck
 	}
 
 	decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(data), 4096)
-	if err := decoder.Decode(into); err != nil {
-		return fmt.Errorf("failed to decode %s: %w", fp, err)
-	}
-
-	return nil
+	return decoder, nil
 }
 
 func IsIpv6(provideIp string) bool {
@@ -120,9 +127,8 @@ func CreateKubeClient(scheme *runtime.Scheme, kubeconfig string) (runtimeclient.
 	if err != nil {
 		return nil, fmt.Errorf("failed to build config from flags for kube client: %w", err)
 	}
-
-	rc, err := runtimeclient.New(config, runtimeclient.Options{Scheme: scheme,
-		WarningHandler: runtimeclient.WarningHandlerOptions{SuppressWarnings: true}})
+	config.WarningHandler = rest.NoWarnings{}
+	rc, err := runtimeclient.New(config, runtimeclient.Options{Scheme: scheme})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtimeclient for kube: %w", err)
 	}
