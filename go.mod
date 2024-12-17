@@ -33,7 +33,7 @@ require (
 	k8s.io/api v0.30.5
 	k8s.io/apimachinery v0.30.5
 	k8s.io/client-go v12.0.0+incompatible
-	sigs.k8s.io/controller-runtime v0.17.6
+	sigs.k8s.io/controller-runtime v0.18.2
 )
 
 require (
@@ -256,5 +256,5 @@ replace (
 	github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20241008123739-b3cc2e3746d2 // release-4.17
 	github.com/openshift/installer => github.com/openshift/installer v0.9.0-master.0.20230306121016-3485fddca1c3 // master
 	github.com/portworx/sched-ops => github.com/portworx/sched-ops v1.20.4-rc1
-	k8s.io/client-go => k8s.io/client-go v0.29.9
+	k8s.io/client-go => k8s.io/client-go v0.30.5
 )
