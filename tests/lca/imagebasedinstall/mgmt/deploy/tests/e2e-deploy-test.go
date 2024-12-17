@@ -52,8 +52,9 @@ const (
 	ibiClusterTemplateName = "ibi-cluster-templates-v1"
 	ibiNodeTemplateName    = "ibi-node-templates-v1"
 
-	ipv4AddrFamily = "ipv4"
-	ipv6AddrFamily = "ipv6"
+	ipv4AddrFamily          = "ipv4"
+	ipv6AddrFamily          = "ipv6"
+	reporterNamespaceToDump = "spoke namespace"
 )
 
 var (
@@ -94,7 +95,7 @@ var _ = Describe(
 					Skip("Cluster is deployed with siteconfig operator")
 				}
 
-				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = "spoke namespace"
+				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
 
 				createIBIOResouces(ipv4AddrFamily)
 			})
@@ -113,9 +114,28 @@ var _ = Describe(
 					Skip("Cluster not installed with proxy")
 				}
 
-				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = "spoke namespace"
+				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
 
 				createSiteConfigResouces(ipv6AddrFamily)
+			})
+
+		It("through siteconfig operator is successful in an IPv4 environment with DHCP networking",
+			reportxml.ID("no-testcase"), func() {
+				if MGMTConfig.StaticNetworking {
+					Skip("Cluster is deployed with static networking")
+				}
+
+				if !MGMTConfig.SiteConfig {
+					Skip("Cluster is deployed without siteconfig operator")
+				}
+
+				if MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy != "" || MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy != "" {
+					Skip("Cluster installed with proxy")
+				}
+
+				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
+
+				createSiteConfigResouces(ipv4AddrFamily)
 			})
 
 		It("successfully creates extramanifests", reportxml.ID("76643"), func() {
