@@ -33,6 +33,7 @@ const (
 	egressSVC2Labels           = "rds-egress=rds-core-2"
 	servicePort          int32 = 9090
 	serviceTargetPort    int32 = 9090
+	httpSuccessCode            = "200"
 )
 
 func defineEgressSVCContainer(cName, cImage string, cCmd []string) *pod.ContainerBuilder {
@@ -399,6 +400,12 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 		}
 
 		verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP)
+
+		By(fmt.Sprintf("Accessing workload via LoadBalancer's IP %s", loadBalancerIP))
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Accessing  workload via LoadBalancer's IP %s", loadBalancerIP)
+
+		verifyIngressIP(loadBalancerIP, "200", servicePort, true)
 	}
 }
 
@@ -593,7 +600,7 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Accessing  workload via LoadBalancer's IP %s", loadBalancerIP)
 
-		verifyIngressIP(loadBalancerIP, expectedIP, servicePort)
+		verifyIngressIP(loadBalancerIP, expectedIP, servicePort, false)
 	}
 }
 
@@ -728,12 +735,18 @@ func VerifyEgressServiceConnectivityETPLocal() {
 // VerifyEgressServiceETPLocalIngressConnectivity verifies ingress IP address while accessing backend pods
 // via loadbalancer with ETP=Local.
 func VerifyEgressServiceETPLocalIngressConnectivity() {
-	verifyEgressServiceIngressConnectivit(egressSVC2Name)
+	verifyEgressServiceIngressConnectivit(egressSVC2Name, false)
+}
+
+// VerifyEgressServiceETPClusterIngressConnectivity verifies ingress IP address while accessing backend pods
+// via loadbalancer with ETP=Cluster.
+func VerifyEgressServiceETPClusterIngressConnectivity() {
+	verifyEgressServiceIngressConnectivit(egressSVC1Name, true)
 }
 
 // verifyEgressServiceIngressConnectivit shared function to verify backend pods' availability via
 // loadbalancer's IP address(es).
-func verifyEgressServiceIngressConnectivit(svcName string) {
+func verifyEgressServiceIngressConnectivit(svcName string, validateCode bool) {
 	By(fmt.Sprintf("Pulling %q service configuration", svcName))
 
 	var (
@@ -792,17 +805,32 @@ func verifyEgressServiceIngressConnectivit(svcName string) {
 
 		Expect(err).ToNot(HaveOccurred(), "Failed to parse IP address")
 
+		var expectedResult string
+
 		if myIP.Is4() {
-			verifyIngressIP(loadBalancerIP, RDSCoreConfig.EgressServiceRemoteIP, servicePort)
+			if validateCode {
+				expectedResult = httpSuccessCode
+			} else {
+				expectedResult = RDSCoreConfig.EgressServiceRemoteIP
+			}
+
+			verifyIngressIP(loadBalancerIP, expectedResult, servicePort, validateCode)
 		}
 
 		if myIP.Is6() {
-			verifyIngressIP(loadBalancerIP, RDSCoreConfig.EgressServiceRemoteIPv6, servicePort)
+			if validateCode {
+				expectedResult = httpSuccessCode
+			} else {
+				expectedResult = RDSCoreConfig.EgressServiceRemoteIPv6
+			}
+
+			verifyIngressIP(loadBalancerIP, expectedResult, servicePort, validateCode)
 		}
 	}
 }
 
-func verifyIngressIP(loadBalancerIP, expectedIP string, servicePort int32) {
+//nolint:unparam
+func verifyIngressIP(loadBalancerIP, expectedIP string, servicePort int32, validateCode bool) {
 	var (
 		cmdResult []byte
 		err       error
@@ -826,8 +854,16 @@ func verifyIngressIP(loadBalancerIP, expectedIP string, servicePort int32) {
 			noramlizedIP = fmt.Sprintf("[%s]", loadBalancerIP)
 		}
 
-		cmdExternal := exec.Command("curl", "--connect-timeout", "3", "-s",
-			fmt.Sprintf("http://%s:%d/clientip", noramlizedIP, servicePort))
+		var cmdExternal *exec.Cmd
+
+		if validateCode {
+			cmdExternal = exec.Command("curl", "--connect-timeout", "3", "-s",
+				"-o", "/dev/null", "-w", "%{http_code}",
+				fmt.Sprintf("http://%s:%d/clientip", noramlizedIP, servicePort))
+		} else {
+			cmdExternal = exec.Command("curl", "--connect-timeout", "3", "-s",
+				fmt.Sprintf("http://%s:%d/clientip", noramlizedIP, servicePort))
+		}
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Running command: %q", cmdExternal.String())
 
@@ -851,11 +887,24 @@ func verifyIngressIP(loadBalancerIP, expectedIP string, servicePort int32) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Parsing command's output:\n\t%v(%v)\n",
 		string(cmdResult), err)
 
-	addr, _, err := net.SplitHostPort(string(cmdResult))
+	switch validateCode {
+	case true:
+		By("Comparing response code")
 
-	By("Comparing ingress IP address")
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Comparing response code %q with expected %q",
+			string(cmdResult), expectedIP)
 
-	Expect(err).ToNot(HaveOccurred(), "Failed to parse Host/Port pairs from command's output")
+		Expect(string(cmdResult)).To(BeEquivalentTo(expectedIP),
+			fmt.Sprintf("Wrong response code. Received %q, expected %q", string(cmdResult), expectedIP))
+	case false:
+		addr, _, err := net.SplitHostPort(string(cmdResult))
 
-	Expect(addr).To(BeEquivalentTo(expectedIP), "Wrong IP address used")
+		By("Comparing ingress IP address")
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Comparing IP address %q with expected %q", addr, expectedIP)
+
+		Expect(err).ToNot(HaveOccurred(), "Failed to parse Host/Port pairs from command's output")
+
+		Expect(addr).To(BeEquivalentTo(expectedIP), "Wrong IP address used")
+	}
 }
