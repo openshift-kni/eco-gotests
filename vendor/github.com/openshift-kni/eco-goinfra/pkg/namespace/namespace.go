@@ -179,6 +179,10 @@ func (builder *Builder) Delete() error {
 	glog.V(100).Infof("Deleting namespace %s", builder.Definition.Name)
 
 	if !builder.Exists() {
+		glog.V(100).Infof("Namespace %s does not exist", builder.Definition.Name)
+
+		builder.Object = nil
+
 		return nil
 	}
 
@@ -210,6 +214,10 @@ func (builder *Builder) DeleteAndWait(timeout time.Duration) error {
 			_, err := builder.apiClient.Namespaces().Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if k8serrors.IsNotFound(err) {
 				return true, nil
+			}
+
+			if err != nil {
+				glog.V(100).Infof("Failed to get namespace %s: %v", builder.Definition.Name, err)
 			}
 
 			return false, nil
