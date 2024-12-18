@@ -278,6 +278,10 @@ var _ = Describe(
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76672"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
 
+			It("Verify EgressService  ingress with Cluster ExternalTrafficPolicy after ungraceful reboot",
+				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("78362"),
+				rdscorecommon.VerifyEgressServiceETPClusterIngressConnectivity)
+
 			It("Verifies NUMA-aware workload is available after ungraceful reboot",
 				Label("nrop"), reportxml.ID("73727"),
 				rdscorecommon.VerifyNROPWorkloadAvailable)
@@ -421,6 +425,10 @@ var _ = Describe(
 			It("Verify EgressService ingress with Local ExternalTrafficPolicy after graceful reboot",
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76673"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
+
+			It("Verify EgressService ingress with Cluster ExternalTrafficPolicy after graceful reboot",
+				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("78363"),
+				rdscorecommon.VerifyEgressServiceETPClusterIngressConnectivity)
 
 			It("Verifies NUMA-aware workload is available after soft reboot",
 				Label("nrop"), reportxml.ID("73726"),
