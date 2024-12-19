@@ -85,7 +85,7 @@ var _ = Describe("Mellanox Secure Boot", Ordered, Label(tsparams.LabelMlxSecureB
 			_, err = sriovOperatorConfig.RemoveDisablePlugins().Update()
 			Expect(err).ToNot(HaveOccurred(), "Failed to delete disablePlugins")
 
-			err = sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+			err = netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 			By("Disabling secure boot on the worker and reboot the node")
