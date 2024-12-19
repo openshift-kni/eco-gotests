@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"time"
 )
 
 // Matcher struc to hold regex to match for and the minimum of matches expected.
@@ -76,7 +77,7 @@ type BMC interface {
 // WaitForRegex waits for any matches passed in a matches slice to appear in the
 // BMC console for the expected number of times.
 // If no matches, timedout is set to true.
-func WaitForRegex(ctx context.Context, bmc BMC, matches []Matcher) (int, error) {
+func WaitForRegex(bmc BMC, matches []Matcher, timeoutWaitRegex time.Duration) (int, error) {
 	reader, _, err := bmc.OpenSerialConsole("")
 	if err != nil {
 		return 0, err
@@ -88,6 +89,10 @@ func WaitForRegex(ctx context.Context, bmc BMC, matches []Matcher) (int, error) 
 			fmt.Printf("error closing BMC serial console, err: %s", err)
 		}
 	}()
+
+	ctx, cancel := context.WithTimeout(context.TODO(), timeoutWaitRegex)
+
+	defer cancel()
 
 	return WaitForAnyMatch(ctx, reader, matches)
 }

@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"context"
 	"fmt"
 
 	"regexp"
@@ -254,9 +253,8 @@ var _ = Describe("TPM2", func() {
 				Times: 1,
 			},
 		}
-		ctx, cancel := context.WithTimeout(context.TODO(), tsparams.TimeoutWaitRegex)
-		defer cancel()
-		matchIndex, err := stdinmatcher.WaitForRegex(ctx, BMCClient, matches)
+
+		matchIndex, err := stdinmatcher.WaitForRegex(BMCClient, matches, tsparams.TimeoutWaitRegex)
 
 		Expect(err).ToNot(HaveOccurred(), "WaitForRegex should not fail")
 		Expect(matchIndex).To(Equal(0), "WaitForRegex should match TPM failed (0)")
@@ -348,9 +346,7 @@ var _ = Describe("TPM2", func() {
 			},
 		}
 
-		ctx, cancel := context.WithTimeout(context.TODO(), tsparams.TimeoutWaitRegex)
-		defer cancel()
-		matchIndex, err := stdinmatcher.WaitForRegex(ctx, BMCClient, matches)
+		matchIndex, err := stdinmatcher.WaitForRegex(BMCClient, matches, tsparams.TimeoutWaitRegex)
 
 		Expect(err).ToNot(HaveOccurred(), "WaitForRegex should not fail")
 		Expect(matchIndex).To(Equal(1), "WaitForRegex should match pcr-rebind-boot (1)")
@@ -438,9 +434,7 @@ var _ = Describe("TPM2", func() {
 			},
 		}
 
-		ctx, cancel := context.WithTimeout(context.TODO(), tsparams.TimeoutWaitRegex)
-		defer cancel()
-		matchIndex, err := stdinmatcher.WaitForRegex(ctx, BMCClient, matches)
+		matchIndex, err := stdinmatcher.WaitForRegex(BMCClient, matches, tsparams.TimeoutWaitRegex)
 
 		Expect(err).ToNot(HaveOccurred(), "WaitForRegex should not fail")
 		Expect(matchIndex).To(Equal(0), "WaitForRegex should match TPM failed (0)")

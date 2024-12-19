@@ -3,7 +3,6 @@ package stdinmatcher
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"io"
 	"regexp"
 	"testing"
@@ -127,11 +126,8 @@ Not it comes the lassst line :)
 			Times: 1,
 		},
 	}
-	ctx1, cancel1 := context.WithTimeout(context.TODO(), 10*time.Second)
 
-	defer cancel1()
-
-	matchIndex, err := WaitForRegex(ctx1, bmc1, matches)
+	matchIndex, err := WaitForRegex(bmc1, matches, 10*time.Second)
 	assert.NoError(t, err)
 
 	if matchIndex == 0 { // if first match found = success
@@ -151,11 +147,7 @@ Not it comes the lassst line :)
 		},
 	}
 
-	ctx2, cancel2 := context.WithTimeout(context.TODO(), 10*time.Second)
-
-	defer cancel2()
-
-	matchIndex, err = WaitForRegex(ctx2, bmc2, matches)
+	matchIndex, err = WaitForRegex(bmc2, matches, 10*time.Second)
 	assert.NoError(t, err)
 
 	if matchIndex == 1 { // if second match found = success
