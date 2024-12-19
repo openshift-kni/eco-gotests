@@ -327,11 +327,11 @@ var _ = Describe(
 				rdscorecommon.VerifyMACVLANConnectivityBetweenDifferentNodes)
 
 			It("Verifies IPVLAN workloads on the same node post hard reboot",
-				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75565"),
+				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75564"),
 				rdscorecommon.VerifyIPVLANConnectivityOnSameNode)
 
 			It("Verifies IPVLAN workloads on different nodes post hard reboot",
-				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75059"),
+				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75058"),
 				rdscorecommon.VerifyIPVLANConnectivityBetweenDifferentNodes)
 
 			It("Verifies workload reachable over BGP route post hard reboot",
@@ -483,11 +483,11 @@ var _ = Describe(
 				rdscorecommon.VerifyMACVLANConnectivityBetweenDifferentNodes)
 
 			It("Verifies IPVLAN workloads on the same node post soft reboot",
-				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75564"),
+				Label("ipvlan", "verify-ipvlan-same-node"), reportxml.ID("75565"),
 				rdscorecommon.VerifyIPVLANConnectivityOnSameNode)
 
 			It("Verifies IPVLAN workloads on different nodes post soft reboot",
-				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75058"),
+				Label("ipvlan", "verify-ipvlan-different-nodes"), reportxml.ID("75059"),
 				rdscorecommon.VerifyIPVLANConnectivityBetweenDifferentNodes)
 
 			It("Verifies workload reachable over BGP route post soft reboot",
