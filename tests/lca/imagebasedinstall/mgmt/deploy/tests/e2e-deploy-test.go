@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/networkconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/installconfig"
@@ -37,6 +38,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/brutil"
 	k8sScheme "k8s.io/client-go/kubernetes/scheme"
 
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtparams"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -48,6 +50,8 @@ const (
 
 	extraManifestNamespaceConfigmapName = "extra-manifests-cm0"
 	extraManifestConfigmapConfigmapName = "extra-manifests-cm1"
+
+	caBundleConfigMapName = "ca-bundle-configmap"
 
 	ibiClusterTemplateName = "ibi-cluster-templates-v1"
 	ibiNodeTemplateName    = "ibi-node-templates-v1"
@@ -138,6 +142,21 @@ var _ = Describe(
 				"error: extra manifest configmap has incorrect content")
 		})
 
+		It("successfully adds CA bundle", reportxml.ID("77795"), func() {
+			if !MGMTConfig.CABundle {
+				Skip("Cluster not configured with CA bundle")
+			}
+
+			By("Get spoke client")
+			spokeClient = getSpokeClient()
+
+			By("Validate adding a certificate by referencing a CA bundle", func() {
+				execCmd := "grep -q qebox.redhat.com /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+				_, err := cluster.ExecCmdWithStdout(spokeClient, execCmd)
+				Expect(err).ToNot(HaveOccurred(), "failed checking the ca bundle for expected entry: %s", err)
+			})
+		})
+
 		It("successfully configured using FIPs", reportxml.ID("76644"), func() {
 			if !MGMTConfig.SeedClusterInfo.HasFIPS {
 				Skip("Cluster not using FIPS enabled seed image")
@@ -214,6 +233,16 @@ func createSharedResources() {
 		Expect(err).NotTo(HaveOccurred(), "error creating configmap for extra manifests configmap")
 	}
 
+	if MGMTConfig.CABundle {
+		By("Create configmap for CA bundle")
+
+		_, err = configmap.NewBuilder(
+			APIClient, caBundleConfigMapName, MGMTConfig.Cluster.Info.ClusterName).WithData(map[string]string{
+			"tls-ca-bundle.pem": mgmtparams.CaBundleString,
+		}).Create()
+		Expect(err).NotTo(HaveOccurred(), "error creating configmap with CA bundle")
+	}
+
 	for host, info := range MGMTConfig.Cluster.Info.Hosts {
 		By("Create baremetalhost secret for " + host)
 
@@ -288,6 +317,10 @@ func createIBIOResouces(addressFamily string) {
 	if MGMTConfig.ExtraManifests {
 		imageClusterInstall.WithExtraManifests(extraManifestNamespaceConfigmapName).
 			WithExtraManifests(extraManifestConfigmapConfigmapName)
+	}
+
+	if MGMTConfig.CABundle {
+		imageClusterInstall.WithCABundle(caBundleConfigMapName)
 	}
 
 	if MGMTConfig.PublicSSHKey != "" {
@@ -393,6 +426,10 @@ func createSiteConfigResouces(addressFamily string) {
 			WithExtraManifests(extraManifestConfigmapConfigmapName)
 	}
 
+	if MGMTConfig.CABundle {
+		clusterInstanceBuilder.WithCABundle(caBundleConfigMapName)
+	}
+
 	if MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy != "" || MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy != "" {
 		clusterInstanceBuilder.WithProxy(&v1beta1.Proxy{
 			HTTPProxy:  MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy,
@@ -466,7 +503,7 @@ func createSiteConfigResouces(addressFamily string) {
 		}
 
 		return false, nil
-	}).WithTimeout(time.Minute*20).WithPolling(time.Second*5).Should(
+	}).WithTimeout(time.Minute*30).WithPolling(time.Second*10).Should(
 		BeTrue(), "error waiting for clusterinstance to finish provisioning")
 }
 
