@@ -26,7 +26,7 @@ func NewRegExKernelMappingBuilder(regex string) *KernelMappingBuilder {
 	glog.V(100).Infof(
 		"Initializing new regex KernelMapping parameter structure with the following regex param: %s", regex)
 
-	builder := KernelMappingBuilder{
+	builder := &KernelMappingBuilder{
 		definition: &moduleV1Beta1.KernelMapping{
 			Regexp: regex,
 		},
@@ -36,9 +36,11 @@ func NewRegExKernelMappingBuilder(regex string) *KernelMappingBuilder {
 		glog.V(100).Infof("The regex of NewRegExKernelMappingBuilder is empty")
 
 		builder.errorMsg = "'regex' parameter can not be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // NewLiteralKernelMappingBuilder create new kernel mapping element based on literal.
@@ -46,7 +48,7 @@ func NewLiteralKernelMappingBuilder(literal string) *KernelMappingBuilder {
 	glog.V(100).Infof(
 		"Initializing new literal KernelMapping parameter structure with following literal param: %s", literal)
 
-	builder := KernelMappingBuilder{
+	builder := &KernelMappingBuilder{
 		definition: &moduleV1Beta1.KernelMapping{
 			Literal: literal,
 		},
@@ -56,9 +58,11 @@ func NewLiteralKernelMappingBuilder(literal string) *KernelMappingBuilder {
 		glog.V(100).Infof("The literal of NewLiteralKernelMappingBuilder is empty")
 
 		builder.errorMsg = "'literal' parameter can not be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // BuildKernelMappingConfig returns kernel mapping config if error is not occur.
@@ -86,9 +90,7 @@ func (builder *KernelMappingBuilder) WithContainerImage(image string) *KernelMap
 		glog.V(100).Infof("The image of WithContainerImage is empty")
 
 		builder.errorMsg = "'image' parameter can not be empty for KernelMapping"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -110,15 +112,15 @@ func (builder *KernelMappingBuilder) WithBuildArg(argName, argValue string) *Ker
 		glog.V(100).Infof("The argName of WithBuildArg is empty")
 
 		builder.errorMsg = "'argName' parameter can not be empty for KernelMapping BuildArg"
+
+		return builder
 	}
 
 	if argValue == "" {
 		glog.V(100).Infof("The argValue of WithBuildArg is empty")
 
 		builder.errorMsg = "'argValue' parameter can not be empty for KernelMapping BuildArg"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -143,9 +145,7 @@ func (builder *KernelMappingBuilder) WithBuildSecret(secret string) *KernelMappi
 		glog.V(100).Infof("The secret of WithBuildSecret is empty")
 
 		builder.errorMsg = "'secret' parameter can not be empty for KernelMapping Secret"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -186,9 +186,7 @@ func (builder *KernelMappingBuilder) WithBuildDockerCfgFile(name string) *Kernel
 		glog.V(100).Infof("The name of WithBuildDockerCfgFile is empty")
 
 		builder.errorMsg = "'name' parameter can not be empty for KernelMapping Docker file"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -212,21 +210,23 @@ func (builder *KernelMappingBuilder) WithSign(certSecret, keySecret string, file
 		glog.V(100).Infof("The certSecret of WithSign is empty")
 
 		builder.errorMsg = "'certSecret' parameter can not be empty for KernelMapping Sign"
+
+		return builder
 	}
 
 	if keySecret == "" {
 		glog.V(100).Infof("The keySecret of WithSign is empty")
 
 		builder.errorMsg = "'keySecret' parameter can not be empty for KernelMapping Sign"
+
+		return builder
 	}
 
 	if len(fileToSign) < 1 {
 		glog.V(100).Infof("The fileToSign of WithSign is empty")
 
 		builder.errorMsg = "'fileToSign' parameter can not be empty for KernelMapping Sign"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -322,7 +322,7 @@ func (builder *KernelMappingBuilder) validate() (bool, error) {
 	if builder.definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.errorMsg != "" {

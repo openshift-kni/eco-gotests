@@ -49,7 +49,7 @@ func NewPreflightValidationOCPBuilder(
 		return nil
 	}
 
-	builder := PreflightValidationOCPBuilder{
+	builder := &PreflightValidationOCPBuilder{
 		apiClient: apiClient,
 		Definition: &moduleV1Beta1.PreflightValidationOCP{
 			ObjectMeta: metav1.ObjectMeta{
@@ -63,15 +63,19 @@ func NewPreflightValidationOCPBuilder(
 		glog.V(100).Infof("The name of the PreflightValidationOCP is empty")
 
 		builder.errorMsg = "PreflightValidationOCP 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the PreflightValidationOCP is empty")
 
 		builder.errorMsg = "PreflightValidationOCP 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithReleaseImage sets the image for which the preflightvalidationocp checks the module.
@@ -165,7 +169,7 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 		return nil, err
 	}
 
-	builder := PreflightValidationOCPBuilder{
+	builder := &PreflightValidationOCPBuilder{
 		apiClient: apiClient,
 		Definition: &moduleV1Beta1.PreflightValidationOCP{
 			ObjectMeta: metav1.ObjectMeta{
@@ -180,7 +184,7 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 
 		builder.errorMsg = "preflightvalidationocp 'name' cannot be empty"
 
-		return &builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf(builder.errorMsg)
 	}
 
 	if nsname == "" {
@@ -188,7 +192,7 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 
 		builder.errorMsg = "preflightvalidationocp 'nsname' cannot be empty"
 
-		return &builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf(builder.errorMsg)
 	}
 
 	if !builder.Exists() {
@@ -198,7 +202,7 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create builds preflightvalidationocp in the cluster and stores object in struct.
@@ -321,13 +325,13 @@ func (builder *PreflightValidationOCPBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

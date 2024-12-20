@@ -50,7 +50,7 @@ func NewKubeletConfigBuilder(apiClient *clients.Settings, name string) *KubeletC
 		return nil
 	}
 
-	builder := KubeletConfigBuilder{
+	builder := &KubeletConfigBuilder{
 		apiClient: apiClient,
 		Definition: &mcv1.KubeletConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -63,9 +63,11 @@ func NewKubeletConfigBuilder(apiClient *clients.Settings, name string) *KubeletC
 		glog.V(100).Infof("The name of the KubeletConfig is empty")
 
 		builder.errorMsg = "kubeletconfig 'name' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullKubeletConfig fetches existing kubeletconfig from cluster.
@@ -85,7 +87,7 @@ func PullKubeletConfig(apiClient *clients.Settings, name string) (*KubeletConfig
 		return nil, err
 	}
 
-	builder := KubeletConfigBuilder{
+	builder := &KubeletConfigBuilder{
 		apiClient: apiClient,
 		Definition: &mcv1.KubeletConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -106,7 +108,7 @@ func PullKubeletConfig(apiClient *clients.Settings, name string) (*KubeletConfig
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns the KubeletConfig object if found.
@@ -171,7 +173,7 @@ func (builder *KubeletConfigBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Exists checks whether the given kubeletconfig exists.
@@ -230,15 +232,15 @@ func (builder *KubeletConfigBuilder) WithSystemReserved(cpu, memory string) *Kub
 		glog.V(100).Infof("The cpu cannot be empty")
 
 		builder.errorMsg = "'cpu' cannot be empty"
+
+		return builder
 	}
 
 	if memory == "" {
 		glog.V(100).Infof("The memory cannot be empty")
 
 		builder.errorMsg = "'memory' cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -295,13 +297,13 @@ func (builder *KubeletConfigBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

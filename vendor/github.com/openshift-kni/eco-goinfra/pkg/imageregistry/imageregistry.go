@@ -48,7 +48,7 @@ func Pull(apiClient *clients.Settings, imageRegistryObjName string) (*Builder, e
 	glog.V(100).Infof(
 		"Pulling imageRegistry object name: %s", imageRegistryObjName)
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &imageregistryv1.Config{
 			ObjectMeta: metav1.ObjectMeta{
@@ -63,7 +63,7 @@ func Pull(apiClient *clients.Settings, imageRegistryObjName string) (*Builder, e
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get fetches existing imageRegistry from cluster.

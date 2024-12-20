@@ -62,12 +62,16 @@ func NewLokiStackBuilder(
 		glog.V(100).Infof("The name of the lokiStack is empty")
 
 		builder.errorMsg = "lokiStack 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The nsname of the lokiStack is empty")
 
 		builder.errorMsg = "lokiStack 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -91,7 +95,7 @@ func PullLokiStack(apiClient *clients.Settings, name, nsname string) (*LokiStack
 		return nil, err
 	}
 
-	builder := LokiStackBuilder{
+	builder := &LokiStackBuilder{
 		apiClient: apiClient.Client,
 		Definition: &lokiv1.LokiStack{
 			ObjectMeta: metav1.ObjectMeta{
@@ -119,7 +123,7 @@ func PullLokiStack(apiClient *clients.Settings, name, nsname string) (*LokiStack
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns lokiStack object if found.

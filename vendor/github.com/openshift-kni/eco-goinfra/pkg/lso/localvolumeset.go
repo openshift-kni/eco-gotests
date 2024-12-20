@@ -239,7 +239,7 @@ func (builder *LocalVolumeSetBuilder) Update() (*LocalVolumeSetBuilder, error) {
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // WithTolerations sets the localVolumeSet's tolerations.

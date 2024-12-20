@@ -45,7 +45,7 @@ func PullApplication(apiClient *clients.Settings, name, nsname string) (*Applica
 		return nil, err
 	}
 
-	builder := ApplicationBuilder{
+	builder := &ApplicationBuilder{
 		apiClient: apiClient.Client,
 		Definition: &argocdtypes.Application{
 			ObjectMeta: metav1.ObjectMeta{
@@ -73,7 +73,7 @@ func PullApplication(apiClient *clients.Settings, name, nsname string) (*Applica
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given argocd application exists.
@@ -219,18 +219,24 @@ func (builder *ApplicationBuilder) WithGitDetails(gitRepo, gitBranch, gitPath st
 		glog.V(100).Infof("The 'gitRepo' of the argocd application is empty")
 
 		builder.errorMsg = "'gitRepo' parameter is empty"
+
+		return builder
 	}
 
 	if gitBranch == "" {
 		glog.V(100).Infof("The 'gitBranch' of the argocd application is empty")
 
 		builder.errorMsg = "'gitBranch' parameter is empty"
+
+		return builder
 	}
 
 	if gitPath == "" {
 		glog.V(100).Infof("The 'gitPath' of the argocd application is empty")
 
 		builder.errorMsg = "'gitPath' parameter is empty"
+
+		return builder
 	}
 
 	glog.V(100).Infof(
@@ -238,10 +244,6 @@ func (builder *ApplicationBuilder) WithGitDetails(gitRepo, gitBranch, gitPath st
 			"RepoURL: %s,TargetRevision: %s, Path: %s", builder.Definition.Name, builder.Definition.Namespace,
 		gitRepo, gitBranch, gitPath,
 	)
-
-	if builder.errorMsg != "" {
-		return builder
-	}
 
 	builder.Definition.Spec.Source.RepoURL = gitRepo
 	builder.Definition.Spec.Source.TargetRevision = gitBranch
@@ -316,13 +318,13 @@ func (builder *ApplicationBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

@@ -47,7 +47,7 @@ func Pull(apiClient *clients.Settings, clusterOperatorName string) (*Builder, er
 		return nil, fmt.Errorf("clusterOperator 'apiClient' cannot be empty")
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &configv1.ClusterOperator{
 			ObjectMeta: metav1.ObjectMeta{
@@ -68,7 +68,7 @@ func Pull(apiClient *clients.Settings, clusterOperatorName string) (*Builder, er
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get fetches existing clusterOperator from cluster.
@@ -272,13 +272,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

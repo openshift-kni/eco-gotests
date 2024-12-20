@@ -40,7 +40,7 @@ func PullHFS(apiClient *clients.Settings, name, nsname string) (*HFSBuilder, err
 		return nil, err
 	}
 
-	builder := HFSBuilder{
+	builder := &HFSBuilder{
 		apiClient: apiClient.Client,
 		Definition: &bmhv1alpha1.HostFirmwareSettings{
 			ObjectMeta: metav1.ObjectMeta{
@@ -68,7 +68,7 @@ func PullHFS(apiClient *clients.Settings, name, nsname string) (*HFSBuilder, err
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns the HostFirmwareSettings object if found.
@@ -132,7 +132,7 @@ func (builder *HFSBuilder) Create() (*HFSBuilder, error) {
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // Delete removes a HostFirmwareSettings from the cluster if it exists.

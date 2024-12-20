@@ -68,6 +68,8 @@ func NewMCPBuilder(apiClient *clients.Settings, mcpName string) *MCPBuilder {
 		glog.V(100).Infof("The name of the MachineConfigPool is empty")
 
 		builder.errorMsg = "machineconfigpool 'name' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -90,7 +92,7 @@ func Pull(apiClient *clients.Settings, name string) (*MCPBuilder, error) {
 		return nil, err
 	}
 
-	builder := MCPBuilder{
+	builder := &MCPBuilder{
 		apiClient: apiClient.Client,
 		Definition: &mcv1.MachineConfigPool{
 			ObjectMeta: metav1.ObjectMeta{
@@ -111,7 +113,7 @@ func Pull(apiClient *clients.Settings, name string) (*MCPBuilder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns the MachineConfigPool object if found.
@@ -178,7 +180,7 @@ func (builder *MCPBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Exists checks whether the given MachineConfigPool exists.
@@ -418,13 +420,13 @@ func (builder *MCPBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
