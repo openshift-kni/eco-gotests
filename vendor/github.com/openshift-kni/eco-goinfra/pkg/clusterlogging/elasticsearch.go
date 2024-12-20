@@ -58,12 +58,16 @@ func NewElasticsearchBuilder(
 		glog.V(100).Infof("The name of the elasticsearch is empty")
 
 		builder.errorMsg = "elasticsearch 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The nsname of the elasticsearch is empty")
 
 		builder.errorMsg = "elasticsearch 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -87,7 +91,7 @@ func PullElasticsearch(apiClient *clients.Settings, name, nsname string) (*Elast
 		return nil, err
 	}
 
-	builder := ElasticsearchBuilder{
+	builder := &ElasticsearchBuilder{
 		apiClient: apiClient.Client,
 		Definition: &eskv1.Elasticsearch{
 			ObjectMeta: metav1.ObjectMeta{
@@ -115,7 +119,7 @@ func PullElasticsearch(apiClient *clients.Settings, name, nsname string) (*Elast
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns elasticsearch object if found.

@@ -282,7 +282,7 @@ func (builder *IbguBuilder) Get() (*v1alpha1.ImageBasedGroupUpgrade, error) {
 		return nil, err
 	}
 
-	return imagebasedgroupupgrade, err
+	return imagebasedgroupupgrade, nil
 }
 
 // Exists checks whether the given imagebasedgroupupgrade exists.
@@ -363,7 +363,7 @@ func PullIbgu(apiClient *clients.Settings, name, nsname string) (*IbguBuilder, e
 		return nil, err
 	}
 
-	builder := IbguBuilder{
+	builder := &IbguBuilder{
 		apiClient: apiClient.Client,
 		Definition: &v1alpha1.ImageBasedGroupUpgrade{
 			ObjectMeta: metav1.ObjectMeta{
@@ -391,7 +391,7 @@ func PullIbgu(apiClient *clients.Settings, name, nsname string) (*IbguBuilder, e
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // DeleteAndWait deletes the ibgu object and waits until the ibgu is deleted.

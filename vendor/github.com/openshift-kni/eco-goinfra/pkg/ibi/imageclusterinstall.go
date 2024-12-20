@@ -64,18 +64,24 @@ func NewImageClusterInstallBuilder(
 		glog.V(100).Infof("The name of the imageclusterinstall is empty")
 
 		builder.errorMsg = "imageclusterinstall 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the imageclusterinstall is empty")
 
 		builder.errorMsg = "imageclusterinstall 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	if imageset == "" {
 		glog.V(100).Infof("The imageset of the imageclusterinstall is empty")
 
 		builder.errorMsg = "imageclusterinstall 'imageset' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -320,7 +326,7 @@ func (builder *ImageClusterInstallBuilder) Get() (*ibiv1alpha1.ImageClusterInsta
 		return nil, err
 	}
 
-	return imageClusterInstall, err
+	return imageClusterInstall, nil
 }
 
 // Create generates an imageclusterinstall on the cluster.
@@ -454,13 +460,13 @@ func (builder *ImageClusterInstallBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

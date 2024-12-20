@@ -52,7 +52,7 @@ func NewSetBuilderFromCopy(
 		" params: namespace: %s, instanceType: %s, workerLabel: %s, and replicas: %v", nsName, instanceType,
 		workerLabel, replicas)
 
-	builder := SetBuilder{
+	builder := &SetBuilder{
 		apiClient: apiClient,
 	}
 
@@ -63,7 +63,7 @@ func NewSetBuilderFromCopy(
 
 		builder.errorMsg = fmt.Sprintf("Error initializing MachineSet from copy: %s", err.Error())
 
-		return &builder
+		return builder
 	}
 
 	builder.Definition = newSetBuilder.Definition
@@ -72,6 +72,8 @@ func NewSetBuilderFromCopy(
 
 	if err != nil {
 		builder.errorMsg = fmt.Sprintf("error getting the public cloud kind: %v", err.Error())
+
+		return builder
 	}
 
 	glog.V(100).Infof("Updating copied MachineSet provider instanceType to: %s", instanceType)
@@ -80,46 +82,58 @@ func NewSetBuilderFromCopy(
 
 	if err != nil {
 		builder.errorMsg = fmt.Sprintf("error changing the instanceType: %v", err.Error())
+
+		return builder
 	}
 
 	if nsName == "" {
 		glog.V(100).Infof("The Namespace of the MachineSet is empty")
 
 		builder.errorMsg = "MachineSet 'nsName' cannot be empty"
+
+		return builder
 	}
 
 	if instanceType == "" {
 		glog.V(100).Infof("The instanceType of the MachineSet is empty")
 
 		builder.errorMsg = "MachineSet 'instanceType' cannot be empty"
+
+		return builder
 	}
 
 	if replicas == 0 {
 		glog.V(100).Infof("The replicas of the MachineSet is zero")
 
 		builder.errorMsg = "MachineSet 'replicas' cannot be zero"
+
+		return builder
 	}
 
 	if workerLabel == "" {
 		glog.V(100).Infof("The workerLabel of the MachineSet is empty")
 
 		builder.errorMsg = "MachineSet 'workerLabel' cannot be empty"
+
+		return builder
 	}
 
 	if builder.Definition == nil {
 		glog.V(100).Infof("The MachineSet object definition is nil")
 
 		builder.errorMsg = "MachineSet 'Object.Definition' is nil"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullSet loads an existing MachineSet into Builder struct.
 func PullSet(apiClient *clients.Settings, name, namespace string) (*SetBuilder, error) {
 	glog.V(100).Infof("Pulling existing machineSet name %s in namespace %s", name, namespace)
 
-	builder := SetBuilder{
+	builder := &SetBuilder{
 		apiClient: apiClient,
 		Definition: &machinev1beta1.MachineSet{
 			ObjectMeta: metav1.ObjectMeta{
@@ -131,10 +145,14 @@ func PullSet(apiClient *clients.Settings, name, namespace string) (*SetBuilder, 
 
 	if name == "" {
 		builder.errorMsg = "MachineSet 'name' cannot be empty"
+
+		return nil, fmt.Errorf("machineSet 'name' cannot be empty")
 	}
 
 	if namespace == "" {
 		builder.errorMsg = "MachineSet 'namespace' cannot be empty"
+
+		return nil, fmt.Errorf("machineSet 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -143,7 +161,7 @@ func PullSet(apiClient *clients.Settings, name, namespace string) (*SetBuilder, 
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given MachineSet exists.
@@ -569,13 +587,13 @@ func (builder *SetBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiClient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

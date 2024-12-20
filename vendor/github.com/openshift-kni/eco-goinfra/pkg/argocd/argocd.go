@@ -43,7 +43,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 		return nil
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &argocdoperator.ArgoCD{
 			Spec: argocdoperator.ArgoCDSpec{},
@@ -59,16 +59,18 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 
 		builder.errorMsg = "argocd 'name' cannot be empty"
 
-		return &builder
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the argocd is empty")
 
 		builder.errorMsg = "argocd 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull pulls existing argocd from cluster.
@@ -252,13 +254,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("error: received nil %s builder apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

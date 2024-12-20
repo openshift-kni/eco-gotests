@@ -59,12 +59,16 @@ func NewClusterLogForwarderBuilder(
 		glog.V(100).Infof("The name of the clusterlogforwarder is empty")
 
 		builder.errorMsg = "clusterlogforwarder 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the clusterlogforwarder is empty")
 
 		builder.errorMsg = "clusterlogforwarder 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -83,9 +87,7 @@ func (builder *ClusterLogForwarderBuilder) WithOutput(outputSpec *clov1.OutputSp
 		glog.V(100).Infof("The 'outputSpec' of the deployment is empty")
 
 		builder.errorMsg = "'outputSpec' parameter is empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -111,9 +113,7 @@ func (builder *ClusterLogForwarderBuilder) WithPipeline(pipelineSpec *clov1.Pipe
 		glog.V(100).Infof("The 'pipelineSpec' of the deployment is empty")
 
 		builder.errorMsg = "'pipelineSpec' parameter is empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -143,7 +143,7 @@ func PullClusterLogForwarder(apiClient *clients.Settings, name, nsname string) (
 		return nil, err
 	}
 
-	builder := ClusterLogForwarderBuilder{
+	builder := &ClusterLogForwarderBuilder{
 		apiClient: apiClient.Client,
 		Definition: &clov1.ClusterLogForwarder{
 			ObjectMeta: metav1.ObjectMeta{
@@ -169,7 +169,7 @@ func PullClusterLogForwarder(apiClient *clients.Settings, name, nsname string) (
 		return nil, fmt.Errorf("clusterlogforwarder object %s does not exist in namespace %s", name, nsname)
 	}
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns clusterlogforwarder object if found.
@@ -191,7 +191,7 @@ func (builder *ClusterLogForwarderBuilder) Get() (*clov1.ClusterLogForwarder, er
 		return nil, err
 	}
 
-	return clusterLogForwarder, err
+	return clusterLogForwarder, nil
 }
 
 // Create makes a clusterlogforwarder in the cluster and stores the created object in struct.

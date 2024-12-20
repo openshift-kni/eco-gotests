@@ -62,12 +62,16 @@ func NewBuilder(
 		glog.V(100).Infof("The name of the clusterLogging is empty")
 
 		builder.errorMsg = "the clusterLogging 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the clusterLogging is empty")
 
 		builder.errorMsg = "the clusterLogging 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -91,7 +95,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		return nil, err
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &clov1.ClusterLogging{
 			ObjectMeta: metav1.ObjectMeta{
@@ -119,7 +123,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns clusterLogging object if found.
@@ -141,7 +145,7 @@ func (builder *Builder) Get() (*clov1.ClusterLogging, error) {
 		return nil, err
 	}
 
-	return clusterLogging, err
+	return clusterLogging, nil
 }
 
 // Create makes a clusterLogging in the cluster and stores the created object in struct.
@@ -348,13 +352,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

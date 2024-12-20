@@ -98,7 +98,7 @@ func PullLocalVolumeDiscovery(apiClient *clients.Settings, name, nsname string) 
 		return nil, err
 	}
 
-	builder := LocalVolumeDiscoveryBuilder{
+	builder := &LocalVolumeDiscoveryBuilder{
 		apiClient: apiClient.Client,
 		Definition: &lsov1alpha1.LocalVolumeDiscovery{
 			ObjectMeta: metav1.ObjectMeta{
@@ -126,7 +126,7 @@ func PullLocalVolumeDiscovery(apiClient *clients.Settings, name, nsname string) 
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get fetches existing localVolumeDiscovery from cluster.

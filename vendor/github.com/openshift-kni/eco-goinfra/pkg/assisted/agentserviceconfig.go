@@ -57,7 +57,7 @@ func NewAgentServiceConfigBuilder(
 		return nil
 	}
 
-	builder := AgentServiceConfigBuilder{
+	builder := &AgentServiceConfigBuilder{
 		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -70,7 +70,7 @@ func NewAgentServiceConfigBuilder(
 		},
 	}
 
-	return &builder
+	return builder
 }
 
 // NewDefaultAgentServiceConfigBuilder creates a new instance of AgentServiceConfigBuilder
@@ -85,7 +85,7 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 		return nil
 	}
 
-	builder := AgentServiceConfigBuilder{
+	builder := &AgentServiceConfigBuilder{
 		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.AgentServiceConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -100,6 +100,8 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 		glog.V(100).Infof("The ImageStorage size is in wrong format")
 
 		builder.errorMsg = fmt.Sprintf("error retrieving the storage size: %v", err)
+
+		return builder
 	}
 
 	builder.Definition.Spec.ImageStorage = &imageStorageSpec
@@ -109,6 +111,8 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 		glog.V(100).Infof("The DatabaseStorage size is in wrong format")
 
 		builder.errorMsg = fmt.Sprintf("error retrieving the storage size: %v", err)
+
+		return builder
 	}
 
 	builder.Definition.Spec.DatabaseStorage = databaseStorageSpec
@@ -118,11 +122,13 @@ func NewDefaultAgentServiceConfigBuilder(apiClient *clients.Settings) *AgentServ
 		glog.V(100).Infof("The FileSystemStorage size is in wrong format")
 
 		builder.errorMsg = fmt.Sprintf("error retrieving the storage size: %v", err)
+
+		return builder
 	}
 
 	builder.Definition.Spec.FileSystemStorage = fileSystemStorageSpec
 
-	return &builder
+	return builder
 }
 
 // WithImageStorage sets the imageStorageSpec used by the agentserviceconfig.

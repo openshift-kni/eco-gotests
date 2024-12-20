@@ -61,7 +61,7 @@ func PullAgent(apiClient *clients.Settings, name, nsname string) (*agentBuilder,
 		return nil, fmt.Errorf("the apiClient is nil")
 	}
 
-	builder := agentBuilder{
+	builder := &agentBuilder{
 		apiClient: apiClient.Client,
 		Definition: &agentInstallV1Beta1.Agent{
 			ObjectMeta: metav1.ObjectMeta{
@@ -74,13 +74,13 @@ func PullAgent(apiClient *clients.Settings, name, nsname string) (*agentBuilder,
 	if name == "" {
 		glog.V(100).Infof("The name of the agent is empty")
 
-		builder.errorMsg = "agent 'name' cannot be empty"
+		return nil, fmt.Errorf("agent 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the agent is empty")
 
-		builder.errorMsg = "agent 'namespace' cannot be empty"
+		return nil, fmt.Errorf("agent 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -89,7 +89,7 @@ func PullAgent(apiClient *clients.Settings, name, nsname string) (*agentBuilder,
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // WithHostName sets the hostname of the agent resource.
@@ -106,9 +106,7 @@ func (builder *agentBuilder) WithHostName(hostname string) *agentBuilder {
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.errorMsg = nonExistentMsg
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -131,9 +129,7 @@ func (builder *agentBuilder) WithRole(role string) *agentBuilder {
 			builder.Definition.Name, builder.Definition.Namespace)
 
 		builder.errorMsg = nonExistentMsg
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -287,7 +283,7 @@ func (builder *agentBuilder) Get() (*agentInstallV1Beta1.Agent, error) {
 		return nil, err
 	}
 
-	return agent, err
+	return agent, nil
 }
 
 // Update modifies the agent resource on the cluster
@@ -377,13 +373,13 @@ func (builder *agentBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

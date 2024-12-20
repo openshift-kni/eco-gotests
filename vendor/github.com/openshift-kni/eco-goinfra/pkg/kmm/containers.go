@@ -40,6 +40,8 @@ func NewModLoaderContainerBuilder(modName string) *ModuleLoaderContainerBuilder 
 		glog.V(100).Infof("The modName of the NewModLoaderContainerBuilder is empty")
 
 		builder.errorMsg = "'modName' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -196,7 +198,7 @@ func (builder *ModuleLoaderContainerBuilder) validate() (bool, error) {
 	if builder.definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.errorMsg != "" {
@@ -222,7 +224,7 @@ func NewDevicePluginContainerBuilder(image string) *DevicePluginContainerBuilder
 	glog.V(100).Infof(
 		"Initializing new DevPluginContainerBuilder structure with the following params: %s", image)
 
-	builder := DevicePluginContainerBuilder{
+	builder := &DevicePluginContainerBuilder{
 		definition: &moduleV1Beta1.DevicePluginContainerSpec{
 			Image: image,
 		},
@@ -232,9 +234,11 @@ func NewDevicePluginContainerBuilder(image string) *DevicePluginContainerBuilder
 		glog.V(100).Infof("The image of NewDevicePluginContainerBuilder is empty")
 
 		builder.errorMsg = "invalid parameter 'image' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithEnv adds specific env to DevicePlugin Container.
@@ -250,15 +254,15 @@ func (builder *DevicePluginContainerBuilder) WithEnv(name, value string) *Device
 		glog.V(100).Infof("The name of WithEnv is empty")
 
 		builder.errorMsg = "'name' can not be empty for DevicePlugin Env"
+
+		return builder
 	}
 
 	if value == "" {
 		glog.V(100).Infof("The value of WithEnv is empty")
 
 		builder.errorMsg = "'value' can not be empty for DevicePlugin Env"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -281,15 +285,15 @@ func (builder *DevicePluginContainerBuilder) WithVolumeMount(mountPath, name str
 		glog.V(100).Infof("The name of WithVolumeMount is empty")
 
 		builder.errorMsg = "'name' can not be empty for DevicePlugin mountPath"
+
+		return builder
 	}
 
 	if mountPath == "" {
 		glog.V(100).Infof("The mountPath of WithVolumeMount is empty")
 
 		builder.errorMsg = "'mountPath' can not be empty for DevicePlugin mountPath"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -323,7 +327,7 @@ func (builder *DevicePluginContainerBuilder) validate() (bool, error) {
 	if builder.definition == nil {
 		glog.V(100).Infof("The %s is undefined", strings.ToLower(resourceCRD))
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.errorMsg != "" {

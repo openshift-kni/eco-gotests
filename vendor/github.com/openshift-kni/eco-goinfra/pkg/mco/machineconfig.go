@@ -47,7 +47,7 @@ func NewMCBuilder(apiClient *clients.Settings, name string) *MCBuilder {
 		return nil
 	}
 
-	builder := MCBuilder{
+	builder := &MCBuilder{
 		apiClient: apiClient.Client,
 		Definition: &mcv1.MachineConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -60,9 +60,11 @@ func NewMCBuilder(apiClient *clients.Settings, name string) *MCBuilder {
 		glog.V(100).Infof("The name of the MachineConfig is empty")
 
 		builder.errorMsg = "machineconfig 'name' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullMachineConfig fetches existing machineconfig from cluster.
@@ -82,7 +84,7 @@ func PullMachineConfig(apiClient *clients.Settings, name string) (*MCBuilder, er
 		return nil, err
 	}
 
-	builder := MCBuilder{
+	builder := &MCBuilder{
 		apiClient: apiClient.Client,
 		Definition: &mcv1.MachineConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -103,7 +105,7 @@ func PullMachineConfig(apiClient *clients.Settings, name string) (*MCBuilder, er
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns the MachineConfig object if found.
@@ -168,7 +170,7 @@ func (builder *MCBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update renovates the existing machineconfig object with machineconfig definition in builder.
@@ -360,13 +362,13 @@ func (builder *MCBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
