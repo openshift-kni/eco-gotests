@@ -29,7 +29,7 @@ type Builder struct {
 func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 	glog.V(100).Info("Initializing new console %s structure", name)
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &configv1.Console{
 			ObjectMeta: metav1.ObjectMeta{
@@ -42,14 +42,16 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 		glog.V(100).Info("The name of the Console is empty")
 
 		builder.errorMsg = "console 'name' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull loads an existing console into the Builder struct.
 func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &configv1.Console{
 			ObjectMeta: metav1.ObjectMeta{
@@ -61,7 +63,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	if name == "" {
 		glog.V(100).Info("The name of the Console is empty")
 
-		builder.errorMsg = "console 'name' cannot be empty"
+		return builder, fmt.Errorf("console 'name' cannot be empty")
 	}
 
 	glog.V(100).Infof("Pulling cluster console %s", name)
@@ -72,7 +74,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create makes a console in cluster and stores the created object in struct.
