@@ -85,7 +85,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 			AfterAll(func() {
 				By("Removing SR-IOV configuration")
-				err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+				err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 				By("Verifying that VFs still exist")
@@ -233,7 +233,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 						"MaxTxRate and VlanId configuration have not been reverted to the initial one")
 
 				By("Removing SR-IOV configuration")
-				err = sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+				err = netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 				By("Checking that VF has initial configuration")
@@ -331,7 +331,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				Expect(err).ToNot(HaveOccurred(), "Failed to update NMState network policy")
 
 				By("Removing SR-IOV configuration")
-				err = sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+				err = netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 				By("Cleaning test namespace")
@@ -463,7 +463,7 @@ func collectingInfoSriovOperator() (
 func removeSriovOperator(sriovNamespace *namespace.Builder) {
 	By("Clean all SR-IOV policies and networks")
 
-	err := sriovenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+	err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 	Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
 
 	By("Remove SR-IOV operator config")
