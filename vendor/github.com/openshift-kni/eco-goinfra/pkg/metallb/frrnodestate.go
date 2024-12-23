@@ -38,7 +38,7 @@ func PullFrrNodeState(apiClient *clients.Settings, name string) (*FrrNodeStateBu
 		return nil, err
 	}
 
-	frrStateBuilder := FrrNodeStateBuilder{
+	frrStateBuilder := &FrrNodeStateBuilder{
 		apiClient: apiClient.Client,
 		Definition: &frrtypes.FRRNodeState{
 			ObjectMeta: metav1.ObjectMeta{
@@ -59,7 +59,7 @@ func PullFrrNodeState(apiClient *clients.Settings, name string) (*FrrNodeStateBu
 
 	frrStateBuilder.Definition = frrStateBuilder.Object
 
-	return &frrStateBuilder, nil
+	return frrStateBuilder, nil
 }
 
 // Exists checks whether the given FRRNodeState exists.
@@ -112,7 +112,7 @@ func (builder *FrrNodeStateBuilder) validate() (bool, error) {
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

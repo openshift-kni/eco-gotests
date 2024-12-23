@@ -40,7 +40,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, nodeSelector m
 		return nil
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &mlbtypes.MetalLB{
 			ObjectMeta: metav1.ObjectMeta{
@@ -57,21 +57,27 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string, nodeSelector m
 		glog.V(100).Infof("The name of the metallb is empty")
 
 		builder.errorMsg = "metallb 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the metallb is empty")
 
 		builder.errorMsg = "metallb 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	if len(nodeSelector) < 1 {
 		glog.V(100).Infof("The SpeakerNodeSelector of the metallb is empty")
 
 		builder.errorMsg = "metallb 'nodeSelector' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull retrieves an existing metallb.io object from the cluster.
@@ -92,7 +98,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		return nil, err
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &mlbtypes.MetalLB{
 			ObjectMeta: metav1.ObjectMeta{
@@ -120,7 +126,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given MetalLb exists.
@@ -182,16 +188,8 @@ func (builder *Builder) Create() (*Builder, error) {
 	if !builder.Exists() {
 		err = builder.apiClient.Create(context.TODO(), builder.Definition)
 
-		if err != nil {
-			glog.V(100).Infof("Failed to create MetalLb")
-
-			return nil, err
-		}
-
-		builder.Object = builder.Definition
-
-		if err != nil {
-			return nil, err
+		if err == nil {
+			builder.Object = builder.Definition
 		}
 	}
 
@@ -242,10 +240,6 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
 
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
-	}
-
 	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	builder.Definition.ObjectMeta.ResourceVersion = builder.Object.ObjectMeta.ResourceVersion
 
@@ -283,9 +277,7 @@ func (builder *Builder) RemoveLabel(key string) *Builder {
 	if key == "" {
 		glog.V(100).Infof("Failed to remove empty label's key from metalLbIo %s", builder.Definition.Name)
 		builder.errorMsg = "error to remove empty key from metalLbIo"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -306,9 +298,7 @@ func (builder *Builder) WithSpeakerNodeSelector(label map[string]string) *Builde
 
 	if len(label) < 1 {
 		builder.errorMsg = "can not accept empty label and redefine metallb NodeSelector"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -394,13 +384,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

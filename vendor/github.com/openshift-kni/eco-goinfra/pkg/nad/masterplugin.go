@@ -25,7 +25,7 @@ func NewMasterMacVlanPlugin(name string) *MasterMacVlanPlugin {
 	glog.V(100).Infof(
 		"Initializing new MasterVlanPlugin structure with the following param: %s", name)
 
-	builder := MasterMacVlanPlugin{
+	builder := &MasterMacVlanPlugin{
 		masterPlugin: &MasterPlugin{
 			CniVersion: "0.3.1",
 			Name:       name,
@@ -37,9 +37,11 @@ func NewMasterMacVlanPlugin(name string) *MasterMacVlanPlugin {
 		glog.V(100).Infof("error MasterMacVlanPlugin can not be empty")
 
 		builder.errorMsg = "MasterMacVlanPlugin name is empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithMode defines macvlan type to MasterMacVlanPlugin. Default is bridge.
@@ -55,6 +57,8 @@ func (plugin *MasterMacVlanPlugin) WithMode(mode string) *MasterMacVlanPlugin {
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterMacVlanPlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterMacVlanPlugin")
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Mode = mode
@@ -75,6 +79,8 @@ func (plugin *MasterMacVlanPlugin) WithMasterInterface(master string) *MasterMac
 		glog.V(100).Infof("error to add master interface, the name of interface can not be empty")
 
 		plugin.errorMsg = "invalid master parameter"
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Master = master
@@ -95,6 +101,8 @@ func (plugin *MasterMacVlanPlugin) WithIPAM(ipam *IPAM) *MasterMacVlanPlugin {
 		glog.V(100).Infof("error to add empty ipam to MasterMacVlanPlugin")
 
 		plugin.errorMsg = invalidIpamParameterMsg
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Ipam = ipam
@@ -136,7 +144,7 @@ func NewMasterBridgePlugin(name, bridgeName string) *MasterBridgePlugin {
 	glog.V(100).Infof(
 		"Initializing new MasterBridgePlugin structure %s, with bridge %s", name, bridgeName)
 
-	builder := MasterBridgePlugin{
+	builder := &MasterBridgePlugin{
 		masterPlugin: &MasterPlugin{
 			CniVersion: "0.3.1",
 			Name:       name,
@@ -149,9 +157,11 @@ func NewMasterBridgePlugin(name, bridgeName string) *MasterBridgePlugin {
 		glog.V(100).Infof("error MasterBridgePlugin can not be empty")
 
 		builder.errorMsg = "MasterBridgePlugin name is empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // GetMasterPluginConfig returns master plugin if error does not occur.
@@ -170,12 +180,16 @@ func (plugin *MasterBridgePlugin) WithIPAM(ipam *IPAM) *MasterBridgePlugin {
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterBridgePlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterBridgePlugin")
+
+		return plugin
 	}
 
 	if ipam == nil {
 		glog.V(100).Infof("error adding empty ipam to MasterBridgePlugin")
 
 		plugin.errorMsg = invalidIpamParameterMsg
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Ipam = ipam
@@ -194,7 +208,7 @@ func NewMasterVlanPlugin(name string, vlanID uint16) *MasterVlanPlugin {
 	glog.V(100).Infof(
 		"Initializing new MasterVlanPlugin structure %s, with vlanId %s", name, vlanID)
 
-	builder := MasterVlanPlugin{
+	builder := &MasterVlanPlugin{
 		masterPlugin: &MasterPlugin{
 			CniVersion: "0.3.1",
 			Name:       name,
@@ -207,15 +221,19 @@ func NewMasterVlanPlugin(name string, vlanID uint16) *MasterVlanPlugin {
 		glog.V(100).Infof("error vlan id can not be greater than 4094")
 
 		builder.errorMsg = "MasterVlanPlugin vlanID is greater than 4094"
+
+		return builder
 	}
 
 	if builder.masterPlugin.Name == "" {
 		glog.V(100).Infof("error MasterVlanPlugin name can not be empty")
 
 		builder.errorMsg = "MasterVlanPlugin name is empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithIPAM defines IPAM configuration to MasterVlanPlugin. Default is empty.
@@ -225,15 +243,15 @@ func (plugin *MasterVlanPlugin) WithIPAM(ipam *IPAM) *MasterVlanPlugin {
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterVlanPlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterVlanPlugin")
+
+		return plugin
 	}
 
 	if ipam == nil {
 		glog.V(100).Infof("error adding empty ipam to MasterVlanPlugin")
 
 		plugin.errorMsg = invalidIpamParameterMsg
-	}
 
-	if plugin.errorMsg != "" {
 		return plugin
 	}
 
@@ -249,15 +267,15 @@ func (plugin *MasterVlanPlugin) WithMasterInterface(masterInterfaceName string) 
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterVlanPlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterVlanPlugin")
+
+		return plugin
 	}
 
 	if masterInterfaceName == "" {
 		glog.V(100).Infof("error to add masterInterfaceName interface, the name of interface can not be empty")
 
 		plugin.errorMsg = "invalid masterInterfaceName parameter"
-	}
 
-	if plugin.errorMsg != "" {
 		return plugin
 	}
 
@@ -271,9 +289,7 @@ func (plugin *MasterVlanPlugin) WithLinkInContainer() *MasterVlanPlugin {
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterVlanPlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterVlanPlugin")
-	}
 
-	if plugin.errorMsg != "" {
 		return plugin
 	}
 
@@ -302,7 +318,7 @@ func NewMasterIPVlanPlugin(name string) *MasterIPVlanPlugin {
 	glog.V(100).Infof(
 		"Initializing new MasterIPVlanPlugin structure %s", name)
 
-	builder := MasterIPVlanPlugin{
+	builder := &MasterIPVlanPlugin{
 		masterPlugin: &MasterPlugin{
 			CniVersion: "0.3.1",
 			Name:       name,
@@ -314,9 +330,11 @@ func NewMasterIPVlanPlugin(name string) *MasterIPVlanPlugin {
 		glog.V(100).Infof("error MasterIPVlanPlugin can not be empty")
 
 		builder.errorMsg = "MasterIPVlanPlugin name is empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithIPAM defines IPAM configuration to MasterIPVlanPlugin. Default is empty.
@@ -326,15 +344,15 @@ func (plugin *MasterIPVlanPlugin) WithIPAM(ipam *IPAM) *MasterIPVlanPlugin {
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin")
+
+		return plugin
 	}
 
 	if ipam == nil {
 		glog.V(100).Infof("error adding empty ipam to MasterIPVlanPlugin")
 
 		plugin.errorMsg = invalidIpamParameterMsg
-	}
 
-	if plugin.errorMsg != "" {
 		return plugin
 	}
 
@@ -350,15 +368,15 @@ func (plugin *MasterIPVlanPlugin) WithMasterInterface(masterInterfaceName string
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin")
+
+		return plugin
 	}
 
 	if masterInterfaceName == "" {
 		glog.V(100).Infof("error to add master interface, the name of interface can not be empty")
 
 		plugin.errorMsg = "invalid masterInterfaceName parameter"
-	}
 
-	if plugin.errorMsg != "" {
 		return plugin
 	}
 
@@ -374,9 +392,7 @@ func (plugin *MasterIPVlanPlugin) WithLinkInContainer() *MasterIPVlanPlugin {
 	if plugin.masterPlugin == nil {
 		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin"))
 		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterIPVlanPlugin")
-	}
 
-	if plugin.errorMsg != "" {
 		return plugin
 	}
 
@@ -410,7 +426,7 @@ func NewMasterBondPlugin(name, mode string) *MasterBondPlugin {
 		"balance-xor":   true,
 	}
 
-	builder := MasterBondPlugin{
+	builder := &MasterBondPlugin{
 		masterPlugin: &MasterPlugin{
 			CniVersion: "0.3.1",
 			Name:       name,
@@ -424,15 +440,19 @@ func NewMasterBondPlugin(name, mode string) *MasterBondPlugin {
 		glog.V(100).Infof("error: invalid mode type %s used for MasterBondPlugin bond interface", mode)
 
 		builder.errorMsg = "Bond mode type is not valid"
+
+		return builder
 	}
 
 	if builder.masterPlugin.Name == "" {
 		glog.V(100).Infof("error NewMasterBondPlugin name can not be empty")
 
 		builder.errorMsg = "NewMasterBondPlugin name is empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithLinksInContainer defines linksInContainer configuration to MasterBondPlugin.
@@ -451,6 +471,8 @@ func (plugin *MasterBondPlugin) WithFailOverMac(failOverMac int) *MasterBondPlug
 		glog.V(100).Infof("error adding incorrect value %d for FailOverMac in MasterBondPlugin", failOverMac)
 
 		plugin.errorMsg = "error adding incorrect FailOverMac to MasterBondPlugin"
+
+		return plugin
 	}
 
 	plugin.masterPlugin.FailOverMac = failOverMac
@@ -466,6 +488,8 @@ func (plugin *MasterBondPlugin) WithMiimon(miimon int) *MasterBondPlugin {
 		glog.V(100).Infof("error adding incorrect miimon value %d to MasterBondPlugin", miimon)
 
 		plugin.errorMsg = "error adding incorrect miimon value to MasterBondPlugin"
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Miimon = fmt.Sprintf("%d", miimon)
@@ -481,6 +505,8 @@ func (plugin *MasterBondPlugin) WithLinks(links []Link) *MasterBondPlugin {
 		glog.V(100).Infof("links value %v cannot be nil or empty in MasterBondPlugin", links)
 
 		plugin.errorMsg = "error adding empty links to MasterBondPlugin"
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Links = links
@@ -496,6 +522,8 @@ func (plugin *MasterBondPlugin) WithCapabilities(capabilities *Capability) *Mast
 		glog.V(100).Infof("error adding nil value %d capabilities to MasterBondPlugin", capabilities)
 
 		plugin.errorMsg = "error adding empty capabilities to MasterBondPlugin"
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Capabilities = capabilities
@@ -511,6 +539,8 @@ func (plugin *MasterBondPlugin) WithIPAM(ipam *IPAM) *MasterBondPlugin {
 		glog.V(100).Infof("error adding ipam value %d to MasterBondPlugin", ipam)
 
 		plugin.errorMsg = "error adding empty ipam to MasterBondPlugin"
+
+		return plugin
 	}
 
 	plugin.masterPlugin.Ipam = ipam
@@ -526,6 +556,8 @@ func (plugin *MasterBondPlugin) WithVLANInContainer(vlan uint16) *MasterBondPlug
 		glog.V(100).Infof("error adding incorrect vlan id %d to MasterBondPlugin", vlan)
 
 		plugin.errorMsg = "error adding incorrect vlan to MasterBondPlugin"
+
+		return plugin
 	}
 
 	plugin.masterPlugin.VlanID = vlan
