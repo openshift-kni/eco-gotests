@@ -46,7 +46,7 @@ func NewFrrConfigurationBuilder(
 		return nil
 	}
 
-	builder := FrrConfigurationBuilder{
+	builder := &FrrConfigurationBuilder{
 		apiClient: apiClient,
 		Definition: &frrtypes.FRRConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
@@ -61,7 +61,7 @@ func NewFrrConfigurationBuilder(
 
 		builder.errorMsg = "frrConfiguration 'name' cannot be empty"
 
-		return &builder
+		return builder
 	}
 
 	if nsname == "" {
@@ -69,10 +69,10 @@ func NewFrrConfigurationBuilder(
 
 		builder.errorMsg = "frrConfiguration 'nsname' cannot be empty"
 
-		return &builder
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Create makes a FrrConfiguration in the cluster and stores the created object in struct.
@@ -221,10 +221,6 @@ func (builder *FrrConfigurationBuilder) WithToReceiveModeAll(routerIndex, neighb
 
 		builder.errorMsg = fmt.Sprintf("invalid neighborIndex: %d", neighborIndex)
 
-		return builder
-	}
-
-	if builder.errorMsg != "" {
 		return builder
 	}
 

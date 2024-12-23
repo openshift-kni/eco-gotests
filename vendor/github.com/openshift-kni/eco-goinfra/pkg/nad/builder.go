@@ -50,7 +50,7 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 		return nil
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &nadV1.NetworkAttachmentDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -64,15 +64,19 @@ func NewBuilder(apiClient *clients.Settings, name, nsname string) *Builder {
 		glog.V(100).Infof("The name of the NetworkAttachmentDefinition is empty")
 
 		builder.errorMsg = "NAD name is empty"
+
+		return builder
 	}
 
 	if builder.Definition.Namespace == "" {
 		glog.V(100).Infof("The namespace of the NetworkAttachmentDefinition is empty")
 
 		builder.errorMsg = "NAD namespace is empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull pulls existing networkattachmentdefinition from cluster.
@@ -93,7 +97,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		return nil, fmt.Errorf("failed to add nad v1 scheme to client schemes")
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &nadV1.NetworkAttachmentDefinition{
 			ObjectMeta: metav1.ObjectMeta{
@@ -121,7 +125,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns CatalogSource object if found.
@@ -324,12 +328,16 @@ func (builder *Builder) WithMasterPlugin(masterPlugin *MasterPlugin) *Builder {
 
 	if builder.Definition.Spec != emptyNadConfig {
 		builder.errorMsg = "error to redefine predefine NAD"
+
+		return builder
 	}
 
 	masterPluginSting, err := json.Marshal(masterPlugin)
 
 	if err != nil {
 		builder.errorMsg = err.Error()
+
+		return builder
 	}
 
 	builder.Definition.Spec.Config = string(masterPluginSting)
@@ -355,6 +363,8 @@ func (builder *Builder) WithPlugins(name string, plugins *[]Plugin) *Builder {
 
 	if err != nil {
 		builder.errorMsg = err.Error()
+
+		return builder
 	}
 
 	builder.Definition.Spec.Config = string(pluginsConfigString)
@@ -383,13 +393,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

@@ -39,7 +39,7 @@ func NewBGPAdvertisementBuilder(apiClient *clients.Settings, name, nsname string
 		return nil
 	}
 
-	builder := BGPAdvertisementBuilder{
+	builder := &BGPAdvertisementBuilder{
 		apiClient: apiClient.Client,
 		Definition: &mlbtypes.BGPAdvertisement{
 			ObjectMeta: metav1.ObjectMeta{
@@ -53,15 +53,19 @@ func NewBGPAdvertisementBuilder(apiClient *clients.Settings, name, nsname string
 		glog.V(100).Infof("The name of the BGPAdvertisement is empty")
 
 		builder.errorMsg = "BGPAdvertisement 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the BGPAdvertisement is empty")
 
 		builder.errorMsg = "BGPAdvertisement 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Exists checks whether the given BGPAdvertisement exists.
@@ -123,7 +127,7 @@ func PullBGPAdvertisement(apiClient *clients.Settings, name, nsname string) (*BG
 		return nil, err
 	}
 
-	builder := BGPAdvertisementBuilder{
+	builder := &BGPAdvertisementBuilder{
 		apiClient: apiClient.Client,
 		Definition: &mlbtypes.BGPAdvertisement{
 			ObjectMeta: metav1.ObjectMeta{
@@ -151,7 +155,7 @@ func PullBGPAdvertisement(apiClient *clients.Settings, name, nsname string) (*BG
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create makes a BGPAdvertisement in the cluster and stores the created object in struct.
@@ -267,9 +271,7 @@ func (builder *BGPAdvertisementBuilder) WithAggregationLength4(aggregationLength
 	if aggregationLength < 0 || aggregationLength > 32 {
 		builder.errorMsg = fmt.Sprintf("AggregationLength %d is invalid, the value shoud be in range 0...32",
 			aggregationLength)
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -292,9 +294,7 @@ func (builder *BGPAdvertisementBuilder) WithAggregationLength6(aggregationLength
 		fmt.Printf("%d", aggregationLength)
 		builder.errorMsg = fmt.Sprintf("AggregationLength %d is invalid, the value shoud be in range 0...128",
 			aggregationLength)
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -330,9 +330,7 @@ func (builder *BGPAdvertisementBuilder) WithCommunities(communities []string) *B
 
 	if len(communities) < 1 {
 		builder.errorMsg = "error: community setting is empty list, the list should contain at least one element"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -353,9 +351,7 @@ func (builder *BGPAdvertisementBuilder) WithIPAddressPools(ipAddressPools []stri
 
 	if len(ipAddressPools) < 1 {
 		builder.errorMsg = "error: IPAddressPools setting is empty list, the list should contain at least one element"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -377,9 +373,7 @@ func (builder *BGPAdvertisementBuilder) WithIPAddressPoolsSelectors(
 
 	if len(poolSelector) < 1 {
 		builder.errorMsg = "error: IPAddressPoolSelectors setting is empty list, the list should contain at least one element"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -401,9 +395,7 @@ func (builder *BGPAdvertisementBuilder) WithNodeSelector(
 
 	if len(nodeSelectors) < 1 {
 		builder.errorMsg = "error: nodeSelectors setting is empty list, the list should contain at least one element"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -424,9 +416,7 @@ func (builder *BGPAdvertisementBuilder) WithPeers(peers []string) *BGPAdvertisem
 
 	if len(peers) < 1 {
 		builder.errorMsg = "error: peers setting is empty list, the list should contain at least one element"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -482,13 +472,13 @@ func (builder *BGPAdvertisementBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
