@@ -18,6 +18,18 @@ const (
 	// MlbAddressListError an error message when the ECO_CNF_CORE_NET_MLB_ADDR_LIST is incorrect.
 	MlbAddressListError = "An unexpected error occurred while " +
 		"determining the IP addresses from the ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable."
+	// NoAdvertiseCommunity routes in this community will not be propagated.
+	NoAdvertiseCommunity = "65535:65282"
+	// CustomCommunity routes in this community will not be included in this community.
+	CustomCommunity = "500:500"
+	// BgpPeerName1 bgp peer name 1.
+	BgpPeerName1 = "bgppeer1"
+	// BgpPeerName2 bgp peer name 2.
+	BgpPeerName2 = "bgppeer2"
+	// BGPTestPeer is the bgppeer name.
+	BGPTestPeer = "testpeer"
+	// FrrK8WebHookServer is the web hook server running in namespace metallb-system.
+	FrrK8WebHookServer = "frr-k8s-webhook-server"
 	// DaemonsFile represents FRR default daemon configuration template.
 	DaemonsFile = `
 	# This file tells the frr package which daemons to start.

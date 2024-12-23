@@ -65,37 +65,37 @@ func DoesClusterSupportMetalLbTests(requiredCPNodeNumber, requiredWorkerNodeNumb
 // CreateNewMetalLbDaemonSetAndWaitUntilItsRunning creates or recreates the new metalLb daemonset and waits until
 // daemonset is in Ready state.
 func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, nodeLabel map[string]string) error {
-	glog.V(90).Infof("Verifying if metalLb daemonset is running")
+	glog.V(90).Infof("Verifying if MetalLB daemonset is running")
 
+	// Check if MetalLB DaemonSet already exists
 	metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
-
 	if err == nil {
-		glog.V(90).Infof("MetalLb daemonset is running. Removing daemonset.")
+		glog.V(90).Infof("MetalLB daemonset is running. Removing existing daemonset.")
 
 		_, err = metalLbIo.Delete()
-
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to delete existing MetalLB daemonset: %w", err)
 		}
 	}
 
-	glog.V(90).Infof("Create new metalLb speaker's daemonSet.")
+	glog.V(90).Infof("Creating a new MetalLB speaker daemonSet.")
 
-	metalLbIo = metallb.NewBuilder(
-		APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace, nodeLabel)
+	// Create new MetalLB DaemonSet
+	metalLbIo = metallb.NewBuilder(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace, nodeLabel)
 	_, err = metalLbIo.Create()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create MetalLB daemonset: %w", err)
 	}
 
+	// Wait for the DaemonSet to be pulled successfully
 	var metalLbDs *daemonset.Builder
 
 	err = wait.PollUntilContextTimeout(
 		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			metalLbDs, err = daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
 			if err != nil {
-				glog.V(90).Infof("Error to pull daemonset %s namespace %s, retry",
+				glog.V(90).Infof("Error pulling daemonset %s in namespace %s, retrying...",
 					tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
 
 				return false, nil
@@ -105,16 +105,31 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, node
 		})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to pull MetalLB daemonset: %w", err)
 	}
 
-	glog.V(90).Infof("Waiting until the new metalLb daemonset is in Ready state.")
+	glog.V(90).Infof("Waiting until the new MetalLB daemonset is in a Ready state.")
 
-	if metalLbDs.IsReady(timeout) {
-		return nil
+	// Check if the DaemonSet is ready
+	if !metalLbDs.IsReady(timeout) {
+		return fmt.Errorf("MetalLB daemonSet is not ready")
 	}
 
-	return fmt.Errorf("metallb daemonSet is not ready")
+	glog.V(90).Infof("Verifying if the FRR webhook server is deployed and ready")
+
+	// Check FRR Webhook Server Readiness **(LAST STEP)**
+	frrk8sWebhookDeployment, err := deployment.Pull(APIClient, tsparams.FrrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+	if err != nil {
+		return fmt.Errorf("failed to pull the frrk8s webhook server: %w", err)
+	}
+
+	if !frrk8sWebhookDeployment.IsReady(30 * time.Second) {
+		return fmt.Errorf("the frrk8s webhook server deployment is not ready")
+	}
+
+	glog.V(90).Infof("FRR webhook server is ready, MetalLB setup complete.")
+
+	return nil
 }
 
 // GetMetalLbIPByIPStack returns metalLb IP addresses  from env var typo:ECO_CNF_CORE_NET_MLB_ADDR_LIST
