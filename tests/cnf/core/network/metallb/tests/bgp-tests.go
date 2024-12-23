@@ -72,7 +72,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
 		Expect(len(frrk8sPods)).To(BeNumerically(">", 0),
 			"Failed the number of frr speaker pods is 0")
-		createBGPPeerAndVerifyIfItsReady(
+		createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
 			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0, frrk8sPods)
 	})
 
@@ -107,7 +107,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					Skip("bgp test cases doesn't support ipv6 yet")
 				}
 
-				createBGPPeerAndVerifyIfItsReady(
+				createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
 					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
 					frrk8sPods)
 
@@ -129,10 +129,10 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 				By("Creating an IPAddressPool and BGPAdvertisement")
-				ipAddressPool := setupBgpAdvertisement(addressPool, int32(prefixLen))
+				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool)
 
 				By("Creating a MetalLB service")
-				setupMetalLbService(ipStack, ipAddressPool, "Cluster")
+				setupMetalLbService("service-1", ipStack, ipAddressPool, "Cluster")
 
 				By("Creating nginx test pod on worker node")
 				setupNGNXPod(workerNodeList[0].Definition.Name)
@@ -141,7 +141,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(nodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, ipStack, cmd.RemovePrefixFromIPList(nodeAddrList), addressPool, prefixLen)
+				validatePrefix(frrPod, ipStack, removePrefixFromIPList(nodeAddrList), addressPool)
 			},
 
 			Entry("", netparam.IPV4Family, 32,
@@ -170,7 +170,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			frrPod := createFrrPod(
 				masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
-			createBGPPeerAndVerifyIfItsReady(
+			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
 				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
 				frrk8sPods)
 
