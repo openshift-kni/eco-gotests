@@ -15,9 +15,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/policy/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/params"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
@@ -26,18 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversriov"), ContinueOnFailure, func() {
+var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni"), ContinueOnFailure, func() {
 
 	var (
 		sriovInterfacesUnderTest                         []string
 		tNs1, tNs2                                       *namespace.Builder
 		testPod1, testPod2, testPod3, testPod4, testPod5 *pod.Builder
-	)
-
-	const (
-		nicPf1, nicPf2               = "pf1", "pf2"
-		ns1, ns2                     = "ns1", "ns2"
-		pod1, pod2, pod3, pod4, pod5 = "pod1", "pod2", "pod3", "pod4", "pod5"
 	)
 
 	BeforeAll(func() {
@@ -51,14 +43,14 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			APIClient, metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to list worker nodes")
 
-		By("Fetching SR-IOV interfaces from ENV VAR")
+		By("Fetching SR-IOV interfaces from ENV VAR to use them as master interfaces for ipvlan")
 		sriovInterfacesUnderTest, err = NetConfig.GetSriovInterfaces(2)
 		Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
 		By("Enable MultiNetworkPolicy support")
 		enableMultiNetworkPolicy(true)
 
-		By("Deploy Test Resources: 2 Namespaces")
+		By("Deploy Test Resources: Two Namespaces")
 		tNs1, err = namespace.NewBuilder(APIClient, tsparams.MultiNetPolNs1).WithMultipleLabels(params.PrivilegedNSLabels).
 			WithLabel("ns", "ns1").Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create test namespace")
@@ -66,55 +58,30 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithLabel("ns", "ns2").Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create test namespace")
 
-		By("Deploy Test Resources: 2 Sriov Policies")
-		_, err = sriov.NewPolicyBuilder(APIClient,
-			"nicpf1", NetConfig.SriovOperatorNamespace, nicPf1, 5,
-			[]string{sriovInterfacesUnderTest[0]}, NetConfig.WorkerLabelMap).
-			WithDevType("netdevice").
-			Create()
-		Expect(err).ToNot(HaveOccurred(), "Failed to create test policy")
+		By("Deploy Test Resources: Two NADs for IPVLAN CNI")
+		defineAndCreateIpvlanNAD(tsparams.MultiNetPolNs1, sriovInterfacesUnderTest[0])
+		defineAndCreateIpvlanNAD(tsparams.MultiNetPolNs2, sriovInterfacesUnderTest[1])
 
-		_, err = sriov.NewPolicyBuilder(APIClient,
-			"nicpf2", NetConfig.SriovOperatorNamespace, nicPf2, 5,
-			[]string{sriovInterfacesUnderTest[1]}, NetConfig.WorkerLabelMap).
-			WithDevType("netdevice").
-			Create()
-		Expect(err).ToNot(HaveOccurred(), "Failed to create test policy")
+		By("Deploy Test Resources: Five Pods")
+		testPod1 = defineAndCreatePodWithIpvlanIf(
+			"pod1", tsparams.MultiNetPolNs1, workerNodeList[0].Object.Name, tsparams.TestData)
+		testPod2 = defineAndCreatePodWithIpvlanIf(
+			"pod2", tsparams.MultiNetPolNs1, workerNodeList[0].Object.Name, tsparams.TestData)
+		testPod3 = defineAndCreatePodWithIpvlanIf(
+			"pod3", tsparams.MultiNetPolNs1, workerNodeList[0].Object.Name, tsparams.TestData)
+		testPod4 = defineAndCreatePodWithIpvlanIf(
+			"pod4", tsparams.MultiNetPolNs2, workerNodeList[0].Object.Name, tsparams.TestData)
+		testPod5 = defineAndCreatePodWithIpvlanIf(
+			"pod5", tsparams.MultiNetPolNs2, workerNodeList[0].Object.Name, tsparams.TestData)
 
-		By("Deploy Test Resources: 4 Sriov Networks")
-		defineAndCreateSriovNetwork(ns1+nicPf1, nicPf1, tsparams.MultiNetPolNs1)
-		defineAndCreateSriovNetwork(ns1+nicPf2, nicPf2, tsparams.MultiNetPolNs1)
-		defineAndCreateSriovNetwork(ns2+nicPf1, nicPf1, tsparams.MultiNetPolNs2)
-		defineAndCreateSriovNetwork(ns2+nicPf2, nicPf2, tsparams.MultiNetPolNs2)
-
-		err = netenv.WaitForSriovAndMCPStable(APIClient, tsparams.MCOWaitTimeout, 10*time.Second,
-			NetConfig.CnfMcpLabel, NetConfig.SriovOperatorNamespace)
-		Expect(err).ToNot(HaveOccurred(), "Sriov and MCP are not stable")
-
-		By("Deploy Test Resources: 2 NADs for bond CNI")
-		defineAndCreateBondNAD(tsparams.MultiNetPolNs1)
-		defineAndCreateBondNAD(tsparams.MultiNetPolNs2)
-
-		By("Deploy Test Resources: 5 Pods")
-		testPod1 = defineAndCreatePodWithBondIf(pod1, tsparams.MultiNetPolNs1, ns1+nicPf1, ns1+nicPf2,
-			workerNodeList[0].Object.Name, tsparams.TestData)
-		testPod2 = defineAndCreatePodWithBondIf(pod2, tsparams.MultiNetPolNs1, ns1+nicPf1, ns1+nicPf2,
-			workerNodeList[0].Object.Name, tsparams.TestData)
-		testPod3 = defineAndCreatePodWithBondIf(pod3, tsparams.MultiNetPolNs1, ns1+nicPf1, ns1+nicPf2,
-			workerNodeList[0].Object.Name, tsparams.TestData)
-		testPod4 = defineAndCreatePodWithBondIf(pod4, tsparams.MultiNetPolNs2, ns2+nicPf1, ns2+nicPf2,
-			workerNodeList[0].Object.Name, tsparams.TestData)
-		testPod5 = defineAndCreatePodWithBondIf(pod5, tsparams.MultiNetPolNs2, ns2+nicPf1, ns2+nicPf2,
-			workerNodeList[0].Object.Name, tsparams.TestData)
-
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -128,35 +95,31 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 	})
 
 	AfterAll(func() {
-		By("Removing SRIOV configuration and wait for MCP stable")
-		err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-		Expect(err).ToNot(HaveOccurred(), "Failed to remove SRIOV configuration and MCP stable")
-
 		By("Delete test namespace")
-		err = tNs1.Delete()
+		err := tNs1.Delete()
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete test namespace")
 		err = tNs2.Delete()
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete test namespace")
 	})
 
-	It("Egress - block all", reportxml.ID("77169"), func() {
+	It("Egress - block all", reportxml.ID("77467"), func() {
 
 		By("Create Multi Network Policy")
 		_, err := networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "egress-deny", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be filtered")
+		By("Check egress traffic from pod1 to other four pods. All ports should be filtered")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -164,28 +127,28 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 	})
 
-	It("Egress - allow all", reportxml.ID("77201"), func() {
+	It("Egress - allow all", reportxml.ID("77474"), func() {
 
 		By("Create Multi Network Policy")
 		testEgressRule, err := networkpolicy.NewEgressRuleBuilder().GetEgressRuleCfg()
 		Expect(err).ToNot(HaveOccurred(), "egress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "egress-allow", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -193,7 +156,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 	})
 
-	It("Egress - podSelector - NonExistent Label", reportxml.ID("77199"), func() {
+	It("Egress - podSelector - NonExistent Label", reportxml.ID("77473"), func() {
 
 		By("Create Multi Network Policy")
 		testEgressRule, err := networkpolicy.NewEgressRuleBuilder().
@@ -202,21 +165,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "egress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "egress-podsel-nonexist", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be filtered")
+		By("Check egress traffic from pod1 to other four pods. All ports should be filtered")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -224,7 +187,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 	})
 
-	It("Egress - namespaceSelector - NonExistent Label", reportxml.ID("77197"), func() {
+	It("Egress - namespaceSelector - NonExistent Label", reportxml.ID("77472"), func() {
 
 		By("Create Multi Network Policy")
 		testEgressRule, err := networkpolicy.NewEgressRuleBuilder().
@@ -233,21 +196,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "egress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "egress-nssel-nonexist", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be filtered")
+		By("Check egress traffic from pod1 to other four pods. All ports should be filtered")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -255,7 +218,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 	})
 
-	It("Egress - Pod and/or Namespace Selector", reportxml.ID("77204"), func() {
+	It("Egress - Pod and/or Namespace Selector", reportxml.ID("77477"), func() {
 
 		By("Create Multi Network Policy")
 		testEgressRule, err := networkpolicy.NewEgressRuleBuilder().
@@ -266,21 +229,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "egress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "egress-pod-ns-selector", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. Only pod2 and pod4 should be accessible on all ports")
+		By("Check egress traffic from pod1 to other four pods. Only pod2 and pod4 should be accessible on all ports")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -288,7 +251,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 	})
 
-	It("Egress - IPBlock IPv4 and IPv6 and Ports", reportxml.ID("77202"), func() {
+	It("Egress - IPBlock IPv4 and IPv6 and Ports", reportxml.ID("77475"), func() {
 
 		By("Create Multi Network Policy")
 		testEgressRule, err := networkpolicy.NewEgressRuleBuilder().
@@ -299,14 +262,14 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "egress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "egress-ipv4v6-port", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. " +
+		By("Check egress traffic from pod1 to other four pods. " +
 			"Pod2 tcp port 5001 should be accessible over IPv4." +
 			"Pod4 tcp port 5001 should be accessible over IPv6")
 
@@ -315,7 +278,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod1, testPod4, tsparams.AllClose, tsparams.P5001Open, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -323,24 +286,24 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 	})
 
-	It("Ingress - block all", reportxml.ID("77237"), func() {
+	It("Ingress - block all", reportxml.ID("77486"), func() {
 
 		By("Create Multi Network Policy")
 		_, err := networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "ingress-deny", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be filtered")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be filtered")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -348,28 +311,28 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 	})
 
-	It("Ingress - allow all", reportxml.ID("77236"), func() {
+	It("Ingress - allow all", reportxml.ID("77485"), func() {
 
 		By("Create Multi Network Policy")
 		testIngressRule, err := networkpolicy.NewIngressRuleBuilder().GetIngressRuleCfg()
 		Expect(err).ToNot(HaveOccurred(), "ingress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "ingress-allow", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be open")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be open")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -377,7 +340,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 	})
 
-	It("Ingress - podSelector - NonExistent Label", reportxml.ID("77233"), func() {
+	It("Ingress - podSelector - NonExistent Label", reportxml.ID("77484"), func() {
 
 		By("Create Multi Network Policy")
 		testIngressRule, err := networkpolicy.NewIngressRuleBuilder().
@@ -386,21 +349,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "ingress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "ingress-podsel-nonexist", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be filtered")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be filtered")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -408,7 +371,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 	})
 
-	It("Ingress - namespaceSelector - NonExistent Label", reportxml.ID("77235"), func() {
+	It("Ingress - namespaceSelector - NonExistent Label", reportxml.ID("77483"), func() {
 
 		By("Create Multi Network Policy")
 		testIngressRule, err := networkpolicy.NewIngressRuleBuilder().
@@ -417,21 +380,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "ingress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "ingress-nssel-nonexist", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. All ports should be filtered")
+		By("Check ingress traffic to pod1 from other four pods. All ports should be filtered")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -439,7 +402,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 	})
 
-	It("Ingress - Pod and/or Namespace Selector", reportxml.ID("77242"), func() {
+	It("Ingress - Pod and/or Namespace Selector", reportxml.ID("77481"), func() {
 
 		By("Create Multi Network Policy")
 		testIngressRule, err := networkpolicy.NewIngressRuleBuilder().
@@ -450,21 +413,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "ingress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "ingress-pod-ns-selector", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. Only pod2 and pod4 can access pod1 on all ports")
+		By("Check ingress traffic to pod1 from other four pods. Only pod2 and pod4 can access pod1 on all ports")
 
 		verifyPaths(testPod2, testPod1, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod3, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -472,7 +435,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 	})
 
-	It("Ingress - IPBlock IPv4 and IPv6 and Ports", reportxml.ID("77238"), func() {
+	It("Ingress - IPBlock IPv4 and IPv6 and Ports", reportxml.ID("77479"), func() {
 
 		By("Create Multi Network Policy")
 		testIngressRule, err := networkpolicy.NewIngressRuleBuilder().
@@ -483,21 +446,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "ingress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "ingress-ipv4v6-port", tsparams.MultiNetPolNs1).
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
+		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. " +
+		By("Check ingress traffic to pod1 from other four pods. " +
 			"Pod2 can access tcp port 5001 of pod1 over IPv4." +
 			"Pod4 can access tcp port 5001 of pod4 over IPv6")
 
@@ -507,7 +470,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		verifyPaths(testPod5, testPod1, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 	})
 
-	It("Ingress & Egress - Peer and Ports", reportxml.ID("77469"), func() {
+	It("Ingress & Egress - Peer and Ports", reportxml.ID("77487"), func() {
 
 		By("Create Multi Network Policy")
 		testEgressRule, err := networkpolicy.NewEgressRuleBuilder().
@@ -525,7 +488,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "ingress rule configuration not generated")
 
 		_, err = networkpolicy.NewMultiNetworkPolicyBuilder(APIClient, "ingress-egress", "policy-ns1").
-			WithNetwork(fmt.Sprintf("%s/bond,%s/bond", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
+			WithNetwork(fmt.Sprintf("%s/ipvlan,%s/ipvlan", tsparams.MultiNetPolNs1, tsparams.MultiNetPolNs2)).
 			WithPodSelector(metav1.LabelSelector{MatchLabels: map[string]string{"app": "pod1"}}).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
@@ -534,14 +497,14 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
-		By("Check egress traffic from pod1 to other 4 pods. Only Pod5 ports should be accessible over IPv6")
+		By("Check egress traffic from pod1 to other four pods. Only Pod5 ports should be accessible over IPv6")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllClose, tsparams.AllOpen, tsparams.TestData)
 
-		By("Check ingress traffic to pod1 from other 4 pods. " +
+		By("Check ingress traffic to pod1 from other four pods. " +
 			"Pod2 can access tcp ports 5001 & 5002 of pod1 over IPv4. " +
 			"Pod4 can access tcp ports 5001 & 5002 of pod1 over both IPv4 & IPv6")
 
@@ -552,33 +515,21 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 	})
 })
 
-func defineAndCreateSriovNetwork(netName, resName, targetNs string) {
-	_, err := sriov.NewNetworkBuilder(
-		APIClient, netName, NetConfig.SriovOperatorNamespace, targetNs, resName).
-		WithLogLevel(netparam.LogLevelDebug).
-		Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Sriov Network %s", netName))
-}
-
-func defineAndCreateBondNAD(nsName string) {
-	config, err := nad.NewMasterBondPlugin("bond", "active-backup").
-		WithFailOverMac(1).
-		WithLinksInContainer(true).
-		WithMiimon(100).
-		WithLinks([]nad.Link{{Name: "net1"}, {Name: "net2"}}).
-		WithCapabilities(&nad.Capability{IPs: true}).
+func defineAndCreateIpvlanNAD(nsName, masterIf string) {
+	config, err := nad.NewMasterIPVlanPlugin("ipvlan").
+		WithMasterInterface(masterIf).
 		WithIPAM(&nad.IPAM{
 			Type:   "static",
 			Routes: []nad.Routes{{Dst: "192.168.0.0/16"}, {Dst: "2001::0/62"}},
 		}).GetMasterPluginConfig()
-	Expect(err).ToNot(HaveOccurred(), "Failed to get master bond plugin config")
+	Expect(err).ToNot(HaveOccurred(), "Failed to get master ipvlan plugin config")
 
-	_, err = nad.NewBuilder(APIClient, "bond", nsName).WithMasterPlugin(config).Create()
+	_, err = nad.NewBuilder(APIClient, "ipvlan", nsName).WithMasterPlugin(config).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create net-attach-def")
 }
 
-func defineAndCreatePodWithBondIf(
-	podName, nsName, net1Name, net2Name, nodeName string, testData tsparams.PodsData) *pod.Builder {
+func defineAndCreatePodWithIpvlanIf(
+	podName, nsName, nodeName string, testData tsparams.PodsData) *pod.Builder {
 	var rootUser int64
 
 	securityContext := corev1.SecurityContext{
@@ -590,16 +541,8 @@ func defineAndCreatePodWithBondIf(
 
 	netAnnotation := []*types.NetworkSelectionElement{
 		{
-			Name:             net1Name,
-			InterfaceRequest: "net1",
-		},
-		{
-			Name:             net2Name,
-			InterfaceRequest: "net2",
-		},
-		{
-			Name:             "bond",
-			InterfaceRequest: "bond1",
+			Name:             "ipvlan",
+			InterfaceRequest: "ipvlan1",
 			IPRequest:        []string{testData[podName].IPv4, testData[podName].IPv6},
 		},
 	}
@@ -613,7 +556,7 @@ func defineAndCreatePodWithBondIf(
 	for index := range len(testData[podName].Protocols) {
 		containerBuilder, err := pod.NewContainerBuilder(testData[podName].Protocols[index]+testData[podName].Ports[index],
 			NetConfig.CnfNetTestContainer,
-			[]string{"/bin/bash", "-c", fmt.Sprintf("testcmd -listen -interface bond1 -protocol %s -port %s",
+			[]string{"/bin/bash", "-c", fmt.Sprintf("testcmd -listen -interface ipvlan1 -protocol %s -port %s",
 				testData[podName].Protocols[index], testData[podName].Ports[index])}).
 			WithSecurityContext(&securityContext).
 			GetContainerCfg()
