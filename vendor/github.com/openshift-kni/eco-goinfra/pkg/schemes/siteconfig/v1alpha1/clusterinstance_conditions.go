@@ -38,6 +38,7 @@ const (
 	RenderedTemplates          ClusterInstanceConditionType = "RenderedTemplates"
 	RenderedTemplatesValidated ClusterInstanceConditionType = "RenderedTemplatesValidated"
 	RenderedTemplatesApplied   ClusterInstanceConditionType = "RenderedTemplatesApplied"
+	RenderedTemplatesDeleted   ClusterInstanceConditionType = "RenderedTemplatesDeleted"
 	ClusterProvisioned         ClusterInstanceConditionType = "Provisioned"
 )
 

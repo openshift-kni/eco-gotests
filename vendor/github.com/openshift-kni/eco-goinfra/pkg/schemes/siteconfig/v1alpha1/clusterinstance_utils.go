@@ -16,6 +16,13 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	"fmt"
+	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
 // ExtraAnnotationSearch Looks up a specific manifest Annotation for this cluster
 func (c *ClusterInstanceSpec) ExtraAnnotationSearch(kind string) (map[string]string, bool) {
 	annotations, ok := c.ExtraAnnotations[kind]
@@ -44,4 +51,57 @@ func (node *NodeSpec) ExtraLabelSearch(kind string, cluster *ClusterInstanceSpec
 		return labels, ok
 	}
 	return cluster.ExtraLabelSearch(kind)
+}
+
+// MatchesIdentity checks if two ManifestReference objects are equal based on identifying fields.
+// These fields are APIGroup, Kind, Name, and Namespace.
+func (m *ManifestReference) MatchesIdentity(other *ManifestReference) bool {
+	if m == nil || other == nil {
+		return false
+	}
+
+	// Safely compare APIGroup pointers
+	APIGroupMatches := m.APIGroup == nil && other.APIGroup == nil ||
+		m.APIGroup != nil && other.APIGroup != nil && *m.APIGroup == *other.APIGroup
+
+	// Compare identifying fields
+	return APIGroupMatches &&
+		m.Kind == other.Kind &&
+		m.Name == other.Name &&
+		m.Namespace == other.Namespace
+}
+
+func (m *ManifestReference) UpdateStatus(status, message string) {
+	if m.Status != status || m.Message != message {
+		m.Status = status
+		m.Message = message
+		m.LastAppliedTime = metav1.Now()
+	}
+}
+
+// String generates a Kubernetes style resource path string from the ManifestReference object
+func (m *ManifestReference) String() string {
+	apiGroup := ""
+	if m.APIGroup != nil && *m.APIGroup != "" {
+		apiGroup = fmt.Sprintf(".%s", *m.APIGroup)
+	}
+
+	// Handle Namespace if present
+	if m.Namespace != "" {
+		return fmt.Sprintf("%s%s/namespaces/%s/%s", strings.ToLower(m.Kind), apiGroup, m.Namespace, m.Name)
+	}
+
+	// Return without Namespace if it is empty
+	return fmt.Sprintf("%s%s/%s", strings.ToLower(m.Kind), apiGroup, m.Name)
+}
+
+// IndexOfManifestByIdentity searches for a ManifestReference in the given list based on identity fields
+// and returns its index. It returns -1 and a not found error if the target is not found.
+func IndexOfManifestByIdentity(target *ManifestReference, manifestRefs []ManifestReference) (int, error) {
+	for i, ref := range manifestRefs {
+		if ref.MatchesIdentity(target) {
+			return i, nil
+		}
+	}
+	return -1, fmt.Errorf("ManifestReference (%s) not found", target.String())
 }
