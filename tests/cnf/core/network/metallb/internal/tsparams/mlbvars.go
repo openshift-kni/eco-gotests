@@ -46,6 +46,10 @@ var (
 	FRRK8sDefaultLabel = "component=frr-k8s"
 	// FRRK8sNodeLabel represents the default metalLb FRRK8S node label.
 	FRRK8sNodeLabel = "app=frr-k8s"
+	// LabelHostName contains the key for the hostname label.
+	LabelHostName = "kubernetes.io/hostname"
+	// LabelRoleName contains the key for the hostname label.
+	LabelRoleName = "node-role.kubernetes.io/workercnf"
 	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	ExternalMacVlanNADName = "external"
 	// HubMacVlanNADName represents default external NetworkAttachmentDefinition name.

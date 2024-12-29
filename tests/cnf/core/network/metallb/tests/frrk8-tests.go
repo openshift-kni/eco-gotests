@@ -420,7 +420,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			ipAddressPool := setupBgpAdvertisement(addressPool, int32(32))
 
 			By("Creating a MetalLB service")
-			setupMetalLbService(netparam.IPV4Family, ipAddressPool, "Cluster")
+			setupMetalLbService("service-1", netparam.IPV4Family, ipAddressPool, "Cluster")
 
 			By("Creating nginx test pod on worker node")
 			setupNGNXPod(workerNodeList[0].Definition.Name)
@@ -764,7 +764,7 @@ func deployTestPods(addressPool, hubIPAddresses, externalAdvertisedIPv4Routes,
 	ipAddressPool := setupBgpAdvertisement(addressPool, int32(32))
 
 	By("Creating a MetalLB service")
-	setupMetalLbService(netparam.IPV4Family, ipAddressPool, "Cluster")
+	setupMetalLbService("service-1", netparam.IPV4Family, ipAddressPool, "Cluster")
 
 	By("Creating nginx test pod on worker node")
 	setupNGNXPod(workerNodeList[0].Definition.Name)

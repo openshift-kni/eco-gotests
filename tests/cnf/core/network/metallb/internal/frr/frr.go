@@ -1,8 +1,10 @@
 package frr
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"strings"
 
 	"github.com/golang/glog"
@@ -30,6 +32,7 @@ type (
 			PathFrom  string `json:"pathFrom"`
 			Prefix    string `json:"prefix"`
 			PrefixLen int    `json:"prefixLen"`
+			LocalPref uint32 `json:"locPrf"`
 			Network   string `json:"network"`
 			Metric    int    `json:"metric"`
 			Weight    int    `json:"weight"`
@@ -280,10 +283,10 @@ func GetBGPStatus(frrPod *pod.Builder, protocolVersion string, containerName ...
 }
 
 // GetBGPCommunityStatus returns bgp community status from frr pod.
-func GetBGPCommunityStatus(frrPod *pod.Builder, ipProtocolVersion string) (*bgpStatus, error) {
+func GetBGPCommunityStatus(frrPod *pod.Builder, communityString, ipProtocolVersion string) (*bgpStatus, error) {
 	glog.V(90).Infof("Getting bgp community status from container on pod: %s", frrPod.Definition.Name)
 
-	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, "65535:65282"))
+	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, communityString))
 }
 
 // FetchBGPConnectTimeValue fetches and returns the ConnectRetryTimer value for the specified BGP peer.
@@ -496,6 +499,36 @@ func ResetBGPConnection(frrPod *pod.Builder) error {
 	glog.V(90).Infof("Resetting BGP session to all neighbors: %s", frrPod.Definition.Name)
 
 	_, err := frrPod.ExecCommand(append(netparam.VtySh, "clear ip bgp *"))
+
+	return err
+}
+
+// ValidateLocalPref verifies local pref from FRR is equal to configured Local Pref.
+func ValidateLocalPref(frrPod *pod.Builder, localPref uint32, ipFamily string) error {
+	var (
+		res bytes.Buffer
+		err error
+	)
+
+	res, err = frrPod.ExecCommand(append(netparam.VtySh,
+		fmt.Sprintf("show ip bgp %s json", ipFamily)))
+
+	if err != nil {
+		return fmt.Errorf("failed to query routes %w", err)
+	}
+
+	toParse := bgpStatus{}
+	err = json.Unmarshal(res.Bytes(), &toParse)
+
+	if err != nil {
+		return fmt.Errorf("failed to parse route local preference %w", err)
+	}
+
+	for _, locPref := range toParse.Routes {
+		if locPref[0].LocalPref != localPref {
+			return fmt.Errorf("incorrect localPref: %d", localPref)
+		}
+	}
 
 	return err
 }
