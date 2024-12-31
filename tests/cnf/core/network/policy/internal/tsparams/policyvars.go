@@ -47,4 +47,32 @@ var (
 	WaitTrafficTimeout = 1 * time.Minute
 	// RetryTrafficInterval represents retry interval for the traffic Eventually functions.
 	RetryTrafficInterval = 20 * time.Second
+	// AllOpen represents that ports 5001,5002,5003 to be open.
+	AllOpen = map[string]string{"5001": "pass", "5002": "pass", "5003": "pass"}
+	// AllClose represents that ports 5001,5002,5003 to be close.
+	AllClose = map[string]string{"5001": "fail", "5002": "fail", "5003": "fail"}
+	// P5001Open represents that port 5001 to be open and 5002-3 to be closed.
+	P5001Open = map[string]string{"5001": "pass", "5002": "fail", "5003": "fail"}
+	// P5001p5002Open represents that port 5001 & 5002 to be open and 5003 to be closed.
+	P5001p5002Open = map[string]string{"5001": "pass", "5002": "pass", "5003": "fail"}
+	// Protocols indicates list of protocols used in policy tests.
+	Protocols = []string{"tcp", "tcp", "udp"}
+	// Ports indicates list of ports used in policy tests.
+	Ports = []string{"5001", "5002", "5003"}
+	// TestData represents test resource data for policy tests.
+	TestData = PodsData{
+		"pod1": {IPv4: "192.168.10.10/24", IPv6: "2001:0:0:1::10/64", Protocols: Protocols, Ports: Ports},
+		"pod2": {IPv4: "192.168.10.11/24", IPv6: "2001:0:0:1::11/64", Protocols: Protocols, Ports: Ports},
+		"pod3": {IPv4: "192.168.10.12/24", IPv6: "2001:0:0:1::12/64", Protocols: Protocols, Ports: Ports},
+		"pod4": {IPv4: "192.168.20.11/24", IPv6: "2001:0:0:2::11/64", Protocols: Protocols, Ports: Ports},
+		"pod5": {IPv4: "192.168.20.12/24", IPv6: "2001:0:0:2::12/64", Protocols: Protocols, Ports: Ports},
+	}
 )
+
+// PodsData contains test pods data used for policy tests.
+type PodsData map[string]struct {
+	IPv4      string
+	IPv6      string
+	Protocols []string
+	Ports     []string
+}
