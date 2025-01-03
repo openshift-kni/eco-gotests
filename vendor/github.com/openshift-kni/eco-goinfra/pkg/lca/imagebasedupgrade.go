@@ -121,11 +121,7 @@ func (builder *ImageBasedUpgradeBuilder) Update() (*ImageBasedUpgradeBuilder, er
 		glog.V(100).Infof("imagebasedupgrade %s does not exist",
 			builder.Definition.Name)
 
-		builder.errorMsg = "Unable to update non-existing imagebasedupgrade"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("unable to update non-existing imagebasedupgrade")
 	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
