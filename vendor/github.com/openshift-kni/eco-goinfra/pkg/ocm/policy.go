@@ -49,7 +49,7 @@ func NewPolicyBuilder(
 		return nil
 	}
 
-	builder := PolicyBuilder{
+	builder := &PolicyBuilder{
 		apiClient: apiClient.Client,
 		Definition: &policiesv1.Policy{
 			ObjectMeta: metav1.ObjectMeta{
@@ -66,21 +66,27 @@ func NewPolicyBuilder(
 		glog.V(100).Info("The name of the Policy is empty")
 
 		builder.errorMsg = "policy 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Info("The namespace of the Policy is empty")
 
 		builder.errorMsg = "policy 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	if template == nil {
 		glog.V(100).Info("The PolicyTemplate of the Policy is nil")
 
 		builder.errorMsg = "policy 'template' cannot be nil"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullPolicy pulls existing policy into Builder struct.
@@ -100,7 +106,7 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 		return nil, err
 	}
 
-	builder := PolicyBuilder{
+	builder := &PolicyBuilder{
 		apiClient: apiClient.Client,
 		Definition: &policiesv1.Policy{
 			ObjectMeta: metav1.ObjectMeta{
@@ -128,7 +134,7 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given policy exists.
@@ -169,7 +175,7 @@ func (builder *PolicyBuilder) Get() (*policiesv1.Policy, error) {
 		return nil, err
 	}
 
-	return policy, err
+	return policy, nil
 }
 
 // Create makes a policy in the cluster and stores the created object in struct.
@@ -181,15 +187,18 @@ func (builder *PolicyBuilder) Create() (*PolicyBuilder, error) {
 	glog.V(100).Infof("Creating the policy %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
-		if err == nil {
-			builder.Object = builder.Definition
-		}
+	if builder.Exists() {
+		return builder, nil
 	}
 
-	return builder, err
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // Delete removes a policy from a cluster.
@@ -260,7 +269,7 @@ func (builder *PolicyBuilder) Update(force bool) (*PolicyBuilder, error) {
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // WithRemediationAction sets a RemediationAction in the policy definition.
@@ -426,13 +435,13 @@ func (builder *PolicyBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

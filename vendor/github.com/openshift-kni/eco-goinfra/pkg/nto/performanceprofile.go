@@ -118,7 +118,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 		return nil, err
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &v2.PerformanceProfile{
 			ObjectMeta: metav1.ObjectMeta{
@@ -139,7 +139,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // WithHugePages defines the HugePages in the PerformanceProfile. hugePageSize allowed values are 2M, 1G.
@@ -171,9 +171,7 @@ func (builder *Builder) WithHugePages(hugePageSize string, hugePages []v2.HugePa
 		glog.V(100).Infof("'hugePages' argument cannot be empty")
 
 		builder.errorMsg = "'hugePages' argument cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -207,9 +205,7 @@ func (builder *Builder) WithMachineConfigPoolSelector(machineConfigPoolSelector 
 		glog.V(100).Infof("'machineConfigPoolSelector' argument cannot be empty")
 
 		builder.errorMsg = "'machineConfigPoolSelector' argument cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -264,9 +260,7 @@ func (builder *Builder) WithNumaTopology(topologyPolicy string) *Builder {
 
 		builder.errorMsg = fmt.Sprintf("'allowedTopologyPolicies' argument is not in allowed list %v",
 			allowedTopologyPolicies)
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -409,18 +403,21 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	glog.V(100).Infof("Creating PerformanceProfile %s ", builder.Definition.Name)
 
-	var err error
 	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
 			return nil, err
 		}
 
 		builder.Object, err = builder.Get()
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return builder, err
+	return builder, nil
 }
 
 // Exists checks whether the given PerformanceProfile exists.
