@@ -433,6 +433,8 @@ func (builder *ModuleBuilder) withServiceAccount(srvAccountName string, accountT
 		builder.Definition.Spec.DevicePlugin.ServiceAccountName = srvAccountName
 	default:
 		builder.errorMsg = "invalid account type parameter. Supported parameters are: 'module', 'device'"
+
+		return builder
 	}
 
 	return builder

@@ -49,7 +49,7 @@ func NewPlacementBindingBuilder(
 		return nil
 	}
 
-	builder := PlacementBindingBuilder{
+	builder := &PlacementBindingBuilder{
 		apiClient: apiClient.Client,
 		Definition: &policiesv1.PlacementBinding{
 			ObjectMeta: metav1.ObjectMeta{
@@ -63,21 +63,29 @@ func NewPlacementBindingBuilder(
 
 	if name == "" {
 		builder.errorMsg = "placementBinding's 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		builder.errorMsg = "placementBinding's 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	if placementRefErr := validatePlacementRef(placementRef); placementRefErr != "" {
 		builder.errorMsg = placementRefErr
+
+		return builder
 	}
 
 	if subjectErr := validateSubject(subject); subjectErr != "" {
 		builder.errorMsg = subjectErr
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullPlacementBinding pulls existing placementBinding into Builder struct.
@@ -178,15 +186,18 @@ func (builder *PlacementBindingBuilder) Create() (*PlacementBindingBuilder, erro
 	glog.V(100).Infof("Creating the placementBinding %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
-		if err == nil {
-			builder.Object = builder.Definition
-		}
+	if builder.Exists() {
+		return builder, nil
 	}
 
-	return builder, err
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // Delete removes a placementBinding from a cluster.

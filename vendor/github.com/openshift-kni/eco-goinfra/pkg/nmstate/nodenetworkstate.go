@@ -195,7 +195,7 @@ func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuild
 		return nil, err
 	}
 
-	stateBuilder := StateBuilder{
+	stateBuilder := &StateBuilder{
 		apiClient: apiClient.Client,
 		Object: &nmstateV1alpha1.NodeNetworkState{
 			ObjectMeta: metav1.ObjectMeta{
@@ -214,7 +214,7 @@ func PullNodeNetworkState(apiClient *clients.Settings, name string) (*StateBuild
 		return nil, fmt.Errorf("nodeNetworkState object %s does not exist", name)
 	}
 
-	return &stateBuilder, nil
+	return stateBuilder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before
@@ -231,13 +231,13 @@ func (builder *StateBuilder) validate() (bool, error) {
 	if builder.Object == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

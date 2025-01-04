@@ -44,7 +44,7 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 		return nil
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &nmstateV1.NMState{
 			ObjectMeta: metav1.ObjectMeta{
@@ -57,9 +57,11 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 		glog.V(100).Infof("The name of the NMState is empty")
 
 		builder.errorMsg = "NMState 'name' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Exists checks whether the given NMState exists.
