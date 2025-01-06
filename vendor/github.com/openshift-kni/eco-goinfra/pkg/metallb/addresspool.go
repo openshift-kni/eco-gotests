@@ -180,9 +180,8 @@ func (builder *IPAddressPoolBuilder) Create() (*IPAddressPoolBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
 
-	var err error
 	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
 		if err != nil {
 			glog.V(100).Infof("Failed to create IPAddressPool")
 
@@ -192,7 +191,7 @@ func (builder *IPAddressPoolBuilder) Create() (*IPAddressPoolBuilder, error) {
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // Delete removes IPAddressPool object from a cluster.
@@ -304,9 +303,7 @@ func (builder *IPAddressPoolBuilder) WithOptions(options ...IPAddressPoolAdditio
 		glog.V(100).Infof("The IPAddressPool is undefined")
 
 		builder.errorMsg = msg.UndefinedCrdObjectErrString("IPAddressPool")
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 

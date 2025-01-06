@@ -225,9 +225,7 @@ func (builder *Builder) WithNewLabel(key, value string) *Builder {
 	if key == "" {
 		glog.V(100).Infof("Failed to apply label with an empty key to node %s", builder.Definition.Name)
 		builder.errorMsg = "error to set empty key to node"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -239,6 +237,8 @@ func (builder *Builder) WithNewLabel(key, value string) *Builder {
 			builder.Definition.Labels[key] = value
 		} else {
 			builder.errorMsg = fmt.Sprintf("cannot overwrite existing node label: %s", key)
+
+			return builder
 		}
 	}
 
@@ -281,9 +281,7 @@ func (builder *Builder) RemoveLabel(key, value string) *Builder {
 	if key == "" {
 		glog.V(100).Infof("Failed to remove empty label's key from node %s", builder.Definition.Name)
 		builder.errorMsg = "error to remove empty key from node"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -413,13 +411,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

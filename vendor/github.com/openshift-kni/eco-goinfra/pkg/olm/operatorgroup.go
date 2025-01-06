@@ -64,12 +64,16 @@ func NewOperatorGroupBuilder(apiClient *clients.Settings, groupName, nsName stri
 		glog.V(100).Infof("The Name of the OperatorGroup is empty")
 
 		builder.errorMsg = "operatorGroup 'groupName' cannot be empty"
+
+		return builder
 	}
 
 	if nsName == "" {
 		glog.V(100).Infof("The Namespace of the OperatorGroup is empty")
 
 		builder.errorMsg = "operatorGroup 'Namespace' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -109,20 +113,18 @@ func (builder *OperatorGroupBuilder) Create() (*OperatorGroupBuilder, error) {
 
 	glog.V(100).Infof("Creating the OperatorGroup %s", builder.Definition.Name)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+	if builder.Exists() {
+		return builder, nil
+	}
 
-		if err != nil {
-			glog.V(100).Infof("Failed to create OperatorGroup")
-
-			return nil, err
-		}
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
 	}
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // Exists checks whether the given OperatorGroup exists.
@@ -255,13 +257,13 @@ func (builder *OperatorGroupBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

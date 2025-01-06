@@ -184,16 +184,15 @@ func (builder *BGPPeerBuilder) Create() (*BGPPeerBuilder, error) {
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
 
-	var err error
 	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err == nil {
 			builder.Object = builder.Definition
 		}
 	}
 
-	return builder, err
+	return builder, nil
 }
 
 // Delete removes BGPPeer object from a cluster.

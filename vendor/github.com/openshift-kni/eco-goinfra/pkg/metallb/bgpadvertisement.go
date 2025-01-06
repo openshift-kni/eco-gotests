@@ -168,9 +168,8 @@ func (builder *BGPAdvertisementBuilder) Create() (*BGPAdvertisementBuilder, erro
 		builder.Definition.Name, builder.Definition.Namespace,
 	)
 
-	var err error
 	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+		err := builder.apiClient.Create(context.TODO(), builder.Definition)
 
 		if err != nil {
 			glog.V(100).Infof("Failed to create BGPAdvertisement")
@@ -181,7 +180,7 @@ func (builder *BGPAdvertisementBuilder) Create() (*BGPAdvertisementBuilder, erro
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // Delete removes BGPAdvertisement object from a cluster.

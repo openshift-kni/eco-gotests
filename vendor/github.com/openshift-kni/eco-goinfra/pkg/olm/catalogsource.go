@@ -45,7 +45,7 @@ func NewCatalogSourceBuilder(apiClient *clients.Settings, name, nsname string) *
 		return nil
 	}
 
-	builder := CatalogSourceBuilder{
+	builder := &CatalogSourceBuilder{
 		apiClient: apiClient.Client,
 		Definition: &oplmV1alpha1.CatalogSource{
 			ObjectMeta: metav1.ObjectMeta{
@@ -59,15 +59,19 @@ func NewCatalogSourceBuilder(apiClient *clients.Settings, name, nsname string) *
 		glog.V(100).Infof("The name of the catalogsource is empty")
 
 		builder.errorMsg = "catalogsource 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The nsname of the catalogsource is empty")
 
 		builder.errorMsg = "catalogsource 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullCatalogSource loads an existing catalogsource into Builder struct.
@@ -88,7 +92,7 @@ func PullCatalogSource(apiClient *clients.Settings, name, nsname string) (*Catal
 		return nil, err
 	}
 
-	builder := CatalogSourceBuilder{
+	builder := &CatalogSourceBuilder{
 		apiClient: apiClient.Client,
 		Definition: &oplmV1alpha1.CatalogSource{
 			ObjectMeta: metav1.ObjectMeta{
@@ -116,7 +120,7 @@ func PullCatalogSource(apiClient *clients.Settings, name, nsname string) (*Catal
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create makes an CatalogSourceBuilder in cluster and stores the created object in struct.
@@ -128,20 +132,18 @@ func (builder *CatalogSourceBuilder) Create() (*CatalogSourceBuilder, error) {
 	glog.V(100).Infof("Creating the catalogsource %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
+	if builder.Exists() {
+		return builder, nil
+	}
 
-		if err != nil {
-			glog.V(100).Infof("Failed to create CatalogSource")
-
-			return nil, err
-		}
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
 	}
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // Get returns CatalogSource object if found.
@@ -204,7 +206,7 @@ func (builder *CatalogSourceBuilder) Update(force bool) (*CatalogSourceBuilder, 
 		}
 	}
 
-	return builder, err
+	return builder, nil
 }
 
 // Exists checks whether the given catalogsource exists.
@@ -265,13 +267,13 @@ func (builder *CatalogSourceBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

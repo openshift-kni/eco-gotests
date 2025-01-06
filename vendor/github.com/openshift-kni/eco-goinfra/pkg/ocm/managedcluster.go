@@ -223,15 +223,18 @@ func (builder *ManagedClusterBuilder) Create() (*ManagedClusterBuilder, error) {
 	glog.V(100).Infof("Creating the managedcluster %s",
 		builder.Definition.Name)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
-		if err == nil {
-			builder.Object = builder.Definition
-		}
+	if builder.Exists() {
+		return builder, nil
 	}
 
-	return builder, err
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before

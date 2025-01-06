@@ -45,7 +45,7 @@ func NewPlacementRuleBuilder(apiClient *clients.Settings, name, nsname string) *
 		return nil
 	}
 
-	builder := PlacementRuleBuilder{
+	builder := &PlacementRuleBuilder{
 		apiClient: apiClient.Client,
 		Definition: &placementrulev1.PlacementRule{
 			ObjectMeta: metav1.ObjectMeta{
@@ -59,15 +59,19 @@ func NewPlacementRuleBuilder(apiClient *clients.Settings, name, nsname string) *
 		glog.V(100).Info("The name of the PlacementRule is empty")
 
 		builder.errorMsg = "placementrule's 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Info("The namespace of the PlacementRule is empty")
 
 		builder.errorMsg = "placementrule's 'nsname' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // PullPlacementRule pulls existing placementrule into Builder struct.
@@ -156,7 +160,7 @@ func (builder *PlacementRuleBuilder) Get() (*placementrulev1.PlacementRule, erro
 		return nil, err
 	}
 
-	return placementRule, err
+	return placementRule, nil
 }
 
 // Create makes a placementrule in the cluster and stores the created object in struct.
@@ -168,15 +172,18 @@ func (builder *PlacementRuleBuilder) Create() (*PlacementRuleBuilder, error) {
 	glog.V(100).Infof("Creating the placementrule %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
-		if err == nil {
-			builder.Object = builder.Definition
-		}
+	if builder.Exists() {
+		return builder, nil
 	}
 
-	return builder, err
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // Delete removes a placementrule from a cluster.
@@ -246,7 +253,7 @@ func (builder *PlacementRuleBuilder) Update(force bool) (*PlacementRuleBuilder, 
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before
@@ -263,13 +270,13 @@ func (builder *PlacementRuleBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
