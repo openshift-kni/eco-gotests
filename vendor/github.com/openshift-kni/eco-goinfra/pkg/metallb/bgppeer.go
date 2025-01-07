@@ -487,6 +487,21 @@ func (builder *BGPPeerBuilder) WithEBGPMultiHop(eBGPMultiHop bool) *BGPPeerBuild
 	return builder
 }
 
+// WithGracefulRestart defines the EnableGracefulRestart bool flag placed in the BGPPeer spec.
+func (builder *BGPPeerBuilder) WithGracefulRestart(gracefulRestart bool) *BGPPeerBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Creating BGPPeer %s in namespace %s with this EnableGracefulRestart flag: %t",
+		builder.Definition.Name, builder.Definition.Namespace, gracefulRestart)
+
+	builder.Definition.Spec.EnableGracefulRestart = gracefulRestart
+
+	return builder
+}
+
 // WithOptions creates BGPPeer with generic mutation options.
 func (builder *BGPPeerBuilder) WithOptions(options ...BGPPeerAdditionalOptions) *BGPPeerBuilder {
 	if valid, _ := builder.validate(); !valid {
