@@ -1,6 +1,7 @@
 package rdscorecommon
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
 
+//nolint:funlen
 func mountNamespaceEncapsulation(nodeLabel string) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check encapsulation for nodes %s", nodeLabel)
 
@@ -63,21 +66,69 @@ func mountNamespaceEncapsulation(nodeLabel string) {
 
 		kubeletMountNsCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "readlink /proc/$(pgrep kubelet)/ns/mnt"}
 
-		kubeletMountNsOutput, err := remote.ExecuteOnNodeWithDebugPod(kubeletMountNsCmd, nodeName)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
-			kubeletMountNsCmd, nodeName, err))
+		var kubeletMountNs string
 
-		kubeletMountNs := strings.Split(kubeletMountNsOutput, ":")[1]
+		err = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, time.Minute, true,
+			func(context.Context) (bool, error) {
+				kubeletMountNsOutput, err := remote.ExecuteOnNodeWithDebugPod(kubeletMountNsCmd, nodeName)
+
+				if err != nil {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to run command %s on node %s due to %v",
+						kubeletMountNsCmd, nodeName, err)
+
+					return false, nil
+				}
+
+				if len(strings.Split(kubeletMountNsOutput, ":")) < 2 {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Malformed output: %q", kubeletMountNsOutput)
+
+					return false, nil
+				}
+
+				kubeletMountNs = strings.Split(kubeletMountNsOutput, ":")[1]
+
+				return true, nil
+			})
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to check kubelet mount namespace")
+
+			Fail(fmt.Sprintf("Failed to check kubelet mount namespace: %v", err))
+		}
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check the CRI-O mount namespace on node %s", nodeName)
 
 		crioMountNsCmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "readlink /proc/$(pgrep crio)/ns/mnt"}
 
-		crioMountNsOutput, err := remote.ExecuteOnNodeWithDebugPod(crioMountNsCmd, nodeName)
-		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to execute %s cmd on the node %s due to %v",
-			crioMountNsCmd, nodeName, err))
+		var crioMountNs string
 
-		crioMountNs := strings.Split(crioMountNsOutput, ":")[1]
+		err = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, time.Minute, true,
+			func(context.Context) (bool, error) {
+				crioMountNsOutput, err := remote.ExecuteOnNodeWithDebugPod(crioMountNsCmd, nodeName)
+
+				if err != nil {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to execute %s cmd on the node %s due to %v",
+						crioMountNsCmd, nodeName, err)
+
+					return false, nil
+				}
+
+				if len(strings.Split(crioMountNsOutput, ":")) < 2 {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Malformed output: %q", crioMountNsOutput)
+
+					return false, nil
+				}
+
+				crioMountNs = strings.Split(crioMountNsOutput, ":")[1]
+
+				return true, nil
+			})
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to check CRI-O mount namespace")
+
+			Fail(fmt.Sprintf("Failed to check CRI-O mount namespace: %v", err))
+		}
 
 		By("Check that encapsulation is in effect")
 
