@@ -43,7 +43,7 @@ func NewBuilder(
 			"name: %s, namespace: %s, labels: %s, containerSpec %v",
 		name, nsname, labels, containerSpec)
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &appsv1.StatefulSet{
 			Spec: appsv1.StatefulSetSpec{
@@ -69,21 +69,27 @@ func NewBuilder(
 		glog.V(100).Infof("The name of the statefulset is empty")
 
 		builder.errorMsg = "statefulset 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the statefulset is empty")
 
 		builder.errorMsg = "statefulset 'namespace' cannot be empty"
+
+		return builder
 	}
 
 	if labels == nil {
 		glog.V(100).Infof("There are no labels for the statefulset")
 
 		builder.errorMsg = "statefulset 'labels' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithAdditionalContainerSpecs appends a list of container specs to the statefulset definition.
@@ -99,9 +105,7 @@ func (builder *Builder) WithAdditionalContainerSpecs(specs []corev1.Container) *
 		glog.V(100).Infof("The container specs are empty")
 
 		builder.errorMsg = "cannot accept nil or empty list as container specs"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -157,10 +161,14 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	if name == "" {
 		builder.errorMsg = "statefulset 'name' cannot be empty"
+
+		return nil, fmt.Errorf("statefulset 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		builder.errorMsg = "statefulset 'namespace' cannot be empty"
+
+		return nil, fmt.Errorf("statefulset 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -285,13 +293,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

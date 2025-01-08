@@ -59,12 +59,16 @@ func NewControlPlaneBuilder(apiClient *clients.Settings, name, nsname string) *C
 		glog.V(100).Infof("The name of the serviceMeshControlPlane is empty")
 
 		builder.errorMsg = "serviceMeshControlPlane 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the serviceMeshControlPlane is empty")
 
 		builder.errorMsg = "serviceMeshControlPlane 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -121,17 +125,17 @@ func (builder *ControlPlaneBuilder) WithGrafanaAddon(
 			glog.V(100).Infof("The grafanaInstallConfig of the Grafana addon is empty")
 
 			builder.errorMsg = "the Grafana addon 'grafanaInstallConfig' cannot be empty when Grafana addon is enabled"
+
+			return builder
 		}
 
 		if address == "" {
 			glog.V(100).Infof("The address of the Grafana addon is empty")
 
 			builder.errorMsg = "the Grafana addon 'address' cannot be empty when Grafana addon is enabled"
-		}
-	}
 
-	if builder.errorMsg != "" {
-		return builder
+			return builder
+		}
 	}
 
 	addonConfig := &istiov2.GrafanaAddonConfig{
@@ -167,15 +171,15 @@ func (builder *ControlPlaneBuilder) WithJaegerAddon(
 		glog.V(100).Infof("The name of the Jaeger addon is empty")
 
 		builder.errorMsg = "the Jaeger addon 'name' cannot be empty"
+
+		return builder
 	}
 
 	if jaegerInstallConfig == nil {
 		glog.V(100).Infof("The jaegerInstallConfig of the Jaeger addon is empty")
 
 		builder.errorMsg = "the Jaeger addon 'jaegerInstallConfig' cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -211,17 +215,17 @@ func (builder *ControlPlaneBuilder) WithKialiAddon(
 			glog.V(100).Infof("The kialiInstallConfig of the Kiali addon is empty")
 
 			builder.errorMsg = "the Kiali addon 'kialiInstallConfig' cannot be empty when Kiali addon is enabled"
+
+			return builder
 		}
 
 		if name == "" {
 			glog.V(100).Infof("The name of the Kiali addon is empty")
 
 			builder.errorMsg = "the Kiali addon 'name' cannot be empty when Kiali addon is enabled"
-		}
-	}
 
-	if builder.errorMsg != "" {
-		return builder
+			return builder
+		}
 	}
 
 	addonConfig := &istiov2.KialiAddonConfig{
@@ -262,6 +266,8 @@ func (builder *ControlPlaneBuilder) WithPrometheusAddon(
 
 			builder.errorMsg = "the Prometheus addon 'prometheusInstallConfig' cannot " +
 				"be empty when Prometheus addon is enabled"
+
+			return builder
 		}
 
 		if metricsExpiryDuration == "" {
@@ -269,17 +275,17 @@ func (builder *ControlPlaneBuilder) WithPrometheusAddon(
 
 			builder.errorMsg = "the Prometheus addon 'metricsExpiryDuration' cannot " +
 				"be empty when Prometheus addon is enabled"
+
+			return builder
 		}
 
 		if address == "" {
 			glog.V(100).Info("The address of the Prometheus addon is empty")
 
 			builder.errorMsg = "the Prometheus addon 'address' cannot be empty when Prometheus addon is enabled"
-		}
-	}
 
-	if builder.errorMsg != "" {
-		return builder
+			return builder
+		}
 	}
 
 	addonConfig := &istiov2.PrometheusAddonConfig{
@@ -340,7 +346,7 @@ func PullControlPlane(apiClient *clients.Settings, name, nsname string) (*Contro
 		return nil, err
 	}
 
-	builder := ControlPlaneBuilder{
+	builder := &ControlPlaneBuilder{
 		apiClient: apiClient.Client,
 		Definition: &istiov2.ServiceMeshControlPlane{
 			ObjectMeta: metav1.ObjectMeta{
@@ -362,17 +368,13 @@ func PullControlPlane(apiClient *clients.Settings, name, nsname string) (*Contro
 		return nil, fmt.Errorf("serviceMeshControlPlane 'nsname' cannot be empty")
 	}
 
-	if builder.errorMsg != "" {
-		return &builder, nil
-	}
-
 	if !builder.Exists() {
 		return nil, fmt.Errorf("serviceMeshControlPlane object %s does not exist in namespace %s", name, nsname)
 	}
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get fetches existing serviceMeshControlPlane from cluster.
@@ -514,13 +516,13 @@ func (builder *ControlPlaneBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
