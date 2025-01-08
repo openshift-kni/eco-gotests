@@ -227,11 +227,19 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 func validatePrefix(
 	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string, prefixLength int) {
-	Eventually(
-		frr.GetBGPStatus, time.Minute, tsparams.DefaultRetryInterval).
-		WithArguments(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test").ShouldNot(BeNil())
+	Eventually(func() error {
+		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
+		if err != nil {
+			return err
+		}
+		if len(bgpStatus.Routes) == 0 {
+			return fmt.Errorf("no BGP routes present")
+		}
 
-	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+		return nil
+	}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(), "BGP status validation failed")
+
+	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
 	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
 	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefixLength))
 	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
