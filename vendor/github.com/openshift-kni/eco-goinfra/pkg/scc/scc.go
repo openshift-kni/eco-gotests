@@ -110,7 +110,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 		return nil, fmt.Errorf("failed to add security v1 scheme to client schemes")
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &securityV1.SecurityContextConstraints{
 			ObjectMeta: metav1.ObjectMeta{
@@ -131,7 +131,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // WithPrivilegedContainer adds bool flag to the allowPrivilegedContainer of SecurityContextConstraints.
@@ -609,7 +609,7 @@ func (builder *Builder) Get() (*securityV1.SecurityContextConstraints, error) {
 		return nil, err
 	}
 
-	return scc, err
+	return scc, nil
 }
 
 // Exists checks whether the given SecurityContextConstraints exists.
@@ -644,13 +644,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

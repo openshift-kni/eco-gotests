@@ -86,6 +86,8 @@ func NewPolicyBuilder(apiClient *clients.Settings, name string, nodeSelector map
 		glog.V(100).Infof("The nodeSelector of the NodeNetworkConfigurationPolicy is empty")
 
 		builder.errorMsg = "nodeNetworkConfigurationPolicy 'nodeSelector' cannot be empty map"
+
+		return builder
 	}
 
 	return builder
@@ -112,7 +114,7 @@ func (builder *PolicyBuilder) Get() (*nmstateV1.NodeNetworkConfigurationPolicy, 
 		return nil, err
 	}
 
-	return nmstatePolicy, err
+	return nmstatePolicy, nil
 }
 
 // Exists checks whether the given NodeNetworkConfigurationPolicy exists.
@@ -139,15 +141,18 @@ func (builder *PolicyBuilder) Create() (*PolicyBuilder, error) {
 
 	glog.V(100).Infof("Creating the NodeNetworkConfigurationPolicy %s", builder.Definition.Name)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
-		if err == nil {
-			builder.Object = builder.Definition
-		}
+	if builder.Exists() {
+		return builder, nil
 	}
 
-	return builder, err
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // Delete removes NodeNetworkConfigurationPolicy object from a cluster.

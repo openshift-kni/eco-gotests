@@ -99,7 +99,7 @@ func (builder *Builder) Get() (*nmstateV1.NMState, error) {
 		return nil, err
 	}
 
-	return nmstate, err
+	return nmstate, nil
 }
 
 // Create makes a NMState in the cluster and stores the created object in struct.
@@ -110,15 +110,18 @@ func (builder *Builder) Create() (*Builder, error) {
 
 	glog.V(100).Infof("Creating the NMState %s", builder.Definition.Name)
 
-	var err error
-	if !builder.Exists() {
-		err = builder.apiClient.Create(context.TODO(), builder.Definition)
-		if err == nil {
-			builder.Object = builder.Definition
-		}
+	if builder.Exists() {
+		return builder, nil
 	}
 
-	return builder, err
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // Delete removes NMState object from a cluster.
@@ -197,7 +200,7 @@ func PullNMstate(apiClient *clients.Settings, name string) (*Builder, error) {
 		return nil, err
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient.Client,
 		Definition: &nmstateV1.NMState{
 			ObjectMeta: metav1.ObjectMeta{
@@ -218,7 +221,7 @@ func PullNMstate(apiClient *clients.Settings, name string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before
@@ -235,13 +238,13 @@ func (builder *Builder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

@@ -51,6 +51,8 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 		glog.V(100).Infof("The name of the namespace is empty")
 
 		builder.errorMsg = "namespace 'name' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -199,7 +201,7 @@ func (builder *Builder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // DeleteAndWait deletes a namespace and waits until it is removed from the cluster.

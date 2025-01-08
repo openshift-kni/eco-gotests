@@ -63,12 +63,16 @@ func NewMemberRollBuilder(apiClient *clients.Settings, name, nsname string) *Mem
 		glog.V(100).Infof("The name of the serviceMeshMemberRoll is empty")
 
 		builder.errorMsg = "serviceMeshMemberRoll 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the serviceMeshMemberRoll is empty")
 
 		builder.errorMsg = "serviceMeshMemberRoll 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -92,7 +96,7 @@ func PullMemberRoll(apiClient *clients.Settings, name, nsname string) (*MemberRo
 		return nil, err
 	}
 
-	builder := MemberRollBuilder{
+	builder := &MemberRollBuilder{
 		apiClient: apiClient.Client,
 		Definition: &istiov1.ServiceMeshMemberRoll{
 			ObjectMeta: metav1.ObjectMeta{
@@ -120,7 +124,7 @@ func PullMemberRoll(apiClient *clients.Settings, name, nsname string) (*MemberRo
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get fetches existing serviceMeshMemberRoll from cluster.
@@ -254,9 +258,7 @@ func (builder *MemberRollBuilder) WithMembersList(membersList []string) *MemberR
 		glog.V(100).Infof("Cannot add empty membersList to the memberRoll structure")
 
 		builder.errorMsg = "can not modify memberRoll config with empty membersList"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -331,13 +333,13 @@ func (builder *MemberRollBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

@@ -31,7 +31,7 @@ type MutatingConfigurationBuilder struct {
 func PullMutatingConfiguration(apiClient *clients.Settings, name string) (*MutatingConfigurationBuilder, error) {
 	glog.V(100).Infof("Pulling existing MutatingWebhookConfiguration name %s from cluster", name)
 
-	builder := MutatingConfigurationBuilder{
+	builder := &MutatingConfigurationBuilder{
 		apiClient: apiClient,
 		Definition: &admregv1.MutatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
@@ -43,7 +43,7 @@ func PullMutatingConfiguration(apiClient *clients.Settings, name string) (*Mutat
 	if name == "" {
 		glog.V(100).Infof("The name of the MutatingWebhookConfiguration is empty")
 
-		builder.errorMsg = "MutatingWebhookConfiguration 'name' cannot be empty"
+		return builder, fmt.Errorf("MutatingWebhookConfiguration 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -52,7 +52,7 @@ func PullMutatingConfiguration(apiClient *clients.Settings, name string) (*Mutat
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given MutatingWebhookConfiguration object exists in the cluster.
@@ -146,7 +146,7 @@ func (builder *MutatingConfigurationBuilder) validate() (bool, error) {
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
