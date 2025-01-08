@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // ExecuteOnNodeWithDebugPod executes a command on a node.
@@ -38,22 +40,69 @@ func ExecuteOnNodeWithDebugPod(cmdToExec []string, nodeName string) (string, err
 }
 
 // ExecuteOnNodeWithPrivilegedDebugPod executes command on the specific node using privileged debug pod.
-func ExecuteOnNodeWithPrivilegedDebugPod(apiClient *clients.Settings, nodeName string, cmd []string) (string, error) {
+func ExecuteOnNodeWithPrivilegedDebugPod(apiClient *clients.Settings,
+	nodeName, imageName string, cmd []string) (string, error) {
+	const (
+		debugPodLabel = "system-test-privileged-debug"
+		debugPodName  = "st-privileged-debug"
+	)
+
 	debugPod := pod.NewBuilder(
 		apiClient,
-		"debug",
+		debugPodName,
 		SystemTestsTestConfig.MCONamespace,
-		SystemTestsTestConfig.CNFGoTestsClientImage)
+		imageName)
 
-	debugPod, err := debugPod.WithPrivilegedFlag().
+	glog.V(90).Infof("Check if %q pod exists", debugPodName)
+
+	podSelector := fmt.Sprintf("%s=%s", debugPodLabel, nodeName)
+
+	err := wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Minute, true,
+		func(context.Context) (bool, error) {
+			oldPods, err := pod.List(apiClient, SystemTestsTestConfig.MCONamespace,
+				v1.ListOptions{LabelSelector: podSelector})
+
+			if err != nil {
+				glog.V(90).Infof("Error listing pods: %v", err)
+
+				return false, nil
+			}
+
+			for _, _pod := range oldPods {
+				glog.V(90).Infof("Deleting pod %q in %q namespace",
+					_pod.Definition.Name, _pod.Definition.Namespace)
+
+				_, delErr := _pod.DeleteAndWait(15 * time.Second)
+
+				if delErr != nil {
+					glog.V(90).Infof("Failed to delete pod %q in %q namespace: %v",
+						_pod.Definition.Name, _pod.Definition.Namespace, delErr)
+
+					return false, nil
+				}
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		glog.V(90).Infof("Failed to assert if previous %q pod exists", debugPodName)
+
+		return "", fmt.Errorf("failed to assert if previous %q pod exists", debugPodName)
+	}
+
+	debugPod, err = debugPod.WithPrivilegedFlag().
 		WithHostNetwork().
-		WithLabel("kubernetes.io/nodeName", nodeName).
+		WithLabel(debugPodLabel, nodeName).
+		WithNodeSelector(map[string]string{"kubernetes.io/hostname": nodeName}).
 		CreateAndWaitUntilRunning(1 * time.Minute)
+
 	if err != nil {
 		return "", err
 	}
 
 	buf, err := debugPod.ExecCommand(cmd)
+
 	if err != nil {
 		return "", err
 	}
