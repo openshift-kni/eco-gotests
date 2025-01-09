@@ -108,6 +108,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 
 		It("Verify that prefixes configured with alwaysBlock are not received by the FRR speakers",
 			reportxml.ID("74270"), func() {
+				Skip("Skipping this test case. AlwaysBlock has been removed until the new Frr namespace " +
+					"CNO is activated in 4.19.")
 				prefixToBlock := externalAdvertisedIPv4Routes[0]
 
 				By("Creating a new instance of MetalLB Speakers on workers blocking specific incoming prefixes")
