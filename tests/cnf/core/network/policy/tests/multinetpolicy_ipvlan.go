@@ -30,6 +30,7 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 		sriovInterfacesUnderTest                         []string
 		tNs1, tNs2                                       *namespace.Builder
 		testPod1, testPod2, testPod3, testPod4, testPod5 *pod.Builder
+		testNAD1, testNAD2                               *nad.Builder
 	)
 
 	BeforeAll(func() {
@@ -59,8 +60,8 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 		Expect(err).ToNot(HaveOccurred(), "Failed to create test namespace")
 
 		By("Deploy Test Resources: Two NADs for IPVLAN CNI")
-		defineAndCreateIpvlanNAD(tsparams.MultiNetPolNs1, sriovInterfacesUnderTest[0])
-		defineAndCreateIpvlanNAD(tsparams.MultiNetPolNs2, sriovInterfacesUnderTest[1])
+		testNAD1 = defineAndCreateIpvlanNAD(tsparams.MultiNetPolNs1, sriovInterfacesUnderTest[0])
+		testNAD2 = defineAndCreateIpvlanNAD(tsparams.MultiNetPolNs2, sriovInterfacesUnderTest[1])
 
 		By("Deploy Test Resources: Five Pods")
 		testPod1 = defineAndCreatePodWithIpvlanIf(
@@ -95,8 +96,20 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 	})
 
 	AfterAll(func() {
+		By("Cleaning up test pods")
+		err := tNs1.CleanObjects(2*time.Minute, pod.GetGVR())
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test pods in test namespace")
+		err = tNs2.CleanObjects(2*time.Minute, pod.GetGVR())
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test pods in test namespace")
+
+		By("Cleaning up test NADs")
+		err = testNAD1.Delete()
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test NADs in test namespace")
+		err = testNAD2.Delete()
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test NADs in test namespace")
+
 		By("Delete test namespace")
-		err := tNs1.Delete()
+		err = tNs1.Delete()
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete test namespace")
 		err = tNs2.Delete()
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete test namespace")
@@ -111,6 +124,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other four pods. All ports should be filtered")
 
@@ -140,6 +156,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
@@ -172,6 +191,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other four pods. All ports should be filtered")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -202,6 +224,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other four pods. All ports should be filtered")
 
@@ -236,6 +261,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other four pods. Only pod2 and pod4 should be accessible on all ports")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -269,6 +297,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other four pods. " +
 			"Pod2 tcp port 5001 should be accessible over IPv4." +
 			"Pod4 tcp port 5001 should be accessible over IPv6")
@@ -295,6 +326,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
@@ -324,6 +358,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
@@ -356,6 +393,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -386,6 +426,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
@@ -420,6 +463,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -452,6 +498,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other four pods. All ports should be open")
 
@@ -497,6 +546,9 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other four pods. Only Pod5 ports should be accessible over IPv6")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -515,7 +567,7 @@ var _ = Describe("Multi-NetworkPolicy : IPVLAN CNI", Ordered, Label("ipvlancni")
 	})
 })
 
-func defineAndCreateIpvlanNAD(nsName, masterIf string) {
+func defineAndCreateIpvlanNAD(nsName, masterIf string) *nad.Builder {
 	config, err := nad.NewMasterIPVlanPlugin("ipvlan").
 		WithMasterInterface(masterIf).
 		WithIPAM(&nad.IPAM{
@@ -524,8 +576,10 @@ func defineAndCreateIpvlanNAD(nsName, masterIf string) {
 		}).GetMasterPluginConfig()
 	Expect(err).ToNot(HaveOccurred(), "Failed to get master ipvlan plugin config")
 
-	_, err = nad.NewBuilder(APIClient, "ipvlan", nsName).WithMasterPlugin(config).Create()
+	createNAD, err := nad.NewBuilder(APIClient, "ipvlan", nsName).WithMasterPlugin(config).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create net-attach-def")
+
+	return createNAD
 }
 
 func defineAndCreatePodWithIpvlanIf(

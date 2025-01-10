@@ -32,6 +32,7 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		sriovInterfacesUnderTest                         []string
 		tNs1, tNs2                                       *namespace.Builder
 		testPod1, testPod2, testPod3, testPod4, testPod5 *pod.Builder
+		testNAD1, testNAD2                               *nad.Builder
 	)
 
 	const (
@@ -92,8 +93,8 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "Sriov and MCP are not stable")
 
 		By("Deploy Test Resources: 2 NADs for bond CNI")
-		defineAndCreateBondNAD(tsparams.MultiNetPolNs1)
-		defineAndCreateBondNAD(tsparams.MultiNetPolNs2)
+		testNAD1 = defineAndCreateBondNAD(tsparams.MultiNetPolNs1)
+		testNAD2 = defineAndCreateBondNAD(tsparams.MultiNetPolNs2)
 
 		By("Deploy Test Resources: 5 Pods")
 		testPod1 = defineAndCreatePodWithBondIf(pod1, tsparams.MultiNetPolNs1, ns1+nicPf1, ns1+nicPf2,
@@ -128,8 +129,20 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 	})
 
 	AfterAll(func() {
+		By("Cleaning up test pods")
+		err := tNs1.CleanObjects(2*time.Minute, pod.GetGVR())
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test pods in test namespace")
+		err = tNs2.CleanObjects(2*time.Minute, pod.GetGVR())
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test pods in test namespace")
+
+		By("Cleaning up test NADs")
+		err = testNAD1.Delete()
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test NADs in test namespace")
+		err = testNAD2.Delete()
+		Expect(err).ToNot(HaveOccurred(), "failed to clean test NADs in test namespace")
+
 		By("Removing SRIOV configuration and wait for MCP stable")
-		err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
+		err = netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
 		Expect(err).ToNot(HaveOccurred(), "Failed to remove SRIOV configuration and MCP stable")
 
 		By("Delete test namespace")
@@ -148,6 +161,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeEgress).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be filtered")
 
@@ -177,6 +193,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
 
@@ -209,6 +228,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be filtered")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -239,6 +261,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithEgressRule(*testEgressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be filtered")
 
@@ -273,6 +298,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other 4 pods. Only pod2 and pod4 should be accessible on all ports")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -306,6 +334,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other 4 pods. " +
 			"Pod2 tcp port 5001 should be accessible over IPv4." +
 			"Pod4 tcp port 5001 should be accessible over IPv6")
@@ -332,6 +363,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithPolicyType(multinetpolicyapiv1.PolicyTypeIngress).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
 
@@ -361,6 +395,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create Multi Network Policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
 
@@ -393,6 +430,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -423,6 +463,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
 
@@ -457,6 +500,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
@@ -489,6 +535,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			WithIngressRule(*testIngressRule).
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
+
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
 
 		By("Check egress traffic from pod1 to other 4 pods. All ports should be open")
 
@@ -534,6 +583,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 			Create()
 		Expect(err).NotTo(HaveOccurred(), "failed to create multi network policy")
 
+		// Wait for 5 seconds for the multi network policy to be configured.
+		time.Sleep(5 * time.Second)
+
 		By("Check egress traffic from pod1 to other 4 pods. Only Pod5 ports should be accessible over IPv6")
 
 		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
@@ -560,7 +612,7 @@ func defineAndCreateSriovNetwork(netName, resName, targetNs string) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Sriov Network %s", netName))
 }
 
-func defineAndCreateBondNAD(nsName string) {
+func defineAndCreateBondNAD(nsName string) *nad.Builder {
 	config, err := nad.NewMasterBondPlugin("bond", "active-backup").
 		WithFailOverMac(1).
 		WithLinksInContainer(true).
@@ -573,8 +625,10 @@ func defineAndCreateBondNAD(nsName string) {
 		}).GetMasterPluginConfig()
 	Expect(err).ToNot(HaveOccurred(), "Failed to get master bond plugin config")
 
-	_, err = nad.NewBuilder(APIClient, "bond", nsName).WithMasterPlugin(config).Create()
+	createdNAD, err := nad.NewBuilder(APIClient, "bond", nsName).WithMasterPlugin(config).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create net-attach-def")
+
+	return createdNAD
 }
 
 func defineAndCreatePodWithBondIf(
