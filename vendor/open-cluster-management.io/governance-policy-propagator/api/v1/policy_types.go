@@ -66,6 +66,14 @@ type PolicyDependency struct {
 	Compliance ComplianceState `json:"compliance"`
 }
 
+type HubTemplateOptions struct {
+	// ServiceAccountName is the name of a service account in the same namespace as the policy to use for all hub
+	// template lookups. The service account must have list and watch permissions on any object the hub templates
+	// look up. If not specified, lookups are restricted to namespaced objects in the same namespace as the policy and
+	// to the `ManagedCluster` object associated with the propagated policy.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+}
+
 // PolicySpec defines the configurations of the policy engine resources to deliver to the managed
 // clusters.
 type PolicySpec struct {
@@ -98,6 +106,9 @@ type PolicySpec struct {
 	// PolicyDependencies is a list of dependency objects detailed with extra considerations for
 	// compliance that should be fulfilled before applying the policies to the managed clusters.
 	Dependencies []PolicyDependency `json:"dependencies,omitempty"`
+
+	// HubTemplateOptions changes the default behavior of hub templates.
+	HubTemplateOptions *HubTemplateOptions `json:"hubTemplateOptions,omitempty"`
 }
 
 // PlacementDecision is the cluster name returned by the placement resource.

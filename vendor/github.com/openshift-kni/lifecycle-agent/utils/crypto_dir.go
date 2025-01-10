@@ -42,7 +42,7 @@ func SeedReconfigurationKubeconfigRetentionToCryptoDir(cryptoDir string, kubecon
 	}
 
 	if err := os.WriteFile(path.Join(cryptoDir, "ingresskey-ingress-operator.key"),
-		[]byte(kubeconfigCryptoRetention.IngresssCrypto.IngressCA), cryptoDirMode); err != nil {
+		[]byte(kubeconfigCryptoRetention.IngresssCrypto.IngressCAPrivateKey), cryptoDirMode); err != nil {
 		return fmt.Errorf("error writing ingresskey-ingress-operator.key: %w", err)
 	}
 
@@ -76,12 +76,17 @@ func SeedReconfigurationKubeconfigRetentionFromCluster(ctx context.Context, clie
 	if err != nil {
 		return nil, err
 	}
+	ingressCN, err := GetIngressCertificateCN(ctx, client)
+	if err != nil {
+		return nil, err
+	}
 
 	kubeconfigCryptoRetention.KubeAPICrypto.ServingCrypto.LoadbalancerSignerPrivateKey = seedreconfig.PEM(loadbalancerServingSignerPrivateKey)
 	kubeconfigCryptoRetention.KubeAPICrypto.ServingCrypto.LocalhostSignerPrivateKey = seedreconfig.PEM(localhostServingSignerKey)
 	kubeconfigCryptoRetention.KubeAPICrypto.ServingCrypto.ServiceNetworkSignerPrivateKey = seedreconfig.PEM(serviceNetworkServingSignerKey)
 	kubeconfigCryptoRetention.KubeAPICrypto.ClientAuthCrypto.AdminCACertificate = seedreconfig.PEM(adminKubeConfigClientCA)
-	kubeconfigCryptoRetention.IngresssCrypto.IngressCA = seedreconfig.PEM(ingressKey)
+	kubeconfigCryptoRetention.IngresssCrypto.IngressCAPrivateKey = seedreconfig.PEM(ingressKey)
+	kubeconfigCryptoRetention.IngresssCrypto.IngressCertificateCN = ingressCN
 
 	return &kubeconfigCryptoRetention, nil
 }
@@ -117,7 +122,7 @@ func BackupKubeconfigCrypto(ctx context.Context, client runtimeclient.Client, cr
 	}
 	p = path.Join(cryptoDir, "ingresskey-ingress-operator.key")
 	if err := os.WriteFile(p, []byte(ingressOperatorKey), cryptoDirMode); err != nil {
-		return fmt.Errorf("failed to ingresskey-ingress-operator.key to path %s: %w", p, err)
+		return fmt.Errorf("failed to write ingresskey-ingress-operator.key to path %s: %w", p, err)
 	}
 
 	return nil

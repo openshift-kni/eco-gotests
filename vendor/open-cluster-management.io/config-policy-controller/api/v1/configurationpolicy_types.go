@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	depclient "github.com/stolostron/kubernetes-dependency-watches/client"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -36,6 +37,23 @@ func (ra RemediationAction) IsInform() bool {
 
 func (ra RemediationAction) IsEnforce() bool {
 	return strings.EqualFold(string(ra), string(Enforce))
+}
+
+// CustomMessage configures the compliance messages emitted by the configuration policy, to use one
+// of the specified Go templates based on the current compliance. The data passed to the templates
+// include a `.DefaultMessage` string variable which matches the message that would be emitted if no
+// custom template was defined, and a `.Policy` object variable which contains the full current
+// state of the policy. If the policy is using Kubernetes API watches (default but can be configured
+// with EvaluationInterval), and the object exists, then the full state of each related object will
+// be available at `.Policy.status.relatedObjects[*].object`. Otherwise, only the identifier
+// information will be available there.
+type CustomMessage struct {
+	// Compliant is the template used for the compliance message when the policy is compliant.
+	Compliant string `json:"compliant,omitempty"`
+
+	// NonCompliant is the template used for the compliance message when the policy is not compliant,
+	// including when the status is unknown.
+	NonCompliant string `json:"noncompliant,omitempty"`
 }
 
 // Severity is a user-defined severity for when an object is noncompliant with this configuration
@@ -84,29 +102,33 @@ func (t Target) String() string {
 }
 
 // EvaluationInterval configures the minimum elapsed time before a configuration policy is
-// reevaluated. If the policy spec is changed, or if the list of namespaces selected by the policy
-// changes, the policy might be evaluated regardless of the settings here.
+// reevaluated. The default value is `watch` to leverage Kubernetes API watches instead of polling the Kubernetes API
+// server. If the policy spec is changed or if the list of namespaces selected by the policy changes, the policy might
+// be evaluated regardless of the settings here.
 type EvaluationInterval struct {
 	// Compliant is the minimum elapsed time before a configuration policy is reevaluated when in the
-	// compliant state. Set this to `never` to disable reevaluation when in the compliant state.
+	// compliant state. Set this to `never` to disable reevaluation when in the compliant state. The default value is
+	// `watch`.
 	//
-	//+kubebuilder:validation:Pattern=`^(?:(?:(?:[0-9]+(?:.[0-9])?)(?:h|m|s|(?:ms)|(?:us)|(?:ns)))|never)+$`
+	//+kubebuilder:validation:Pattern=`^(?:(?:(?:[0-9]+(?:.[0-9])?)(?:h|m|s|(?:ms)|(?:us)|(?:ns)))|never|watch)+$`
 	Compliant string `json:"compliant,omitempty"`
-	// NonCompliant is the minimum elapsed time before a configuration policy is reevaluated when in
-	// the noncompliant state. Set this to `never` to disable reevaluation when in the noncompliant
-	// state.
+	// NonCompliant is the minimum elapsed time before a configuration policy is reevaluated when in the noncompliant
+	// state. Set this to `never` to disable reevaluation when in the noncompliant state. The default value is `watch`.
 	//
-	//+kubebuilder:validation:Pattern=`^(?:(?:(?:[0-9]+(?:.[0-9])?)(?:h|m|s|(?:ms)|(?:us)|(?:ns)))|never)+$`
+	//+kubebuilder:validation:Pattern=`^(?:(?:(?:[0-9]+(?:.[0-9])?)(?:h|m|s|(?:ms)|(?:us)|(?:ns)))|never|watch)+$`
 	NonCompliant string `json:"noncompliant,omitempty"`
 }
 
-var ErrIsNever = errors.New("the interval is set to never")
+var (
+	ErrIsNever = errors.New("the interval is set to never")
+	ErrIsWatch = errors.New("the interval is set to watch")
+)
 
-// parseInterval converts the input string to a duration. The default value is "0s". ErrIsNever is
-// returned when the string is set to `never`.
+// parseInterval converts the input string to a duration. ErrIsNever is returned when the string is set to `never`.
+// ErrIsWatch is returned when the string is unset or set to `watch`.
 func (e EvaluationInterval) parseInterval(interval string) (time.Duration, error) {
-	if interval == "" {
-		return 0, nil
+	if interval == "" || interval == "watch" {
+		return 0, ErrIsWatch
 	}
 
 	if interval == "never" {
@@ -121,6 +143,14 @@ func (e EvaluationInterval) parseInterval(interval string) (time.Duration, error
 	return parsedInterval, nil
 }
 
+func (e EvaluationInterval) IsWatchForCompliant() bool {
+	return e.Compliant == "" || e.Compliant == "watch"
+}
+
+func (e EvaluationInterval) IsWatchForNonCompliant() bool {
+	return e.NonCompliant == "" || e.NonCompliant == "watch"
+}
+
 // GetCompliantInterval converts the Compliant interval to a duration. ErrIsNever is returned when
 // the string is set to `never`.
 func (e EvaluationInterval) GetCompliantInterval() (time.Duration, error) {
@@ -133,11 +163,6 @@ func (e EvaluationInterval) GetNonCompliantInterval() (time.Duration, error) {
 	return e.parseInterval(e.NonCompliant)
 }
 
-// ComplianceType describes how objects on the cluster should be compared with the object definition
-// of the configuration policy. The supported options are `MustHave`, `MustOnlyHave`, or
-// `MustNotHave`.
-//
-// +kubebuilder:validation:Enum=MustHave;Musthave;musthave;MustOnlyHave;Mustonlyhave;mustonlyhave;MustNotHave;Mustnothave;mustnothave
 type ComplianceType string
 
 const (
@@ -163,14 +188,6 @@ func (c ComplianceType) IsMustNotHave() bool {
 	return strings.EqualFold(string(c), string(MustNotHave))
 }
 
-// MetadataComplianceType describes how the labels and annotations of objects on the cluster should
-// be compared with the object definition of the configuration policy. The supported options are
-// `MustHave` or `MustOnlyHave`. The default value is the value defined in `complianceType` for the
-// object template.
-//
-// +kubebuilder:validation:Enum=MustHave;Musthave;musthave;MustOnlyHave;Mustonlyhave;mustonlyhave
-type MetadataComplianceType string
-
 // +kubebuilder:validation:Enum=Log;InStatus;None
 type RecordDiff string
 
@@ -193,8 +210,20 @@ const (
 
 // ObjectTemplate describes the desired state of an object on the cluster.
 type ObjectTemplate struct {
-	ComplianceType         ComplianceType         `json:"complianceType"`
-	MetadataComplianceType MetadataComplianceType `json:"metadataComplianceType,omitempty"`
+	// ComplianceType describes how objects on the cluster should be compared with the object definition
+	// of the configuration policy. The supported options are `MustHave`, `MustOnlyHave`, or
+	// `MustNotHave`.
+	//
+	// +kubebuilder:validation:Enum=MustHave;Musthave;musthave;MustOnlyHave;Mustonlyhave;mustonlyhave;MustNotHave;Mustnothave;mustnothave
+	ComplianceType ComplianceType `json:"complianceType"`
+
+	// MetadataComplianceType describes how the labels and annotations of objects on the cluster should
+	// be compared with the object definition of the configuration policy. The supported options are
+	// `MustHave` or `MustOnlyHave`. The default value is the value defined in `complianceType` for the
+	// object template.
+	//
+	// +kubebuilder:validation:Enum=MustHave;Musthave;musthave;MustOnlyHave;Mustonlyhave;mustonlyhave
+	MetadataComplianceType ComplianceType `json:"metadataComplianceType,omitempty"`
 
 	// RecreateOption describes when to delete and recreate an object when an update is required. When you set the
 	// object to `IfRequired`, the policy recreates the object when updating an immutable field. When you set the
@@ -252,6 +281,7 @@ func (o *ObjectTemplate) RecordDiffWithDefault() RecordDiff {
 // ConfigurationPolicySpec defines the desired configuration of objects on the cluster, along with
 // how the controller should handle when the cluster doesn't match the configuration policy.
 type ConfigurationPolicySpec struct {
+	CustomMessage      CustomMessage      `json:"customMessage,omitempty"`
 	Severity           Severity           `json:"severity,omitempty"`
 	RemediationAction  RemediationAction  `json:"remediationAction"`
 	EvaluationInterval EvaluationInterval `json:"evaluationInterval,omitempty"`
@@ -422,6 +452,16 @@ type ConfigurationPolicyStatus struct {
 	// RelatedObjects is a list of objects processed by the configuration policy due to its
 	// `object-templates`.
 	RelatedObjects []RelatedObject `json:"relatedObjects,omitempty"`
+}
+
+func (c ConfigurationPolicy) ObjectIdentifier() depclient.ObjectIdentifier {
+	return depclient.ObjectIdentifier{
+		Group:     GroupVersion.Group,
+		Version:   GroupVersion.Version,
+		Kind:      "ConfigurationPolicy",
+		Namespace: c.Namespace,
+		Name:      c.Name,
+	}
 }
 
 // ConfigurationPolicy is the schema for the configurationpolicies API. A configuration policy

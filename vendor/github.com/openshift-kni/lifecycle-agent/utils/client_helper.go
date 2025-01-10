@@ -3,6 +3,8 @@ package utils
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"net"
 	"strings"
@@ -84,6 +86,8 @@ type ClusterInfo struct {
 	ClusterNetworks          []string
 	ServiceNetworks          []string
 	MachineNetwork           string
+	NodeLabels               map[string]string
+	IngressCertificateCN     string
 }
 
 func GetClusterInfo(ctx context.Context, client runtimeclient.Client) (*ClusterInfo, error) {
@@ -120,6 +124,8 @@ func GetClusterInfo(ctx context.Context, client runtimeclient.Client) (*ClusterI
 		return nil, err
 	}
 
+	nodeLabels := node.GetLabels()
+
 	releaseRegistry, err := GetReleaseRegistry(ctx, client)
 	if err != nil {
 		return nil, err
@@ -134,6 +140,12 @@ func GetClusterInfo(ctx context.Context, client runtimeclient.Client) (*ClusterI
 	if err != nil {
 		return nil, err
 	}
+
+	ingressCN, err := GetIngressCertificateCN(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ClusterInfo{
 		ClusterName:              clusterName,
 		BaseDomain:               clusterBaseDomain,
@@ -146,6 +158,8 @@ func GetClusterInfo(ctx context.Context, client runtimeclient.Client) (*ClusterI
 		ClusterNetworks:          clusterNetworks,
 		ServiceNetworks:          serviceNetworks,
 		MachineNetwork:           machineNetwork,
+		NodeLabels:               nodeLabels,
+		IngressCertificateCN:     ingressCN,
 	}, nil
 }
 
@@ -410,6 +424,28 @@ func ShouldOverrideSeedRegistry(ctx context.Context, client runtimeclient.Client
 	}
 
 	return !lo.Contains(mirroredRegistries, releaseRegistry), nil
+}
+
+func GetIngressCertificateCN(ctx context.Context, client runtimeclient.Client) (string, error) {
+	ingressOperatorCrt, err := GetSecretData(ctx, "router-ca", "openshift-ingress-operator", "tls.crt", client)
+	if err != nil {
+		return "", err
+	}
+	return getCommonNameFromCertificate([]byte(ingressOperatorCrt))
+}
+
+func getCommonNameFromCertificate(certPEM []byte) (string, error) {
+	block, _ := pem.Decode(certPEM)
+	if block == nil {
+		return "", fmt.Errorf("failed to decode PEM block")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse certificate: %w", err)
+	}
+
+	return cert.Subject.CommonName, nil
 }
 
 func getClusterNetworks(ctx context.Context, client runtimeclient.Client) ([]string, []string, error) {
