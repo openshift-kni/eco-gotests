@@ -59,12 +59,16 @@ func NewObjectBucketClaimBuilder(
 		glog.V(100).Infof("The name of the objectBucketClaim is empty")
 
 		builder.errorMsg = "objectBucketClaim 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The nsname of the objectBucketClaim is empty")
 
 		builder.errorMsg = "objectBucketClaim 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	return builder
@@ -88,7 +92,7 @@ func PullObjectBucketClaim(apiClient *clients.Settings, name, nsname string) (*O
 		return nil, err
 	}
 
-	builder := ObjectBucketClaimBuilder{
+	builder := &ObjectBucketClaimBuilder{
 		apiClient: apiClient.Client,
 		Definition: &noobaav1alpha1.ObjectBucketClaim{
 			ObjectMeta: metav1.ObjectMeta{
@@ -116,7 +120,7 @@ func PullObjectBucketClaim(apiClient *clients.Settings, name, nsname string) (*O
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns objectBucketClaim object if found.
@@ -138,7 +142,7 @@ func (builder *ObjectBucketClaimBuilder) Get() (*noobaav1alpha1.ObjectBucketClai
 		return nil, err
 	}
 
-	return objectBucketClaimObj, err
+	return objectBucketClaimObj, nil
 }
 
 // Create makes a objectBucketClaim in the cluster and stores the created object in struct.
@@ -226,7 +230,7 @@ func (builder *ObjectBucketClaimBuilder) Update() (*ObjectBucketClaimBuilder, er
 
 	builder.Object = builder.Definition
 
-	return builder, err
+	return builder, nil
 }
 
 // WithStorageClassName sets the objectBucketClaim operator's storageClassName configuration.

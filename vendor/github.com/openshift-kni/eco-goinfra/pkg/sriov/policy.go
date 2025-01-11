@@ -55,7 +55,7 @@ func NewPolicyBuilder(
 		return nil
 	}
 
-	builder := PolicyBuilder{
+	builder := &PolicyBuilder{
 		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetworkNodePolicy{
 			ObjectMeta: metav1.ObjectMeta{
@@ -76,29 +76,41 @@ func NewPolicyBuilder(
 
 	if name == "" {
 		builder.errorMsg = "SriovNetworkNodePolicy 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		builder.errorMsg = "SriovNetworkNodePolicy 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	if resName == "" {
 		builder.errorMsg = "SriovNetworkNodePolicy 'resName' cannot be empty"
+
+		return builder
 	}
 
 	if len(nicNames) == 0 {
 		builder.errorMsg = "SriovNetworkNodePolicy 'nicNames' cannot be empty list"
+
+		return builder
 	}
 
 	if len(nodeSelector) == 0 {
 		builder.errorMsg = "SriovNetworkNodePolicy 'nodeSelector' cannot be empty map"
+
+		return builder
 	}
 
 	if vfsNumber <= 0 {
 		builder.errorMsg = "SriovNetworkNodePolicy 'vfsNumber' cannot be zero of negative"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithDevType sets device type in the SriovNetworkNodePolicy definition. Allowed devTypes are vfio-pci and netdevice.
@@ -128,17 +140,19 @@ func (builder *PolicyBuilder) WithVFRange(firstVF, lastVF int) *PolicyBuilder {
 
 	if firstVF < 0 || lastVF < 0 {
 		builder.errorMsg = "firstPF or lastVF can not be less than 0"
+
+		return builder
 	}
 
 	if firstVF > lastVF {
 		builder.errorMsg = "firstPF argument can not be greater than lastPF"
+
+		return builder
 	}
 
 	if lastVF > 63 {
 		builder.errorMsg = "lastVF can not be greater than 63"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -160,9 +174,7 @@ func (builder *PolicyBuilder) WithMTU(mtu int) *PolicyBuilder {
 
 	if 1 > mtu || mtu > 9192 {
 		builder.errorMsg = fmt.Sprintf("invalid mtu size %d allowed mtu should be in range 1...9192", mtu)
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -252,7 +264,7 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 		return nil, err
 	}
 
-	builder := PolicyBuilder{
+	builder := &PolicyBuilder{
 		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovNetworkNodePolicy{
 			ObjectMeta: metav1.ObjectMeta{
@@ -280,7 +292,7 @@ func PullPolicy(apiClient *clients.Settings, name, nsname string) (*PolicyBuilde
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns CatalogSource object if found.
@@ -382,13 +394,13 @@ func (builder *PolicyBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
