@@ -38,7 +38,7 @@ func PullPersistentVolume(apiClient *clients.Settings, name string) (*PVBuilder,
 		return nil, fmt.Errorf("persistentVolume 'apiClient' cannot be empty")
 	}
 
-	builder := PVBuilder{
+	builder := &PVBuilder{
 		apiClient: apiClient,
 		Definition: &corev1.PersistentVolume{
 			ObjectMeta: metav1.ObjectMeta{
@@ -59,7 +59,7 @@ func PullPersistentVolume(apiClient *clients.Settings, name string) (*PVBuilder,
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Exists checks whether the given PersistentVolume exists.

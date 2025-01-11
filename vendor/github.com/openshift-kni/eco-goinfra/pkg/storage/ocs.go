@@ -92,7 +92,7 @@ func PullStorageCluster(apiClient *clients.Settings, name, namespace string) (*S
 		return nil, err
 	}
 
-	builder := StorageClusterBuilder{
+	builder := &StorageClusterBuilder{
 		apiClient: apiClient.Client,
 		Definition: &ocsoperatorv1.StorageCluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -121,7 +121,7 @@ func PullStorageCluster(apiClient *clients.Settings, name, namespace string) (*S
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get fetches existing storageCluster from cluster.

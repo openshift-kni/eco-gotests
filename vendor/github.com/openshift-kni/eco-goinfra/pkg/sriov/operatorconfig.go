@@ -69,6 +69,8 @@ func NewOperatorConfigBuilder(apiClient *clients.Settings, nsname string) *Opera
 		glog.V(100).Infof("The namespace of the SriovOperatorConfig is empty")
 
 		builder.errorMsg = "SriovOperatorConfig 'nsname' is empty"
+
+		return builder
 	}
 
 	return builder
@@ -114,7 +116,7 @@ func PullOperatorConfig(apiClient *clients.Settings, nsname string) (*OperatorCo
 		return nil, err
 	}
 
-	builder := OperatorConfigBuilder{
+	builder := &OperatorConfigBuilder{
 		apiClient: apiClient.Client,
 		Definition: &srIovV1.SriovOperatorConfig{
 			ObjectMeta: metaV1.ObjectMeta{
@@ -137,7 +139,7 @@ func PullOperatorConfig(apiClient *clients.Settings, nsname string) (*OperatorCo
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns CatalogSource object if found.

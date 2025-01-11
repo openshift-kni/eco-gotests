@@ -88,7 +88,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 		return nil, fmt.Errorf("secret 'apiClient' cannot be empty")
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -116,7 +116,7 @@ func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create makes a secret in the cluster and stores the created object in struct.
@@ -212,9 +212,7 @@ func (builder *Builder) WithData(data map[string][]byte) *Builder {
 		glog.V(100).Infof("The data of the secret is empty")
 
 		builder.errorMsg = "'data' cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -237,9 +235,7 @@ func (builder *Builder) WithStringData(data map[string]string) *Builder {
 		glog.V(100).Infof("The stringData of the secret is empty")
 
 		builder.errorMsg = "'stringData' cannot be empty"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
