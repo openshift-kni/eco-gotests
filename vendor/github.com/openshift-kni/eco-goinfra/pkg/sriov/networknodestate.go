@@ -57,12 +57,16 @@ func NewNetworkNodeStateBuilder(apiClient *clients.Settings, nodeName, nsname st
 		glog.V(100).Infof("The name of the nodeName is empty")
 
 		builder.errorMsg = "SriovNetworkNodeState 'nodeName' is empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the SriovNetworkNodeState is empty")
 
 		builder.errorMsg = "SriovNetworkNodeState 'nsname' is empty"
+
+		return builder
 	}
 
 	return builder
@@ -226,16 +230,16 @@ func (builder *NetworkNodeStateBuilder) findInterfaceByName(sriovInterfaceName s
 		glog.V(100).Infof("Error to discover sriov network node state for node %s", builder.nodeName)
 
 		builder.errorMsg = "failed to discover sriov network node state"
+
+		return nil, err
 	}
 
 	if sriovInterfaceName == "" {
 		glog.V(100).Infof("The sriovInterface can not be empty string")
 
 		builder.errorMsg = "the sriovInterface is an empty sting"
-	}
 
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("sriovInterface can not be empty string")
 	}
 
 	for _, interf := range builder.Objects.Status.Interfaces {
@@ -261,7 +265,7 @@ func (builder *NetworkNodeStateBuilder) validate() (bool, error) {
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
