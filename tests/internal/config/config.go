@@ -24,6 +24,8 @@ type GeneralConfig struct {
 	DumpFailedTests           bool   `yaml:"dump_failed_tests" envconfig:"ECO_DUMP_FAILED_TESTS"`
 	EnableReport              bool   `yaml:"enable_report" envconfig:"ECO_ENABLE_REPORT"`
 	DryRun                    bool   `yaml:"dry_run" envconfig:"ECO_DRY_RUN"`
+	SSHKeyPath                string `envconfig:"ECO_SSH_KEY_PATH"`
+	SSHUser                   string `yaml:"ssh_user" envconfig:"ECO_SSH_USER"`
 	KubernetesRolePrefix      string `yaml:"kubernetes_role_prefix" envconfig:"ECO_KUBERNETES_ROLE_PREFIX"`
 	WorkerLabelEnvVar         string `yaml:"worker_label" envconfig:"ECO_WORKER_LABEL"`
 	WorkerLabel               string

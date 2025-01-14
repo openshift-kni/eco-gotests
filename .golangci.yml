@@ -26,6 +26,7 @@ linters-settings:
         deny:
         - pkg: "github.com/onsi**"
         allow:
+        - "github.com/onsi/ginkgo/v2/types"
         - "k8s.io/apimachinery"
         - "k8s.io/api"
         - "k8s.io/kubelet"

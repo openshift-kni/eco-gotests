@@ -15,3 +15,4 @@ logging_operator_namespace: "openshift-logging"
 sriov_operator_namespace: "openshift-sriov-network-operator"
 nmstate_operator_namespace: "openshift-nmstate"
 sriov_fec_operator_namespace: "vran-acceleration-operators"
+ssh_user: core
