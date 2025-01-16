@@ -564,7 +564,7 @@ github.com/opencontainers/runtime-spec/specs-go
 ## explicit; go 1.22.0
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20250114141644-12ee120cfca4
+# github.com/openshift-kni/eco-goinfra v0.0.0-20250115144925-de38da17b822
 ## explicit; go 1.23
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -679,8 +679,6 @@ github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2
 github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/k8skatamanager/v1alpha1/config
 github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/k8skoperatorlibs/upgrade/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/nvidiagputypes
-github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/nvidiagputypes/internal/consts
-github.com/openshift-kni/eco-goinfra/pkg/schemes/nvidiagpu/semver
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/api/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/pkg/common
 github.com/openshift-kni/eco-goinfra/pkg/schemes/oadp/velero/api/v1
