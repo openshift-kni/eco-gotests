@@ -446,6 +446,28 @@ var _ = Describe(
 				}
 			})
 		})
+
+		It("includes specific NTP servers among sources", reportxml.ID("74409"), func() {
+			if MGMTConfig.AdditionalNTPSources == "" {
+				Skip("The value for additional NTP sources isn't set")
+			}
+
+			By("Validate the proper NTP servers are listed in the config", func() {
+				execCmd := "cat /etc/chrony.conf"
+				cmdOutput, err := cluster.ExecCmdWithStdout(APIClient, execCmd)
+				Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
+
+				for _, stdout := range cmdOutput {
+					for _, ntpSource := range strings.Split(MGMTConfig.AdditionalNTPSources, ",") {
+
+						Expect(strings.ReplaceAll(stdout, "\n", "")).To(ContainSubstring("server %s",
+							ntpSource),
+							"error: the expected NTP source %s wasn't found", ntpSource)
+					}
+
+				}
+			})
+		})
 	})
 
 //nolint:funlen

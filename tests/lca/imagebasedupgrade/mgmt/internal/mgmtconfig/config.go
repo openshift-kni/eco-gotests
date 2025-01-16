@@ -19,6 +19,7 @@ type MGMTConfig struct {
 	IdlePostUpgrade      bool   `envconfig:"ECO_LCA_IBU_MGMT_IDLE_POST_UPGRADE" default:"false"`
 	RollbackAfterUpgrade bool   `envconfig:"ECO_LCA_IBU_MGMT_ROLLBACK_AFTER_UPGRADE" default:"false"`
 	ExtraManifests       bool   `envconfig:"ECO_LCA_IBU_MGMT_EXTRA_MANIFESTS" default:"true"`
+	AdditionalNTPSources string `envconfig:"ECO_LCA_IBU_MGMT_ADDITIONAL_NTP_SOURCES" default:""`
 }
 
 // NewMGMTConfig returns instance of MGMTConfig type.
