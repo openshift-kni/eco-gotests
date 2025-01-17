@@ -15,9 +15,13 @@ import (
 
 // ReachURLviaFRRroute test URL via route learned by MetalLB FRR.
 func ReachURLviaFRRroute(ctx SpecContext) {
+	reachURLviaFRRroute(ctx, RDSCoreConfig.MetalLBFRRTestURLIPv4, RDSCoreConfig.MetalLBFRRTestURLIPv6)
+}
+
+func reachURLviaFRRroute(ctx SpecContext, frrTestURLIPv4, frrTestURLIPv6 string) {
 	By("Asserting if test URL is provided")
 
-	if RDSCoreConfig.MetalLBFRRTestURLIPv4 == "" && RDSCoreConfig.MetalLBFRRTestURLIPv6 == "" {
+	if frrTestURLIPv4 == "" && frrTestURLIPv6 == "" {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
 			"Test URLs for MetalLB FRR testing not specified or are empty. Skipping...")
 		Skip("Test URL for MetalLB FRR testing not specified or are empty")
@@ -36,7 +40,7 @@ func ReachURLviaFRRroute(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d 'frr' pods", len(frrPodList))
 
 	for _, _pod := range frrPodList {
-		for _, testURL := range []string{RDSCoreConfig.MetalLBFRRTestURLIPv4, RDSCoreConfig.MetalLBFRRTestURLIPv6} {
+		for _, testURL := range []string{frrTestURLIPv4, frrTestURLIPv6} {
 			if testURL == "" {
 				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Empty URL continue")
 

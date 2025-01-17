@@ -191,6 +191,25 @@ type CoreConfig struct {
 	MetalLBFRRTestURLIPv4 string `yaml:"rdscore_metallb_frr_test_url_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_TEST_URL_IPV4"`
 	//nolint:lll
 	MetalLBFRRTestURLIPv6 string `yaml:"rdscore_metallb_frr_test_url_ipv6" envconfig:"ECO_RDSCORE_METALLB_FRR_TEST_URL_IPV6"`
+	MetalLBFRRTargetPort  string `yaml:"rdscore_metallb_frr_target_port" envconfig:"ECO_RDSCORE_METALLB_FRR_TARGET_PORT"`
+	MetalLBFirstFRRIPv4   string `yaml:"rdscore_metallb_first_frr_ipv4" envconfig:"ECO_RDSCORE_METALLB_FIRST_FRR_IPV4"`
+	MetalLBFirstFRRIPv6   string `yaml:"rdscore_metallb_first_frr_ipv6" envconfig:"ECO_RDSCORE_METALLB_FIRST_FRR_IPV6"`
+	MetalLBSecondFRRIPv4  string `yaml:"rdscore_metallb_second_frr_ipv4" envconfig:"ECO_RDSCORE_METALLB_SECOND_FRR_IPV4"`
+	MetalLBSecondFRRIPv6  string `yaml:"rdscore_metallb_second_frr_ipv6" envconfig:"ECO_RDSCORE_METALLB_SECOND_FRR_IPV6"`
+	//nolint:lll
+	MetalLBSecondFRRTestURLIPv4 string `yaml:"rdscore_metallb_second_frr_test_url_ipv4" envconfig:"ECO_RDSCORE_METALLB_SECOND_FRR_TEST_URL_IPV4"`
+	//nolint:lll
+	MetalLBSecondFRRTestURLIPv6 string `yaml:"rdscore_metallb_second_frr_test_url_ipv6" envconfig:"ECO_RDSCORE_METALLB_SECOND_FRR_TEST_URL_IPV6"`
+	//nolint:lll
+	MetalLBFirstFRRTargetIPv4 string `yaml:"rdscore_metallb_first_frr_target_ipv4" envconfig:"ECO_RDSCORE_METALLB_FIRST_FRR_TARGET_IPV4"`
+	//nolint:lll
+	MetalLBFirstFRRTargetIPv6 string `yaml:"rdscore_metallb_first_frr_target_ipv6" envconfig:"ECO_RDSCORE_METALLB_FIRST_FRR_TARGET_IPV6"`
+	//nolint:lll
+	MetalLBSecondFRRTargetIPv4 string `yaml:"rdscore_metallb_second_frr_target_ipv4" envconfig:"ECO_RDSCORE_METALLB_SECOND_FRR_TARGET_IPV4"`
+	//nolint:lll
+	MetalLBSecondFRRTargetIPv6 string `yaml:"rdscore_metallb_second_frr_target_ipv6" envconfig:"ECO_RDSCORE_METALLB_SECOND_FRR_TARGET_IPV6"`
+	//nolint:lll
+	MetalLBSupportToolsImage string `yaml:"rdscore_metallb_support_tools_image" envconfig:"ECO_RDSCORE_METALLB_SUPPORT_TOOLS_IMAGE"`
 	//nolint:lll
 	WlkdSRIOVConfigMapDataOne EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_one" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_ONE"`
 	//nolint:lll
