@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 )
@@ -114,6 +115,21 @@ func RxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) error {
 	return nil
 }
 
+// ValidateTCPTraffic runs the testcmd with tcp and specified interface, port and destination.
+// The receiving client needs to be listening to the specified port.
+func ValidateTCPTraffic(clientPod *pod.Builder, destIPAddrs []string, interfaceName,
+	containerName string, portNum int) error {
+	for _, destIPAddr := range removePrefixFromIPList(destIPAddrs) {
+		command := fmt.Sprintf("testcmd -interface %s -protocol tcp -port %d -server %s", interfaceName,
+			portNum, destIPAddr)
+		_, err := clientPod.ExecCommand([]string{"bash", "-c", command}, containerName)
+
+		return err
+	}
+
+	return nil
+}
+
 // checkRxOnly checks the number of incoming packets.
 func checkRxOnly(out string) bool {
 	lines := strings.Split(out, "\n")
@@ -159,4 +175,13 @@ func getNumberOfPackets(line, firstFieldSubstr string) int {
 	}
 
 	return numberOfPackets
+}
+
+func removePrefixFromIPList(ipAddressList []string) []string {
+	var ipAddressListWithoutPrefix []string
+	for _, ipaddress := range ipAddressList {
+		ipAddressListWithoutPrefix = append(ipAddressListWithoutPrefix, ipaddr.RemovePrefix(ipaddress))
+	}
+
+	return ipAddressListWithoutPrefix
 }

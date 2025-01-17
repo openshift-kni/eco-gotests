@@ -11,6 +11,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
@@ -81,7 +83,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						externalAdvertisedIPv6Routes, dynamicASeBGP, tsparams.RemoteBGPASN)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
@@ -97,7 +99,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						externalAdvertisedIPv6Routes, dynamicASiBGP, tsparams.LocalBGPASN)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
@@ -113,7 +115,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						externalAdvertisedIPv6Routes, dynamicASiBGP, tsparams.RemoteBGPASN)
 
 					By("Checking that BGP session is down")
-					verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received is incorrect and marked as 0 on the FRR nodes")
 					Eventually(func() error {
@@ -136,11 +138,14 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 				})
 				Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
 
-				speakerRoutesMap := buildRoutesMapWithSpecificRoutes(frrk8sPods, []string{ipv4metalLbIPList[0],
-					ipv4metalLbIPList[1], frrNodeSecIntIPv4Addresses[0], frrNodeSecIntIPv4Addresses[1]})
+				speakerRoutesMap, err := frrconfig.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
+					[]string{ipv4metalLbIPList[0], ipv4metalLbIPList[1], frrNodeSecIntIPv4Addresses[0],
+						frrNodeSecIntIPv4Addresses[1]})
+				Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
 
 				for _, frrk8sPod := range frrk8sPods {
-					out, err := frr.SetStaticRoute(frrk8sPod, "del", frrExternalMasterIPAddress, speakerRoutesMap)
+					out, err := frrconfig.SetStaticRoute(frrk8sPod, "del", frrExternalMasterIPAddress,
+						frrconfig.ContainerName, speakerRoutesMap)
 					Expect(err).ToNot(HaveOccurred(), out)
 				}
 
@@ -158,7 +163,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, dynamicASiBGP, false)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
@@ -177,7 +182,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, dynamicASeBGP, true)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
@@ -276,14 +281,14 @@ func setupBGPRemoteASMultiHopTest(ipv4metalLbIPList, hubIPv4ExternalAddresses, e
 
 	By("Creating static ip annotation for hub0")
 
-	hub0BRstaticIPAnnotation := createStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
+	hub0BRstaticIPAnnotation := define.CreateStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
 		tsparams.HubMacVlanNADName,
 		[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[0])},
 		[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[0])})
 
 	By("Creating static ip annotation for hub1")
 
-	hub1BRstaticIPAnnotation := createStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
+	hub1BRstaticIPAnnotation := define.CreateStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
 		tsparams.HubMacVlanNADName,
 		[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[1])},
 		[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[1])})
@@ -309,10 +314,12 @@ func setupBGPRemoteASMultiHopTest(ipv4metalLbIPList, hubIPv4ExternalAddresses, e
 
 	By("Adding static routes to the speakers")
 
-	speakerRoutesMap := buildRoutesMapWithSpecificRoutes(frrk8sPods, ipv4metalLbIPList)
+	speakerRoutesMap, err := frrconfig.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList, ipv4metalLbIPList)
+	Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
 
 	for _, frrk8sPod := range frrk8sPods {
-		out, err := frr.SetStaticRoute(frrk8sPod, "add", masterClientPodIP, speakerRoutesMap)
+		out, err := frrconfig.SetStaticRoute(frrk8sPod, "add", masterClientPodIP, frrconfig.ContainerName,
+			speakerRoutesMap)
 		Expect(err).ToNot(HaveOccurred(), out)
 	}
 

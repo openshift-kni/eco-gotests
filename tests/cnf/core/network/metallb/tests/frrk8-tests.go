@@ -16,13 +16,14 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
-	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -130,10 +131,11 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool, 32)
+				validatePrefix(frrPod, netparam.IPV4Family, frrconfig.RemovePrefixFromIPList(nodeAddrList),
+					addressPool, 32)
 
 				By("Create a frrconfiguration allow all")
 				createFrrConfiguration(frrCongigAllowAll, ipv4metalLbIPList[0],
@@ -176,10 +178,11 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool, 32)
+				validatePrefix(frrPod, netparam.IPV4Family, frrconfig.RemovePrefixFromIPList(nodeAddrList),
+					addressPool, 32)
 
 				By("Create a frrconfiguration with prefix filter")
 
@@ -223,10 +226,11 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool, 32)
+				validatePrefix(frrPod, netparam.IPV4Family, frrconfig.RemovePrefixFromIPList(nodeAddrList),
+					addressPool, 32)
 
 				By("Create a frrconfiguration allow all")
 				createFrrConfiguration(frrCongigAllowAll, ipv4metalLbIPList[0], tsparams.LocalBGPASN,
@@ -267,10 +271,11 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool, 32)
+				validatePrefix(frrPod, netparam.IPV4Family, frrconfig.RemovePrefixFromIPList(nodeAddrList),
+					addressPool, 32)
 
 				By("Create first frrconfiguration that receieves a single route")
 				createFrrConfiguration(frrConfigFiltered1, ipv4metalLbIPList[0], tsparams.LocalBGPASN,
@@ -438,11 +443,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
 
-			speakerRoutesMap := buildRoutesMapWithSpecificRoutes(frrk8sPods, []string{ipv4metalLbIPList[0],
-				ipv4metalLbIPList[1], frrNodeSecIntIPv4Addresses[0], frrNodeSecIntIPv4Addresses[1]})
+			speakerRoutesMap, err := frrconfig.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
+				[]string{ipv4metalLbIPList[0], ipv4metalLbIPList[1], frrNodeSecIntIPv4Addresses[0], frrNodeSecIntIPv4Addresses[1]})
+			Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
 
 			for _, frrk8sPod := range frrk8sPods {
-				out, err := frr.SetStaticRoute(frrk8sPod, "del", frrExternalMasterIPAddress, speakerRoutesMap)
+				out, err := frrconfig.SetStaticRoute(frrk8sPod, "del", frrExternalMasterIPAddress,
+					frrconfig.ContainerName, speakerRoutesMap)
 				Expect(err).ToNot(HaveOccurred(), out)
 			}
 
@@ -477,10 +484,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			reportxml.ID("74278"), func() {
 
 				By("Adding static routes to the speakers")
-				speakerRoutesMap := buildRoutesMapWithSpecificRoutes(frrk8sPods, ipv4metalLbIPList)
+				speakerRoutesMap, err := frrconfig.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
+					ipv4metalLbIPList)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
 
 				for _, frrk8sPod := range frrk8sPods {
-					out, err := frr.SetStaticRoute(frrk8sPod, "add", masterClientPodIP, speakerRoutesMap)
+					out, err := frrconfig.SetStaticRoute(frrk8sPod, "add", masterClientPodIP,
+						frrconfig.ContainerName, speakerRoutesMap)
 					Expect(err).ToNot(HaveOccurred(), out)
 				}
 
@@ -491,13 +501,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				createExternalNad(tsparams.HubMacVlanNADName)
 
 				By("Creating static ip annotation for hub0")
-				hub0BRstaticIPAnnotation := createStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
+				hub0BRstaticIPAnnotation := define.CreateStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
 					tsparams.HubMacVlanNADName,
 					[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[0])},
 					[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[0])})
 
 				By("Creating static ip annotation for hub1")
-				hub1BRstaticIPAnnotation := createStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
+				hub1BRstaticIPAnnotation := define.CreateStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
 					tsparams.HubMacVlanNADName,
 					[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[1])},
 					[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[1])})
@@ -523,10 +533,10 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList),
+				validatePrefix(frrPod, netparam.IPV4Family, frrconfig.RemovePrefixFromIPList(nodeAddrList),
 					addressPool, 32)
 
 				By("Create a frrconfiguration allow all for EBGP multihop")
@@ -546,10 +556,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			reportxml.ID("47279"), func() {
 
 				By("Adding static routes to the speakers")
-				speakerRoutesMap := buildRoutesMapWithSpecificRoutes(frrk8sPods, ipv4metalLbIPList)
+				speakerRoutesMap, err := frrconfig.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
+					ipv4metalLbIPList)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
 
 				for _, frrk8sPod := range frrk8sPods {
-					out, err := frr.SetStaticRoute(frrk8sPod, "add", masterClientPodIP, speakerRoutesMap)
+					out, err := frrconfig.SetStaticRoute(frrk8sPod, "add", masterClientPodIP,
+						frrconfig.ContainerName, speakerRoutesMap)
 					Expect(err).ToNot(HaveOccurred(), out)
 				}
 
@@ -560,13 +573,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				createExternalNad(tsparams.HubMacVlanNADName)
 
 				By("Creating static ip annotation for hub0")
-				hub0BRstaticIPAnnotation := createStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
+				hub0BRstaticIPAnnotation := define.CreateStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
 					tsparams.HubMacVlanNADName,
 					[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[0])},
 					[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[0])})
 
 				By("Creating static ip annotation for hub1")
-				hub1BRstaticIPAnnotation := createStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
+				hub1BRstaticIPAnnotation := define.CreateStaticIPAnnotations(tsparams.ExternalMacVlanNADName,
 					tsparams.HubMacVlanNADName,
 					[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[1])},
 					[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[1])})
@@ -592,10 +605,10 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					true, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList),
+				validatePrefix(frrPod, netparam.IPV4Family, frrconfig.RemovePrefixFromIPList(nodeAddrList),
 					addressPool, 32)
 
 				By("Create a frrconfiguration allow all for EBGP multihop")
@@ -628,14 +641,17 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					srIovInterfacesUnderTest[0], frrNodeSecIntIPv4Addresses[1], "2001:100::253", vlanID)
 
 				By("Adding static routes to the speakers")
-				speakerRoutesMap := buildRoutesMapWithSpecificRoutes(frrk8sPods, hubSecIntIPv4Addresses)
+				// speakerRoutesMap := buildRoutesMapWithSpecificRoutes(frrk8sPods, hubSecIntIPv4Addresses)
+				speakerRoutesMap, err := frrconfig.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
+					hubSecIntIPv4Addresses)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
 
 				for _, frrk8sPod := range frrk8sPods {
 					// Wait until the interface is created before adding the static route
 					Eventually(func() error {
 						// Here you can add logic to check if the interface exists
-						out, err := frr.SetStaticRoute(frrk8sPod, "add", fmt.Sprintf("%s/32",
-							frrExternalMasterIPAddress), speakerRoutesMap)
+						out, err := frrconfig.SetStaticRoute(frrk8sPod, "add", fmt.Sprintf("%s/32",
+							frrExternalMasterIPAddress), frrconfig.ContainerName, speakerRoutesMap)
 						if err != nil {
 							return fmt.Errorf("error adding static route: %s", out)
 						}
@@ -660,13 +676,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				createHubConfigMapSecInt := createHubConfigMap("frr-hub-node-config")
 
 				By("Creating static ip annotation for hub0")
-				hub0BRStaticSecIntIPAnnotation := createStaticIPAnnotations(tsparams.HubMacVlanNADSecIntName,
+				hub0BRStaticSecIntIPAnnotation := define.CreateStaticIPAnnotations(tsparams.HubMacVlanNADSecIntName,
 					tsparams.HubMacVlanNADName,
 					[]string{fmt.Sprintf("%s/24", hubSecIntIPv4Addresses[0])},
 					[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[0])})
 
 				By("Creating static ip annotation for hub1")
-				hub1SecIntIPAnnotation := createStaticIPAnnotations(tsparams.HubMacVlanNADSecIntName,
+				hub1SecIntIPAnnotation := define.CreateStaticIPAnnotations(tsparams.HubMacVlanNADSecIntName,
 					tsparams.HubMacVlanNADName,
 					[]string{fmt.Sprintf("%s/24", hubSecIntIPv4Addresses[1])},
 					[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[1])})
@@ -846,8 +862,8 @@ func createConfigMapWithStaticRoutes(
 	enableMultiHop, enableBFD bool) *configmap.Builder {
 	frrBFDConfig := frr.DefineBGPConfigWithStaticRouteAndNetwork(
 		bgpAsn, tsparams.LocalBGPASN, hubIPAddresses, externalAdvertisedIPv4Routes,
-		externalAdvertisedIPv6Routes, removePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
-	configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
+		externalAdvertisedIPv6Routes, frrconfig.RemovePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
+	configMapData := frrconfig.DefineBaseConfig(frrconfig.DaemonsFile, frrBFDConfig, "")
 	masterConfigMap, err := configmap.NewBuilder(APIClient, "frr-master-node-config", tsparams.TestNamespaceName).
 		WithData(configMapData).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create config map")
@@ -857,7 +873,7 @@ func createConfigMapWithStaticRoutes(
 
 func verifyExternalAdvertisedRoutes(frrPod *pod.Builder, ipv4NodeAddrList, externalExpectedRoutes []string) {
 	// Get advertised routes from FRR pod, now returned as a map of node IPs to their advertised routes
-	advertisedRoutesMap, err := frr.GetBGPAdvertisedRoutes(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+	advertisedRoutesMap, err := frr.GetBGPAdvertisedRoutes(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 	Expect(err).ToNot(HaveOccurred(), "Failed to find advertised routes")
 
 	// Iterate through each node in the advertised routes map
@@ -875,26 +891,6 @@ func verifyExternalAdvertisedRoutes(frrPod *pod.Builder, ipv4NodeAddrList, exter
 	}
 }
 
-func buildRoutesMapWithSpecificRoutes(podList []*pod.Builder, nextHopList []string) map[string]string {
-	Expect(len(podList)).ToNot(BeZero(), "Pod list is empty")
-	Expect(len(nextHopList)).ToNot(BeZero(), "Nexthop IP addresses list is empty")
-	Expect(len(nextHopList)).To(BeNumerically(">=", len(podList)),
-		fmt.Sprintf("Number of speaker IP addresses[%d] is less than the number of pods[%d]",
-			len(nextHopList), len(podList)))
-
-	routesMap := make(map[string]string)
-
-	for _, frrPod := range podList {
-		if frrPod.Definition.Spec.NodeName == workerNodeList[0].Definition.Name {
-			routesMap[frrPod.Definition.Spec.NodeName] = nextHopList[1]
-		} else {
-			routesMap[frrPod.Definition.Spec.NodeName] = nextHopList[0]
-		}
-	}
-
-	return routesMap
-}
-
 func createSecondaryInterfaceOnNode(policyName, nodeName, interfaceName, ipv4Address, ipv6Address string,
 	vlanID uint16) {
 	secondaryInterface := nmstate.NewPolicyBuilder(APIClient, policyName, map[string]string{
@@ -906,15 +902,6 @@ func createSecondaryInterfaceOnNode(policyName, nodeName, interfaceName, ipv4Add
 	_, err := secondaryInterface.Create()
 	Expect(err).ToNot(HaveOccurred(),
 		"fail to create secondary interface: %s.+%d", interfaceName, vlanID)
-}
-
-func createStaticIPAnnotations(internalNADName, externalNADName string, internalIPAddresses,
-	externalIPAddresses []string) []*types.NetworkSelectionElement {
-	ipAnnotation := pod.StaticIPAnnotation(internalNADName, internalIPAddresses)
-	ipAnnotation = append(ipAnnotation,
-		pod.StaticIPAnnotation(externalNADName, externalIPAddresses)...)
-
-	return ipAnnotation
 }
 
 func verifyReceivedRoutes(frrk8sPods []*pod.Builder, allowedPrefixes string) {

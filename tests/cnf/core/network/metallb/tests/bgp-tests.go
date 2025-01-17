@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
@@ -139,10 +140,10 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				setupNGNXPod(workerNodeList[0].Definition.Name)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(nodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(nodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, ipStack, removePrefixFromIPList(nodeAddrList), addressPool, prefixLen)
+				validatePrefix(frrPod, ipStack, frrconfig.RemovePrefixFromIPList(nodeAddrList), addressPool, prefixLen)
 			},
 
 			Entry("", netparam.IPV4Family, 32,
@@ -176,7 +177,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				frrk8sPods)
 
 			By("Checking that BGP session is established and up")
-			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 			By("Label namespace")
 			testNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
