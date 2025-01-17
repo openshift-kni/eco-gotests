@@ -119,16 +119,6 @@ type (
 	BGPNeighborGRStatus map[string]GRStatus
 )
 
-// DefineBaseConfig defines minimal required FRR configuration.
-func DefineBaseConfig(daemonsConfig, frrConfig, vtyShConfig string) map[string]string {
-	configMapData := make(map[string]string)
-	configMapData["daemons"] = daemonsConfig
-	configMapData["frr.conf"] = frrConfig
-	configMapData["vtysh.conf"] = vtyShConfig
-
-	return configMapData
-}
-
 // DefineBGPConfig returns string which represents BGP config file peering to all given IP addresses.
 func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []string, multiHop, bfd bool) string {
 	bgpConfig := tsparams.FRRBaseConfig +
@@ -270,29 +260,6 @@ func GetMetricsByPrefix(frrPod *pod.Builder, metricPrefix string) ([]string, err
 	}
 
 	return collectedMetrics, nil
-}
-
-// SetStaticRoute could set or delete static route on all Speaker pods.
-func SetStaticRoute(frrPod *pod.Builder, action, destIP string, nextHopMap map[string]string) (string, error) {
-	buffer, err := frrPod.ExecCommand(
-		[]string{"ip", "route", action, destIP, "via", nextHopMap[frrPod.Definition.Spec.NodeName]}, "frr")
-	if err != nil {
-		if strings.Contains(buffer.String(), "File exists") {
-			glog.V(90).Infof("Warning: Route to %s already exist", destIP)
-
-			return buffer.String(), nil
-		}
-
-		if strings.Contains(buffer.String(), "No such process") {
-			glog.V(90).Infof("Warning: Route to %s already absent", destIP)
-
-			return buffer.String(), nil
-		}
-
-		return buffer.String(), err
-	}
-
-	return buffer.String(), nil
 }
 
 // GetBGPStatus returns bgp status output from frr pod.

@@ -16,6 +16,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
@@ -63,10 +65,10 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 	BeforeEach(func() {
 		By("Creating External NAD")
-		createExternalNad(tsparams.ExternalMacVlanNADName)
+		err := netenv.CreateExternalNad(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
 		By("Listing metalLb speakers pod")
-		var err error
 		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 			LabelSelector: tsparams.FRRK8sDefaultLabel,
 		})
@@ -123,7 +125,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 				By("Creating static ip annotation")
 				staticIPAnnotation := pod.StaticIPAnnotation(
-					externalNad.Definition.Name, []string{fmt.Sprintf("%s/%s", mlbAddressList[0], subMask)})
+					tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", mlbAddressList[0], subMask)})
 
 				By("Creating FRR Pod")
 				frrPod := createFrrPod(
@@ -139,10 +141,10 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				setupNGNXPod(workerNodeList[0].Definition.Name)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(nodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(nodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, ipStack, removePrefixFromIPList(nodeAddrList), addressPool, prefixLen)
+				validatePrefix(frrPod, ipStack, cmd.RemovePrefixFromIPList(nodeAddrList), addressPool, prefixLen)
 			},
 
 			Entry("", netparam.IPV4Family, 32,
@@ -162,7 +164,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		It("provides Prometheus BGP metrics", reportxml.ID("47202"), func() {
 			By("Creating static ip annotation")
 			staticIPAnnotation := pod.StaticIPAnnotation(
-				externalNad.Definition.Name, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})
+				tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})
 
 			By("Creating MetalLb configMap")
 			masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
@@ -176,7 +178,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				frrk8sPods)
 
 			By("Checking that BGP session is established and up")
-			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
+			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 			By("Label namespace")
 			testNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
