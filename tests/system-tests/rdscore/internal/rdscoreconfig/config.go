@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kelseyhightower/envconfig"
@@ -189,8 +191,44 @@ type CoreConfig struct {
 	NROPSchedulerName       string      `yaml:"rdscore_nrop_scheduler_name" envconfig:"ECO_RDSCORE_NROP_SCHEDULER_NAME"`
 	//nolint:lll
 	MetalLBFRRTestURLIPv4 string `yaml:"rdscore_metallb_frr_test_url_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_TEST_URL_IPV4"`
+	MetalLBFRROneIPv4     string `yaml:"rdscore_metallb_frr_one_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_ONE_IPV4"`
+	MetalLBFRROneIPv6     string `yaml:"rdscore_metallb_frr_one_ipv6" envconfig:"ECO_RDSCORE_METALLB_FRR_ONEIPV6"`
+	MetalLBFRRTwoIPv4     string `yaml:"rdscore_metallb_frr_two_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_TWO_IPV4"`
+	MetalLBFRRTwoIPv6     string `yaml:"rdscore_metallb_frr_two_ipv6" envconfig:"ECO_RDSCORE_METALLB_FRR_TWO_IPV6"`
 	//nolint:lll
 	MetalLBFRRTestURLIPv6 string `yaml:"rdscore_metallb_frr_test_url_ipv6" envconfig:"ECO_RDSCORE_METALLB_FRR_TEST_URL_IPV6"`
+	//nolint:lll
+	MetalLBTrafficSegregationTargetPort string `yaml:"rdscore_metallb_traffic_segregation_target_port" envconfig:"ECO_RDSCORE_METALLB_TRAFFIC_SEGREGATION_TARGET_PORT"`
+	//nolint:lll
+	MetalLBTrafficSegregationTargetOneIPv4 string `yaml:"rdscore_metallb_traffic_segregation_target_one_ipv4" envconfig:"ECO_RDSCORE_METALLB_TRAFFIC_SEG_TARGET_ONE_IPV4"`
+	//nolint:lll
+	MetalLBTrafficSegregationTargetOneIPv6 string `yaml:"rdscore_metallb_traffic_segregation_target_one_ipv6" envconfig:"ECO_RDSCORE_METALLB_TRAFFIC_SEG_TARGET_ONE_IPV6"`
+	//nolint:lll
+	MetalLBTrafficSegregationTargetTwoIPv4 string `yaml:"rdscore_metallb_traffic_segregation_target_two_ipv4" envconfig:"ECO_RDSCORE_METALLB_TRAFFIC_SEG_TARGET_TWO_IPV4"`
+	//nolint:lll
+	MetalLBTrafficSegregationTargetTwoIPv6 string `yaml:"rdscore_metallb_traffic_segregation_target_two_ipv6" envconfig:"ECO_RDSCORE_METALLB_TRAFFIC_SEG_TARGET_TWO_IPV6"`
+	//nolint:lll
+	MetalLBLoadBalancerOneNamespace string `yaml:"rdscore_metallb_lb_one_app_namespace" envconfig:"ECO_RDSCORE_METALLB_LB_ONE_NAMESPACE"`
+	//nolint:lll
+	MetalLBLoadBalancerTwoNamespace string `yaml:"rdscore_metallb_lb_two_app_namespace" envconfig:"ECO_RDSCORE_METALLB_LB_TWO_NAMESPACE"`
+	//nolint:lll
+	MetalLBSupportToolsImage string `yaml:"rdscore_metallb_support_tools_image" envconfig:"ECO_RDSCORE_METALLB_SUPPORT_TOOLS_IMAGE"`
+	//nolint:lll
+	MetalLBTrafficSegregationTCPDumpIntOne string `yaml:"rdscore_metallb_traffic_segregation_tcpdump_int_one" envconfig:"ECO_RDSCORE_METALLB_TRAFFIC_SEG_TCPDUMP_INT_ONE"`
+	//nolint:lll
+	MetalLBTrafficSegregationTCPDumpIntTwo string `yaml:"rdscore_metallb_traffic_segregation_tcpdump_int_two" envconfig:"ECO_RDSCORE_METALLB_TRAFFIC_SEG_TCPDUMP_INT_TWO"`
+	//nolint:lll
+	MetalLBFRRContainerNameOne string `yaml:"rdscore_metallb_frr_container_name_one" envconfig:"ECO_RDSCORE_METALLB_FRR_CONTAINER_NAME_ONE"`
+	//nolint:lll
+	MetalLBFRRContainerNameTwo string `yaml:"rdscore_metallb_frr_container_name_two" envconfig:"ECO_RDSCORE_METALLB_FRR_CONTAINER_NAME_TWO"`
+	MetalLBLoadBalancerOneIPv4 string `yaml:"rdscore_metallb_lb_one_ipv4" envconfig:"ECO_RDSCORE_METALLB_LB_ONE_IPV4"`
+	MetalLBLoadBalancerOneIPv6 string `yaml:"rdscore_metallb_lb_one_ipv6" envconfig:"ECO_RDSCORE_METALLB_LB_ONE_IPV6"`
+	MetalLBLoadBalancerTwoIPv4 string `yaml:"rdscore_metallb_lb_two_ipv4" envconfig:"ECO_RDSCORE_METALLB_LB_TWO_IPV4"`
+	MetalLBLoadBalancerTwoIPv6 string `yaml:"rdscore_metallb_lb_two_ipv6" envconfig:"ECO_RDSCORE_METALLB_LB_TWO_IPV6"`
+
+	HypervisorHost string `yaml:"hypervisor_host" envconfig:"ECO_SYSTEM_TEST_HYPERVISOR_HOST"`
+	HypervisorUser string `yaml:"hypervisor_user" envconfig:"ECO_SYSTEM_TEST_HYPERVISOR_USER"`
+	HypervisorPass string `yaml:"hypervisor_pass" envconfig:"ECO_SYSTEM_TEST_HYPERVISOR_PASS"`
 	//nolint:lll
 	WlkdSRIOVConfigMapDataOne EnvMapString `yaml:"rdscore_wlkd_sriov_cm_data_one" envconfig:"ECO_RDSCORE_SRIOV_CM_DATA_ONE"`
 	//nolint:lll
@@ -412,7 +450,8 @@ type CoreConfig struct {
 	//nolint:lll,nolintlint
 	EgressIPRemoteIPv6 string `yaml:"rdscore_egressip_remote_ipv6" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6"`
 	//nolint:lll,nolintlint
-	EgressIPTcpPort string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
+	EgressIPTcpPort       string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
+	WorkerLabelListOption metav1.ListOptions
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
@@ -477,6 +516,8 @@ func readEnv(rdsConfig *CoreConfig) error {
 	if err != nil {
 		return err
 	}
+
+	rdsConfig.WorkerLabelListOption = metav1.ListOptions{LabelSelector: rdsConfig.WorkerLabel}
 
 	return nil
 }
