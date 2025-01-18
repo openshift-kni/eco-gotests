@@ -17,7 +17,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
-	github.com/openshift-kni/eco-goinfra v0.0.0-20250116220120-a5578e4557e8 // latest
+	github.com/openshift-kni/eco-goinfra v0.0.0-20250117183055-f38bbfb8afdc // latest
 	github.com/openshift-kni/k8sreporter v1.0.6
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/cluster-nfd-operator v0.0.0-20240902145504-f70d1389d329 // release-4.17

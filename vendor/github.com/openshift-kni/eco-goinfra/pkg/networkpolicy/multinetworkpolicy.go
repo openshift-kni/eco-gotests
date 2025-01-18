@@ -84,10 +84,6 @@ func (builder *MultiNetworkPolicyBuilder) WithPodSelector(podSelector metav1.Lab
 		"Creating MultiNetworkPolicy %s in %s namespace with the podSelector defined: %v",
 		builder.Definition.Name, builder.Definition.Namespace, podSelector)
 
-	if builder.errorMsg != "" {
-		return builder
-	}
-
 	builder.Definition.Spec.PodSelector = podSelector
 
 	return builder

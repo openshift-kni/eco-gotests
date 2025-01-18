@@ -46,31 +46,35 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 		return nil
 	}
 
-	nodeFeatureDiscovery, err := getNodeFeatureDiscoveryFromAlmExample(almExample)
-
-	glog.V(100).Infof(
-		"Initializing Builder definition to NodeFeatureDiscovery object")
-
-	builder := Builder{
-		apiClient:  apiClient,
-		Definition: nodeFeatureDiscovery,
+	builder := &Builder{
+		apiClient: apiClient,
 	}
 
+	nodeFeatureDiscovery, err := getNodeFeatureDiscoveryFromAlmExample(almExample)
 	if err != nil {
 		glog.V(100).Infof(
 			"Error initializing NodeFeatureDiscovery from alm-examples: %s", err.Error())
 
-		builder.errorMsg = fmt.Sprintf("Error initializing NodeFeatureDiscovery from alm-examples: %s",
+		builder.errorMsg = fmt.Sprintf("error initializing NodeFeatureDiscovery from alm-examples: %s",
 			err.Error())
+
+		return builder
 	}
+
+	builder.Definition = nodeFeatureDiscovery
+
+	glog.V(100).Infof(
+		"Initializing Builder definition to NodeFeatureDiscovery object")
 
 	if builder.Definition == nil {
 		glog.V(100).Infof("The NodeFeatureDiscovery object definition is nil")
 
-		builder.errorMsg = "NodeFeatureDiscovery definition is nil"
+		builder.errorMsg = "nodeFeatureDiscovery definition is nil"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // Pull loads an existing NodeFeatureDiscovery into Builder struct.
@@ -90,7 +94,7 @@ func Pull(apiClient *clients.Settings, name, namespace string) (*Builder, error)
 		return nil, err
 	}
 
-	builder := Builder{
+	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &nfdv1.NodeFeatureDiscovery{
 			ObjectMeta: metav1.ObjectMeta{
@@ -113,12 +117,12 @@ func Pull(apiClient *clients.Settings, name, namespace string) (*Builder, error)
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("NodeFeatureDiscovery object %s does not exist in namespace %s", name, namespace)
+		return nil, fmt.Errorf("nodeFeatureDiscovery object %s does not exist in namespace %s", name, namespace)
 	}
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Get returns NodeFeatureDiscovery object if found.
@@ -143,7 +147,7 @@ func (builder *Builder) Get() (*nfdv1.NodeFeatureDiscovery, error) {
 		return nil, err
 	}
 
-	return nodeFeatureDiscovery, err
+	return nodeFeatureDiscovery, nil
 }
 
 // Exists checks whether the given NodeFeatureDiscovery exists.
