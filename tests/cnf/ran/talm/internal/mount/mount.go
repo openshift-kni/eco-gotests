@@ -29,13 +29,11 @@ func PrepareEnvWithSmallMountPoint(client *clients.Settings) (string, error) {
 	}
 
 	// find the next available loopback device (OS takes care of creating a new one if needed)
-	loopbackDevicePath, err := cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
-		"sudo losetup -f")
+	loopbackDevicePath, err := execWhileBlank(client, "sudo losetup -f")
 	if err != nil {
 		return "", err
 	}
 
-	loopbackDevicePath = strings.TrimSpace(loopbackDevicePath)
 	glog.V(tsparams.LogLevel).Info("loopback device path: ", loopbackDevicePath)
 
 	// create a file with desired size for the filesystem to use
@@ -71,27 +69,12 @@ func PrepareEnvWithSmallMountPoint(client *clients.Settings) (string, error) {
 
 // DiskFullEnvCleanup clean all the resources created for single cluster backup fail.
 func DiskFullEnvCleanup(client *clients.Settings, loopbackDevicePath string) error {
-	var (
-		output string
-		err    error
-	)
-
-	// findmnt outputs a blank string sometimes so retry until successful
-	for len(output) == 0 {
-		// retrieve all mounts for backup dir
-		output, err = cluster.ExecCommandOnSNOWithRetries(
-			client, ranparam.RetryCount, ranparam.RetryInterval,
-			fmt.Sprintf("findmnt -n -o SOURCE --target %s", tsparams.BackupPath))
-		if err != nil {
-			return err
-		}
+	findmntOutput, err := execWhileBlank(client, fmt.Sprintf("findmnt -n -o SOURCE --target %s", tsparams.BackupPath))
+	if err != nil {
+		return err
 	}
 
-	glog.V(tsparams.LogLevel).Infof("findmnt output: `%s`", output)
-
-	output = strings.Trim(output, " \r\n")
-
-	safeToDeleteBackupDir, err := unmountLoopback(client, loopbackDevicePath, output)
+	safeToDeleteBackupDir, err := unmountLoopback(client, loopbackDevicePath, findmntOutput)
 	if err != nil {
 		return err
 	}
@@ -130,19 +113,10 @@ func unmountLoopback(client *clients.Settings, loopbackDevicePath, findmntOutput
 			continue
 		}
 
-		// deviceType outputs a blank string sometimes so retry until successful
-		var deviceType string
-		for deviceType == "" {
-			var err error
-			deviceType, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval,
-				fmt.Sprintf("lsblk %s -o TYPE -n", devicePath))
-
-			if err != nil {
-				return false, err
-			}
+		deviceType, err := execWhileBlank(client, fmt.Sprintf("lsblk %s -o TYPE -n", devicePath))
+		if err != nil {
+			return false, err
 		}
-
-		deviceType = strings.Trim(deviceType, " \r\n")
 
 		if deviceType == "part" {
 			safeToDeleteBackupDir = false
@@ -187,4 +161,26 @@ func unmountLoopback(client *clients.Settings, loopbackDevicePath, findmntOutput
 	}
 
 	return safeToDeleteBackupDir, nil
+}
+
+// execWhileBlank runs the provided command on the cluster until the output, after trimming whitespace, is not empty.
+func execWhileBlank(client *clients.Settings, command string) (string, error) {
+	var (
+		output  string
+		err     error
+		retries uint
+	)
+
+	// Just in case an infinite loop forms, allow a maximum of 10 retries. It should never require that many.
+	for output == "" && retries < 10 {
+		output, err = cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount, ranparam.RetryInterval, command)
+		if err != nil {
+			return "", err
+		}
+
+		output = strings.TrimSpace(output)
+		retries++
+	}
+
+	return output, nil
 }
