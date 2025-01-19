@@ -89,6 +89,16 @@ const (
 	CPUPartitioningAllNodes CPUPartitioningMode = "AllNodes"
 )
 
+// CpuArchitecture is used to define the software architecture of a host.
+type CPUArchitecture string
+
+const (
+	// Supported architectures are x86, arm, or multi
+	CPUArchitectureX86_64  CPUArchitecture = "x86_64"
+	CPUArchitectureAarch64 CPUArchitecture = "aarch64"
+	CPUArchitectureMulti   CPUArchitecture = "multi"
+)
+
 // TemplateRef is used to specify the installation CR templates
 type TemplateRef struct {
 	// +required
@@ -156,6 +166,13 @@ type NodeSpec struct {
 	// Hostname is the desired hostname for the host
 	// +required
 	HostName string `json:"hostName"`
+
+	// CPUArchitecture is the software architecture of the node.
+	// If it is not defined here then it is inheirited from the ClusterInstanceSpec.
+	// +kubebuilder:validation:Enum=x86_64;aarch64
+	// +kubebuilder:default:=x86_64
+	// +optional
+	CPUArchitecture CPUArchitecture `json:"cpuArchitecture,omitempty"`
 
 	// Provide guidance about how to choose the device for the image being provisioned.
 	// +kubebuilder:default:=UEFI
@@ -377,6 +394,12 @@ type ClusterInstanceSpec struct {
 	// +kubebuilder:default=None
 	// +optional
 	CPUPartitioning CPUPartitioningMode `json:"cpuPartitioningMode,omitempty"`
+
+	// CPUArchitecture is the default software architecture used for nodes that do not have an architecture defined.
+	// +kubebuilder:validation:Enum=x86_64;aarch64;multi
+	// +kubebuilder:default:=x86_64
+	// +optional
+	CPUArchitecture CPUArchitecture `json:"cpuArchitecture,omitempty"`
 
 	// +kubebuilder:validation:Enum=SNO;HighlyAvailable
 	// +optional
