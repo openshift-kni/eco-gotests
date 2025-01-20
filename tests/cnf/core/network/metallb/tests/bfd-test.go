@@ -250,7 +250,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				ipAddressPool := setupBgpAdvertisement(addressPool, prefixLen)
 
 				By("Creating a MetalLB service")
-				setupMetalLbService(ipStack, ipAddressPool, externalTrafficPolicy)
+				setupMetalLbService("service-1", ipStack, ipAddressPool, externalTrafficPolicy)
 
 				By("Creating nginx test pod on worker node")
 				setupNGNXPod(workerNodeList[0].Definition.Name)
