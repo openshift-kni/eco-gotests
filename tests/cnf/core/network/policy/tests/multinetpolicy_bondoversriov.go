@@ -146,9 +146,9 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		Expect(err).ToNot(HaveOccurred(), "Failed to remove SRIOV configuration and MCP stable")
 
 		By("Delete test namespace")
-		err = tNs1.Delete()
+		err = tNs1.DeleteAndWait(1 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete test namespace")
-		err = tNs2.Delete()
+		err = tNs2.DeleteAndWait(1 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to delete test namespace")
 	})
 
