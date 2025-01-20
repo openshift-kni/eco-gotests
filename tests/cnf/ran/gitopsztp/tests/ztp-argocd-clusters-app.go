@@ -23,7 +23,6 @@ var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdCluster
 		if !versionInRange {
 			Skip("ZTP Argo CD clusters app tests require ZTP 4.11 or later")
 		}
-
 	})
 
 	AfterEach(func() {
@@ -34,7 +33,7 @@ var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdCluster
 	})
 
 	// 54238 - User modification of klustletaddonconfig via gitops
-	It("should override the KlusterletAddonConfiguration and verify the change", reportxml.ID("54238"), func() {
+	It("overrides the KlusterletAddonConfiguration and verifies the change", reportxml.ID("54238"), func() {
 		exists, err := gitdetails.UpdateArgoCdAppGitPath(
 			tsparams.ArgoCdClustersAppName, tsparams.ZtpTestPathClustersApp, true)
 		if !exists {
@@ -52,7 +51,7 @@ var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdCluster
 	})
 
 	// 60619 - Image creation fails when NMstateConfig CR is empty
-	It("should not have NMStateConfig CR when nodeNetwork section not in siteConfig", reportxml.ID("60619"), func() {
+	It("does not have NMStateConfig CR when nodeNetwork section not in siteconfig", reportxml.ID("60619"), func() {
 		// Update the git path manually so we can potentially skip the test before checking if the NM State
 		// Config exists.
 		gitDetails := tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName]
@@ -81,7 +80,7 @@ var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdCluster
 			true)
 		Expect(err).ToNot(HaveOccurred(), "Failed to update the Argo CD app with new git details")
 
-		By("validate the NM state config is gone on hub")
+		By("validating the NM state config is gone on hub")
 		nmStateConfigList, err = assisted.ListNmStateConfigsInAllNamespaces(HubAPIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to list NM state configs")
 		Expect(nmStateConfigList).To(BeEmpty(), "Found NM state config when it should be gone")

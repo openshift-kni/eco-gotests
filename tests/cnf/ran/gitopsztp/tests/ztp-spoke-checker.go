@@ -17,7 +17,7 @@ import (
 var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTests), func() {
 	When("a TunedPerformancePatch.yaml PGT disables the chronyd service", func() {
 		// 54237 - Moving chronyd disable to tuned patch
-		It("should disable and inactivate the chronyd service on spoke", reportxml.ID("54237"), func() {
+		It("disables and inactivates the chronyd service on spoke", reportxml.ID("54237"), func() {
 			By("verifying chronyd is inactive")
 			// Use `| cat -` to explicitly ignore the return code since it will be nonzero when the service
 			// is not active, which is expected here.
@@ -53,14 +53,14 @@ var _ = Describe("ZTP Spoke Checker Tests", Label(tsparams.LabelSpokeCheckerTest
 		})
 
 		// 60904 - Verifies list of pods in openshift-network-diagnostics namespace on spoke
-		It("should not have pods in the network diagnostics namespace", reportxml.ID("60904"), func() {
+		It("does not have pods in the network diagnostics namespace", reportxml.ID("60904"), func() {
 			pods, err := pod.List(Spoke1APIClient, tsparams.NetworkDiagnosticsNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods in the network diagnostics namespace")
 			Expect(pods).To(BeEmpty(), "Found pods in the network diagnostics namespace")
 		})
 
 		// 60905 - Verifies list of pods in openshift-console namespace on spoke
-		It("should not have pods in the console namespace", reportxml.ID("60905"), func() {
+		It("does not have pods in the console namespace", reportxml.ID("60905"), func() {
 			pods, err := pod.List(Spoke1APIClient, tsparams.ConsoleNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods in the console namespace")
 			Expect(pods).To(BeEmpty(), "Found pods in the console namespace")
