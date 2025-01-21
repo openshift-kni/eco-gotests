@@ -50,7 +50,7 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 			workerNodeList           []*nodes.Builder
 			sriovmetricsdaemonset    *daemonset.Builder
 			sriovInterfacesUnderTest []string
-			sriovDeviceID            string
+			sriovVendorID            string
 		)
 
 		BeforeAll(func() {
@@ -71,8 +71,8 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 			Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
 			By("Fetching SR-IOV Device ID for interface under test")
-			sriovDeviceID = discoverInterfaceUnderTestDeviceID(sriovInterfacesUnderTest[0], workerNodeList[0].Definition.Name)
-			Expect(sriovDeviceID).ToNot(BeEmpty(), "Expected sriovDeviceID not to be empty")
+			sriovVendorID = discoverInterfaceUnderTestVendorID(sriovInterfacesUnderTest[0], workerNodeList[0].Definition.Name)
+			Expect(sriovVendorID).ToNot(BeEmpty(), "Expected sriovDeviceID not to be empty")
 
 			By("Enable Sriov Metrics Exporter feature in default SriovOperatorConfig CR")
 			setMetricsExporter(true)
@@ -122,15 +122,15 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 		Context("Netdevice to Netdevice", func() {
 			It("Same PF", reportxml.ID("74762"), func() {
 				runNettoNetTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
-					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovVendorID)
 			})
 			It("Different PF", reportxml.ID("75929"), func() {
 				runNettoNetTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[1],
-					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovVendorID)
 			})
 			It("Different Worker", reportxml.ID("75930"), func() {
 				runNettoNetTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
-					workerNodeList[0].Object.Name, workerNodeList[1].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[1].Object.Name, sriovVendorID)
 			})
 		})
 
@@ -152,15 +152,15 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 			})
 			It("Same PF", reportxml.ID("74797"), func() {
 				runNettoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
-					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovVendorID)
 			})
 			It("Different PF", reportxml.ID("75931"), func() {
 				runNettoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[1],
-					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovVendorID)
 			})
 			It("Different Worker", reportxml.ID("75932"), func() {
 				runNettoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
-					workerNodeList[0].Object.Name, workerNodeList[1].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[1].Object.Name, sriovVendorID)
 			})
 		})
 
@@ -183,15 +183,15 @@ var _ = Describe("SriovMetricsExporter", Ordered, Label(tsparams.LabelSriovMetri
 			})
 			It("Same PF", reportxml.ID("74800"), func() {
 				runVfiotoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
-					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovVendorID)
 			})
 			It("Different PF", reportxml.ID("75933"), func() {
 				runVfiotoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[1],
-					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[0].Object.Name, sriovVendorID)
 			})
 			It("Different Worker", reportxml.ID("75934"), func() {
 				runVfiotoVfioTests(sriovInterfacesUnderTest[0], sriovInterfacesUnderTest[0],
-					workerNodeList[0].Object.Name, workerNodeList[1].Object.Name, sriovDeviceID)
+					workerNodeList[0].Object.Name, workerNodeList[1].Object.Name, sriovVendorID)
 			})
 		})
 
@@ -285,7 +285,7 @@ func definePolicy(role, devType, nicVendor, pfName string, vfRange int) *sriov.P
 			WithDevType("netdevice").
 			WithVFRange(vfRange, vfRange)
 	case "vfiopci":
-		if !(nicVendor == netparam.MlxDeviceID || nicVendor == netparam.MlxBFDeviceID) {
+		if nicVendor != netparam.MlxVendorID {
 			policy = sriov.NewPolicyBuilder(APIClient,
 				role+devType, NetConfig.SriovOperatorNamespace, role+devType, 2, []string{pfName}, NetConfig.WorkerLabelMap).
 				WithDevType("vfio-pci").
