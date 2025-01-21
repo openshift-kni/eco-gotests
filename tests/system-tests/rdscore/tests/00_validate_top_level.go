@@ -57,6 +57,14 @@ var _ = Describe(
 				Label("frr"), reportxml.ID("76009"),
 				rdscorecommon.ReachURLviaFRRroute)
 
+			It("Verifies workload reachable over second BGP route",
+				Label("frr-segregation"), reportxml.ID("79082"),
+				rdscorecommon.ReachURLviaSecondFRRroute)
+
+			It("Verifies workload reachable over correct BGP route learned by MetalLB FRR",
+				Label("frr-segregation"), reportxml.ID("79085"),
+				rdscorecommon.VerifyMetallbTrafficSegregation)
+
 			It("Verifies KDump service on Control Plane node",
 				Label("kdump", "kdump-cp"), reportxml.ID("75620"),
 				rdscorecommon.VerifyKDumpOnControlPlane)
@@ -387,6 +395,14 @@ var _ = Describe(
 			It("Verifies workload reachable over BGP route post hard reboot",
 				Label("frr"), reportxml.ID("76010"),
 				rdscorecommon.ReachURLviaFRRroute)
+
+			It("Verifies workload reachable over second BGP route",
+				Label("frr-segregation"), reportxml.ID("79083"),
+				rdscorecommon.ReachURLviaSecondFRRroute)
+
+			It("Verifies workload reachable over correct BGP route learned by MetalLB FRR",
+				Label("frr-segregation"), reportxml.ID("79086"),
+				rdscorecommon.VerifyMetallbTrafficSegregation)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -554,5 +570,13 @@ var _ = Describe(
 			It("Verifies workload reachable over BGP route post soft reboot",
 				Label("frr"), reportxml.ID("76011"),
 				rdscorecommon.ReachURLviaFRRroute)
+
+			It("Verifies workload reachable over second BGP route",
+				Label("frr-segregation"), reportxml.ID("79084"),
+				rdscorecommon.ReachURLviaSecondFRRroute)
+
+			It("Verifies workload reachable over correct BGP route learned by MetalLB FRR",
+				Label("frr-segregation"), reportxml.ID("79087"),
+				rdscorecommon.VerifyMetallbTrafficSegregation)
 		})
 	})
