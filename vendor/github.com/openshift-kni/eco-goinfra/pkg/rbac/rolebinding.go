@@ -38,7 +38,7 @@ func NewRoleBindingBuilder(apiClient *clients.Settings,
 		"Initializing new rolebinding structure with the following params: "+
 			"name: %s, namespace: %s, role: %s, subject %v", name, nsname, role, subject)
 
-	builder := RoleBindingBuilder{
+	builder := &RoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
@@ -57,17 +57,21 @@ func NewRoleBindingBuilder(apiClient *clients.Settings,
 		glog.V(100).Infof("The name of the rolebinding is empty")
 
 		builder.errorMsg = "RoleBinding 'name' cannot be empty"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the rolebinding is empty")
 
 		builder.errorMsg = "RoleBinding 'nsname' cannot be empty"
+
+		return builder
 	}
 
 	builder.WithSubjects([]rbacv1.Subject{subject})
 
-	return &builder
+	return builder
 }
 
 // WithSubjects adds specified Subject to the RoleBinding.
@@ -83,9 +87,7 @@ func (builder *RoleBindingBuilder) WithSubjects(subjects []rbacv1.Subject) *Role
 		glog.V(100).Infof("The list of subjects is empty")
 
 		builder.errorMsg = "cannot create rolebinding with empty subject"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -94,15 +96,15 @@ func (builder *RoleBindingBuilder) WithSubjects(subjects []rbacv1.Subject) *Role
 			glog.V(100).Infof("The rolebinding subject kind must be one of 'ServiceAccount', 'User', or 'Group'")
 
 			builder.errorMsg = "rolebinding subject kind must be one of 'ServiceAccount', 'User', 'Group'"
+
+			return builder
 		}
 
 		if subject.Name == "" {
 			glog.V(100).Infof("The rolebinding subject name cannot be empty")
 
 			builder.errorMsg = "rolebinding subject name cannot be empty"
-		}
 
-		if builder.errorMsg != "" {
 			return builder
 		}
 	}
@@ -140,7 +142,7 @@ func (builder *RoleBindingBuilder) WithOptions(options ...RoleBindingAdditionalO
 func PullRoleBinding(apiClient *clients.Settings, name, nsname string) (*RoleBindingBuilder, error) {
 	glog.V(100).Infof("Pulling existing rolebinding name %s under namespace %s from cluster", name, nsname)
 
-	builder := RoleBindingBuilder{
+	builder := &RoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &rbacv1.RoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
@@ -153,13 +155,13 @@ func PullRoleBinding(apiClient *clients.Settings, name, nsname string) (*RoleBin
 	if name == "" {
 		glog.V(100).Infof("The name of the rolebinding is empty")
 
-		builder.errorMsg = "rolebinding 'name' cannot be empty"
+		return builder, fmt.Errorf("rolebinding 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the rolebinding is empty")
 
-		builder.errorMsg = "rolebinding 'namespace' cannot be empty"
+		return builder, fmt.Errorf("rolebinding 'namespace' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -168,7 +170,7 @@ func PullRoleBinding(apiClient *clients.Settings, name, nsname string) (*RoleBin
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // Create generates a RoleBinding and stores the created object in struct.
@@ -261,13 +263,13 @@ func (builder *RoleBindingBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {

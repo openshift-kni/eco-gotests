@@ -37,7 +37,7 @@ func NewClusterRoleBindingBuilder(
 			"name: %s, clusterrole: %s, subject %v",
 		name, clusterRole, subject)
 
-	builder := ClusterRoleBindingBuilder{
+	builder := &ClusterRoleBindingBuilder{
 		apiClient: apiClient,
 		Definition: &rbacv1.ClusterRoleBinding{
 			ObjectMeta: metav1.ObjectMeta{
@@ -57,9 +57,11 @@ func NewClusterRoleBindingBuilder(
 		glog.V(100).Infof("The name of the clusterrolebinding is empty")
 
 		builder.errorMsg = "clusterrolebinding 'name' cannot be empty"
+
+		return builder
 	}
 
-	return &builder
+	return builder
 }
 
 // WithSubjects appends additional subjects to clusterrolebinding definition.
@@ -75,9 +77,7 @@ func (builder *ClusterRoleBindingBuilder) WithSubjects(subjects []rbacv1.Subject
 		glog.V(100).Infof("The list of subjects is empty")
 
 		builder.errorMsg = "cannot accept nil or empty slice as subjects"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -86,15 +86,15 @@ func (builder *ClusterRoleBindingBuilder) WithSubjects(subjects []rbacv1.Subject
 			glog.V(100).Infof("The clusterrolebinding subject kind must be one of 'ServiceAccount', 'User', or 'Group'")
 
 			builder.errorMsg = "clusterrolebinding subject kind must be one of 'ServiceAccount', 'User', or 'Group'"
+
+			return builder
 		}
 
 		if subject.Name == "" {
 			glog.V(100).Infof("The clusterrolebinding subject name cannot be empty")
 
 			builder.errorMsg = "clusterrolebinding subject name cannot be empty"
-		}
 
-		if builder.errorMsg != "" {
 			return builder
 		}
 	}
@@ -146,7 +146,7 @@ func PullClusterRoleBinding(apiClient *clients.Settings, name string) (*ClusterR
 	if name == "" {
 		glog.V(100).Infof("The name of the clusterrolebinding is empty")
 
-		builder.errorMsg = "clusterrolebinding 'name' cannot be empty"
+		return nil, fmt.Errorf("clusterrolebinding 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -203,7 +203,7 @@ func (builder *ClusterRoleBindingBuilder) Delete() error {
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // Update modifies a clusterrolebinding object in the cluster.
@@ -252,13 +252,13 @@ func (builder *ClusterRoleBindingBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
