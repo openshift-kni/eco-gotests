@@ -15,6 +15,8 @@ const (
 	LabelFRRTestCases = "frrk8s"
 	// BGPPassword var is used to set password for BGP session between FRR speakers.
 	BGPPassword = "bgp-test"
+	// LabelGRTestCases represents graceful restart label that can be used for test cases selection.
+	LabelGRTestCases = "gracefulrestart"
 	// MlbAddressListError an error message when the ECO_CNF_CORE_NET_MLB_ADDR_LIST is incorrect.
 	MlbAddressListError = "An unexpected error occurred while " +
 		"determining the IP addresses from the ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable."

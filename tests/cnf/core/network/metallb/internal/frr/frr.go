@@ -18,32 +18,35 @@ type (
 	}
 
 	bgpStatus struct {
-		VrfID         int    `json:"vrfId"`
-		VrfName       string `json:"vrfName"`
-		TableVersion  int    `json:"tableVersion"`
-		RouterID      string `json:"routerId"`
-		DefaultLocPrf int    `json:"defaultLocPrf"`
-		LocalAS       int    `json:"localAS"`
-		Routes        map[string][]struct {
-			Valid     bool   `json:"valid"`
-			Multipath bool   `json:"multipath,omitempty"`
-			PathFrom  string `json:"pathFrom"`
-			Prefix    string `json:"prefix"`
-			PrefixLen int    `json:"prefixLen"`
-			Network   string `json:"network"`
-			Metric    int    `json:"metric"`
-			Weight    int    `json:"weight"`
-			PeerID    string `json:"peerId"`
-			Path      string `json:"path"`
-			Origin    string `json:"origin"`
-			Nexthops  []struct {
-				IP       string `json:"ip"`
-				Hostname string `json:"hostname"`
-				Afi      string `json:"afi"`
-				Used     bool   `json:"used"`
-			} `json:"nexthops"`
-			Bestpath bool `json:"bestpath,omitempty"`
-		} `json:"routes"`
+		VrfID         int                `json:"vrfId"`
+		VrfName       string             `json:"vrfName"`
+		TableVersion  int                `json:"tableVersion"`
+		RouterID      string             `json:"routerId"`
+		DefaultLocPrf int                `json:"defaultLocPrf"`
+		LocalAS       int                `json:"localAS"`
+		Routes        map[string][]Route `json:"routes"`
+	}
+
+	// Route creates a struct of routes from the output of the "show ip bgp json" command.
+	Route struct {
+		Valid     bool   `json:"valid"`
+		Multipath bool   `json:"multipath,omitempty"`
+		PathFrom  string `json:"pathFrom"`
+		Prefix    string `json:"prefix"`
+		PrefixLen int    `json:"prefixLen"`
+		Network   string `json:"network"`
+		Metric    int    `json:"metric"`
+		Weight    int    `json:"weight"`
+		PeerID    string `json:"peerId"`
+		Path      string `json:"path"`
+		Origin    string `json:"origin"`
+		Nexthops  []struct {
+			IP       string `json:"ip"`
+			Hostname string `json:"hostname"`
+			Afi      string `json:"afi"`
+			Used     bool   `json:"used"`
+		} `json:"nexthops"`
+		Bestpath bool `json:"bestpath,omitempty"`
 	}
 
 	advertisedRoute struct {
@@ -94,6 +97,26 @@ type (
 		ConnectRetryTimer int `json:"connectRetryTimer"`
 		RemoteAS          int `json:"remoteAS"`
 	}
+
+	// GRTimers struct includes the GracefulRestart timers.
+	GRTimers struct {
+		ConfiguredRestartTimer int `json:"configuredRestartTimer"`
+		ReceivedRestartTimer   int `json:"receivedRestartTimer"`
+		RestartTimerRemaining  int `json:"restartTimerRemaining"`
+	}
+
+	// GRStatus struct includes the GracefulRestart status per BGP neighbor.
+	GRStatus struct {
+		NeighborAddr string   `json:"neighborAddr"`
+		LocalGrMode  string   `json:"localGrMode"`
+		RemoteGrMode string   `json:"remoteGrMode"`
+		RBit         bool     `json:"rBit"`
+		NBit         bool     `json:"nBit"`
+		Timers       GRTimers `json:"timers"`
+	}
+
+	// BGPNeighborGRStatus is a map of GRStatus per peer.
+	BGPNeighborGRStatus map[string]GRStatus
 )
 
 // DefineBaseConfig defines minimal required FRR configuration.
@@ -273,10 +296,10 @@ func SetStaticRoute(frrPod *pod.Builder, action, destIP string, nextHopMap map[s
 }
 
 // GetBGPStatus returns bgp status output from frr pod.
-func GetBGPStatus(frrPod *pod.Builder, protocolVersion string, containerName ...string) (*bgpStatus, error) {
+func GetBGPStatus(frrPod *pod.Builder, protocolVersion string) (*bgpStatus, error) {
 	glog.V(90).Infof("Getting bgp status from pod: %s", frrPod.Definition.Name)
 
-	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s json", protocolVersion), containerName...)
+	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s json", protocolVersion))
 }
 
 // GetBGPCommunityStatus returns bgp community status from frr pod.
@@ -347,14 +370,8 @@ func ValidateBGPRemoteAS(frrk8sPods []*pod.Builder, bgpPeerIP string, expectedRe
 	return fmt.Errorf("no BGP neighbor with RemoteAS %d found for peer %s", expectedRemoteAS, bgpPeerIP)
 }
 
-func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bgpStatus, error) {
-	cName := "frr"
-
-	if len(containerName) > 0 {
-		cName = containerName[0]
-	}
-
-	glog.V(90).Infof("Getting bgp status from container: %s of pod: %s", cName, frrPod.Definition.Name)
+func getBgpStatus(frrPod *pod.Builder, cmd string) (*bgpStatus, error) {
+	glog.V(90).Infof("Getting bgp status from pod: %s", frrPod.Definition.Name)
 
 	bgpStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, cmd))
 
@@ -371,11 +388,32 @@ func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bg
 		return nil, err
 	}
 
-	if len(bgpStatus.Routes) == 0 {
-		return nil, fmt.Errorf("no bgp routes present BGP status is empty")
+	return &bgpStatus, nil
+}
+
+// GetGracefulRestartStatus fetches and returns the GracefulRestart status value for the
+// specified BGP peer in the default VRF.
+func GetGracefulRestartStatus(frrPod *pod.Builder, neighborIP string) (GRStatus, error) {
+	glog.V(90).Infof("Getting GracefulRestart status from container: %s of pod: %s", "frr", frrPod.Definition.Name)
+
+	grStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, "sh bgp neighbors graceful-restart json"))
+
+	if err != nil {
+		glog.V(90).Infof("Failed to execute Graceful Restart command")
+
+		return GRStatus{}, err
 	}
 
-	return &bgpStatus, nil
+	bgpNeighborGRStatus := BGPNeighborGRStatus{}
+
+	err = json.Unmarshal(grStateOut.Bytes(), &bgpNeighborGRStatus)
+	if err != nil {
+		glog.V(90).Infof("Failed to Unmarshal grStateOut string: %s in to GRStatus struct", grStateOut.String())
+
+		return GRStatus{}, err
+	}
+
+	return bgpNeighborGRStatus[neighborIP], nil
 }
 
 func runningConfig(frrPod *pod.Builder) (string, error) {
