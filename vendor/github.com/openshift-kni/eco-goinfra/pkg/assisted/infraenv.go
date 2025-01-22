@@ -790,11 +790,7 @@ func (builder *InfraEnvBuilder) Update(force bool) (*InfraEnvBuilder, error) {
 		glog.V(100).Infof("infraenv %s in namespace %s does not exist",
 			builder.Definition.Name, builder.Definition.Namespace)
 
-		builder.errorMsg = "Cannot update non-existent infraenv"
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("cannot update non-existent infraenv")
 	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)

@@ -157,9 +157,7 @@ func (builder *AgentServiceConfigBuilder) WithMirrorRegistryRef(configMapName st
 		glog.V(100).Infof("The configMapName is empty")
 
 		builder.errorMsg = "cannot add agentserviceconfig mirrorRegistryRef with empty configmap name"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -347,7 +345,7 @@ func (builder *AgentServiceConfigBuilder) Get() (*agentInstallV1Beta1.AgentServi
 		return nil, err
 	}
 
-	return agentServiceConfig, err
+	return agentServiceConfig, nil
 }
 
 // Create generates an agentserviceconfig on the cluster.
@@ -524,13 +522,13 @@ func (builder *AgentServiceConfigBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		builder.errorMsg = msg.UndefinedCrdObjectErrString(resourceCRD)
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
-		builder.errorMsg = fmt.Sprintf("%s builder cannot have nil apiClient", resourceCRD)
+		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}
 
 	if builder.errorMsg != "" {
