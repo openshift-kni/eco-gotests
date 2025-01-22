@@ -32,10 +32,10 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/networkconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/installconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/brutil"
+	"github.com/openshift-kni/eco-gotests/tests/lca/internal/installconfig"
 	k8sScheme "k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtparams"
