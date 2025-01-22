@@ -358,7 +358,7 @@ func (builder *BGPPeerBuilder) WithHoldTime(holdTime metav1.Duration) *BGPPeerBu
 		"Creating BGPPeer %s in namespace %s with this holdTime: %s",
 		builder.Definition.Name, builder.Definition.Namespace, holdTime)
 
-	builder.Definition.Spec.HoldTime = holdTime
+	builder.Definition.Spec.HoldTime = &holdTime
 
 	return builder
 }
@@ -373,7 +373,7 @@ func (builder *BGPPeerBuilder) WithKeepalive(keepalive metav1.Duration) *BGPPeer
 		"Creating BGPPeer %s in namespace %s with this keepalive: %s",
 		builder.Definition.Name, builder.Definition.Namespace, keepalive)
 
-	builder.Definition.Spec.KeepaliveTime = keepalive
+	builder.Definition.Spec.KeepaliveTime = &keepalive
 
 	return builder
 }
