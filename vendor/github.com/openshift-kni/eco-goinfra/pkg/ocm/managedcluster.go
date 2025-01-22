@@ -194,6 +194,28 @@ func (builder *ManagedClusterBuilder) Delete() error {
 	return nil
 }
 
+// Get returns the ManagedCluster object if found.
+func (builder *ManagedClusterBuilder) Get() (*clusterv1.ManagedCluster, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting ManagedCluster object %s", builder.Definition.Name)
+
+	managedCluster := &clusterv1.ManagedCluster{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
+		Name: builder.Definition.Name,
+	}, managedCluster)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to get ManagedCluster object %s: %v", builder.Definition.Name, err)
+
+		return nil, err
+	}
+
+	return managedCluster, nil
+}
+
 // Exists checks if the defined ManagedCluster has already been created.
 func (builder *ManagedClusterBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
@@ -202,14 +224,8 @@ func (builder *ManagedClusterBuilder) Exists() bool {
 
 	glog.V(100).Infof("Checking if ManagedCluster %s exists", builder.Definition.Name)
 
-	managedCluster := &clusterv1.ManagedCluster{}
-	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
-		Name: builder.Definition.Name,
-	}, managedCluster)
-
-	if err == nil {
-		builder.Object = managedCluster
-	}
+	var err error
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }

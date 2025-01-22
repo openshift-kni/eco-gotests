@@ -604,7 +604,6 @@ func (builder *AgentClusterInstallBuilder) Update(force bool) (*AgentClusterInst
 
 			err = builder.DeleteAndWait(time.Second * 10)
 			builder.Definition.ResourceVersion = ""
-			// fmt.Printf("agentclusterinstall exists: %v\n", builder.Exists())
 
 			if err != nil {
 				glog.V(100).Infof(

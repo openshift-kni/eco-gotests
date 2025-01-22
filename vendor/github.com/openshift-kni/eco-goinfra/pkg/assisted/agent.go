@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	nonExistentMsg = "Cannot update non-existent agent"
+	nonExistentMsg = "cannot update non-existent agent"
 )
 
 // agentBuilder provides struct for the agent object containing connection to
@@ -300,11 +300,7 @@ func (builder *agentBuilder) Update() (*agentBuilder, error) {
 		glog.V(100).Infof("agent %s in namespace %s does not exist",
 			builder.Definition.Name, builder.Definition.Namespace)
 
-		builder.errorMsg = nonExistentMsg
-	}
-
-	if builder.errorMsg != "" {
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf(nonExistentMsg)
 	}
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
