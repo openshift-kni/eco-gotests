@@ -97,29 +97,12 @@ func (powerEquipment *PowerEquipment) UnmarshalJSON(b []byte) error {
 
 // GetPowerEquipment will get a PowerEquipment instance from the Redfish service.
 func GetPowerEquipment(c common.Client, uri string) (*PowerEquipment, error) {
-	var powerEquipment PowerEquipment
-	return &powerEquipment, powerEquipment.Get(c, uri, &powerEquipment)
+	return common.GetObject[PowerEquipment](c, uri)
 }
 
 // ManagedBy gets the collection of managers of this PowerEquipment
 func (powerEquipment *PowerEquipment) ManagedBy() ([]*Manager, error) {
-	var result []*Manager
-
-	collectionError := common.NewCollectionError()
-	for _, uri := range powerEquipment.managedBy {
-		manager, err := GetManager(powerEquipment.GetClient(), uri)
-		if err != nil {
-			collectionError.Failures[uri] = err
-		} else {
-			result = append(result, manager)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+	return common.GetObjects[Manager](powerEquipment.GetClient(), powerEquipment.managedBy)
 }
 
 // ElectricalBuses gets the collection that contains a set of electrical bus units.

@@ -59,6 +59,9 @@ type IOPerformanceLoSCapabilities struct {
 	// MinSupportedIoOperationLatencyMicroseconds shall be the minimum supported
 	// average IO latency in microseconds calculated over the SamplePeriod
 	MinSupportedIoOperationLatencyMicroseconds int
+	// Oem shall contain the OEM extensions. All values for properties that this object contains shall conform to the
+	// Redfish Specification-described requirements.
+	OEM json.RawMessage `json:"Oem"`
 	// SupportedIOWorkloads shall be a collection of supported workloads.
 	SupportedIOWorkloads []IOWorkload
 	// SupportedLinesOfService shall be a collection of supported IO performance
@@ -118,52 +121,13 @@ func (ioperformanceloscapabilities *IOPerformanceLoSCapabilities) Update() error
 
 // GetIOPerformanceLoSCapabilities will get a IOPerformanceLoSCapabilities instance from the service.
 func GetIOPerformanceLoSCapabilities(c common.Client, uri string) (*IOPerformanceLoSCapabilities, error) {
-	var ioPerformanceLoSCapabilities IOPerformanceLoSCapabilities
-	return &ioPerformanceLoSCapabilities, ioPerformanceLoSCapabilities.Get(c, uri, &ioPerformanceLoSCapabilities)
+	return common.GetObject[IOPerformanceLoSCapabilities](c, uri)
 }
 
 // ListReferencedIOPerformanceLoSCapabilitiess gets the collection of IOPerformanceLoSCapabilities from
 // a provided reference.
-func ListReferencedIOPerformanceLoSCapabilitiess(c common.Client, link string) ([]*IOPerformanceLoSCapabilities, error) { //nolint:dupl
-	var result []*IOPerformanceLoSCapabilities
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *IOPerformanceLoSCapabilities
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		ioperformanceloscapabilities, err := GetIOPerformanceLoSCapabilities(c, link)
-		ch <- GetResult{Item: ioperformanceloscapabilities, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedIOPerformanceLoSCapabilitiess(c common.Client, link string) ([]*IOPerformanceLoSCapabilities, error) {
+	return common.GetCollectionObjects[IOPerformanceLoSCapabilities](c, link)
 }
 
 // IOWorkload is used to describe an IO Workload.

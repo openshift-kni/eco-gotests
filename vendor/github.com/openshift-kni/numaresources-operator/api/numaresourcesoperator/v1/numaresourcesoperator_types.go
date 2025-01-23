@@ -111,8 +111,18 @@ type NodeGroupConfig struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
+const (
+	// NodeGroupMaxAnnotations limits the number of annotations a node group can have.
+	// These annotations differ from regular kubernetes object annotations in key ways:
+	// - User-provided generic annotations are not supported and can be removed any time by the functioning of the operator.
+	// - Reserved for internal usage of the NUMA resources operator to fine-tune and detail the behavior of node groups.
+	// - Based on projected usage, there is a fixed cap to the maximum amount of annotations a NodeGroup can hold
+	// Besides this funtamental key differences, per-nodegroup annotations will work like regular kubernetes objects annotations.
+	NodeGroupMaxAnnotations = 8
+)
+
 // NodeGroup defines group of nodes that will run resource topology exporter daemon set
-// You can choose the group of node by MachineConfigPoolSelector or by NodeSelector
+// You can choose the group of node by MachineConfigPoolSelector or by PoolName
 type NodeGroup struct {
 	// MachineConfigPoolSelector defines label selector for the machine config pool
 	// +optional
@@ -120,6 +130,34 @@ type NodeGroup struct {
 	// Config defines the RTE behavior for this NodeGroup
 	// +optional
 	Config *NodeGroupConfig `json:"config,omitempty"`
+	// PoolName defines the pool name to which the nodes belong that the config of this node group will be applied to
+	// +optional
+	PoolName *string `json:"poolName,omitempty"`
+	// Annotations is the per-nodegroup equivalent of the per-object annotations.
+	// Unlike the regular annotations, there is a hard limit of supported annotations, dependent on the operator version.
+	// In general, prefer to use per-object standard annotations.
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// NodeGroupStatus reports the status of a NodeGroup once matches an actual set of nodes and it is correctly processed
+// by the system. In other words, is not possible to have a NodeGroupStatus which does not represent a valid NodeGroup
+// which in turn correctly references unambiguously a set of nodes in the cluster.
+// Hence, if a NodeGroupStatus is published, its `Name` must be present, because it refers back to a NodeGroup whose
+// config was correctly processed in the Spec. And its DaemonSet will be nonempty, because matches correctly a set
+// of nodes in the cluster. The Config is best-effort always represented, possibly reflecting the system defaults.
+// If the system cannot process a NodeGroup correctly from the Spec, it will report Degraded state in the top-level
+// condition, and will provide details using the aforementioned conditions.
+type NodeGroupStatus struct {
+	// DaemonSet of the configured RTEs, for this node group
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="RTE DaemonSets"
+	DaemonSet NamespacedName `json:"daemonsets"`
+	// NodeGroupConfig represents the latest available configuration applied to this NodeGroup
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Optional configuration enforced on this NodeGroup"
+	Config NodeGroupConfig `json:"config"`
+	// PoolName represents the pool name to which the nodes belong that the config of this node group is be applied to
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Pool name of nodes in this node group"
+	PoolName string `json:"selector"`
 }
 
 // NUMAResourcesOperatorStatus defines the observed state of NUMAResourcesOperator
@@ -130,6 +168,10 @@ type NUMAResourcesOperatorStatus struct {
 	// MachineConfigPools resolved from configured node groups
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="RTE MCPs from node groups"
 	MachineConfigPools []MachineConfigPool `json:"machineconfigpools,omitempty"`
+	// NodeGroups report the observed status of the configured NodeGroups, matching by their name
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Node groups observed status"
+	NodeGroups []NodeGroupStatus `json:"nodeGroups,omitempty"`
 	// Conditions show the current state of the NUMAResourcesOperator Operator
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Condition reported"
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
@@ -183,9 +225,16 @@ func init() {
 }
 
 func (ngc *NodeGroupConfig) ToString() string {
-	if ngc != nil {
-		ngc.SetDefaults()
-		return fmt.Sprintf("PodsFingerprinting mode: %s InfoRefreshMode: %s InfoRefreshPeriod: %s InfoRefreshPause: %s", *ngc.PodsFingerprinting, *ngc.InfoRefreshMode, *ngc.InfoRefreshPeriod, *ngc.InfoRefreshPause)
+	if ngc == nil {
+		return ""
 	}
-	return ""
+	ngc.SetDefaults()
+	return fmt.Sprintf("PodsFingerprinting mode: %s InfoRefreshMode: %s InfoRefreshPeriod: %s InfoRefreshPause: %s Tolerations: %+v", *ngc.PodsFingerprinting, *ngc.InfoRefreshMode, *ngc.InfoRefreshPeriod, *ngc.InfoRefreshPause, ngc.Tolerations)
+}
+
+func (ng *NodeGroup) ToString() string {
+	if ng == nil {
+		return ""
+	}
+	return fmt.Sprintf("PoolName: %s MachineConfigPoolSelector: %s Config: %s", *ng.PoolName, ng.MachineConfigPoolSelector.String(), ng.Config.ToString())
 }

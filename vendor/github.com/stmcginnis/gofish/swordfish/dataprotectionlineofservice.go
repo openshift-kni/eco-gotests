@@ -59,52 +59,13 @@ type DataProtectionLineOfService struct {
 
 // GetDataProtectionLineOfService will get a DataProtectionLineOfService instance from the service.
 func GetDataProtectionLineOfService(c common.Client, uri string) (*DataProtectionLineOfService, error) {
-	var dataProtectionLineOfService DataProtectionLineOfService
-	return &dataProtectionLineOfService, dataProtectionLineOfService.Get(c, uri, &dataProtectionLineOfService)
+	return common.GetObject[DataProtectionLineOfService](c, uri)
 }
 
 // ListReferencedDataProtectionLineOfServices gets the collection of DataProtectionLineOfService from
 // a provided reference.
-func ListReferencedDataProtectionLineOfServices(c common.Client, link string) ([]*DataProtectionLineOfService, error) { //nolint:dupl
-	var result []*DataProtectionLineOfService
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *DataProtectionLineOfService
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		dataprotectionlineofservice, err := GetDataProtectionLineOfService(c, link)
-		ch <- GetResult{Item: dataprotectionlineofservice, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedDataProtectionLineOfServices(c common.Client, link string) ([]*DataProtectionLineOfService, error) {
+	return common.GetCollectionObjects[DataProtectionLineOfService](c, link)
 }
 
 // ReplicaRequest is a request for a replica.

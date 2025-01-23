@@ -56,12 +56,8 @@ type Bios struct {
 func (bios *Bios) UnmarshalJSON(b []byte) error {
 	type temp Bios
 	type Actions struct {
-		ChangePassword struct {
-			Target string
-		} `json:"#Bios.ChangePassword"`
-		ResetBios struct {
-			Target string
-		} `json:"#Bios.ResetBios"`
+		ChangePassword common.ActionTarget `json:"#Bios.ChangePassword"`
+		ResetBios      common.ActionTarget `json:"#Bios.ResetBios"`
 	}
 	type Links struct {
 		ActiveSoftwareImage struct {
@@ -103,51 +99,12 @@ func (bios *Bios) UnmarshalJSON(b []byte) error {
 
 // GetBios will get a Bios instance from the service.
 func GetBios(c common.Client, uri string) (*Bios, error) {
-	var bios Bios
-	return &bios, bios.Get(c, uri, &bios)
+	return common.GetObject[Bios](c, uri)
 }
 
 // ListReferencedBioss gets the collection of Bios from a provided reference.
-func ListReferencedBioss(c common.Client, link string) ([]*Bios, error) { //nolint:dupl
-	var result []*Bios
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Bios
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		bios, err := GetBios(c, link)
-		ch <- GetResult{Item: bios, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedBioss(c common.Client, link string) ([]*Bios, error) {
+	return common.GetCollectionObjects[Bios](c, link)
 }
 
 // ChangePassword shall change the selected BIOS password.

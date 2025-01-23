@@ -6,6 +6,7 @@ package swordfish
 
 import (
 	"encoding/json"
+	"reflect"
 
 	"github.com/stmcginnis/gofish/common"
 )
@@ -47,6 +48,8 @@ type DataStorageLineOfService struct {
 	// 'offline'. The expectation is that the services required to implement
 	// this capability are part of the advertising system.
 	RecoveryTimeObjectives RecoveryAccessScope
+	// rawData holds the original serialized JSON so we can compare updates.
+	rawData []byte
 }
 
 // UnmarshalJSON unmarshals a DataStorageLineOfService object from the raw JSON.
@@ -68,52 +71,34 @@ func (datastoragelineofservice *DataStorageLineOfService) UnmarshalJSON(b []byte
 	return nil
 }
 
+// Update commits updates to this object's properties to the running system.
+func (datastoragelineofservice *DataStorageLineOfService) Update() error {
+	// Get a representation of the object's original state so we can find what
+	// to update.
+	original := new(DataStorageLineOfService)
+	original.UnmarshalJSON(datastoragelineofservice.rawData)
+
+	readWriteFields := []string{
+		"AccessCapabilities",
+		"IsSpaceEfficient",
+		"ProvisioningPolicy",
+		"RecoverableCapacitySourceCount",
+		"RecoveryTimeObjectives",
+	}
+
+	originalElement := reflect.ValueOf(original).Elem()
+	currentElement := reflect.ValueOf(datastoragelineofservice).Elem()
+
+	return datastoragelineofservice.Entity.Update(originalElement, currentElement, readWriteFields)
+}
+
 // GetDataStorageLineOfService will get a DataStorageLineOfService instance from the service.
 func GetDataStorageLineOfService(c common.Client, uri string) (*DataStorageLineOfService, error) {
-	var dataStorageLineOfService DataStorageLineOfService
-	return &dataStorageLineOfService, dataStorageLineOfService.Get(c, uri, &dataStorageLineOfService)
+	return common.GetObject[DataStorageLineOfService](c, uri)
 }
 
 // ListReferencedDataStorageLineOfServices gets the collection of DataStorageLineOfService from
 // a provided reference.
-func ListReferencedDataStorageLineOfServices(c common.Client, link string) ([]*DataStorageLineOfService, error) { //nolint:dupl
-	var result []*DataStorageLineOfService
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *DataStorageLineOfService
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		datastoragelineofservice, err := GetDataStorageLineOfService(c, link)
-		ch <- GetResult{Item: datastoragelineofservice, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedDataStorageLineOfServices(c common.Client, link string) ([]*DataStorageLineOfService, error) {
+	return common.GetCollectionObjects[DataStorageLineOfService](c, link)
 }

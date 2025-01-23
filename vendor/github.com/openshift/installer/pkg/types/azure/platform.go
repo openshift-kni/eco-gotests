@@ -9,13 +9,17 @@ import (
 var aro bool
 
 // OutboundType is a strategy for how egress from cluster is achieved.
-// +kubebuilder:validation:Enum="";Loadbalancer;UserDefinedRouting
+// +kubebuilder:validation:Enum="";Loadbalancer;NatGateway;UserDefinedRouting
 type OutboundType string
 
 const (
 	// LoadbalancerOutboundType uses Standard loadbalancer for egress from the cluster.
 	// see https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections#lb
 	LoadbalancerOutboundType OutboundType = "Loadbalancer"
+
+	// NatGatewayOutboundType uses NAT gateway for egress from the cluster
+	// see https://learn.microsoft.com/en-us/azure/virtual-network/nat-gateway/nat-gateway-resource
+	NatGatewayOutboundType OutboundType = "NatGateway"
 
 	// UserDefinedRoutingOutboundType uses user defined routing for egress from the cluster.
 	// see https://docs.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview
@@ -72,6 +76,7 @@ type Platform struct {
 	CloudName CloudEnvironment `json:"cloudName,omitempty"`
 
 	// OutboundType is a strategy for how egress from cluster is achieved. When not specified default is "Loadbalancer".
+	// "NatGateway" is only available in TechPreview.
 	//
 	// +kubebuilder:default=Loadbalancer
 	// +optional
@@ -90,10 +95,30 @@ type Platform struct {
 	// UserTags has additional keys and values that the installer will add
 	// as tags to all resources that it creates on AzurePublicCloud alone.
 	// Resources created by the cluster itself may not include these tags.
-	// This is a TechPreview feature and requires setting featureSet to
-	// TechPreviewNoUpgrade to configure the tags.
 	// +optional
 	UserTags map[string]string `json:"userTags,omitempty"`
+
+	// CustomerManagedKey has the keys needed to encrypt the storage account.
+	CustomerManagedKey *CustomerManagedKey `json:"customerManagedKey,omitempty"`
+}
+
+// KeyVault defines an Azure Key Vault.
+type KeyVault struct {
+	// ResourceGroup defines the Azure resource group used by the key
+	// vault.
+	ResourceGroup string `json:"resourceGroup"`
+	// Name is the name of the key vault.
+	Name string `json:"name"`
+	// KeyName is the name of the key vault key.
+	KeyName string `json:"keyName"`
+}
+
+// CustomerManagedKey defines the customer managed key settings for encryption of the Azure storage account.
+type CustomerManagedKey struct {
+	// KeyVault is the keyvault used for the customer created key required for encryption.
+	KeyVault KeyVault `json:"keyVault,omitempty"`
+	// UserAssignedIdentityKey is the name of the user identity that has access to the managed key.
+	UserAssignedIdentityKey string `json:"userAssignedIdentityKey,omitempty"`
 }
 
 // CloudEnvironment is the name of the Azure cloud environment
@@ -136,6 +161,36 @@ func (p *Platform) ClusterResourceGroupName(infraID string) string {
 		return p.ResourceGroupName
 	}
 	return fmt.Sprintf("%s-rg", infraID)
+}
+
+// VirtualNetworkName returns the name of the virtual network for the cluster.
+func (p *Platform) VirtualNetworkName(infraID string) string {
+	if len(p.VirtualNetwork) > 0 {
+		return p.VirtualNetwork
+	}
+	return fmt.Sprintf("%s-vnet", infraID)
+}
+
+// ControlPlaneSubnetName returns the name of the control plane subnet for the
+// cluster.
+func (p *Platform) ControlPlaneSubnetName(infraID string) string {
+	if len(p.ControlPlaneSubnet) > 0 {
+		return p.ControlPlaneSubnet
+	}
+	return fmt.Sprintf("%s-master-subnet", infraID)
+}
+
+// ComputeSubnetName returns the name of the compute subnet for the cluster.
+func (p *Platform) ComputeSubnetName(infraID string) string {
+	if len(p.ComputeSubnet) > 0 {
+		return p.ComputeSubnet
+	}
+	return fmt.Sprintf("%s-worker-subnet", infraID)
+}
+
+// NetworkSecurityGroupName returns the name of the network security group.
+func (p *Platform) NetworkSecurityGroupName(infraID string) string {
+	return fmt.Sprintf("%s-nsg", infraID)
 }
 
 // IsARO returns true if ARO-only modifications are enabled

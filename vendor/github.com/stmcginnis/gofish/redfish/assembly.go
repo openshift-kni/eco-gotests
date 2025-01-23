@@ -73,52 +73,13 @@ func (assembly *Assembly) Update() error {
 
 // GetAssembly will get a Assembly instance from the service.
 func GetAssembly(c common.Client, uri string) (*Assembly, error) {
-	var assembly Assembly
-	return &assembly, assembly.Get(c, uri, &assembly)
+	return common.GetObject[Assembly](c, uri)
 }
 
 // ListReferencedAssemblys gets the collection of Assembly from
 // a provided reference.
-func ListReferencedAssemblys(c common.Client, link string) ([]*Assembly, error) { //nolint:dupl
-	var result []*Assembly
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Assembly
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		assembly, err := GetAssembly(c, link)
-		ch <- GetResult{Item: assembly, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedAssemblys(c common.Client, link string) ([]*Assembly, error) {
+	return common.GetCollectionObjects[Assembly](c, link)
 }
 
 // AssemblyData is information about an assembly.
@@ -134,6 +95,11 @@ type AssemblyData struct {
 	// EngineeringChangeLevel shall be the Engineering Change Level (ECL) or
 	// revision of the assembly.
 	EngineeringChangeLevel string
+	// ISOCountryCodeOfOrigin shall contain the ISO 3166-1-defined alpha-2 or alpha-3 country code that reflects the
+	// manufacturing country of origin.
+	ISOCountryCodeOfOrigin string
+	// Location shall contain the location information of the associated assembly.
+	Location common.Location
 	// MemberID shall uniquely identify the member within the collection.
 	MemberID string
 	// Model shall be the name by which the manufacturer generally refers to the
@@ -154,6 +120,11 @@ type AssemblyData struct {
 	// assembly. The time of day portion of the property shall be '00:00:00Z' if
 	// the time of day is unknown.
 	ProductionDate string
+	// Replaceable shall indicate whether the component associated this assembly can be independently replaced as
+	// allowed by the vendor's replacement policy. A value of 'false' indicates the component needs to be replaced by
+	// policy as part of another component. If the 'LocationType' property of this assembly contains 'Embedded', this
+	// property shall contain 'false'.
+	Replaceable bool
 	// SKU shall be the name of the assembly.
 	SKU string
 	// SerialNumber is used to identify the assembly.

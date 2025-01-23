@@ -11,6 +11,20 @@ import (
 	"github.com/stmcginnis/gofish/common"
 )
 
+type DataSanitizationType string
+
+const (
+	// BlockEraseDataSanitizationType shall indicate sanitization is performed by deleting all logical block addresses,
+	// including those that are not currently mapping to active addresses, but leaving the data on the drive.
+	BlockEraseDataSanitizationType DataSanitizationType = "BlockErase"
+	// CryptographicEraseDataSanitizationType shall indicate sanitization is performed by erasing the target data's
+	// encryption key leaving only the ciphertext on the drive. For more information, see NIST800-88 and ISO/IEC 27040.
+	CryptographicEraseDataSanitizationType DataSanitizationType = "CryptographicErase"
+	// OverwriteDataSanitizationType shall indicate sanitization is performed by overwriting data by writing an
+	// implementation-specific pattern onto all sectors of the drive.
+	OverwriteDataSanitizationType DataSanitizationType = "Overwrite"
+)
+
 // EncryptionAbility is the drive's encryption ability.
 type EncryptionAbility string
 
@@ -47,6 +61,58 @@ const (
 	ForeignEncryptionStatus EncryptionStatus = "Foreign"
 	// UnencryptedEncryptionStatus indicates the drive is not currently encrypted.
 	UnencryptedEncryptionStatus EncryptionStatus = "Unencrypted"
+)
+
+type FormFactor string
+
+const (
+	// Drive35FormFactor shall indicate the drive is approximately 3.5 inches in width and no more than 1.1 inches in
+	// height.
+	Drive35FormFactor FormFactor = "Drive3_5"
+	// Drive25FormFactor shall indicate the drive is approximately 2.5 inches in width and no more than 0.8 inches in
+	// height and is not a U.2 drive.
+	Drive25FormFactor FormFactor = "Drive2_5"
+	// EDSFFFormFactor shall indicate the drive corresponds to one of SNIA's SFF specifications with an unspecified
+	// form factor. The SlotFormFactor property should not contain this value.
+	EDSFFFormFactor FormFactor = "EDSFF"
+	// EDSFF1ULongFormFactor shall indicate the drive corresponds to the SFF-TA-1007 Specification.
+	EDSFF1ULongFormFactor FormFactor = "EDSFF_1U_Long"
+	// EDSFF1UShortFormFactor shall indicate the drive corresponds to the SFF-TA-1006 Specification.
+	EDSFF1UShortFormFactor FormFactor = "EDSFF_1U_Short"
+	// EDSFFE3ShortFormFactor shall indicate the drive corresponds to the SFF-TA-1008 Specification and is
+	// approximately 112.75 mm in length.
+	EDSFFE3ShortFormFactor FormFactor = "EDSFF_E3_Short"
+	// EDSFFE3LongFormFactor shall indicate the drive corresponds to the SFF-TA-1008 Specification and is approximately
+	// 142.2 mm in length.
+	EDSFFE3LongFormFactor FormFactor = "EDSFF_E3_Long"
+	// M2FormFactor shall indicate the drive corresponds to the PCI Express M.2 Specification with an unspecified form
+	// factor. The SlotFormFactor property should not contain this value.
+	M2FormFactor FormFactor = "M2"
+	// M22230FormFactor shall indicate the drive corresponds to the PCI Express M.2 Specification and is approximately
+	// 22 mm in width and 30 mm in length.
+	M22230FormFactor FormFactor = "M2_2230"
+	// M22242FormFactor shall indicate the drive corresponds to the PCI Express M.2 Specification and is approximately
+	// 22 mm in width and 42 mm in length.
+	M22242FormFactor FormFactor = "M2_2242"
+	// M22260FormFactor shall indicate the drive corresponds to the PCI Express M.2 Specification and is approximately
+	// 22 mm in width and 60 mm in length.
+	M22260FormFactor FormFactor = "M2_2260"
+	// M22280FormFactor shall indicate the drive corresponds to the PCI Express M.2 Specification and is approximately
+	// 22 mm in width and 80 mm in length.
+	M22280FormFactor FormFactor = "M2_2280"
+	// M222110FormFactor shall indicate the drive corresponds to the PCI Express M.2 Specification and is approximately
+	// 22 mm in width and 110 mm in length.
+	M222110FormFactor FormFactor = "M2_22110"
+	// U2FormFactor shall indicate the drive corresponds to the PCI Express SFF-8639 Module Specification.
+	U2FormFactor FormFactor = "U2"
+	// PCIeSlotFullLengthFormFactor shall indicate the drive is an add-in card greater than 7 inches in length.
+	PCIeSlotFullLengthFormFactor FormFactor = "PCIeSlotFullLength"
+	// PCIeSlotLowProfileFormFactor shall indicate the drive is an add-in card less than 2.5 inches in height.
+	PCIeSlotLowProfileFormFactor FormFactor = "PCIeSlotLowProfile"
+	// PCIeHalfLengthFormFactor shall indicate the drive is an add-in card less than 7 inches in length.
+	PCIeHalfLengthFormFactor FormFactor = "PCIeHalfLength"
+	// OEMFormFactor shall indicate the drive is an OEM-defined form factor.
+	OEMFormFactor FormFactor = "OEM"
 )
 
 // HotspareReplacementModeType is the replacement operation mode of a hot spare.
@@ -139,15 +205,23 @@ type Drive struct {
 	CapacityBytes int64
 	// Description provides a description of this resource.
 	Description string
+	// DriveFormFactor shall contain the form factor of the drive inserted in this slot.
+	// Added in v1.18.0.
+	DriveFormFactor FormFactor
 	// EncryptionAbility shall contain the encryption ability for the associated
 	// drive.
 	EncryptionAbility EncryptionAbility
 	// EncryptionStatus shall contain the encryption status for the associated
 	// drive.
 	EncryptionStatus EncryptionStatus
+	// EnvironmentMetrics shall contain a link to a resource of type EnvironmentMetrics that specifies the environment
+	// metrics for this drive.
+	environmentMetrics string
 	// FailurePredicted shall contain failure information as defined by the
 	// manufacturer for the associated drive.
 	FailurePredicted bool
+	// FirmwareVersion shall contain the firmware version as defined by the manufacturer for this drive.
+	FirmwareVersion string
 	// HotspareReplacementMode shall specify if a commissioned hotspare will
 	// continue to serve as a hotspare once the failed drive is replaced.
 	HotspareReplacementMode HotspareReplacementModeType
@@ -161,6 +235,10 @@ type Drive struct {
 	IndicatorLED common.IndicatorLED
 	// Location shall contain location information of the associated drive.
 	Location []common.Location
+	// LocationIndicatorActive shall contain the state of the indicator used to physically identify or locate this
+	// resource. A write to this property shall update the value of IndicatorLED in this resource, if supported, to
+	// reflect the implementation of the locating function.
+	LocationIndicatorActive bool
 	// Manufacturer shall be the name of the organization responsible for
 	// producing the drive. This organization might be the entity from whom the
 	// drive is purchased, but this is not necessarily true.
@@ -168,6 +246,8 @@ type Drive struct {
 	// MediaType shall contain the type of media contained in the associated
 	// drive.
 	MediaType MediaType
+	// Metrics shall contain a link to the metrics associated with this drive.
+	Metrics DriveMetrics
 	// Model shall be the name by which the manufacturer generally refers to the
 	// drive.
 	Model string
@@ -193,6 +273,8 @@ type Drive struct {
 	// Protocol shall contain the protocol the associated drive is using to
 	// communicate to the storage controller for this system.
 	Protocol common.Protocol
+	// ReadyToRemove shall indicate whether the system is prepared for the removal of this drive.
+	ReadyToRemove bool
 	// Revision shall contain the revision as defined by the manufacturer for
 	// the associated drive.
 	Revision string
@@ -202,6 +284,12 @@ type Drive struct {
 	SKU string
 	// SerialNumber is used to identify the drive.
 	SerialNumber string
+	// SlotCapableProtocols shall contain the drive protocols capable in this slot. The value of this property depends
+	// upon the connector in this slot, the storage controllers connected to this slot, the configuration of the
+	// system, and other constraints that determine if a particular protocol is capable at a given time.
+	SlotCapableProtocols []common.Protocol
+	// SlotFormFactor shall contain the form factor of the slot.
+	SlotFormFactor FormFactor
 	// Status shall contain any status or health properties of the resource.
 	Status common.Status
 	// StatusIndicator shall contain the status indicator state for the status
@@ -211,6 +299,12 @@ type Drive struct {
 	// WriteCacheEnabled shall indicate whether the drive
 	// write cache is enabled.
 	WriteCacheEnabled bool
+	// Oem is all the available OEM information for the drive
+	Oem json.RawMessage
+
+	// ActiveSoftwareImage shall contain a link a resource of type SoftwareInventory that represents the active drive
+	// firmware image.
+	activeSoftwareImage string
 	// chassis shall be a reference to a resource of type Chassis that represent
 	// the physical container associated with this Drive.
 	chassis string
@@ -218,7 +312,10 @@ type Drive struct {
 	// associated with and shall reference a resource of type Endpoint.
 	endpoints []string
 	// EndpointsCount is the number of endpoints.
-	EndpointsCount int `json:"Endpoints@odata.count"`
+	EndpointsCount         int `json:"Endpoints@odata.count"`
+	networkDeviceFunctions []string
+	// NetworkDeviceFunctionsCount is the number of network device functions related to this drive.
+	NetworkDeviceFunctionsCount int
 	// volumes are the associated volumes.
 	volumes []string
 	// Volumes is the number of associated volumes.
@@ -227,42 +324,58 @@ type Drive struct {
 	pcieFunctions []string
 	// PCIeFunctionCount is the number of PCIeFunctions.
 	PCIeFunctionCount int
+	softwareImages    []string
+	// SoftwareImagesCount is the number of software images related to this drive.
+	SoftwareImagesCount int
+	storage             string
+	storagePools        []string
 	// storagePools      []string
 	StoragePoolsCount int
 	// secureEraseTarget is the URL for SecureErase actions.
 	secureEraseTarget string
-	// rawData holds the original serialized JSON so we can compare updates.
-	rawData []byte
+	// RawData holds the original serialized JSON so we can compare updates
+	// as well as access Oem values in the oem package.
+	RawData []byte
 }
 
 // UnmarshalJSON unmarshals a Drive object from the raw JSON.
 func (drive *Drive) UnmarshalJSON(b []byte) error {
 	type temp Drive
 	type links struct {
-		Chassis       common.Link
-		Endpoints     common.Links
-		EndpointCount int `json:"Endpoints@odata.count"`
-		// PCIeFunctions is The value of this property shall reference a resource
-		// of type PCIeFunction that represents the PCIe functions associated
+		ActiveSoftwareImage common.Link
+		Chassis             common.Link
+		Endpoints           common.Links
+		EndpointCount       int `json:"Endpoints@odata.count"`
+		// NetworkDeviceFunctions shall contain the array of links to resources of type NetworkDeviceFunction. This
+		// property should only be present for drives with network connectivity, such as Ethernet attached drives.
+		NetworkDeviceFunctions common.Links
+		// NetworkDeviceFunctions@odata.count
+		NetworkDeviceFunctionsCount int `json:"NetworkDeviceFunctions@odata.count"`
+		// PCIeFunctions shall reference a resource of type PCIeFunction that represents the PCIe functions associated
 		// with this resource.
-		PCIeFunctions common.Links
-		// PCIeFunctions@odata.count is
+		PCIeFunctions      common.Links
 		PCIeFunctionsCount int `json:"PCIeFunctions@odata.count"`
-		StoragePools       common.Links
-		StoragePoolsCount  int `json:"StoragePools@odata.count"`
-		Volumes            common.Links
-		VolumeCount        int `json:"Volumes@odata.count"`
+		// SoftwareImages shall contain an array of links to resources of type SoftwareInventory that represent the
+		// firmware images that apply to this drive.
+		SoftwareImages      common.Links
+		SoftwareImagesCount int `json:"SoftwareImages@odata.count"`
+		// Storage shall contain a link to a resource of type Storage that represents the storage subsystem to which this
+		// drive belongs.
+		Storage           common.Link
+		StoragePools      common.Links
+		StoragePoolsCount int `json:"StoragePools@odata.count"`
+		Volumes           common.Links
+		VolumeCount       int `json:"Volumes@odata.count"`
 	}
 	type Actions struct {
-		SecureErase struct {
-			Target string
-		} `json:"#Drive.SecureErase"`
+		SecureErase common.ActionTarget `json:"#Drive.SecureErase"`
 	}
 	var t struct {
 		temp
-		Links    links
-		Actions  Actions
-		Assembly common.Link
+		Links              links
+		Actions            Actions
+		Assembly           common.Link
+		EnvironmentMetrics common.Link
 	}
 
 	err := json.Unmarshal(b, &t)
@@ -273,17 +386,29 @@ func (drive *Drive) UnmarshalJSON(b []byte) error {
 	// Extract the links to other entities for later
 	*drive = Drive(t.temp)
 	drive.assembly = t.Assembly.String()
+	drive.environmentMetrics = t.EnvironmentMetrics.String()
+
+	drive.activeSoftwareImage = t.Links.ActiveSoftwareImage.String()
 	drive.chassis = t.Links.Chassis.String()
 	drive.endpoints = t.Links.Endpoints.ToStrings()
 	drive.EndpointsCount = t.Links.EndpointCount
-	drive.volumes = t.Links.Volumes.ToStrings()
-	drive.VolumesCount = t.Links.VolumeCount
+	drive.networkDeviceFunctions = t.Links.NetworkDeviceFunctions.ToStrings()
+	drive.NetworkDeviceFunctionsCount = t.Links.NetworkDeviceFunctionsCount
+	drive.Oem = t.Oem
 	drive.pcieFunctions = t.Links.PCIeFunctions.ToStrings()
 	drive.PCIeFunctionCount = t.Links.PCIeFunctionsCount
+	drive.softwareImages = t.Links.SoftwareImages.ToStrings()
+	drive.SoftwareImagesCount = t.Links.SoftwareImagesCount
+	drive.storage = t.Links.Storage.String()
+	drive.storagePools = t.Links.StoragePools.ToStrings()
+	drive.StoragePoolsCount = t.Links.StoragePoolsCount
+	drive.volumes = t.Links.Volumes.ToStrings()
+	drive.VolumesCount = t.Links.VolumeCount
+
 	drive.secureEraseTarget = t.Actions.SecureErase.Target
 
 	// This is a read/write object, so we need to save the raw object data for later
-	drive.rawData = b
+	drive.RawData = b
 
 	return nil
 }
@@ -293,7 +418,7 @@ func (drive *Drive) Update() error {
 	// Get a representation of the object's original state so we can find what
 	// to update.
 	original := new(Drive)
-	err := original.UnmarshalJSON(drive.rawData)
+	err := original.UnmarshalJSON(drive.RawData)
 	if err != nil {
 		return err
 	}
@@ -301,9 +426,12 @@ func (drive *Drive) Update() error {
 	readWriteFields := []string{
 		"AssetTag",
 		"HotspareReplacementMode",
-		"IndicatorLED",
+		"HotspareType",
+		"LocationIndicatorActive",
+		"ReadyToRemove",
 		"StatusIndicator",
 		"WriteCacheEnabled",
+		"IndicatorLED",
 	}
 
 	originalElement := reflect.ValueOf(original).Elem()
@@ -314,51 +442,12 @@ func (drive *Drive) Update() error {
 
 // GetDrive will get a Drive instance from the service.
 func GetDrive(c common.Client, uri string) (*Drive, error) {
-	var drive Drive
-	return &drive, drive.Get(c, uri, &drive)
+	return common.GetObject[Drive](c, uri)
 }
 
 // ListReferencedDrives gets the collection of Drives from a provided reference.
-func ListReferencedDrives(c common.Client, link string) ([]*Drive, error) { //nolint:dupl
-	var result []*Drive
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Drive
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		drive, err := GetDrive(c, link)
-		ch <- GetResult{Item: drive, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedDrives(c common.Client, link string) ([]*Drive, error) {
+	return common.GetCollectionObjects[Drive](c, link)
 }
 
 // Assembly gets the Assembly for this drive.
@@ -381,80 +470,33 @@ func (drive *Drive) Chassis() (*Chassis, error) {
 
 // Endpoints references the Endpoints that this drive is associated with.
 func (drive *Drive) Endpoints() ([]*Endpoint, error) {
-	var result []*Endpoint
+	return common.GetObjects[Endpoint](drive.GetClient(), drive.endpoints)
+}
 
-	collectionError := common.NewCollectionError()
-	for _, endpointLink := range drive.endpoints {
-		endpoint, err := GetEndpoint(drive.GetClient(), endpointLink)
-		if err != nil {
-			collectionError.Failures[endpointLink] = err
-		} else {
-			result = append(result, endpoint)
-		}
+// EnvironmentMetrics gets the environment metrics for this drive.
+// If no metrics are available the EnvironmentMetrics reference will be nil but
+// no error will be returned unless it was due to a problem fetching the data.
+func (drive *Drive) EnvironmentMetrics() (*EnvironmentMetrics, error) {
+	if drive.environmentMetrics == "" {
+		return nil, nil
 	}
 
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+	return GetEnvironmentMetrics(drive.GetClient(), drive.environmentMetrics)
 }
 
 // Volumes references the Volumes that this drive is associated with.
 func (drive *Drive) Volumes() ([]*Volume, error) {
-	var result []*Volume
-
-	collectionError := common.NewCollectionError()
-	for _, volumeLink := range drive.volumes {
-		volume, err := GetVolume(drive.GetClient(), volumeLink)
-		if err != nil {
-			collectionError.Failures[volumeLink] = err
-		} else {
-			result = append(result, volume)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+	return common.GetObjects[Volume](drive.GetClient(), drive.volumes)
 }
 
 // PCIeFunctions references the PCIeFunctions that this drive is associated with.
 func (drive *Drive) PCIeFunctions() ([]*PCIeFunction, error) {
-	var result []*PCIeFunction
-
-	collectionError := common.NewCollectionError()
-	for _, pcieFunctionLink := range drive.pcieFunctions {
-		pcieFunction, err := GetPCIeFunction(drive.GetClient(), pcieFunctionLink)
-		if err != nil {
-			collectionError.Failures[pcieFunctionLink] = err
-		} else {
-			result = append(result, pcieFunction)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+	return common.GetObjects[PCIeFunction](drive.GetClient(), drive.pcieFunctions)
 }
 
 // // StoragePools references the StoragePools that this drive is associated with.
 // func (drive *Drive) StoragePools() ([]*StoragePools, error) {
-// 	var result []*StoragePools
-
-// 	for _, storagePoolLink := range drive.storagePools {
-// 		storagePool, err := GetStoragePools(drive.Client, storagePoolLink)
-// 		if err != nil {
-// 			return result, err
-// 		}
-// 		result = append(result, storagePool)
-// 	}
-
-// 	return result, nil
+//	return common.GetObjects[StoragePools](drive.GetClient(), drive.storagePools)
 // }
 
 // SecureErase shall perform a secure erase of the drive.

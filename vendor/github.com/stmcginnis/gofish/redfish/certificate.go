@@ -168,13 +168,9 @@ func (certificate *Certificate) UnmarshalJSON(b []byte) error {
 		Oem           json.RawMessage
 	}
 	type actions struct {
-		RekeyCertificate struct {
-			Target string
-		} `json:"#Certificate.Rekey"`
-		RenewCertificate struct {
-			Target string
-		} `json:"#Certificate.Renew"`
-		Oem json.RawMessage // OEM actions will be stored here
+		RekeyCertificate common.ActionTarget `json:"#Certificate.Rekey"`
+		RenewCertificate common.ActionTarget `json:"#Certificate.Renew"`
+		Oem              json.RawMessage     // OEM actions will be stored here
 	}
 	var t struct {
 		temp
@@ -201,51 +197,12 @@ func (certificate *Certificate) UnmarshalJSON(b []byte) error {
 
 // GetCertificate will get a Certificate instance from the Redfish service.
 func GetCertificate(c common.Client, uri string) (*Certificate, error) {
-	var certificate Certificate
-	return &certificate, certificate.Get(c, uri, &certificate)
+	return common.GetObject[Certificate](c, uri)
 }
 
 // ListReferencedCertificates gets the Certificates collection.
-func ListReferencedCertificates(c common.Client, link string) ([]*Certificate, error) { //nolint:dupl
-	var result []*Certificate
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Certificate
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		certificate, err := GetCertificate(c, link)
-		ch <- GetResult{Item: certificate, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedCertificates(c common.Client, link string) ([]*Certificate, error) {
+	return common.GetCollectionObjects[Certificate](c, link)
 }
 
 func (certificate *Certificate) RekeyCertificate(challengePassword, keyCurveID, keyPairAlgorithm string, keyBitLength int) error {

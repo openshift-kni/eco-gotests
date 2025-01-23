@@ -7,6 +7,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 )
@@ -39,6 +40,11 @@ type Entity struct {
 // entity.
 func (e *Entity) SetClient(c Client) {
 	e.client = c
+}
+
+// SetETag sets the etag value of this API object.
+func (e *Entity) SetETag(tag string) {
+	e.etag = tag
 }
 
 // GetClient get the API client connection to use for accessing this
@@ -141,6 +147,22 @@ func (e *Entity) Post(uri string, payload interface{}) error {
 	return err
 }
 
+// PostWithResponse performs a Post request against the Redfish service with etag,
+// returning the response from the service.
+// Callers should make sure to call `resp.Body.Close()` when done with the response.
+func (e *Entity) PostWithResponse(uri string, payload interface{}) (*http.Response, error) {
+	header := make(map[string]string)
+	if e.etag != "" && !e.disableEtagMatch {
+		if e.stripEtagQuotes {
+			e.etag = strings.Trim(e.etag, "\"")
+		}
+
+		header["If-Match"] = e.etag
+	}
+
+	return e.client.PostWithHeaders(uri, payload, header)
+}
+
 type Filter string
 
 type FilterOption func(*Filter)
@@ -224,4 +246,76 @@ func getPatchPayloadFromUpdate(originalEntity, updatedEntity reflect.Value) (pay
 		}
 	}
 	return payload
+}
+
+type SchemaObject interface {
+	SetClient(Client)
+	SetETag(string)
+}
+
+// GetObject retrieves an API object from the service.
+func GetObject[T any, PT interface {
+	*T
+	SchemaObject
+}](c Client, uri string) (*T, error) {
+	resp, err := c.Get(uri)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	entity := PT(new(T))
+	err = json.NewDecoder(resp.Body).Decode(&entity)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Header["Etag"] != nil {
+		entity.SetETag(resp.Header["Etag"][0])
+	}
+	entity.SetClient(c)
+	return entity, nil
+}
+
+// GetObject retrieves an API object from the service.
+func GetObjects[T any, PT interface {
+	*T
+	SchemaObject
+}](c Client, uris []string) ([]*T, error) {
+	var result []*T
+	if len(uris) == 0 {
+		return result, nil
+	}
+
+	type GetResult struct {
+		Item  *T
+		Link  string
+		Error error
+	}
+
+	ch := make(chan GetResult)
+	collectionError := NewCollectionError()
+	get := func(link string) {
+		entity, err := GetObject[T, PT](c, link)
+		ch <- GetResult{Item: entity, Link: link, Error: err}
+	}
+
+	go func() {
+		CollectCollection(get, uris)
+		close(ch)
+	}()
+
+	for r := range ch {
+		if r.Error != nil {
+			collectionError.Failures[r.Link] = r.Error
+		} else {
+			result = append(result, r.Item)
+		}
+	}
+
+	if collectionError.Empty() {
+		return result, nil
+	}
+
+	return result, collectionError
 }

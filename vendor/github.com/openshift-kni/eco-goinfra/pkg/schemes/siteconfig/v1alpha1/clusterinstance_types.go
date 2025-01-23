@@ -536,6 +536,7 @@ type ClusterInstanceStatus struct {
 	Reinstall *ReinstallStatus `json:"reinstall,omitempty"`
 }
 
+//nolint:lll
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=clusterinstances,scope=Namespaced

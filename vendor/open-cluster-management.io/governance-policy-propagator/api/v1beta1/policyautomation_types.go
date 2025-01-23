@@ -44,8 +44,8 @@ type AutomationDef struct {
 	// +kubebuilder:validation:MinLength=1
 	TowerSecret string `json:"secret"`
 
-	// JobTTL sets the time to live for the Kubernetes AnsibleJob object after the Ansible job run has
-	// finished.
+	// JobTTL sets the time to live for the Kubernetes Job object after the Ansible job playbook run
+	// has finished.
 	JobTTL *int `json:"jobTtl,omitempty"`
 
 	// The maximum number of violating cluster contexts that are provided to the Ansible job as
@@ -53,7 +53,7 @@ type AutomationDef struct {
 	// is "1000".
 	//
 	// +kubebuilder:validation:Minimum=0
-	PolicyViolationsLimit *uint `json:"policyViolationsLimit,omitempty"`
+	PolicyViolationsLimit *uint16 `json:"policyViolationsLimit,omitempty"`
 }
 
 // PolicyAutomationSpec defines how and when automation is initiated for the referenced policy.
@@ -68,7 +68,7 @@ type PolicyAutomationSpec struct {
 	// "noncompliant".
 	//
 	// +kubebuilder:validation:Enum={noncompliant}
-	// +kubebuilder:validation:Required
+	// +kubebuilder:default=noncompliant
 	EventHook string `json:"eventHook,omitempty"`
 
 	// RescanAfter is reserved for future use and should not be set.

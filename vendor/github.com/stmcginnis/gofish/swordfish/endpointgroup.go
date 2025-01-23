@@ -130,52 +130,13 @@ func (endpointgroup *EndpointGroup) Update() error {
 
 // GetEndpointGroup will get a EndpointGroup instance from the service.
 func GetEndpointGroup(c common.Client, uri string) (*EndpointGroup, error) {
-	var endpointGroup EndpointGroup
-	return &endpointGroup, endpointGroup.Get(c, uri, &endpointGroup)
+	return common.GetObject[EndpointGroup](c, uri)
 }
 
 // ListReferencedEndpointGroups gets the collection of EndpointGroup from
 // a provided reference.
-func ListReferencedEndpointGroups(c common.Client, link string) ([]*EndpointGroup, error) { //nolint:dupl
-	var result []*EndpointGroup
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *EndpointGroup
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		endpointgroup, err := GetEndpointGroup(c, link)
-		ch <- GetResult{Item: endpointgroup, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedEndpointGroups(c common.Client, link string) ([]*EndpointGroup, error) {
+	return common.GetCollectionObjects[EndpointGroup](c, link)
 }
 
 // Endpoints gets the group's endpoints.

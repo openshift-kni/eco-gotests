@@ -6,7 +6,7 @@ package redfish
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"reflect"
 
 	"github.com/stmcginnis/gofish/common"
@@ -400,16 +400,10 @@ func (circuit *Circuit) UnmarshalJSON(b []byte) error {
 		SourceCircuit             common.Link
 	}
 	type actions struct {
-		BreakerControl struct {
-			Target string
-		} `json:"#Circuit.BreakerControl"`
-		PowerControl struct {
-			Target string
-		} `json:"#Circuit.PowerControl"`
-		ResetMetrics struct {
-			Target string
-		} `json:"#Circuit.ResetMetrics"`
-		Oem json.RawMessage // OEM actions will be stored here
+		BreakerControl common.ActionTarget `json:"#Circuit.BreakerControl"`
+		PowerControl   common.ActionTarget `json:"#Circuit.PowerControl"`
+		ResetMetrics   common.ActionTarget `json:"#Circuit.ResetMetrics"`
+		Oem            json.RawMessage     // OEM actions will be stored here
 	}
 	var t struct {
 		temp
@@ -447,8 +441,7 @@ func (circuit *Circuit) UnmarshalJSON(b []byte) error {
 
 // GetCircuit will get a Circuit instance from the Redfish service.
 func GetCircuit(c common.Client, uri string) (*Circuit, error) {
-	var circuit Circuit
-	return &circuit, circuit.Get(c, uri, &circuit)
+	return common.GetObject[Circuit](c, uri)
 }
 
 // Update commits updates to this object's properties to the running system.
@@ -487,7 +480,7 @@ func (circuit *Circuit) Update() error {
 // This action shall control the state of the circuit breaker or over-current protection device.
 func (circuit *Circuit) BreakerControl(powerState ActionPowerState) error {
 	if circuit.breakerControlTarget == "" {
-		return fmt.Errorf("BreakerControl is not supported") //nolint:golint
+		return errors.New("BreakerControl is not supported")
 	}
 
 	t := struct {
@@ -500,7 +493,7 @@ func (circuit *Circuit) BreakerControl(powerState ActionPowerState) error {
 // This action shall control the power state of the circuit.
 func (circuit *Circuit) PowerControl(powerState ActionPowerState) error {
 	if circuit.powerControlTarget == "" {
-		return fmt.Errorf("PowerControl is not supported") //nolint:golint
+		return errors.New("PowerControl is not supported")
 	}
 
 	t := struct {
@@ -513,7 +506,7 @@ func (circuit *Circuit) PowerControl(powerState ActionPowerState) error {
 // This action shall reset any time intervals or counted values for this circuit.
 func (circuit *Circuit) ResetMetrics() error {
 	if circuit.resetMetricsTarget == "" {
-		return fmt.Errorf("ResetMetrics is not supported") //nolint:golint
+		return errors.New("ResetMetrics is not supported")
 	}
 
 	return circuit.Post(circuit.resetMetricsTarget, nil)
@@ -521,46 +514,8 @@ func (circuit *Circuit) ResetMetrics() error {
 
 // ListReferencedCircuits gets the collection of Circuits from
 // a provided reference.
-func ListReferencedCircuits(c common.Client, link string) ([]*Circuit, error) { //nolint:dupl
-	var result []*Circuit
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Circuit
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		circuit, err := GetCircuit(c, link)
-		ch <- GetResult{Item: circuit, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedCircuits(c common.Client, link string) ([]*Circuit, error) {
+	return common.GetCollectionObjects[Circuit](c, link)
 }
 
 // BranchCircuit gets a resource that represents the branch circuit associated with this circuit.
@@ -575,23 +530,7 @@ func (circuit *Circuit) SourceCircuit() (*Circuit, error) {
 
 // DistributionCircuits gets the collection that contains the circuits powered by this circuit.
 func (circuit *Circuit) DistributionCircuits() ([]*Circuit, error) {
-	var result []*Circuit
-
-	collectionError := common.NewCollectionError()
-	for _, uri := range circuit.distributionCircuits {
-		ct, err := GetCircuit(circuit.GetClient(), uri)
-		if err != nil {
-			collectionError.Failures[uri] = err
-		} else {
-			result = append(result, ct)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+	return common.GetObjects[Circuit](circuit.GetClient(), circuit.distributionCircuits)
 }
 
 // TODO: outlets, power outlet

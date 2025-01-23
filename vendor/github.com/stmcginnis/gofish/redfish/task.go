@@ -63,7 +63,7 @@ type Payload struct {
 	// HTTPOperation shall contain the HTTP operation to
 	// execute for this Task.
 	HTTPOperation string `json:"HttpOperation"`
-	// JSONBody is used for this Task.
+	// JSONBody shall contain the JSON-formatted payload used for this task.
 	JSONBody string `json:"JsonBody"`
 	// TargetURI is used as the target for an HTTP operation.
 	TargetURI string `json:"TargetUri"`
@@ -86,6 +86,12 @@ type Task struct {
 	// returned normally. If this property is not specified when the Task is
 	// created, the default value shall be False.
 	HidePayload bool
+	Links       struct {
+		// CreatedResources are an array of resource IDs created by this task.
+		CreatedResources []string
+		// CreatedResourcesCount is the number of created resources.
+		CreatedResourcesCount int `json:"CreatedResources@odata.count"`
+	}
 	// Messages shall be an array of messages associated with the task.
 	Messages []common.Message
 	// Payload shall contain information detailing the HTTP and JSON payload
@@ -98,6 +104,9 @@ type Task struct {
 	PercentComplete int
 	// StartTime shall indicate the time the task was started.
 	StartTime string
+	// SubTasks shall contain a link to a resource collection of type TaskCollection. This property shall not be
+	// present if this resource represents a sub-task for a task.
+	subTasks []string
 	// TaskMonitor shall contain a URI to Task Monitor as defined in the Redfish
 	// Specification.
 	TaskMonitor string
@@ -137,6 +146,7 @@ func (task *Task) UnmarshalJSON(b []byte) error {
 	type temp Task
 	var t struct {
 		temp
+		SubTasks common.LinksCollection
 	}
 
 	err := json.Unmarshal(b, &t)
@@ -146,56 +156,24 @@ func (task *Task) UnmarshalJSON(b []byte) error {
 
 	// Extract the links to other entities for later
 	*task = Task(t.temp)
+	task.subTasks = t.SubTasks.ToStrings()
 
 	return nil
 }
 
+// SubTasks gets the sub-tasks for this task.
+// This property shall not be present if this resource represents a sub-task for a task.
+func (task *Task) SubTasks() ([]*Task, error) {
+	return common.GetObjects[Task](task.GetClient(), task.subTasks)
+}
+
 // GetTask will get a Task instance from the service.
 func GetTask(c common.Client, uri string) (*Task, error) {
-	var task Task
-	return &task, task.Get(c, uri, &task)
+	return common.GetObject[Task](c, uri)
 }
 
 // ListReferencedTasks gets the collection of Task from
 // a provided reference.
-func ListReferencedTasks(c common.Client, link string) ([]*Task, error) { //nolint:dupl
-	var result []*Task
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Task
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		task, err := GetTask(c, link)
-		ch <- GetResult{Item: task, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedTasks(c common.Client, link string) ([]*Task, error) {
+	return common.GetCollectionObjects[Task](c, link)
 }

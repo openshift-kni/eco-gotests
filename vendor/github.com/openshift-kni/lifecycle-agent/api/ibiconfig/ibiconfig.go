@@ -17,7 +17,7 @@ import (
 const ImageBasedInstallConfigVersion = "v1beta1"
 
 const (
-	defaultExtraPartitionLabel = "varlibcontainers"
+	defaultExtraPartitionLabel = "var-lib-containers"
 	sshPublicKeyRegex          = "^(ssh-rsa AAAAB3NzaC1yc2|ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNT|ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzOD|ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1Mj|ssh-ed25519 AAAAC3NzaC1lZDI1NTE5|ssh-dss AAAAB3NzaC1kc3)[0-9A-Za-z+/]+[=]{0,3}( .*)?$"
 )
 
@@ -118,6 +118,15 @@ type IBIPrepareConfig struct {
 	// As part of installation we will try to format the disk this flag will skip that step.
 	// Default is false
 	SkipDiskCleanup bool `json:"skipDiskCleanup,omitempty"`
+
+	// CoreosInstallerArgs additional arguments for coreos-install command that will be used while writing os to disk
+	// Example: in order not to override earlier created installation disk partition, you can provide
+	// coreosInstallerArgs:
+	// - "--save-partindex"
+	// - "6"
+	// this will save previously created partition number 6
+	// +optional
+	CoreosInstallerArgs []string `json:"coreosInstallerArgs,omitempty"`
 }
 
 type ImageDigestSource struct {
