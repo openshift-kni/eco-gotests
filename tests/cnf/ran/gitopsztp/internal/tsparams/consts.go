@@ -138,8 +138,6 @@ const (
 	CustomSourceCrPolicyName = "custom-source-cr-policy-config"
 	// CustomSourceCrName is the name of the custom source CR itself.
 	CustomSourceCrName = "custom-source-cr"
-	// CustomSourceTestNamespace is the test namespace for the custom source test.
-	CustomSourceTestNamespace = "default"
 	// CustomSourceStorageClass is the storage class used in the custom source test.
 	CustomSourceStorageClass = "example-storage-class"
 	// ImageRegistrySC is the storage class created by the policies app image registry tests.
