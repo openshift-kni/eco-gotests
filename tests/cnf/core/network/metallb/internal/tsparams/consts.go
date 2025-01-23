@@ -20,6 +20,25 @@ const (
 	// MlbAddressListError an error message when the ECO_CNF_CORE_NET_MLB_ADDR_LIST is incorrect.
 	MlbAddressListError = "An unexpected error occurred while " +
 		"determining the IP addresses from the ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable."
+	// BlockBGPBFDPorts adds an input rule blocking TCP & UDP ports for BGP and BFD.
+	// chain custom_chain_INPUT {
+	//    type filter hook input priority 1; policy accept;
+	//      tcp dport 179 drop
+	//      tcp sport 179 drop
+	//      udp dport 3784 drop
+	//      udp dport 4784 drop
+	//      udp sport 3784 drop
+	//      udp sport 4784 drop}
+	BlockBGPBFDPorts = `data:;base64,H4sIAAAAAAAC/4yMwaqDMBBF18lX3F+QJ/gefsHblC7atdhkiqGpMyTjQor/` +
+		`XhRctKBtdrnnzNH2EgmhJ4UbsvK9WRbrKZIStvDGjoc1rmtDv67Lp/k/HM+nmRkdhXANUSmhY74h9DIoJAVOQUcUNYRjcCNa50i0nm+` +
+		`cwAsnRVH9wScWi7c3K3lfGfxa+al+y09OuevkLzr5tbMiY6yZ7GSfAQAA//8b4LHSeAEAAA==`
+	// DeleteAllRules removes all the rules from the custom table.
+	//      table inet custom_table
+	//      delete table inet custom_table
+	//      table inet custom_table {
+	//      }
+	DeleteAllRules = `data:;base64, ` +
+		`H4sIAAAAAAAC/ypJTMpJVcjMSy1RSC4tLsnPjQeLcKWk5qSWpCrgksYhrlDNVcsFCAAA//9SII3uUwAAAA==`
 	// DaemonsFile represents FRR default daemon configuration template.
 	DaemonsFile = `
 	# This file tells the frr package which daemons to start.

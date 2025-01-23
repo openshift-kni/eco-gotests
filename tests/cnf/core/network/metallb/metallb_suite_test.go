@@ -7,9 +7,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/tests"
@@ -60,7 +62,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("Deleting test namespace")
-	err := testNS.Delete()
+	err := testNS.DeleteAndWait(netparam.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "error to delete test namespace")
 })
 
