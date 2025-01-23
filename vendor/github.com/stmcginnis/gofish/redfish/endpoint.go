@@ -26,51 +26,58 @@ const (
 type EntityType string
 
 const (
-	// StorageInitiatorEntityType means the entity is a storage initiator. The
-	// EntityLink property (if present) should be a Storage.StorageController
-	// entity.
+	// StorageInitiatorEntityType shall indicate the entity this endpoint represents is a storage initiator. The
+	// EntityLink property, if present, should be of type StorageController.
 	StorageInitiatorEntityType EntityType = "StorageInitiator"
-	// RootComplexEntityType means the entity is a PCI(e) root complex. The
-	// EntityLink property (if present) should be a
-	// ComputerSystem.ComputerSystem entity.
+	// RootComplexEntityType shall indicate the entity this endpoint represents is a PCIe root complex. The EntityLink
+	// property, if present, should be of type ComputerSystem.
 	RootComplexEntityType EntityType = "RootComplex"
-	// NetworkControllerEntityType means the entity is a network controller. The
-	// EntityLink property (if present) should be an
-	// EthernetInterface.EthernetInterface entity.
+	// NetworkControllerEntityType shall indicate the entity this endpoint represents is a network controller. The
+	// EntityLink property, if present, should be of type NetworkDeviceFunction or EthernetInterface.
 	NetworkControllerEntityType EntityType = "NetworkController"
-	// DriveEntityType means the entity is a disk drive. The EntityLink property
-	// (if present) should be a Drive.Drive entity.
+	// DriveEntityType shall indicate the entity this endpoint represents is a drive. The EntityLink property, if
+	// present, should be of type Drive.
 	DriveEntityType EntityType = "Drive"
-	// StorageExpanderEntityType means the entity is a storage expander. The
-	// EntityLink property (if present) should be a Chassis.Chassis entity.
+	// StorageExpanderEntityType shall indicate the entity this endpoint represents is a storage expander. The
+	// EntityLink property, if present, should be of type Chassis.
 	StorageExpanderEntityType EntityType = "StorageExpander"
-	// DisplayControllerEntityType means the entity is a display controller.
+	// DisplayControllerEntityType shall indicate the entity this endpoint represents is a display controller.
 	DisplayControllerEntityType EntityType = "DisplayController"
-	// BridgeEntityType means the entity is a PCI(e) bridge.
+	// BridgeEntityType shall indicate the entity this endpoint represents is a PCIe bridge.
 	BridgeEntityType EntityType = "Bridge"
-	// ProcessorEntityType means the entity is a processor device.
+	// ProcessorEntityType shall indicate the entity this endpoint represents is a processor. The EntityLink property,
+	// if present, should be of type Processor.
 	ProcessorEntityType EntityType = "Processor"
-	// VolumeEntityType means the entity is a volume. The EntityLink property (if
-	// present) should be a Volume.Volume entity.
+	// VolumeEntityType shall indicate the entity this endpoint represents is a volume. The EntityLink property, if
+	// present, should be of type Volume.
 	VolumeEntityType EntityType = "Volume"
-	// AccelerationFunctionEntityType means the entity is an acceleration function
-	// realized through a device, such as an FPGA. The EntityLink property
-	// (if present) should be a AccelerationFunction.AccelerationFunction
-	// entity.
+	// AccelerationFunctionEntityType shall indicate the entity this endpoint represents is an acceleration function.
+	// The EntityLink property, if present, should be of type AccelerationFunction.
 	AccelerationFunctionEntityType EntityType = "AccelerationFunction"
-	// MediaControllerEntityType means the entity is a media controller. The
-	// EntityLink property, if present, should be a MediaController type.
+	// MediaControllerEntityType shall indicate the entity this endpoint represents is a media controller. The
+	// EntityLink property, if present, should be of type MediaController.
 	MediaControllerEntityType EntityType = "MediaController"
-	// MemoryChunkEntityType means the entity is a memory chunk. The EntityLink
-	// property, if present, should be a MemoryChunk type.
+	// MemoryChunkEntityType shall indicate the entity this endpoint represents is a memory chunk. The EntityLink
+	// property, if present, should be of type MemoryChunk.
 	MemoryChunkEntityType EntityType = "MemoryChunk"
-	// SwitchEntityType means the entity is a switch, not an expander. Use
-	// `Expander` for expanders. The EntityLink property, if present, should
-	// be a Switch type.
+	// SwitchEntityType shall indicate the entity this endpoint represents is a switch and not an expander. The
+	// EntityLink property, if present, should be of type Switch.
 	SwitchEntityType EntityType = "Switch"
-	// FabricBridgeEntityType means the entity is a fabric bridge. The EntityLink
-	// property, if present, should be a FabricAdapter type.
+	// FabricBridgeEntityType shall indicate the entity this endpoint represents is a fabric bridge. The EntityLink
+	// property, if present, should be of type FabricAdapter.
 	FabricBridgeEntityType EntityType = "FabricBridge"
+	// ManagerEntityType shall indicate the entity this endpoint represents is a manager. The EntityLink property, if
+	// present, should be of type Manager.
+	ManagerEntityType EntityType = "Manager"
+	// StorageSubsystemEntityType shall indicate the entity this endpoint represents is a storage subsystem. The
+	// EntityLink property, if present, should be of type Storage.
+	StorageSubsystemEntityType EntityType = "StorageSubsystem"
+	// MemoryEntityType shall indicate the entity this endpoint represents is a memory device. The EntityLink property,
+	// if present, should be of type Memory.
+	MemoryEntityType EntityType = "Memory"
+	// CXLDeviceEntityType shall indicate the entity this endpoint represents is a CXL logical device. The EntityLink
+	// property, if present, should be of type CXLLogicalDevice.
+	CXLDeviceEntityType EntityType = "CXLDevice"
 )
 
 // ConnectedEntity shall represent a remote resource that is
@@ -121,8 +128,6 @@ type Endpoint struct {
 	// Identifiers shall be unique in the context of other endpoints that can
 	// reached over the connected network.
 	Identifiers []common.Identifier
-	// Name is the name of the resource or array element.
-	Name string
 	// PciID shall be the PCI ID of the endpoint.
 	PciID PciID `json:"PciId"`
 	// Redundancy is used to show how this endpoint is grouped with other
@@ -133,6 +138,7 @@ type Endpoint struct {
 	// Status shall contain any status or health properties
 	// of the resource.
 	Status common.Status
+
 	// MutuallyExclusiveEndpoints shall be an array of references of type
 	// Endpoint that cannot be used in a zone if this endpoint is used in a zone.
 	mutuallyExclusiveEndpoints []string
@@ -150,13 +156,13 @@ type Endpoint struct {
 	PortsCount int
 	// addressPools shall contain an array of links to
 	// resources of type AddressPool with which this endpoint is associated.
-	// addressPools []string
+	addressPools []string
 	// AddressPoolsCount is the number of AddressPools.
 	AddressPoolsCount int
 	// connectedPorts shall contain an array of links to
 	// resources of type Port that represent ports associated with this
 	// endpoint.
-	// connectedPorts []string
+	connectedPorts []string
 	// ConnectedPortCount is the number of ConnectedPorts.
 	ConnectedPortsCount int
 }
@@ -205,6 +211,10 @@ func (endpoint *Endpoint) UnmarshalJSON(b []byte) error {
 
 	// Extract the links to other entities for later
 	*endpoint = Endpoint(t.temp)
+	endpoint.addressPools = t.Links.AddressPools.ToStrings()
+	endpoint.AddressPoolsCount = t.Links.AddressPoolsCount
+	endpoint.connectedPorts = t.Links.ConnectedPorts.ToStrings()
+	endpoint.ConnectedPortsCount = t.Links.ConnectedPortsCount
 	endpoint.mutuallyExclusiveEndpoints = t.Links.MutuallyExclusiveEndpoints.ToStrings()
 	endpoint.MutuallyExclusiveEndpointsCount = t.Links.MutuallyExclusiveEndpointsCount
 	endpoint.networkDeviceFunction = t.Links.NetworkDeviceFunction.ToStrings()
@@ -217,58 +227,18 @@ func (endpoint *Endpoint) UnmarshalJSON(b []byte) error {
 
 // GetEndpoint will get a Endpoint instance from the service.
 func GetEndpoint(c common.Client, uri string) (*Endpoint, error) {
-	var endpoint Endpoint
-	return &endpoint, endpoint.Get(c, uri, &endpoint)
+	return common.GetObject[Endpoint](c, uri)
 }
 
 // ListReferencedEndpoints gets the collection of Endpoint from
 // a provided reference.
-func ListReferencedEndpoints(c common.Client, link string) ([]*Endpoint, error) { //nolint:dupl
-	var result []*Endpoint
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Endpoint
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		endpoint, err := GetEndpoint(c, link)
-		ch <- GetResult{Item: endpoint, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedEndpoints(c common.Client, link string) ([]*Endpoint, error) {
+	return common.GetCollectionObjects[Endpoint](c, link)
 }
 
 // GCID shall contain the Gen-Z Core Specification-defined Global
 // Component ID.
 type GCID struct {
-
 	// CID shall contain the 12 bit component identifier
 	// portion of the GCID of the entity.
 	CID string
@@ -279,7 +249,6 @@ type GCID struct {
 
 // GenZ shall contain the Gen-Z related properties for an entity.
 type GenZ struct {
-
 	// AccessKey shall contain the Gen-Z Core Specification-
 	// defined 6 bit Access Key for the entity.
 	AccessKey string

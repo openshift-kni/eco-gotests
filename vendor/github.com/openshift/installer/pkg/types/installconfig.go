@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	configv1 "github.com/openshift/api/config/v1"
+	features "github.com/openshift/api/features"
 	"github.com/openshift/installer/pkg/ipnet"
-	"github.com/openshift/installer/pkg/types/alibabacloud"
 	"github.com/openshift/installer/pkg/types/aws"
 	"github.com/openshift/installer/pkg/types/azure"
 	"github.com/openshift/installer/pkg/types/baremetal"
+	"github.com/openshift/installer/pkg/types/external"
+	"github.com/openshift/installer/pkg/types/featuregates"
 	"github.com/openshift/installer/pkg/types/gcp"
 	"github.com/openshift/installer/pkg/types/ibmcloud"
-	"github.com/openshift/installer/pkg/types/libvirt"
 	"github.com/openshift/installer/pkg/types/none"
 	"github.com/openshift/installer/pkg/types/nutanix"
 	"github.com/openshift/installer/pkg/types/openstack"
@@ -35,14 +38,13 @@ var (
 	// platform names in alphabetical order. This is the list of
 	// platforms presented to the user in the interactive wizard.
 	PlatformNames = []string{
-		alibabacloud.Name,
 		aws.Name,
 		azure.Name,
+		baremetal.Name,
 		gcp.Name,
 		ibmcloud.Name,
 		nutanix.Name,
 		openstack.Name,
-		ovirt.Name,
 		powervs.Name,
 		vsphere.Name,
 	}
@@ -50,7 +52,7 @@ var (
 	// hidden-but-supported platform names. This list isn't presented
 	// to the user in the interactive wizard.
 	HiddenPlatformNames = []string{
-		baremetal.Name,
+		external.Name,
 		none.Name,
 	}
 
@@ -69,6 +71,9 @@ const (
 	ExternalPublishingStrategy PublishingStrategy = "External"
 	// InternalPublishingStrategy exposes the endpoints for the cluster to the private network only.
 	InternalPublishingStrategy PublishingStrategy = "Internal"
+	// MixedPublishingStrategy allows for the api server and the ingress to be configured individually for exposure to
+	// private network or Internet.
+	MixedPublishingStrategy PublishingStrategy = "Mixed"
 )
 
 // PolicyType is for usage polices that are applied to additionalTrustBundle.
@@ -138,8 +143,13 @@ type InstallConfig struct {
 	Proxy *Proxy `json:"proxy,omitempty"`
 
 	// ImageContentSources lists sources/repositories for the release-image content.
+	// The field is deprecated. Please use imageDigestSources.
 	// +optional
-	ImageContentSources []ImageContentSource `json:"imageContentSources,omitempty"`
+	DeprecatedImageContentSources []ImageContentSource `json:"imageContentSources,omitempty"`
+
+	// ImageDigestSources lists sources/repositories for the release-image content.
+	// +optional
+	ImageDigestSources []ImageDigestSource `json:"imageDigestSources,omitempty"`
 
 	// Publish controls how the user facing endpoints of the cluster like the Kubernetes API, OpenShift routes etc. are exposed.
 	// When no strategy is specified, the strategy is "External".
@@ -147,6 +157,9 @@ type InstallConfig struct {
 	// +kubebuilder:default=External
 	// +optional
 	Publish PublishingStrategy `json:"publish,omitempty"`
+
+	// OperatorPublishingStrategy controls the visibility of ingress and apiserver. Defaults to public.
+	OperatorPublishingStrategy *OperatorPublishingStrategy `json:"operatorPublishingStrategy,omitempty"`
 
 	// FIPS configures https://www.nist.gov/itl/fips-general-information
 	//
@@ -158,7 +171,6 @@ type InstallConfig struct {
 	// When this field is set the cluster will be flagged for CPU Partitioning allowing users to segregate workloads to
 	// specific CPU Sets. This does not make any decisions on workloads it only configures the nodes to allow CPU Partitioning.
 	// The "AllNodes" value will setup all nodes for CPU Partitioning, the default is "None".
-	// This feature is currently in TechPreview.
 	//
 	// +kubebuilder:default="None"
 	// +optional
@@ -182,7 +194,6 @@ type InstallConfig struct {
 	// AzureStack: "Manual"
 	// GCP: "Mint", "Passthrough", "Manual"
 	// IBMCloud: "Manual"
-	// AlibabaCloud: "Manual"
 	// PowerVS: "Manual"
 	// Nutanix: "Manual"
 	// +optional
@@ -197,8 +208,17 @@ type InstallConfig struct {
 	Capabilities *Capabilities `json:"capabilities,omitempty"`
 
 	// FeatureSet enables features that are not part of the default feature set.
+	// Valid values are "Default", "TechPreviewNoUpgrade" and "CustomNoUpgrade".
+	// When omitted, the "Default" feature set is used.
 	// +optional
 	FeatureSet configv1.FeatureSet `json:"featureSet,omitempty"`
+
+	// FeatureGates enables a set of custom feature gates.
+	// May only be used in conjunction with FeatureSet "CustomNoUpgrade".
+	// Features may be enabled or disabled by providing a true or false value for the feature gate.
+	// E.g. "featureGates": ["FeatureGate1=true", "FeatureGate2=false"].
+	// +optional
+	FeatureGates []string `json:"featureGates,omitempty"`
 }
 
 // ClusterDomain returns the DNS domain that all records for a cluster must belong to.
@@ -241,10 +261,6 @@ const (
 // Platform is the configuration for the specific platform upon which to perform
 // the installation. Only one of the platform configuration should be set.
 type Platform struct {
-	// AlibabaCloud is the configuration used when installing on Alibaba Cloud.
-	// +optional
-	AlibabaCloud *alibabacloud.Platform `json:"alibabacloud,omitempty"`
-
 	// AWS is the configuration used when installing on AWS.
 	// +optional
 	AWS *aws.Platform `json:"aws,omitempty"`
@@ -265,13 +281,13 @@ type Platform struct {
 	// +optional
 	IBMCloud *ibmcloud.Platform `json:"ibmcloud,omitempty"`
 
-	// Libvirt is the configuration used when installing on libvirt.
-	// +optional
-	Libvirt *libvirt.Platform `json:"libvirt,omitempty"`
-
 	// None is the empty configuration used when installing on an unsupported
 	// platform.
 	None *none.Platform `json:"none,omitempty"`
+
+	// External is the configuration used when installing on
+	// an external cloud provider.
+	External *external.Platform `json:"external,omitempty"`
 
 	// OpenStack is the configuration used when installing on OpenStack.
 	// +optional
@@ -294,6 +310,22 @@ type Platform struct {
 	Nutanix *nutanix.Platform `json:"nutanix,omitempty"`
 }
 
+// OperatorPublishingStrategy is used to control the visibility of the components which can be used to have a mix of public
+// and private resources.
+type OperatorPublishingStrategy struct {
+	// Ingress sets the visibility of the created dns resources.
+	// +kubebuilder:validation:Enum="";External;Internal
+	// +kubebuilder:default=External
+	// +optional
+	Ingress string `json:"ingress,omitempty"`
+
+	// APIServer sets the visibility of the load balancers servicing the APIserver.
+	// +kubebuilder:validation:Enum="";External;Internal
+	// +kubebuilder:default=External
+	// +optional
+	APIServer string `json:"apiserver,omitempty"`
+}
+
 // Name returns a string representation of the platform (e.g. "aws" if
 // AWS is non-nil).  It returns an empty string if no platform is
 // configured.
@@ -301,8 +333,6 @@ func (p *Platform) Name() string {
 	switch {
 	case p == nil:
 		return ""
-	case p.AlibabaCloud != nil:
-		return alibabacloud.Name
 	case p.AWS != nil:
 		return aws.Name
 	case p.Azure != nil:
@@ -313,10 +343,10 @@ func (p *Platform) Name() string {
 		return gcp.Name
 	case p.IBMCloud != nil:
 		return ibmcloud.Name
-	case p.Libvirt != nil:
-		return libvirt.Name
 	case p.None != nil:
 		return none.Name
+	case p.External != nil:
+		return external.Name
 	case p.OpenStack != nil:
 		return openstack.Name
 	case p.VSphere != nil:
@@ -344,8 +374,7 @@ type Networking struct {
 	// MachineNetwork is the list of IP address pools for machines.
 	// This field replaces MachineCIDR, and if set MachineCIDR must
 	// be empty or match the first entry in the list.
-	// Default is 10.0.0.0/16 for all platforms other than libvirt and Power VS.
-	// For libvirt, the default is 192.168.126.0/24.
+	// Default is 10.0.0.0/16 for all platforms other than Power VS.
 	// For Power VS, the default is 192.168.0.0/24.
 	//
 	// +optional
@@ -364,6 +393,13 @@ type Networking struct {
 	// +kubebuilder:validation:MaxItems=1
 	// +optional
 	ServiceNetwork []ipnet.IPNet `json:"serviceNetwork,omitempty"`
+
+	// ClusterNetworkMTU is the Maximum Transmit (MTU) Unit size in bytes to allocate to the cluster network.
+	// For example, 1200 would set the MTU of the entire overlay network. If the deployment does
+	// not require changes in the network plugin, leave it unset and the MTU will be calculated
+	// automatically based on the host network MTU.
+	// +optional
+	ClusterNetworkMTU uint32 `json:"clusterNetworkMTU,omitempty"`
 
 	// Deprecated types, scheduled to be removed
 
@@ -427,7 +463,18 @@ type Proxy struct {
 }
 
 // ImageContentSource defines a list of sources/repositories that can be used to pull content.
+// The field is deprecated. Please use imageDigestSources.
 type ImageContentSource struct {
+	// Source is the repository that users refer to, e.g. in image pull specifications.
+	Source string `json:"source"`
+
+	// Mirrors is one or more repositories that may also contain the same images.
+	// +optional
+	Mirrors []string `json:"mirrors,omitempty"`
+}
+
+// ImageDigestSource defines a list of sources/repositories that can be used to pull content.
+type ImageDigestSource struct {
 	// Source is the repository that users refer to, e.g. in image pull specifications.
 	Source string `json:"source"`
 
@@ -474,6 +521,32 @@ type Capabilities struct {
 	AdditionalEnabledCapabilities []configv1.ClusterVersionCapability `json:"additionalEnabledCapabilities,omitempty"`
 }
 
+// GetEnabledCapabilities returns a set of enabled ClusterVersionCapabilities.
+func (c *InstallConfig) GetEnabledCapabilities() sets.Set[configv1.ClusterVersionCapability] {
+	enabledCaps := sets.Set[configv1.ClusterVersionCapability]{}
+	if c.Capabilities == nil || c.Capabilities.BaselineCapabilitySet == "" {
+		// when Capabilities and/or BaselineCapabilitySet is not specified, default is vCurrent
+		baseSet := configv1.ClusterVersionCapabilitySets[configv1.ClusterVersionCapabilitySetCurrent]
+		for _, cap := range baseSet {
+			enabledCaps.Insert(cap)
+		}
+	}
+	if c.Capabilities != nil {
+		if c.Capabilities.BaselineCapabilitySet != "" {
+			baseSet := configv1.ClusterVersionCapabilitySets[c.Capabilities.BaselineCapabilitySet]
+			for _, cap := range baseSet {
+				enabledCaps.Insert(cap)
+			}
+		}
+		if c.Capabilities.AdditionalEnabledCapabilities != nil {
+			for _, cap := range c.Capabilities.AdditionalEnabledCapabilities {
+				enabledCaps.Insert(cap)
+			}
+		}
+	}
+	return enabledCaps
+}
+
 // WorkerMachinePool retrieves the worker MachinePool from InstallConfig.Compute
 func (c *InstallConfig) WorkerMachinePool() *MachinePool {
 	for _, machinePool := range c.Compute {
@@ -484,4 +557,69 @@ func (c *InstallConfig) WorkerMachinePool() *MachinePool {
 	}
 
 	return nil
+}
+
+// EnabledFeatureGates returns a FeatureGate that can be checked (using the Enabled function)
+// to determine if a feature gate is enabled in the current feature sets.
+func (c *InstallConfig) EnabledFeatureGates() featuregates.FeatureGate {
+	var customFS *configv1.CustomFeatureGates
+
+	if c.FeatureSet == configv1.CustomNoUpgrade {
+		customFS = featuregates.GenerateCustomFeatures(c.FeatureGates)
+	}
+
+	clusterProfile := GetClusterProfileName()
+	featureSets, ok := features.AllFeatureSets()[clusterProfile]
+	if !ok {
+		logrus.Warnf("no feature sets for cluster profile %q", clusterProfile)
+	}
+	fg := featuregates.FeatureGateFromFeatureSets(featureSets, c.FeatureSet, customFS)
+
+	return fg
+}
+
+// ClusterAPIFeatureGateEnabled checks whether feature gates enabling
+// cluster api installs are enabled.
+func ClusterAPIFeatureGateEnabled(platform string, fgs featuregates.FeatureGate) bool {
+	// FeatureGateClusterAPIInstall enables for all platforms.
+	if fgs.Enabled(features.FeatureGateClusterAPIInstall) {
+		return true
+	}
+
+	// Check if CAPI install is enabled for individual platforms.
+	switch platform {
+	case aws.Name, azure.Name, gcp.Name, nutanix.Name, openstack.Name, powervs.Name, vsphere.Name:
+		return true
+	case azure.StackTerraformName, azure.StackCloud.Name():
+		return false
+	case ibmcloud.Name:
+		return fgs.Enabled(features.FeatureGateClusterAPIInstallIBMCloud)
+	default:
+		return false
+	}
+}
+
+// MultiArchFeatureGateEnabled checks whether feature gate enabling multi-arch clusters is enabled.
+func MultiArchFeatureGateEnabled(platform string, fgs featuregates.FeatureGate) bool {
+	switch platform {
+	case aws.Name:
+		return fgs.Enabled(features.FeatureGateMultiArchInstallAWS)
+	case gcp.Name:
+		return fgs.Enabled(features.FeatureGateMultiArchInstallGCP)
+	default:
+		return false
+	}
+}
+
+// PublicAPI indicates whether the API load balancer should be public
+// by inspecting the cluster and operator publishing strategies.
+func (c *InstallConfig) PublicAPI() bool {
+	if c.Publish == ExternalPublishingStrategy {
+		return true
+	}
+
+	if op := c.OperatorPublishingStrategy; op != nil && strings.EqualFold(op.APIServer, "External") {
+		return true
+	}
+	return false
 }

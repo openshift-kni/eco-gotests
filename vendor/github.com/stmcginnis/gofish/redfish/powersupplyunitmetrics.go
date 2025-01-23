@@ -84,10 +84,8 @@ func (metrics *PowerSupplyUnitMetrics) UnmarshalJSON(b []byte) error {
 	type temp PowerSupplyUnitMetrics
 
 	type actions struct {
-		ResetMetrics struct {
-			Target string
-		} `json:"#PowerSupplyMetrics.ResetMetrics"`
-		Oem json.RawMessage // OEM actions will be stored here
+		ResetMetrics common.ActionTarget `json:"#PowerSupplyMetrics.ResetMetrics"`
+		Oem          json.RawMessage     // OEM actions will be stored here
 	}
 	var t struct {
 		temp
@@ -108,8 +106,7 @@ func (metrics *PowerSupplyUnitMetrics) UnmarshalJSON(b []byte) error {
 
 // GetPowerSupplyUnitMetrics will get a PowerSupplyMetrics instance from the Redfish service.
 func GetPowerSupplyUnitMetrics(c common.Client, uri string) (*PowerSupplyUnitMetrics, error) {
-	var metrics PowerSupplyUnitMetrics
-	return &metrics, metrics.Get(c, uri, &metrics)
+	return common.GetObject[PowerSupplyUnitMetrics](c, uri)
 }
 
 // This action resets the summary metrics related to this equipment.

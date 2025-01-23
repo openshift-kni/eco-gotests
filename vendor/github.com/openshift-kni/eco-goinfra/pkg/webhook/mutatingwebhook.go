@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	"golang.org/x/net/context"
 
 	admregv1 "k8s.io/api/admissionregistration/v1"
@@ -24,15 +25,28 @@ type MutatingConfigurationBuilder struct {
 	// errorMsg is processed before MutatingWebhookConfiguration object is created.
 	errorMsg string
 	// apiClient opens api connection to the cluster.
-	apiClient *clients.Settings
+	apiClient goclient.Client
 }
 
 // PullMutatingConfiguration pulls existing MutatingWebhookConfiguration from cluster.
 func PullMutatingConfiguration(apiClient *clients.Settings, name string) (*MutatingConfigurationBuilder, error) {
 	glog.V(100).Infof("Pulling existing MutatingWebhookConfiguration name %s from cluster", name)
 
+	if apiClient == nil {
+		glog.V(100).Infof("The MutatingWebhookConfiguration apiClient is nil")
+
+		return nil, fmt.Errorf("mutatingWebhookConfiguration 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(admregv1.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add admissionregistration v1 scheme to client schemes")
+
+		return nil, err
+	}
+
 	builder := &MutatingConfigurationBuilder{
-		apiClient: apiClient,
+		apiClient: apiClient.Client,
 		Definition: &admregv1.MutatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -43,11 +57,11 @@ func PullMutatingConfiguration(apiClient *clients.Settings, name string) (*Mutat
 	if name == "" {
 		glog.V(100).Infof("The name of the MutatingWebhookConfiguration is empty")
 
-		return builder, fmt.Errorf("MutatingWebhookConfiguration 'name' cannot be empty")
+		return nil, fmt.Errorf("mutatingWebhookConfiguration 'name' cannot be empty")
 	}
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("MutatingWebhook object %s does not exist", name)
+		return nil, fmt.Errorf("mutatingWebhookConfiguration object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object
@@ -70,7 +84,7 @@ func (builder *MutatingConfigurationBuilder) Exists() bool {
 // Get returns MutatingWebhookConfiguration object.
 func (builder *MutatingConfigurationBuilder) Get() (*admregv1.MutatingWebhookConfiguration, error) {
 	if valid, err := builder.validate(); !valid {
-		return &admregv1.MutatingWebhookConfiguration{}, err
+		return nil, err
 	}
 
 	mutatingWebhookConfiguration := &admregv1.MutatingWebhookConfiguration{}
@@ -79,9 +93,9 @@ func (builder *MutatingConfigurationBuilder) Get() (*admregv1.MutatingWebhookCon
 	}, mutatingWebhookConfiguration)
 
 	if err != nil {
-		glog.V(100).Infof("Failed to get MutatingConfigurationBuilder %s: %v", builder.Definition.Name, err)
+		glog.V(100).Infof("Failed to get MutatingWebhookConfiguration %s: %v", builder.Definition.Name, err)
 
-		return &admregv1.MutatingWebhookConfiguration{}, err
+		return nil, err
 	}
 
 	return mutatingWebhookConfiguration, err
@@ -105,9 +119,8 @@ func (builder *MutatingConfigurationBuilder) Delete() (*MutatingConfigurationBui
 	}
 
 	err := builder.apiClient.Delete(context.TODO(), builder.Definition)
-
 	if err != nil {
-		return builder, fmt.Errorf("can not delete MutatingWebhookConfiguration: %w", err)
+		return builder, err
 	}
 
 	builder.Object = nil
@@ -124,10 +137,20 @@ func (builder *MutatingConfigurationBuilder) Update() (*MutatingConfigurationBui
 
 	glog.V(100).Infof("Updating MutatingWebhookConfiguration %s", builder.Definition.Name)
 
-	err := builder.apiClient.Update(context.TODO(), builder.Definition)
-	if err == nil {
-		builder.Object = builder.Definition
+	if !builder.Exists() {
+		glog.V(100).Infof("Cannot update MutatingWebhookConfiguration %s as it does not exist", builder.Definition.Name)
+
+		return builder, fmt.Errorf("cannot update non-existent mutatingWebhookConfiguration")
 	}
+
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
 
 	return builder, err
 }
@@ -135,12 +158,18 @@ func (builder *MutatingConfigurationBuilder) Update() (*MutatingConfigurationBui
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *MutatingConfigurationBuilder) validate() (bool, error) {
-	resourceCRD := "MutatingWebhookConfiguration"
+	resourceCRD := "mutatingWebhookConfiguration"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
 
 		return false, fmt.Errorf("error: received nil %s builder", resourceCRD)
+	}
+
+	if builder.Definition == nil {
+		glog.V(100).Infof("The %s is undefined", resourceCRD)
+
+		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {

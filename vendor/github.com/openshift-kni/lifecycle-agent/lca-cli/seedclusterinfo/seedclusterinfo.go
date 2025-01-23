@@ -87,6 +87,13 @@ type SeedClusterInfo struct {
 
 	// The target for the /var/lib/containers mountpoint, if setup.
 	ContainerStorageMountpointTarget string `json:"container_storage_mountpoint_target,omitempty"`
+
+	// IngressCertificateCN is the Subject.CN of the ingress router-ca signer
+	// certificate, which is of the form `ingress-operator@<unix-timestampt>`.
+	// Without this recert will not be able to sign the ingress certificate with
+	// the correct ingress private key, because it looks for strict equality in
+	// the certificate's Subject.CN.
+	IngressCertificateCN string `json:"ingress_certificate_cn,omitempty"`
 }
 
 type AdditionalTrustBundle struct {
@@ -104,6 +111,7 @@ func NewFromClusterInfo(clusterInfo *utils.ClusterInfo,
 	hasFIPS bool,
 	additionalTrustBundle *AdditionalTrustBundle,
 	containerStorageMountpointTarget string,
+	ingressCertificateCN string,
 ) *SeedClusterInfo {
 	return &SeedClusterInfo{
 		SeedClusterOCPVersion:    clusterInfo.OCPVersion,
@@ -119,6 +127,8 @@ func NewFromClusterInfo(clusterInfo *utils.ClusterInfo,
 		AdditionalTrustBundle:    additionalTrustBundle,
 
 		ContainerStorageMountpointTarget: containerStorageMountpointTarget,
+
+		IngressCertificateCN: ingressCertificateCN,
 	}
 }
 

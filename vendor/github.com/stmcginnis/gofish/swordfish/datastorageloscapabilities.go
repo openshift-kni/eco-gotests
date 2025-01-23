@@ -130,50 +130,11 @@ func (datastorageloscapabilities *DataStorageLoSCapabilities) Update() error {
 
 // GetDataStorageLoSCapabilities will get a DataStorageLoSCapabilities instance from the service.
 func GetDataStorageLoSCapabilities(c common.Client, uri string) (*DataStorageLoSCapabilities, error) {
-	var dataStorageLoSCapabilities DataStorageLoSCapabilities
-	return &dataStorageLoSCapabilities, dataStorageLoSCapabilities.Get(c, uri, &dataStorageLoSCapabilities)
+	return common.GetObject[DataStorageLoSCapabilities](c, uri)
 }
 
 // ListReferencedDataStorageLoSCapabilities gets the collection of DataStorageLoSCapabilities from
 // a provided reference.
-func ListReferencedDataStorageLoSCapabilities(c common.Client, link string) ([]*DataStorageLoSCapabilities, error) { //nolint:dupl
-	var result []*DataStorageLoSCapabilities
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *DataStorageLoSCapabilities
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		datastorageloscapabilities, err := GetDataStorageLoSCapabilities(c, link)
-		ch <- GetResult{Item: datastorageloscapabilities, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedDataStorageLoSCapabilities(c common.Client, link string) ([]*DataStorageLoSCapabilities, error) {
+	return common.GetCollectionObjects[DataStorageLoSCapabilities](c, link)
 }

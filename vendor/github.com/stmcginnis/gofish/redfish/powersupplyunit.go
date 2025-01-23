@@ -6,7 +6,7 @@ package redfish
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"reflect"
 
 	"github.com/stmcginnis/gofish/common"
@@ -136,12 +136,12 @@ type PowerSupplyUnit struct {
 
 	// Links section
 	// Deprecated (v1.4): A link to the outlet connected to this power supply.
-	outlet string
-	// An array of links to the chassis that are directly powered by this power supply.
-	poweringChassis      []string
+	outlet          string
+	poweringChassis []string
+	// PoweringChassisCount is the number of chassis that are directly powered by this power supply.
 	PoweringChassisCount int
-	// An array of links to the outlets that provide power to this power supply.
-	powerOutlets      []string
+	powerOutlets         []string
+	// PowerOutletsCount is the number of outlets that provide power to this power supply.
 	PowerOutletsCount int
 	// OemLinks are all OEM data under link section
 	OemLinks json.RawMessage
@@ -169,10 +169,8 @@ func (powerSupplyUnit *PowerSupplyUnit) UnmarshalJSON(b []byte) error {
 		Oem                  json.RawMessage
 	}
 	type actions struct {
-		Reset struct {
-			Target string
-		} `json:"#PowerSupply.Reset"`
-		Oem json.RawMessage // OEM actions will be stored here
+		Reset common.ActionTarget `json:"#PowerSupply.Reset"`
+		Oem   json.RawMessage     // OEM actions will be stored here
 	}
 	var t struct {
 		temp
@@ -209,12 +207,6 @@ func (powerSupplyUnit *PowerSupplyUnit) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// GetPowerSupplyUnit will get a PowerSupplyUnit instance from the Redfish service.
-func GetPowerSupplyUnit(c common.Client, uri string) (*PowerSupplyUnit, error) {
-	var powerSupplyUnit PowerSupplyUnit
-	return &powerSupplyUnit, powerSupplyUnit.Get(c, uri, &powerSupplyUnit)
-}
-
 // Update commits updates to this object's properties to the running system.
 func (powerSupplyUnit *PowerSupplyUnit) Update() error {
 	// Get a representation of the object's original state so we can find what
@@ -237,11 +229,22 @@ func (powerSupplyUnit *PowerSupplyUnit) Update() error {
 	return powerSupplyUnit.Entity.Update(originalElement, currentElement, readWriteFields)
 }
 
+// GetPowerSupplyUnit will get a PowerSupplyUnit instance from the Redfish service.
+func GetPowerSupplyUnit(c common.Client, uri string) (*PowerSupplyUnit, error) {
+	return common.GetObject[PowerSupplyUnit](c, uri)
+}
+
+// ListReferencedPowerSupplyUnits gets the collection of PowerSupplies from
+// a provided reference.
+func ListReferencedPowerSupplyUnits(c common.Client, link string) ([]*PowerSupplyUnit, error) {
+	return common.GetCollectionObjects[PowerSupplyUnit](c, link)
+}
+
 // This action shall reset a power supply. A GracefulRestart ResetType shall reset the power supply
 // but shall not affect the power output. A ForceRestart ResetType can affect the power supply output.
 func (powerSupplyUnit *PowerSupplyUnit) Reset(resetType ResetType) error {
 	if powerSupplyUnit.resetTarget == "" {
-		return fmt.Errorf("Reset is not supported") //nolint:golint
+		return errors.New("Reset is not supported") //nolint:golint
 	}
 
 	t := struct {
@@ -251,77 +254,37 @@ func (powerSupplyUnit *PowerSupplyUnit) Reset(resetType ResetType) error {
 	return powerSupplyUnit.Post(powerSupplyUnit.resetTarget, t)
 }
 
-// ListReferencedPowerSupplyUnits gets the collection of PowerSupplies from
-// a provided reference.
-func ListReferencedPowerSupplyUnits(c common.Client, link string) ([]*PowerSupplyUnit, error) { //nolint:dupl
-	var result []*PowerSupplyUnit
-	if link == "" {
-		return result, nil
+// Assembly gets the containing assembly for this power supply.
+func (powerSupplyUnit *PowerSupplyUnit) Assembly() (*Assembly, error) {
+	if powerSupplyUnit.assembly == "" {
+		return nil, nil
 	}
-
-	type GetResult struct {
-		Item  *PowerSupplyUnit
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		powerSupplyUnit, err := GetPowerSupplyUnit(c, link)
-		ch <- GetResult{Item: powerSupplyUnit, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
-}
-
-// PoweringChassis gets the collection of the chassis directly powered by this power supply.
-func (powerSupplyUnit *PowerSupplyUnit) PoweringChassis() ([]*Chassis, error) {
-	var result []*Chassis
-
-	collectionError := common.NewCollectionError()
-	for _, uri := range powerSupplyUnit.poweringChassis {
-		chassis, err := GetChassis(powerSupplyUnit.GetClient(), uri)
-		if err != nil {
-			collectionError.Failures[uri] = err
-		} else {
-			result = append(result, chassis)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+	return GetAssembly(powerSupplyUnit.GetClient(), powerSupplyUnit.assembly)
 }
 
 // Metrics gets the metrics associated with this power supply.
-func (powerSupplyUnit *PowerSupplyUnit) Metrics() (metrics *PowerSupplyUnitMetrics, err error) {
+func (powerSupplyUnit *PowerSupplyUnit) Metrics() (*PowerSupplyUnitMetrics, error) {
 	if powerSupplyUnit.metrics == "" {
-		return
+		return nil, nil
 	}
 	return GetPowerSupplyUnitMetrics(powerSupplyUnit.GetClient(), powerSupplyUnit.metrics)
 }
 
-// TODO: assembly, outlet, powerOutlets
+// Outlet get the outlet connected to this power supply.
+// Deprecated (v1.4)
+func (powerSupplyUnit *PowerSupplyUnit) Outlet() (*Outlet, error) {
+	if powerSupplyUnit.metrics == "" {
+		return nil, nil
+	}
+	return GetOutlet(powerSupplyUnit.GetClient(), powerSupplyUnit.outlet)
+}
+
+// PowerOutlets gets the outlets that supply power to this power supply.
+func (powerSupplyUnit *PowerSupplyUnit) PowerOutlets() ([]*Outlet, error) {
+	return common.GetObjects[Outlet](powerSupplyUnit.GetClient(), powerSupplyUnit.powerOutlets)
+}
+
+// PoweringChassis gets the collection of the chassis directly powered by this power supply.
+func (powerSupplyUnit *PowerSupplyUnit) PoweringChassis() ([]*Chassis, error) {
+	return common.GetObjects[Chassis](powerSupplyUnit.GetClient(), powerSupplyUnit.poweringChassis)
+}

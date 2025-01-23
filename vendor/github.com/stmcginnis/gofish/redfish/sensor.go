@@ -11,6 +11,23 @@ import (
 	"github.com/stmcginnis/gofish/common"
 )
 
+type ImplementationType string
+
+const (
+	// PhysicalSensorImplementationType The reading is acquired from a physical sensor.
+	PhysicalSensorImplementationType ImplementationType = "PhysicalSensor"
+	// CalculatedImplementationType The metric is implemented by applying a calculation on another metric property. The
+	// calculation is specified in the CalculationAlgorithm property.
+	CalculatedImplementationType ImplementationType = "Calculated"
+	// SynthesizedImplementationType The reading is obtained by applying a calculation on one or more properties or
+	// multiple sensors. The calculation is not provided.
+	SynthesizedImplementationType ImplementationType = "Synthesized"
+	// ReportedImplementationType The reading is obtained from software or a device.
+	ReportedImplementationType ImplementationType = "Reported"
+	// DigitalMeterImplementationType The metric is implemented as digital meter.
+	DigitalMeterImplementationType ImplementationType = "DigitalMeter"
+)
+
 // The implementation of the sensor.
 type SensorImplementation string
 
@@ -139,11 +156,78 @@ type Thresholds struct {
 	UpperFatal Threshold
 }
 
+// SensorArrayExcerpt shall represent a sensor for a Redfish implementation.
+type SensorArrayExcerpt struct {
+	// DataSourceURI shall contain a URI to the resource that provides the source of the excerpt contained within this
+	// copy.
+	DataSourceURI string
+	// DeviceName shall contain the name of the device associated with this sensor. If the device is represented by a
+	// resource, the value shall contain the value of the Name property of the associated resource.
+	DeviceName string
+	// PhysicalContext shall contain a description of the affected component or region within the equipment to which
+	// this sensor measurement applies.
+	PhysicalContext PhysicalContext
+	// PhysicalSubContext shall contain a description of the usage or sub-region within the equipment to which this
+	// sensor measurement applies. This property generally differentiates multiple sensors within the same
+	// PhysicalContext instance.
+	PhysicalSubContext PhysicalSubContext
+	// Reading shall contain the sensor value.
+	Reading float64
+}
+
+// SensorCurrentExcerpt shall represent a sensor for a Redfish implementation.
+type SensorCurrentExcerpt struct {
+	// CrestFactor shall contain the ratio of the peak measurement divided by the RMS measurement and calculated over
+	// same N line cycles. A sine wave would have a value of 1.414.
+	CrestFactor float64
+	// DataSourceUri shall contain a URI to the resource that provides the source of the excerpt contained within this
+	// copy.
+	DataSourceURI string `json:"DataSourceUri"`
+	// Reading shall contain the sensor value.
+	Reading float64
+	// THDPercent shall contain the total harmonic distortion of the Reading property in percent units, typically '0'
+	// to '100'.
+	THDPercent float64
+}
+
+// SensorExcerpt shall represent a sensor for a Redfish implementation.
 type SensorExcerpt struct {
 	// The link to the resource that provides the data for this sensor.
 	DataSourceURI string `json:"DataSourceUri"`
 	// The sensor value.
 	Reading float32
+}
+
+// SensorFanArrayExcerpt shall represent a sensor for a Redfish implementation.
+type SensorFanArrayExcerpt struct {
+	// DataSourceURI shall contain a URI to the resource that provides the source of the excerpt contained within this
+	// copy.
+	DataSourceURI string
+	// DeviceName shall contain the name of the device associated with this sensor. If the device is represented by a
+	// resource, the value shall contain the value of the Name property of the associated resource.
+	DeviceName string
+	// PhysicalContext shall contain a description of the affected component or region within the equipment to which
+	// this sensor measurement applies.
+	PhysicalContext PhysicalContext
+	// PhysicalSubContext shall contain a description of the usage or sub-region within the equipment to which this
+	// sensor measurement applies. This property generally differentiates multiple sensors within the same
+	// PhysicalContext instance.
+	PhysicalSubContext PhysicalSubContext
+	// Reading shall contain the sensor value.
+	Reading float64
+	// SpeedRPM shall contain a reading of the rotational speed of the device in revolutions per minute (RPM) units.
+	SpeedRPM float64
+}
+
+// SensorFanExcerpt shall represent a sensor for a Redfish implementation.
+type SensorFanExcerpt struct {
+	// DataSourceURI shall contain a URI to the resource that provides the source of the excerpt contained within this
+	// copy.
+	DataSourceURI string
+	// Reading shall contain the sensor value.
+	Reading float64
+	// SpeedRPM shall contain a reading of the rotational speed of the device in revolutions per minute (RPM) units.
+	SpeedRPM float64
 }
 
 // Energy consumption (kWh).
@@ -164,6 +248,36 @@ type SensorEnergykWhExcerpt struct {
 	SensorResetTime string
 }
 
+type SensorPowerArrayExcerpt struct {
+	// ApparentVA shall contain the product of voltage (RMS) multiplied by current (RMS) for a circuit. This property
+	// can appear in sensors of the Power ReadingType, and shall not appear in sensors of other ReadingType values.
+	ApparentVA float64
+	// DataSourceUri shall contain a URI to the resource that provides the source of the excerpt contained within this
+	// copy.
+	DataSourceURI string
+	// PhaseAngleDegrees shall contain the phase angle, in degree units, between the current and voltage waveforms for
+	// an electrical measurement. This property can appear in sensors with a ReadingType containing 'Power', and shall
+	// not appear in sensors with other ReadingType values.
+	PhaseAngleDegrees float64
+	// PhysicalContext shall contain a description of the affected component or region within the equipment to which
+	// this sensor measurement applies.
+	PhysicalContext PhysicalContext
+	// PhysicalSubContext shall contain a description of the usage or sub-region within the equipment to which this
+	// sensor measurement applies. This property generally differentiates multiple sensors within the same
+	// PhysicalContext instance.
+	PhysicalSubContext PhysicalSubContext
+	// PowerFactor shall identify the quotient of real power (W) and apparent power (VA) for a circuit. PowerFactor is
+	// expressed in unit-less 1/100ths. This property can appear in sensors containing a ReadingType value of 'Power',
+	// and shall not appear in sensors of other ReadingType values.
+	PowerFactor float64
+	// ReactiveVAR shall contain the arithmetic mean of product terms of instantaneous voltage and quadrature current
+	// measurements calculated over an integer number of line cycles for a circuit. This property can appear in sensors
+	// of the Power ReadingType, and shall not appear in sensors of other ReadingType values.
+	ReactiveVAR float64
+	// Reading shall contain the sensor value.
+	Reading float64
+}
+
 // Power consumption (W).
 type SensorPowerExcerpt struct {
 	// The product of voltage and current for an AC circuit, in volt-ampere units.
@@ -180,6 +294,17 @@ type SensorPowerExcerpt struct {
 	ReactiveVAR float32
 	// The sensor value.
 	Reading float32
+}
+
+// SensorPumpExcerpt shall represent a sensor for a Redfish implementation.
+type SensorPumpExcerpt struct {
+	// DataSourceUri shall contain a URI to the resource that provides the source of the excerpt contained within this
+	// copy.
+	DataSourceURI string `json:"DataSourceUri"`
+	// Reading shall contain the sensor value.
+	Reading float64
+	// SpeedRPM shall contain a reading of the rotational speed of the device in revolutions per minute (RPM) units.
+	SpeedRPM float64
 }
 
 // Voltage consumption (V).
@@ -264,10 +389,14 @@ type Sensor struct {
 	ReactiveVAR float32
 	// The sensor value.
 	Reading float32
+	// ReadingAccuracy shall contain the accuracy of the value of the Reading for this sensor. The value shall be the
+	// absolute value of the maximum deviation of the Reading from its actual value. The value shall be in units that
+	// follow the ReadingUnits for this sensor.
+	ReadingAccuracy float64
 	// The basis for the reading of this sensor.
 	ReadingBasis ReadingBasisType
 	// The maximum possible value for this sensor.
-	ReadingRangeMax float32
+	ReadingRangeMax float64
 	// The minimum possible value for this sensor.
 	ReadingRangeMin float32
 	// The date and time that the reading was acquired from the sensor.
@@ -322,13 +451,9 @@ func (sensor *Sensor) UnmarshalJSON(b []byte) error {
 		Oem                     json.RawMessage
 	}
 	type actions struct {
-		ResetMetrics struct {
-			Target string
-		} `json:"#Sensor.ResetMetrics"`
-		ResetToDefaults struct {
-			Target string
-		} `json:"#Sensor.ResetToDefaults"`
-		Oem json.RawMessage // OEM actions will be stored here
+		ResetMetrics    common.ActionTarget `json:"#Sensor.ResetMetrics"`
+		ResetToDefaults common.ActionTarget `json:"#Sensor.ResetToDefaults"`
+		Oem             json.RawMessage     // OEM actions will be stored here
 	}
 	var t struct {
 		temp
@@ -358,51 +483,12 @@ func (sensor *Sensor) UnmarshalJSON(b []byte) error {
 
 // GetSensor will get a Sensor instance from the Redfish service.
 func GetSensor(c common.Client, uri string) (*Sensor, error) {
-	var sensor Sensor
-	return &sensor, sensor.Get(c, uri, &sensor)
+	return common.GetObject[Sensor](c, uri)
 }
 
 // ListReferencedSensor gets the Sensor collection.
-func ListReferencedSensors(c common.Client, link string) ([]*Sensor, error) { //nolint:dupl
-	var result []*Sensor
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Sensor
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		sensor, err := GetSensor(c, link)
-		ch <- GetResult{Item: sensor, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedSensors(c common.Client, link string) ([]*Sensor, error) {
+	return common.GetCollectionObjects[Sensor](c, link)
 }
 
 func (sensor *Sensor) ResetMetrics() error {

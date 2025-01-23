@@ -108,52 +108,13 @@ func (spareresourceset *SpareResourceSet) Update() error {
 
 // GetSpareResourceSet will get a SpareResourceSet instance from the service.
 func GetSpareResourceSet(c common.Client, uri string) (*SpareResourceSet, error) {
-	var spareResourceSet SpareResourceSet
-	return &spareResourceSet, spareResourceSet.Get(c, uri, &spareResourceSet)
+	return common.GetObject[SpareResourceSet](c, uri)
 }
 
 // ListReferencedSpareResourceSets gets the collection of SpareResourceSet from
 // a provided reference.
-func ListReferencedSpareResourceSets(c common.Client, link string) ([]*SpareResourceSet, error) { //nolint:dupl
-	var result []*SpareResourceSet
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *SpareResourceSet
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		spareresourceset, err := GetSpareResourceSet(c, link)
-		ch <- GetResult{Item: spareresourceset, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedSpareResourceSets(c common.Client, link string) ([]*SpareResourceSet, error) {
+	return common.GetCollectionObjects[SpareResourceSet](c, link)
 }
 
 // ReplacementSpareSets gets other spare sets that can be utilized to replenish

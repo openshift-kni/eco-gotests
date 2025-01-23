@@ -29,6 +29,9 @@ type IOConnectivityLoSCapabilities struct {
 	MaxSupportedBytesPerSecond int64
 	// MaxSupportedIOPS shall be the maximum IOPS that a connection can support.
 	MaxSupportedIOPS int
+	// Oem shall contain the OEM extensions. All values for properties that this object contains shall conform to the
+	// Redfish Specification-described requirements.
+	OEM json.RawMessage `json:"Oem"`
 	// SupportedAccessProtocols is Access protocols supported by this service
 	// option. NOTE: SMB+NFS* requires that SMB and at least one of NFSv3 or
 	// NFXv4 are also selected, (i.e. {'SMB', 'NFSv4', 'SMB+NFS*'}).
@@ -90,50 +93,11 @@ func (ioconnectivityloscapabilities *IOConnectivityLoSCapabilities) Update() err
 // GetIOConnectivityLoSCapabilities will get a IOConnectivityLoSCapabilities
 // instance from the service.
 func GetIOConnectivityLoSCapabilities(c common.Client, uri string) (*IOConnectivityLoSCapabilities, error) {
-	var ioConnectivityLoSCapabilities IOConnectivityLoSCapabilities
-	return &ioConnectivityLoSCapabilities, ioConnectivityLoSCapabilities.Get(c, uri, &ioConnectivityLoSCapabilities)
+	return common.GetObject[IOConnectivityLoSCapabilities](c, uri)
 }
 
 // ListReferencedIOConnectivityLoSCapabilitiess gets the collection of
 // IOConnectivityLoSCapabilities from a provided reference.
-func ListReferencedIOConnectivityLoSCapabilitiess(c common.Client, link string) ([]*IOConnectivityLoSCapabilities, error) { //nolint:dupl
-	var result []*IOConnectivityLoSCapabilities
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *IOConnectivityLoSCapabilities
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		ioconnectivityloscapabilities, err := GetIOConnectivityLoSCapabilities(c, link)
-		ch <- GetResult{Item: ioconnectivityloscapabilities, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedIOConnectivityLoSCapabilitiess(c common.Client, link string) ([]*IOConnectivityLoSCapabilities, error) {
+	return common.GetCollectionObjects[IOConnectivityLoSCapabilities](c, link)
 }

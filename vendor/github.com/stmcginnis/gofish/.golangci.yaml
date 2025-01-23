@@ -1,6 +1,18 @@
 linters-settings:
+  depguard:
+      rules:
+        prevent_unmaintained_packages:
+          list-mode: lax # allow unless explicitly denied
+          files:
+            - $all
+            - "!$test"
+          allow:
+            - $gostd
+          deny:
+            - pkg: io/ioutil
+              desc: "replaced by io and os packages since Go 1.16: https://tip.golang.org/doc/go1.16#ioutil"
   dupl:
-    threshold: 100
+    threshold: 200
   funlen:
     lines: 100
     statements: 50
@@ -32,7 +44,9 @@ linters-settings:
   goimports:
     local-prefixes: github.com/stmcginnis
   govet:
-    check-shadowing: true
+    enable-all: true
+    disable:
+      - fieldalignment
   misspell:
     locale: US
   nolintlint:
@@ -98,6 +112,7 @@ issues:
     - "G402: TLS InsecureSkipVerify may be true"
     - "`(F|f)ibre` is a misspelling"
     - "`(C|c)ancell.*` is a misspelling"
-run:
-  skip-dirs:
+    - "Error return value of `original.UnmarshalJSON` is not checked"
+  exclude-dirs:
     - examples
+    - tools

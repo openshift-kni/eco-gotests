@@ -215,50 +215,11 @@ func (serialInterface *SerialInterface) Update() error {
 
 // GetSerialInterface will get a SerialInterface instance from the service.
 func GetSerialInterface(c common.Client, uri string) (*SerialInterface, error) {
-	var serialInterface SerialInterface
-	return &serialInterface, serialInterface.Get(c, uri, &serialInterface)
+	return common.GetObject[SerialInterface](c, uri)
 }
 
 // ListReferencedSerialInterfaces gets the collection of SerialInterface from
 // a provided reference.
-func ListReferencedSerialInterfaces(c common.Client, link string) ([]*SerialInterface, error) { //nolint:dupl
-	var result []*SerialInterface
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *SerialInterface
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		serialInterface, err := GetSerialInterface(c, link)
-		ch <- GetResult{Item: serialInterface, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedSerialInterfaces(c common.Client, link string) ([]*SerialInterface, error) {
+	return common.GetCollectionObjects[SerialInterface](c, link)
 }

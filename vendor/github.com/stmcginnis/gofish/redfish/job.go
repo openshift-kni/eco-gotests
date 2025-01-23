@@ -126,7 +126,7 @@ type Job struct {
 	PercentComplete int
 	// Schedule shall contain the scheduling details for this job and the
 	// recurrence frequency for future instances of this job.
-	Schedule string
+	Schedule common.Schedule
 	// StartTime shall indicate the date and time when the job was last
 	// started or is scheduled to start.
 	StartTime string
@@ -164,52 +164,18 @@ func (job *Job) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// Steps gets the collection of steps for this job.
+func (job *Job) Steps() ([]*Job, error) {
+	return ListReferencedJobs(job.GetClient(), job.steps)
+}
+
 // GetJob will get a Job instance from the service.
 func GetJob(c common.Client, uri string) (*Job, error) {
-	var job Job
-	return &job, job.Get(c, uri, &job)
+	return common.GetObject[Job](c, uri)
 }
 
 // ListReferencedJobs gets the collection of Job from
 // a provided reference.
-func ListReferencedJobs(c common.Client, link string) ([]*Job, error) { //nolint:dupl
-	var result []*Job
-	if link == "" {
-		return result, nil
-	}
-
-	type GetResult struct {
-		Item  *Job
-		Link  string
-		Error error
-	}
-
-	ch := make(chan GetResult)
-	collectionError := common.NewCollectionError()
-	get := func(link string) {
-		job, err := GetJob(c, link)
-		ch <- GetResult{Item: job, Link: link, Error: err}
-	}
-
-	go func() {
-		err := common.CollectList(get, c, link)
-		if err != nil {
-			collectionError.Failures[link] = err
-		}
-		close(ch)
-	}()
-
-	for r := range ch {
-		if r.Error != nil {
-			collectionError.Failures[r.Link] = r.Error
-		} else {
-			result = append(result, r.Item)
-		}
-	}
-
-	if collectionError.Empty() {
-		return result, nil
-	}
-
-	return result, collectionError
+func ListReferencedJobs(c common.Client, link string) ([]*Job, error) {
+	return common.GetCollectionObjects[Job](c, link)
 }

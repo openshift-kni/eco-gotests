@@ -32,8 +32,22 @@ type MachinePool struct {
 
 	// IAMRole is the name of the IAM Role to use for the instance profile of the machine.
 	// Leave unset to have the installer create the IAM Role on your behalf.
+	// Cannot be specified together with iamProfile.
 	// +optional
 	IAMRole string `json:"iamRole,omitempty"`
+
+	// IAMProfile is the name of the IAM instance profile to use for the machine.
+	// Leave unset to have the installer create the IAM Profile on your behalf.
+	// Cannot be specified together with iamRole.
+	// +optional
+	IAMProfile string `json:"iamProfile,omitempty"`
+
+	// AdditionalSecurityGroupIDs contains IDs of additional security groups for machines, where each ID
+	// is presented in the format sg-xxxx.
+	//
+	// +kubebuilder:validation:MaxItems=10
+	// +optional
+	AdditionalSecurityGroupIDs []string `json:"additionalSecurityGroupIDs,omitempty"`
 }
 
 // Set sets the values from `required` to `a`.
@@ -73,6 +87,14 @@ func (a *MachinePool) Set(required *MachinePool) {
 
 	if required.IAMRole != "" {
 		a.IAMRole = required.IAMRole
+	}
+
+	if required.IAMProfile != "" {
+		a.IAMProfile = required.IAMProfile
+	}
+
+	if len(required.AdditionalSecurityGroupIDs) > 0 {
+		a.AdditionalSecurityGroupIDs = required.AdditionalSecurityGroupIDs
 	}
 }
 

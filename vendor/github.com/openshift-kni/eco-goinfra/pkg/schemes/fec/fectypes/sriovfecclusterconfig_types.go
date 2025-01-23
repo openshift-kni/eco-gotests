@@ -11,6 +11,11 @@ import (
 
 type SyncStatus string
 
+const (
+	acc100maxQueueGroups = 8
+	acc200maxQueueGroups = 16
+)
+
 var (
 	// InProgressSync indicates that the synchronization of the CR is in progress
 	InProgressSync SyncStatus = "InProgress"
@@ -66,7 +71,10 @@ type UplinkDownlink struct {
 type N3000BBDevConfig struct {
 	// +kubebuilder:validation:Enum=FPGA_5GNR;FPGA_LTE
 	NetworkType string `json:"networkType"`
-	PFMode      bool   `json:"pfMode"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:false
+	// +kubebuilder:validation:Enum=false
+	PFMode bool `json:"pfMode,omitempty"`
 	// +kubebuilder:validation:Minimum=0
 	FLRTimeOut int            `json:"flrTimeout"`
 	Downlink   UplinkDownlink `json:"downlink"`
@@ -75,67 +83,160 @@ type N3000BBDevConfig struct {
 
 type QueueGroupConfig struct {
 	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=8
+	// +kubebuilder:validation:Maximum=16
 	NumQueueGroups int `json:"numQueueGroups"`
-	// +kubebuilder:validation:Minimum=16
+	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=16
 	NumAqsPerGroups int `json:"numAqsPerGroups"`
-	// +kubebuilder:validation:Minimum=4
-	// +kubebuilder:validation:Maximum=4
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=12
 	AqDepthLog2 int `json:"aqDepthLog2"`
 }
 
 // ACC100BBDevConfig specifies variables to configure ACC100 with
 type ACC100BBDevConfig struct {
-	PFMode bool `json:"pfMode"`
-	// +kubebuilder:validation:Minimum=16
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default:false
+	// +kubebuilder:validation:Enum=false
+	PFMode bool `json:"pfMode,omitempty"`
+	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=16
 	NumVfBundles int `json:"numVfBundles"`
 	// +kubebuilder:validation:Minimum=1024
 	// +kubebuilder:validation:Maximum=1024
-	MaxQueueSize int              `json:"maxQueueSize"`
+	// +kubebuilder:default:1024
+	// +kubebuilder:validation:Optional
+	MaxQueueSize int              `json:"maxQueueSize,omitempty"`
 	Uplink4G     QueueGroupConfig `json:"uplink4G"`
 	Downlink4G   QueueGroupConfig `json:"downlink4G"`
 	Uplink5G     QueueGroupConfig `json:"uplink5G"`
 	Downlink5G   QueueGroupConfig `json:"downlink5G"`
 }
 
+func (in *ACC100BBDevConfig) Validate() error {
+	totalQueueGroups := in.Uplink4G.NumQueueGroups + in.Downlink4G.NumQueueGroups + in.Uplink5G.NumQueueGroups + in.Downlink5G.NumQueueGroups
+	if totalQueueGroups > acc100maxQueueGroups {
+		return fmt.Errorf("total number of requested queue groups (4G/5G) %v exceeds the maximum (%d)", totalQueueGroups, acc100maxQueueGroups)
+	}
+	return nil
+}
+
+// FFTLutParam specifies variables required to use custom fft bin file
+type FFTLutParam struct {
+	// Path to .tar.gz SRS-FFT file
+	// +kubebuilder:validation:Pattern=`^((http|https)://.*\.tar\.gz)?$`
+	FftUrl string `json:"fftUrl"`
+	// SHA-1 checksum of .tar.gz SRS-FFT File
+	// +kubebuilder:validation:Pattern=`^([a-fA-F0-9]{40})?$`
+	FftChecksum string `json:"fftChecksum"`
+}
+
+// ACC200BBDevConfig specifies variables to configure ACC200 with
+type ACC200BBDevConfig struct {
+	ACC100BBDevConfig `json:",inline"`
+	QFFT              QueueGroupConfig `json:"qfft"`
+	FFTLut            FFTLutParam      `json:"fftLut,omitempty"`
+}
+
+func (in *ACC200BBDevConfig) Validate() error {
+	totalQueueGroups := in.Uplink4G.NumQueueGroups + in.Downlink4G.NumQueueGroups + in.Uplink5G.NumQueueGroups + in.Downlink5G.NumQueueGroups + in.QFFT.NumQueueGroups
+	if totalQueueGroups > acc200maxQueueGroups {
+		return fmt.Errorf("total number of requested queue groups (4G/5G/QFFT) %v exceeds the maximum (%d)", totalQueueGroups, acc200maxQueueGroups)
+	}
+	return nil
+}
+
 // BBDevConfig is a struct containing configuration for various FEC cards
 type BBDevConfig struct {
 	N3000  *N3000BBDevConfig  `json:"n3000,omitempty"`
 	ACC100 *ACC100BBDevConfig `json:"acc100,omitempty"`
+	ACC200 *ACC200BBDevConfig `json:"acc200,omitempty"`
+}
+
+type validator interface {
+	Validate() error
+}
+
+func (in *BBDevConfig) Validate() error {
+
+	for _, config := range []interface{}{in.ACC200, in.ACC100, in.N3000} {
+		if !isNil(config) {
+			if validator, ok := config.(validator); ok {
+				return validator.Validate()
+			}
+		}
+	}
+
+	return nil
 }
 
 // PhysicalFunctionConfig defines a possible configuration of a single Physical Function (PF), i.e. card
 type PhysicalFunctionConfig struct {
-	// PCIAdress is a Physical Functions's PCI address that will be configured according to this spec
-	// +kubebuilder:validation:Pattern=`^[a-fA-F0-9]{4}:[a-fA-F0-9]{2}:[01][a-fA-F0-9]\.[0-7]$`
-	PCIAddress string `json:"pciAddress"`
 	// PFDriver to bound the PFs to
+	//+kubebuilder:validation:Pattern=`(pci-pf-stub|pci_pf_stub|igb_uio|vfio-pci)`
 	PFDriver string `json:"pfDriver"`
 	// VFDriver to bound the VFs to
 	VFDriver string `json:"vfDriver"`
 	// VFAmount is an amount of VFs to be created
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
 	VFAmount int `json:"vfAmount"`
 	// BBDevConfig is a config for PF's queues
 	BBDevConfig BBDevConfig `json:"bbDevConfig"`
 }
 
-type NodeConfig struct {
-	// Name of the node
-	NodeName string `json:"nodeName"`
-	// List of physical functions (cards) configs
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	PhysicalFunctions []PhysicalFunctionConfig `json:"physicalFunctions"`
+type PhysicalFunctionConfigExt struct {
+	// PCIAdress is a Physical Functions's PCI address that will be configured according to this spec
+	// +kubebuilder:validation:Pattern=`^[a-fA-F0-9]{4}:[a-fA-F0-9]{2}:[01][a-fA-F0-9]\.[0-7]$`
+	PCIAddress string `json:"pciAddress"`
+
+	// PFDriver to bound the PFs to
+	//+kubebuilder:validation:Pattern=`(pci-pf-stub|pci_pf_stub|igb_uio|vfio-pci)`
+	PFDriver string `json:"pfDriver"`
+
+	// VFDriver to bound the VFs to
+	VFDriver string `json:"vfDriver"`
+
+	// VFAmount is an amount of VFs to be created
+	// +kubebuilder:validation:Minimum=0
+	VFAmount int `json:"vfAmount"`
+
+	// BBDevConfig is a config for PF's queues
+	BBDevConfig BBDevConfig `json:"bbDevConfig"`
 }
 
 // SriovFecClusterConfigSpec defines the desired state of SriovFecClusterConfig
 type SriovFecClusterConfigSpec struct {
-	// List of node configurations
+
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	Nodes     []NodeConfig `json:"nodes"`
-	DrainSkip bool         `json:"drainSkip,omitempty"`
+	// Selector describes target node for this spec
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// Selector describes target accelerator for this spec
+	AcceleratorSelector AcceleratorSelector `json:"acceleratorSelector,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// Physical function (card) config
+	PhysicalFunction PhysicalFunctionConfig `json:"physicalFunction"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// Higher priority policies can override lower ones.
+	Priority int `json:"priority,omitempty"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// Skips drain process when true; default false. Should be true if operator is running on SNO
+	DrainSkip *bool `json:"drainSkip,omitempty"`
+}
+
+type AcceleratorSelector struct {
+	VendorID string `json:"vendorID,omitempty"`
+	DeviceID string `json:"deviceID,omitempty"`
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern=`^[a-fA-F0-9]{4}:[a-fA-F0-9]{2}:[01][a-fA-F0-9]\.[0-7]$`
+	PCIAddress string `json:"pciAddress,omitempty"`
+	//+kubebuilder:validation:Pattern=`(pci-pf-stub|pci_pf_stub|igb_uio|vfio-pci)`
+	PFDriver string `json:"driver,omitempty"`
+	MaxVFs   int    `json:"maxVirtualFunctions,omitempty"`
 }
 
 // SriovFecClusterConfigStatus defines the observed state of SriovFecClusterConfig
@@ -148,10 +249,11 @@ type SriovFecClusterConfigStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="SyncStatus",type=string,JSONPath=`.status.syncStatus`
-// +kubebuilder:unservedversion
+// +kubebuilder:storageversion
+// +kubebuilder:resource:shortName=sfcc
+
 // SriovFecClusterConfig is the Schema for the sriovfecclusterconfigs API
-// +operator-sdk:csv:customresourcedefinitions:displayName="SriovFecClusterConfig",resources={{SriovFecNodeConfig,v1,node}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="SriovFecClusterConfig",resources={{SriovFecNodeConfig,v2,node}}
 type SriovFecClusterConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

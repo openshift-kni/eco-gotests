@@ -61,18 +61,24 @@ func NewRestoreBuilder(apiClient *clients.Settings, name, nsname, backupName str
 		glog.V(100).Infof("The name of the restore is empty")
 
 		builder.errorMsg = "restore name cannot be an empty string"
+
+		return builder
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the restore is empty")
 
 		builder.errorMsg = "restore namespace cannot be an empty string"
+
+		return builder
 	}
 
 	if backupName == "" {
 		glog.V(100).Infof("The backupName of the restore is empty")
 
 		builder.errorMsg = "restore backupName cannot be an empty string"
+
+		return builder
 	}
 
 	return builder
@@ -95,7 +101,7 @@ func PullRestore(apiClient *clients.Settings, name, nsname string) (*RestoreBuil
 		return nil, err
 	}
 
-	builder := RestoreBuilder{
+	builder := &RestoreBuilder{
 		apiClient: apiClient.Client,
 		Definition: &velerov1.Restore{
 			ObjectMeta: metav1.ObjectMeta{
@@ -106,10 +112,14 @@ func PullRestore(apiClient *clients.Settings, name, nsname string) (*RestoreBuil
 	}
 
 	if name == "" {
+		glog.V(100).Info("The name of the restore is empty")
+
 		return nil, fmt.Errorf("restore name cannot be empty")
 	}
 
 	if nsname == "" {
+		glog.V(100).Info("The namespace of the restore is empty")
+
 		return nil, fmt.Errorf("restore namespace cannot be empty")
 	}
 
@@ -119,7 +129,7 @@ func PullRestore(apiClient *clients.Settings, name, nsname string) (*RestoreBuil
 
 	builder.Definition = builder.Object
 
-	return &builder, nil
+	return builder, nil
 }
 
 // WithStorageLocation adds a storage location to the restore.
@@ -136,9 +146,7 @@ func (builder *RestoreBuilder) WithStorageLocation(location string) *RestoreBuil
 		glog.V(100).Infof("Backup storage location is empty")
 
 		builder.errorMsg = "restore storage location cannot be an empty string"
-	}
 
-	if builder.errorMsg != "" {
 		return builder
 	}
 
@@ -157,7 +165,8 @@ func (builder *RestoreBuilder) Get() (*velerov1.Restore, error) {
 		return nil, err
 	}
 
-	glog.V(100).Infof("Collecting Restore object %s", builder.Definition.Name)
+	glog.V(100).Infof("Collecting Restore object %s in namespace %s",
+		builder.Definition.Name, builder.Definition.Namespace)
 
 	restore := &velerov1.Restore{}
 	err := builder.apiClient.Get(
@@ -165,7 +174,8 @@ func (builder *RestoreBuilder) Get() (*velerov1.Restore, error) {
 		goclient.ObjectKey{Name: builder.Definition.Name, Namespace: builder.Definition.Namespace}, restore)
 
 	if err != nil {
-		glog.V(100).Infof("Restore object %s does not exist", builder.Definition.Name)
+		glog.V(100).Infof("Restore object %s does not exist in namespace %s: %v",
+			builder.Definition.Name, builder.Definition.Namespace, err)
 
 		return nil, err
 	}
@@ -216,6 +226,14 @@ func (builder *RestoreBuilder) Update() (*RestoreBuilder, error) {
 
 	glog.V(100).Infof("Updating restore %s in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
 
+	if !builder.Exists() {
+		glog.V(100).Infof("Restore %s in namespace %s cannot be updated because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return builder, fmt.Errorf("cannot update non-existent restore")
+	}
+
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 
 	if err == nil {
@@ -258,7 +276,7 @@ func (builder *RestoreBuilder) Delete() (*RestoreBuilder, error) {
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *RestoreBuilder) validate() (bool, error) {
-	resourceCRD := "Restore"
+	resourceCRD := "restore"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
