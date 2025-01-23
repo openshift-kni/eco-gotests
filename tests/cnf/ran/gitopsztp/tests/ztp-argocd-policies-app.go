@@ -179,8 +179,15 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 	When("applying and validating custom source CRs on the DU policies", func() {
 		AfterEach(func() {
 			By("deleting the policy from spoke if it exists")
-			policy, err := ocm.PullPolicy(
-				Spoke1APIClient, tsparams.CustomSourceCrPolicyName, tsparams.TestNamespace)
+			policy, err := ocm.PullPolicy(Spoke1APIClient, tsparams.CustomSourceCrPolicyName, tsparams.TestNamespace)
+
+			// Pulling the policy regularly fails here but in a way such that err is nil but the definition
+			// is nil. Here we retry until either it fails in a different way or succeeds. It is only a
+			// transient error so there is no risk of getting stuck in a loop.
+			for err == nil && policy.Definition == nil {
+				policy, err = ocm.PullPolicy(Spoke1APIClient, tsparams.CustomSourceCrPolicyName, tsparams.TestNamespace)
+			}
+
 			if err == nil {
 				_, err = policy.Delete()
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete policy")
@@ -188,7 +195,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 
 			By("deleting the service account from spoke if it exists")
 			serviceAccount, err := serviceaccount.Pull(
-				Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.CustomSourceTestNamespace)
+				Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.TestNamespace)
 			if err == nil {
 				err := serviceAccount.Delete()
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete service account")
@@ -214,7 +221,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			"via custom source-cr", reportxml.ID("61978"), func() {
 			By("checking service account does not exist on spoke")
 			_, err := serviceaccount.Pull(
-				Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.CustomSourceTestNamespace)
+				Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.TestNamespace)
 			Expect(err).To(HaveOccurred(), "Service account already exists before test")
 
 			By("updating Argo CD policies app")
@@ -239,7 +246,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			_, err = helper.WaitForServiceAccountToExist(
 				Spoke1APIClient,
 				tsparams.CustomSourceCrName,
-				tsparams.CustomSourceTestNamespace,
+				tsparams.TestNamespace,
 				tsparams.ArgoCdChangeTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for service account to exist")
 		})
@@ -319,7 +326,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			}
 
 			By("checking service account does not exist on spoke")
-			_, err = serviceaccount.Pull(Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.CustomSourceTestNamespace)
+			_, err = serviceaccount.Pull(Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.TestNamespace)
 			Expect(err).To(HaveOccurred(), "Service account already exists before test")
 
 			By("checking storage class does not exist on spoke")
@@ -345,7 +352,7 @@ var _ = Describe("ZTP Argo CD Policies Tests", Label(tsparams.LabelArgoCdPolicie
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for policy to be Compliant")
 
 			By("checking service account exists")
-			_, err = serviceaccount.Pull(Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.CustomSourceTestNamespace)
+			_, err = serviceaccount.Pull(Spoke1APIClient, tsparams.CustomSourceCrName, tsparams.TestNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to check that service account exists")
 
 			By("checking storage class exists")

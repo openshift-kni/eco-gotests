@@ -61,7 +61,7 @@ var (
 		{Cr: &corev1.PersistentVolumeList{}},
 		{Cr: &corev1.PersistentVolumeClaimList{}, Namespace: ptr.To(ImageRegistryNamespace)},
 		{Cr: &storagev1.StorageClassList{}},
-		{Cr: &corev1.ServiceAccountList{}, Namespace: ptr.To(CustomSourceTestNamespace)},
+		{Cr: &corev1.ServiceAccountList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &sriovv1.SriovNetworkList{}, Namespace: ptr.To(RANConfig.SriovOperatorNamespace)},
 		{Cr: &sriovv1.SriovNetworkList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &imageregistryv1.ConfigList{}},
