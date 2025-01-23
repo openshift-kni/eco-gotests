@@ -17,7 +17,7 @@ type SriovAccelerator struct {
 	VendorID   string `json:"vendorID"`
 	DeviceID   string `json:"deviceID"`
 	PCIAddress string `json:"pciAddress"`
-	Driver     string `json:"driver"`
+	PFDriver   string `json:"driver"`
 	MaxVFs     int    `json:"maxVirtualFunctions"`
 	VFs        []VF   `json:"virtualFunctions"`
 }
@@ -30,12 +30,16 @@ type NodeInventory struct {
 type SriovFecNodeConfigSpec struct {
 	// List of PhysicalFunctions configs
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
-	PhysicalFunctions []PhysicalFunctionConfig `json:"physicalFunctions"`
-	DrainSkip         bool                     `json:"drainSkip,omitempty"`
+	PhysicalFunctions []PhysicalFunctionConfigExt `json:"physicalFunctions"`
+
+	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	// Skips drain process when true; default false. Should be true if operator is running on SNO
+	DrainSkip bool `json:"drainSkip,omitempty"`
 }
 
 // SriovFecNodeConfigStatus defines the observed state of SriovFecNodeConfig
 type SriovFecNodeConfigStatus struct {
+	PfBbConfVersion string `json:"pfBbConfVersion,omitempty"`
 	// Provides information about device update status
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 	// Provides information about FPGA inventory on the node
@@ -46,7 +50,9 @@ type SriovFecNodeConfigStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Configured",type=string,JSONPath=`.status.conditions[?(@.type=="Configured")].reason`
-// +kubebuilder:unservedversion
+// +kubebuilder:storageversion
+// +kubebuilder:resource:shortName=sfnc
+
 // SriovFecNodeConfig is the Schema for the sriovfecnodeconfigs API
 // +operator-sdk:csv:customresourcedefinitions:displayName="SriovFecNodeConfig",resources={{SriovFecNodeConfig,v1,node}}
 type SriovFecNodeConfig struct {

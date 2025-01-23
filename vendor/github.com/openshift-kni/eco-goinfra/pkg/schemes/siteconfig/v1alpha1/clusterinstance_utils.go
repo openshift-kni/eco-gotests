@@ -103,5 +103,5 @@ func IndexOfManifestByIdentity(target *ManifestReference, manifestRefs []Manifes
 			return i, nil
 		}
 	}
-	return -1, fmt.Errorf("ManifestReference (%s) not found", target.String())
+	return -1, fmt.Errorf("manifestReference (%s) not found", target.String())
 }
