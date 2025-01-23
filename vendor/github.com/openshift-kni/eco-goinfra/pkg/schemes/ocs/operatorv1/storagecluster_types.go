@@ -93,11 +93,11 @@ type StorageClusterSpec struct {
 
 	// AllowRemoteStorageConsumers Indicates that the OCS cluster should deploy the needed
 	// components to enable connections from remote consumers.
+	// +kubebuilder:deprecatedversion:warning="AllowRemoteStorageConsumers field has been deprecated and will be ignored within the reconcile."
 	AllowRemoteStorageConsumers bool `json:"allowRemoteStorageConsumers,omitempty"`
 
 	// ProviderAPIServerServiceType Indicates the ServiceType for OCS Provider API Server Service.
 	// The supported values are NodePort or LoadBalancer. The default ServiceType is NodePort if the value is empty.
-	// This will only be used when AllowRemoteStorageConsumers is set to true
 	ProviderAPIServerServiceType corev1.ServiceType `json:"providerAPIServerServiceType,omitempty"`
 
 	// EnableCephTools toggles on whether or not the ceph tools pod
@@ -225,9 +225,11 @@ type ManageCephDashboard struct {
 
 // ManageCephBlockPools defines how to reconcile CephBlockPools
 type ManageCephBlockPools struct {
-	ReconcileStrategy    string `json:"reconcileStrategy,omitempty"`
-	DisableStorageClass  bool   `json:"disableStorageClass,omitempty"`
-	DisableSnapshotClass bool   `json:"disableSnapshotClass,omitempty"`
+	ReconcileStrategy string `json:"reconcileStrategy,omitempty"`
+	// +kubebuilder:deprecatedversion:warning="This field has been deprecated and will be removed in future.
+	DisableStorageClass bool `json:"disableStorageClass,omitempty"`
+	// +kubebuilder:deprecatedversion:warning="This field has been deprecated and will be removed in future.
+	DisableSnapshotClass bool `json:"disableSnapshotClass,omitempty"`
 	// if set to true, the storageClass created for cephBlockPools will be annotated as the default for the whole cluster
 	DefaultStorageClass bool `json:"defaultStorageClass,omitempty"`
 	// StorageClassName specifies the name of the storage class created for ceph block pools
@@ -266,10 +268,12 @@ type ManageCephNonResilientPools struct {
 
 // ManageCephFilesystems defines how to reconcile CephFilesystems
 type ManageCephFilesystems struct {
-	ReconcileStrategy     string `json:"reconcileStrategy,omitempty"`
-	DisableStorageClass   bool   `json:"disableStorageClass,omitempty"`
-	ActiveMetadataServers int    `json:"activeMetadataServers,omitempty"`
-	DisableSnapshotClass  bool   `json:"disableSnapshotClass,omitempty"`
+	ReconcileStrategy string `json:"reconcileStrategy,omitempty"`
+	// +kubebuilder:deprecatedversion:warning="This field has been deprecated and will be removed in future.
+	DisableStorageClass   bool `json:"disableStorageClass,omitempty"`
+	ActiveMetadataServers int  `json:"activeMetadataServers,omitempty"`
+	// +kubebuilder:deprecatedversion:warning="This field has been deprecated and will be removed in future.
+	DisableSnapshotClass bool `json:"disableSnapshotClass,omitempty"`
 	// StorageClassName specifies the name of the storage class created for cephfs
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
@@ -284,11 +288,12 @@ type ManageCephFilesystems struct {
 
 // ManageCephObjectStores defines how to reconcile CephObjectStores
 type ManageCephObjectStores struct {
-	ReconcileStrategy   string `json:"reconcileStrategy,omitempty"`
-	DisableStorageClass bool   `json:"disableStorageClass,omitempty"`
-	GatewayInstances    int    `json:"gatewayInstances,omitempty"`
-	DisableRoute        bool   `json:"disableRoute,omitempty"`
-	HostNetwork         *bool  `json:"hostNetwork,omitempty"`
+	ReconcileStrategy string `json:"reconcileStrategy,omitempty"`
+	// +kubebuilder:deprecatedversion:warning="This field has been deprecated and will be removed in future.
+	DisableStorageClass bool  `json:"disableStorageClass,omitempty"`
+	GatewayInstances    int   `json:"gatewayInstances,omitempty"`
+	DisableRoute        bool  `json:"disableRoute,omitempty"`
+	HostNetwork         *bool `json:"hostNetwork,omitempty"`
 	// StorageClassName specifies the name of the storage class created for ceph obc's
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
