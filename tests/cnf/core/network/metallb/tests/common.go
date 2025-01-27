@@ -17,7 +17,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
@@ -83,8 +83,8 @@ func setWorkerNodeListAndLabelForBfdTests(
 func createConfigMap(
 	bgpAsn int, nodeAddrList []string, enableMultiHop, enableBFD bool) *configmap.Builder {
 	frrBFDConfig := frr.DefineBGPConfig(
-		bgpAsn, tsparams.LocalBGPASN, removePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
-	configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
+		bgpAsn, tsparams.LocalBGPASN, frrconfig.RemovePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
+	configMapData := frrconfig.DefineBaseConfig(frrconfig.DaemonsFile, frrBFDConfig, "")
 	masterConfigMap, err := configmap.NewBuilder(APIClient, "frr-master-node-config", tsparams.TestNamespaceName).
 		WithData(configMapData).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create config map")
@@ -95,7 +95,7 @@ func createConfigMap(
 func createHubConfigMap(name string) *configmap.Builder {
 	frrBFDConfig := frr.DefineBGPConfig(
 		tsparams.LocalBGPASN, tsparams.LocalBGPASN, []string{"10.10.0.10"}, false, false)
-	configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
+	configMapData := frrconfig.DefineBaseConfig(frrconfig.DaemonsFile, frrBFDConfig, "")
 	hubConfigMap, err := configmap.NewBuilder(APIClient, name, tsparams.TestNamespaceName).WithData(configMapData).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create hub config map")
 
@@ -189,7 +189,7 @@ func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
 }
 
 func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range frrconfig.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
 			time.Minute*3, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
@@ -198,7 +198,7 @@ func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []s
 }
 
 func verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range frrconfig.RemovePrefixFromIPList(peerAddrList) {
 		Consistently(frr.BGPNeighborshipHasState,
 			time.Minute, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
@@ -296,15 +296,6 @@ func setupNGNXPod(nodeName string) {
 		RedefineDefaultCMD(cmd.DefineNGNXAndSleep()).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
-}
-
-func removePrefixFromIPList(ipAddressList []string) []string {
-	var ipAddressListWithoutPrefix []string
-	for _, ipaddress := range ipAddressList {
-		ipAddressListWithoutPrefix = append(ipAddressListWithoutPrefix, ipaddr.RemovePrefix(ipaddress))
-	}
-
-	return ipAddressListWithoutPrefix
 }
 
 func verifyMetricPresentInPrometheus(

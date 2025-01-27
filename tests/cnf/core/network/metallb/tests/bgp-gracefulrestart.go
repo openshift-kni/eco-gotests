@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
@@ -206,7 +207,7 @@ func gracefulRestartTest(
 }
 
 func verifyMetalLbBGPSessionsAreDown(frrPod *pod.Builder, peerAddrList []string) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range frrconfig.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
 			30*time.Second, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").ShouldNot(
@@ -215,7 +216,7 @@ func verifyMetalLbBGPSessionsAreDown(frrPod *pod.Builder, peerAddrList []string)
 }
 
 func verifyGREnabledOnNeighbors(frrPod *pod.Builder, peerAddrList []string) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range frrconfig.RemovePrefixFromIPList(peerAddrList) {
 		grStatus, err := frr.GetGracefulRestartStatus(frrPod, peerAddress)
 
 		Expect(err).ToNot(HaveOccurred(), "Failed to get GracefulRestart status")

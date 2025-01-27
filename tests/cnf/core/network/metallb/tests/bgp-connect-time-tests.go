@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
@@ -139,7 +140,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to reset BGP connection")
 
 			By("Verify that BGP session is re-established and up in less then 10 seconds")
-			verifyMaxReConnectTime(frrPod, removePrefixFromIPList(ipv4NodeAddrList), time.Second*10)
+			verifyMaxReConnectTime(frrPod, frrconfig.RemovePrefixFromIPList(ipv4NodeAddrList), time.Second*10)
 		})
 
 	It("Update the timer to less then the default on an existing BGP connection",
@@ -202,7 +203,7 @@ func createAndDeployFRRPod() *pod.Builder {
 }
 
 func verifyMaxReConnectTime(frrPod *pod.Builder, peerAddrList []string, maxConnectTime time.Duration) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range frrconfig.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
 			maxConnectTime, time.Second).
 			WithArguments(frrPod, peerAddress, "Established").Should(
