@@ -5,6 +5,7 @@ import (
 
 	"regexp"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -427,7 +428,7 @@ var _ = Describe("TPM2", func() {
 			WithPolling(tsparams.PollingIntervalBMC).
 			ShouldNot(HaveOccurred(), "getting boot order should not return an error")
 
-		By(fmt.Sprintf("listing original boot Order: %s", originalBootOrder))
+		glog.V(tsparams.LogLevel).Infof("listing original boot Order: %s", originalBootOrder)
 
 		By("changing the server boot order")
 		swapFirstSecondBootItems()
