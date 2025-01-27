@@ -169,6 +169,8 @@ var _ = Describe("rdmaMetricsAPI", Ordered, Label(tsparams.LabelRdmaMetricsAPITe
 				pciAddress, rdmaDevice, err := getInterfacePci(testPod, "net1")
 				Expect(err).ToNot(HaveOccurred(),
 					"Could not get PCI Address and/or Rdma device from Pod Annotations")
+				Expect(pciAddress).To(Not(BeEmpty()), "pci-address field is empty")
+				Expect(rdmaDevice).To(Not(BeEmpty()), "rdma-device field is empty")
 
 				By("Verify Rdma Metrics should not be present inside Pod")
 				podOutput, err := testPod.ExecCommand(
@@ -266,11 +268,11 @@ func verifyAllocatableResouces(tPod *pod.Builder, resName string) {
 	Expect(err).ToNot(HaveOccurred(), "Failed to list sriov device plugin pods")
 	Expect(len(sriovDevicePluginPods)).To(Equal(1), "Failed to fetch the sriov device plugin pod")
 
-	_, err = sriovDevicePluginPods[0].Delete()
+	_, err = sriovDevicePluginPods[0].DeleteAndWait(1 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete the sriov device plugin pod")
 
 	Eventually(func() bool {
-		sriovDevicePluginPods, err := pod.List(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{
+		sriovDevicePluginPods, err = pod.List(APIClient, NetConfig.SriovOperatorNamespace, metav1.ListOptions{
 			LabelSelector: labels.Set{"app": "sriov-device-plugin"}.String(),
 			FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": tPod.Object.Spec.NodeName}).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to list sriov device plugin pods")
@@ -278,7 +280,7 @@ func verifyAllocatableResouces(tPod *pod.Builder, resName string) {
 		return len(sriovDevicePluginPods) == 1
 	}, 1*time.Minute, 2*time.Second).Should(BeTrue(), "Failed to find the new sriov device plugin pod")
 
-	Consistently(func() bool {
+	Eventually(func() bool {
 		testNode, err := nodes.Pull(APIClient, tPod.Object.Spec.NodeName)
 		Expect(err).NotTo(HaveOccurred(), "Failed to pull test pod's host worker node")
 
@@ -398,6 +400,8 @@ func verifyRdmaMetrics(inputPod *pod.Builder, iName string) {
 	pciAddress, rdmaDevice, err := getInterfacePci(inputPod, iName)
 	Expect(err).ToNot(HaveOccurred(),
 		"Could not get PCI Address and/or Rdma device from Pod Annotations")
+	Expect(pciAddress).To(Not(BeEmpty()), "pci-address field is empty")
+	Expect(rdmaDevice).To(Not(BeEmpty()), "rdma-device field is empty")
 
 	By("Rdma metrics should be present inside the Pod")
 
