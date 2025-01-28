@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -297,9 +296,7 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 			resource.Resource, builder.Definition.Name)
 
 		err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).DeleteCollection(
-			context.TODO(), metav1.DeleteOptions{
-				GracePeriodSeconds: ptr.To(int64(0)),
-			}, metav1.ListOptions{})
+			context.TODO(), metav1.DeleteOptions{}, metav1.ListOptions{})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to remove resources: %s in namespace: %s",
