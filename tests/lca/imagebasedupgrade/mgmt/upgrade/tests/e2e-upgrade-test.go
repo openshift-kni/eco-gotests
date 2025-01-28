@@ -68,8 +68,9 @@ var (
 	ibu *lca.ImageBasedUpgradeBuilder
 	err error
 
-	ibuWorkloadNamespace *namespace.Builder
-	ibuWorkloadRoute     *route.Builder
+	ibuWorkloadNamespace     *namespace.Builder
+	ibuWorkloadRoute         *route.Builder
+	originalClusterVersionXY string
 )
 
 var _ = Describe(
@@ -81,6 +82,14 @@ var _ = Describe(
 		)
 
 		BeforeAll(func() {
+
+			By("Check if seed image and target cluster are equal prior the upgrade")
+			clusterVersion, err := clusterversion.Pull(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling clusterversion")
+
+			if MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion == clusterVersion.Object.Status.Desired.Version {
+				Skip("Target clusterversion is equal to seedimageversion before IBU")
+			}
 
 			By("Get target cluster proxy configuration")
 			originalTargetProxy, err = proxy.Pull(APIClient)
@@ -95,6 +104,10 @@ var _ = Describe(
 			ibu.Definition.Spec.OADPContent = []lcav1.ConfigMapRef{}
 			ibu, err := ibu.Update()
 			Expect(err).NotTo(HaveOccurred(), "error updating ibu resource with empty values")
+
+			By("Get the target cluster's X.Y portion of the OCP version before the upgrade")
+			originalClusterVersionXY, err = ClusterVersionXY(clusterVersion.Object.Status.Desired.Version)
+			Expect(err).NotTo(HaveOccurred(), "error retrieveing the X.Y version of the cluster before upgrade")
 
 			if findInstalledCSV("kernel-module-management") {
 				glog.V(mgmtparams.MGMTLogLevel).Infof("KMM was installed")
@@ -325,7 +338,7 @@ var _ = Describe(
 			}
 		})
 
-		It("upgrades the connected cluster", reportxml.ID("71362"), func() {
+		It("upgrades the connected cluster to a newer minor version", reportxml.ID("71362"), func() {
 			By("Check if the target cluster is connected")
 			connected, err := cluster.Connected(APIClient)
 
@@ -335,6 +348,37 @@ var _ = Describe(
 
 			if err != nil {
 				Skip(fmt.Sprintf("Encountered an error while getting cluster connection info: %s", err.Error()))
+			}
+
+			By("Check if seed and target have the same minor version")
+			seedImageClusterVersionXY, err := ClusterVersionXY(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion)
+			Expect(err).NotTo(HaveOccurred(), "error retrieving the XY portion of the seed cluster version")
+
+			if seedImageClusterVersionXY == originalClusterVersionXY {
+				Skip("XY portion of the OCP version between seed and target clusters is identical")
+			}
+
+			upgrade()
+		})
+
+		It("upgrades the connected cluster to a newer z-stream", reportxml.ID("79176"), func() {
+			By("Check if the target cluster is connected")
+			connected, err := cluster.Connected(APIClient)
+
+			if !connected {
+				Skip("Target cluster is disconnected")
+			}
+
+			if err != nil {
+				Skip(fmt.Sprintf("Encountered an error while getting cluster connection info: %s", err.Error()))
+			}
+
+			By("Check if seed and target have the same minor version")
+			seedImageClusterVersionXY, err := ClusterVersionXY(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion)
+			Expect(err).NotTo(HaveOccurred(), "error retrieving the XY portion of the seed cluster version")
+
+			if seedImageClusterVersionXY != originalClusterVersionXY {
+				Skip("XY portion of the OCP version between seed and target clusters is different")
 			}
 
 			upgrade()
@@ -563,6 +607,7 @@ func upgrade() {
 
 	clusterVersion, err := clusterversion.Pull(APIClient)
 	Expect(err).NotTo(HaveOccurred(), "error pulling clusterversion")
+
 	Expect(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion).To(
 		Equal(clusterVersion.Object.Status.Desired.Version), "error: clusterversion does not match seedimageversion")
 
@@ -722,4 +767,11 @@ func findInstalledCSV(expectedCSV string) bool {
 	}
 
 	return false
+}
+
+// ClusterVersionXY returns the XY portion of the cluster's OCP version.
+func ClusterVersionXY(clusterVersionXYZ string) (string, error) {
+	splitVersion := strings.Split(clusterVersionXYZ, ".")
+
+	return fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1]), nil
 }
