@@ -777,12 +777,14 @@ func EnsureInNodeReadiness(ctx SpecContext) {
 		}).WithTimeout(25*time.Minute).WithPolling(15*time.Second).WithContext(ctx).Should(BeTrue(),
 			"Node hasn't reached Ready state")
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Uncordoning node %q", _node.Definition.Name)
-		err = _node.Uncordon()
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to uncordon %q due to %v", _node.Definition.Name, err))
+		if _node.Object.Spec.Unschedulable {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Uncordoning node %q", _node.Definition.Name)
+			err = _node.Uncordon()
+			Expect(err).ToNot(HaveOccurred(),
+				fmt.Sprintf("Failed to uncordon %q due to %v", _node.Definition.Name, err))
 
-		time.Sleep(15 * time.Second)
+			time.Sleep(15 * time.Second)
+		}
 	}
 }
 
