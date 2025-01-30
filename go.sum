@@ -632,8 +632,8 @@ github.com/opencontainers/runtime-spec v1.2.0 h1:z97+pHb3uELt/yiAWD691HNHQIF07bE
 github.com/opencontainers/runtime-spec v1.2.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20241213003211-a57a58a5c4f2 h1:Ts3yv2vE8LtfFmXvhUcyLsZ7YBHT84/vEWR9SHbFj2M=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20241213003211-a57a58a5c4f2/go.mod h1:TYB+3zGmMhqOmyZ6FCbtNZSndvRDcfh16U7wgYGpe/8=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250127171101-7a8e606f1dcb h1:yXaR+5LPjM5QB1q1p+qmsMws1cZ7l2fmLSwqQ8WY1vQ=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250127171101-7a8e606f1dcb/go.mod h1:6MDA4ZdKa3Bih18XggQ3p/YHd5rfvnvEhb9hiGXgRaU=
+github.com/openshift-kni/eco-goinfra v0.0.0-20250129204500-1fb7f3c38dc7 h1:kr36AexX86BZ/oOO1IOdtFWa/+k/YsPeq0cF7y5pSDI=
+github.com/openshift-kni/eco-goinfra v0.0.0-20250129204500-1fb7f3c38dc7/go.mod h1:1jORX9uYlpcQWcFyTKKPhkDi6JFvvMvnrbDPpSt7908=
 github.com/openshift-kni/k8sreporter v1.0.6 h1:aaxDzZx3s9bo1I3nopR63RGVZxcJgR94j5X87aDihYo=
 github.com/openshift-kni/k8sreporter v1.0.6/go.mod h1:tX6LOg0m0oXje7WNLFo8LKHC9Ix8VV0a7vUc6eyeFBQ=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20250120220331-9547280df193 h1:pdJAfmQwUvqAKcjaMGNqICbuZ7a20sGxm4JFymc1mmw=
@@ -971,8 +971,8 @@ golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45/go.mod h1:gOpvHmFTYa4Iltr
 golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/oauth2 v0.21.0/go.mod h1:XYTD2NtWslqkgxebSiOHnXEap4TF09sJSc7H1sXbhtI=
-golang.org/x/oauth2 v0.24.0 h1:KTBBxWqUa0ykRPLtV69rRto9TLXcqYkeswu48x/gvNE=
-golang.org/x/oauth2 v0.24.0/go.mod h1:XYTD2NtWslqkgxebSiOHnXEap4TF09sJSc7H1sXbhtI=
+golang.org/x/oauth2 v0.25.0 h1:CY4y7XT9v0cRI9oupztF8AgiIu99L/ksR/Xp/6jrZ70=
+golang.org/x/oauth2 v0.25.0/go.mod h1:XYTD2NtWslqkgxebSiOHnXEap4TF09sJSc7H1sXbhtI=
 golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20181108010431-42b317875d0f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
