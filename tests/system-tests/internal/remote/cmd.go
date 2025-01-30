@@ -134,21 +134,26 @@ func ExecCmdOnHost(remoteHostname, remoteHostUsername, remoteHostPass, cmd strin
 
 	sshConf := ssh.NewSSHConfigFromPassword(remoteHostUsername, remoteHostPass)
 
-	glog.V(100).Infof("Dial SSH to %s", remoteHostname)
+	glog.V(100).Infof("Dial SSH to the host %s", remoteHostname)
 
 	scpClient, err := ssh.NewClient(remoteHostname, sshConf, &ssh.ClientOption{})
 
 	if err != nil {
-		return "", err
+		glog.V(100).Infof("Failed to build new ssh client due to: %v", err)
+
+		return "", fmt.Errorf("failed to build new ssh client due to: %w", err)
 	}
 
 	ss, _ := scpClient.NewSession()
 	defer ss.Close()
 
-	out, err := ss.Output(cmd)
+	out, err := ss.CombinedOutput(cmd)
 
 	if err != nil {
-		return "", err
+		glog.V(100).Infof("Failed to run cmd %s on the host %s due to: %v",
+			cmd, remoteHostname, err)
+
+		return "", fmt.Errorf("failed to run cmd %s on the host %s due to: %w", cmd, remoteHostname, err)
 	}
 
 	return string(out), nil
