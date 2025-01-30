@@ -501,7 +501,7 @@ func gracefulNodeReboot(nodeName string) error {
 	err = nodeObj.Cordon()
 
 	if err != nil {
-		glog.V(100).Infof("Failed to cordon node %q due to %w", nodeName, err)
+		glog.V(100).Infof("Failed to cordon node %q due to %v", nodeName, err)
 
 		return fmt.Errorf("failed to cordon node %q due to %w", nodeName, err)
 	}
@@ -513,7 +513,7 @@ func gracefulNodeReboot(nodeName string) error {
 	err = nodeObj.Drain()
 
 	if err != nil {
-		glog.V(100).Infof("Failed to drain node %q due to %w", nodeName, err)
+		glog.V(100).Infof("Failed to drain node %q due to %v", nodeName, err)
 
 		return fmt.Errorf("failed to drain node %q due to %w", nodeName, err)
 	}
