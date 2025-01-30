@@ -18,7 +18,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02 // release-4.15
+	github.com/openshift-kni/eco-goinfra v0.0.0-20250128204359-006719ae1d54 // release-4.16
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -66,6 +66,7 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
+	github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61 // indirect
 	github.com/kdomanski/iso9660 v0.2.1 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.5.1 // indirect

@@ -377,6 +377,9 @@ github.com/gorilla/websocket
 # github.com/grafana-operator/grafana-operator/v4 v4.10.1
 ## explicit; go 1.18
 github.com/grafana-operator/grafana-operator/v4/api/integreatly/v1alpha1
+# github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61
+## explicit; go 1.19
+github.com/grafana/loki/operator/apis/loki/v1
 # github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79
 ## explicit
 github.com/gregjones/httpcache
@@ -638,7 +641,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/scheme
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/generated/clientset/versioned/typed/clustergroupupgrades/v1alpha1/fake
-# github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02
+# github.com/openshift-kni/eco-goinfra v0.0.0-20250128204359-006719ae1d54
 ## explicit; go 1.22
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd

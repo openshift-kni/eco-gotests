@@ -1355,6 +1355,8 @@ github.com/gorilla/websocket v1.5.1 h1:gmztn0JnHVt9JZquRuzLw3g4wouNVzKL15iLr/zn/
 github.com/gorilla/websocket v1.5.1/go.mod h1:x3kM2JMyaluk02fnUJpQuwD2dCS5NDG2ZHL0uE0tcaY=
 github.com/grafana-operator/grafana-operator/v4 v4.10.1 h1:9TSZhuMh6b64frhTa8eb+jBEw0oZp076Bh990Ts2WqU=
 github.com/grafana-operator/grafana-operator/v4 v4.10.1/go.mod h1:k69wJcXVrqAcZBoGuh5LSqz0ak8LlVOxxqp0W3f/4V8=
+github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61 h1:UxACR7AVQlmoe/shdBjd5PHZxLI4NzudQPeqgaorc+0=
+github.com/grafana/loki/operator/apis/loki v0.0.0-20240627192641-91a34868db61/go.mod h1:0M5m4ewKZrM5rS6MfbbzfdIjaurqK6pCMRNmWOdzojc=
 github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
 github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 h1:+ngKgrYPPJrOjhax5N+uePQ0Fh1Z7PheYoUI/0nzkPA=
 github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
@@ -1691,8 +1693,8 @@ github.com/opencontainers/runtime-spec v1.2.0 h1:z97+pHb3uELt/yiAWD691HNHQIF07bE
 github.com/opencontainers/runtime-spec v1.2.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f07cdbf8af2c h1:wAPCXsnAXOUAJ5DYlVgGUcV9YBSiVlH4o9tbQ9py8ZY=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240423171335-f07cdbf8af2c/go.mod h1:hkzqKpmQvh7vgPx8Hw6IExJorKPM0dEeJdOXjIW3gNw=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02 h1:e9+xSEmZzymaHJbRsZ+6cndk8TYGYPYdDqVbPTVz0r4=
-github.com/openshift-kni/eco-goinfra v0.0.0-20240626143745-4d019aeb6f02/go.mod h1:oGFnQMzZ/bqtnjdh9Rx44NzsMGWaZXgyQsoS0Q7faJ8=
+github.com/openshift-kni/eco-goinfra v0.0.0-20250128204359-006719ae1d54 h1:hTpdaT21P35B5oiqvUl6QmS8o8VKQKOpICCWXfy6D+M=
+github.com/openshift-kni/eco-goinfra v0.0.0-20250128204359-006719ae1d54/go.mod h1:IAaoOAilxnel+d9reSOJqMFl6DdRtl1C0h3tOsGeSQA=
 github.com/openshift-kni/k8sreporter v1.0.5 h1:1GYBc/BTZyVoXilHef43v9A8BSzw700zAPZ6zsZvo6Y=
 github.com/openshift-kni/k8sreporter v1.0.5/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20240606123201-0c45cd13c2f1 h1:y+0Ecc+MSZA/GNS3VOpKq+XK9x8qoNA7TlyHvqbVbpw=
