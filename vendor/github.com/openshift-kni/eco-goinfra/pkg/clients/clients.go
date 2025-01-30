@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	argocdOperatorv1alpha1 "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
+	lokiv1 "github.com/grafana/loki/operator/apis/loki/v1"
 	kedav1alpha1 "github.com/kedacore/keda-olm-operator/apis/keda/v1alpha1"
 	kedav2v1alpha1 "github.com/kedacore/keda/v2/apis/keda/v1alpha1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
@@ -377,6 +378,10 @@ func SetScheme(crScheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := lokiv1.AddToScheme(crScheme); err != nil {
+		return err
+	}
+
 	if err := istiov1.AddToScheme(crScheme); err != nil {
 		return err
 	}
@@ -545,6 +550,8 @@ func GetTestClients(tcp TestClientParams) *Settings {
 		case *clov1.ClusterLogForwarder:
 			genericClientObjects = append(genericClientObjects, v)
 		case *eskv1.Elasticsearch:
+			genericClientObjects = append(genericClientObjects, v)
+		case *lokiv1.LokiStack:
 			genericClientObjects = append(genericClientObjects, v)
 		case *hiveextV1Beta1.AgentClusterInstall:
 			genericClientObjects = append(genericClientObjects, v)
