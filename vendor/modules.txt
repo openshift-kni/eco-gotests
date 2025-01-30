@@ -746,6 +746,15 @@ github.com/openshift-kni/lifecycle-agent/utils
 # github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250114093602-01c00730991d
 ## explicit; go 1.22.0
 github.com/openshift-kni/numaresources-operator/api/numaresourcesoperator/v1
+# github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin v0.0.0-20250128160241-57fbcf565b32
+## explicit; go 1.22.0
+github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin/v1alpha1
+# github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250130153422-72163e75c543
+## explicit; go 1.22.0
+github.com/openshift-kni/oran-o2ims/api/hardwaremanagement/v1alpha1
+# github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250123151805-c935b06062f9
+## explicit; go 1.22.0
+github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1
 # github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible => github.com/openshift/api v0.0.0-20250123044544-55c9ecba501f
 ## explicit; go 1.22.0
 github.com/openshift/api
@@ -994,6 +1003,9 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/r3labs/diff/v3 v3.0.1
+## explicit; go 1.13
+github.com/r3labs/diff/v3
 # github.com/red-hat-storage/odf-operator v0.0.0-20241124050455-02681e6c10df
 ## explicit; go 1.22.7
 github.com/red-hat-storage/odf-operator/api/v1alpha1
@@ -1056,6 +1068,15 @@ github.com/vincent-petithory/dataurl
 # github.com/vishvananda/netns v0.0.4
 ## explicit; go 1.17
 github.com/vishvananda/netns
+# github.com/vmihailenco/msgpack/v5 v5.3.5
+## explicit; go 1.11
+github.com/vmihailenco/msgpack/v5
+github.com/vmihailenco/msgpack/v5/msgpcode
+# github.com/vmihailenco/tagparser/v2 v2.0.0
+## explicit; go 1.15
+github.com/vmihailenco/tagparser/v2
+github.com/vmihailenco/tagparser/v2/internal
+github.com/vmihailenco/tagparser/v2/internal/parser
 # github.com/vmware-tanzu/velero v1.13.2
 ## explicit; go 1.21
 github.com/vmware-tanzu/velero/pkg/apis/velero/shared
@@ -1071,6 +1092,15 @@ github.com/wk8/go-ordered-map/v2
 # github.com/x448/float16 v0.8.4
 ## explicit; go 1.11
 github.com/x448/float16
+# github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
+## explicit
+github.com/xeipuuv/gojsonpointer
+# github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
+## explicit
+github.com/xeipuuv/gojsonreference
+# github.com/xeipuuv/gojsonschema v1.2.0
+## explicit
+github.com/xeipuuv/gojsonschema
 # github.com/xlab/treeprint v1.2.0
 ## explicit; go 1.13
 github.com/xlab/treeprint
@@ -1848,7 +1878,7 @@ open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/place
 sigs.k8s.io/container-object-storage-interface-api/apis
 sigs.k8s.io/container-object-storage-interface-api/apis/objectstorage
 sigs.k8s.io/container-object-storage-interface-api/apis/objectstorage/v1alpha1
-# sigs.k8s.io/controller-runtime v0.19.4
+# sigs.k8s.io/controller-runtime v0.19.5
 ## explicit; go 1.22.0
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/builder
