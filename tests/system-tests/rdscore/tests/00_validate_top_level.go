@@ -167,7 +167,7 @@ var _ = Describe(
 				rdscorecommon.VerifyEgressIPWrongNsLabel)
 
 			It("Verify eIPv4 address assigned to the next available node after node reboot; fail-over",
-				Label("egressip", "egressip-ipv4", "egressip-failover"), reportxml.ID("78280"),
+				Label("egressip", "egressip-ipv4", "egressip-failover", "debug"), reportxml.ID("78280"),
 				rdscorecommon.VerifyEgressIPFailOverIPv4)
 
 			It("Verify eIPv6 address assigned to the next available node after node reboot; fail-over",

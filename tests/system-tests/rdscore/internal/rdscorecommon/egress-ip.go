@@ -3,6 +3,8 @@ package rdscorecommon
 import (
 	"context"
 	"fmt"
+	policyv1 "k8s.io/api/policy/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"math/rand"
 	"net"
 	"net/netip"
@@ -12,8 +14,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
-
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -28,6 +28,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/egressip"
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/poddisruptionbudget"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -515,6 +517,17 @@ func gracefulNodeReboot(nodeName string) error {
 
 	time.Sleep(5 * time.Second)
 
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Set minAvailable=0 to all found PDB to avoid " +
+		"Node Drain Failure due to active PodDisruptionBudget")
+
+	pdbList, err := setMinAvailableToZeroForActivePDB()
+
+	if err != nil {
+		glog.V(100).Infof("Failed to retrieve pdb list and set minAvailable=0 due to %v", err)
+
+		return fmt.Errorf("failed to retrieve pdb list and set minAvailable=0 due to: %w", err)
+	}
+
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Draining node %q", nodeName)
 
 	err = nodeObj.Drain()
@@ -650,6 +663,15 @@ func gracefulNodeReboot(nodeName string) error {
 
 	time.Sleep(15 * time.Second)
 
+	err = restoreActivePDBValues(pdbList)
+
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			"Failed to restore minAvailable value for the active PDBs due to %v", err)
+
+		return fmt.Errorf("failed to restore minAvailable value for the active PDBs due to %v", err)
+	}
+
 	return nil
 }
 
@@ -677,6 +699,78 @@ func getNodeForReboot(isIPv6 bool) (string, string, error) {
 	}
 
 	return "", "", fmt.Errorf("no egress IP address found in egressIP map")
+}
+
+func setMinAvailableToZeroForActivePDB() ([]*poddisruptionbudget.Builder, error) {
+	By("Workaround for the node drain failure due to active PodDisruptionBudget")
+
+	allAvailablePDB, err := poddisruptionbudget.ListInAllNamespaces(APIClient)
+
+	if err != nil {
+		glog.Infof("Failed to list all available pod disruption budget due to %v", err)
+
+		return nil, nil
+	}
+
+	var pdbMinAvailableList []*poddisruptionbudget.Builder
+
+	for _, _pdb := range allAvailablePDB {
+		minAvailableValue := _pdb.Object.Spec.MinAvailable
+
+		if minAvailableValue.IntValue() >= 1 {
+			pdbMinAvailableList = append(pdbMinAvailableList, _pdb)
+		}
+	}
+
+	if len(pdbMinAvailableList) == 0 {
+		glog.V(100).Infof("no poddisruptionbudget with the MinAvailable >= 1 found")
+
+		return nil, nil
+	}
+
+	zeroInt := intstr.FromInt32(0)
+
+	setZeroValue := policyv1.PodDisruptionBudgetSpec{
+		MinAvailable: &zeroInt,
+	}
+
+	for _, _pdb := range pdbMinAvailableList {
+		_, err = _pdb.WithPDBSpec(setZeroValue).Update(true)
+
+		if err != nil {
+			glog.V(100).Infof("Failed to update PodDisruptionBudget due to %v", err)
+
+			return nil, fmt.Errorf("failed to update PodDisruptionBudget due to %w", err)
+		}
+	}
+
+	return pdbMinAvailableList, nil
+}
+
+func restoreActivePDBValues(pdbMinAvailableList []*poddisruptionbudget.Builder) error {
+	By("Workaround for the node drain failure due to active PodDisruptionBudget, restore active PDBs values")
+
+	oneInt := intstr.FromInt32(1)
+
+	restoreValue := policyv1.PodDisruptionBudgetSpec{
+		MinAvailable: &oneInt,
+	}
+
+	for _, _pdb := range pdbMinAvailableList {
+		minAvailableValue := _pdb.Object.Spec.MinAvailable
+
+		if minAvailableValue.IntValue() == 0 {
+			_, err := _pdb.WithPDBSpec(restoreValue).Update(true)
+
+			if err != nil {
+				glog.V(100).Infof("Failed to update PodDisruptionBudget due to %v", err)
+
+				return fmt.Errorf("failed to update PodDisruptionBudget due to %w", err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func verifyEgressIPFailOver(isIPv6 bool) {
