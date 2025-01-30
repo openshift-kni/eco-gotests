@@ -5,6 +5,7 @@ import (
 
 	"regexp"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -413,6 +414,22 @@ var _ = Describe("TPM2", func() {
 		isRootDiskReservedSlotPresent := helper.LuksListContainsReservedSlot(luksListOutput)
 		Expect(isRootDiskReservedSlotPresent).To(BeFalse(), "there should be no reserved slot present at this point")
 
+		By("saving the original server boot order")
+		var originalBootOrder []string
+		Eventually(func() error {
+			originalBootOrder, err = BMCClient.SystemBootOrderReferences()
+
+			if len(originalBootOrder) < 2 {
+				return fmt.Errorf("need at least 2 boot entries")
+			}
+
+			return err
+		}).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PollingIntervalBMC).
+			ShouldNot(HaveOccurred(), "getting boot order should not return an error")
+
+		glog.V(tsparams.LogLevel).Infof("listing original boot Order: %s", originalBootOrder)
+
 		By("changing the server boot order")
 		swapFirstSecondBootItems()
 
@@ -439,8 +456,10 @@ var _ = Describe("TPM2", func() {
 		Expect(err).ToNot(HaveOccurred(), "WaitForRegex should not fail")
 		Expect(matchIndex).To(Equal(0), "WaitForRegex should match TPM failed (0)")
 
-		By("changing the server boot order back to defaults")
-		swapFirstSecondBootItems()
+		By("changing the server boot order back to original settings")
+		Eventually(BMCClient.SetSystemBootOrderReferences).WithTimeout(tsparams.TimeoutWaitingOnBMC).
+			WithPolling(tsparams.PollingIntervalBMC).WithArguments(originalBootOrder).ShouldNot(HaveOccurred(),
+			"changing boot order should not return an error")
 
 		By("power cycling node")
 		Eventually(BMCClient.SystemPowerCycle).WithTimeout(tsparams.TimeoutWaitingOnBMC).
