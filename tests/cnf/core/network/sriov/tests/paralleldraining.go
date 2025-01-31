@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -59,6 +60,13 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 			createSriovConfigurationParallelDrain(sriovInterfacesUnderTest[0])
 
 			By("Creating test pods and checking connectivity between the them")
+			Eventually(func() error {
+				_, err := nad.Pull(APIClient, sriovAndResourceNameParallelDrain, tsparams.TestNamespaceName)
+
+				return err
+			}, 10*time.Second, 1*time.Second).Should(BeNil(), fmt.Sprintf(
+				"Failed to pull NAD %s", sriovAndResourceNameParallelDrain))
+
 			err := sriovenv.CreatePodsAndRunTraffic(workerNodeList[0].Object.Name, workerNodeList[0].Object.Name,
 				sriovAndResourceNameParallelDrain, sriovAndResourceNameParallelDrain,
 				tsparams.ClientMacAddress, tsparams.ServerMacAddress,
