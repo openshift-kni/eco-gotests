@@ -3,13 +3,14 @@ package rdscorecommon
 import (
 	"context"
 	"fmt"
-	policyv1 "k8s.io/api/policy/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"math/rand"
 	"net"
 	"net/netip"
 	"strings"
 	"time"
+
+	policyv1 "k8s.io/api/policy/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -498,7 +499,7 @@ func gracefulNodeReboot(nodeName string) error {
 		return fmt.Errorf("failed to retrieve node %s object due to: %w", nodeName, err)
 	}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Cordoning node %q", nodeName)
+	glog.V(100).Infof("Cordoning node %q", nodeName)
 
 	err = nodeObj.Cordon()
 
@@ -510,7 +511,7 @@ func gracefulNodeReboot(nodeName string) error {
 
 	time.Sleep(5 * time.Second)
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Set minAvailable=0 to all found PDB to avoid " +
+	glog.V(100).Infof("Set minAvailable=0 to all found PDB to avoid " +
 		"Node Drain Failure due to active PodDisruptionBudget")
 
 	pdbList, err := setMinAvailableToZeroForActivePDB()
@@ -521,7 +522,7 @@ func gracefulNodeReboot(nodeName string) error {
 		return fmt.Errorf("failed to retrieve pdb list and set minAvailable=0 due to: %w", err)
 	}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Draining node %q", nodeName)
+	glog.V(100).Infof("Draining node %q", nodeName)
 
 	err = nodeObj.Drain()
 
@@ -531,17 +532,14 @@ func gracefulNodeReboot(nodeName string) error {
 		return fmt.Errorf("failed to drain node %q due to %w", nodeName, err)
 	}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
-		fmt.Sprintf("NodesCredentialsMap:\n\t%#v", RDSCoreConfig.NodesCredentialsMap))
+	glog.V(100).Infof(fmt.Sprintf("NodesCredentialsMap:\n\t%#v", RDSCoreConfig.NodesCredentialsMap))
 
 	var bmcClient *bmc.BMC
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
-		fmt.Sprintf("Creating BMC client for node %s", nodeName))
+	glog.V(100).Infof(fmt.Sprintf("Creating BMC client for node %s", nodeName))
 
 	if auth, ok := RDSCoreConfig.NodesCredentialsMap[nodeName]; !ok {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
-			fmt.Sprintf("BMC Details for %q not found", nodeName))
+		glog.V(100).Infof(fmt.Sprintf("BMC Details for %q not found", nodeName))
 		Fail(fmt.Sprintf("BMC Details for %q not found", nodeName))
 	} else {
 		bmcClient = bmc.New(auth.BMCAddress).
@@ -556,20 +554,18 @@ func gracefulNodeReboot(nodeName string) error {
 		true,
 		func(ctx context.Context) (bool, error) {
 			if err := bmcClient.SystemForceReset(); err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
-					fmt.Sprintf("Failed to power cycle %s -> %v", nodeName, err))
+				glog.V(100).Infof(fmt.Sprintf("Failed to power cycle %s -> %v", nodeName, err))
 
 				return false, nil
 			}
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
-				fmt.Sprintf("Successfully powered cycle %s", nodeName))
+			glog.V(100).Infof(fmt.Sprintf("Successfully powered cycle %s", nodeName))
 
 			return true, nil
 		})
 
 	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to reboot node %s", nodeName)
+		glog.V(100).Infof("Failed to reboot node %s", nodeName)
 
 		return fmt.Errorf("failed to reboot node %s", nodeName)
 	}
@@ -584,7 +580,7 @@ func gracefulNodeReboot(nodeName string) error {
 		func(ctx context.Context) (bool, error) {
 			currentNode, err := nodes.Pull(APIClient, nodeName)
 			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to pull node: %v", err)
+				glog.V(100).Infof("Failed to pull node: %v", err)
 
 				return false, nil
 			}
@@ -592,8 +588,8 @@ func gracefulNodeReboot(nodeName string) error {
 			for _, condition := range currentNode.Object.Status.Conditions {
 				if condition.Type == rdscoreparams.ConditionTypeReadyString {
 					if condition.Status != rdscoreparams.ConstantTrueString {
-						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node %q is notReady", currentNode.Definition.Name)
-						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("  Reason: %s", condition.Reason)
+						glog.V(100).Infof("Node %q is notReady", currentNode.Definition.Name)
+						glog.V(100).Infof("  Reason: %s", condition.Reason)
 
 						return true, nil
 					}
@@ -604,7 +600,7 @@ func gracefulNodeReboot(nodeName string) error {
 		})
 
 	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("The node %s hasn't reached notReady state", nodeName)
+		glog.V(100).Infof("The node %s hasn't reached notReady state", nodeName)
 
 		return fmt.Errorf("node %s hasn't reached notReady state", nodeName)
 	}
@@ -619,7 +615,7 @@ func gracefulNodeReboot(nodeName string) error {
 		func(ctx context.Context) (bool, error) {
 			currentNode, err := nodes.Pull(APIClient, nodeName)
 			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error pulling in node: %v", err)
+				glog.V(100).Infof("Error pulling in node: %v", err)
 
 				return false, nil
 			}
@@ -627,8 +623,8 @@ func gracefulNodeReboot(nodeName string) error {
 			for _, condition := range currentNode.Object.Status.Conditions {
 				if condition.Type == rdscoreparams.ConditionTypeReadyString {
 					if condition.Status == rdscoreparams.ConstantTrueString {
-						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node %q is Ready", currentNode.Definition.Name)
-						glog.V(rdscoreparams.RDSCoreLogLevel).Infof("  Reason: %s", condition.Reason)
+						glog.V(100).Infof("Node %q is Ready", currentNode.Definition.Name)
+						glog.V(100).Infof("  Reason: %s", condition.Reason)
 
 						return true, nil
 					}
@@ -639,17 +635,17 @@ func gracefulNodeReboot(nodeName string) error {
 		})
 
 	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("The node %s hasn't reached Ready state", nodeName)
+		glog.V(100).Infof("The node %s hasn't reached Ready state", nodeName)
 
 		return fmt.Errorf("node %s hasn't reached Ready state", nodeName)
 	}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Uncordoning node %q", nodeName)
+	glog.V(100).Infof("Uncordoning node %q", nodeName)
 
 	err = nodeObj.Uncordon()
 
 	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to uncordon %q due to %v", nodeName, err)
+		glog.V(100).Infof("Failed to uncordon %q due to %v", nodeName, err)
 
 		return fmt.Errorf("failed to uncordon %q due to %w", nodeName, err)
 	}
@@ -659,10 +655,9 @@ func gracefulNodeReboot(nodeName string) error {
 	err = restoreActivePDBValues(pdbList)
 
 	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
-			"Failed to restore minAvailable value for the active PDBs due to %v", err)
+		glog.V(100).Infof("Failed to restore minAvailable value for the active PDBs due to %v", err)
 
-		return fmt.Errorf("failed to restore minAvailable value for the active PDBs due to %v", err)
+		return fmt.Errorf("failed to restore minAvailable value for the active PDBs due to %w", err)
 	}
 
 	return nil
@@ -702,24 +697,10 @@ func setMinAvailableToZeroForActivePDB() ([]*poddisruptionbudget.Builder, error)
 	if err != nil {
 		glog.Infof("Failed to list all available pod disruption budget due to %v", err)
 
-		return nil, nil
+		return nil, fmt.Errorf("failed to list all available pod disruption budget due to %w", err)
 	}
 
 	var pdbMinAvailableList []*poddisruptionbudget.Builder
-
-	for _, _pdb := range allAvailablePDB {
-		minAvailableValue := _pdb.Object.Spec.MinAvailable
-
-		if minAvailableValue.IntValue() >= 1 {
-			pdbMinAvailableList = append(pdbMinAvailableList, _pdb)
-		}
-	}
-
-	if len(pdbMinAvailableList) == 0 {
-		glog.V(100).Infof("no poddisruptionbudget with the MinAvailable >= 1 found")
-
-		return nil, nil
-	}
 
 	zeroInt := intstr.FromInt32(0)
 
@@ -727,14 +708,45 @@ func setMinAvailableToZeroForActivePDB() ([]*poddisruptionbudget.Builder, error)
 		MinAvailable: &zeroInt,
 	}
 
-	for _, _pdb := range pdbMinAvailableList {
-		_, err = _pdb.WithPDBSpec(setZeroValue).Update(true)
+	for _, _pdb := range allAvailablePDB {
+		err := wait.PollUntilContextTimeout(
+			context.TODO(),
+			time.Second,
+			time.Second*3,
+			true,
+			func(ctx context.Context) (bool, error) {
+				minAvailableValue := _pdb.Object.Spec.MinAvailable
+
+				if minAvailableValue != nil && minAvailableValue.IntValue() == 1 {
+					pdbMinAvailableList = append(pdbMinAvailableList, _pdb)
+
+					_, err = _pdb.WithPDBSpec(setZeroValue).Update(false)
+
+					if err != nil {
+						glog.V(100).Infof("Failed to update PodDisruptionBudget due to %v", err)
+
+						return false, nil
+					}
+				}
+
+				minAvailableValueNew := _pdb.Object.Spec.MinAvailable
+
+				glog.V(100).Infof("debug minAvailableValueNew: %v", minAvailableValueNew)
+
+				return true, nil
+			})
 
 		if err != nil {
 			glog.V(100).Infof("Failed to update PodDisruptionBudget due to %v", err)
 
 			return nil, fmt.Errorf("failed to update PodDisruptionBudget due to %w", err)
 		}
+	}
+
+	if len(pdbMinAvailableList) == 0 {
+		glog.V(100).Infof("no poddisruptionbudget with the MinAvailable == 1 found")
+
+		return nil, nil
 	}
 
 	return pdbMinAvailableList, nil
@@ -750,16 +762,42 @@ func restoreActivePDBValues(pdbMinAvailableList []*poddisruptionbudget.Builder) 
 	}
 
 	for _, _pdb := range pdbMinAvailableList {
-		minAvailableValue := _pdb.Object.Spec.MinAvailable
+		err := wait.PollUntilContextTimeout(
+			context.TODO(),
+			time.Second,
+			time.Second*3,
+			true,
+			func(ctx context.Context) (bool, error) {
+				updatePDB, err := poddisruptionbudget.Pull(APIClient, _pdb.Definition.Name, _pdb.Definition.Namespace)
 
-		if minAvailableValue.IntValue() == 0 {
-			_, err := _pdb.WithPDBSpec(restoreValue).Update(true)
+				if err != nil {
+					glog.V(100).Infof("Failed to retrieve PodDisruptionBudget %s in namespace %s due to %v",
+						_pdb.Definition.Name, _pdb.Definition.Namespace, err)
 
-			if err != nil {
-				glog.V(100).Infof("Failed to update PodDisruptionBudget due to %v", err)
+					return false, nil
+				}
 
-				return fmt.Errorf("failed to update PodDisruptionBudget due to %w", err)
-			}
+				minAvailableValue := updatePDB.Object.Spec.MinAvailable
+
+				if minAvailableValue != nil && minAvailableValue.IntValue() == 0 {
+					_, err := updatePDB.WithPDBSpec(restoreValue).Update(false)
+
+					if err != nil {
+						glog.V(100).Infof("Failed to update PodDisruptionBudget due to %v", err)
+
+						return false, nil
+					}
+				}
+
+				return true, nil
+			})
+
+		if err != nil {
+			glog.V(100).Infof("Failed to retrieve updated PodDisruptionBudget %s in namespace %s due to %v",
+				_pdb.Definition.Name, _pdb.Definition.Namespace, err)
+
+			return fmt.Errorf("failed to retrieve updated PodDisruptionBudget %s in namespace %s due to %w",
+				_pdb.Definition.Name, _pdb.Definition.Namespace, err)
 		}
 	}
 
