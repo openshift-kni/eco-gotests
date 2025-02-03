@@ -2,6 +2,8 @@ package tests
 
 import (
 	"fmt"
+	"net"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -376,4 +378,42 @@ func resetOperatorAndTestNS() {
 		configmap.GetGVR(),
 		nad.GetGVR())
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
+}
+
+func validatePrefix(
+	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string, prefixLength int) {
+	Eventually(func() error {
+		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
+		if err != nil {
+			return err
+		}
+		if len(bgpStatus.Routes) == 0 {
+			return fmt.Errorf("no BGP routes present")
+		}
+
+		return nil
+	}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(), "BGP status validation failed")
+
+	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
+	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
+	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefixLength))
+	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
+	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
+
+	var nextHopAddresses []string
+
+	for _, route := range bgpStatus.Routes[subnet.String()] {
+		Expect(route.PrefixLen).To(BeNumerically("==", prefixLength),
+			"Failed prefix length is not in expected value")
+
+		for _, nHop := range route.Nexthops {
+			nextHopAddresses = append(nextHopAddresses, nHop.IP)
+		}
+	}
+
+	Expect(workerNodesAddresses).To(ContainElements(nextHopAddresses),
+		"Failed next hop address in not in node addresses list")
+
+	_, err = frr.GetBGPCommunityStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp community status")
 }

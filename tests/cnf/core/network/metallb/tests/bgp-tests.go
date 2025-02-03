@@ -2,12 +2,11 @@ package tests
 
 import (
 	"fmt"
-	"net"
-	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
@@ -16,11 +15,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -224,41 +222,3 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		})
 	})
 })
-
-func validatePrefix(
-	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string, prefixLength int) {
-	Eventually(func() error {
-		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
-		if err != nil {
-			return err
-		}
-		if len(bgpStatus.Routes) == 0 {
-			return fmt.Errorf("no BGP routes present")
-		}
-
-		return nil
-	}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(), "BGP status validation failed")
-
-	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
-	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
-	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefixLength))
-	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
-	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
-
-	var nextHopAddresses []string
-
-	for _, nextHop := range bgpStatus.Routes[subnet.String()] {
-		Expect(nextHop.PrefixLen).To(BeNumerically("==", prefixLength),
-			"Failed prefix length is not in expected value")
-
-		for _, nHop := range nextHop.Nexthops {
-			nextHopAddresses = append(nextHopAddresses, nHop.IP)
-		}
-	}
-
-	Expect(workerNodesAddresses).To(ContainElements(nextHopAddresses),
-		"Failed next hop address in not in node addresses list")
-
-	_, err = frr.GetBGPCommunityStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
-	Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp community status")
-}
