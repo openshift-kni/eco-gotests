@@ -4,6 +4,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 )
 
 // MasterNadPlugin sets NetworkAttachmentDefinition master plugin based on given input.
@@ -54,7 +56,7 @@ func MacVlanNad(apiClient *clients.Settings, name, nsName, intName string, ipam 
 		return nil, err
 	}
 
-	return createNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
+	return CreateNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
 }
 
 // VlanNad defines and creates Vlan NetworkAttachmentDefinition on a cluster.
@@ -67,7 +69,7 @@ func VlanNad(
 		return nil, err
 	}
 
-	return createNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
+	return CreateNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
 }
 
 // IPVlanNad defines and creates IP-Vlan NetworkAttachmentDefinition on a cluster.
@@ -78,10 +80,11 @@ func IPVlanNad(apiClient *clients.Settings, name, nsName, intName string, ipam *
 		return nil, err
 	}
 
-	return createNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
+	return CreateNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
 }
 
-func createNadWithMasterPlugin(
+// CreateNadWithMasterPlugin creates a MasterPlugin network attachment definition.
+func CreateNadWithMasterPlugin(
 	apiClient *clients.Settings, name, nsName string, masterPlugin *nad.MasterPlugin) (*nad.Builder, error) {
 	createdNad, err := nad.NewBuilder(apiClient, name, nsName).WithMasterPlugin(masterPlugin).Create()
 	if err != nil {
@@ -89,4 +92,14 @@ func createNadWithMasterPlugin(
 	}
 
 	return createdNad, nil
+}
+
+// CreateStaticIPAnnotations creates a static ip annotation used together with the nad in a pod for IP configuration.
+func CreateStaticIPAnnotations(internalNADName, externalNADName string, internalIPAddresses,
+	externalIPAddresses []string) []*types.NetworkSelectionElement {
+	ipAnnotation := pod.StaticIPAnnotation(internalNADName, internalIPAddresses)
+	ipAnnotation = append(ipAnnotation,
+		pod.StaticIPAnnotation(externalNADName, externalIPAddresses)...)
+
+	return ipAnnotation
 }

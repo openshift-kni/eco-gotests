@@ -14,7 +14,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 
+	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
@@ -62,7 +64,8 @@ var _ = Describe("BGP Graceful Restart", Ordered, Label(tsparams.LabelGRTestCase
 
 		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4MetalLbIPList, nil)
 		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-		createExternalNad(tsparams.ExternalMacVlanNADName)
+		err = netenv.CreateExternalNad(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
 		By("Listing master nodes")
 		masterNodeList, err = nodes.List(APIClient,
@@ -82,11 +85,12 @@ var _ = Describe("BGP Graceful Restart", Ordered, Label(tsparams.LabelGRTestCase
 			Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
 			By("Creating External NAD")
-			createExternalNad(tsparams.ExternalMacVlanNADName)
+			err = netenv.CreateExternalNad(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName)
+			Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
 			By("Creating static ip annotation")
 			staticIPAnnotation := pod.StaticIPAnnotation(
-				externalNad.Definition.Name, []string{fmt.Sprintf("%s/%s", ipv4MetalLbIPList[0], "24")})
+				tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4MetalLbIPList[0], "24")})
 
 			By("Creating MetalLb configMap")
 			masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
@@ -105,7 +109,7 @@ var _ = Describe("BGP Graceful Restart", Ordered, Label(tsparams.LabelGRTestCase
 
 			By("Creating static ip annotation")
 			pod.StaticIPAnnotation(
-				externalNad.Definition.Name, []string{fmt.Sprintf("%s/%s", ipv4MetalLbIPList[0], netparam.IPSubnet24)})
+				tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4MetalLbIPList[0], netparam.IPSubnet24)})
 
 			By("Creating an IPAddressPool and BGPAdvertisement")
 			ipAddressPool = setupBgpAdvertisement(addressPool, 32)
@@ -206,7 +210,7 @@ func gracefulRestartTest(
 }
 
 func verifyMetalLbBGPSessionsAreDown(frrPod *pod.Builder, peerAddrList []string) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
 			30*time.Second, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").ShouldNot(
@@ -215,7 +219,7 @@ func verifyMetalLbBGPSessionsAreDown(frrPod *pod.Builder, peerAddrList []string)
 }
 
 func verifyGREnabledOnNeighbors(frrPod *pod.Builder, peerAddrList []string) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
 		grStatus, err := frr.GetGracefulRestartStatus(frrPod, peerAddress)
 
 		Expect(err).ToNot(HaveOccurred(), "Failed to get GracefulRestart status")

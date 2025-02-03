@@ -3,17 +3,21 @@ package netenv
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
@@ -233,4 +237,110 @@ func RemoveAllPoliciesAndWaitForSriovAndMCPStable() error {
 	return WaitForSriovAndMCPStable(
 		netinittools.APIClient, netparam.MCOWaitTimeout, time.Minute,
 		netinittools.NetConfig.CnfMcpLabel, netinittools.NetConfig.SriovOperatorNamespace)
+}
+
+// BuildRoutesMapWithSpecificRoutes creates a route map with specific routes.
+func BuildRoutesMapWithSpecificRoutes(podList []*pod.Builder, workerNodeList []*nodes.Builder,
+	nextHopList []string) (map[string]string, error) {
+	if len(podList) == 0 {
+		glog.V(90).Infof("Pod list is empty")
+
+		return nil, fmt.Errorf("pod list is empty")
+	}
+
+	if len(nextHopList) == 0 {
+		glog.V(90).Infof("Nexthop IP addresses list is empty")
+
+		return nil, fmt.Errorf("nexthop IP addresses list is empty")
+	}
+
+	if len(nextHopList) < len(podList) {
+		glog.V(90).Infof("Number of speaker IP addresses[%d] is less than the number of pods[%d]",
+			len(nextHopList), len(podList))
+
+		return nil, fmt.Errorf("insufficient speaker IP addresses: got %d, need at least %d",
+			len(nextHopList), len(podList))
+	}
+
+	routesMap := make(map[string]string)
+
+	for _, frrPod := range podList {
+		if frrPod.Definition.Spec.NodeName == workerNodeList[0].Definition.Name {
+			routesMap[frrPod.Definition.Spec.NodeName] = nextHopList[1]
+		} else {
+			routesMap[frrPod.Definition.Spec.NodeName] = nextHopList[0]
+		}
+	}
+
+	return routesMap, nil
+}
+
+// SetStaticRoute could set or delete static route on all Speaker pods.
+func SetStaticRoute(frrPod *pod.Builder, action, destIP, containerName string,
+	nextHopMap map[string]string) (string, error) {
+	buffer, err := frrPod.ExecCommand(
+		[]string{"ip", "route", action, destIP, "via", nextHopMap[frrPod.Definition.Spec.NodeName]}, containerName)
+	if err != nil {
+		if strings.Contains(buffer.String(), "File exists") {
+			glog.V(90).Infof("Warning: Route to %s already exist", destIP)
+
+			return buffer.String(), nil
+		}
+
+		if strings.Contains(buffer.String(), "No such process") {
+			glog.V(90).Infof("Warning: Route to %s already absent", destIP)
+
+			return buffer.String(), nil
+		}
+
+		return buffer.String(), err
+	}
+
+	return buffer.String(), nil
+}
+
+// CreateExternalNad creats an external network-attchment-definition using the br-ex interface.
+func CreateExternalNad(apiClient *clients.Settings, name, testNameSpace string) error {
+	glog.V(90).Info("Creating external BR-EX NetworkAttachmentDefinition")
+
+	// Define the master NAD plugin
+	macVlanPlugin, err := define.MasterNadPlugin(coreparams.OvnExternalBridge, "bridge", nad.IPAMStatic())
+	if err != nil {
+		glog.V(90).Infof("Failed to define master NAD plugin: %v", err)
+
+		return err
+	}
+
+	// Create the NetworkAttachmentDefinition
+	_, err = define.CreateNadWithMasterPlugin(apiClient, name, testNameSpace, macVlanPlugin)
+	if err != nil {
+		glog.V(90).Infof("Failed to create external NetworkAttachmentDefinition: %v", err)
+
+		return err
+	}
+
+	glog.V(90).Infof("Successfully created external NetworkAttachmentDefinition: %s", name)
+
+	return nil
+}
+
+// WaitForMcpStable waits for the stability of the MCP with the given name.
+func WaitForMcpStable(apiClient *clients.Settings, waitingTime, stableDuration time.Duration, mcpName string) error {
+	mcp, err := mco.Pull(apiClient, mcpName)
+
+	glog.V(90).Info("Waiting for mcp to be stable")
+
+	if err != nil {
+		return fmt.Errorf("fail to pull mcp %s from cluster due to: %s", mcpName, err.Error())
+	}
+
+	err = mcp.WaitToBeStableFor(stableDuration, waitingTime)
+
+	if err != nil {
+		glog.V(90).Infof("Failed to add or delete machine-Config\": %v", err)
+
+		return err
+	}
+
+	return nil
 }
