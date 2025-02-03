@@ -1280,9 +1280,6 @@ func getDefinition(name, nsName string) *corev1.Pod {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: nsName},
-		Spec: corev1.PodSpec{
-			TerminationGracePeriodSeconds: ptr.To(int64(0)),
-		},
 	}
 }
 
