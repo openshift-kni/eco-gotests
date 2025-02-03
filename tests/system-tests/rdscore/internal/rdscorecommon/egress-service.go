@@ -343,6 +343,33 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Created EgressService %q in %q namespace",
 		egrSVCBuilder.Object.Name, egrSVCBuilder.Object.Namespace)
 
+	By("Getting status of EgressService")
+
+	Eventually(func() bool {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check EgressService %q in %q namespace has host assigned",
+			egrSVCBuilder.Definition.Name, egrSVCBuilder.Definition.Namespace)
+
+		refreshEgressSVC, err := egrSVCBuilder.Get()
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to refresh egress service status")
+
+			return false
+		}
+
+		if refreshEgressSVC.Status.Host == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Host is not assigned to EgressService")
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("EgressService %q in %q namespace is assigned to %q",
+			refreshEgressSVC.Name, refreshEgressSVC.Namespace, refreshEgressSVC.Status.Host)
+
+		return true
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(3*time.Minute).Should(BeTrue(),
+		"EgressService does not have node assigned")
+
 	By("Finding pod from app deployment")
 
 	clientPods := findPodWithSelector(RDSCoreConfig.EgressServiceNS, egressSVC1Labels)
@@ -532,6 +559,33 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Created EgressService %q in %q namespace",
 		egrSVCBuilder.Object.Name, egrSVCBuilder.Object.Namespace)
+
+	By("Getting status of EgressService")
+
+	Eventually(func() bool {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check EgressService %q in %q namespace has host assigned",
+			egrSVCBuilder.Definition.Name, egrSVCBuilder.Definition.Namespace)
+
+		refreshEgressSVC, err := egrSVCBuilder.Get()
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to refresh egress service status")
+
+			return false
+		}
+
+		if refreshEgressSVC.Status.Host == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Host is not assigned to EgressService")
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("EgressService %q in %q namespace is assigned to %q",
+			refreshEgressSVC.Name, refreshEgressSVC.Namespace, refreshEgressSVC.Status.Host)
+
+		return true
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(3*time.Minute).Should(BeTrue(),
+		"EgressService does not have node assigned")
 
 	By("Getting status of service")
 
