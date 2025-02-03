@@ -13,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,10 +24,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/utils/ptr"
-
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 )
 
 // Builder provides a struct for pod object from the cluster and a pod definition.
@@ -1156,9 +1154,6 @@ func getDefinition(name, nsName string) *v1.Pod {
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      name,
 			Namespace: nsName},
-		Spec: v1.PodSpec{
-			TerminationGracePeriodSeconds: ptr.To(int64(0)),
-		},
 	}
 }
 
