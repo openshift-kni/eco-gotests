@@ -234,3 +234,20 @@ func RemoveAllPoliciesAndWaitForSriovAndMCPStable() error {
 		netinittools.APIClient, netparam.MCOWaitTimeout, time.Minute,
 		netinittools.NetConfig.CnfMcpLabel, netinittools.NetConfig.SriovOperatorNamespace)
 }
+
+// WaitForMcpStable waits for the stability of the MCP with the given name.
+func WaitForMcpStable(apiClient *clients.Settings, waitingTime, stableDuration time.Duration, mcpName string) error {
+	mcp, err := mco.Pull(apiClient, mcpName)
+
+	if err != nil {
+		return fmt.Errorf("fail to pull mcp %s from cluster due to: %s", mcpName, err.Error())
+	}
+
+	err = mcp.WaitToBeStableFor(stableDuration, waitingTime)
+
+	if err != nil {
+		return fmt.Errorf("cluster is not stable: %s", err.Error())
+	}
+
+	return nil
+}
