@@ -586,6 +586,27 @@ func (bmc *BMC) SystemPowerState() (string, error) {
 	return string(system.PowerState), nil
 }
 
+// WaitForSystemPowerState waits up to timeout until the BMC returns the provided system power state.
+func (bmc *BMC) WaitForSystemPowerState(powerState redfish.PowerState, timeout time.Duration) error {
+	if valid, err := bmc.validateRedfish(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Waiting up to %s until BMC returns power state %s", timeout, powerState)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 10*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			systemPowerState, err := bmc.SystemPowerState()
+			if err != nil {
+				glog.V(100).Infof("Failed to get system power state from BMC: %v", err)
+
+				return false, nil
+			}
+
+			return systemPowerState == string(powerState), nil
+		})
+}
+
 // PowerUsage returns the current power usage of the chassis in watts using the Redfish API. This method uses the first
 // chassis with a power link and the power control index for the BMC client.
 func (bmc *BMC) PowerUsage() (float32, error) {

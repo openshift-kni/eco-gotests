@@ -3,6 +3,7 @@ package ocm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
@@ -10,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/ocm/clusterv1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -249,6 +251,50 @@ func (builder *ManagedClusterBuilder) Create() (*ManagedClusterBuilder, error) {
 	}
 
 	builder.Object = builder.Definition
+
+	return builder, nil
+}
+
+// WaitForLabel waits up to timeout until label exists on the ManagedCluster.
+func (builder *ManagedClusterBuilder) WaitForLabel(
+	label string, timeout time.Duration) (*ManagedClusterBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Waiting up to %s until ManageddCluster %s has label %s", timeout, builder.Definition.Name, label)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("ManagedCluster %s does not exist", builder.Definition.Name)
+
+		return nil, fmt.Errorf("managedCluster object %s does not exist", builder.Definition.Name)
+	}
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			builder.Object, err = builder.Get()
+
+			if err != nil {
+				glog.V(100).Info("Failed to get ManagedCluster %s: %v", builder.Definition.Name, err)
+
+				return false, nil
+			}
+
+			builder.Definition = builder.Object
+
+			if builder.Definition.Labels == nil {
+				return false, nil
+			}
+
+			_, exists := builder.Definition.Labels[label]
+
+			return exists, nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
 
 	return builder, nil
 }
