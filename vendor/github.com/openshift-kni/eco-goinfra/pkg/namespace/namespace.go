@@ -270,7 +270,7 @@ func (builder *Builder) CleanObjects(cleanTimeout time.Duration, objects ...sche
 				objList, err := builder.apiClient.Resource(resource).Namespace(builder.Definition.Name).List(
 					context.Background(), metaV1.ListOptions{})
 
-				if err != nil || len(objList.Items) > 1 {
+				if err != nil || len(objList.Items) > 0 {
 					// avoid timeout due to default automatically created openshift
 					// configmaps: kube-root-ca.crt openshift-service-ca.crt
 					if resource.Resource == "configmaps" {
