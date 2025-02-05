@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/ubi9/ubi:latest
 
-ARG GO_VER=go1.23.2
+ARG GO_VER=go1.23.6
 ARG GINKGO_VER=ginkgo@v2.20.2
 ARG CONTAINERUSER=testuser
 
