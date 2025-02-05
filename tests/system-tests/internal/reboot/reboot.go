@@ -11,7 +11,7 @@ import (
 	systemtestsscc "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/scc"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools"
 	systemtestsparams "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,8 +36,8 @@ func HardRebootNode(nodeName string, nsName string) error {
 		SystemTestsTestConfig.IpmiToolImage, []string{"sleep", "86400"})
 
 	trueVar := true
-	deployContainer = deployContainer.WithSecurityContext(&v1.SecurityContext{Privileged: &trueVar})
-	deployContainer = deployContainer.WithImagePullPolicy(v1.PullAlways)
+	deployContainer = deployContainer.WithSecurityContext(&corev1.SecurityContext{Privileged: &trueVar})
+	deployContainer = deployContainer.WithImagePullPolicy(corev1.PullAlways)
 
 	deployContainerCfg, err := deployContainer.GetContainerCfg()
 	if err != nil {

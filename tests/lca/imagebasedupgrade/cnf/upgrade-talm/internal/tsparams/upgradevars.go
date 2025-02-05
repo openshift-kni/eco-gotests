@@ -2,7 +2,7 @@ package tsparams
 
 import (
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -44,7 +44,7 @@ var (
 		{Cr: &appsv1.DeploymentList{}},
 		{Cr: &corev1.ServiceList{}},
 		{Cr: &lcav1.ImageBasedUpgradeList{}},
-		{Cr: &v1.ClusterOperatorList{}},
+		{Cr: &configv1.ClusterOperatorList{}},
 	}
 
 	// TargetSnoClusterName is the name of target sno cluster.

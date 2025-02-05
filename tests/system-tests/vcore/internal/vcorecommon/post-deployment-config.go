@@ -21,7 +21,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/scc"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/imageregistryconfig"
-	v1 "github.com/openshift/api/operator/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -57,7 +57,7 @@ func VerifyPostDeploymentConfig() {
 func VerifyImageRegistryManagementStateEnablement(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Enable local imageregistryconfig; change ManagementState to the Managed")
 
-	err := imageregistryconfig.SetManagementState(APIClient, v1.Managed)
+	err := imageregistryconfig.SetManagementState(APIClient, operatorv1.Managed)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to change imageRegistry state to the Managed; %v", err))
 

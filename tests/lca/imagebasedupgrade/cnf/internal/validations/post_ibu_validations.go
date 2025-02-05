@@ -17,7 +17,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/statefulset"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/seedimage"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfclusterinfo"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
@@ -120,7 +120,7 @@ func ValidateClusterID() {
 func ValidatePodsSeedName() {
 	It("Validate no pods using seed name", reportxml.ID("71389"), Label("ValidatePodsSeedName"), func() {
 		By("Validate no pods are using seed's name", func() {
-			podList, err := pod.ListInAllNamespaces(TargetSNOAPIClient, v1.ListOptions{})
+			podList, err := pod.ListInAllNamespaces(TargetSNOAPIClient, metav1.ListOptions{})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
 
 			for _, pod := range podList {
