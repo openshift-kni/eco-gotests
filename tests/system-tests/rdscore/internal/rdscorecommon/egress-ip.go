@@ -324,7 +324,14 @@ func sendTrafficCheckIP(clientPods []*pod.Builder, isIPv6 bool, expectedIPs []st
 	for _, clientPod := range clientPods {
 		var parsedIP string
 
-		err := wait.PollUntilContextTimeout(
+		glog.V(100).Infof("Wait 5 minutes for pod %q to be Ready", clientPod.Definition.Name)
+
+		err := clientPod.WaitUntilReady(5 * time.Minute)
+
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q in %q namespace is not Ready",
+			clientPod.Definition.Name, clientPod.Definition.Namespace))
+
+		err = wait.PollUntilContextTimeout(
 			context.TODO(),
 			time.Second,
 			time.Second*5,
