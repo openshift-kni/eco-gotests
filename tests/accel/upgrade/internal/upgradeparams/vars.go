@@ -5,7 +5,7 @@ import (
 
 	"github.com/openshift-kni/eco-gotests/tests/accel/internal/accelparams"
 	"github.com/openshift-kni/k8sreporter"
-	v1 "github.com/openshift/api/config/v1"
+	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -28,8 +28,8 @@ var (
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &corev1.PodList{}},
-		{Cr: &v1.ClusterOperatorList{}},
-		{Cr: &v1.ClusterVersionList{}},
+		{Cr: &configv1.ClusterOperatorList{}},
+		{Cr: &configv1.ClusterVersionList{}},
 	}
 	trueFlag  = true
 	falseFlag = false

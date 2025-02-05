@@ -11,7 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/strings/slices"
 
@@ -120,7 +120,7 @@ var _ = Describe(
 
 				By("Create string from the KMM module namespace definition")
 				kmmNamespaceString, err := brutil.NewBackupRestoreObject(
-					kmmNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+					kmmNamespace.Definition, k8sScheme.Scheme, corev1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM namespace")
 
 				By("Create serviceaccount definition for KMM module")
@@ -132,7 +132,7 @@ var _ = Describe(
 
 				By("Create string from the KMM module serviceaccount definition")
 				kmmServiceAccountString, err := brutil.NewBackupRestoreObject(
-					kmmServiceAccount.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+					kmmServiceAccount.Definition, k8sScheme.Scheme, corev1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM serviceaccount")
 
 				By("Create clusterrolebinding definition for KMM module")
@@ -198,7 +198,7 @@ var _ = Describe(
 
 				By("Create configmap for extra manifests namespace")
 				extraNamespaceString, err := brutil.NewBackupRestoreObject(
-					extraNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+					extraNamespace.Definition, k8sScheme.Scheme, corev1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest namespace")
 				extraManifestsNamespaceConfigmap, err := configmap.NewBuilder(
 					APIClient, extraManifestNamespaceConfigmapName, mgmtparams.LCANamespace).WithData(map[string]string{
@@ -216,7 +216,7 @@ var _ = Describe(
 
 				By("Create configmap for extramanifests configmap")
 				extraConfigmapString, err := brutil.NewBackupRestoreObject(
-					extraConfigmap.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+					extraConfigmap.Definition, k8sScheme.Scheme, corev1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest configmap")
 				extraManifestsConfigmapConfigmap, err := configmap.NewBuilder(
 					APIClient, extraManifesConfigmapConfigmapName, mgmtparams.LCANamespace).WithData(map[string]string{
@@ -703,10 +703,10 @@ func startTestWorkload() {
 	_, err = deployment.NewBuilder(
 		APIClient, mgmtparams.LCAWorkloadName, mgmtparams.LCAWorkloadName, map[string]string{
 			"app": mgmtparams.LCAWorkloadName,
-		}, v1.Container{
+		}, corev1.Container{
 			Name:  mgmtparams.LCAWorkloadName,
 			Image: MGMTConfig.IBUWorkloadImage,
-			Ports: []v1.ContainerPort{
+			Ports: []corev1.ContainerPort{
 				{
 					Name:          "http",
 					ContainerPort: 8080,
@@ -720,8 +720,8 @@ func startTestWorkload() {
 	_, err = service.NewBuilder(
 		APIClient, mgmtparams.LCAWorkloadName, mgmtparams.LCAWorkloadName, map[string]string{
 			"app": mgmtparams.LCAWorkloadName,
-		}, v1.ServicePort{
-			Protocol: v1.ProtocolTCP,
+		}, corev1.ServicePort{
+			Protocol: corev1.ProtocolTCP,
 			Port:     8080,
 		}).Create()
 	Expect(err).NotTo(HaveOccurred(), "error creating ibu workload service")

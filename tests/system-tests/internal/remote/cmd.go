@@ -11,7 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -19,7 +19,7 @@ import (
 
 // ExecuteOnNodeWithDebugPod executes a command on a node.
 func ExecuteOnNodeWithDebugPod(cmdToExec []string, nodeName string) (string, error) {
-	listOptions := v1.ListOptions{
+	listOptions := metav1.ListOptions{
 		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nodeName}).String(),
 		LabelSelector: labels.SelectorFromSet(labels.Set{"k8s-app": SystemTestsTestConfig.MCOConfigDaemonName}).String(),
 	}
@@ -60,7 +60,7 @@ func ExecuteOnNodeWithPrivilegedDebugPod(apiClient *clients.Settings,
 	err := wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Minute, true,
 		func(context.Context) (bool, error) {
 			oldPods, err := pod.List(apiClient, SystemTestsTestConfig.MCONamespace,
-				v1.ListOptions{LabelSelector: podSelector})
+				metav1.ListOptions{LabelSelector: podSelector})
 
 			if err != nil {
 				glog.V(90).Infof("Error listing pods: %v", err)
