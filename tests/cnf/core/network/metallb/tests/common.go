@@ -37,7 +37,6 @@ var (
 	ipv4NodeAddrList  []string
 	ipv6metalLbIPList []string
 	ipv6NodeAddrList  []string
-	externalNad       *nad.Builder
 	cnfWorkerNodeList []*nodes.Builder
 	workerNodeList    []*nodes.Builder
 	masterNodeList    []*nodes.Builder
@@ -109,7 +108,7 @@ func createExternalNadWithMasterInterface(name, masterInterface string) {
 
 	macVlanPlugin, err := define.MasterNadPlugin(name, "bridge", nad.IPAMStatic(), masterInterface)
 	Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
-	externalNad, err = nad.NewBuilder(APIClient, name, tsparams.TestNamespaceName).
+	externalNad, err := nad.NewBuilder(APIClient, name, tsparams.TestNamespaceName).
 		WithMasterPlugin(macVlanPlugin).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
 	Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
@@ -342,7 +341,7 @@ func resetOperatorAndTestNS() {
 		tsparams.DefaultTimeout,
 		metallb.GetBGPPeerGVR(),
 		metallb.GetBFDProfileGVR(),
-		metallb.GetBGPPeerGVR(),
+		metallb.GetL2AdvertisementGVR(),
 		metallb.GetBGPAdvertisementGVR(),
 		metallb.GetIPAddressPoolGVR(),
 		metallb.GetMetalLbIoGVR(),
