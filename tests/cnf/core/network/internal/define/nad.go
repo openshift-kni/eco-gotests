@@ -4,6 +4,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 )
 
 // MasterNadPlugin sets NetworkAttachmentDefinition master plugin based on given input.
@@ -89,4 +90,29 @@ func createNadWithMasterPlugin(
 	}
 
 	return createdNad, nil
+}
+
+// CreateExternalNad creates an external network-attachment-definition using the br-ex interface.
+func CreateExternalNad(apiClient *clients.Settings, name, testNameSpace string) error {
+	glog.V(90).Info("Creating external BR-EX NetworkAttachmentDefinition")
+
+	// Define the master NAD plugin
+	macVlanPlugin, err := MasterNadPlugin(coreparams.OvnExternalBridge, "bridge", nad.IPAMStatic())
+	if err != nil {
+		glog.V(90).Infof("Failed to define master NAD plugin: %v", err)
+
+		return err
+	}
+
+	// Create the NetworkAttachmentDefinition
+	_, err = createNadWithMasterPlugin(apiClient, name, testNameSpace, macVlanPlugin)
+	if err != nil {
+		glog.V(90).Infof("Failed to create external NetworkAttachmentDefinition: %v", err)
+
+		return err
+	}
+
+	glog.V(90).Infof("Successfully created external NetworkAttachmentDefinition: %s", name)
+
+	return nil
 }

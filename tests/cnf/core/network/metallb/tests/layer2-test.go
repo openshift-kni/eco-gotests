@@ -17,6 +17,8 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
@@ -79,14 +81,15 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		setupMetalLbService(netparam.IPV4Family, ipAddressPool, "Cluster")
 
 		By("Creating external Network Attachment Definition")
-		createExternalNad(tsparams.ExternalMacVlanNADName)
+		err = define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
 		By("Creating client test pod")
 		clientTestPod, err = pod.NewBuilder(
 			APIClient, "l2clientpod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 			DefineOnNode(masterNodeList[0].Object.Name).
 			WithTolerationToMaster().
-			WithSecondaryNetwork(pod.StaticIPAnnotation(tsparams.ExternalMacVlanNADName,
+			WithSecondaryNetwork(pod.StaticIPAnnotation(frrconfig.ExternalMacVlanNADName,
 				[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[1])})).
 			WithPrivilegedFlag().CreateAndWaitUntilRunning(time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create client test pod")

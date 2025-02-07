@@ -17,6 +17,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
@@ -59,7 +62,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
 		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-		createExternalNad(tsparams.ExternalMacVlanNADName)
+		err = define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 	})
 
 	Context("single hop", Label("singlehop"), func() {
@@ -80,7 +84,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 			By("Creating static ip annotation")
 			staticIPAnnotation := pod.StaticIPAnnotation(
-				externalNad.Definition.Name, []string{fmt.Sprintf("%s/24", ipv4metalLbIPList[0])})
+				frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/24", ipv4metalLbIPList[0])})
 
 			By("Listing control-plane nodes")
 			masterNodeList, err := nodes.List(APIClient,
@@ -185,7 +189,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			})
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
 			for _, frrk8sPod := range frrk8sPods {
-				out, err := frr.SetStaticRoute(frrk8sPod, "del", "172.16.0.1", speakerRoutesMap)
+				out, err := netenv.SetStaticRoute(frrk8sPod, "del", "172.16.0.1",
+					frrconfig.ContainerName, speakerRoutesMap)
 				Expect(err).ToNot(HaveOccurred(), out)
 			}
 
@@ -211,7 +216,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		DescribeTable("should provide fast link failure detection", reportxml.ID("47186"),
 			func(bgpProtocol, ipStack string, externalTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
-				createExternalNad(tsparams.ExternalMacVlanNADName)
+				err := define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
 				By("Verifying that speaker route map is not empty")
 				Expect(speakerRoutesMap).ToNot(BeNil(), "Speaker route map is empty")
@@ -289,18 +295,19 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					pod.StaticIPAnnotation(bridgeNad.Definition.Name, []string{fmt.Sprintf("%s/%s", masterClientPodIP, subMast)}))
 
 				// Add static routes from client towards Speaker via router internal IPs
-				for index, workerAddress := range removePrefixFromIPList(nodeAddrList) {
+				for index, workerAddress := range netcmd.RemovePrefixFromIPList(nodeAddrList) {
 					buffer, err := cmd.SetRouteOnPod(frrPod, workerAddress, frrMasterIPs[index])
 					Expect(err).ToNot(HaveOccurred(), buffer.String())
 				}
 				By("Adding static routes to the speakers")
 				for _, frrk8sPod := range frrk8sPods {
-					out, err := frr.SetStaticRoute(frrk8sPod, "add", masterClientPodIP, speakerRoutesMap)
+					out, err := netenv.SetStaticRoute(frrk8sPod, "add", masterClientPodIP,
+						frrconfig.ContainerName, speakerRoutesMap)
 					Expect(err).ToNot(HaveOccurred(), out)
 				}
 
 				By("Checking that BGP and BFD sessions are established and up")
-				verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(nodeAddrList))
+				verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(nodeAddrList))
 
 				By("Running http check")
 				httpOutput, err := cmd.Curl(frrPod, masterClientPodIP, addressPool[0], ipStack, tsparams.FRRSecondContainerName)
@@ -366,7 +373,7 @@ func createFrrPodOnMasterNodeAndWaitUntilRunning(
 	By("Creating static ip annotation for FRR pod two on master node")
 
 	podMasterOneNetCfg := pod.StaticIPAnnotation(
-		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", metalLbAddr, subMask)})
+		frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", metalLbAddr, subMask)})
 	podMasterOneNetCfg = append(podMasterOneNetCfg, pod.StaticIPAnnotation(
 		bridgeNadName, []string{fmt.Sprintf("%s/%s", internalFrrIP, subMask)})...)
 
@@ -498,7 +505,7 @@ func setLocalGWMode(status bool) {
 }
 
 func verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
 			time.Minute*3, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
