@@ -119,7 +119,7 @@ var _ = Describe(
 				}
 
 				By("Create string from the KMM module namespace definition")
-				kmmNamespaceString, err := brutil.NewBackRestoreObject(
+				kmmNamespaceString, err := brutil.NewBackupRestoreObject(
 					kmmNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM namespace")
 
@@ -131,7 +131,7 @@ var _ = Describe(
 				}
 
 				By("Create string from the KMM module serviceaccount definition")
-				kmmServiceAccountString, err := brutil.NewBackRestoreObject(
+				kmmServiceAccountString, err := brutil.NewBackupRestoreObject(
 					kmmServiceAccount.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM serviceaccount")
 
@@ -149,7 +149,7 @@ var _ = Describe(
 				}
 
 				By("Create string from the KMM module clusterrolebinding definition")
-				kmmClusterRoleBindingString, err := brutil.NewBackRestoreObject(
+				kmmClusterRoleBindingString, err := brutil.NewBackupRestoreObject(
 					kmmClusterRoleBinding.Definition, k8sScheme.Scheme, rbacv1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM clusterrolebinding")
 
@@ -167,7 +167,7 @@ var _ = Describe(
 				kmmModule.Definition.Spec.Selector = map[string]string{"node-role.kubernetes.io/worker": ""}
 
 				By("Create string from the KMM module namespace definition")
-				kmmModuleString, err := brutil.NewBackRestoreObject(
+				kmmModuleString, err := brutil.NewBackupRestoreObject(
 					kmmModule.Definition, APIClient.Scheme(), kmmv1beta1.GroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for KMM module")
 
@@ -197,7 +197,7 @@ var _ = Describe(
 				extraNamespace.Definition.Annotations["lca.openshift.io/apply-wave"] = "1"
 
 				By("Create configmap for extra manifests namespace")
-				extraNamespaceString, err := brutil.NewBackRestoreObject(
+				extraNamespaceString, err := brutil.NewBackupRestoreObject(
 					extraNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest namespace")
 				extraManifestsNamespaceConfigmap, err := configmap.NewBuilder(
@@ -215,7 +215,7 @@ var _ = Describe(
 				extraConfigmap.Definition.Annotations["lca.openshift.io/apply-wave"] = "2"
 
 				By("Create configmap for extramanifests configmap")
-				extraConfigmapString, err := brutil.NewBackRestoreObject(
+				extraConfigmapString, err := brutil.NewBackupRestoreObject(
 					extraConfigmap.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 				Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest configmap")
 				extraManifestsConfigmapConfigmap, err := configmap.NewBuilder(
@@ -667,7 +667,7 @@ func updateIBUWithCustomCatalogSources(imagebasedupgrade *lca.ImageBasedUpgradeB
 
 	for _, catalogSource := range catalogSources {
 		if !omitCatalogRegex.MatchString(catalogSource.Object.Name) {
-			configmapData, err := brutil.NewBackRestoreObject(
+			configmapData, err := brutil.NewBackupRestoreObject(
 				catalogSource.Object, APIClient.Scheme(), oplmV1alpha1.SchemeGroupVersion).String()
 			Expect(err).NotTo(HaveOccurred(), "error creating configmap data from catalogsource content")
 

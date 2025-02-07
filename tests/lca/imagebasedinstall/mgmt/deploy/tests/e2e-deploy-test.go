@@ -225,7 +225,7 @@ func createSharedResources() {
 
 		By("Create configmap for extra manifests namespace")
 
-		extraNamespaceString, err := brutil.NewBackRestoreObject(
+		extraNamespaceString, err := brutil.NewBackupRestoreObject(
 			extraNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 		Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest namespace")
 		_, err = configmap.NewBuilder(
@@ -243,7 +243,7 @@ func createSharedResources() {
 
 		By("Create configmap for extramanifests configmap")
 
-		extraConfigmapString, err := brutil.NewBackRestoreObject(
+		extraConfigmapString, err := brutil.NewBackupRestoreObject(
 			extraConfigmap.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
 		Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest configmap")
 		_, err = configmap.NewBuilder(
