@@ -162,6 +162,30 @@ var _ = Describe(
 				"error: extra manifest configmap has incorrect content")
 		})
 
+		It("successfully creates extra partition", reportxml.ID("79049"), func() {
+			if MGMTConfig.ExtraPartName == "" {
+				Skip("Cluster not configured with extra partition")
+			}
+
+			By("Get spoke client")
+			spokeClient = getSpokeClient()
+
+			By("Validate the value of ExtraPartSizeMib variable")
+			extraPartSizeMibInt, err := strconv.ParseInt(MGMTConfig.ExtraPartSizeMib, 10, 0)
+			Expect(err).ToNot(HaveOccurred(), "failed to convert the extra partition size to int64: %s", err)
+
+			By("Validate size of extra partition")
+			execCmd := "lsblk -o size -b -n " + MGMTConfig.ExtraPartName
+			cmdOutput, err := cluster.ExecCmdWithStdout(spokeClient, execCmd)
+			Expect(err).ToNot(HaveOccurred(), "failed getting the size for extrapartition: %s", err)
+			for _, stdout := range cmdOutput {
+				Expect(strings.ReplaceAll(stdout, "\n", "")).To(Equal(
+					strconv.Itoa(int(extraPartSizeMibInt)*1024*1024)),
+					"error: the extra partition size doesn't match the expected value")
+			}
+
+		})
+
 		It("successfully adds CA bundle", reportxml.ID("77795"), func() {
 			if !MGMTConfig.CABundle {
 				Skip("Cluster not configured with CA bundle")

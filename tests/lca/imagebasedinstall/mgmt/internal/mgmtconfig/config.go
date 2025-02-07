@@ -66,10 +66,12 @@ type MGMTConfig struct {
 	SeedClusterInfo  *seedimage.SeedImageContent
 	SSHKeyPath       string `envconfig:"ECO_LCA_IBI_MGMT_SSHKEY_PATH"`
 	PublicSSHKey     string
-	StaticNetworking bool `envconfig:"ECO_LCA_IBI_MGMT_STATIC_NETWORK" default:"false"`
-	ExtraManifests   bool `envconfig:"ECO_LCA_IBI_EXTRA_MANIFESTS" default:"true"`
-	CABundle         bool `envconfig:"ECO_LCA_IBI_CA_BUNDLE" default:"true"`
-	SiteConfig       bool `envconfig:"ECO_LCA_IBI_SITECONFIG" default:"true"`
+	StaticNetworking bool   `envconfig:"ECO_LCA_IBI_MGMT_STATIC_NETWORK" default:"false"`
+	ExtraManifests   bool   `envconfig:"ECO_LCA_IBI_EXTRA_MANIFESTS" default:"true"`
+	CABundle         bool   `envconfig:"ECO_LCA_IBI_CA_BUNDLE" default:"true"`
+	SiteConfig       bool   `envconfig:"ECO_LCA_IBI_SITECONFIG" default:"true"`
+	ExtraPartName    string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_NAME" default:""`
+	ExtraPartSizeMib string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_SIZE" default:"50000"`
 }
 
 // NewMGMTConfig returns instance of MGMTConfig type.
