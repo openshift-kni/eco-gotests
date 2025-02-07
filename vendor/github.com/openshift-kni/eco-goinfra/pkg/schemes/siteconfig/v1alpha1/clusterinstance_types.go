@@ -494,11 +494,30 @@ type ReinstallHistory struct {
 
 // ReinstallStatus represents the current state and historical details of reinstall operations for a ClusterInstance.
 type ReinstallStatus struct {
+
+	// List of conditions pertaining to reinstall requests.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// InProgressGeneration is the generation of the ClusterInstance that is being processed for reinstallation.
+	// It corresponds to the Generation field in ReinstallSpec and indicates the latest reinstall request that
+	// the controller is acting upon.
+	// +optional
+	InProgressGeneration string `json:"inProgressGeneration,omitempty"`
+
 	// ObservedGeneration is the generation of the ClusterInstance that has been processed for reinstallation.
 	// It corresponds to the Generation field in ReinstallSpec and indicates the latest reinstall request that
 	// the controller has acted upon.
-	// +required
-	ObservedGeneration string `json:"observedGeneration"`
+	// +optionsl
+	ObservedGeneration string `json:"observedGeneration,omitempty"`
+
+	// RequestStartTime indicates the time at which SiteConfig was requested to reinstall.
+	// +optional
+	RequestStartTime metav1.Time `json:"requestStartTime,omitempty"`
+
+	// RequestEndTime indicates the time at which SiteConfig completed processing the reinstall request.
+	// +optional
+	RequestEndTime metav1.Time `json:"requestEndTime,omitempty"`
 
 	// History maintains a record of all previous reinstallation attempts.
 	// Each entry captures details such as the generation, timestamp, and the differences in the ClusterInstance

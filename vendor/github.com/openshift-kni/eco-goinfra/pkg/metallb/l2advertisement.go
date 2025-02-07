@@ -325,6 +325,27 @@ func (builder *L2AdvertisementBuilder) WithIPAddressPoolsSelectors(
 	return builder
 }
 
+// WithInterfaces adds the specified interfaces to the L2Advertisement.
+func (builder *L2AdvertisementBuilder) WithInterfaces(interfaces []string) *L2AdvertisementBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Appending L2Advertisement %s in namespace %s with Interfaces: %v",
+		builder.Definition.Name, builder.Definition.Namespace, interfaces)
+
+	if len(interfaces) < 1 {
+		builder.errorMsg = "error: Interfaces setting is empty list, the list should contain at least one element"
+
+		return builder
+	}
+
+	builder.Definition.Spec.Interfaces = interfaces
+
+	return builder
+}
+
 // WithOptions creates L2Advertisement with generic mutation options.
 func (builder *L2AdvertisementBuilder) WithOptions(
 	options ...L2AdvertisementAdditionalOptions) *L2AdvertisementBuilder {
