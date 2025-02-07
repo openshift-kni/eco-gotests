@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	hiveextV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/hiveextension/v1beta1"
-	v1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1"
+	hivev1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/hive/api/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/models"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -243,7 +243,7 @@ func (builder *AgentClusterInstallBuilder) WithImageSet(imageSet string) *AgentC
 		return builder
 	}
 
-	builder.Definition.Spec.ImageSetRef = &v1.ClusterImageSetReference{Name: imageSet}
+	builder.Definition.Spec.ImageSetRef = &hivev1.ClusterImageSetReference{Name: imageSet}
 
 	return builder
 }
@@ -404,7 +404,7 @@ func (builder *AgentClusterInstallBuilder) WithOptions(
 
 // WaitForConditionMessage waits the specified timeout for the given condition to report the specified message.
 func (builder *AgentClusterInstallBuilder) WaitForConditionMessage(
-	conditionType v1.ClusterInstallConditionType, message string, timeout time.Duration) error {
+	conditionType hivev1.ClusterInstallConditionType, message string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
@@ -418,7 +418,7 @@ func (builder *AgentClusterInstallBuilder) WaitForConditionMessage(
 
 // WaitForConditionStatus waits the specified timeout for the given condition to report the specified status.
 func (builder *AgentClusterInstallBuilder) WaitForConditionStatus(
-	conditionType v1.ClusterInstallConditionType, status corev1.ConditionStatus, timeout time.Duration) error {
+	conditionType hivev1.ClusterInstallConditionType, status corev1.ConditionStatus, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
@@ -432,7 +432,7 @@ func (builder *AgentClusterInstallBuilder) WaitForConditionStatus(
 
 // WaitForConditionReason waits the specified timeout for the given condition to report the specified reason.
 func (builder *AgentClusterInstallBuilder) WaitForConditionReason(
-	conditionType v1.ClusterInstallConditionType, reason string, timeout time.Duration) error {
+	conditionType hivev1.ClusterInstallConditionType, reason string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
 			condition, err := builder.getCondition(conditionType)
@@ -695,7 +695,7 @@ func (builder *AgentClusterInstallBuilder) Exists() bool {
 
 // getCondition returns the agentclusterinstall condition discovered based on specified conditionType.
 func (builder *AgentClusterInstallBuilder) getCondition(
-	conditionType v1.ClusterInstallConditionType) (*v1.ClusterInstallCondition, error) {
+	conditionType hivev1.ClusterInstallConditionType) (*hivev1.ClusterInstallCondition, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}

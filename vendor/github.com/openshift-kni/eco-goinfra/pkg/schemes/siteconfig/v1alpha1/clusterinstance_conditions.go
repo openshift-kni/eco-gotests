@@ -44,6 +44,7 @@ const (
 
 // The following constants define the different reasons that conditions will be set for
 const (
+	Initialized     ClusterInstanceConditionReason = "Initialized"
 	Completed       ClusterInstanceConditionReason = "Completed"
 	Failed          ClusterInstanceConditionReason = "Failed"
 	TimedOut        ClusterInstanceConditionReason = "TimedOut"
