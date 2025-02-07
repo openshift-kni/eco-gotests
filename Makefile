@@ -2,8 +2,6 @@
 BASE_IMG ?= eco-gotests
 BASE_TAG ?= latest
 
-# Export GO111MODULE=on to enable project to be built from within GOPATH/src
-export GO111MODULE=on
 GO_PACKAGES=$(shell go list ./... | grep -v vendor)
 .PHONY: lint \
         deps-update \
