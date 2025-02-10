@@ -39,7 +39,7 @@ import (
 	k8sScheme "k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtparams"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -250,7 +250,7 @@ func createSharedResources() {
 		By("Create configmap for extra manifests namespace")
 
 		extraNamespaceString, err := brutil.NewBackupRestoreObject(
-			extraNamespace.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+			extraNamespace.Definition, k8sScheme.Scheme, corev1.SchemeGroupVersion).String()
 		Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest namespace")
 		_, err = configmap.NewBuilder(
 			APIClient, extraManifestNamespaceConfigmapName, MGMTConfig.Cluster.Info.ClusterName).WithData(map[string]string{
@@ -268,7 +268,7 @@ func createSharedResources() {
 		By("Create configmap for extramanifests configmap")
 
 		extraConfigmapString, err := brutil.NewBackupRestoreObject(
-			extraConfigmap.Definition, k8sScheme.Scheme, v1.SchemeGroupVersion).String()
+			extraConfigmap.Definition, k8sScheme.Scheme, corev1.SchemeGroupVersion).String()
 		Expect(err).NotTo(HaveOccurred(), "error creating configmap data for extramanifest configmap")
 		_, err = configmap.NewBuilder(
 			APIClient, extraManifestConfigmapConfigmapName, MGMTConfig.Cluster.Info.ClusterName).WithData(map[string]string{
@@ -291,7 +291,7 @@ func createSharedResources() {
 		By("Create baremetalhost secret for " + host)
 
 		_, err = secret.NewBuilder(
-			APIClient, host, MGMTConfig.Cluster.Info.ClusterName, v1.SecretTypeOpaque).WithData(map[string][]byte{
+			APIClient, host, MGMTConfig.Cluster.Info.ClusterName, corev1.SecretTypeOpaque).WithData(map[string][]byte{
 			"username": []byte(info.BMC.User),
 			"password": []byte(info.BMC.Password),
 		}).Create()
@@ -328,7 +328,7 @@ func createIBIOResouces(addressFamily string) {
 			Expect(err).NotTo(HaveOccurred(), "error marshaling network configuration")
 
 			_, err = secret.NewBuilder(APIClient, fmt.Sprintf("%s-nmstate-config", host),
-				MGMTConfig.Cluster.Info.ClusterName, v1.SecretTypeOpaque).WithData(map[string][]byte{
+				MGMTConfig.Cluster.Info.ClusterName, corev1.SecretTypeOpaque).WithData(map[string][]byte{
 				"nmstate": networkSecretContent,
 			}).Create()
 			Expect(err).NotTo(HaveOccurred(), "error creating network configuration secret")
