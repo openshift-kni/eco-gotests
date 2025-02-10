@@ -8,8 +8,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-// NewBackRestoreObject returns a BackupRestoreObject.
-func NewBackRestoreObject(object runtime.Object, scheme *runtime.Scheme, gvr schema.GroupVersion) *BackupRestoreObject {
+// NewBackupRestoreObject returns a BackupRestoreObject.
+func NewBackupRestoreObject(object runtime.Object, scheme *runtime.Scheme,
+	gvr schema.GroupVersion) *BackupRestoreObject {
 	return &BackupRestoreObject{
 		Scheme: scheme,
 		GVR:    gvr,
