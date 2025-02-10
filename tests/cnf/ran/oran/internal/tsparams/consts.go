@@ -1,0 +1,92 @@
+package tsparams
+
+import "github.com/golang/glog"
+
+const (
+	// LabelSuite is the label applied to all cases in the oran suite.
+	LabelSuite = "oran"
+	// LabelPreProvision is the label applied to just the pre-provision test cases.
+	LabelPreProvision = "pre-provision"
+	// LabelProvision is the label applied to just the provision test cases.
+	LabelProvision = "provision"
+	// LabelPostProvision is the label applied to just the post-provision test cases.
+	LabelPostProvision = "post-provision"
+)
+
+const (
+	// ClusterTemplateName is the name without the version of the ClusterTemplate used in the ORAN tests. It is also
+	// the namespace the ClusterTemplates are in.
+	ClusterTemplateName = "sno-ran-du"
+	// HardwareManagerNamespace is the namespace that HardwareManagers and their secrets use.
+	HardwareManagerNamespace = "oran-hwmgr-plugin"
+	// O2IMSNamespace is the namespace used by the oran-o2ims operator.
+	O2IMSNamespace = "oran-o2ims"
+	// ExtraManifestsName is the name of the generated extra manifests ConfigMap in the cluster Namespace.
+	ExtraManifestsName = "sno-ran-du-extra-manifest-1"
+	// ClusterInstanceParamsKey is the key in the TemplateParameters map for the ClusterInstance parameters.
+	ClusterInstanceParamsKey = "clusterInstanceParameters"
+	// PolicyTemplateParamsKey is the key in the TemplateParameters map for the policy template parameters.
+	PolicyTemplateParamsKey = "policyTemplateParameters"
+	// HugePagesSizeKey is the key in TemplateParameters.policyTemplateParameters that sets the hugepages size.
+	HugePagesSizeKey = "hugepages-size"
+
+	// ImmutableMessage is the message to expect in a Policy's history when an immutable field cannot be updated.
+	ImmutableMessage = "cannot be updated, likely due to immutable fields not matching"
+	// CTMissingSchemaMessage is the ClusterTemplate condition message for when required schema is missing.
+	CTMissingSchemaMessage = "Error validating the clusterInstanceParameters schema"
+	// CTMissingLabelMessage is the ClusterTemplate condition message for when the default ConfigMap is missing an
+	// interface label.
+	CTMissingLabelMessage = "failed to validate the default ConfigMap: 'label' is missing for interface"
+)
+
+const (
+	// TemplateValid is the valid ClusterTemplate used for the provision tests.
+	TemplateValid = "v1"
+	// TemplateNonexistentProfile is the ClusterTemplate version for the nonexistent hardware profile test.
+	TemplateNonexistentProfile = "v2"
+	// TemplateNoHardware is the ClusterTemplate version for the no hardware available test.
+	TemplateNoHardware = "v3"
+	// TemplateMissingLabels is the ClusterTemplate version for the missing interface labels test.
+	TemplateMissingLabels = "v4"
+	// TemplateIncorrectLabel is the ClusterTemplate version for the incorrect boot interface label test.
+	TemplateIncorrectLabel = "v5"
+	// TemplateUpdateProfile is the ClusterTemplate version for the hardware profile update test.
+	TemplateUpdateProfile = "v6"
+	// TemplateInvalid is the ClusterTemplate version for the invalid ClusterTemplate test.
+	TemplateInvalid = "v7"
+	// TemplateUpdateDefaults is the ClusterTemplate version for the ClusterInstance defaults update test.
+	TemplateUpdateDefaults = "v8"
+	// TemplateUpdateExisting is the ClusterTemplate version for the update existing PG manifest test.
+	TemplateUpdateExisting = "v9"
+	// TemplateAddNew is the ClusterTemplate version for the add new manifest to existing PG test.
+	TemplateAddNew = "v10"
+	// TemplateUpdateSchema is the ClusterTemplate version for the policyTemplateParameters schema update test.
+	TemplateUpdateSchema = "v11"
+	// TemplateMissingSchema is the ClusterTemplate version for the missing schema without HardwareTemplate test.
+	TemplateMissingSchema = "v12"
+	// TemplateNoHWTemplate is the ClusterTemplate version for the successful no HardwareTemplate test.
+	TemplateNoHWTemplate = "v13"
+)
+
+const (
+	// TestName is the name to use for various test items, such as labels, annotations, and the test ConfigMap in
+	// post-provision tests. This constant consolidates all these names so there is only one rather than a separate
+	// TestLabel, TestAnnotation, etc. constants that are all the same.
+	TestName = "oran-test"
+	// TestName2 is the secondary test name to use for various test items, for example, the second test ConfigMap
+	// for test cases that use it in the post-provision tests.
+	TestName2 = "oran-test-2"
+	// TestOriginalValue is the original value to expect when checking the test ConfigMap.
+	TestOriginalValue = "original-value"
+	// TestNewValue is the new value to set in the test ConfigMap.
+	TestNewValue = "new-value"
+	// TestPRName is the UUID used for naming ProvisioningRequests. Since metadata.name must be a UUID, just use a
+	// constant one for consistency.
+	TestPRName = "9c5372f3-ea1d-4a96-8157-b3b874a55cf9"
+	// TestBase64Credential is a base64 encoded version of the string "wrongpassword" for when an obviously invalid
+	// credential is needed.
+	TestBase64Credential = "d3JvbmdwYXNzd29yZA=="
+)
+
+// LogLevel is the glog verbosity level to use for logs in this suite or its helpers.
+const LogLevel glog.Level = 80
