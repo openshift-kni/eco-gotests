@@ -38,6 +38,9 @@ type RANConfig struct {
 	PtpOperatorNamespace   string   `yaml:"ptpOperatorNamespace" envconfig:"ECO_CNF_RAN_PTP_OPERATOR_NAMESPACE"`
 	TalmPreCachePolicies   []string `yaml:"talmPreCachePolicies" envconfig:"ECO_CNF_RAN_TALM_PRECACHE_POLICIES"`
 	ZtpSiteGenerateImage   string   `yaml:"ztpSiteGenerateImage" envconfig:"ECO_CNF_RAN_ZTP_SITE_GENERATE_IMAGE"`
+	// ClusterTemplateAffix is the version-dependent affix used for naming ClusterTemplates and other O-RAN
+	// resources.
+	ClusterTemplateAffix string `envconfig:"ECO_CNF_RAN_CLUSTER_TEMPLATE_AFFIX"`
 }
 
 // HubConfig contains the configuration for the hub cluster, if present.
@@ -53,8 +56,12 @@ type HubConfig struct {
 type Spoke1Config struct {
 	Spoke1BMC        *bmc.BMC
 	Spoke1APIClient  *clients.Settings
-	Spoke1Name       string
 	Spoke1OCPVersion string
+	// Spoke1Name is automatically updated if Spoke1Kubeconfig exists, otherwise it can be provided as an input.
+	Spoke1Name string `envconfig:"ECO_CNF_RAN_SPOKE1_NAME"`
+	// Spoke1Hostname is not automatically updated but instead used as an input for the O-RAN suite.
+	Spoke1Hostname   string        `envconfig:"ECO_CNF_RAN_SPOKE1_HOSTNAME"`
+	Spoke1Kubeconfig string        `envconfig:"KUBECONFIG"`
 	BMCUsername      string        `envconfig:"ECO_CNF_RAN_BMC_USERNAME"`
 	BMCPassword      string        `envconfig:"ECO_CNF_RAN_BMC_PASSWORD"`
 	BMCHosts         []string      `envconfig:"ECO_CNF_RAN_BMC_HOSTS"`
@@ -168,12 +175,12 @@ func (ranconfig *RANConfig) newSpoke1Config(configFile string) {
 
 	ranconfig.Spoke1Config.Spoke1APIClient = inittools.APIClient
 
-	spoke1Kubeconfig := os.Getenv("KUBECONFIG")
-	if spoke1Kubeconfig != "" {
-		ranconfig.Spoke1Config.Spoke1Name, err = version.GetClusterName(spoke1Kubeconfig)
-
+	if spoke1Kubeconfig := ranconfig.Spoke1Config.Spoke1Kubeconfig; spoke1Kubeconfig != "" {
+		spoke1Name, err := version.GetClusterName(spoke1Kubeconfig)
 		if err != nil {
 			glog.V(ranparam.LogLevel).Infof("Failed to get spoke 1 name from kubeconfig at %s: %v", spoke1Kubeconfig, err)
+		} else {
+			ranconfig.Spoke1Config.Spoke1Name = spoke1Name
 		}
 	} else {
 		glog.V(ranparam.LogLevel).Infof("No spoke 1 kubeconfig specified in KUBECONFIG environment variable")
