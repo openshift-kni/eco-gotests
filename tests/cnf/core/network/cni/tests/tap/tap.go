@@ -404,7 +404,7 @@ var _ = Describe("", Ordered,
 			By("Cleaning configuration after test")
 			cniNs, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
 			Expect(err).ToNot(HaveOccurred(), "Fail to pull test namespace")
-			err = cniNs.CleanObjects(tsparams.DefaultTimeout, pod.GetGVR(), nad.GetGVR(), deployment.GetGVR())
+			err = cniNs.CleanObjects(tsparams.DefaultTimeout, deployment.GetGVR(), nad.GetGVR(), pod.GetGVR())
 			Expect(err).ToNot(HaveOccurred(), "Fail to clean up test namespace")
 		})
 
