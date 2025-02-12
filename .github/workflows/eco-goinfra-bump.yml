@@ -13,6 +13,9 @@ jobs:
       contents: write  # for peter-evans/create-pull-request to create branch
       pull-requests: write  # for peter-evans/create-pull-request to create a PR
 
+    outputs:
+      pr-url: ${{ steps.create-pr.outputs.pull-request-url }}
+
     runs-on: ubuntu-latest
     env:
       SHELL: /bin/bash
@@ -29,6 +32,7 @@ jobs:
         run: make sync-eco-goinfra
 
       - name: Create PR
+        id: create-pr
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_KEY }}
@@ -39,3 +43,24 @@ jobs:
           branch: eco-goinfra-bump
           delete-branch: true
           reviewers: achuzhoy,cdvultur,klaskosk,kononovn,trewest
+
+  ci:
+    needs: main
+    uses: ./.github/workflows/makefile.yml
+
+  label:
+    needs: [main, ci]
+    if: ${{ needs.main.result == 'success' && needs.main.outputs.pr-url }}
+
+    name: Label created PR
+
+    permissions:
+      pull-requests: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Label PR based on CI result
+        run: gh pr edit ${{ needs.main.outputs.pr-url }} --add-label ci/${{ needs.ci.result }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
