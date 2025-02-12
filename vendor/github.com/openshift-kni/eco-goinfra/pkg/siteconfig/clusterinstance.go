@@ -491,6 +491,58 @@ func (builder *CIBuilder) WaitForCondition(expected metav1.Condition, timeout ti
 	return builder, err
 }
 
+// WaitForExtraLabel waits up to timeout until the ExtraLabel label exists for manifest of kind.
+func (builder *CIBuilder) WaitForExtraLabel(kind, label string, timeout time.Duration) (*CIBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Waiting up to %s until ClusterInstance %s in namespace %s has extra label %s on kind %s",
+		timeout, builder.Definition.Name, builder.Definition.Namespace, label, kind)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("ClusterInstance %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return nil, fmt.Errorf(
+			"clusterinstance object %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			builder.Object, err = builder.Get()
+
+			if err != nil {
+				glog.V(100).Info("Failed to get ClusterInstance %s in namespace %s: %v",
+					builder.Definition.Name, builder.Definition.Namespace, err)
+
+				return false, nil
+			}
+
+			builder.Definition = builder.Object
+
+			if builder.Definition.Spec.ExtraLabels == nil {
+				return false, nil
+			}
+
+			kindLabels, exists := builder.Definition.Spec.ExtraLabels[kind]
+			if !exists {
+				return false, nil
+			}
+
+			_, exists = kindLabels[label]
+
+			return exists, nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return builder, nil
+}
+
 // Get fetches the defined ClusterInstance from the cluster.
 func (builder *CIBuilder) Get() (*siteconfigv1alpha1.ClusterInstance, error) {
 	if valid, err := builder.validate(); !valid {
