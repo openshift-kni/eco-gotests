@@ -14,6 +14,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
@@ -139,7 +142,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to reset BGP connection")
 
 			By("Verify that BGP session is re-established and up in less then 10 seconds")
-			verifyMaxReConnectTime(frrPod, removePrefixFromIPList(ipv4NodeAddrList), time.Second*10)
+			verifyMaxReConnectTime(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList), time.Second*10)
 		})
 
 	It("Update the timer to less then the default on an existing BGP connection",
@@ -182,12 +185,14 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 func createAndDeployFRRPod() *pod.Builder {
 	By("Creating External NAD")
-	createExternalNad(tsparams.ExternalMacVlanNADName)
+
+	err := define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
+	Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
 	By("Creating static ip annotation")
 
 	staticIPAnnotation := pod.StaticIPAnnotation(
-		externalNad.Definition.Name, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})
+		frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})
 
 	By("Creating MetalLb configMap")
 
@@ -202,7 +207,7 @@ func createAndDeployFRRPod() *pod.Builder {
 }
 
 func verifyMaxReConnectTime(frrPod *pod.Builder, peerAddrList []string, maxConnectTime time.Duration) {
-	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range cmd.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
 			maxConnectTime, time.Second).
 			WithArguments(frrPod, peerAddress, "Established").Should(

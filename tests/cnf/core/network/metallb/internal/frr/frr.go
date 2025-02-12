@@ -119,16 +119,6 @@ type (
 	BGPNeighborGRStatus map[string]GRStatus
 )
 
-// DefineBaseConfig defines minimal required FRR configuration.
-func DefineBaseConfig(daemonsConfig, frrConfig, vtyShConfig string) map[string]string {
-	configMapData := make(map[string]string)
-	configMapData["daemons"] = daemonsConfig
-	configMapData["frr.conf"] = frrConfig
-	configMapData["vtysh.conf"] = vtyShConfig
-
-	return configMapData
-}
-
 // DefineBGPConfig returns string which represents BGP config file peering to all given IP addresses.
 func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []string, multiHop, bfd bool) string {
 	bgpConfig := tsparams.FRRBaseConfig +

@@ -46,8 +46,6 @@ var (
 	FRRK8sDefaultLabel = "component=frr-k8s"
 	// FRRK8sNodeLabel represents the default metalLb FRRK8S node label.
 	FRRK8sNodeLabel = "app=frr-k8s"
-	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
-	ExternalMacVlanNADName = "external"
 	// HubMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	HubMacVlanNADName = "nad-hub"
 	// HubMacVlanNADSecIntName represents a NetworkAttachmentDefinition that includes the master interface.
