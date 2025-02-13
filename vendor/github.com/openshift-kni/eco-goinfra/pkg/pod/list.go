@@ -9,8 +9,10 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // List returns pod inventory in the given namespace.
@@ -209,6 +211,55 @@ func WaitForAllPodsInNamespaceRunning(
 	return true, nil
 }
 
+// WaitForPodsInNamespacesHealthy waits up to timeout until every pod in namespaces is healthy. Failed pods with
+// RestartPolicy of Never are ignored. It works by listing pods every 15 seconds until every listed pod is healthy.
+func WaitForPodsInNamespacesHealthy(
+	apiClient *clients.Settings, namespaces []string, timeout time.Duration, options ...metav1.ListOptions) error {
+	logMessage := fmt.Sprintf("Waiting for all pods in namespaces %v to be healthy", namespaces)
+	passedOptions := metav1.ListOptions{}
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient is nil")
+
+		return fmt.Errorf("podList 'apiClient' cannot be empty")
+	}
+
+	if len(options) > 1 {
+		glog.V(100).Infof("'options' parameter must be empty or single-valued")
+
+		return fmt.Errorf("error: more than one ListOptions was passed")
+	}
+
+	if len(options) == 1 {
+		passedOptions = options[0]
+		logMessage += fmt.Sprintf(" with the options %v", passedOptions)
+	}
+
+	glog.V(100).Info(logMessage)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 15*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pods, err := listPodsInNamespaces(apiClient, namespaces, passedOptions)
+			if err != nil {
+				return false, nil
+			}
+
+			for _, pod := range pods {
+				// We use this internal helper to avoid spamming the apiClient since otherwise we may be
+				// sending hundreds of requests each iteration.
+				if !pod.isObjectHealthy() {
+					if pod.Object.Status.Phase == corev1.PodFailed && pod.Object.Spec.RestartPolicy == corev1.RestartPolicyNever {
+						continue
+					}
+
+					return false, nil
+				}
+			}
+
+			return true, nil
+		})
+}
+
 // WaitForAllPodsInNamespacesHealthy waits until:
 // - all pods in a list of namespaces that match options are in healthy state.
 // - a pod in a healthy state is in running phase and optionally in ready condition.
@@ -290,4 +341,28 @@ func WaitForAllPodsInNamespacesHealthy(
 	}
 
 	return nil
+}
+
+// listPodsInNamespaces lists pods only in the provided namespaces or all namespaces if the provided slice is empty. It
+// will not perform validation, passing arguments directly to ListInAllNamespaces or List.
+func listPodsInNamespaces(
+	apiClient *clients.Settings, namespaces []string, options ...metav1.ListOptions) ([]*Builder, error) {
+	if len(namespaces) == 0 {
+		return ListInAllNamespaces(apiClient, options...)
+	}
+
+	var allPods []*Builder
+
+	for _, namespace := range namespaces {
+		namespacePods, err := List(apiClient, namespace, options...)
+		if err != nil {
+			glog.V(100).Infof("Failed to list pods in namespace %s: %v", namespace, err)
+
+			return nil, err
+		}
+
+		allPods = append(allPods, namespacePods...)
+	}
+
+	return allPods, nil
 }
