@@ -578,7 +578,7 @@ github.com/opencontainers/runtime-spec/specs-go
 ## explicit; go 1.22.0
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20250211160605-6f5982f0fe18
+# github.com/openshift-kni/eco-goinfra v0.0.0-20250212220441-cec1d5554c72
 ## explicit; go 1.23.6
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
