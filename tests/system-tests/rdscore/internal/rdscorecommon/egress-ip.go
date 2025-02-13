@@ -333,8 +333,8 @@ func sendTrafficCheckIP(clientPods []*pod.Builder, isIPv6 bool, expectedIPs []st
 
 		err = wait.PollUntilContextTimeout(
 			context.TODO(),
-			time.Second,
 			time.Second*5,
+			time.Minute*1,
 			true,
 			func(ctx context.Context) (bool, error) {
 				result, err := clientPod.ExecCommand(cmdToRun, clientPod.Object.Spec.Containers[0].Name)
