@@ -29,6 +29,8 @@ const (
 	PolicyTemplateParamsKey = "policyTemplateParameters"
 	// HugePagesSizeKey is the key in TemplateParameters.policyTemplateParameters that sets the hugepages size.
 	HugePagesSizeKey = "hugepages-size"
+	// OCloudSiteID is the name of the site in the hardware manager to provision in.
+	OCloudSiteID = "rdu3"
 
 	// ImmutableMessage is the message to expect in a Policy's history when an immutable field cannot be updated.
 	ImmutableMessage = "cannot be updated, likely due to immutable fields not matching"

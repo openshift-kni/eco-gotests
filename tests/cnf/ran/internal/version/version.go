@@ -76,6 +76,11 @@ func GetOCPVersion(client *clients.Settings) (string, error) {
 		return "", err
 	}
 
+	// Workaround for an issue in eco-goinfra where builder.Object is nil even when Pull returns a nil error.
+	if clusterVersion.Object == nil {
+		return "", fmt.Errorf("failed to get ClusterVersion object")
+	}
+
 	histories := clusterVersion.Object.Status.History
 	for i := len(histories) - 1; i >= 0; i-- {
 		if histories[i].State == configv1.CompletedUpdate {
