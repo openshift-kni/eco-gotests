@@ -29,6 +29,7 @@ type ZTPConfig struct {
 
 // HubConfig contains environment information related to the hub cluster.
 type HubConfig struct {
+	HubAPIClient               *clients.Settings
 	HubOCPVersion              string
 	HubOCPXYVersion            string
 	HubAgentServiceConfig      *assisted.AgentServiceConfigBuilder
@@ -65,7 +66,7 @@ func NewZTPConfig() *ZTPConfig {
 	ztpconfig.SpokeConfig = new(SpokeConfig)
 
 	if err := ztpconfig.newHubConfig(); err != nil {
-		APIClient = nil
+		ztpconfig.HubConfig.HubAPIClient = nil
 
 		return &ztpconfig
 	}
@@ -101,7 +102,13 @@ func (ztpconfig *ZTPConfig) newHubConfig() error {
 		}
 	}
 
-	ztpconfig.HubConfig.HubOCPVersion, err = find.ClusterVersion(APIClient)
+	ztpconfig.HubConfig.HubAPIClient = APIClient
+
+	if ztpconfig.HubConfig.HubAPIClient == nil {
+		return fmt.Errorf("error: received nil hub apiClient")
+	}
+
+	ztpconfig.HubConfig.HubOCPVersion, err = find.ClusterVersion(ztpconfig.HubConfig.HubAPIClient)
 	if err != nil {
 		return err
 	}
@@ -111,7 +118,7 @@ func (ztpconfig *ZTPConfig) newHubConfig() error {
 		ztpconfig.HubConfig.HubOCPXYVersion = fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1])
 	}
 
-	ztpconfig.HubConfig.HubAgentServiceConfig, err = assisted.PullAgentServiceConfig(APIClient)
+	ztpconfig.HubConfig.HubAgentServiceConfig, err = assisted.PullAgentServiceConfig(ztpconfig.HubConfig.HubAPIClient)
 	if err != nil {
 		return err
 	}
@@ -128,7 +135,7 @@ func (ztpconfig *ZTPConfig) newHubConfig() error {
 		}
 	}
 
-	ztpconfig.HubConfig.HubPullSecret, err = cluster.GetOCPPullSecret(APIClient)
+	ztpconfig.HubConfig.HubPullSecret, err = cluster.GetOCPPullSecret(ztpconfig.HubConfig.HubAPIClient)
 	if err != nil {
 		return err
 	}
@@ -137,7 +144,8 @@ func (ztpconfig *ZTPConfig) newHubConfig() error {
 		return nil
 	}
 
-	ztpconfig.HubConfig.HubInstallConfig, err = configmap.Pull(APIClient, "cluster-config-v1", "kube-system")
+	ztpconfig.HubConfig.HubInstallConfig, err =
+		configmap.Pull(ztpconfig.HubConfig.HubAPIClient, "cluster-config-v1", "kube-system")
 	if err != nil {
 		return err
 	}
@@ -168,7 +176,7 @@ func (ztpconfig *ZTPConfig) newSpokeConfig() error {
 		}
 
 		ztpconfig.SpokeConfig.SpokeClusterName, err =
-			find.SpokeClusterName(APIClient, ztpconfig.SpokeConfig.SpokeAPIClient)
+			find.SpokeClusterName(ztpconfig.HubConfig.HubAPIClient, ztpconfig.SpokeConfig.SpokeAPIClient)
 		if err != nil {
 			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke cluster name: %v", err)
 
@@ -187,7 +195,7 @@ func (ztpconfig *ZTPConfig) newSpokeConfig() error {
 			ztpconfig.SpokeConfig.SpokeOCPXYVersion = fmt.Sprintf("%s.%s", splitVersion[0], splitVersion[1])
 		}
 
-		ztpconfig.SpokeConfig.SpokeClusterDeployment, err = hive.PullClusterDeployment(APIClient,
+		ztpconfig.SpokeConfig.SpokeClusterDeployment, err = hive.PullClusterDeployment(ztpconfig.HubConfig.HubAPIClient,
 			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
 		if err != nil {
 			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke cluster deployment: %v", err)
@@ -195,15 +203,16 @@ func (ztpconfig *ZTPConfig) newSpokeConfig() error {
 			return err
 		}
 
-		ztpconfig.SpokeConfig.SpokeAgentClusterInstall, err = assisted.PullAgentClusterInstall(APIClient,
-			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
+		ztpconfig.SpokeConfig.SpokeAgentClusterInstall, err =
+			assisted.PullAgentClusterInstall(ztpconfig.HubConfig.HubAPIClient,
+				ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
 		if err != nil {
 			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke agent cluster install: %v", err)
 
 			return err
 		}
 
-		ztpconfig.SpokeConfig.SpokeInfraEnv, err = assisted.PullInfraEnvInstall(APIClient,
+		ztpconfig.SpokeConfig.SpokeInfraEnv, err = assisted.PullInfraEnvInstall(ztpconfig.HubConfig.HubAPIClient,
 			ztpconfig.SpokeConfig.SpokeClusterName, ztpconfig.SpokeConfig.SpokeClusterName)
 		if err != nil {
 			glog.V(ztpparams.ZTPLogLevel).Infof("failed to find spoke infra env: %v", err)
@@ -233,7 +242,7 @@ func (ztpconfig *ZTPConfig) newSpokeConfig() error {
 // and populates hubAssistedServicePod.
 func (ztpconfig *ZTPConfig) HubAssistedServicePod() *pod.Builder {
 	if ztpconfig.hubAssistedServicePod == nil || !ztpconfig.hubAssistedServicePod.Exists() {
-		ztpconfig.hubAssistedServicePod, _ = find.AssistedServicePod(APIClient)
+		ztpconfig.hubAssistedServicePod, _ = find.AssistedServicePod(ztpconfig.HubAPIClient)
 	}
 
 	return ztpconfig.hubAssistedServicePod
@@ -243,7 +252,7 @@ func (ztpconfig *ZTPConfig) HubAssistedServicePod() *pod.Builder {
 // and populates hubAssistedImageServicePod.
 func (ztpconfig *ZTPConfig) HubAssistedImageServicePod() *pod.Builder {
 	if ztpconfig.hubAssistedImageServicePod == nil || !ztpconfig.hubAssistedImageServicePod.Exists() {
-		ztpconfig.hubAssistedImageServicePod, _ = find.AssistedImageServicePod(APIClient)
+		ztpconfig.hubAssistedImageServicePod, _ = find.AssistedImageServicePod(ztpconfig.HubAPIClient)
 	}
 
 	return ztpconfig.hubAssistedImageServicePod

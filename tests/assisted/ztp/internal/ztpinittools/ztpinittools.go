@@ -3,7 +3,6 @@ package ztpinittools
 import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpconfig"
-	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
 var (
@@ -16,7 +15,7 @@ var (
 )
 
 func init() {
-	HubAPIClient = inittools.APIClient
 	ZTPConfig = ztpconfig.NewZTPConfig()
+	HubAPIClient = ZTPConfig.HubAPIClient
 	SpokeAPIClient = ZTPConfig.SpokeAPIClient
 }
