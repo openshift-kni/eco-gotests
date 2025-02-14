@@ -575,7 +575,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 		runningNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull namespace")
 		Expect(runningNamespace.CleanObjects(
-			tsparams.WaitTimeout, pod.GetGVR(), deployment.GetGVR(), nad.GetGVR())).ToNot(HaveOccurred())
+			tsparams.WaitTimeout, deployment.GetGVR(), nad.GetGVR(), pod.GetGVR())).ToNot(HaveOccurred())
 	})
 
 	AfterAll(func() {
