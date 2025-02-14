@@ -21,3 +21,6 @@ const (
 	PreservationLabelKey      = Group + "/preserve"
 	ClusterIdentityLabelValue = "cluster-identity"
 )
+
+// PausedAnnotation is the annotation that pauses the reconciliation.
+const PausedAnnotation = "clusterinstance." + Group + "/paused"

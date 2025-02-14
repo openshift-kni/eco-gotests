@@ -527,6 +527,22 @@ type ReinstallStatus struct {
 	History []ReinstallHistory `json:"history,omitempty"`
 }
 
+type PausedStatus struct {
+	// TimeSet indicates when the paused annotation was applied.
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Format=date-time
+	TimeSet metav1.Time `json:"timeSet"`
+
+	// Reason provides an explanation for why the paused annotation was applied.
+	// This field may not be empty.
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MaxLength=32768
+	Reason string `json:"reason"`
+}
+
 // ClusterInstanceStatus defines the observed state of ClusterInstance
 type ClusterInstanceStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
@@ -553,12 +569,18 @@ type ClusterInstanceStatus struct {
 	// Reinstall status information.
 	// +optional
 	Reinstall *ReinstallStatus `json:"reinstall,omitempty"`
+
+	// Paused provides information about the pause annotation set by the controller
+	// to temporarily pause reconciliation of the ClusterInstance.
+	// +optional
+	Paused *PausedStatus `json:"paused,omitempty"`
 }
 
 //nolint:lll
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=clusterinstances,scope=Namespaced
+//+kubebuilder:printcolumn:name="Paused",type="date",JSONPath=".status.paused.timeSet"
 //+kubebuilder:printcolumn:name="ProvisionStatus",type="string",JSONPath=".status.conditions[?(@.type=='Provisioned')].reason"
 //+kubebuilder:printcolumn:name="ProvisionDetails",type="string",JSONPath=".status.conditions[?(@.type=='Provisioned')].message"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
