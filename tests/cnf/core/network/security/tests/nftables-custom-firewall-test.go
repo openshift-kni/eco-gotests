@@ -39,18 +39,20 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		hubIPv4Network           = "172.16.0.0/24"
 		masterPodIPv4Address     = "172.16.0.1"
 		portNum8888              = 8888
+		portNum8088              = 8088
 		cnfWorkerNodeList        []*nodes.Builder
 		masterNodeList           []*nodes.Builder
 		ipv4NodeAddrList         []string
 		ip4Worker0NodeAddr       []string
 		ipv4SecurityIPList       []string
 		testPodWorker0           *pod.Builder
-		testPodList              []*pod.Builder
-		routeMap                 map[string]string
-		mcNftablesName           = "98-nftables-cnf-worker"
-		interfaceNameNet1        = "net1"
-		interfaceNameBrEx        = "br-ex"
-		err                      error
+		// testPodWorker1           *pod.Builder
+		testPodList       []*pod.Builder
+		routeMap          map[string]string
+		mcNftablesName    = "98-nftables-cnf-worker"
+		interfaceNameNet1 = "net1"
+		interfaceNameBrEx = "br-ex"
+		err               error
 	)
 	BeforeAll(func() {
 		By("List CNF worker nodes in cluster")
@@ -72,14 +74,17 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		Expect(len(cnfWorkerNodeList)).To(BeNumerically(">", 1),
 			"Failed to detect at least two worker nodes")
 
-		By("verify status of nftables and activate if inactive")
-		activateNftablesIfInactive()
+		By("verify status of nftables on worker-0 if inactive activate")
+		activateNftablesIfInactive(cnfWorkerNodeList[0].Definition.Name)
 
 		By("Edit the machineconfiguration cluster to include NFTables")
 		updateMachineConfigurationNodeDisruptionPolicy()
 
-		By("Create test pods on worker node 0")
-		testPodWorker0 = createTestPodOnWorkers(cnfWorkerNodeList[0].Definition.Name, portNum8888)
+		By("Create test pods on worker node 0 listening to port 8888")
+		testPodWorker0 = createTestPodOnWorkers("testpod1", cnfWorkerNodeList[0].Definition.Name, portNum8888)
+
+		By("Create test pods on worker node 0 listening to port 8088")
+		_ = createTestPodOnWorkers("testpod2", cnfWorkerNodeList[0].Definition.Name, portNum8088)
 		testPodList = []*pod.Builder{testPodWorker0}
 
 		By("Create a static route to the external Pod network on each worker node")
@@ -97,8 +102,8 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		By("Remove the static route to the external Pod network on each worker node")
 		addDeleteStaticRouteOnWorkerNodes(testPodList, routeMap, "del", hubIPv4Network)
 
-		By("Disables nftables in cluster")
-		disableNftablesIfActive()
+		By("Disables nftables on worker-0 if active")
+		disableNftablesIfActive(cnfWorkerNodeList[0].Definition.Name)
 	})
 
 	Context("custom firewall", func() {
@@ -110,7 +115,71 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		})
 
 		It("Verify the creation of a new custom node firewall NFTables table with an ingress rule",
-			reportxml.ID("77412"), func() {
+			reportxml.ID("77142"), func() {
+				By("Setup test environment")
+				masterPod := setupRemoteMultiHopTest(ipv4SecurityIPList, hubIPv4ExternalAddresses,
+					ipv4NodeAddrList, cnfWorkerNodeList, masterNodeList)
+
+				By("Verify ICMP connectivity between the external Pod and the test pods on the workers")
+				err := cmd.ICMPConnectivityCheck(masterPod, ip4Worker0NodeAddr, interfaceNameNet1)
+				Expect(err).ToNot(HaveOccurred(), "Failed to ping the worker nodes")
+
+				By("Verify ingress and egress TCP traffic over port 8888 between the external Pod and the test pods " +
+					"on worker-0 before the custom firewall is activated")
+				verifyTCPPortBeforeCustomFirewallActive(masterPod, testPodWorker0, ip4Worker0NodeAddr, portNum8888)
+
+				By("Define and create a NFTables custom rule blocking ingress TCP port 8888")
+				createMCAndWaitforMCPStable(tsparams.CustomFirewallIngressPort8888, mcNftablesName)
+
+				By("Verify ingress TCP traffic is blocked and egress traffic is not blocked over port 8888")
+				verifyIngressTCPTrafficAfterCustomFirewallActive(masterPod, testPodWorker0, ipv4NodeAddrList, portNum8888)
+			})
+
+		It("Verify the creation of a custom node firewall nftables table with egress rule added to a ingress rule",
+			reportxml.ID("77143"), func() {
+				By("Setup test environment")
+				masterPod := setupRemoteMultiHopTest(ipv4SecurityIPList, hubIPv4ExternalAddresses,
+					ipv4NodeAddrList, cnfWorkerNodeList, masterNodeList)
+
+				By("Verify ICMP connectivity between the external Pod and the test pods on the workers")
+				err := cmd.ICMPConnectivityCheck(masterPod, ip4Worker0NodeAddr, interfaceNameNet1)
+				Expect(err).ToNot(HaveOccurred(), "Failed to ping the worker nodes")
+
+				By("Verify ingress and egress TCP traffic over port 8888 between the external Pod and the test pods " +
+					"on the workers")
+				verifyTCPPortBeforeCustomFirewallActive(masterPod, testPodWorker0, ip4Worker0NodeAddr, portNum8888)
+
+				By("Define and create a NFTables custom rule blocking ingress TCP port 8888")
+				createMCAndWaitforMCPStable(tsparams.CustomFirewallIngressPort8888, mcNftablesName)
+
+				By("Verify ingress TCP traffic is blocked and egress traffic is not blocked over port 8888")
+				verifyIngressTCPTrafficAfterCustomFirewallActive(masterPod, testPodWorker0, ipv4NodeAddrList, portNum8888)
+
+				By("Define and add a new NFTables custom rule blocking egress TCP port 8088")
+				createMCAndWaitforMCPStable(tsparams.CustomFirewallIngress8888EgressPort8088, mcNftablesName)
+
+				By("Verify ICMP connectivity between the external Pod and the test pods on the workers")
+				err = cmd.ICMPConnectivityCheck(masterPod, ip4Worker0NodeAddr, interfaceNameNet1)
+				Expect(err).ToNot(HaveOccurred(), "Failed to ping the worker nodes")
+
+				By("Verify ingress TCP traffic is blocked and egress traffic is not blocked over port 8888")
+				verifyIngressTCPTrafficAfterCustomFirewallActive(masterPod, testPodWorker0, ipv4NodeAddrList, portNum8888)
+
+				By("Verify that egress TCP port 8088 is blocked from testpod to external pod")
+				err = cmd.ValidateTCPTraffic(testPodWorker0, []string{masterPodIPv4Address},
+					interfaceNameBrEx, "", portNum8088)
+				Expect(err).To(HaveOccurred(),
+					"Failed to send egress TCP traffic over port 8888 to the pod on the master node")
+
+				By("Verify that ingress TCP port 8088 is not blocked")
+				err = cmd.ValidateTCPTraffic(masterPod, ipv4NodeAddrList, interfaceNameNet1, frrconfig.ContainerName,
+					portNum8088)
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to send ingress TCP traffic over port 8088")
+			})
+
+		It("Verify a custom firewall nftables is reloaded after host reboot with all existing rules",
+			reportxml.ID("77144"), func() {
 				By("Setup test environment")
 				masterPod := setupRemoteMultiHopTest(ipv4SecurityIPList, hubIPv4ExternalAddresses,
 					ipv4NodeAddrList, cnfWorkerNodeList, masterNodeList)
@@ -119,34 +188,39 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 				err := cmd.ICMPConnectivityCheck(masterPod, ip4Worker0NodeAddr, interfaceNameNet1)
 				Expect(err).ToNot(HaveOccurred(), "Failed to ping the worker nodes")
 
-				By("Verify ingress TCP traffic over port 8888 between the master Pod and the test pods on the workers")
-				err = cmd.ValidateTCPTraffic(masterPod, ip4Worker0NodeAddr, interfaceNameNet1, frrconfig.ContainerName,
-					portNum8888)
-				Expect(err).ToNot(HaveOccurred(),
-					"Failed to send ingress TCP traffic over port 8888 to the worker nodes")
-
-				By("Verify egress TCP traffic over port 8888 between the test Pod on the worker0 and the master pod")
-				err = cmd.ValidateTCPTraffic(testPodWorker0, []string{masterPodIPv4Address},
-					interfaceNameBrEx, "", portNum8888)
-				Expect(err).ToNot(HaveOccurred(),
-					"Failed to send egress TCP traffic over port 8888 to the pod on the master node")
+				By("Verify ingress and egress TCP traffic over port 8888 between the external Pod and the test pods " +
+					"on the workers")
+				verifyTCPPortBeforeCustomFirewallActive(masterPod, testPodWorker0, ip4Worker0NodeAddr, portNum8888)
 
 				By("Define and create a NFTables custom rule blocking ingress TCP port 8888")
 				createMCAndWaitforMCPStable(tsparams.CustomFirewallIngressPort8888, mcNftablesName)
 
-				By("Verify ingress TCP traffic is blocked over port 8888 between the master Pod and the test" +
-					" pods on the workers")
+				By("Verify ICMP connectivity between the external Pod and the test pods on the workers")
+				err = cmd.ICMPConnectivityCheck(masterPod, ip4Worker0NodeAddr, interfaceNameNet1)
+				Expect(err).ToNot(HaveOccurred(), "Failed to ping the worker nodes")
 
-				err = cmd.ValidateTCPTraffic(masterPod, ipv4NodeAddrList, interfaceNameNet1, frrconfig.ContainerName,
-					portNum8888)
-				Expect(err).To(HaveOccurred(),
-					"Successfully sent ingress TCP traffic over port 8888 to the worker nodes")
+				By("Verify ingress TCP traffic is blocked and egress traffic is not blocked over port 8888")
+				verifyIngressTCPTrafficAfterCustomFirewallActive(masterPod, testPodWorker0, ipv4NodeAddrList, portNum8888)
 
-				By("Verify egress TCP traffic over port 8888 between the test Pod on the worker0 and the master pod")
-				err = cmd.ValidateTCPTraffic(testPodWorker0, []string{masterPodIPv4Address},
-					interfaceNameBrEx, "", portNum8888)
-				Expect(err).ToNot(HaveOccurred(),
-					"Failed to send egress TCP traffic over port 8888 to the pod on the master node")
+				By("Reboot worker-0")
+				rebootNodeAndWaitForMcpStable()
+
+				By("Recreate a static route to the external Pod network on worker node after reboot")
+				// GetMetalLbVirIP using the metallb virtal IP address variable for test pod IP addresses.
+				ipv4SecurityIPList, err = NetConfig.GetMetalLbVirIP()
+				Expect(err).ToNot(HaveOccurred(), "Failed to retrieve the ipv4SecurityIPList")
+
+				routeMap, err = netenv.BuildRoutesMapWithSpecificRoutes(testPodList, cnfWorkerNodeList, ipv4SecurityIPList)
+				Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
+
+				addDeleteStaticRouteOnWorkerNodes(testPodList, routeMap, "add", hubIPv4Network)
+
+				By("Verify ICMP connectivity between the external Pod and the test pods on the workers")
+				err = cmd.ICMPConnectivityCheck(masterPod, ip4Worker0NodeAddr, interfaceNameNet1)
+				Expect(err).ToNot(HaveOccurred(), "Failed to ping the worker nodes")
+
+				By("Verify ingress TCP traffic is blocked and egress traffic is not blocked over port 8888")
+				verifyIngressTCPTrafficAfterCustomFirewallActive(masterPod, testPodWorker0, ipv4NodeAddrList, portNum8888)
 			})
 	})
 })
@@ -255,7 +329,8 @@ func createFrrPodTest(
 	if masterPod {
 		frrContainer = pod.NewContainerBuilder(
 			"frr", NetConfig.CnfNetTestContainer, []string{"/bin/bash", "-c",
-				"testcmd -interface net1 -protocol tcp -port 8888 -listen"})
+				"testcmd -interface net1 -protocol tcp -port 8888 -listen && " +
+					"testcmd -interface net1 -protocol tcp -port 8088 -listen"})
 	} else {
 		frrContainer = pod.NewContainerBuilder(
 			"frr", NetConfig.CnfNetTestContainer, []string{"/bin/bash", "-c", "sleep INF"})
@@ -289,9 +364,9 @@ func defineConfigMapWithStaticRouteAndNetwork(hubPodIPs, nodeIPAddresses []strin
 	return frrConfig
 }
 
-func createTestPodOnWorkers(nodeName string, portNum int) *pod.Builder {
+func createTestPodOnWorkers(podName, nodeName string, portNum int) *pod.Builder {
 	testPod, err := pod.NewBuilder(
-		APIClient, "testpod-"+nodeName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 		DefineOnNode(nodeName).WithHostNetwork().WithHostPid(true).
 		RedefineDefaultCMD([]string{"/bin/bash", "-c",
 			fmt.Sprintf("testcmd -interface br-ex -protocol tcp -port %d -listen", portNum)}).
@@ -374,49 +449,52 @@ func addDeleteStaticRouteOnWorkerNodes(testPodList []*pod.Builder, routeMap map[
 	}
 }
 
-func activateNftablesIfInactive() {
+func activateNftablesIfInactive(targetNodeName string) {
 	// Get the current status of the nftables service
-	statuses, err := cluster.ExecCmdWithStdoutWithRetries(APIClient,
-		3, 10*time.Second,
-		"systemctl is-active nftables.service | cat -")
+	statuses, err := cluster.ExecCmdWithStdout(APIClient,
+		"systemctl is-active nftables.service | cat -",
+		metav1.ListOptions{LabelSelector: "kubernetes.io/hostname=worker-0"})
+	fmt.Println("############################### ENABLED", statuses)
 	Expect(err).ToNot(HaveOccurred(), "Failed to check if nftables service status")
 	Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for nftables service")
 
 	// Iterate through the statuses of the nodes
 	for nodeName, status := range statuses {
-		// If the status is inactive, activate it
+		// If the node matches targetNodeName and the status is inactive, activate it
 		status = strings.TrimSpace(status)
-		if status == "inactive" {
+		if nodeName == targetNodeName && status == "inactive" {
 			// Execute the command to start nftables service
-			_, err := cluster.ExecCmdWithStdoutWithRetries(APIClient,
-				3, 10*time.Second,
-				"systemctl start nftables.service")
+			_, err := cluster.ExecCmdWithStdout(APIClient,
+				"systemctl start nftables.service",
+				metav1.ListOptions{LabelSelector: "kubernetes.io/hostname=worker-0"})
 			Expect(err).ToNot(HaveOccurred(), "Failed to start nftables service on "+nodeName)
 
 			// Verify that nftables is now active
 			verifyNftablesStatus("active", nodeName)
+			Expect(err).ToNot(HaveOccurred(), "Failed to start nftables service on "+nodeName)
 		}
 	}
 }
 
-func disableNftablesIfActive() {
+func disableNftablesIfActive(targetNodeName string) {
 	// Get the current status of the nftables service
 	statuses, err := cluster.ExecCmdWithStdoutWithRetries(APIClient,
-		3, 10*time.Second,
-		"systemctl is-active nftables.service | cat -")
+		3, 5*time.Second,
+		"systemctl is-active nftables.service | cat -",
+		metav1.ListOptions{LabelSelector: "kubernetes.io/hostname=worker-0"})
 	Expect(err).ToNot(HaveOccurred(), "Failed to check nftables service status")
 	Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for nftables service")
 
 	// Iterate through the statuses of the nodes
 	for nodeName, status := range statuses {
 		status = strings.TrimSpace(status)
-		if status == "active" {
+		if nodeName == targetNodeName && status == "active" {
 			// Execute the command to stop and disable nftables service
-			_, err := cluster.ExecCmdWithStdoutWithRetries(APIClient,
-				3, 10*time.Second,
-				"systemctl stop nftables.service")
-			Expect(err).ToNot(HaveOccurred(), "Failed to disable nftables service on "+nodeName)
-			fmt.Printf("Disabled nftables on %s\n", nodeName)
+			_, err := cluster.ExecCmdWithStdout(APIClient,
+				"systemctl stop nftables.service",
+				metav1.ListOptions{LabelSelector: "kubernetes.io/hostname=worker-0"})
+			Expect(err).ToNot(HaveOccurred(), "Failed to stop nftables service on "+nodeName)
+			fmt.Printf("Stopping nftables on %s\n", nodeName)
 
 			// Verify that nftables is now inactive
 			verifyNftablesStatus("inactive", nodeName)
@@ -425,9 +503,9 @@ func disableNftablesIfActive() {
 }
 
 func verifyNftablesStatus(expectedStatus, nodeName string) {
-	statuses, err := cluster.ExecCmdWithStdoutWithRetries(APIClient,
-		3, 10*time.Second,
-		"systemctl is-active nftables.service | cat -")
+	statuses, err := cluster.ExecCmdWithStdout(APIClient,
+		"systemctl is-active nftables.service | cat -",
+		metav1.ListOptions{LabelSelector: "kubernetes.io/hostname=worker-0"})
 	Expect(err).ToNot(HaveOccurred(), "Failed to verify nftables status on "+nodeName)
 
 	actualStatus, exists := statuses[nodeName]
@@ -436,4 +514,55 @@ func verifyNftablesStatus(expectedStatus, nodeName string) {
 	actualStatus = strings.TrimSpace(actualStatus)
 	Expect(actualStatus).To(Equal(expectedStatus),
 		fmt.Sprintf("Expected nftables status on %s to be %s, but got %s", nodeName, expectedStatus, actualStatus))
+}
+
+func verifyTCPPortBeforeCustomFirewallActive(
+	masterPod *pod.Builder,
+	testPodWorker0 *pod.Builder,
+	ip4Worker0NodeAddr []string,
+	portNum int,
+) {
+	By("Verify ingress TCP traffic over port 8888 between the master Pod and the test pods on the workers")
+
+	err := cmd.ValidateTCPTraffic(masterPod, ip4Worker0NodeAddr, "net1", frrconfig.ContainerName,
+		portNum)
+	Expect(err).ToNot(HaveOccurred(),
+		"Failed to send ingress TCP traffic over port 8888 to the worker nodes")
+
+	By("Verify egress TCP traffic over port 8888 between the test Pod on the worker0 and the master pod")
+
+	err = cmd.ValidateTCPTraffic(testPodWorker0, []string{"172.16.0.1"},
+		"br-ex", "", portNum)
+	Expect(err).ToNot(HaveOccurred(),
+		"Failed to send egress TCP traffic over port 8888 to the pod on the master node")
+}
+
+func verifyIngressTCPTrafficAfterCustomFirewallActive(
+	masterPod *pod.Builder,
+	testPodWorker0 *pod.Builder,
+	ip4Worker0NodeAddr []string,
+	portNum int,
+) {
+	err := cmd.ValidateTCPTraffic(masterPod, ip4Worker0NodeAddr, "net1", frrconfig.ContainerName,
+		portNum)
+	Expect(err).To(HaveOccurred(),
+		fmt.Sprintf("Successfully sent ingress TCP traffic over port %d to the worker nodes", portNum))
+
+	By(fmt.Sprintf("Verify egress TCP traffic over port %d between the test Pod on the worker0 and the "+
+		"master pod", portNum))
+
+	err = cmd.ValidateTCPTraffic(testPodWorker0, []string{"172.16.0.1"},
+		"br-ex", "", portNum)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to send egress TCP traffic over port %d to the pod on the master node", portNum))
+}
+
+func rebootNodeAndWaitForMcpStable() {
+	_, err := cluster.ExecCmdWithStdout(APIClient,
+		"reboot -f",
+		metav1.ListOptions{LabelSelector: "kubernetes.io/hostname=worker-0"})
+	Expect(err).ToNot(HaveOccurred(), "Failed to reboot worker-0")
+
+	err = netenv.WaitForMcpStable(APIClient, 35*time.Minute, 1*time.Minute, NetConfig.CnfMcpLabel)
+	Expect(err).ToNot(HaveOccurred(), "Failed to wait for MCP to be stable")
 }
