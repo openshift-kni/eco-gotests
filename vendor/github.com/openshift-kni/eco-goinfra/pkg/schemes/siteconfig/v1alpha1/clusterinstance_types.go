@@ -481,9 +481,13 @@ type ReinstallHistory struct {
 	// +required
 	Generation string `json:"generation"`
 
-	// Timestamp indicates the date and time when the reinstallation occurred.
+	// RequestStartTime indicates the time at which SiteConfig was requested to reinstall.
 	// +required
-	Timestamp metav1.Time `json:"timestamp"`
+	RequestStartTime metav1.Time `json:"requestStartTime,omitempty"`
+
+	// RequestEndTime indicates the time at which SiteConfig completed processing the reinstall request.
+	// +required
+	RequestEndTime metav1.Time `json:"requestEndTime,omitempty"`
 
 	// ClusterInstanceSpecDiff provides a JSON representation of the differences between the
 	// ClusterInstance spec at the time of reinstallation and the previous spec.
