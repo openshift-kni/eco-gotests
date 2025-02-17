@@ -18,6 +18,7 @@ require (
 	github.com/kedacore/keda-olm-operator v0.0.0-20241108231742-8cb33dda32d3
 	github.com/kedacore/keda/v2 v2.16.1
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/klauspost/compress v1.17.11
 	github.com/metal3-io/baremetal-operator/apis v0.9.0
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20250114063637-129b149f6ce9
 	github.com/onsi/ginkgo/v2 v2.22.2
@@ -53,7 +54,6 @@ require (
 	open-cluster-management.io/config-policy-controller v0.15.0
 	open-cluster-management.io/governance-policy-propagator v0.15.0
 	open-cluster-management.io/multicloud-operators-subscription v0.15.0
-	github.com/klauspost/compress v1.17.11
 	sigs.k8s.io/controller-runtime v0.19.5
 )
 
