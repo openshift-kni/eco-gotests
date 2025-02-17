@@ -24,3 +24,5 @@ const (
 
 // PausedAnnotation is the annotation that pauses the reconciliation.
 const PausedAnnotation = "clusterinstance." + Group + "/paused"
+
+const LastClusterInstanceSpecAnnotation = "clusterinstance." + Group + "/last-observed-spec"
