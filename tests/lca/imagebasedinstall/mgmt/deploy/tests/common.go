@@ -68,7 +68,7 @@ func createSharedResources() {
 	_, err := namespace.NewBuilder(APIClient, MGMTConfig.Cluster.Info.ClusterName).Create()
 	Expect(err).NotTo(HaveOccurred(), "error creating namespace")
 
-	if MGMTConfig.ReinstallManifestDir != "" {
+	if MGMTConfig.Reinstall != nil {
 		By("Recreate admin kubeconfig secret")
 
 		adminKubeconfig := secret.NewBuilder(
@@ -78,11 +78,11 @@ func createSharedResources() {
 
 		var adminKubeconfigContents *v1.Secret
 
-		adminKubeconfigFile, err := os.ReadFile(MGMTConfig.ReinstallManifestDir + "/admin-kubeconfig.json")
-		Expect(err).NotTo(HaveOccurred(), "error reading admin-kubeconfig.json")
+		adminKubeconfigFile, err := os.ReadFile(MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
+		Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
 
 		err = json.Unmarshal(adminKubeconfigFile, &adminKubeconfigContents)
-		Expect(err).NotTo(HaveOccurred(), "error unmarshalling admin-kubeconfig.json to secret")
+		Expect(err).NotTo(HaveOccurred(), "error unmarshalling %s to secret", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
 
 		adminKubeconfig.Definition = adminKubeconfigContents
 
@@ -98,11 +98,11 @@ func createSharedResources() {
 
 		var adminPasswordContents *v1.Secret
 
-		adminPasswordFile, err := os.ReadFile(MGMTConfig.ReinstallManifestDir + "/admin-password.json")
-		Expect(err).NotTo(HaveOccurred(), "error reading admin-password.json")
+		adminPasswordFile, err := os.ReadFile(MGMTConfig.Reinstall.AdminPasswordSecretFile)
+		Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.AdminPasswordSecretFile)
 
 		err = json.Unmarshal(adminPasswordFile, &adminPasswordContents)
-		Expect(err).NotTo(HaveOccurred(), "error unmarshalling admin-password.json to secret")
+		Expect(err).NotTo(HaveOccurred(), "error unmarshalling %s to secret", MGMTConfig.Reinstall.AdminPasswordSecretFile)
 
 		adminPassword.Definition = adminPasswordContents
 
@@ -118,11 +118,11 @@ func createSharedResources() {
 
 		var seedReconfigContents *v1.Secret
 
-		seedReconfigFile, err := os.ReadFile(MGMTConfig.ReinstallManifestDir + "/seed-reconfiguration.json")
-		Expect(err).NotTo(HaveOccurred(), "error reading seed-reconfiguration.json")
+		seedReconfigFile, err := os.ReadFile(MGMTConfig.Reinstall.SeedRecertSecretFile)
+		Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.SeedRecertSecretFile)
 
 		err = json.Unmarshal(seedReconfigFile, &seedReconfigContents)
-		Expect(err).NotTo(HaveOccurred(), "error unmarshalling seed-reconfiguration.json to secret")
+		Expect(err).NotTo(HaveOccurred(), "error unmarshalling %s to secret", MGMTConfig.Reinstall.SeedRecertSecretFile)
 
 		seedReconfig.Definition = seedReconfigContents
 
