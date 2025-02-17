@@ -2,10 +2,12 @@ package tests
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
@@ -173,6 +175,12 @@ func testExposeMTU(mtu int, interfacesUnderTest []string, devType, workerName st
 		tsparams.TestNamespaceName, sriovAndResourceNameExposeMTU).WithStaticIpam().WithMacAddressSupport().
 		WithIPAddressSupport().WithLogLevel(netparam.LogLevelDebug).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create SR-IOV network")
+
+	Eventually(func() error {
+		_, err := nad.Pull(APIClient, sriovAndResourceNameExposeMTU, tsparams.TestNamespaceName)
+
+		return err
+	}, 10*time.Second, 1*time.Second).Should(BeNil(), fmt.Sprintf("Failed to pull NAD %s", sriovAndResourceNameExposeMTU))
 
 	By("Creating test pod")
 
