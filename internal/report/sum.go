@@ -1,4 +1,3 @@
-//nolint:unused // Until the next PR merges, this file is unused.
 package main
 
 import (
