@@ -1,14 +1,23 @@
 package helper
 
 import (
+	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/oran"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/tsparams"
 	pluginv1alpha1 "github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin/v1alpha1"
+	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -83,4 +92,138 @@ func GetValidDellHwmgr(client *clients.Settings) (*oran.HardwareManagerBuilder, 
 	}
 
 	return nil, fmt.Errorf("no valid HardwareManager with AdaptorID dell-hwmgr exists")
+}
+
+// WaitForNoncompliantImmutable waits up to timeout until one of the policies in namespace is NonCompliant and the
+// message history shows it is due to an immutable field.
+func WaitForNoncompliantImmutable(client *clients.Settings, namespace string, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			policies, err := ocm.ListPoliciesInAllNamespaces(client, runtimeclient.ListOptions{Namespace: namespace})
+			if err != nil {
+				glog.V(tsparams.LogLevel).Infof("Failed to list all policies in namespace %s: %v", namespace, err)
+
+				return false, nil
+			}
+
+			for _, policy := range policies {
+				if policy.Definition.Status.ComplianceState == policiesv1.NonCompliant {
+					glog.V(tsparams.LogLevel).Infof("Policy %s in namespace %s is not compliant, checking history",
+						policy.Definition.Name, policy.Definition.Namespace)
+
+					details := policy.Definition.Status.Details
+					if len(details) != 1 {
+						continue
+					}
+
+					history := details[0].History
+					if len(history) < 1 {
+						continue
+					}
+
+					if strings.Contains(history[0].Message, tsparams.ImmutableMessage) {
+						glog.V(tsparams.LogLevel).Infof("Policy %s in namespace %s is not compliant due to an immutable field",
+							policy.Definition.Name, policy.Definition.Namespace)
+
+						return true, nil
+					}
+				}
+			}
+
+			return false, nil
+		})
+}
+
+// GetPolicyVersionForTemplate extracts the policy version from the ClusterInstance defaults ConfigMap for the provided
+// ClusterTemplate.
+func GetPolicyVersionForTemplate(client *clients.Settings, template *oran.ClusterTemplateBuilder) (string, error) {
+	ciDefaultsCM, err := configmap.Pull(
+		client, template.Object.Spec.Templates.ClusterInstanceDefaults, template.Definition.Namespace)
+	if err != nil {
+		glog.V(tsparams.LogLevel).Infof(
+			"Failed to pull ClusterInstance defaults ConfigMap for template %s in namespace %s: %v",
+			template.Definition.Name, template.Definition.Name, err)
+
+		return "", err
+	}
+
+	ciDefaults, exists := ciDefaultsCM.Object.Data[tsparams.ClusterInstanceDefaultsKey]
+	if !exists {
+		return "", fmt.Errorf("clusterInstance defaults ConfigMap missing the defaults key %s",
+			tsparams.ClusterInstanceDefaultsKey)
+	}
+
+	unmarshaledDefaults := make(map[string]any)
+	err = yaml.Unmarshal([]byte(ciDefaults), &unmarshaledDefaults)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal ClusterInstance defaults data: %w", err)
+	}
+
+	extraLabels, exists := unmarshaledDefaults["extraLabels"]
+	if !exists {
+		return "", fmt.Errorf("clusterInstance defaults missing extraLabels key")
+	}
+
+	extraLabelsMap, typeOk := extraLabels.(map[string]any)
+	if !typeOk {
+		return "", fmt.Errorf("cannot assert extraLabels as map[string]any when its type is %T", extraLabels)
+	}
+
+	mclLabels, exists := extraLabelsMap["ManagedCluster"]
+	if !exists {
+		return "", fmt.Errorf("extraLabels map does not contain any labels for kind ManagedCluster")
+	}
+
+	mclLabelsMap, typeOk := mclLabels.(map[string]any)
+	if !typeOk {
+		return "", fmt.Errorf("cannot assert ManagedCluster labels as map[string]any when its type is %T", mclLabels)
+	}
+
+	policyVersion, exists := mclLabelsMap[tsparams.PolicySelectorLabel]
+	if !exists {
+		return "", fmt.Errorf("labels for kind ManagedCluster do not contain key %s", tsparams.PolicySelectorLabel)
+	}
+
+	policyVersionString, typeOk := policyVersion.(string)
+	if !typeOk {
+		return "", fmt.Errorf("cannot assert policy version label as string when its type is %T", policyVersion)
+	}
+
+	return policyVersionString, nil
+}
+
+// WaitForPolicyVersion waits up to timeout until all policies in namespace have version policyVersion, polling every 3
+// seconds.
+func WaitForPolicyVersion(client *clients.Settings, namespace, policyVersion string, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			policies, err := ocm.ListPoliciesInAllNamespaces(client, runtimeclient.ListOptions{Namespace: namespace})
+			if err != nil {
+				glog.V(tsparams.LogLevel).Infof("Failed to list all policies in namespace %s: %v", namespace, err)
+
+				return false, nil
+			}
+
+			for _, policy := range policies {
+				policySegments := strings.Split(policy.Definition.Name, ".")
+
+				var policyName string
+
+				// Generated policies will be of the format policyNamespace.policyname so we extract
+				// only the name.
+				if len(policySegments) == 0 {
+					policyName = policy.Definition.Name
+				} else {
+					policyName = policySegments[len(policySegments)-1]
+				}
+
+				// All policy names should be of the format policyVersion-policyName.
+				if !strings.HasPrefix(policyName, policyVersion) {
+					return false, nil
+				}
+			}
+
+			return true, nil
+		})
 }
