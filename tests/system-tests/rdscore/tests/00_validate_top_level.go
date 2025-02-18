@@ -46,12 +46,23 @@ var _ = Describe(
 				rdscorecommon.VerifyGRMultipleConnectionIPv6ETPLocal)
 
 			It("Verify EgressService with Cluster ExternalTrafficPolicy",
-				Label("egress", "egress-etp-cluster"), reportxml.ID("76485"),
-				rdscorecommon.VerifyEgressServiceWithClusterETP)
+				Label("egress", "egress-etp-cluster", "egress-etp-cluster-loadbalancer"),
+				reportxml.ID("76485"),
+				rdscorecommon.VerifyEgressServiceWithClusterETPLoadbalancer)
+
+			It("Verify EgressService with Cluster ExternalTrafficPolicy and sourceIPBy=Network",
+				Label("egress", "egress-etp-cluster", "egress-etp-cluster-network"),
+				reportxml.ID("79510"),
+				rdscorecommon.VerifyEgressServiceWithClusterETPNetwork)
 
 			It("Verify EgressService with Local ExternalTrafficPolicy",
 				Label("egress", "egress-etp-local"), reportxml.ID("76484"),
 				rdscorecommon.VerifyEgressServiceWithLocalETP)
+
+			It("Verify EgressService with Local ExternalTrafficPolicy and sourceIPBy=Network",
+				Label("egress", "egress-etp-local", "egress-etp-local-network"),
+				reportxml.ID("79483"),
+				rdscorecommon.VerifyEgressServiceWithLocalETPSourceIPByNetwork)
 
 			It("Verifies workload reachable over BGP route",
 				Label("frr"), reportxml.ID("76009"),
@@ -182,11 +193,17 @@ var _ = Describe(
 
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
-				By("Creating EgressService with ETP=Cluster")
-				rdscorecommon.VerifyEgressServiceWithClusterETP(ctx)
+				By("Creating EgressService with ETP=Cluster and sourceIPBy=LoadBalancerIP")
+				rdscorecommon.VerifyEgressServiceWithClusterETPLoadbalancer(ctx)
 
-				By("Creating EgressService with ETP=Local")
+				By("Creating EgressService with ETP=Cluster and sourceIPBy=Network")
+				rdscorecommon.VerifyEgressServiceWithClusterETPNetwork(ctx)
+
+				By("Creating EgressService with ETP=Local and sourceIPBy=LoadBalancerIP")
 				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+
+				By("Creating EgressService with ETP=Local and sourceIPBy=Network")
+				rdscorecommon.VerifyEgressServiceWithLocalETPSourceIPByNetwork(ctx)
 
 				By("Creating EgressIP workload config")
 				rdscorecommon.CreateEgressIPTestDeployment()
@@ -309,20 +326,42 @@ var _ = Describe(
 				Label("validate-policies"), rdscorecommon.ValidateAllPoliciesCompliant)
 
 			It("Verify EgressService with Cluster ExternalTrafficPolicy after ungraceful reboot",
-				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("76503"),
+				Label("egress-validate-cluster-etp", "egress", "egress-validate-cluster-etp-loadbalancer"),
+				reportxml.ID("76503"),
 				rdscorecommon.VerifyEgressServiceConnectivityETPCluster)
 
+			It("Verify EgressService with Cluster ExternalTrafficPolicy and sourceIPBy=Network after ungraceful reboot",
+				Label("egress-validate-cluster-etp", "egress", "egress-validate-cluster-etp-network"),
+				reportxml.ID("79513"),
+				rdscorecommon.VerifyEgressServiceConnectivityETPClusterSourceIPByNetwork)
+
 			It("Verify EgressService with Local ExternalTrafficPolicy after ungraceful reboot",
-				Label("egress-validate-local-etp", "egress"), reportxml.ID("76504"),
+				Label("egress-validate-local-etp", "egress", "egress-validate-local-etp-loadbalancerip"),
+				reportxml.ID("76504"),
 				rdscorecommon.VerifyEgressServiceConnectivityETPLocal)
+
+			It("Verify EgressService with Local ExternalTrafficPolicy and sourceIPBy=Network after ungraceful reboot",
+				Label("egress-validate-local-etp", "egress", "egress-validate-local-etp-network"),
+				reportxml.ID("79515"),
+				rdscorecommon.VerifyEgressServiceConnectivityETPLocalSourceIPByNetwork)
 
 			It("Verify EgressService  ingress with Local ExternalTrafficPolicy after ungraceful reboot",
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76672"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
 
+			It("Verify EgressService ingress with Local ExternalTrafficPolicy and sourceIPBy=Network after ungraceful reboot",
+				Label("egress-validate-local-etp", "egress", "egress-local-etp-network-ingress"),
+				reportxml.ID("79516"),
+				rdscorecommon.VerifyEgressServiceETPLocalSourceIPByNetworkIngressConnectivity)
+
 			It("Verify EgressService  ingress with Cluster ExternalTrafficPolicy after ungraceful reboot",
 				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("78362"),
 				rdscorecommon.VerifyEgressServiceETPClusterIngressConnectivity)
+
+			It("Verify EgressService ingress with Cluster ExternalTrafficPolicy and sourceIPBy=Network after ungraceful reboot",
+				Label("egress-validate-cluster-etp", "egress", "egress-cluster-etp-network-ingress"),
+				reportxml.ID("79517"),
+				rdscorecommon.VerifyEgressServiceETPClusterSourceIPByNetworkIngressConnectivity)
 
 			It("Verify EgressIP connectivity over IPv4 address after ungraceful reboot",
 				Label("egressip", "egressip-ipv4"), reportxml.ID("75061"),
@@ -391,11 +430,17 @@ var _ = Describe(
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
-				By("Creating EgressService with ETP=Cluster")
-				rdscorecommon.VerifyEgressServiceWithClusterETP(ctx)
+				By("Creating EgressService with ETP=Cluster and sourceIPBy=LoadBalancerIP")
+				rdscorecommon.VerifyEgressServiceWithClusterETPLoadbalancer(ctx)
 
-				By("Creating EgressService with ETP=Local")
+				By("Creating EgressService with ETP=Cluster and sourceIPBy=Network")
+				rdscorecommon.VerifyEgressServiceWithClusterETPNetwork(ctx)
+
+				By("Creating EgressService with ETP=Local and sourceIPBy=LoadBalancerIP")
 				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
+
+				By("Creating EgressService with ETP=Local and sourceIPBy=Network")
+				rdscorecommon.VerifyEgressServiceWithLocalETPSourceIPByNetwork(ctx)
 
 				By("Creating EgressIP workload config")
 				rdscorecommon.CreateEgressIPTestDeployment()
@@ -468,20 +513,41 @@ var _ = Describe(
 				Label("validate-policies"), rdscorecommon.ValidateAllPoliciesCompliant)
 
 			It("Verify EgressService with Cluster ExternalTrafficPolicy after graceful reboot",
-				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("76505"),
+				Label("egress-validate-cluster-etp", "egress", "egress-validate-cluster-etp-loadbalancer"),
+				reportxml.ID("76505"),
 				rdscorecommon.VerifyEgressServiceConnectivityETPCluster)
 
-			It("Verify EgressService with Local ExternalTrafficPolicy after graceful reboot",
+			It("Verify EgressService with Cluster ExternalTrafficPolicy and sourceIPBy=Network after graceful reboot",
+				Label("egress-validate-cluster-etp", "egress", "egress-validate-cluster-etp-network"),
+				reportxml.ID("79518"),
+				rdscorecommon.VerifyEgressServiceConnectivityETPClusterSourceIPByNetwork)
+
+			It("Verify EgressService with Local ExternalTrafficPolicy and sourceIPBy=LoadBalancerIPafter graceful reboot",
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76506"),
 				rdscorecommon.VerifyEgressServiceConnectivityETPLocal)
+
+			It("Verify EgressService with Local ExternalTrafficPolicy and sourceIPBy=Network after graceful reboot",
+				Label("egress-validate-local-etp", "egress", "egress-validate-local-etp-network"),
+				reportxml.ID("79519"),
+				rdscorecommon.VerifyEgressServiceConnectivityETPLocalSourceIPByNetwork)
 
 			It("Verify EgressService ingress with Local ExternalTrafficPolicy after graceful reboot",
 				Label("egress-validate-local-etp", "egress"), reportxml.ID("76673"),
 				rdscorecommon.VerifyEgressServiceETPLocalIngressConnectivity)
 
+			It("Verify EgressService ingress with Local ExternalTrafficPolicy and sourceIPBy=Network after graceful reboot",
+				Label("egress-validate-local-etp", "egress", "egress-local-etp-network-ingress"),
+				reportxml.ID("79520"),
+				rdscorecommon.VerifyEgressServiceETPLocalSourceIPByNetworkIngressConnectivity)
+
 			It("Verify EgressService ingress with Cluster ExternalTrafficPolicy after graceful reboot",
 				Label("egress-validate-cluster-etp", "egress"), reportxml.ID("78363"),
 				rdscorecommon.VerifyEgressServiceETPClusterIngressConnectivity)
+
+			It("Verify EgressService ingress with Cluster ExternalTrafficPolicy and sourceIPBy=Network after graceful reboot",
+				Label("egress-validate-cluster-etp", "egress", "egress-cluster-etp-network-ingress"),
+				reportxml.ID("79521"),
+				rdscorecommon.VerifyEgressServiceETPClusterSourceIPByNetworkIngressConnectivity)
 
 			It("Verify EgressIP connectivity over IPv4 address after graceful reboot",
 				Label("egressip", "egressip-ipv4"), reportxml.ID("75062"),

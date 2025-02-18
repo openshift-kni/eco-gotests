@@ -31,6 +31,12 @@ const (
 	egressSVCDeploy2Name       = "rds-egress-deploy2"
 	egressSVC2Name             = "egress-svc-2"
 	egressSVC2Labels           = "rds-egress=rds-core-2"
+	egressSVCDeploy3Name       = "rds-egress-etp-cluster"
+	egressSVC3Name             = "egress-svc-etp-cluster"
+	egressSVC3Labels           = "rds-egress=rds-core-etp-cluster"
+	egressSVCDeploy4Name       = "rds-egress-etp-local"
+	egressSVC4Name             = "egress-svc-etp-local"
+	egressSVC4Labels           = "rds-egress=rds-core-etp-local"
 	servicePort          int32 = 9090
 	serviceTargetPort    int32 = 9090
 	httpSuccessCode            = "200"
@@ -178,7 +184,8 @@ func waitForPodsGone(podNS, podSelector string) {
 		"pods matching label() still present")
 }
 
-func verifyPodSourceAddress(clientPods []*pod.Builder, cmdToRun []string, expectedIP string) {
+func verifyPodSourceAddress(clientPods []*pod.Builder, cmdToRun []string, expectedIP string,
+	expectedIPsMap map[string]string) {
 	By("Validating pods source address")
 
 	for _, clientPod := range clientPods {
@@ -214,25 +221,116 @@ func verifyPodSourceAddress(clientPods []*pod.Builder, cmdToRun []string, expect
 		}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
 			"Failed to run command from within pod")
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Comparing %q with expected %q", parsedIP, expectedIP)
+		var expectedResult []string
 
-		Expect(parsedIP).To(Equal(expectedIP),
+		if expectedIP == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Use IP from the ExpectedIPsMap")
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Get expected IP address for pod %q running on %q",
+				clientPod.Object.Name, clientPod.Object.Spec.NodeName)
+
+			var ok bool
+
+			expectedNodeIP, ok := expectedIPsMap[clientPod.Object.Spec.NodeName]
+
+			if !ok {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Cannot find expected IP address for pod %q running on %q",
+					clientPod.Object.Name, clientPod.Object.Spec.NodeName)
+
+				Fail(fmt.Sprintf("Cannot find expected IP address for pod %q running on %q",
+					clientPod.Object.Name, clientPod.Object.Spec.NodeName))
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Expected IP address for pod %q running on %q is %q",
+				clientPod.Object.Name, clientPod.Object.Spec.NodeName, expectedNodeIP)
+
+			expectedResult = strings.Split(expectedNodeIP, ",")
+		} else {
+			expectedResult = []string{expectedIP}
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Comparing %q with expected %q", parsedIP, expectedResult)
+
+		// Expect(parsedIP).To(Equal(expectedIP),
+		// 	fmt.Sprintf("Mismatched IP address. Expected %q got %q", expectedIP, parsedIP))
+		Expect(expectedResult).To(ContainElement(parsedIP),
 			fmt.Sprintf("Mismatched IP address. Expected %q got %q", expectedIP, parsedIP))
 	}
 }
 
-// VerifyEgressServiceWithClusterETP verifies EgressService with externalTrafficPolicy set to Cluster.
+// VerifyEgressServiceWithClusterETPLoadbalancer verifies EgressService with externalTrafficPolicy set to Cluster
+// and sourceIPBy set to "LoadBalancer".
+func VerifyEgressServiceWithClusterETPLoadbalancer(ctx SpecContext) {
+	VerifyEgressServiceETPClusterWrapper(
+		egressSVCDeploy1Name,
+		map[string]string{},
+		RDSCoreConfig.EgressServiceNS,
+		egressSVC1Name,
+		egressSVC1Labels,
+		RDSCoreConfig.EgressServiceDeploy1Image,
+		RDSCoreConfig.EgressServiceDeploy1CMD,
+		RDSCoreConfig.EgressServiceDeploy1IPAddrPool,
+		"LoadBalancerIP",
+		RDSCoreConfig.EgressServiceDeploy1NodeSelector,
+		RDSCoreConfig.EgressServiceVRF1Network,
+		RDSCoreConfig.EgressServiceRemoteIP,
+		RDSCoreConfig.EgressServiceRemoteIPv6,
+		RDSCoreConfig.EgressServiceRemotePort)
+}
+
+// VerifyEgressServiceWithClusterETPNetwork verifies EgressService with externalTrafficPolicy set to Cluster
+// and sourceIPBy set to "Network".
+func VerifyEgressServiceWithClusterETPNetwork(ctx SpecContext) {
+	VerifyEgressServiceETPClusterWrapper(
+		egressSVCDeploy3Name,
+		RDSCoreConfig.EgressServiceDeploy3NodeSelector,
+		RDSCoreConfig.EgressServiceNS,
+		egressSVC3Name,
+		egressSVC3Labels,
+		RDSCoreConfig.EgressServiceDeploy3Image,
+		RDSCoreConfig.EgressServiceDeploy3CMD,
+		RDSCoreConfig.EgressServiceDeploy3IPAddrPool,
+		"Network",
+		RDSCoreConfig.EgressServiceDeploy3NodeSelector,
+		RDSCoreConfig.EgressServiceVRF3Network,
+		RDSCoreConfig.EgressServiceRemoteIP,
+		RDSCoreConfig.EgressServiceRemoteIPv6,
+		RDSCoreConfig.EgressServiceRemotePort)
+}
+
+// VerifyEgressServiceETPClusterWrapper verifies EgressService with externalTrafficPolicy set to Cluster.
+// sourceIPBy is customizable and accepts next values: "LoadBalancer" and/or "Network"
 //
 //nolint:funlen
-func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
-	deleteDeployments(egressSVCDeploy1Name, RDSCoreConfig.EgressServiceNS)
-	deleteService(egressSVC1Name, RDSCoreConfig.EgressServiceNS)
-	deleteEgressService(egressSVC1Name, RDSCoreConfig.EgressServiceNS)
+func VerifyEgressServiceETPClusterWrapper(
+	deployName string, // egressSVCDeploy1Name
+	deployNodeSelector map[string]string, //
+	testNamespace string, // RDSCoreConfig.EgressServiceNS
+	svcName string, // egressSVC1Name
+	svcSelector string, // egressSVC1Labels
+	containerImage string, // RDSCoreConfig.EgressServiceDeploy1Image
+	containerCommand []string, // RDSCoreConfig.EgressServiceDeploy1CMD
+	ipAddrPoolName string, // RDSCoreConfig.EgressServiceDeploy1IPAddrPool
+	sourceIPBy string, // "LoadBalancer", "Network"
+	egrSvcNodeSelector map[string]string, // RDSCoreConfig.EgressServiceDeploy1NodeSelector
+	vrfNetwork string, // RDSCoreConfig.EgressServiceVRF1Network
+	remoteTargetIP string, // RDSCoreConfig.EgressServiceRemoteIP
+	remoteTargetIPv6 string, // RDSCoreConfig.EgressServiceRemoteIPv6
+	remoteTargetPort string) {
+	if strings.EqualFold(sourceIPBy, "Network") && len(RDSCoreConfig.EgressServiceNetworkExpectedIPs) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("EgressServiceNetworkExpectedIPs is not defined. Skipping")
 
-	waitForPodsGone(RDSCoreConfig.EgressServiceNS, egressSVC1Labels)
+		Skip("EgressServiceNetworkExpectedIPs is not defined. Skipping")
+	}
+
+	deleteDeployments(deployName, testNamespace)
+	deleteService(svcName, testNamespace)
+	deleteEgressService(svcName, testNamespace)
+
+	waitForPodsGone(testNamespace, svcSelector)
 
 	podContainer := defineEgressSVCContainer(egressSVCContainer,
-		RDSCoreConfig.EgressServiceDeploy1Image, RDSCoreConfig.EgressServiceDeploy1CMD)
+		containerImage, containerCommand)
 
 	By("Reseting SecurityContext")
 
@@ -242,11 +340,11 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get container definition: %v", err))
 
 	deployLabels := map[string]string{
-		strings.Split(egressSVC1Labels, "=")[0]: strings.Split(egressSVC1Labels, "=")[1],
+		strings.Split(svcSelector, "=")[0]: strings.Split(svcSelector, "=")[1],
 	}
 
-	deploy := defineEgressSVCDeployment(cfgContainer, egressSVCDeploy1Name,
-		RDSCoreConfig.EgressServiceNS, deployLabels, map[string]string{}, int32(2))
+	deploy := defineEgressSVCDeployment(cfgContainer, deployName,
+		testNamespace, deployLabels, deployNodeSelector, int32(2))
 
 	Expect(deploy).ToNot(BeNil(), "Failed to create deployment")
 
@@ -270,10 +368,10 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining Service object")
 
 	svcLabels := map[string]string{
-		strings.Split(egressSVC1Labels, "=")[0]: strings.Split(egressSVC1Labels, "=")[1],
+		strings.Split(svcSelector, "=")[0]: strings.Split(svcSelector, "=")[1],
 	}
 
-	svcBuilder := defineService(egressSVC1Name, RDSCoreConfig.EgressServiceNS, svcLabels, *svcPort)
+	svcBuilder := defineService(svcName, testNamespace, svcLabels, *svcPort)
 
 	Expect(svcBuilder).ToNot(BeNil(), "Failed to defined service")
 
@@ -290,7 +388,7 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Setting MetalLB address-pool annotation")
 
 	svcBuilder = svcBuilder.WithAnnotation(map[string]string{
-		"metallb.universe.tf/address-pool": RDSCoreConfig.EgressServiceDeploy1IPAddrPool})
+		"metallb.universe.tf/address-pool": ipAddrPoolName})
 
 	By("Setting ipFamilyPolicy to 'RequireDualStack'")
 
@@ -311,27 +409,27 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 	By("Defining EgressService")
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining EgressService %q in %q namespace",
-		egressSVC1Name, RDSCoreConfig.EgressServiceNS)
+		svcName, testNamespace)
 
-	egrSVCBuilder := egressservice.NewEgressServiceBuilder(APIClient, egressSVC1Name,
-		RDSCoreConfig.EgressServiceNS, "LoadBalancerIP")
+	egrSVCBuilder := egressservice.NewEgressServiceBuilder(APIClient, svcName,
+		testNamespace, sourceIPBy)
 
-	if len(RDSCoreConfig.EgressServiceDeploy1NodeSelector) != 0 {
+	if len(egrSvcNodeSelector) != 0 {
 		By("Setting nodeSelector for EgressService")
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Configuring nodeSelector on EgressService %q in %q namespace",
 			egrSVCBuilder.Definition.Name, egrSVCBuilder.Definition.Namespace)
 
-		egrSVCBuilder = egrSVCBuilder.WithNodeLabelSelector(RDSCoreConfig.EgressServiceDeploy1NodeSelector)
+		egrSVCBuilder = egrSVCBuilder.WithNodeLabelSelector(egrSvcNodeSelector)
 	}
 
-	if RDSCoreConfig.EgressServiceVRF1Network != "" {
+	if vrfNetwork != "" {
 		By("Setting VRF network for EgressService")
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Configuring VRF network on EgressService %q in %q namespace",
 			egrSVCBuilder.Definition.Name, egrSVCBuilder.Definition.Namespace)
 
-		egrSVCBuilder = egrSVCBuilder.WithVRFNetwork(RDSCoreConfig.EgressServiceVRF1Network)
+		egrSVCBuilder = egrSVCBuilder.WithVRFNetwork(vrfNetwork)
 	}
 
 	By("Creating EgressService")
@@ -344,6 +442,8 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 		egrSVCBuilder.Object.Name, egrSVCBuilder.Object.Namespace)
 
 	By("Getting status of EgressService")
+
+	var ctx SpecContext
 
 	Eventually(func() bool {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Check EgressService %q in %q namespace has host assigned",
@@ -372,11 +472,11 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 
 	By("Finding pod from app deployment")
 
-	clientPods := findPodWithSelector(RDSCoreConfig.EgressServiceNS, egressSVC1Labels)
+	clientPods := findPodWithSelector(testNamespace, svcSelector)
 
 	Expect(clientPods).ToNot(BeNil(),
 		fmt.Sprintf("Application pods matching %q label not found in %q namespace",
-			RDSCoreConfig.EgressServiceNS, egressSVC1Labels))
+			testNamespace, svcSelector))
 
 	By("Getting status of service")
 
@@ -417,16 +517,26 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 
 			cmdToRun = []string{"/bin/bash", "-c",
 				fmt.Sprintf("curl --connect-timeout 3 -Ls http://%s:%s/clientip",
-					RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
+					remoteTargetIP, remoteTargetPort)}
 		} else {
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing IPv6 address")
 
 			cmdToRun = []string{"/bin/bash", "-c",
 				fmt.Sprintf("curl --connect-timeout 3 -Ls http://[%s]:%s/clientip",
-					RDSCoreConfig.EgressServiceRemoteIPv6, RDSCoreConfig.EgressServiceRemotePort)}
+					remoteTargetIPv6, remoteTargetPort)}
 		}
 
-		verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP)
+		if strings.EqualFold(strings.TrimSpace(string(egrSVCBuilder.Object.Spec.SourceIPBy)), "Network") {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing EgressService with sourceIPBy=%s",
+				string(egrSVCBuilder.Object.Spec.SourceIPBy))
+
+			verifyPodSourceAddress(clientPods, cmdToRun, "", RDSCoreConfig.EgressServiceNetworkExpectedIPs)
+		} else {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing EgressService with sourceIPBy=%s",
+				string(egrSVCBuilder.Object.Spec.SourceIPBy))
+
+			verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP, map[string]string{})
+		}
 
 		By(fmt.Sprintf("Accessing workload via LoadBalancer's IP %s", loadBalancerIP))
 
@@ -437,22 +547,84 @@ func VerifyEgressServiceWithClusterETP(ctx SpecContext) {
 }
 
 // VerifyEgressServiceWithLocalETP verifies EgressService with externalTrafficPolicy set to Local.
+func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
+	VerifyEgressServiceWithLocalETPWrapper(
+		egressSVCDeploy2Name,
+		RDSCoreConfig.EgressServiceDeploy2NodeSelector,
+		RDSCoreConfig.EgressServiceNS,
+		egressSVC2Name,
+		egressSVC2Labels,
+		RDSCoreConfig.EgressServiceDeploy2Image,
+		RDSCoreConfig.EgressServiceDeploy2CMD,
+		RDSCoreConfig.EgressServiceDeploy2IPAddrPool,
+		"LoadBalancerIP",
+		RDSCoreConfig.EgressServiceDeploy2NodeSelector,
+		RDSCoreConfig.EgressServiceVRF2Network,
+		RDSCoreConfig.EgressServiceRemoteIP,
+		RDSCoreConfig.EgressServiceRemoteIPv6,
+		RDSCoreConfig.EgressServiceRemotePort)
+}
+
+// VerifyEgressServiceWithLocalETPSourceIPByNetwork verifies EgressService with externalTrafficPolicy set to Local.
+// sourceIPBy is set to "Network".
+func VerifyEgressServiceWithLocalETPSourceIPByNetwork(ctx SpecContext) {
+	VerifyEgressServiceWithLocalETPWrapper(
+		egressSVCDeploy4Name,
+		RDSCoreConfig.EgressServiceDeploy4NodeSelector,
+		RDSCoreConfig.EgressServiceNS,
+		egressSVC4Name,
+		egressSVC4Labels,
+		RDSCoreConfig.EgressServiceDeploy4Image,
+		RDSCoreConfig.EgressServiceDeploy4CMD,
+		RDSCoreConfig.EgressServiceDeploy4IPAddrPool,
+		"Network",
+		RDSCoreConfig.EgressServiceDeploy4NodeSelector,
+		RDSCoreConfig.EgressServiceVRF4Network,
+		RDSCoreConfig.EgressServiceRemoteIP,
+		RDSCoreConfig.EgressServiceRemoteIPv6,
+		RDSCoreConfig.EgressServiceRemotePort)
+}
+
+// VerifyEgressServiceWithLocalETPWrapper verifies EgressService with externalTrafficPolicy set to Local.
+// sourceIPBy is customizable and accepts next values: "LoadBalancerIP" or "Network"
 //
 //nolint:funlen
-func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
-	deleteDeployments(egressSVCDeploy2Name, RDSCoreConfig.EgressServiceNS)
-	deleteService(egressSVC2Name, RDSCoreConfig.EgressServiceNS)
-	deleteEgressService(egressSVC2Name, RDSCoreConfig.EgressServiceNS)
+func VerifyEgressServiceWithLocalETPWrapper(
+	deployName string, // egressSVCDeploy2Name
+	deployNodeSelector map[string]string, // RDSCoreConfig.EgressServiceDeploy2NodeSelector
+	testNamespace string, // RDSCoreConfig.EgressServiceNS
+	svcName string, // egressSVC2Name
+	svcSelector string, // egressSVC2Labels
+	containerImage string, // RDSCoreConfig.EgressServiceDeploy2Image
+	containerCommand []string, // RDSCoreConfig.EgressServiceDeploy2CMD
+	ipAddrPoolName string, // RDSCoreConfig.EgressServiceDeploy2IPAddrPool
+	sourceIPBy string, // "LoadBalancer", "Network"
+	egrSvcNodeSelector map[string]string, // RDSCoreConfig.EgressServiceDeploy2NodeSelector
+	vrfNetwork string, // RDSCoreConfig.EgressServiceVRF2Network
+	remoteTargetIP string, // RDSCoreConfig.EgressServiceRemoteIP
+	remoteTargetIPv6 string, // RDSCoreConfig.EgressServiceRemoteIPv6
+	remoteTargetPort string) {
+	if strings.EqualFold(sourceIPBy, "Network") && len(RDSCoreConfig.EgressServiceNetworkExpectedIPs) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("EgressServiceNetworkExpectedIPs is not defined. Skipping")
 
-	waitForPodsGone(RDSCoreConfig.EgressServiceNS, egressSVC2Labels)
+		Skip("EgressServiceNetworkExpectedIPs is not defined. Skipping")
+	}
+
+	deleteDeployments(deployName, testNamespace)
+	deleteService(svcName, testNamespace)
+	deleteEgressService(svcName, testNamespace)
+
+	waitForPodsGone(testNamespace, svcSelector)
 
 	const (
 		servicePort       int32 = 9090
 		serviceTargetPort int32 = 9090
 	)
 
+	var ctx SpecContext
+
 	podContainer := defineEgressSVCContainer(egressSVCContainer,
-		RDSCoreConfig.EgressServiceDeploy2Image, RDSCoreConfig.EgressServiceDeploy2CMD)
+		containerImage, containerCommand)
 
 	By("Reseting SecurityContext")
 
@@ -462,11 +634,11 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get container definition: %v", err))
 
 	deployLabels := map[string]string{
-		strings.Split(egressSVC2Labels, "=")[0]: strings.Split(egressSVC2Labels, "=")[1],
+		strings.Split(svcSelector, "=")[0]: strings.Split(svcSelector, "=")[1],
 	}
 
-	deploy := defineEgressSVCDeployment(cfgContainer, egressSVCDeploy2Name,
-		RDSCoreConfig.EgressServiceNS, deployLabels, RDSCoreConfig.EgressServiceDeploy2NodeSelector, int32(1))
+	deploy := defineEgressSVCDeployment(cfgContainer, deployName,
+		testNamespace, deployLabels, egrSvcNodeSelector, int32(1))
 
 	Expect(deploy).ToNot(BeNil(), "Failed to create deployment")
 
@@ -490,10 +662,10 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining Service object")
 
 	svcLabels := map[string]string{
-		strings.Split(egressSVC2Labels, "=")[0]: strings.Split(egressSVC2Labels, "=")[1],
+		strings.Split(svcSelector, "=")[0]: strings.Split(svcSelector, "=")[1],
 	}
 
-	svcBuilder := defineService(egressSVC2Name, RDSCoreConfig.EgressServiceNS, svcLabels, *svcPort)
+	svcBuilder := defineService(svcName, testNamespace, svcLabels, *svcPort)
 
 	Expect(svcBuilder).ToNot(BeNil(), "Failed to defined service")
 
@@ -510,7 +682,7 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Setting MetalLB address-pool annotation")
 
 	svcBuilder = svcBuilder.WithAnnotation(map[string]string{
-		"metallb.universe.tf/address-pool": RDSCoreConfig.EgressServiceDeploy2IPAddrPool})
+		"metallb.universe.tf/address-pool": ipAddrPoolName})
 
 	By("Setting ipFamilyPolicy to 'RequireDualStack'")
 
@@ -528,27 +700,27 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 	By("Defining EgressService")
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining EgressService %q in %q namespace",
-		egressSVC2Name, RDSCoreConfig.EgressServiceNS)
+		svcName, testNamespace)
 
-	egrSVCBuilder := egressservice.NewEgressServiceBuilder(APIClient, egressSVC2Name,
-		RDSCoreConfig.EgressServiceNS, "LoadBalancerIP")
+	egrSVCBuilder := egressservice.NewEgressServiceBuilder(APIClient, svcName,
+		testNamespace, sourceIPBy)
 
-	if len(RDSCoreConfig.EgressServiceDeploy2NodeSelector) != 0 {
+	if len(egrSvcNodeSelector) != 0 {
 		By("Setting nodeSelector for EgressService")
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Configuring nodeSelector on EgressService %q in %q namespace",
 			egrSVCBuilder.Definition.Name, egrSVCBuilder.Definition.Namespace)
 
-		egrSVCBuilder = egrSVCBuilder.WithNodeLabelSelector(RDSCoreConfig.EgressServiceDeploy2NodeSelector)
+		egrSVCBuilder = egrSVCBuilder.WithNodeLabelSelector(egrSvcNodeSelector)
 	}
 
-	if RDSCoreConfig.EgressServiceVRF2Network != "" {
+	if vrfNetwork != "" {
 		By("Setting VRF network for EgressService")
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Configuring VRF network on EgressService %q in %q namespace",
 			egrSVCBuilder.Definition.Name, egrSVCBuilder.Definition.Namespace)
 
-		egrSVCBuilder = egrSVCBuilder.WithVRFNetwork(RDSCoreConfig.EgressServiceVRF2Network)
+		egrSVCBuilder = egrSVCBuilder.WithVRFNetwork(vrfNetwork)
 	}
 
 	By("Creating EgressService")
@@ -610,11 +782,11 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 
 	By("Finding pod from app deployment")
 
-	clientPods := findPodWithSelector(RDSCoreConfig.EgressServiceNS, egressSVC2Labels)
+	clientPods := findPodWithSelector(testNamespace, svcSelector)
 
 	Expect(clientPods).ToNot(BeNil(),
 		fmt.Sprintf("Application pods matching %q label not found in %q namespace",
-			RDSCoreConfig.EgressServiceNS, egressSVC2Labels))
+			testNamespace, svcSelector))
 
 	for _, vip := range svcBuilder.Object.Status.LoadBalancer.Ingress {
 		loadBalancerIP := vip.IP
@@ -635,20 +807,28 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 
 			cmdToRun = []string{"/bin/bash", "-c",
 				fmt.Sprintf("curl --connect-timeout 3 -Ls http://%s:%s/clientip",
-					RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
+					remoteTargetIP, remoteTargetPort)}
 
-			expectedIP = RDSCoreConfig.EgressServiceRemoteIP
+			expectedIP = remoteTargetIP
 		} else {
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing IPv6 address")
 
 			cmdToRun = []string{"/bin/bash", "-c",
 				fmt.Sprintf("curl --connect-timeout 3 -Ls http://[%s]:%s/clientip",
-					RDSCoreConfig.EgressServiceRemoteIPv6, RDSCoreConfig.EgressServiceRemotePort)}
+					remoteTargetIPv6, remoteTargetPort)}
 
-			expectedIP = RDSCoreConfig.EgressServiceRemoteIPv6
+			expectedIP = remoteTargetIPv6
 		}
 
-		verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP)
+		if sourceIPBy == "LoadBalancerIP" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing sourceIPBy %q", sourceIPBy)
+
+			verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP, map[string]string{})
+		} else {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing sourceIPBy %q", sourceIPBy)
+
+			verifyPodSourceAddress(clientPods, cmdToRun, "", RDSCoreConfig.EgressServiceNetworkExpectedIPs)
+		}
 
 		By(fmt.Sprintf("Accessing workload via LoadBalancer's IP %s", loadBalancerIP))
 
@@ -659,13 +839,15 @@ func VerifyEgressServiceWithLocalETP(ctx SpecContext) {
 }
 
 //nolint:funlen
-func verifySourceIP(svcName, svcNS, podLabels string, cmdToRun []string, useIPv6 bool) {
+func verifySourceIP(svcName, svcNS, podLabels string, cmdToRun []string, useIPv6 bool,
+	expectedIPsMap map[string]string) {
 	By(fmt.Sprintf("Pulling %q service configuration", svcName))
 
 	var (
-		svcBuilder *service.Builder
-		err        error
-		ctx        SpecContext
+		svcBuilder    *service.Builder
+		egrSVCBuilder *egressservice.EgressServiceBuilder
+		err           error
+		ctx           SpecContext
 	)
 
 	Eventually(func() bool {
@@ -709,6 +891,26 @@ func verifySourceIP(svcName, svcNS, podLabels string, cmdToRun []string, useIPv6
 	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(3*time.Minute).Should(BeTrue(),
 		"Service does not have LoadBalancer IP address")
 
+	Eventually(func() bool {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pulling %q EgressService from %q namespace",
+			svcName, svcNS)
+
+		egrSVCBuilder, err = egressservice.Pull(APIClient, svcName, svcNS)
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error pulling EgressService %q from %q namespace: %v",
+				svcName, svcNS, err)
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Successfully pulled EgressService %q from %q namespace",
+			egrSVCBuilder.Definition.Name, egrSVCBuilder.Definition.Namespace)
+
+		return true
+	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+		fmt.Sprintf("Error obtaining EgressService %q configuration", svcName))
+
 	By("Finding pod from app deployment")
 
 	clientPods := findPodWithSelector(svcNS, podLabels)
@@ -717,41 +919,47 @@ func verifySourceIP(svcName, svcNS, podLabels string, cmdToRun []string, useIPv6
 		fmt.Sprintf("Application pods matching %q label not found in %q namespace",
 			svcName, svcNS))
 
-	By("Processing all LoadBalancer IP addresses")
+	if strings.EqualFold(strings.TrimSpace(string(egrSVCBuilder.Object.Spec.SourceIPBy)), "LoadBalancerIP") {
+		var trafficValidated bool
 
-	var trafficValidated bool
+		By("Processing all LoadBalancer IP addresses")
 
-	for _, vip := range svcBuilder.Object.Status.LoadBalancer.Ingress {
-		loadBalancerIP := vip.IP
+		for _, vip := range svcBuilder.Object.Status.LoadBalancer.Ingress {
+			loadBalancerIP := vip.IP
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing %q address", loadBalancerIP)
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing %q address", loadBalancerIP)
 
-		myIP, err := netip.ParseAddr(loadBalancerIP)
+			myIP, err := netip.ParseAddr(loadBalancerIP)
 
-		Expect(err).ToNot(HaveOccurred(), "Failed to parse IP address")
+			Expect(err).ToNot(HaveOccurred(), "Failed to parse IP address")
 
-		if myIP.Is4() && useIPv6 {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping %q address as IPv6 is required",
-				loadBalancerIP)
+			if myIP.Is4() && useIPv6 {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping %q address as IPv6 is required",
+					loadBalancerIP)
 
-			continue
+				continue
+			}
+
+			if myIP.Is6() && !useIPv6 {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping %q address as IPv4 is required",
+					loadBalancerIP)
+
+				continue
+			}
+
+			trafficValidated = true
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("LoadBalancer IP address: %q", loadBalancerIP)
+
+			verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP, map[string]string{})
 		}
 
-		if myIP.Is6() && !useIPv6 {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping %q address as IPv4 is required",
-				loadBalancerIP)
+		Expect(trafficValidated).To(BeTrue(), "Traffic wasn't validated")
+	} else {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Processing EgressService with sourceIPBy=Network")
 
-			continue
-		}
-
-		trafficValidated = true
-
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("LoadBalancer IP address: %q", loadBalancerIP)
-
-		verifyPodSourceAddress(clientPods, cmdToRun, loadBalancerIP)
+		verifyPodSourceAddress(clientPods, cmdToRun, "", expectedIPsMap)
 	}
-
-	Expect(trafficValidated).To(BeTrue(), "Traffic wasn't validated")
 }
 
 // VerifyEgressServiceConnectivityETPCluster verifies source IP address when external traffic policy
@@ -761,13 +969,33 @@ func VerifyEgressServiceConnectivityETPCluster() {
 		fmt.Sprintf("curl --connect-timeout 3 -Ls http://%s:%s/clientip",
 			RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
 
-	verifySourceIP(egressSVC1Name, RDSCoreConfig.EgressServiceNS, egressSVC1Labels, cmdToRun, false)
+	verifySourceIP(egressSVC1Name, RDSCoreConfig.EgressServiceNS, egressSVC1Labels, cmdToRun, false,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
 
 	cmdToRun = []string{"/bin/bash", "-c",
 		fmt.Sprintf("curl --connect-timeout 3 -Ls http://[%s]:%s/clientip",
 			RDSCoreConfig.EgressServiceRemoteIPv6, RDSCoreConfig.EgressServiceRemotePort)}
 
-	verifySourceIP(egressSVC1Name, RDSCoreConfig.EgressServiceNS, egressSVC1Labels, cmdToRun, true)
+	verifySourceIP(egressSVC1Name, RDSCoreConfig.EgressServiceNS, egressSVC1Labels, cmdToRun, true,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
+}
+
+// VerifyEgressServiceConnectivityETPClusterSourceIPByNetwork verifies source IP address when external traffic policy
+// is set to Cluster.
+func VerifyEgressServiceConnectivityETPClusterSourceIPByNetwork() {
+	cmdToRun := []string{"/bin/bash", "-c",
+		fmt.Sprintf("curl --connect-timeout 3 -Ls http://%s:%s/clientip",
+			RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
+
+	verifySourceIP(egressSVC3Name, RDSCoreConfig.EgressServiceNS, egressSVC3Labels, cmdToRun, false,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
+
+	cmdToRun = []string{"/bin/bash", "-c",
+		fmt.Sprintf("curl --connect-timeout 3 -Ls http://[%s]:%s/clientip",
+			RDSCoreConfig.EgressServiceRemoteIPv6, RDSCoreConfig.EgressServiceRemotePort)}
+
+	verifySourceIP(egressSVC3Name, RDSCoreConfig.EgressServiceNS, egressSVC3Labels, cmdToRun, true,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
 }
 
 // VerifyEgressServiceConnectivityETPLocal verifies source IP address when external traffic policy
@@ -777,13 +1005,33 @@ func VerifyEgressServiceConnectivityETPLocal() {
 		fmt.Sprintf("curl --connect-timeout 3 -Ls http://%s:%s/clientip",
 			RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
 
-	verifySourceIP(egressSVC2Name, RDSCoreConfig.EgressServiceNS, egressSVC2Labels, cmdToRun, false)
+	verifySourceIP(egressSVC2Name, RDSCoreConfig.EgressServiceNS, egressSVC2Labels, cmdToRun, false,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
 
 	cmdToRun = []string{"/bin/bash", "-c",
 		fmt.Sprintf("curl --connect-timeout 3 -Ls http://[%s]:%s/clientip",
 			RDSCoreConfig.EgressServiceRemoteIPv6, RDSCoreConfig.EgressServiceRemotePort)}
 
-	verifySourceIP(egressSVC2Name, RDSCoreConfig.EgressServiceNS, egressSVC2Labels, cmdToRun, true)
+	verifySourceIP(egressSVC2Name, RDSCoreConfig.EgressServiceNS, egressSVC2Labels, cmdToRun, true,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
+}
+
+// VerifyEgressServiceConnectivityETPLocalSourceIPByNetwork verifies source IP address when external traffic policy
+// is set to Local and sourceIPBy=Network.
+func VerifyEgressServiceConnectivityETPLocalSourceIPByNetwork() {
+	cmdToRun := []string{"/bin/bash", "-c",
+		fmt.Sprintf("curl --connect-timeout 3 -Ls http://%s:%s/clientip",
+			RDSCoreConfig.EgressServiceRemoteIP, RDSCoreConfig.EgressServiceRemotePort)}
+
+	verifySourceIP(egressSVC4Name, RDSCoreConfig.EgressServiceNS, egressSVC4Labels, cmdToRun, false,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
+
+	cmdToRun = []string{"/bin/bash", "-c",
+		fmt.Sprintf("curl --connect-timeout 3 -Ls http://[%s]:%s/clientip",
+			RDSCoreConfig.EgressServiceRemoteIPv6, RDSCoreConfig.EgressServiceRemotePort)}
+
+	verifySourceIP(egressSVC4Name, RDSCoreConfig.EgressServiceNS, egressSVC4Labels, cmdToRun, true,
+		RDSCoreConfig.EgressServiceNetworkExpectedIPs)
 }
 
 // VerifyEgressServiceETPLocalIngressConnectivity verifies ingress IP address while accessing backend pods
@@ -792,10 +1040,22 @@ func VerifyEgressServiceETPLocalIngressConnectivity() {
 	verifyEgressServiceIngressConnectivit(egressSVC2Name, false)
 }
 
+// VerifyEgressServiceETPLocalSourceIPByNetworkIngressConnectivity verifies ingress IP address
+// while accessing backend pods via loadbalancer with ETP=Local and sourceIPBy=Network.
+func VerifyEgressServiceETPLocalSourceIPByNetworkIngressConnectivity() {
+	verifyEgressServiceIngressConnectivit(egressSVC4Name, false)
+}
+
 // VerifyEgressServiceETPClusterIngressConnectivity verifies ingress IP address while accessing backend pods
 // via loadbalancer with ETP=Cluster.
 func VerifyEgressServiceETPClusterIngressConnectivity() {
 	verifyEgressServiceIngressConnectivit(egressSVC1Name, true)
+}
+
+// VerifyEgressServiceETPClusterSourceIPByNetworkIngressConnectivity verifies ingress IP address
+// while accessing backend pods via loadbalancer with ETP=Cluster and sourceIPBy=Network.
+func VerifyEgressServiceETPClusterSourceIPByNetworkIngressConnectivity() {
+	verifyEgressServiceIngressConnectivit(egressSVC3Name, true)
 }
 
 // verifyEgressServiceIngressConnectivit shared function to verify backend pods' availability via

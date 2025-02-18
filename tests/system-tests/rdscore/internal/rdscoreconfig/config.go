@@ -384,7 +384,27 @@ type CoreConfig struct {
 	EgressServiceDeploy2NodeSelector EnvMapString `yaml:"rdscore_egress_service_2_node_selector" envconfig:"ECO_RDSCORE_EGRESS_SVC_2_NODE_SELECTOR"`
 	//nolint:lll,nolintlint
 	EgressServiceDeploy2IPAddrPool string `yaml:"rdscore_egress_service_deploy_2_ipaddr_pool" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_2_IPADDR_POOL"`
-	EgressIPName                   string `yaml:"rdscore_egressip_name" envconfig:"ECO_RDSCORE_EGRESSIP_NAME"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy3CMD EnvSliceString `yaml:"rdscore_egress_service_deploy_3_cmd" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_DEPLOY_3_CMD"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy3Image string `yaml:"rdscore_egress_service_deploy_3_img" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_3_IMG"`
+	EgressServiceVRF3Network  string `yaml:"rdscore_egress_service_vrf_3_net" envconfig:"ECO_RDSCORE_EGRESS_SVC_VRF_3_NET"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy3IPAddrPool string `yaml:"rdscore_egress_service_deploy_3_ipaddr_pool" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_3_IPADDR_POOL"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy3NodeSelector EnvMapString `yaml:"rdscore_egress_service_3_node_selector" envconfig:"ECO_RDSCORE_EGRESS_SVC_3_NODE_SELECTOR"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy4CMD EnvSliceString `yaml:"rdscore_egress_service_deploy_4_cmd" envconfig:"ECO_RDSCORE_EGRESS_SERVICE_DEPLOY_4_CMD"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy4Image string `yaml:"rdscore_egress_service_deploy_4_img" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_4_IMG"`
+	EgressServiceVRF4Network  string `yaml:"rdscore_egress_service_vrf_4_net" envconfig:"ECO_RDSCORE_EGRESS_SVC_VRF_4_NET"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy4IPAddrPool string `yaml:"rdscore_egress_service_deploy_4_ipaddr_pool" envconfig:"ECO_RDSCORE_EGRESS_SVC_DEPLOY_4_IPADDR_POOL"`
+	//nolint:lll,nolintlint
+	EgressServiceDeploy4NodeSelector EnvMapString `yaml:"rdscore_egress_service_4_node_selector" envconfig:"ECO_RDSCORE_EGRESS_SVC_4_NODE_SELECTOR"`
+	//nolint:lll,nolintlint
+	EgressServiceNetworkExpectedIPs EnvMapString `yaml:"rdscore_egress_service_network_expected_ips" envconfig:"ECO_RDSCORE_EGRESS_SVC_NETWORK_EXPECTED_IPS"`
+	EgressIPName                    string       `yaml:"rdscore_egressip_name" envconfig:"ECO_RDSCORE_EGRESSIP_NAME"`
 	//nolint:lll,nolintlint
 	EgressIPDeploymentImage string `yaml:"rdscore_wlkd_egressip_image" envconfig:"ECO_RDSCORE_EGRESSIP_DEPLOY_IMG"`
 	//nolint:lll,nolintlint
