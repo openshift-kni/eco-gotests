@@ -349,6 +349,30 @@ func CreatePodsAndRunTraffic(
 	return cmd.ICMPConnectivityCheck(clientPod, serverIPs)
 }
 
+// ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP configures Mellanox firmware and wait for the cluster becomes stable.
+func ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(
+	workerNodes []*nodes.Builder, sriovInterfaceName string, enableSriov bool, numVfs int) error {
+	glog.V(90).Infof("Enabling SR-IOV on Mellanox device")
+
+	err := ConfigureSriovMlnxFirmwareOnWorkers(workerNodes, sriovInterfaceName, enableSriov, numVfs)
+	if err != nil {
+		glog.V(90).Infof("Failed to configure SR-IOV Mellanox firmware")
+
+		return err
+	}
+
+	time.Sleep(10 * time.Second)
+	err = netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
+
+	if err != nil {
+		glog.V(90).Infof("Machineconfigpool is not stable")
+
+		return err
+	}
+
+	return nil
+}
+
 // removeAllPoliciesAndWaitForSriovAndMCPStable removes all  SriovNetworkNodePolicies and waits until
 // SR-IOV and MCP become stable.
 func removeAllPoliciesAndWaitForSriovAndMCPStable() error {
