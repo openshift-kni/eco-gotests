@@ -1,7 +1,6 @@
 run:
-  timeout: 15m0s
-  skip-dirs-use-default: true
-  fast: false
+  go: "1.23"
+  timeout: 15m
 #  modules-download-mode: readonly
 
 linters-settings:
@@ -67,9 +66,6 @@ linters-settings:
   funlen:
     lines: 90
     statements: 40
-  unused:
-    check-exported: true
-    go: "1.23"
   stylecheck:
     dot-import-whitelist:
       - github.com/onsi/gomega
@@ -91,8 +87,6 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/accel/internal/accelinittools
       - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/diskencryptioninittools
-    # Select the Go version to target. The default is '1.13'.
-    go: "1.23"
     # https://staticcheck.io/docs/options#checks
     checks:
       - all
@@ -101,7 +95,6 @@ linters-settings:
 linters:
   disable:
     - ireturn
-    - structcheck
   enable:
     - asciicheck
     - bidichk
@@ -151,8 +144,10 @@ linters:
     - nlreturn
 
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
 issues:
+  exclude-dirs-use-default: true
   exclude:
     - "can't run linter goanalysis_metalinter: inspect: failed to load"
   max-issues-per-linter: 0
