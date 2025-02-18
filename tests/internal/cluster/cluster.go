@@ -277,8 +277,7 @@ func WaitForRecover(client *clients.Settings, namespaces []string, timeout time.
 		return err
 	}
 
-	err = pod.WaitForAllPodsInNamespacesHealthy(client, namespaces, timeout,
-		true, false, true, []string{GeneralConfig.LoggingOperatorNamespace})
+	err = pod.WaitForPodsInNamespacesHealthy(client, namespaces, timeout)
 	if err != nil {
 		return err
 	}
