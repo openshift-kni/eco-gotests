@@ -68,6 +68,18 @@ var _ = Describe(
 				Label("frr"), reportxml.ID("76009"),
 				rdscorecommon.ReachURLviaFRRroute)
 
+			It("Verifies workload reachable over correct BGP route learned by MetalLB FRR",
+				Label("metallb-egress"), reportxml.ID("79085"),
+				rdscorecommon.VerifyMetallbEgressTrafficSegregation)
+
+			It("Verify ingress connectivity with traffic segregation",
+				Label("metallb-segregation", "debug"), reportxml.ID("79133"),
+				rdscorecommon.VerifyMetallbIngressTrafficSegregation)
+
+			It("Verify LB application is not reachable from the incorrect FRR container",
+				Label("metallb-segregation"), reportxml.ID("79268"),
+				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
 			It("Verifies KDump service on Control Plane node",
 				Label("kdump", "kdump-cp"), reportxml.ID("75620"),
 				rdscorecommon.VerifyKDumpOnControlPlane)
@@ -426,6 +438,18 @@ var _ = Describe(
 			It("Verifies workload reachable over BGP route post hard reboot",
 				Label("frr"), reportxml.ID("76010"),
 				rdscorecommon.ReachURLviaFRRroute)
+
+			It("Verifies workload reachable over correct BGP route learned by MetalLB FRR post hard reboot",
+				Label("metallb-egress"), reportxml.ID("79086"),
+				rdscorecommon.VerifyMetallbEgressTrafficSegregation)
+
+			It("Verify ingress connectivity with traffic segregation post hard reboot",
+				Label("metallb-segregation"), reportxml.ID("79139"),
+				rdscorecommon.VerifyMetallbIngressTrafficSegregation)
+
+			It("Verify LB application is not reachable from the incorrect FRR container post hard reboot",
+				Label("metallb-segregation"), reportxml.ID("79284"),
+				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -620,5 +644,17 @@ var _ = Describe(
 			It("Verifies workload reachable over BGP route post soft reboot",
 				Label("frr"), reportxml.ID("76011"),
 				rdscorecommon.ReachURLviaFRRroute)
+
+			It("Verifies workload reachable over correct BGP route learned by MetalLB FRR post soft reboot",
+				Label("metallb-egress"), reportxml.ID("79087"),
+				rdscorecommon.VerifyMetallbEgressTrafficSegregation)
+
+			It("Verify ingress connectivity with traffic segregation post soft reboot",
+				Label("metallb-segregation"), reportxml.ID("79140"),
+				rdscorecommon.VerifyMetallbIngressTrafficSegregation)
+
+			It("Verify LB application is not reachable from the incorrect FRR container post soft reboot",
+				Label("metallb-segregation"), reportxml.ID("79285"),
+				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
 		})
 	})
