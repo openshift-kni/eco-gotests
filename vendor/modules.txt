@@ -628,6 +628,7 @@ github.com/openshift-kni/eco-goinfra/pkg/ocm
 github.com/openshift-kni/eco-goinfra/pkg/olm
 github.com/openshift-kni/eco-goinfra/pkg/oran
 github.com/openshift-kni/eco-goinfra/pkg/pod
+github.com/openshift-kni/eco-goinfra/pkg/poddisruptionbudget
 github.com/openshift-kni/eco-goinfra/pkg/proxy
 github.com/openshift-kni/eco-goinfra/pkg/rbac
 github.com/openshift-kni/eco-goinfra/pkg/reportxml

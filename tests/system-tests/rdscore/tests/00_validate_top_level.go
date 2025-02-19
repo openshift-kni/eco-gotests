@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/poddisruptionbudget"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/pdb"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -25,6 +29,16 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			var OriginalPDBsMap map[*poddisruptionbudget.Builder]*intstr.IntOrString
+
+			BeforeAll(func() {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Setup: Find all PDBs")
+
+				var err error
+				OriginalPDBsMap, err = pdb.RetrieveActivePDBMap(APIClient)
+				Expect(err).ToNot(HaveOccurred(), "Failed to retrieving active PDBs map: %v", err)
+			})
+
 			It("Verify MetalLB Graceful Restart - single IPv4 connection",
 				Label("metallb-graceful", "metallb-gr-single-ipv4"),
 				reportxml.ID("77997"),
@@ -200,6 +214,12 @@ var _ = Describe(
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure all nodes are Ready and scheduling enabled")
 				rdscorecommon.EnsureInNodeReadiness(ctx)
+
+				By("Restore original minAvailable PDB values if required")
+
+				err := pdb.RestoreActivePDBValues(APIClient, OriginalPDBsMap)
+				Expect(err).ToNot(HaveOccurred(),
+					"Failed to restore original PodDisruption budget minAvailable values")
 			})
 		})
 
