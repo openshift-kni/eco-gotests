@@ -7,6 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/await"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/golang/glog"
@@ -38,6 +44,9 @@ var (
 		RDSCoreConfig.MetalLBLoadBalancerTwoIPv4, RDSCoreConfig.MetalLBTrafficSegregationTargetPort)
 	bgpTwoAppURLIPv6 = fmt.Sprintf("http://[%s]:%s",
 		RDSCoreConfig.MetalLBLoadBalancerTwoIPv6, RDSCoreConfig.MetalLBTrafficSegregationTargetPort)
+	stDeploymentLabelList = metav1.ListOptions{
+		LabelSelector: "rds-core=supporttools-deploy",
+	}
 )
 
 // VerifyMetallbEgressTrafficSegregation test metallb egress traffic segregation.
@@ -252,7 +261,11 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Creating the tcpdump deployment for the first FRR packets capturing")
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Create tcpdump deployment for the node %v", lbOneNodeName)
+	workerNodesList, err := getNodesNamesList(APIClient, RDSCoreConfig.WorkerLabelListOption)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve worker nodes names list due to %v", err))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Create tcpdump deployment for the nodes %v", workerNodesList)
 
 	_, err =
 		supporttools.CreateTCPDumpDeployment(
@@ -262,7 +275,7 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 			RDSCoreConfig.MetalLBSupportToolsImage,
 			RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntOne,
 			captureScript,
-			[]string{lbOneNodeName})
+			workerNodesList)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create tcpdump deployment for the node %v in namespace %s from image %s: %v",
 			lbOneNodeName, stNamespace, RDSCoreConfig.MetalLBSupportToolsImage, err))
@@ -271,9 +284,19 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Searching for tcpdump pods in %q namespace", stNamespace)
 
+	stPodsFound, err := await.WaitForThePodReplicasCountInNamespace(
+		APIClient,
+		stNamespace,
+		stDeploymentLabelList,
+		len(workerNodesList),
+		time.Second*30)
+	Expect(err).ToNot(HaveOccurred(), "Failed to retrieve all tcpdump pods in namespace %s due to: %v",
+		stNamespace, err)
+	Expect(stPodsFound).To(Equal(true), "Not all tcpdump pods found in namespace %s", stNamespace)
+
 	stPodsList := findPodWithSelector(stNamespace, stDeploymentLabel)
-	Expect(len(stPodsList)).ToNot(Equal(0), "No tcpdump pods found in namespace %s",
-		stNamespace)
+	Expect(len(stPodsList)).To(Equal(len(workerNodesList)), "Not all tcpdump pods found in namespace "+
+		"%s: %v", stNamespace, stPodsList)
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d 'tcpdump' pods", len(stPodsList))
 
@@ -297,36 +320,19 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Check the traffic flows for the first FRR through the expected interface")
 
-	for _, _pod := range stPodsList {
-		for _, searchString := range []string{RDSCoreConfig.MetalLBLoadBalancerOneIPv4,
-			RDSCoreConfig.MetalLBLoadBalancerOneIPv6} {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Making sure that the traffic flows from the first FRR "+
-				"through the %s interface", RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntOne)
+	for _, searchString := range []string{RDSCoreConfig.MetalLBLoadBalancerOneIPv4,
+		RDSCoreConfig.MetalLBLoadBalancerOneIPv6} {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Making sure that the traffic flows from the first FRR "+
+			"through the %s interface", RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntOne)
 
-			numberFound, logs, err := supporttools.ScanTCPDumpPodLogs(
-				APIClient,
-				_pod,
-				stNamespace,
-				stDeploymentLabel,
-				searchString,
-				timeStart)
-			Expect(err).ToNot(HaveOccurred(),
-				fmt.Sprintf("failed to tcpdump log results for the pod %s in namespace %s: %v",
-					_pod.Definition.Name, _pod.Definition.Namespace, err))
-
-			if numberFound == 0 {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("The searching string %s was not found in log: %s",
-					searchString, logs)
-			}
-
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("The searching string %s was found in log: %s",
-				searchString, logs)
-		}
+		err = scanTroughPodsList(stPodsList, searchString, timeStart)
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("expected string %s not found in tcpdump log: %v", searchString, err))
 	}
 
 	By("Creating the tcpdump deployment for the second FRR packets capturing")
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Create tcpdump deployment for the node %v", lbTwoNodeName)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Create tcpdump deployment for the nodes %v", workerNodesList)
 
 	_, err =
 		supporttools.CreateTCPDumpDeployment(
@@ -336,7 +342,7 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 			RDSCoreConfig.MetalLBSupportToolsImage,
 			RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntTwo,
 			captureScript,
-			[]string{lbTwoNodeName})
+			workerNodesList)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to create tcpdump deployment for the node %v in namespace %s from image %s: %v",
 			lbTwoNodeName, stNamespace, RDSCoreConfig.MetalLBSupportToolsImage, err))
@@ -344,6 +350,16 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 	By("Finding support-tools pods")
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Searching for tcpdump pods in %q namespace", stNamespace)
+
+	stPodsFound, err = await.WaitForThePodReplicasCountInNamespace(
+		APIClient,
+		stNamespace,
+		stDeploymentLabelList,
+		len(workerNodesList),
+		time.Second*30)
+	Expect(err).ToNot(HaveOccurred(), "Failed to retrieve all tcpdump pods in namespace %s due to: %v",
+		stNamespace, err)
+	Expect(stPodsFound).To(Equal(true), "Not all tcpdump pods found in namespace %s", stNamespace)
 
 	stPodsList = findPodWithSelector(stNamespace, stDeploymentLabel)
 	Expect(len(stPodsList)).ToNot(Equal(0), "No tcpdump pods found in namespace %s",
@@ -367,35 +383,18 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("second mockup app %s is not reachable from the container %s: %v",
 				appURL, RDSCoreConfig.MetalLBFRRContainerNameTwo, err))
+	}
 
-		By("Check the traffic flows for the second FRR through the expected interface")
+	By("Check the traffic flows for the second FRR through the expected interface")
 
-		for _, _pod := range stPodsList {
-			for _, searchString := range []string{RDSCoreConfig.MetalLBLoadBalancerOneIPv4,
-				RDSCoreConfig.MetalLBLoadBalancerOneIPv6} {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Making sure that the traffic flows from the second FRR "+
-					"through the %s interface", RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntTwo)
+	for _, searchString := range []string{RDSCoreConfig.MetalLBLoadBalancerTwoIPv4,
+		RDSCoreConfig.MetalLBLoadBalancerTwoIPv6} {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Making sure that the traffic flows from the second FRR "+
+			"through the %s interface", RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntTwo)
 
-				numberFound, logs, err := supporttools.ScanTCPDumpPodLogs(
-					APIClient,
-					_pod,
-					stNamespace,
-					stDeploymentLabel,
-					searchString,
-					timeStart)
-				Expect(err).ToNot(HaveOccurred(),
-					fmt.Sprintf("failed to tcpdump log results for the pod %s in namespace %s: %v",
-						_pod.Definition.Name, _pod.Definition.Namespace, err))
-
-				if numberFound == 0 {
-					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("The searching string %s was not found in log: %s",
-						searchString, logs)
-				}
-
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("The searching string %s was found in log: %s",
-					searchString, logs)
-			}
-		}
+		err = scanTroughPodsList(stPodsList, searchString, timeStart)
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("expected string %s not found in tcpdump log: %v", searchString, err))
 	}
 }
 
@@ -679,4 +678,61 @@ func getNodeForTest(namespace, deploymentLabel string) (string, error) {
 	nodeName := podsList[0].Object.Spec.NodeName
 
 	return nodeName, nil
+}
+
+func getNodesNamesList(apiClient *clients.Settings, options metav1.ListOptions) ([]string, error) {
+	glog.V(100).Infof("Building node names list for the nodes with the label %q", options.String())
+
+	var nodeNamesList []string
+
+	nodesList, err := nodes.List(apiClient, options)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to retrieve %q nodes list; %v", options.String(), err)
+
+		return nil, fmt.Errorf("failed to retrieve %q nodes list; %w", options.String(), err)
+	}
+
+	if len(nodesList) == 0 {
+		glog.V(100).Infof("The %q nodes list is empty", options.String())
+
+		return nil, fmt.Errorf("%q nodes list is empty", options.String())
+	}
+
+	for _, _node := range nodesList {
+		nodeNamesList = append(nodeNamesList, _node.Definition.Name)
+	}
+
+	return nodeNamesList, nil
+}
+
+func scanTroughPodsList(podsList []*pod.Builder, searchString string, timeStart time.Time) error {
+	var errorMsg error
+
+	for _, _pod := range podsList {
+		numberFound, logs, err := supporttools.ScanTCPDumpPodLogs(
+			APIClient,
+			_pod,
+			stNamespace,
+			stDeploymentLabel,
+			searchString,
+			timeStart)
+
+		if err != nil {
+			errorMsg = err
+		}
+
+		if numberFound != 0 {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("The searching string %s was found in log: %s",
+				searchString, logs)
+
+			return nil
+		}
+	}
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to find string %s in tcpdump log results for the pods in "+
+		"namespace %s: %v", searchString, stNamespace, errorMsg)
+
+	return fmt.Errorf("failed to find string %s in tcpdump log results for the pods in namespace %s: %w",
+		searchString, stNamespace, errorMsg)
 }

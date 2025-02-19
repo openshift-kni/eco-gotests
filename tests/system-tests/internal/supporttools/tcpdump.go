@@ -36,7 +36,7 @@ func CreateTCPDumpDeployment(
 	packetCaptureInterface,
 	captureScript string,
 	scheduleOnHosts []string) (*deployment.Builder, error) {
-	glog.V(100).Infof("-------------------DEBUG: NODE NAME: %q", scheduleOnHosts)
+	glog.V(100).Infof("-------------------DEBUG: NODES NAMES: %q", scheduleOnHosts)
 
 	stDeploymentName := "tcpdump"
 
@@ -203,7 +203,7 @@ func createTCPDumpDeployment(
 
 	glog.V(100).Infof("Creating deployment")
 
-	glog.V(100).Infof("-------------------DEBUG: NODE NAME: %q", scheduleOnHosts)
+	glog.V(100).Infof("-------------------DEBUG: NODES NAMES: %q", scheduleOnHosts)
 
 	stDeployment, err = stDeployment.CreateAndWaitUntilReady(5 * time.Minute)
 	if err != nil {
@@ -420,7 +420,7 @@ func ScanTCPDumpPodLogs(
 	err = wait.PollUntilContextTimeout(
 		context.TODO(),
 		time.Second,
-		time.Minute,
+		time.Second*5,
 		true,
 		func(ctx context.Context) (bool, error) {
 			logStartTimestamp := time.Since(timeSpan)

@@ -73,7 +73,7 @@ var _ = Describe(
 				rdscorecommon.VerifyMetallbEgressTrafficSegregation)
 
 			It("Verify ingress connectivity with traffic segregation",
-				Label("metallb-segregation", "debug"), reportxml.ID("79133"),
+				Label("metallb-segregation"), reportxml.ID("79133"),
 				rdscorecommon.VerifyMetallbIngressTrafficSegregation)
 
 			It("Verify LB application is not reachable from the incorrect FRR container",
