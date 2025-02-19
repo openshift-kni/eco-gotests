@@ -60,12 +60,14 @@ type Spoke1Config struct {
 	// Spoke1Name is automatically updated if Spoke1Kubeconfig exists, otherwise it can be provided as an input.
 	Spoke1Name string `envconfig:"ECO_CNF_RAN_SPOKE1_NAME"`
 	// Spoke1Hostname is not automatically updated but instead used as an input for the O-RAN suite.
-	Spoke1Hostname   string        `envconfig:"ECO_CNF_RAN_SPOKE1_HOSTNAME"`
-	Spoke1Kubeconfig string        `envconfig:"KUBECONFIG"`
-	BMCUsername      string        `envconfig:"ECO_CNF_RAN_BMC_USERNAME"`
-	BMCPassword      string        `envconfig:"ECO_CNF_RAN_BMC_PASSWORD"`
-	BMCHosts         []string      `envconfig:"ECO_CNF_RAN_BMC_HOSTS"`
-	BMCTimeout       time.Duration `yaml:"bmcTimeout" envconfig:"ECO_CNF_RAN_BMC_TIMEOUT"`
+	Spoke1Hostname   string `envconfig:"ECO_CNF_RAN_SPOKE1_HOSTNAME"`
+	Spoke1Kubeconfig string `envconfig:"KUBECONFIG"`
+	// Spoke1Password is the path to the admin password, saved in the O-RAN suite.
+	Spoke1Password string        `envconfig:"ECO_CNF_RAN_SPOKE1_PASSWORD"`
+	BMCUsername    string        `envconfig:"ECO_CNF_RAN_BMC_USERNAME"`
+	BMCPassword    string        `envconfig:"ECO_CNF_RAN_BMC_PASSWORD"`
+	BMCHosts       []string      `envconfig:"ECO_CNF_RAN_BMC_HOSTS"`
+	BMCTimeout     time.Duration `yaml:"bmcTimeout" envconfig:"ECO_CNF_RAN_BMC_TIMEOUT"`
 }
 
 // Spoke2Config contains the configuration for the spoke 2 cluster, if present.

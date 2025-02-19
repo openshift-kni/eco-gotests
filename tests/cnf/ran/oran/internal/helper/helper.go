@@ -18,7 +18,7 @@ func NewProvisioningRequest(client *clients.Settings, templateVersion string) *o
 	versionWithAffix := RANConfig.ClusterTemplateAffix + "-" + templateVersion
 	prBuilder := oran.NewPRBuilder(client, tsparams.TestPRName, tsparams.ClusterTemplateName, versionWithAffix).
 		WithTemplateParameter("nodeClusterName", RANConfig.Spoke1Name).
-		WithTemplateParameter("oCloudSiteId", RANConfig.Spoke1Name).
+		WithTemplateParameter("oCloudSiteId", tsparams.OCloudSiteID).
 		WithTemplateParameter("policyTemplateParameters", map[string]any{}).
 		WithTemplateParameter("clusterInstanceParameters", map[string]any{
 			"clusterName": RANConfig.Spoke1Name,
@@ -37,7 +37,7 @@ func NewNoTemplatePR(client *clients.Settings, templateVersion string) *oran.Pro
 	versionWithAffix := RANConfig.ClusterTemplateAffix + "-" + templateVersion
 	prBuilder := oran.NewPRBuilder(client, tsparams.TestPRName, tsparams.ClusterTemplateName, versionWithAffix).
 		WithTemplateParameter("nodeClusterName", RANConfig.Spoke1Name).
-		WithTemplateParameter("oCloudSiteId", RANConfig.Spoke1Name).
+		WithTemplateParameter("oCloudSiteId", tsparams.OCloudSiteID).
 		WithTemplateParameter("policyTemplateParameters", map[string]any{}).
 		WithTemplateParameter("clusterInstanceParameters", map[string]any{
 			"clusterName": RANConfig.Spoke1Name,
