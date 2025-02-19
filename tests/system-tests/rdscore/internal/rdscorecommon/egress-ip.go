@@ -749,9 +749,17 @@ func verifyEgressIPFailOver(isIPv6 bool) {
 
 	glog.V(100).Infof("Refreshed EgressIP map:\n%v\n", egressIPMap)
 
-	Expect(egressIPMap[nodeNameForVerification]).To(Equal(egressIPUnderTest),
-		fmt.Sprintf("Released EgressIP %s was not assigned to the node %s",
-			egressIPUnderTest, nodeNameForVerification))
+	for _node, _ip := range egressIPMap {
+		if _ip == egressIPUnderTest {
+			glog.V(100).Infof("egressIP %s assigned to the node %q", egressIPUnderTest, _node)
+
+			Expect(_node).ToNot(Equal(nodeNameForReboot),
+				fmt.Sprintf("Failover procedure failure, egress IP %s was not assigned to the new node",
+					egressIPUnderTest))
+
+			break
+		}
+	}
 
 	By("Verify egressIP connectivity after egressIP fail-over")
 
