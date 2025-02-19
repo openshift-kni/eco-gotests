@@ -441,7 +441,7 @@ func defineDeployment(
 	deployLabels map[string]string) *deployment.Builder {
 	glog.V(100).Infof("Defining deployment %q in %q ns", deployName, deployNs)
 
-	glog.V(100).Infof("-------------------DEBUG: NODE NAME: %q", scheduleOnHosts)
+	glog.V(100).Infof("-------------------DEBUG: NODES NAMES: %q", scheduleOnHosts)
 
 	nodeAffinity := corev1.Affinity{
 		NodeAffinity: &corev1.NodeAffinity{
