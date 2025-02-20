@@ -304,6 +304,8 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	timeStart := time.Now()
 
+	time.Sleep(time.Second * 10)
+
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("start run traffic at %v", timeStart)
 
 	for _, appURL := range []string{bgpOneAppURLIPv4, bgpOneAppURLIPv6} {
