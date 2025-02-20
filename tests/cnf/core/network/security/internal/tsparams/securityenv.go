@@ -9,7 +9,8 @@ import (
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
 	Labels = append(netparam.Labels, LabelSuite)
-
+	// 	MasterPodIPv4Address is the IP address of the external Pod.
+	MasterPodIPv4Address = "172.16.0.1"
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
 		TestNamespaceName: TestNamespaceName,
