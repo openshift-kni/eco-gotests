@@ -304,7 +304,7 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	timeStart := time.Now()
 
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 5)
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("start run traffic at %v", timeStart)
 
@@ -370,6 +370,8 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d 'tcpdump' pods", len(stPodsList))
 
 	timeStart = time.Now()
+
+	time.Sleep(time.Second * 5)
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("start run traffic at %v", timeStart)
 
