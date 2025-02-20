@@ -31,6 +31,10 @@ const (
 	HugePagesSizeKey = "hugepages-size"
 	// OCloudSiteID is the name of the site in the hardware manager to provision in.
 	OCloudSiteID = "rdu3"
+	// PolicySelectorLabel is the ExtraLabel applied to the managed cluster that determines which policies to apply.
+	PolicySelectorLabel = "sno-ran-du-policy"
+	// ClusterInstanceDefaultsKey is the key used for the ClusterInstance defaults in its ConfigMap.
+	ClusterInstanceDefaultsKey = "clusterinstance-defaults"
 
 	// ImmutableMessage is the message to expect in a Policy's history when an immutable field cannot be updated.
 	ImmutableMessage = "cannot be updated, likely due to immutable fields not matching"
