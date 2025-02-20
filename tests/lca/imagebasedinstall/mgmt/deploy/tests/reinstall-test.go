@@ -49,8 +49,8 @@ var _ = Describe(
 					Skip("Cluster is deployed with siteconfig operator")
 				}
 
-				if MGMTConfig.ReinstallManifestDir == "" {
-					Skip("Reinstall manifest directory not supplied")
+				if MGMTConfig.Reinstall == nil {
+					Skip("Reinstall configuration not supplied")
 				}
 
 				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
@@ -59,11 +59,12 @@ var _ = Describe(
 
 				By("Load admin kubeconfig secret")
 				var adminKubeconfigSecret *v1.Secret
-				adminKubeconfigFile, err := os.ReadFile(MGMTConfig.ReinstallManifestDir + "/admin-kubeconfig.json")
-				Expect(err).NotTo(HaveOccurred(), "error reading admin-kubeconfig.json")
+				adminKubeconfigFile, err := os.ReadFile(MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
+				Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
 
 				err = json.Unmarshal(adminKubeconfigFile, &adminKubeconfigSecret)
-				Expect(err).NotTo(HaveOccurred(), "error unmarshalling admin-kubeconfig.json to secret")
+				Expect(err).NotTo(HaveOccurred(),
+					"error unmarshalling %s to secret", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
 
 				adminKubeconfigContent, ok := adminKubeconfigSecret.Data["kubeconfig"]
 				Expect(ok).To(BeTrue(), "error checking for kubeconfig key from admin kubeconfig secret")
@@ -81,5 +82,7 @@ var _ = Describe(
 				Expect(targetClusterVersion.Object.Status.Desired.Version).To(
 					Equal(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion),
 					"error: target cluster version does not match seedimage cluster version")
+				Expect(MGMTConfig.Reinstall.ClusterIdentity).To(Equal(string(targetClusterVersion.Object.Spec.ClusterID)),
+					"error: reinstalled cluster has different cluster identity than original cluster")
 			})
 	})
