@@ -53,6 +53,9 @@ const (
 	ipv4AddrFamily          = "ipv4"
 	ipv6AddrFamily          = "ipv6"
 	reporterNamespaceToDump = "spoke namespace"
+
+	trueStatus  = "True"
+	falseStatus = "False"
 )
 
 var (
@@ -320,7 +323,7 @@ func createIBIOResouces(addressFamily string) {
 			return false, err
 		}
 
-		return condition.Status == "True" && condition.Reason == ibiv1alpha1.InstallSucceededReason, nil
+		return condition.Status == trueStatus && condition.Reason == ibiv1alpha1.InstallSucceededReason, nil
 
 	}).WithTimeout(time.Minute*20).WithPolling(time.Second*5).Should(
 		BeTrue(), "error waiting for imageclusterinstall to complete")
@@ -442,7 +445,7 @@ func createSiteConfigResouces(addressFamily string) {
 
 		for _, condition := range clusterInstanceBuilder.Object.Status.Conditions {
 			if condition.Type == string(siteconfigv1alpha1.ClusterProvisioned) {
-				return condition.Status == "True" && condition.Reason == string(siteconfigv1alpha1.Completed), nil
+				return condition.Status == trueStatus && condition.Reason == string(siteconfigv1alpha1.Completed), nil
 
 			}
 		}
