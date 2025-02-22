@@ -19,14 +19,13 @@ import (
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/cpuset"
+	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("CPU frequency tuning tests change the core frequencies of isolated and reserved cores",
 	Label(tsparams.LabelCPUFrequency), func() {
 		var (
 			perfProfile             *nto.Builder
-			desiredReservedCoreFreq = performancev2.CPUfrequency(2500002)
-			desiredIsolatedCoreFreq = performancev2.CPUfrequency(2200002)
 			originalIsolatedCPUFreq performancev2.CPUfrequency
 			originalReservedCPUFreq performancev2.CPUfrequency
 			err                     error
@@ -71,7 +70,8 @@ var _ = Describe("CPU frequency tuning tests change the core frequencies of isol
 					Skip("OCP 4.16 or higher required for this test")
 				}
 
-				err = helper.SetCPUFreq(perfProfile, &desiredIsolatedCoreFreq, &desiredReservedCoreFreq)
+				err = helper.SetCPUFreq(
+					perfProfile, ptr.To(tsparams.DesiredIsolatedCoreFreq), ptr.To(tsparams.DesiredReservedCoreFreq))
 				Expect(err).ToNot(HaveOccurred(), "Failed to set CPU Freq")
 
 			})

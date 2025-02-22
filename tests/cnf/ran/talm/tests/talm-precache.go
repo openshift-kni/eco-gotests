@@ -388,10 +388,6 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 	})
 
 	When("there are multiple spokes and one turns off", Ordered, ContinueOnFailure, func() {
-		var (
-			talmCompleteLabel = "talmcomplete"
-		)
-
 		BeforeAll(func() {
 			clusters := []*clients.Settings{HubAPIClient, Spoke1APIClient, Spoke2APIClient}
 			for index, cluster := range clusters {
@@ -477,7 +473,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				By("updating CGU to add afterCompletion action")
 				cguBuilder.Definition.Spec.Actions = v1alpha1.Actions{
 					AfterCompletion: &v1alpha1.AfterCompletion{
-						AddClusterLabels: map[string]string{talmCompleteLabel: ""},
+						AddClusterLabels: map[string]string{tsparams.TalmCompleteLabel: ""},
 					},
 				}
 
@@ -495,7 +491,7 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 				Expect(errorList).To(BeEmpty(), "Failed to clean up test resources on hub")
 
 				By("deleting label from managed cluster")
-				err := helper.DeleteClusterLabel(HubAPIClient, RANConfig.Spoke2Name, talmCompleteLabel)
+				err := helper.DeleteClusterLabel(HubAPIClient, RANConfig.Spoke2Name, tsparams.TalmCompleteLabel)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete label from managed cluster")
 			})
 
@@ -514,12 +510,12 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 			// 59946 - Post completion action on a per cluster basis
 			It("verifies CGU afterCompletion action executes on spoke2 when spoke1 is offline", reportxml.ID("59946"), func() {
 				By("checking spoke 2 for post-action label present")
-				labelPresent, err := helper.DoesClusterLabelExist(HubAPIClient, RANConfig.Spoke2Name, talmCompleteLabel)
+				labelPresent, err := helper.DoesClusterLabelExist(HubAPIClient, RANConfig.Spoke2Name, tsparams.TalmCompleteLabel)
 				Expect(err).ToNot(HaveOccurred(), "Failed to check if spoke 2 has post-action label")
 				Expect(labelPresent).To(BeTrue(), "Cluster post-action label was not present on spoke 2")
 
 				By("checking spoke 1 for post-action label not present")
-				labelPresent, err = helper.DoesClusterLabelExist(HubAPIClient, RANConfig.Spoke1Name, talmCompleteLabel)
+				labelPresent, err = helper.DoesClusterLabelExist(HubAPIClient, RANConfig.Spoke1Name, tsparams.TalmCompleteLabel)
 				Expect(err).ToNot(HaveOccurred(), "Failed to check if cluster post-action label exists on spoke 1")
 				Expect(labelPresent).To(BeFalse(), "Cluster post-action label was present on spoke 1")
 			})

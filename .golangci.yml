@@ -91,6 +91,12 @@ linters-settings:
     checks:
       - all
       - ST1001
+  ginkgolinter:
+    forbid-focus-container: true
+    force-expect-to: true
+    validate-async-intervals: true
+    forbid-spec-pollution: true
+    force-succeed: true
 
 linters:
   disable:
@@ -106,6 +112,7 @@ linters:
     - exhaustive
     - forcetypeassert
     - funlen
+    - ginkgolinter
     - gochecknoinits
     - gocognit
     - goconst
@@ -159,7 +166,9 @@ issues:
     - EXC0014  # EXC0014 revive: Annoying issue about not having a comment. The rare codebase has such comments
   exclude-rules:
     #- # Exclude some linters from running on tests files.
-
+    - path-except: tests/cnf/ran
+      linters:
+        - ginkgolinter
     - path: 'tests/internal/inittools'
       linters:
         - gochecknoinits
