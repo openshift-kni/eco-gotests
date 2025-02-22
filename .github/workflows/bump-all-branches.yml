@@ -1,0 +1,51 @@
+name: Bump eco-goinfra on all branches
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+    
+jobs:
+  branches:
+    outputs:
+      branches: ${{ steps.intersect-branches.outputs.branches }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: List eco-gotests branches
+        id: gotests-branches
+        run: echo "branches=$(gh api repos/openshift-kni/eco-gotests/branches -q '[.[].name] | map(select(test("main|release-.*"))) | @json')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: List eco-goinfra branches
+        id: goinfra-branches
+        run: echo "branches=$(gh api repos/openshift-kni/eco-goinfra/branches -q '[.[].name] | map(select(test("main|release-.*"))) | @json')" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Intersect eco-gotests and eco-goinfra branches
+        id: intersect-branches
+        run: echo "branches=$(echo $GOTESTS_BRANCHES $GOINFRA_BRANCHES | jq -sc '.[0] - (.[0] - .[1])')" >> $GITHUB_OUTPUT
+        env:
+          GOTESTS_BRANCHES: ${{ steps.gotests-branches.outputs.branches }}
+          GOINFRA_BRANCHES: ${{ steps.goinfra-branches.outputs.branches }}
+
+  bump:
+    needs: [branches]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.branches.outputs.branches) }}
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    uses: ./.github/workflows/eco-goinfra-bump.yml
+    with:
+      branch: ${{ matrix.branch }}
