@@ -4,6 +4,7 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
@@ -27,8 +28,6 @@ import (
 
 var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 	Label(tsparams.LabelClusterInstanceDeleteTestCases), func() {
-		var earlyReturnSkip = true
-
 		// These tests use the hub and spoke architecture.
 		BeforeEach(func() {
 			By("verifying that ZTP meets the minimum version")
@@ -41,7 +40,7 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 		})
 
 		AfterEach(func() {
-			if earlyReturnSkip {
+			if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
 				return
 			}
 
@@ -88,8 +87,6 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 			if spokeClusterType == ranparam.SNOCluster {
 				Skip("This test only applies to standard or multi-node openshift spoke cluster")
 			}
-
-			earlyReturnSkip = false
 
 			// Test step 1-Delete default assisted installer template reference ConfigMap CRs after spoke cluster installed.
 			By("deleting default assisted installer template reference ConfigMap custom resources")
@@ -193,7 +190,6 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 				Skip(err.Error())
 			}
 
-			earlyReturnSkip = false
 			Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD clusters app with new git path")
 
 			// Test step 1 expected results validation.

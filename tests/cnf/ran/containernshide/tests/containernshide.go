@@ -32,9 +32,9 @@ var _ = Describe("Container Namespace Hiding", Label(tsparams.LabelContainerNSHi
 			ranparam.RetryInterval, "readlink /proc/$(pidof crio)/ns/mnt")
 		Expect(err).ToNot(HaveOccurred(), "Failed to check crio inodes")
 
-		Expect(len(systemdInodes)).To(Equal(len(kubeletInodes)),
+		Expect(systemdInodes).To(HaveLen(len(kubeletInodes)),
 			"Collected systemd inodes from different number of nodes than kubelet inodes")
-		Expect(len(systemdInodes)).To(Equal(len(crioInodes)),
+		Expect(systemdInodes).To(HaveLen(len(crioInodes)),
 			"Collected systemd inodes from different number of nodes than crio inodes")
 
 		for host, systemdInode := range systemdInodes {
