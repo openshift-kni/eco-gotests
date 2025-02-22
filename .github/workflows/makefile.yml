@@ -13,14 +13,14 @@ on:
       - 'release-\d.\d\d'
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
     env:
       SHELL: /bin/bash
 
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -29,6 +29,19 @@ jobs:
       - name: Run lint
         run: make lint
 
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SHELL: /bin/bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
       - name: Install
         run: make install-ginkgo
 
@@ -36,6 +49,6 @@ jobs:
         run: ginkgo run -vv -r --dry-run ./tests/
         env:
           ECO_DRY_RUN: true
-      
+
       - name: Run unit tests
         run: make test
