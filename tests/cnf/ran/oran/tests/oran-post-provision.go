@@ -35,6 +35,10 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 
 		copiedSpec := prBuilder.Definition.Spec
 		originalPRSpec = &copiedSpec
+
+		By("verifying ProvisioningRequest is fulfilled to start")
+		prBuilder, err = prBuilder.WaitUntilFulfilled(time.Minute)
+		Expect(err).ToNot(HaveOccurred(), "Failed to verify spoke 1 ProvisioningRequest is fulfilled")
 	})
 
 	AfterEach(func() {
@@ -109,6 +113,19 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		})
 
 		prBuilder = updatePRUntilNoConflict(prBuilder)
+
+		By("waiting to ensure the policy status updates")
+		// This test case updates a previously compliant policy so if we check the compliance state too soon we
+		// risk a situation where the policy has been updated but its compliance state has not been.
+		time.Sleep(15 * time.Second)
+
+		DeferCleanup(func() {
+			By("waiting to ensure the policy status updates")
+			// The same issue that happens on the cleanup side of this test case, so wait again to ensure
+			// the next test case is not affected.
+			time.Sleep(15 * time.Second)
+		})
+
 		waitForPolicies(prBuilder)
 
 		By("verifying the test ConfigMap has the new value")
@@ -193,10 +210,6 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 
 	// 77379 - Failed update to ProvisioningRequest and successful rollback
 	It("successfully rolls back failed ProvisioningRequest update", reportxml.ID("77379"), func() {
-		By("verifying ProvisioningRequest is valid to start")
-		prBuilder, err := prBuilder.WaitForCondition(tsparams.PRConfigurationAppliedCondition, time.Minute)
-		Expect(err).ToNot(HaveOccurred(), "Failed to verify spoke 1 ProvisioningRequest has ConfigurationApplied")
-
 		By("updating the policyTemplateParameters")
 		prBuilder = prBuilder.WithTemplateParameter(tsparams.PolicyTemplateParamsKey, map[string]string{
 			tsparams.HugePagesSizeKey: "2G",
@@ -204,7 +217,7 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		prBuilder = updatePRUntilNoConflict(prBuilder)
 
 		By("waiting for policy to go NonCompliant")
-		err = helper.WaitForNoncompliantImmutable(HubAPIClient, RANConfig.Spoke1Name, time.Minute)
+		err := helper.WaitForNoncompliantImmutable(HubAPIClient, RANConfig.Spoke1Name, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for a spoke 1 policy to go NonCompliant due to immutable field")
 
 		By("fixing the policyTemplateParameters")
@@ -302,6 +315,12 @@ func waitForPolicies(prBuilder *oran.ProvisioningRequestBuilder) {
 
 	err = helper.WaitForPolicyVersion(Spoke1APIClient, RANConfig.Spoke1Name, policyVersion, 2*time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to wait for policies to propagate to the spoke")
+
+	By("waiting for ProvisioningRequest to have the correct policies")
+
+	err = helper.WaitForPRPolicyVersion(prBuilder, policyVersion, 2*time.Minute)
+	Expect(err).ToNot(HaveOccurred(),
+		"Failed to wait for the ProvisioningRequest to have the correct policy version %s", policyVersion)
 
 	By("waiting for policies to be compliant")
 
