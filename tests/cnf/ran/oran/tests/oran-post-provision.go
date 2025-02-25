@@ -47,6 +47,10 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		powerState, err := BMCClient.SystemPowerState()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get system power state from spoke 1 BMC")
 
+		By("pulling the ProvisioningRequest again to ensure it is valid")
+		prBuilder, err = oran.PullPR(HubAPIClient, tsparams.TestPRName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to pull the ProvisioningRequest again")
+
 		By("restoring the original ProvisioningRequest spec")
 		prBuilder.Definition.Spec = *originalPRSpec
 		prBuilder = updatePRUntilNoConflict(prBuilder)

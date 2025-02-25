@@ -91,10 +91,10 @@ var _ = Describe("ORAN Pre-provision Tests", Label(tsparams.LabelPreProvision), 
 	)
 
 	When("a ProvisioningRequest is created", func() {
-		var prBuilder *oran.ProvisioningRequestBuilder
-
 		AfterEach(func() {
-			if prBuilder != nil {
+			By("deleting the ProvisioningRequest if it exists")
+			prBuilder, err := oran.PullPR(HubAPIClient, tsparams.TestPRName)
+			if err == nil {
 				err := prBuilder.DeleteAndWait(10 * time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete the ProvisioningRequest")
 			}
@@ -102,15 +102,13 @@ var _ = Describe("ORAN Pre-provision Tests", Label(tsparams.LabelPreProvision), 
 
 		DescribeTable("ProvisionRequest pre-provision validations",
 			func(templateVersion string, condition metav1.Condition) {
-				var err error
-
 				By("creating a ProvisioningRequest")
-				prBuilder = helper.NewProvisioningRequest(HubAPIClient, templateVersion)
-				prBuilder, err = prBuilder.Create()
+				prBuilder := helper.NewProvisioningRequest(HubAPIClient, templateVersion)
+				prBuilder, err := prBuilder.Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create a ProvisioningRequest")
 
 				By("verifying the ProvisioningRequest has the expected condition")
-				prBuilder, err = prBuilder.WaitForCondition(condition, time.Minute)
+				_, err = prBuilder.WaitForCondition(condition, time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "Failed to verify the ProvisioningRequest status")
 			},
 			// 77387 - Failed provisioning with nonexistent hardware profile
@@ -127,14 +125,12 @@ var _ = Describe("ORAN Pre-provision Tests", Label(tsparams.LabelPreProvision), 
 		// 78246 - Successful provisioning without hardware template
 		It("successfully generates ClusterInstance provisioning without HardwareTemplate", reportxml.ID("78246"), func() {
 			By("creating a ProvisioningRequest")
-			prBuilder = helper.NewNoTemplatePR(HubAPIClient, tsparams.TemplateNoHWTemplate)
-
-			var err error
-			prBuilder, err = prBuilder.Create()
+			prBuilder := helper.NewNoTemplatePR(HubAPIClient, tsparams.TemplateNoHWTemplate)
+			prBuilder, err := prBuilder.Create()
 			Expect(err).ToNot(HaveOccurred(), "Failed to create a ProvisioningRequest")
 
 			By("waiting for its ClusterInstance to be processed")
-			prBuilder, err = prBuilder.WaitForCondition(tsparams.PRCIProcesssedCondition, time.Minute)
+			_, err = prBuilder.WaitForCondition(tsparams.PRCIProcesssedCondition, time.Minute)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for ClusterInstance to be processed")
 		})
 	})
