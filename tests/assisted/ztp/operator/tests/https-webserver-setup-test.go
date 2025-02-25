@@ -13,10 +13,14 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/assisted/api/v1beta1"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/storage"
+
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/meets"
 	. "github.com/openshift-kni/eco-gotests/tests/assisted/ztp/internal/ztpinittools"
 	"github.com/openshift-kni/eco-gotests/tests/assisted/ztp/operator/internal/tsparams"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 const (
@@ -24,6 +28,7 @@ const (
 	nsname              = "httpdtest"
 	containerPort       = 8443
 	httpdContainerImage = "registry.redhat.io/rhel8/httpd-24"
+	httpsPVCQuantity    = "20Gi"
 )
 
 var (
@@ -31,6 +36,8 @@ var (
 	httpPodBuilder        *pod.Builder
 	testOSImage           v1beta1.OSImage
 	version               string = ZTPConfig.HubOCPXYVersion
+	httpsPVC              *storage.PVCBuilder
+	httpsPVCMode          = corev1.PersistentVolumeFilesystem
 )
 var _ = Describe(
 	"HttpWebserverSetup",
@@ -51,9 +58,36 @@ var _ = Describe(
 				testNS, err := namespace.NewBuilder(HubAPIClient, nsname).Create()
 				Expect(err).ToNot(HaveOccurred(), "error creating namespace")
 
+				pvcQuantity, err := resource.ParseQuantity(httpsPVCQuantity)
+				Expect(err).ToNot(HaveOccurred(), "error parsing persistentvolume quantity")
+
+				By("Create persistent volume claim for test")
+				httpsPVC = storage.NewPVCBuilder(HubAPIClient, "https-webserver-pvc", nsname)
+				httpsPVC.Definition.Spec = corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{
+						corev1.ReadWriteOnce,
+					},
+					Resources: corev1.VolumeResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: pvcQuantity,
+						},
+					},
+					VolumeMode: &httpsPVCMode,
+				}
+
+				_, err = httpsPVC.Create()
+				Expect(err).ToNot(HaveOccurred(), "error creating persistent volume claim")
+
 				By("Starting the https-webserver pod running an httpd container")
 				httpPodBuilder = pod.NewBuilder(HubAPIClient, serverName, testNS.Definition.Name,
-					httpdContainerImage).WithLabel("app", serverName)
+					httpdContainerImage).WithLabel("app", serverName).WithVolume(corev1.Volume{
+					Name: "https-volume",
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+							ClaimName: "https-webserver-pvc",
+						},
+					},
+				})
 
 				By("Adding an httpd container to the pod")
 				httpPodBuilder.WithAdditionalContainer(&corev1.Container{
@@ -63,6 +97,13 @@ var _ = Describe(
 					Ports: []corev1.ContainerPort{
 						{
 							ContainerPort: containerPort,
+						},
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name:      "https-volume",
+							ReadOnly:  false,
+							MountPath: "/var/www/html",
 						},
 					},
 				})
@@ -106,7 +147,7 @@ var _ = Describe(
 				_, err = newAgentServiceConfig.Create()
 				Expect(err).ToNot(HaveOccurred(), "error while creating new agentserviceconfig")
 
-				_, err = newAgentServiceConfig.WaitUntilDeployed(time.Second * 60)
+				_, err = newAgentServiceConfig.WaitUntilDeployed(time.Second * 300)
 				Expect(err).ToNot(HaveOccurred(), "error while deploying new agentserviceconfig")
 			})
 
@@ -117,11 +158,15 @@ var _ = Describe(
 				})
 
 			AfterAll(func() {
-
-				By("Deleting test namespace and pod")
+				By("Deleting test pod")
 				_, err = httpPodBuilder.DeleteAndWait(time.Second * 60)
 				Expect(err).ToNot(HaveOccurred(), "could not delete pod")
 
+				By("Deleting persistent volume claim")
+				err = httpsPVC.DeleteAndWait(time.Second * 60)
+				Expect(err).ToNot(HaveOccurred(), "could not delete persistentvolumeclaim")
+
+				By("Deleting test namespace")
 				ns, err := namespace.Pull(HubAPIClient, nsname)
 				Expect(err).ToNot(HaveOccurred(), "could not pull namespace")
 				err = ns.DeleteAndWait(time.Second * 120)
@@ -135,7 +180,7 @@ var _ = Describe(
 				_, err = ZTPConfig.HubAgentServiceConfig.Create()
 				Expect(err).ToNot(HaveOccurred(), "could not reinstate original agentserviceconfig")
 
-				_, err = ZTPConfig.HubAgentServiceConfig.WaitUntilDeployed(time.Second * 180)
+				_, err = ZTPConfig.HubAgentServiceConfig.WaitUntilDeployed(time.Second * 1800)
 				Expect(err).ToNot(HaveOccurred(), "error while deploying original agentserviceconfig")
 
 				reqMet, msg := meets.HubInfrastructureOperandRunningRequirement()
