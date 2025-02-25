@@ -49,7 +49,7 @@ var _ = Describe(
 					Skip("Cluster is deployed with siteconfig operator")
 				}
 
-				if MGMTConfig.Reinstall == nil {
+				if MGMTConfig.ReinstallConfigFile == "" {
 					Skip("Reinstall configuration not supplied")
 				}
 

@@ -68,7 +68,7 @@ func createSharedResources() {
 	_, err := namespace.NewBuilder(APIClient, MGMTConfig.Cluster.Info.ClusterName).Create()
 	Expect(err).NotTo(HaveOccurred(), "error creating namespace")
 
-	if MGMTConfig.Reinstall != nil {
+	if MGMTConfig.ReinstallConfigFile != "" {
 		By("Recreate admin kubeconfig secret")
 
 		adminKubeconfig := secret.NewBuilder(
