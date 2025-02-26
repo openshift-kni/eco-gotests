@@ -3,14 +3,12 @@ package pod
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -258,89 +256,6 @@ func WaitForPodsInNamespacesHealthy(
 
 			return true, nil
 		})
-}
-
-// WaitForAllPodsInNamespacesHealthy waits until:
-// - all pods in a list of namespaces that match options are in healthy state.
-// - a pod in a healthy state is in running phase and optionally in ready condition.
-//
-// nsNames passes the list of namespaces to monitor. Monitors all namespaces when empty.
-// timeout is the duration in seconds to wait for the pods to be healthy
-// includeSucceeded when true, considers that pods in succeeded phase are healthy.
-// skipReadiness when false, checks that the podCondition is ready.
-// ignoreRestartPolicyNever when true, ignores failed pods with restart policy set to never.
-// ignoreNamespaces is a list of namespaces to ignore.
-// options reduces the list of namespace to only the ones matching options.
-func WaitForAllPodsInNamespacesHealthy(
-	apiClient *clients.Settings,
-	nsNames []string,
-	timeout time.Duration,
-	includeSucceeded bool,
-	skipReadinessCheck bool,
-	ignoreRestartPolicyNever bool,
-	ignoreNamespaces []string,
-	options ...metav1.ListOptions,
-) error {
-	logMessage := fmt.Sprintf("Waiting for all pods in %v namespaces", nsNames)
-	passedOptions := metav1.ListOptions{}
-
-	if apiClient == nil {
-		glog.V(100).Infof("The apiClient is empty")
-
-		return fmt.Errorf("podList 'apiClient' cannot be empty")
-	}
-
-	if len(options) == 1 {
-		passedOptions = options[0]
-		logMessage += fmt.Sprintf(" with the options %v", passedOptions)
-	}
-
-	glog.V(100).Infof(logMessage + " are in running state")
-
-	var podList []*Builder
-
-	if len(nsNames) == 0 {
-		var err error
-		podList, err = ListInAllNamespaces(apiClient, passedOptions)
-
-		if err != nil {
-			glog.V(100).Infof("Failed to list all pods due to %s", err.Error())
-
-			return err
-		}
-	} else {
-		for _, ns := range nsNames {
-			podListForNs, err := List(apiClient, ns, passedOptions)
-			if err != nil {
-				glog.V(100).Infof("Failed to list all pods due to %s", err.Error())
-
-				return err
-			}
-			podList = append(podList, podListForNs...)
-		}
-	}
-
-	for _, podObj := range podList {
-		if slices.Contains(ignoreNamespaces, podObj.Definition.Namespace) {
-			continue
-		}
-
-		err := podObj.WaitUntilHealthy(timeout, includeSucceeded, skipReadinessCheck, ignoreRestartPolicyNever)
-		if k8serrors.IsNotFound(err) {
-			glog.V(100).Infof("Pod %s in namespace %s no longer exists, skipping",
-				podObj.Definition.Name, podObj.Definition.Namespace)
-
-			continue
-		}
-
-		if err != nil {
-			glog.V(100).Infof("Failed to wait for all pods to be healthy due to %s", err.Error())
-
-			return err
-		}
-	}
-
-	return nil
 }
 
 // listPodsInNamespaces lists pods only in the provided namespaces or all namespaces if the provided slice is empty. It
