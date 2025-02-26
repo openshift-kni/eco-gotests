@@ -118,9 +118,9 @@ rdscore_nrop_scheduler_name: topo-aware-scheduler
 rdscore_wlkd_nrop_one_selector: {}
 rdscore_sc_cephfs_name: ''
 rdscore_sc_cephrbd_name: ''
-rdscore_kdump_cp_node_label: 'node-role.kubernetes.io/control-plane=""'
-rdscore_kdump_worker_node_label: 'node-role.kubernetes.io/standard=""'
-rdscore_kdump_cnf_node_label: 'node-role.kubernetes.io/customcnf=""'
+rdscore_kdump_cp_node_label: 'node-role.kubernetes.io/control-plane='
+rdscore_kdump_worker_node_label: 'node-role.kubernetes.io/standard='
+rdscore_kdump_cnf_node_label: 'node-role.kubernetes.io/customcnf='
 rdscore_metallb_frr_test_url_ipv4: ''
 rdscore_metallb_frr_test_url_ipv6: ''
 # Egress Service
