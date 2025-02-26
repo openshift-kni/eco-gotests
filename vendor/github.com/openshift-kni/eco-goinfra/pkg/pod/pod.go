@@ -326,55 +326,6 @@ func (builder *Builder) IsHealthy() bool {
 	return builder.isObjectHealthy()
 }
 
-// WaitUntilHealthy waits for the duration of the defined timeout or until the pod is healthy.
-// A healthy pod is in running phase and optionally in ready condition.
-//
-// timeout is the duration to wait for the pod to be healthy
-// includeSucceeded when true, implies that pod in succeeded phase is running.
-// skipReadinessCheck when false, checks that the podCondition is ready.
-// ignoreRestartPolicyNever when true, Ignores failed pods with restart policy set to never.
-func (builder *Builder) WaitUntilHealthy(timeout time.Duration, includeSucceeded, skipReadinessCheck,
-	ignoreRestartPolicyNever bool) error {
-	statusesChecked := []corev1.PodPhase{corev1.PodRunning}
-
-	// Ignore failed pod with restart policy never. This could happen in image pruner or installer pods that
-	// will never restart. For those pods, instead of restarting the same pod, a new pod will be created
-	// to complete the task.
-	if ignoreRestartPolicyNever &&
-		builder.Object.Status.Phase == corev1.PodFailed &&
-		builder.Object.Spec.RestartPolicy == corev1.RestartPolicyNever {
-		glog.V(100).Infof("Ignore failed pod with restart policy never. Message: %s",
-			builder.Object.Status.Message)
-
-		return nil
-	}
-
-	if includeSucceeded {
-		statusesChecked = append(statusesChecked, corev1.PodSucceeded)
-	}
-
-	podPhase, err := builder.WaitUntilInOneOfStatuses(statusesChecked, timeout)
-
-	if err != nil {
-		glog.V(100).Infof("pod condition is not in %v. Message: %s", statusesChecked, builder.Object.Status.Message)
-
-		return err
-	}
-
-	if skipReadinessCheck || *podPhase == corev1.PodSucceeded {
-		return nil
-	}
-
-	err = builder.WaitUntilCondition(corev1.PodReady, timeout)
-	if err != nil {
-		glog.V(100).Infof("pod condition is not Ready. Message: %s", builder.Object.Status.Message)
-
-		return err
-	}
-
-	return nil
-}
-
 // WaitUntilInStatus waits for the duration of the defined timeout or until the pod gets to a specific status.
 func (builder *Builder) WaitUntilInStatus(status corev1.PodPhase, timeout time.Duration) error {
 	if valid, err := builder.validate(); !valid {
@@ -384,34 +335,10 @@ func (builder *Builder) WaitUntilInStatus(status corev1.PodPhase, timeout time.D
 	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s has status %v",
 		builder.Definition.Name, builder.Definition.Namespace, status)
 
-	_, err := builder.WaitUntilInOneOfStatuses([]corev1.PodPhase{status}, timeout)
-
-	return err
-}
-
-// WaitUntilInOneOfStatuses waits for the duration of the defined timeout or until the pod gets to any specific status
-// in a list of statues.
-func (builder *Builder) WaitUntilInOneOfStatuses(statuses []corev1.PodPhase,
-	timeout time.Duration) (*corev1.PodPhase, error) {
-	if valid, err := builder.validate(); !valid {
-		return nil, err
-	}
-
-	glog.V(100).Infof("Waiting for the defined period until pod %s in namespace %s has status %v",
-		builder.Definition.Name, builder.Definition.Namespace, statuses)
-
-	var foundPhase corev1.PodPhase
-
-	return &foundPhase, wait.PollUntilContextTimeout(
-		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			updatePod, err := builder.apiClient.Pods(builder.Definition.Namespace).Get(
-				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
-			if k8serrors.IsNotFound(err) {
-				glog.V(100).Infof("Pod %s in namespace %s does not exist", builder.Definition.Name, builder.Definition.Namespace)
-
-				return false, err
-			}
-
+	return wait.PollUntilContextTimeout(context.TODO(),
+		time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			updatePod, err := builder.apiClient.Pods(builder.Definition.Namespace).
+				Get(context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 			if err != nil {
 				glog.V(100).Infof("Failed to get pod %s in namespace %s: %v",
 					builder.Definition.Name, builder.Definition.Namespace, err)
@@ -419,15 +346,7 @@ func (builder *Builder) WaitUntilInOneOfStatuses(statuses []corev1.PodPhase,
 				return false, nil
 			}
 
-			for _, phase := range statuses {
-				if updatePod.Status.Phase == phase {
-					foundPhase = phase
-
-					return true, nil
-				}
-			}
-
-			return false, nil
+			return updatePod.Status.Phase == status, nil
 		})
 }
 
