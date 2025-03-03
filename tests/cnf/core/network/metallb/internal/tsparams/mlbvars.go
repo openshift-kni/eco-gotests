@@ -79,6 +79,10 @@ var (
 		"frrk8s_bgp_updates_total", "frrk8s_bgp_updates_total_received", "frrk8s_bgp_announced_prefixes_total",
 		"frrk8s_bgp_received_prefixes_total",
 	}
+	// LBipv4Range represents the LoadBalancer IPv4 Address Pool.
+	LBipv4Range = []string{"3.3.3.1", "3.3.3.240"}
+	// ExtFrrConnectedPool represents custom network prefixes to advertise from external FRR pod.
+	ExtFrrConnectedPool = []string{"8.8.8.8/32", "4.4.4.4/32"}
 )
 
 func setUnstructured(kind string) *unstructured.UnstructuredList {

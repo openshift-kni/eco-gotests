@@ -14,7 +14,9 @@ import (
 
 type (
 	bgpDescription struct {
-		BGPState string `json:"bgpState"`
+		BGPState         string `json:"bgpState"`
+		BGPHoldTime      int    `json:"bgpTimerHoldTimeMsecs"`
+		BGPKeepAliveTime int    `json:"bgpTimerKeepAliveIntervalMsecs"`
 	}
 
 	bgpStatus struct {
@@ -37,6 +39,7 @@ type (
 		Network   string `json:"network"`
 		Metric    int    `json:"metric"`
 		Weight    int    `json:"weight"`
+		LocalPref uint32 `json:"locPrf,omitempty"`
 		PeerID    string `json:"peerId"`
 		Path      string `json:"path"`
 		Origin    string `json:"origin"`
@@ -138,6 +141,7 @@ func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []strin
 		}
 	}
 
+	//nolint:goconst
 	bgpConfig += "!\naddress-family ipv4 unicast\n"
 	for _, ipAddress := range neighborsIPAddresses {
 		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
@@ -183,6 +187,7 @@ func DefineBGPConfigWithStaticRouteAndNetwork(localBGPASN, remoteBGPASN int, hub
 
 	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv4Routes[0])
 	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv4Routes[1])
+	//nolint:goconst
 	bgpConfig += "exit-address-family\n"
 
 	// Add network commands only once for IPv6
@@ -193,6 +198,55 @@ func DefineBGPConfigWithStaticRouteAndNetwork(localBGPASN, remoteBGPASN int, hub
 
 	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv6Routes[0])
 	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv6Routes[1])
+	bgpConfig += "exit-address-family\n"
+
+	bgpConfig += "!\nline vty\n!\nend\n"
+
+	return bgpConfig
+}
+
+// DefineBGPConfigWithNetwork defines BGP config file with static route and network.
+func DefineBGPConfigWithNetwork(localBGPASN, remoteBGPASN int,
+	advertisedIPv4Routes, advertisedIPv6Routes, neighborsIPAddresses []string,
+	multiHop, bfd bool) string {
+	bgpConfig := tsparams.FRRBaseConfig +
+		fmt.Sprintf("router bgp %d\n", localBGPASN) +
+		tsparams.FRRDefaultBGPPreConfig
+
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s remote-as %d\n  neighbor %s password %s\n",
+			ipAddress, remoteBGPASN, ipAddress, tsparams.BGPPassword)
+
+		if bfd {
+			bgpConfig += fmt.Sprintf("  neighbor %s bfd\n", ipAddress)
+		}
+
+		if multiHop {
+			bgpConfig += fmt.Sprintf("  neighbor %s ebgp-multihop 2\n", ipAddress)
+		}
+	}
+
+	bgpConfig += "!\naddress-family ipv4 unicast\n"
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+	}
+
+	for _, advertisedIPv4Route := range advertisedIPv4Routes {
+		bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv4Route)
+	}
+
+	bgpConfig += "exit-address-family\n"
+
+	// Add network commands only once for IPv6
+	bgpConfig += "!\naddress-family ipv6 unicast\n"
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+	}
+
+	for _, advertisedIPv6Route := range advertisedIPv6Routes {
+		bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv6Route)
+	}
+
 	bgpConfig += "exit-address-family\n"
 
 	bgpConfig += "!\nline vty\n!\nend\n"
@@ -215,6 +269,24 @@ func BGPNeighborshipHasState(frrPod *pod.Builder, neighborIPAddress string, stat
 	}
 
 	return result[neighborIPAddress].BGPState == state, nil
+}
+
+// GetBGPNeighborTimer verifies that BGP session on a pod has given state.
+func GetBGPNeighborTimer(frrPod *pod.Builder, neighborIPAddress string, holdTimer, keepAliveTimer int) (bool, error) {
+	var result map[string]bgpDescription
+
+	bgpStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, "sh bgp neighbors json"))
+	if err != nil {
+		return false, err
+	}
+
+	err = json.Unmarshal(bgpStateOut.Bytes(), &result)
+	if err != nil {
+		return false, err
+	}
+
+	return result[neighborIPAddress].BGPHoldTime == holdTimer &&
+		result[neighborIPAddress].BGPKeepAliveTime == keepAliveTimer, nil
 }
 
 // IsProtocolConfigured verifies that given protocol is set in frr config.
@@ -297,6 +369,20 @@ func GetBGPCommunityStatus(frrPod *pod.Builder, ipProtocolVersion string) (*bgpS
 	glog.V(90).Infof("Getting bgp community status from container on pod: %s", frrPod.Definition.Name)
 
 	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, "65535:65282"))
+}
+
+// GetBGPCommunityStatusWithCommArg returns bgp community status from frr pod.
+func GetBGPCommunityStatusWithCommArg(frrPod *pod.Builder, ipProtocolVersion, community string) (*bgpStatus, error) {
+	glog.V(90).Infof("Getting bgp community status from container on pod: %s", frrPod.Definition.Name)
+
+	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, community))
+}
+
+// GetBGPStatusWithCmd returns bgp status output from frr pod.
+func GetBGPStatusWithCmd(frrPod *pod.Builder, protocolVersion string) (*bgpStatus, error) {
+	glog.V(90).Infof("Getting bgp status from pod: %s", frrPod.Definition.Name)
+
+	return getBgpStatus(frrPod, fmt.Sprintf("show ip bgp %s json", protocolVersion))
 }
 
 // FetchBGPConnectTimeValue fetches and returns the ConnectRetryTimer value for the specified BGP peer.

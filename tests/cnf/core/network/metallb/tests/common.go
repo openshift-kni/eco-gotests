@@ -396,3 +396,24 @@ func validatePrefix(
 	_, err = frr.GetBGPCommunityStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp community status")
 }
+
+func validatePrefixWithReturn(
+	masterNodeFRRPod *pod.Builder, ipProtoVersion string, addressPool []string, prefixLength int) error {
+	Eventually(func() error {
+		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
+		if err != nil {
+			return err
+		}
+		if len(bgpStatus.Routes) == 0 {
+			return fmt.Errorf("no BGP routes present")
+		}
+
+		return nil
+	}, time.Minute, tsparams.DefaultRetryInterval).ShouldNot(HaveOccurred(), "BGP status validation failed")
+
+	_, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
+	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
+	_, _, err = net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefixLength))
+
+	return err
+}

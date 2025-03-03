@@ -148,4 +148,8 @@ bfd
 	LocalBGPASN = 64500
 	// RemoteBGPASN represents remote BGP AS number.
 	RemoteBGPASN = 64501
+	// CommunityNoAdv represent BGP NoAdv community.
+	CommunityNoAdv = "65535:65282"
+	// CustomCommunity represent BGP NoAdv community.
+	CustomCommunity = "300:300"
 )
