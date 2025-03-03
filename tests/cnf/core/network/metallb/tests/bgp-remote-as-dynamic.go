@@ -135,10 +135,14 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 
 			AfterEach(func() {
 				By("Removing static routes from the speakers")
-				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-					LabelSelector: tsparams.FRRK8sDefaultLabel,
-				})
-				Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
+				frrk8sPods := []*pod.Builder{}
+				for _, node := range cnfWorkerNodeList {
+					frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+						FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+					})
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+					frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+				}
 
 				speakerRoutesMap, err := netenv.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
 					[]string{ipv4metalLbIPList[0], ipv4metalLbIPList[1], frrNodeSecIntIPv4Addresses[0],
@@ -240,10 +244,15 @@ func setupBGPRemoteASTestCase(hubIPv4ExternalAddresses, externalAdvertisedIPv4Ro
 
 	By("Collect connection information for the Frr Node pods")
 
-	frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-		LabelSelector: tsparams.FRRK8sDefaultLabel,
-	})
-	Expect(err).ToNot(HaveOccurred(), "Failed to list frr pods")
+	frrk8sPods := []*pod.Builder{}
+
+	for _, node := range cnfWorkerNodeList {
+		frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+		})
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+		frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+	}
 
 	By("Collect connection information for the Frr external pod")
 
@@ -266,10 +275,16 @@ func setupBGPRemoteASMultiHopTest(ipv4metalLbIPList, hubIPv4ExternalAddresses, e
 
 	By("Collecting information before test")
 
-	frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-		LabelSelector: tsparams.FRRK8sNodeLabel,
-	})
-	Expect(err).ToNot(HaveOccurred(), "Failed to list frrk8 pods")
+	frrk8sPods := []*pod.Builder{}
+
+	for _, node := range cnfWorkerNodeList {
+		frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+			FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+		})
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+		frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+	}
+
 	By("Setting test parameters")
 
 	masterClientPodIP, _, _, nodeAddrList, _, _, err :=
