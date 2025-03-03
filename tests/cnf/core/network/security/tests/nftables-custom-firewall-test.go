@@ -41,6 +41,7 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		portNum8088              = 8088
 		cnfWorkerNodeList        []*nodes.Builder
 		masterNodeList           []*nodes.Builder
+		workerNodeNames          []string
 		ipv4NodeAddrList         []string
 		ip4Worker0NodeAddr       []string
 		ipv4SecurityIPList       []string
@@ -58,6 +59,10 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		cnfWorkerNodeList, err = nodes.List(APIClient,
 			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+
+		for _, node := range cnfWorkerNodeList {
+			workerNodeNames = append(workerNodeNames, node.Definition.Name)
+		}
 
 		By("Selecting worker node for Security tests")
 		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(

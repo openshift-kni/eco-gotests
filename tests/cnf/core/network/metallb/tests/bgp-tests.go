@@ -65,13 +65,19 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err := define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
-		By("Listing metalLb speakers pod")
-		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-			LabelSelector: tsparams.FRRK8sDefaultLabel,
-		})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
+		By("Collecting frrk8sPod list")
+		frrk8sPods = []*pod.Builder{}
+		for _, node := range cnfWorkerNodeList {
+			frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+			})
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+			frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+		}
+		Expect(err).ToNot(HaveOccurred(), "Fail to list frrk8s pods")
 		Expect(len(frrk8sPods)).To(BeNumerically(">", 0),
 			"Failed the number of frr speaker pods is 0")
+
 		createBGPPeerAndVerifyIfItsReady(
 			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0, frrk8sPods)
 	})
