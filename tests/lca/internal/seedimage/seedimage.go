@@ -120,6 +120,10 @@ func GetContent(apiClient *clients.Settings, seedImageLocation string) (*SeedIma
 		proxyEnv := proxyEnvOutput[seedNode]
 
 		seedInfo.ParseProxyEnv(proxyEnv)
+
+		if seedInfo.Proxy.HTTPProxy == "" || seedInfo.Proxy.HTTPSProxy == "" {
+			return nil, fmt.Errorf("encountered an error gathering proxy info: %v", seedInfo.Proxy)
+		}
 	}
 
 	if seedInfo.MirrorRegistryConfigured {
@@ -152,6 +156,11 @@ func GetContent(apiClient *clients.Settings, seedImageLocation string) (*SeedIma
 		}
 
 		seedInfo.ParseMirrorConf(registriesConfig)
+
+		if len(seedInfo.MirrorConfig.Spec.ImageDigestMirrors) == 0 {
+			return nil, fmt.Errorf("encountered an error gathering mirror info: %v",
+				seedInfo.MirrorConfig.Spec.ImageDigestMirrors)
+		}
 	}
 
 	return seedInfo, nil
