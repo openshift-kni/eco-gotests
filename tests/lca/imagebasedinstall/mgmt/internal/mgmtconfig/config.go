@@ -63,20 +63,21 @@ type Cluster struct {
 //nolint:lll
 type MGMTConfig struct {
 	*ibiconfig.IBIConfig
-	Cluster             *Cluster
-	ClusterInfoPath     string `envconfig:"ECO_LCA_IBI_MGMT_CLUSTER_INFO"`
-	SeedImage           string `envconfig:"ECO_LCA_IBI_MGMT_SEED_IMAGE" default:"quay.io/ocp-edge-qe/ib-seedimage-public:ci"`
-	SeedClusterInfo     *seedimage.SeedImageContent
-	SSHKeyPath          string `envconfig:"ECO_LCA_IBI_MGMT_SSHKEY_PATH"`
-	PublicSSHKey        string
-	StaticNetworking    bool   `envconfig:"ECO_LCA_IBI_MGMT_STATIC_NETWORK" default:"false"`
-	ExtraManifests      bool   `envconfig:"ECO_LCA_IBI_EXTRA_MANIFESTS" default:"true"`
-	CABundle            bool   `envconfig:"ECO_LCA_IBI_CA_BUNDLE" default:"true"`
-	SiteConfig          bool   `envconfig:"ECO_LCA_IBI_SITECONFIG" default:"true"`
-	ExtraPartName       string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_NAME" default:""`
-	ExtraPartSizeMib    string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_SIZE" default:"50000"`
-	Reinstall           *ReinstallConfig
-	ReinstallConfigFile string `envconfig:"ECO_LCA_IBI_REINSTALL_CONFIG_FILE" default:""`
+	Cluster                  *Cluster
+	ClusterInfoPath          string `envconfig:"ECO_LCA_IBI_MGMT_CLUSTER_INFO"`
+	SeedImage                string `envconfig:"ECO_LCA_IBI_MGMT_SEED_IMAGE" default:"quay.io/ocp-edge-qe/ib-seedimage-public:ci"`
+	SeedClusterInfo          *seedimage.SeedImageContent
+	SSHKeyPath               string `envconfig:"ECO_LCA_IBI_MGMT_SSHKEY_PATH"`
+	PublicSSHKey             string
+	StaticNetworking         bool   `envconfig:"ECO_LCA_IBI_MGMT_STATIC_NETWORK" default:"false"`
+	ExtraManifests           bool   `envconfig:"ECO_LCA_IBI_EXTRA_MANIFESTS" default:"true"`
+	CABundle                 bool   `envconfig:"ECO_LCA_IBI_CA_BUNDLE" default:"true"`
+	SiteConfig               bool   `envconfig:"ECO_LCA_IBI_SITECONFIG" default:"true"`
+	ExtraPartName            string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_NAME" default:""`
+	ExtraPartSizeMib         string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_SIZE" default:"50000"`
+	Reinstall                *ReinstallConfig
+	ReinstallConfigFile      string `envconfig:"ECO_LCA_IBI_REINSTALL_CONFIG_FILE" default:""`
+	ReinstallGenerationLabel string `envconfig:"ECO_LCA_IBI_REINSTALL_GENERATION" default:"generate1"`
 }
 
 // ReinstallConfig is used to collect info for performing resinstall test.

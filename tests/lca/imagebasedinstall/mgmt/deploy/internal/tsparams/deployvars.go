@@ -16,6 +16,9 @@ var (
 	// Labels represents the range of labels that can be used for test cases selection.
 	Labels = append(mgmtparams.Labels, LabelSuite)
 
+	// RHACMNamespace holds the namespace for ACM resources.
+	RHACMNamespace = "rhacm"
+
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
 		mgmtparams.IBIONamespace: "ibio",
