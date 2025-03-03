@@ -34,6 +34,8 @@ const (
 	BGPTestPeer = "testpeer"
 	// FrrK8WebHookServer is the web hook server running in namespace metallb-system.
 	FrrK8WebHookServer = "frr-k8s-webhook-server"
+	// MetallbServiceName is the name of the metallb service.
+	MetallbServiceName = "service-1"
 	// BlockBGPBFDPorts adds an input rule blocking TCP & UDP ports for BGP and BFD.
 	// chain custom_chain_INPUT {
 	//    type filter hook input priority 1; policy accept;

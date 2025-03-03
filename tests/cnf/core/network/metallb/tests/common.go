@@ -11,6 +11,7 @@ import (
 	typesGomega "github.com/onsi/gomega/types"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
+	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -35,15 +36,16 @@ import (
 
 // test cases variables that are accessible across entire package.
 var (
-	ipv4metalLbIPList []string
-	ipv4NodeAddrList  []string
-	ipv6metalLbIPList []string
-	ipv6NodeAddrList  []string
-	cnfWorkerNodeList []*nodes.Builder
-	workerNodeList    []*nodes.Builder
-	masterNodeList    []*nodes.Builder
-	workerLabelMap    map[string]string
-	metalLbTestsLabel = map[string]string{"metallb": "metallbtests"}
+	ipv4metalLbIPList  []string
+	ipv4NodeAddrList   []string
+	ipv6metalLbIPList  []string
+	ipv6NodeAddrList   []string
+	cnfWorkerNodeList  []*nodes.Builder
+	workerNodeList     []*nodes.Builder
+	masterNodeList     []*nodes.Builder
+	workerLabelMap     map[string]string
+	metalLbTestsLabel  = map[string]string{"metallb": "metallbtests"}
+	frrK8WebHookServer = "frr-k8s-webhook-server"
 )
 
 func removeNodeLabel(workerNodeList []*nodes.Builder, nodeSelector map[string]string) {
@@ -156,6 +158,25 @@ func createBGPPeerAndVerifyIfItsReady(
 	}
 }
 
+func setupBgpAdvertisementAndIPAddressPool(addressPool []string, prefixLen int) *metallb.IPAddressPoolBuilder {
+	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
+		APIClient,
+		"addresspool",
+		NetConfig.MlbOperatorNamespace,
+		[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
+
+	_, err = metallb.
+		NewBGPAdvertisementBuilder(APIClient, "bgpadvertisement", NetConfig.MlbOperatorNamespace).
+		WithIPAddressPools([]string{ipAddressPool.Definition.Name}).
+		WithCommunities([]string{"65535:65282"}).
+		WithLocalPref(100).
+		WithAggregationLength4(int32(prefixLen)).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
+
+	return ipAddressPool
+}
+
 func setupBgpAdvertisement(
 	name,
 	communities,
@@ -174,20 +195,6 @@ func setupBgpAdvertisement(
 
 	_, err := builder.Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
-}
-
-func setupBgpAdvertisementAndIPAddressPool(addressPool []string) *metallb.IPAddressPoolBuilder {
-	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
-		APIClient,
-		"address-pool",
-		NetConfig.MlbOperatorNamespace,
-		[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
-
-	setupBgpAdvertisement("bgpadvertisement", tsparams.NoAdvertiseCommunity, ipAddressPool.Definition.Name,
-		100, []string{}, []metav1.LabelSelector{})
-
-	return ipAddressPool
 }
 
 func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
@@ -297,7 +304,6 @@ func setupMetalLbService(
 	extTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
 	servicePort, err := service.DefineServicePort(80, 80, "TCP")
 	Expect(err).ToNot(HaveOccurred(), "Failed to define service port")
-
 	_, err = service.NewBuilder(APIClient, name, tsparams.TestNamespaceName,
 		map[string]string{"app": "nginx1"}, *servicePort).
 		WithExternalTrafficPolicy(extTrafficPolicy).
@@ -362,7 +368,7 @@ func metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
 }
 
 func resetOperatorAndTestNS() {
-	By("Cleaning MetalLb operator namespace")
+	By("Cleaning MetalLb and openshift-frr-k8s operator namespaces")
 
 	metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
@@ -374,6 +380,13 @@ func resetOperatorAndTestNS() {
 		metallb.GetBGPAdvertisementGVR(),
 		metallb.GetIPAddressPoolGVR(),
 		metallb.GetMetalLbIoGVR(),
+	)
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
+
+	frrk8sNs, err := namespace.Pull(APIClient, NetConfig.Frrk8sNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull openshift-frr-k8s operator namespace")
+	err = frrk8sNs.CleanObjects(
+		tsparams.DefaultTimeout,
 		metallb.GetFrrConfigurationGVR())
 	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
@@ -389,21 +402,27 @@ func resetOperatorAndTestNS() {
 }
 
 func validatePrefix(
-	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string) {
-	Eventually(
-		frr.GetBGPStatus, time.Minute, tsparams.DefaultRetryInterval).
-		WithArguments(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test").ShouldNot(BeNil())
+	masterNodeFRRPod *pod.Builder, ipProtoVersion string, prefix int, workerNodesAddresses, addressPool []string) {
+	Eventually(func() bool {
+		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+		if err != nil {
+			return false
+		}
+
+		return len(bgpStatus.Routes) > 0
+	}, time.Minute, tsparams.DefaultRetryInterval).
+		Should(BeTrue(), "Expected BGP status to contain routes, but it was empty")
 
 	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
 	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
-	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], 32))
+	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefix))
 	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
 	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
 
 	var nextHopAddresses []string
 
 	for _, route := range bgpStatus.Routes[subnet.String()] {
-		Expect(route.PrefixLen).To(BeNumerically("==", 32),
+		Expect(route.PrefixLen).To(BeNumerically("==", prefix),
 			"Failed prefix length is not in expected value")
 
 		for _, nHop := range route.Nexthops {
@@ -422,4 +441,39 @@ func removePrefixFromIPList(ipAddressList []string) []string {
 	}
 
 	return ipAddressListWithoutPrefix
+}
+
+func verifyAndCreateFRRk8sPodList() []*pod.Builder {
+	frrk8sWebhookDeployment, err := deployment.Pull(
+		APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
+	Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
+		"frr-k8s-webhook-server deployment is not ready")
+
+	frrk8sPods := []*pod.Builder{}
+
+	for _, node := range cnfWorkerNodeList {
+		var frrk8sPodList []*pod.Builder
+
+		Eventually(func() error {
+			pods, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name),
+				LabelSelector: tsparams.FRRK8sDefaultLabel,
+			})
+			if err != nil {
+				return err
+			}
+			if len(pods) == 0 {
+				return fmt.Errorf("no FRR k8s pod found on node %s", node.Definition.Name)
+			}
+
+			frrk8sPodList = pods
+
+			return nil
+		}, 30*time.Second, 2*time.Second).Should(Succeed(), "Failed to find FRR k8s pod on node %s", node.Definition.Name)
+
+		frrk8sPods = append(frrk8sPods, frrk8sPodList[0])
+	}
+
+	return frrk8sPods
 }

@@ -221,12 +221,14 @@ func setupTestCase(ipAddressPool1, ipAddressPool2 *metallb.IPAddressPoolBuilder,
 	By("Creating static ip annotation for FRR master 0")
 
 	staticIPAnnotation0 := pod.StaticIPAnnotation(
-		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], netparam.IPSubnet24)})
+		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0],
+			netparam.IPSubnet24)})
 
 	By("Creating static ip annotation for FRR master 1")
 
 	staticIPAnnotation1 := pod.StaticIPAnnotation(
-		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[1], netparam.IPSubnet24)})
+		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[1],
+			netparam.IPSubnet24)})
 
 	By("Creating MetalLb configMap for FRR master pods")
 
@@ -243,13 +245,11 @@ func setupTestCase(ipAddressPool1, ipAddressPool2 *metallb.IPAddressPoolBuilder,
 		masterNodeList[1].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation1, "frr-master1")
 
 	By("Create two BGPPeers")
-	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
-		tsparams.LocalBGPASN, false,
-		0, frrk8sPods)
+	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "", tsparams.LocalBGPASN,
+		false, 0, frrk8sPods)
 
-	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName2, ipv4metalLbIPList[1], "",
-		tsparams.LocalBGPASN, false,
-		0, frrk8sPods)
+	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName2, ipv4metalLbIPList[1], "", tsparams.LocalBGPASN,
+		false, 0, frrk8sPods)
 
 	return frrPod0, frrPod1
 }
@@ -263,8 +263,10 @@ func verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1 *pod.Builder, nodeAddrLis
 	verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod1, removePrefixFromIPList(ipv4NodeAddrList))
 
 	By("Validating BGP route prefix on Frr Master 0")
-	validatePrefix(frrPod0, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool1)
+	validatePrefix(frrPod0, netparam.IPV4Family, netparam.IPSubnetInt32,
+		removePrefixFromIPList(nodeAddrList), addressPool1)
 
 	By("Validating BGP route prefix on Frr Master 1")
-	validatePrefix(frrPod1, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool2)
+	validatePrefix(frrPod1, netparam.IPV4Family, netparam.IPSubnetInt32,
+		removePrefixFromIPList(nodeAddrList), addressPool2)
 }

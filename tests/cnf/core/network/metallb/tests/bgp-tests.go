@@ -65,15 +65,12 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err := define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
-		By("Listing metalLb speakers pod")
-		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-			LabelSelector: tsparams.FRRK8sDefaultLabel,
-		})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
-		Expect(len(frrk8sPods)).To(BeNumerically(">", 0),
-			"Failed the number of frr speaker pods is 0")
-		createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
-			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0, frrk8sPods)
+		By("Verifying that the frrk8sPod deployment is in Ready state and create a list of the pods on " +
+			"worker nodes.")
+		frrk8sPods = verifyAndCreateFRRk8sPodList()
+
+		createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+			tsparams.LocalBGPASN, false, 0, frrk8sPods)
 	})
 
 	AfterEach(func() {
@@ -107,8 +104,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					Skip("bgp test cases doesn't support ipv6 yet")
 				}
 
-				createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
-					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
+				createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+					tsparams.LocalBGPASN, false, 0,
 					frrk8sPods)
 
 				By("Setting test iteration parameters")
@@ -129,7 +126,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 				By("Creating an IPAddressPool and BGPAdvertisement")
-				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool)
+				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool, prefixLen)
 
 				By("Creating a MetalLB service")
 				setupMetalLbService("service-1", ipStack, ipAddressPool, "Cluster")
@@ -141,7 +138,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(nodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, ipStack, removePrefixFromIPList(nodeAddrList), addressPool)
+				validatePrefix(frrPod, ipStack, prefixLen, removePrefixFromIPList(nodeAddrList), addressPool)
 			},
 
 			Entry("", netparam.IPV4Family, 32,
@@ -161,7 +158,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		It("provides Prometheus BGP metrics", reportxml.ID("47202"), func() {
 			By("Creating static ip annotation")
 			staticIPAnnotation := pod.StaticIPAnnotation(
-				frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})
+				frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0],
+					netparam.IPSubnet24)})
 
 			By("Creating MetalLb configMap")
 			masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
@@ -170,9 +168,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			frrPod := createFrrPod(
 				masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
-				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
-				frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 			By("Checking that BGP session is established and up")
 			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))

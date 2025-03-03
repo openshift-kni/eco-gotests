@@ -135,10 +135,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 
 			AfterEach(func() {
 				By("Removing static routes from the speakers")
-				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-					LabelSelector: tsparams.FRRK8sDefaultLabel,
-				})
-				Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
+				frrk8sPods := verifyAndCreateFRRk8sPodList()
 
 				speakerRoutesMap, err := netenv.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
 					[]string{ipv4metalLbIPList[0], ipv4metalLbIPList[1], frrNodeSecIntIPv4Addresses[0],
@@ -240,10 +237,7 @@ func setupBGPRemoteASTestCase(hubIPv4ExternalAddresses, externalAdvertisedIPv4Ro
 
 	By("Collect connection information for the Frr Node pods")
 
-	frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-		LabelSelector: tsparams.FRRK8sDefaultLabel,
-	})
-	Expect(err).ToNot(HaveOccurred(), "Failed to list frr pods")
+	frrk8sPods := verifyAndCreateFRRk8sPodList()
 
 	By("Collect connection information for the Frr external pod")
 
@@ -266,10 +260,8 @@ func setupBGPRemoteASMultiHopTest(ipv4metalLbIPList, hubIPv4ExternalAddresses, e
 
 	By("Collecting information before test")
 
-	frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-		LabelSelector: tsparams.FRRK8sNodeLabel,
-	})
-	Expect(err).ToNot(HaveOccurred(), "Failed to list frrk8 pods")
+	frrk8sPods := verifyAndCreateFRRk8sPodList()
+
 	By("Setting test parameters")
 
 	masterClientPodIP, _, _, nodeAddrList, _, _, err :=
@@ -291,15 +283,15 @@ func setupBGPRemoteASMultiHopTest(ipv4metalLbIPList, hubIPv4ExternalAddresses, e
 
 	hub0BRstaticIPAnnotation := frrconfig.CreateStaticIPAnnotations(frrconfig.ExternalMacVlanNADName,
 		tsparams.HubMacVlanNADName,
-		[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[0])},
-		[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[0])})
+		[]string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], netparam.IPSubnet24)},
+		[]string{fmt.Sprintf("%s/%s", hubIPv4ExternalAddresses[0], netparam.IPSubnet24)})
 
 	By("Creating static ip annotation for hub1")
 
 	hub1BRstaticIPAnnotation := frrconfig.CreateStaticIPAnnotations(frrconfig.ExternalMacVlanNADName,
 		tsparams.HubMacVlanNADName,
-		[]string{fmt.Sprintf("%s/24", ipv4metalLbIPList[1])},
-		[]string{fmt.Sprintf("%s/24", hubIPv4ExternalAddresses[1])})
+		[]string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[1], netparam.IPSubnet24)},
+		[]string{fmt.Sprintf("%s/%s", hubIPv4ExternalAddresses[1], netparam.IPSubnet24)})
 
 	By("Creating MetalLb Hub pod configMap")
 
