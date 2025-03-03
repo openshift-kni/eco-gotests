@@ -118,7 +118,7 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, node
 	glog.V(90).Infof("Verifying if the FRR webhook server is deployed and ready")
 
 	// Check FRR Webhook Server Readiness **(LAST STEP)**
-	frrk8sWebhookDeployment, err := deployment.Pull(APIClient, tsparams.FrrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+	frrk8sWebhookDeployment, err := deployment.Pull(APIClient, tsparams.FrrK8WebHookServer, NetConfig.Frrk8sNamespace)
 	if err != nil {
 		return fmt.Errorf("failed to pull the frrk8s webhook server: %w", err)
 	}
@@ -214,7 +214,7 @@ func DefineIterationParams(
 	switch ipFamily {
 	case netparam.IPV4Family:
 		return "172.16.0.1",
-			netparam.IPSubnet24,
+			"24",
 			ipv4AddrList,
 			nodeExtIPv4AddrList,
 			[]string{"3.3.3.1", "3.3.3.240"},
@@ -223,7 +223,7 @@ func DefineIterationParams(
 
 	case netparam.IPV6Family:
 		return "2002:1:1::3",
-			netparam.IPSubnet64,
+			"64",
 			ipv6AddrList,
 			nodeExtIPv6AddrList,
 			[]string{"2002:2:2::1", "2002:2:2::5"},

@@ -65,11 +65,15 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err := metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-		By("Collecting information before test")
-		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-			LabelSelector: tsparams.FRRK8sDefaultLabel,
-		})
-		Expect(err).ToNot(HaveOccurred(), "Failed to list frr pods")
+		By("Collecting frrk8sPod list")
+		frrk8sPods = []*pod.Builder{}
+		for _, node := range cnfWorkerNodeList {
+			frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+			})
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+			frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+		}
 	})
 
 	AfterEach(func() {
@@ -101,8 +105,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		reportxml.ID("74414"), func() {
 
 			By("Creating BGP Peers with 10 second retry connect timer")
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
-				64500, false, 10, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 10, frrk8sPods)
 
 			By("Validate BGP Peers with 10 second retry connect timer")
 			Eventually(func() int {
@@ -123,8 +127,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			frrPod := createAndDeployFRRPod()
 
 			By("Creating BGP Peers with 10 second retry connect timer")
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
-				64500, false, 10, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 10, frrk8sPods)
 
 			By("Validate BGP Peers with 10 second retry connect timer")
 			Eventually(func() int {
@@ -149,8 +153,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		reportxml.ID("74417"), func() {
 
 			By("Creating BGP Peers")
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
-				64500, false, 0, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 			By("Validate BGP Peers with the default retry connect timer")
 			Eventually(func() int {
@@ -164,7 +168,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				"Failed to fetch BGP connect time")
 
 			By("Update the BGP Peers connect timer to 10 seconds")
-			bgpPeer, err := metallb.PullBGPPeer(APIClient, "testpeer", NetConfig.MlbOperatorNamespace)
+			bgpPeer, err := metallb.PullBGPPeer(APIClient, tsparams.BgpPeerName1, NetConfig.MlbOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to find bgp peer")
 
 			_, err = bgpPeer.WithConnectTime(metav1.Duration{Duration: 10 * time.Second}).Update(true)
