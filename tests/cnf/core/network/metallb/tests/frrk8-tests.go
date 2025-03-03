@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -29,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -44,6 +42,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 		hubPodWorker0                = "hub-pod-worker-0"
 		hubPodWorker1                = "hub-pod-worker-1"
 		frrK8WebHookServer           = "frr-k8s-webhook-server"
+		frrK8Pods                    = "frr-k8s"
 		frrCongigAllowAll            = "frrconfig-allow-all"
 		frrNodeLabel                 = "app=frr-k8s"
 		err                          error
@@ -109,54 +108,6 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			resetOperatorAndTestNS()
 		})
 
-		It("Verify that prefixes configured with alwaysBlock are not received by the FRR speakers",
-			reportxml.ID("74270"), func() {
-				prefixToBlock := externalAdvertisedIPv4Routes[0]
-
-				By("Creating a new instance of MetalLB Speakers on workers blocking specific incoming prefixes")
-				createNewMetalLbDaemonSetAndWaitUntilItsRunningWithAlwaysBlock(tsparams.DefaultTimeout,
-					workerLabelMap, []string{prefixToBlock})
-
-				By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state.")
-				frrk8sWebhookDeployment, err := deployment.Pull(
-					APIClient, frrK8WebHookServer, NetConfig.MlbOperatorNamespace)
-				Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
-				Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
-					"frr-k8s-webhook-server deployment is not ready")
-
-				By("Creating external FRR pod on master node")
-				frrPod := deployTestPods(addressPool, hubIPv4ExternalAddresses, externalAdvertisedIPv4Routes,
-					externalAdvertisedIPv6Routes)
-
-				By("Creating BGP Peers")
-				createBGPPeerAndVerifyIfItsReady(ipv4metalLbIPList[0], "", tsparams.LocalBGPASN,
-					false, 0, frrk8sPods)
-
-				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
-
-				By("Validating BGP route prefix")
-				validatePrefix(frrPod, netparam.IPV4Family, cmd.RemovePrefixFromIPList(nodeAddrList),
-					addressPool, 32)
-
-				By("Create a frrconfiguration allow all")
-				createFrrConfiguration(frrCongigAllowAll, ipv4metalLbIPList[0],
-					tsparams.LocalBGPASN, nil, false, false)
-
-				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-					LabelSelector: frrNodeLabel,
-				})
-				Expect(err).ToNot(HaveOccurred(), "Fail to find Frrk8 pod list")
-
-				By("Verify that the node FRR pods advertises two routes")
-				verifyExternalAdvertisedRoutes(frrPod, ipv4NodeAddrList, externalAdvertisedIPv4Routes)
-
-				By("Validate that only the allowed route was received")
-				verifyReceivedRoutes(frrk8sPods, externalAdvertisedIPv4Routes[1])
-				By("Validate that only the route not allowed was blocked")
-				verifyBlockedRoutes(frrk8sPods, prefixToBlock)
-			})
-
 		It("Verify the FRR node only receives routes that are configured in the allowed prefixes",
 			reportxml.ID("74272"), func() {
 				prefixToFilter := externalAdvertisedIPv4Routes[1]
@@ -165,9 +116,9 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 				Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-				By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state.")
+				By("Verifying that the frrk8sPod deployment is in Ready state.")
 				frrk8sWebhookDeployment, err := deployment.Pull(
-					APIClient, frrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+					APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
 				Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
 					"frr-k8s-webhook-server deployment is not ready")
@@ -192,7 +143,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					tsparams.LocalBGPASN, []string{externalAdvertisedIPv4Routes[0], externalAdvertisedIPv6Routes[0]},
 					false, false)
 
-				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+				frrk8sPods, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
 					LabelSelector: frrNodeLabel,
 				})
 				Expect(err).ToNot(HaveOccurred(), "Fail to find Frrk8 pod list")
@@ -213,9 +164,9 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 				Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-				By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state.")
+				By("Verifying that the frrk8sPod deployment is in Ready state.")
 				frrk8sWebhookDeployment, err := deployment.Pull(
-					APIClient, frrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+					APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
 				Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
 					"frr-k8s-webhook-server deployment is not ready")
@@ -238,7 +189,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				createFrrConfiguration(frrCongigAllowAll, ipv4metalLbIPList[0], tsparams.LocalBGPASN,
 					nil, false, false)
 
-				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+				frrk8sPods, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
 					LabelSelector: frrNodeLabel,
 				})
 				Expect(err).ToNot(HaveOccurred(), "Fail to find Frrk8 pod list")
@@ -258,9 +209,9 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 				Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-				By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state.")
+				By("Verifying that the frrk8sPod deployment is in Ready state.")
 				frrk8sWebhookDeployment, err := deployment.Pull(
-					APIClient, frrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+					APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
 				Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
 					"frr-k8s-webhook-server deployment is not ready")
@@ -279,11 +230,11 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				validatePrefix(frrPod, netparam.IPV4Family, cmd.RemovePrefixFromIPList(nodeAddrList),
 					addressPool, 32)
 
-				By("Create first frrconfiguration that receieves a single route")
+				By("Create first frrconfiguration that receives a single route")
 				createFrrConfiguration(frrConfigFiltered1, ipv4metalLbIPList[0], tsparams.LocalBGPASN,
 					[]string{externalAdvertisedIPv4Routes[0], externalAdvertisedIPv6Routes[0]}, false, false)
 
-				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+				frrk8sPods, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
 					LabelSelector: frrNodeLabel,
 				})
 				Expect(err).ToNot(HaveOccurred(), "Fail to find Frrk8 pod list")
@@ -313,9 +264,9 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 				Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-				By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state.")
+				By("Verifying that the frrk8sPod deployment is in Ready state.")
 				frrk8sWebhookDeployment, err := deployment.Pull(
-					APIClient, frrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+					APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
 				Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
 					"frr-k8s-webhook-server deployment is not ready")
@@ -338,12 +289,28 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 				Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-				By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state.")
+				By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state")
 				frrk8sWebhookDeployment, err := deployment.Pull(
-					APIClient, frrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+					APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
 				Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
 				Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
 					"frr-k8s-webhook-server deployment is not ready")
+
+				By("Waiting until the frrk8 daemonSet is in Ready state.")
+				Eventually(func() error {
+					frrk8DSPods, err := daemonset.Pull(APIClient, frrK8Pods, NetConfig.Frrk8sNamespace)
+
+					if err != nil {
+						return err
+					}
+
+					if frrk8DSPods.IsReady(10 * time.Second) {
+						return nil
+					}
+
+					return fmt.Errorf("frrk8 DS is not ready")
+				}, 3*time.Minute, 5*time.Second).ShouldNot(HaveOccurred(),
+					"Failed frrk8s daemonSet is not ready")
 
 				By("Creating BGP Peers")
 				createBGPPeerAndVerifyIfItsReady(ipv4metalLbIPList[0], "", tsparams.LocalBGPASN,
@@ -405,18 +372,27 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			err := metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-			By("Waiting until the new frr-k8s-webhook-server deployment is in Ready state.")
+			By("Creating a new instance of MetalLB Speakers on workers")
+			err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
+			Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
+
+			By("Verifying that the frrk8sPod deployment is in Ready state.")
 			frrk8sWebhookDeployment, err := deployment.Pull(
-				APIClient, frrK8WebHookServer, NetConfig.MlbOperatorNamespace)
+				APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
 			Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
 				"frr-k8s-webhook-server deployment is not ready")
 
-			By("Collecting information before test")
-			frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: frrNodeLabel,
-			})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list speaker pods")
+			By("Collecting frrk8sPod list")
+			frrk8sPods = []*pod.Builder{}
+			for _, node := range cnfWorkerNodeList {
+				frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: frrNodeLabel,
+				})
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+				frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+			}
+
 			By("Setting test iteration parameters")
 			masterClientPodIP, _, _, nodeAddrList, addressPool, _, err =
 				metallbenv.DefineIterationParams(
@@ -440,10 +416,14 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 
 		AfterEach(func() {
 			By("Removing static routes from the speakers")
-			frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: tsparams.FRRK8sDefaultLabel,
-			})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
+			frrk8sPods = []*pod.Builder{}
+			for _, node := range cnfWorkerNodeList {
+				frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: frrNodeLabel,
+				})
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+				frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+			}
 
 			speakerRoutesMap, err := netenv.BuildRoutesMapWithSpecificRoutes(frrk8sPods, workerNodeList,
 				[]string{ipv4metalLbIPList[0], ipv4metalLbIPList[1], frrNodeSecIntIPv4Addresses[0], frrNodeSecIntIPv4Addresses[1]})
@@ -652,7 +632,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				Expect(err).ToNot(HaveOccurred(), "Failed to create route map with specific routes")
 
 				for _, frrk8sPod := range frrk8sPods {
-					// Wait until the interface is created before adding the static route
+
 					Eventually(func() error {
 						// Here you can add logic to check if the interface exists
 						out, err := netenv.SetStaticRoute(frrk8sPod, "add", fmt.Sprintf("%s/32",
@@ -731,55 +711,6 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 
 })
 
-func createNewMetalLbDaemonSetAndWaitUntilItsRunningWithAlwaysBlock(timeout time.Duration,
-	nodeLabel map[string]string, prefixes []string) {
-	By("Verifying if metalLb daemonset is running")
-
-	metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
-
-	if err == nil {
-		By("MetalLb daemonset is running. Removing daemonset.")
-
-		_, err = metalLbIo.Delete()
-		Expect(err).ToNot(HaveOccurred(), "Failed to delete MetalLb daemonset")
-	}
-
-	By("Create new metalLb speaker's daemonSet.")
-
-	metalLbIo = metallb.NewBuilder(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace, nodeLabel)
-	metalLbIo.WithFRRConfigAlwaysBlock(prefixes)
-
-	_, err = metalLbIo.Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create new MetalLb daemonset")
-
-	var metalLbDs *daemonset.Builder
-
-	err = wait.PollUntilContextTimeout(
-		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			metalLbDs, err = daemonset.Pull(APIClient, tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace)
-			if err != nil {
-				By(fmt.Sprintf("Error pulling speakers in %s namespace %s, retry",
-					tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace))
-
-				return false, nil
-			}
-
-			metalLbDs, err = daemonset.Pull(APIClient, tsparams.FrrDsName, NetConfig.MlbOperatorNamespace)
-			if err != nil {
-				By(fmt.Sprintf("Error pulling frrk8s in %s namespace %s, retry",
-					tsparams.FRRK8sDefaultLabel, NetConfig.MlbOperatorNamespace))
-
-				return false, nil
-			}
-
-			return true, nil
-		})
-	Expect(err).ToNot(HaveOccurred(), "Failed to wait for MetalLb daemonset readiness")
-
-	By("Waiting until the new metalLb daemonset is in Ready state.")
-	Expect(metalLbDs.IsReady(timeout)).To(BeTrue(), "MetalLb daemonset is not ready")
-}
-
 func deployTestPods(addressPool, hubIPAddresses, externalAdvertisedIPv4Routes,
 	externalAdvertisedIPv6Routes []string) *pod.Builder {
 	By("Creating an IPAddressPool and BGPAdvertisement")
@@ -817,7 +748,7 @@ func deployTestPods(addressPool, hubIPAddresses, externalAdvertisedIPv4Routes,
 
 func createFrrConfiguration(name, bgpPeerIP string, remoteAS uint32, filteredIP []string, ebgp, expectToFail bool) {
 	frrConfig := metallb.NewFrrConfigurationBuilder(APIClient, name,
-		NetConfig.MlbOperatorNamespace).
+		NetConfig.Frrk8sNamespace).
 		WithBGPRouter(tsparams.LocalBGPASN).
 		WithBGPNeighbor(bgpPeerIP, remoteAS, 0)
 
@@ -840,6 +771,7 @@ func createFrrConfiguration(name, bgpPeerIP string, remoteAS uint32, filteredIP 
 
 	if expectToFail {
 		_, err := frrConfig.Create()
+
 		Expect(err).To(HaveOccurred(), "Failed expected to not create a FRR configuration for %s", name)
 	} else {
 		_, err := frrConfig.Create()

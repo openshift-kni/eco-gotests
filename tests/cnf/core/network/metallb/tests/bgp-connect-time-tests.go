@@ -65,11 +65,15 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err := metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-		By("Collecting information before test")
-		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-			LabelSelector: tsparams.FRRK8sDefaultLabel,
-		})
-		Expect(err).ToNot(HaveOccurred(), "Failed to list frr pods")
+		By("Collecting frrk8sPod list")
+		frrk8sPods = []*pod.Builder{}
+		for _, node := range cnfWorkerNodeList {
+			frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+			})
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+			frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+		}
 	})
 
 	AfterEach(func() {

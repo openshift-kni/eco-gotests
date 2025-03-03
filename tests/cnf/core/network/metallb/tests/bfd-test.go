@@ -68,11 +68,15 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 	Context("single hop", Label("singlehop"), func() {
 		BeforeEach(func() {
-			By("Collect running metallb bgp speakers")
-			frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: tsparams.FRRK8sDefaultLabel,
-			})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
+			By("Collecting frrk8sPod list")
+			frrk8sPods := []*pod.Builder{}
+			for _, node := range cnfWorkerNodeList {
+				frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+				})
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+				frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+			}
 			bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
 			createBGPPeerAndVerifyIfItsReady(
@@ -104,6 +108,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		It("basic functionality should provide fast link failure detection", reportxml.ID("47188"), func() {
 			scaleDownMetalLbSpeakers()
+			// time.Sleep(20 * time.Minute)
 			testBFDFailOver()
 			testBFDFailBack()
 		})
@@ -154,14 +159,19 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 	})
 
 	Context("multihop", Label("multihop"), func() {
+		var err error
 		speakerRoutesMap := make(map[string]string)
 
 		BeforeEach(func() {
-			By("Collecting information before test")
-			frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-				LabelSelector: tsparams.FRRK8sDefaultLabel,
-			})
-			Expect(err).ToNot(HaveOccurred(), "Failed to list speaker pods")
+			By("Collecting frrk8sPod list")
+			frrk8sPods := []*pod.Builder{}
+			for _, node := range cnfWorkerNodeList {
+				frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+				})
+				Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+				frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+			}
 
 			speakerRoutesMap, err = buildRoutesMap(frrk8sPods, ipv4metalLbIPList)
 			Expect(err).ToNot(HaveOccurred(), "Failed to build speaker route map")
@@ -232,10 +242,15 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				}
 
 				By("Collecting running MetalLB speakers")
-				frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-					LabelSelector: tsparams.FRRK8sDefaultLabel,
-				})
-				Expect(err).ToNot(HaveOccurred(), "Failed to list metalLb speaker pods")
+				frrk8sPods := []*pod.Builder{}
+				for _, node := range cnfWorkerNodeList {
+					frrk8sPod, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+						FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name), LabelSelector: tsparams.FRRK8sDefaultLabel,
+					})
+					Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create frrk8sPods list: %v", err))
+					frrk8sPods = append(frrk8sPods, frrk8sPod[0])
+				}
+
 				bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
 				neighbourASN := uint32(tsparams.LocalBGPASN)
@@ -305,7 +320,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 						frrconfig.ContainerName, speakerRoutesMap)
 					Expect(err).ToNot(HaveOccurred(), out)
 				}
-
+				// time.Sleep(30 * time.Minute)
 				By("Checking that BGP and BFD sessions are established and up")
 				verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(nodeAddrList))
 

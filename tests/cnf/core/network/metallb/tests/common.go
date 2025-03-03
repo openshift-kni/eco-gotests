@@ -345,6 +345,13 @@ func resetOperatorAndTestNS() {
 		metallb.GetBGPAdvertisementGVR(),
 		metallb.GetIPAddressPoolGVR(),
 		metallb.GetMetalLbIoGVR(),
+	)
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
+
+	frrk8sNs, err := namespace.Pull(APIClient, NetConfig.Frrk8sNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
+	err = frrk8sNs.CleanObjects(
+		tsparams.DefaultTimeout,
 		metallb.GetFrrConfigurationGVR())
 	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
