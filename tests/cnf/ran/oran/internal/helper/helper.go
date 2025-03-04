@@ -227,3 +227,29 @@ func WaitForPolicyVersion(client *clients.Settings, namespace, policyVersion str
 			return true, nil
 		})
 }
+
+// WaitForPRPolicyVersion waits up to timeout until all of the policies on the provided ProvisioningRequest have
+// policyVersion.
+func WaitForPRPolicyVersion(
+	prBuilder *oran.ProvisioningRequestBuilder, policyVersion string, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			// Exists will update the Object with the latest ProvisioningRequest.
+			if !prBuilder.Exists() {
+				glog.V(tsparams.LogLevel).Infof("Failed to verify ProvisioningRequest %s exists", prBuilder.Definition.Name)
+
+				return false, nil
+			}
+
+			for _, policyDetail := range prBuilder.Object.Status.Extensions.Policies {
+				if !strings.HasPrefix(policyDetail.PolicyName, policyVersion) {
+					glog.V(tsparams.LogLevel).Infof("Policy %s does not match expected policy version %s",
+						policyDetail.PolicyName, policyVersion)
+
+					return false, nil
+				}
+			}
+
+			return true, nil
+		})
+}
