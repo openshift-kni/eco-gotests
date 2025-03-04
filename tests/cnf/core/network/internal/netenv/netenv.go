@@ -13,7 +13,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netconfig"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	v2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,4 +173,64 @@ func DeployPerformanceProfile(
 	}
 
 	return mcp.WaitToBeStableFor(time.Minute, netparam.MCOWaitTimeout)
+}
+
+// RemoveSriovConfigurationAndWaitForSriovAndMCPStable removes all SR-IOV networks
+// and policies in SR-IOV operator namespace.
+func RemoveSriovConfigurationAndWaitForSriovAndMCPStable() error {
+	glog.V(90).Infof("Removing all SR-IOV networks and policies")
+
+	err := RemoveAllSriovNetworks()
+	if err != nil {
+		glog.V(90).Infof("Failed to remove all SR-IOV networks")
+
+		return err
+	}
+
+	err = removeAllPoliciesAndWaitForSriovAndMCPStable()
+	if err != nil {
+		glog.V(90).Infof("Failed to remove all SR-IOV policies")
+
+		return err
+	}
+
+	return nil
+}
+
+// RemoveAllSriovNetworks removes all SR-IOV networks.
+func RemoveAllSriovNetworks() error {
+	glog.V(90).Infof("Removing all SR-IOV networks")
+
+	sriovNs, err := namespace.Pull(netinittools.APIClient, netinittools.NetConfig.SriovOperatorNamespace)
+	if err != nil {
+		glog.V(90).Infof("Failed to pull SR-IOV operator namespace")
+
+		return err
+	}
+
+	err = sriovNs.CleanObjects(
+		netparam.DefaultTimeout,
+		sriov.GetSriovNetworksGVR())
+	if err != nil {
+		glog.V(90).Infof("Failed to remove SR-IOV networks from SR-IOV operator namespace")
+
+		return err
+	}
+
+	return nil
+}
+
+// removeAllPoliciesAndWaitForSriovAndMCPStable removes all  SriovNetworkNodePolicies and waits until
+// SR-IOV and MCP become stable.
+func removeAllPoliciesAndWaitForSriovAndMCPStable() error {
+	glog.V(90).Infof("Deleting all SriovNetworkNodePolicies and waiting for SR-IOV and MCP become stable.")
+
+	err := sriov.CleanAllNetworkNodePolicies(netinittools.APIClient, netinittools.NetConfig.SriovOperatorNamespace)
+	if err != nil {
+		return err
+	}
+
+	return WaitForSriovAndMCPStable(
+		netinittools.APIClient, netparam.MCOWaitTimeout, time.Minute, netinittools.NetConfig.CnfMcpLabel,
+		netinittools.NetConfig.SriovOperatorNamespace)
 }

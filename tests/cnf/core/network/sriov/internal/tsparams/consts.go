@@ -11,4 +11,6 @@ const (
 	LabelParallelDrainingTestCases = "paralleldraining"
 	// LabelQinQTestCases represents ExternallyManaged label that can be used for test cases selection.
 	LabelQinQTestCases = "qinq"
+	// LabelSriovMetricsTestCases represents Sriov Metrics Exporter label that can be used for test cases selection.
+	LabelSriovMetricsTestCases = "sriovmetrics"
 )

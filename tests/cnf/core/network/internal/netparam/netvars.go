@@ -27,4 +27,8 @@ var (
 	VtySh = []string{"vtysh", "-c"}
 	// MlxDeviceID is the Mellanox SRIOV device ID.
 	MlxDeviceID = "1017"
+	// ClusterMonitoringNSLabel represents Cluster Monitoring label for a NS to enable Prometheus Scraping.
+	ClusterMonitoringNSLabel = map[string]string{"openshift.io/cluster-monitoring": "true"}
+	// MlxVendorID is the Mellanox Sriov Vendor ID.
+	MlxVendorID = "15b3"
 )
