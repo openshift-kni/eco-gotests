@@ -89,6 +89,29 @@ func (builder *Builder) WithMultipleLabels(labels map[string]string) *Builder {
 	return builder
 }
 
+// RemoveLabels removes given label from Node metadata.
+func (builder *Builder) RemoveLabels(labels map[string]string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Removing labels %v from namespace %s", labels, builder.Definition.Name)
+
+	if len(labels) == 0 {
+		glog.V(100).Infof("labels to be removed cannot be empty")
+
+		builder.errorMsg = "labels to be removed cannot be empty"
+
+		return builder
+	}
+
+	for key := range labels {
+		delete(builder.Definition.Labels, key)
+	}
+
+	return builder
+}
+
 // WithOptions creates namespace with generic mutation options.
 func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	if valid, _ := builder.validate(); !valid {
