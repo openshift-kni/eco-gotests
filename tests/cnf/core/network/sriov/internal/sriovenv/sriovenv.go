@@ -138,51 +138,6 @@ func IsSriovDeployed() error {
 	return nil
 }
 
-// RemoveSriovConfigurationAndWaitForSriovAndMCPStable removes all SR-IOV networks
-// and policies in SR-IOV operator namespace.
-func RemoveSriovConfigurationAndWaitForSriovAndMCPStable() error {
-	glog.V(90).Infof("Removing all SR-IOV networks and policies")
-
-	err := RemoveAllSriovNetworks()
-	if err != nil {
-		glog.V(90).Infof("Failed to remove all SR-IOV networks")
-
-		return err
-	}
-
-	err = removeAllPoliciesAndWaitForSriovAndMCPStable()
-	if err != nil {
-		glog.V(90).Infof("Failed to remove all SR-IOV policies")
-
-		return err
-	}
-
-	return nil
-}
-
-// RemoveAllSriovNetworks removes all SR-IOV networks.
-func RemoveAllSriovNetworks() error {
-	glog.V(90).Infof("Removing all SR-IOV networks")
-
-	sriovNs, err := namespace.Pull(APIClient, NetConfig.SriovOperatorNamespace)
-	if err != nil {
-		glog.V(90).Infof("Failed to pull SR-IOV operator namespace")
-
-		return err
-	}
-
-	err = sriovNs.CleanObjects(
-		netparam.DefaultTimeout,
-		sriov.GetSriovNetworksGVR())
-	if err != nil {
-		glog.V(90).Infof("Failed to remove SR-IOV networks from SR-IOV operator namespace")
-
-		return err
-	}
-
-	return nil
-}
-
 // IsMellanoxDevice checks if a given network interface on a node is a Mellanox device.
 func IsMellanoxDevice(intName, nodeName string) bool {
 	glog.V(90).Infof("Checking if specific interface %s on node %s is a Mellanox device.", intName, nodeName)
@@ -347,18 +302,4 @@ func CreatePodsAndRunTraffic(
 	}
 
 	return cmd.ICMPConnectivityCheck(clientPod, serverIPs)
-}
-
-// removeAllPoliciesAndWaitForSriovAndMCPStable removes all  SriovNetworkNodePolicies and waits until
-// SR-IOV and MCP become stable.
-func removeAllPoliciesAndWaitForSriovAndMCPStable() error {
-	glog.V(90).Infof("Deleting all SriovNetworkNodePolicies and waiting for SR-IOV and MCP become stable.")
-
-	err := sriov.CleanAllNetworkNodePolicies(APIClient, NetConfig.SriovOperatorNamespace)
-	if err != nil {
-		return err
-	}
-
-	return netenv.WaitForSriovAndMCPStable(
-		APIClient, tsparams.MCOWaitTimeout, time.Minute, NetConfig.CnfMcpLabel, NetConfig.SriovOperatorNamespace)
 }
