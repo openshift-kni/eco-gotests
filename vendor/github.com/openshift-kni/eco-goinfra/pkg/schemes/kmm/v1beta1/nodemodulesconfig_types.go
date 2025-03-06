@@ -25,6 +25,7 @@ type ModuleConfig struct {
 	KernelVersion  string `json:"kernelVersion"`
 	ContainerImage string `json:"containerImage"`
 	// +kubebuilder:default=IfNotPresent
+	//+optional
 	ImagePullPolicy v1.PullPolicy `json:"imagePullPolicy"`
 	// When InsecurePull is true, the container image can be pulled without TLS.
 	InsecurePull bool `json:"insecurePull"`
@@ -40,6 +41,9 @@ type ModuleItem struct {
 	Name               string                   `json:"name"`
 	Namespace          string                   `json:"namespace"`
 	ServiceAccountName string                   `json:"serviceAccountName"`
+	//+optional
+	// tolerations define which tolerations should be added for every load/unload pod running on the node
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 type NodeModuleSpec struct {

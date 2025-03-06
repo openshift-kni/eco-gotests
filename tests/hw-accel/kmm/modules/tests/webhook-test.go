@@ -6,10 +6,10 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-version"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta1"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
-	"github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"

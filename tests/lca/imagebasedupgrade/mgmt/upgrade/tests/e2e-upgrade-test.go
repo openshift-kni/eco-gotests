@@ -29,6 +29,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/route"
+	kmmv1beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta1"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
@@ -42,7 +43,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/installconfig"
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
 	oplmV1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	kmmv1beta1 "github.com/rh-ecosystem-edge/kernel-module-management/api/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8sScheme "k8s.io/client-go/kubernetes/scheme"
 )

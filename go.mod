@@ -22,7 +22,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20250114063637-129b149f6ce9
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/openshift-kni/eco-goinfra v0.0.0-20250305205525-c44aa5285717 // latest
+	github.com/openshift-kni/eco-goinfra v0.0.0-20250306150601-69304dde3313 // latest
 	github.com/openshift-kni/k8sreporter v1.0.6
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20250120220331-9547280df193 // release-4.18
 	github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250114093602-01c00730991d // release-4.18
@@ -40,7 +40,6 @@ require (
 	github.com/operator-framework/api v0.28.0
 	github.com/povsister/scp v0.0.0-20240802064259-28781e87b246
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.78.2
-	github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20240925181841-898c27853e89 // release-2.2
 	github.com/stretchr/testify v1.10.0
 	github.com/vmware-tanzu/velero v1.13.2
 	github.com/walle/targz v0.0.0-20140417120357-57fe4206da5a
