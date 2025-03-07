@@ -321,13 +321,13 @@ func (builder *Builder) Delete() error {
 	err := builder.apiClient.Delete(
 		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
 
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 
 	builder.Object = nil
 
-	return err
+	return nil
 }
 
 // CreateAndWaitUntilReady creates a daemonset in the cluster and waits until the daemonset is available.
@@ -356,6 +356,17 @@ func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder
 				return false, nil
 			}
 
+			// Check if the daemonset is ready.
+			//nolint:gocritic
+			if builder.Object.Status.DesiredNumberScheduled == builder.Object.Status.CurrentNumberScheduled &&
+				builder.Object.Status.DesiredNumberScheduled == builder.Object.Status.NumberReady &&
+				builder.Object.Status.DesiredNumberScheduled == builder.Object.Status.NumberAvailable &&
+				builder.Object.Status.NumberUnavailable == 0 &&
+				builder.Object.Status.NumberReady > 0 {
+				return true, nil
+			}
+
+			// If none of the conditions above are met, evaluate the daemonset conditions.
 			for _, condition := range builder.Object.Status.Conditions {
 				if condition.Type == "Available" {
 					return condition.Status == "True", nil
