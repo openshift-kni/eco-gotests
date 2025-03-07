@@ -472,6 +472,8 @@ type CoreConfig struct {
 	//nolint:lll,nolintlint
 	EgressIPTcpPort       string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
 	WorkerLabelListOption metav1.ListOptions
+	FRRNamespace          string         `yaml:"rdscore_frr_namespace" envconfig:"ECO_RDSCORE_FRR_NAMESPACE"`
+	FRRExpectedNodes      EnvSliceString `yaml:"rdscore_frr_expected_nodes" envconfig:"ECO_RDSCORE_FRR_EXPECTED_NODES"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
