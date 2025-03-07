@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>eco-gotests report | {{ .Branch }}</title>
+    <style rel="stylesheet" type="text/css">
+        * {
+            font-family: 'Red Hat Text', sans-serif;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        main {
+            width: 100%;
+            max-width: 768px;
+            margin: 0 auto;
+            padding: 1rem 0;
+            flex-grow: 1;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        footer {
+            background-color: #000000;
+            color: #ffffff;
+            border-top: 0.75rem solid #ee0000;
+        }
+
+        footer>p {
+            padding: 1rem 0;
+            text-align: center;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0.5rem 0;
+
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 2rem 0;
+            margin: 0;
+            font-family: 'Red Hat Display', sans-serif;
+        }
+
+        h2 {
+            font-weight: 500;
+            font-size: 1.25rem;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .tree {
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .tree summary {
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: 500;
+
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .tree details> :not(summary) {
+            padding-left: 2rem;
+        }
+
+        .tree details>summary::before {
+            content: "+";
+            font-size: 1.5rem;
+            width: 0.75em;
+        }
+
+        .tree details[open]>summary::before {
+            content: "-";
+        }
+
+        .tree details[open]>ul {
+            border-left: 1px dashed #000000;
+        }
+
+        .tree span {
+            background-color: #ee0000;
+            color: #ffffff;
+            border-radius: 1em;
+            text-align: center;
+            width: 4em;
+            height: 100%;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .labels {
+            flex-direction: row;
+            gap: 0.5rem;
+        }
+
+        .labels>li:not(:last-child)::after {
+            content: ",";
+        }
+
+        .tree details.leaf>summary,
+        .tree details.leaf>summary::before {
+            font-size: 1.25rem;
+            font-weight: 400;
+        }
+
+        .leaf td.value,
+        .leaf td.value .labels>li {
+            font-family: 'Red Hat Mono', monospace;
+        }
+
+        .leaf table {
+            padding-left: 1.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>eco-gotests hierarchy on branch {{ .Branch }}</h1>
+    </header>
+
+    {{ define "node" }}
+    {{ if .SpecReport }}
+    <details class="leaf">
+        <summary>{{ .Name }}</summary>
+        <table>
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>LeafNodeLocation</td>
+                    <td class="value">{{ cleanPath .SpecReport.LeafNodeLocation.FileName }}:{{
+                        .SpecReport.LeafNodeLocation.LineNumber }}</td>
+                </tr>
+                <tr>
+                    <td>LeafNodeLabels</td>
+                    <td class="value">
+                        <ul class="labels">
+                            {{ range .SpecReport.LeafNodeLabels }}
+                            <li>{{ . }}</li>
+                            {{ end }}
+                        </ul>
+                    </td>
+                </tr>
+                <tr>
+                    <td>IsSerial</td>
+                    <td class="value">{{ .SpecReport.IsSerial }}</td>
+                </tr>
+                <tr>
+                    <td>IsInOrderedContainer</td>
+                    <td class="value">{{ .SpecReport.IsInOrderedContainer }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </details>
+    {{ else }}
+    <details>
+        <summary><span>{{ .Specs }}</span> {{ .Name }}</summary>
+        {{ if .Description }}
+        <h2>{{ .Description }}</h2>
+        {{ end }}
+        <ul>
+            {{ range .Children }}
+            <li>
+                {{ template "node" . }}
+            </li>
+            {{ end }}
+        </ul>
+    </details>
+    {{ end }}
+    {{ end }}
+
+    <main>
+        {{ with .Tree }}
+        <ul class="tree">
+            <li>
+                <details open>
+                    <summary><span>{{ .Specs }}</span> {{ .Name }}</summary>
+                    <ul>
+                        {{ range .Children }}
+                        <li>
+                            {{ template "node" . }}
+                        </li>
+                        {{ end }}
+                    </ul>
+                </details>
+            </li>
+        </ul>
+        {{ end }}
+    </main>
+
+    <footer>
+        {{ $time := .Generated.Format .TimeFormat }}
+        <p>
+            Generated by <a href="{{ .ActionURL }}">GitHub Actions</a> on <time datetime="{{ $time }}">{{ $time
+                }}</time> from branch {{ .Branch }}. <a href="{{ .RepoURL }}/tree/{{ .Branch }}">Source.</a>
+        </p>
+    </footer>
+</body>
+
+</html>
