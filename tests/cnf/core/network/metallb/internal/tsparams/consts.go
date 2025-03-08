@@ -13,6 +13,8 @@ const (
 	LabelLayer2TestCases = "layer2"
 	// LabelFRRTestCases represents frrk8 label that can be used for test cases selection.
 	LabelFRRTestCases = "frrk8s"
+	// LabelFRRNode is a label configured on the worker nodes.
+	LabelFRRNode = "app=frr-k8s"
 	// BGPPassword var is used to set password for BGP session between FRR speakers.
 	BGPPassword = "bgp-test"
 	// LabelGRTestCases represents graceful restart label that can be used for test cases selection.
@@ -20,6 +22,18 @@ const (
 	// MlbAddressListError an error message when the ECO_CNF_CORE_NET_MLB_ADDR_LIST is incorrect.
 	MlbAddressListError = "An unexpected error occurred while " +
 		"determining the IP addresses from the ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable."
+	// NoAdvertiseCommunity routes in this community will not be propagated.
+	NoAdvertiseCommunity = "65535:65282"
+	// CustomCommunity routes in this community will not be included in this community.
+	CustomCommunity = "500:500"
+	// BgpPeerName1 bgp peer name 1.
+	BgpPeerName1 = "bgppeer1"
+	// BgpPeerName2 bgp peer name 2.
+	BgpPeerName2 = "bgppeer2" // FrrK8WebHookServer is the web hook server running in namespace metallb-system.
+	// BGPTestPeer is the bgppeer name.
+	BGPTestPeer = "testpeer"
+	// FrrK8WebHookServer is the web hook server running in namespace metallb-system.
+	FrrK8WebHookServer = "frr-k8s-webhook-server"
 	// BlockBGPBFDPorts adds an input rule blocking TCP & UDP ports for BGP and BFD.
 	// chain custom_chain_INPUT {
 	//    type filter hook input priority 1; policy accept;

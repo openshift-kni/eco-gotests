@@ -75,7 +75,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
 			bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
-			createBGPPeerAndVerifyIfItsReady(
+			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
 				ipv4metalLbIPList[0], bfdProfile.Definition.Name, tsparams.RemoteBGPASN, false, 0,
 				frrk8sPods)
 
@@ -244,19 +244,14 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					neighbourASN = tsparams.RemoteBGPASN
 					eBgpMultiHop = true
 				}
-				createBGPPeerAndVerifyIfItsReady(
+				createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
 					masterClientPodIP, bfdProfile.Definition.Name, neighbourASN, eBgpMultiHop, 0, frrk8sPods)
 
-				prefixLen := int32(32)
-				if ipStack == netparam.IPV6Family {
-					prefixLen = 128
-				}
-
 				By("Creating an IPAddressPool and BGPAdvertisement for bfd tests")
-				ipAddressPool := setupBgpAdvertisement(addressPool, prefixLen)
+				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool)
 
 				By("Creating a MetalLB service")
-				setupMetalLbService(ipStack, ipAddressPool, externalTrafficPolicy)
+				setupMetalLbService("service-1", ipStack, ipAddressPool, externalTrafficPolicy)
 
 				By("Creating nginx test pod on worker node")
 				setupNGNXPod(workerNodeList[0].Definition.Name)

@@ -18,13 +18,33 @@ type (
 	}
 
 	bgpStatus struct {
-		VrfID         int                `json:"vrfId"`
-		VrfName       string             `json:"vrfName"`
-		TableVersion  int                `json:"tableVersion"`
-		RouterID      string             `json:"routerId"`
-		DefaultLocPrf int                `json:"defaultLocPrf"`
-		LocalAS       int                `json:"localAS"`
-		Routes        map[string][]Route `json:"routes"`
+		VrfID         int    `json:"vrfId"`
+		VrfName       string `json:"vrfName"`
+		TableVersion  int    `json:"tableVersion"`
+		RouterID      string `json:"routerId"`
+		DefaultLocPrf int    `json:"defaultLocPrf"`
+		LocalAS       int    `json:"localAS"`
+		Routes        map[string][]struct {
+			Valid     bool   `json:"valid"`
+			Multipath bool   `json:"multipath,omitempty"`
+			PathFrom  string `json:"pathFrom"`
+			Prefix    string `json:"prefix"`
+			PrefixLen int    `json:"prefixLen"`
+			LocalPref uint32 `json:"locPrf"`
+			Network   string `json:"network"`
+			Metric    int    `json:"metric"`
+			Weight    int    `json:"weight"`
+			PeerID    string `json:"peerId"`
+			Path      string `json:"path"`
+			Origin    string `json:"origin"`
+			Nexthops  []struct {
+				IP       string `json:"ip"`
+				Hostname string `json:"hostname"`
+				Afi      string `json:"afi"`
+				Used     bool   `json:"used"`
+			} `json:"nexthops"`
+			Bestpath bool `json:"bestpath,omitempty"`
+		} `json:"routes"`
 	}
 
 	// Route creates a struct of routes from the output of the "show ip bgp json" command.
@@ -118,6 +138,16 @@ type (
 	// BGPNeighborGRStatus is a map of GRStatus per peer.
 	BGPNeighborGRStatus map[string]GRStatus
 )
+
+// DefineBaseConfig defines minimal required FRR configuration.
+func DefineBaseConfig(daemonsConfig, frrConfig, vtyShConfig string) map[string]string {
+	configMapData := make(map[string]string)
+	configMapData["daemons"] = daemonsConfig
+	configMapData["frr.conf"] = frrConfig
+	configMapData["vtysh.conf"] = vtyShConfig
+
+	return configMapData
+}
 
 // DefineBGPConfig returns string which represents BGP config file peering to all given IP addresses.
 func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []string, multiHop, bfd bool) string {
@@ -286,17 +316,17 @@ func SetStaticRoute(frrPod *pod.Builder, action, destIP string, nextHopMap map[s
 }
 
 // GetBGPStatus returns bgp status output from frr pod.
-func GetBGPStatus(frrPod *pod.Builder, protocolVersion string) (*bgpStatus, error) {
+func GetBGPStatus(frrPod *pod.Builder, protocolVersion string, containerName ...string) (*bgpStatus, error) {
 	glog.V(90).Infof("Getting bgp status from pod: %s", frrPod.Definition.Name)
 
-	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s json", protocolVersion))
+	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s json", protocolVersion), containerName...)
 }
 
 // GetBGPCommunityStatus returns bgp community status from frr pod.
-func GetBGPCommunityStatus(frrPod *pod.Builder, ipProtocolVersion string) (*bgpStatus, error) {
+func GetBGPCommunityStatus(frrPod *pod.Builder, communityString, ipProtocolVersion string) (*bgpStatus, error) {
 	glog.V(90).Infof("Getting bgp community status from container on pod: %s", frrPod.Definition.Name)
 
-	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, "65535:65282"))
+	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, communityString))
 }
 
 // FetchBGPConnectTimeValue fetches and returns the ConnectRetryTimer value for the specified BGP peer.
@@ -360,8 +390,14 @@ func ValidateBGPRemoteAS(frrk8sPods []*pod.Builder, bgpPeerIP string, expectedRe
 	return fmt.Errorf("no BGP neighbor with RemoteAS %d found for peer %s", expectedRemoteAS, bgpPeerIP)
 }
 
-func getBgpStatus(frrPod *pod.Builder, cmd string) (*bgpStatus, error) {
-	glog.V(90).Infof("Getting bgp status from pod: %s", frrPod.Definition.Name)
+func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bgpStatus, error) {
+	cName := "frr"
+
+	if len(containerName) > 0 {
+		cName = containerName[0]
+	}
+
+	glog.V(90).Infof("Getting bgp status from container: %s of pod: %s", cName, frrPod.Definition.Name)
 
 	bgpStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, cmd))
 
@@ -526,4 +562,21 @@ func ResetBGPConnection(frrPod *pod.Builder) error {
 	_, err := frrPod.ExecCommand(append(netparam.VtySh, "clear ip bgp *"))
 
 	return err
+}
+
+// ValidateLocalPref verifies local pref from FRR is equal to configured Local Pref.
+func ValidateLocalPref(frrPod *pod.Builder, localPref uint32, ipFamily string) error {
+	bgpStatus, err := getBgpStatus(frrPod, fmt.Sprintf("show ip bgp %s json", ipFamily))
+
+	if err != nil {
+		return fmt.Errorf("failed to get BGP status %w", err)
+	}
+
+	for _, route := range bgpStatus.Routes {
+		if route[0].LocalPref != localPref {
+			return fmt.Errorf("expected localpref %d but received localPref: %d", localPref, route[0].LocalPref)
+		}
+	}
+
+	return nil
 }
