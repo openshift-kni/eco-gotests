@@ -251,10 +251,8 @@ func verifyPodSourceAddress(clientPods []*pod.Builder, cmdToRun []string, expect
 
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Comparing %q with expected %q", parsedIP, expectedResult)
 
-		// Expect(parsedIP).To(Equal(expectedIP),
-		// 	fmt.Sprintf("Mismatched IP address. Expected %q got %q", expectedIP, parsedIP))
 		Expect(expectedResult).To(ContainElement(parsedIP),
-			fmt.Sprintf("Mismatched IP address. Expected %q got %q", expectedIP, parsedIP))
+			fmt.Sprintf("Mismatched IP address. Expected %q got %q", expectedResult, parsedIP))
 	}
 }
 
