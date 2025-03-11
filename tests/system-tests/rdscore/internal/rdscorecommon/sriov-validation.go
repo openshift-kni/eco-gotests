@@ -485,6 +485,12 @@ func verifyMsgInPodLogs(podObj *pod.Builder, msg, cName string, timeSpan time.Ti
 }
 
 func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLabels, targetAddr string) {
+	var (
+		podOneResult bytes.Buffer
+		err          error
+		ctx          SpecContext
+	)
+
 	By("Getting pods backed by deployment")
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
@@ -497,6 +503,13 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one is %q on node %q",
 		podOne.Definition.Name, podOne.Definition.Spec.NodeName)
 
+	By(fmt.Sprintf("Waiting for pod %q to get Ready", podOne.Definition.Name))
+
+	err = podOne.WaitUntilReady(1 * time.Minute)
+
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q in %q ns is not Ready",
+		podOne.Definition.Name, podOne.Definition.Namespace))
+
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Looking for pod(s) matching label %q in %q namespace",
 		deployTwoLabels, nsTwoName)
 
@@ -506,6 +519,13 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 	podTwo := podTwoList[0]
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two is %q on node %q",
 		podTwo.Definition.Name, podTwo.Definition.Spec.NodeName)
+
+	By(fmt.Sprintf("Waiting for pod %q to get Ready", podTwo.Definition.Name))
+
+	err = podTwo.WaitUntilReady(1 * time.Minute)
+
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q in %q ns is not Ready",
+		podTwo.Definition.Name, podTwo.Definition.Namespace))
 
 	By("Sending data from pod one to pod two")
 
@@ -519,12 +539,6 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 
 	sendDataOneCmd := []string{"/bin/bash", "-c",
 		fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
-
-	var (
-		podOneResult bytes.Buffer
-		err          error
-		ctx          SpecContext
-	)
 
 	timeStart := time.Now()
 
