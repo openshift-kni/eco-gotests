@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     name: Build and push docker image
+    if: github.repository_owner == 'openshift-kni'
     runs-on: ubuntu-latest
 
     steps:

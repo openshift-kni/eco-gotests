@@ -8,6 +8,7 @@ permissions:
 jobs:
   main:
     name: Eco-goinfra module bump
+    if: github.repository_owner == 'openshift-kni'
 
     permissions:
       contents: write  # for peter-evans/create-pull-request to create branch
