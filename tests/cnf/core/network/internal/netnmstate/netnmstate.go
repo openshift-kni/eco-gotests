@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/golang/glog"
 	nmstateShared "github.com/nmstate/kubernetes-nmstate/api/shared"

@@ -46,7 +46,7 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 	gopkg.in/k8snetworkplumbingwg/multus-cni.v4 v4.1.4
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.31.5
 	k8s.io/apimachinery v0.31.5
 	k8s.io/client-go v12.0.0+incompatible
@@ -247,7 +247,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-require gopkg.in/yaml.v3 v3.0.1
+require gopkg.in/yaml.v2 v2.4.0 // indirect
 
 replace (
 	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16

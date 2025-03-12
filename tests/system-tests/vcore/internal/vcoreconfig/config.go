@@ -11,7 +11,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsconfig"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (

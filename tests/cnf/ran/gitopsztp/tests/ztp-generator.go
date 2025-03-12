@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, ranparam.LabelNoContainer), func() {
