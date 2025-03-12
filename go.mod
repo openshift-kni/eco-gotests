@@ -1,6 +1,6 @@
 module github.com/openshift-kni/eco-gotests
 
-go 1.23.6
+go 1.24.1
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -224,7 +224,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.25.12 // indirect
 	k8s.io/apiextensions-apiserver v0.31.5 // indirect
 	k8s.io/apiserver v0.31.5 // indirect
@@ -247,6 +246,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+require gopkg.in/yaml.v3 v3.0.1 // indirect
 
 replace (
 	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
