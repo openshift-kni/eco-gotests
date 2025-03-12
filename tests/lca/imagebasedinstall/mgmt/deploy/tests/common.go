@@ -1,7 +1,6 @@
 package deploy_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -64,74 +63,11 @@ var (
 	spokeClient *clients.Settings
 )
 
-//nolint:funlen
 func createSharedResources() {
 	By("Create namespace for IBI installation")
 
 	_, err := namespace.NewBuilder(APIClient, MGMTConfig.Cluster.Info.ClusterName).Create()
 	Expect(err).NotTo(HaveOccurred(), "error creating namespace")
-
-	if MGMTConfig.ReinstallConfigFile != "" {
-		By("Recreate admin kubeconfig secret")
-
-		adminKubeconfig := secret.NewBuilder(
-			APIClient, MGMTConfig.Cluster.Info.ClusterName+"-admin-kubeconfig",
-			MGMTConfig.Cluster.Info.ClusterName,
-			v1.SecretTypeOpaque)
-
-		var adminKubeconfigContents *v1.Secret
-
-		adminKubeconfigFile, err := os.ReadFile(MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
-		Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
-
-		err = json.Unmarshal(adminKubeconfigFile, &adminKubeconfigContents)
-		Expect(err).NotTo(HaveOccurred(), "error unmarshalling %s to secret", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
-
-		adminKubeconfig.Definition = adminKubeconfigContents
-
-		_, err = adminKubeconfig.Create()
-		Expect(err).NotTo(HaveOccurred(), "error creating admin-kubeconfig secret")
-
-		By("Recreate admin password secret")
-
-		adminPassword := secret.NewBuilder(
-			APIClient, MGMTConfig.Cluster.Info.ClusterName+"-admin-password",
-			MGMTConfig.Cluster.Info.ClusterName,
-			v1.SecretTypeOpaque)
-
-		var adminPasswordContents *v1.Secret
-
-		adminPasswordFile, err := os.ReadFile(MGMTConfig.Reinstall.AdminPasswordSecretFile)
-		Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.AdminPasswordSecretFile)
-
-		err = json.Unmarshal(adminPasswordFile, &adminPasswordContents)
-		Expect(err).NotTo(HaveOccurred(), "error unmarshalling %s to secret", MGMTConfig.Reinstall.AdminPasswordSecretFile)
-
-		adminPassword.Definition = adminPasswordContents
-
-		_, err = adminPassword.Create()
-		Expect(err).NotTo(HaveOccurred(), "error creating admin-password secret")
-
-		By("Recreate seed reconfiguration secret")
-
-		seedReconfig := secret.NewBuilder(
-			APIClient, MGMTConfig.Cluster.Info.ClusterName+"-seed-reconfiguration",
-			MGMTConfig.Cluster.Info.ClusterName,
-			v1.SecretTypeOpaque)
-
-		var seedReconfigContents *v1.Secret
-
-		seedReconfigFile, err := os.ReadFile(MGMTConfig.Reinstall.SeedRecertSecretFile)
-		Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.SeedRecertSecretFile)
-
-		err = json.Unmarshal(seedReconfigFile, &seedReconfigContents)
-		Expect(err).NotTo(HaveOccurred(), "error unmarshalling %s to secret", MGMTConfig.Reinstall.SeedRecertSecretFile)
-
-		seedReconfig.Definition = seedReconfigContents
-
-		_, err = seedReconfig.Create()
-		Expect(err).NotTo(HaveOccurred(), "error creating seed-reconfiguration secret")
-	}
 
 	By("Get pull secret from hub cluster")
 
