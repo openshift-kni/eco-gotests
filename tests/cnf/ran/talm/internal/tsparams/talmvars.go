@@ -23,6 +23,7 @@ var (
 	ReporterHubNamespacesToDump = map[string]string{
 		TestNamespace:                       "",
 		ranparam.OpenshiftOperatorNamespace: "",
+		ranparam.AcmOperatorNamespace:       "",
 	}
 
 	// ReporterSpokeNamespacesToDump tells the reporter which namespaces on the spokes to collect pod logs from.
@@ -38,7 +39,7 @@ var (
 		{Cr: &corev1.PodList{}},
 		{Cr: &cguv1alpha1.ClusterGroupUpgradeList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &cguv1alpha1.PreCachingConfigList{}, Namespace: ptr.To(TestNamespace)},
-		{Cr: &policiesv1.PolicyList{}, Namespace: ptr.To(TestNamespace)},
+		{Cr: &policiesv1.PolicyList{}},
 		{Cr: &policiesv1.PlacementBindingList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &placementrulev1.PlacementRuleList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &policiesv1beta1.PolicySetList{}, Namespace: ptr.To(TestNamespace)},
@@ -49,6 +50,7 @@ var (
 		{Cr: &corev1.NamespaceList{}},
 		{Cr: &corev1.PodList{}},
 		{Cr: &olmv1alpha1.CatalogSourceList{}, Namespace: ptr.To(TemporaryNamespace)},
+		{Cr: &policiesv1.PolicyList{}},
 	}
 
 	// TalmNonExistentClusterMessage is the condition message for when a cluster is non-existent.
