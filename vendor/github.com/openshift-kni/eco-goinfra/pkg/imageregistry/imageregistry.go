@@ -80,7 +80,7 @@ func (builder *Builder) Get() (*imageregistryv1.Config, error) {
 	}, imageRegistry)
 
 	if err != nil {
-		glog.V(100).Infof("ImageRegistry object %s does not exist", builder.Definition.Name)
+		glog.V(100).Infof("Failed to get ImageRegistry object %s: %v", builder.Definition.Name, err)
 
 		return nil, err
 	}

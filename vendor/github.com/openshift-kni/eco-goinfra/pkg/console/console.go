@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Builder provides a struct for console object from the cluster and a console definition.
@@ -20,7 +21,7 @@ type Builder struct {
 	// Created console object.
 	Object *configv1.Console
 	// api client to interact with the cluster.
-	apiClient *clients.Settings
+	apiClient runtimeclient.Client
 	// errorMsg is processed before console object is created.
 	errorMsg string
 }
@@ -28,6 +29,19 @@ type Builder struct {
 // NewBuilder creates a new instance of Builder.
 func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 	glog.V(100).Info("Initializing new console %s structure", name)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient of the Console is nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(configv1.Install)
+	if err != nil {
+		glog.V(100).Infof("Failed to add config v1 scheme to client schemes: %v", err)
+
+		return nil
+	}
 
 	builder := &Builder{
 		apiClient: apiClient,
@@ -51,6 +65,21 @@ func NewBuilder(apiClient *clients.Settings, name string) *Builder {
 
 // Pull loads an existing console into the Builder struct.
 func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing Console %s from cluster", name)
+
+	if apiClient == nil {
+		glog.V(100).Infof("The apiClient of the Console is nil")
+
+		return nil, fmt.Errorf("console 'apiClient' cannot be nil")
+	}
+
+	err := apiClient.AttachScheme(configv1.Install)
+	if err != nil {
+		glog.V(100).Infof("Failed to add config v1 scheme to client schemes: %v", err)
+
+		return nil, err
+	}
+
 	builder := &Builder{
 		apiClient: apiClient,
 		Definition: &configv1.Console{
@@ -69,7 +98,9 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	glog.V(100).Infof("Pulling cluster console %s", name)
 
 	if !builder.Exists() {
-		return nil, fmt.Errorf("the console object %s does not exist", name)
+		glog.V(100).Infof("The Console %s does not exist", name)
+
+		return nil, fmt.Errorf("console object %s does not exist", name)
 	}
 
 	builder.Definition = builder.Object
@@ -77,21 +108,48 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 	return builder, nil
 }
 
-// Create makes a console in cluster and stores the created object in struct.
+// Get returns the Console object if found.
+func (builder *Builder) Get() (*configv1.Console, error) {
+	if valid, err := builder.validate(); !valid {
+		return nil, err
+	}
+
+	glog.V(100).Infof("Getting Console object %s", builder.Definition.Name)
+
+	console := &configv1.Console{}
+	err := builder.apiClient.Get(context.TODO(), runtimeclient.ObjectKey{
+		Name: builder.Definition.Name,
+	}, console)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to get Console object %s: %v", builder.Definition.Name, err)
+
+		return nil, err
+	}
+
+	return console, nil
+}
+
+// Create makes a console in the cluster if it does not already exist.
 func (builder *Builder) Create() (*Builder, error) {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return nil, err
 	}
 
-	glog.V(100).Infof("Creating the console %s", builder.Definition.Name)
+	glog.V(100).Infof("Creating Console %s", builder.Definition.Name)
 
-	var err error
-	if !builder.Exists() {
-		builder.Object, err = builder.apiClient.Consoles().Create(
-			context.TODO(), builder.Definition, metav1.CreateOptions{})
+	if builder.Exists() {
+		return builder, nil
 	}
 
-	return builder, err
+	err := builder.apiClient.Create(context.TODO(), builder.Definition)
+	if err != nil {
+		return nil, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // Exists checks whether the given console exists.
@@ -103,8 +161,7 @@ func (builder *Builder) Exists() bool {
 	glog.V(100).Infof("Checking if console %s exists", builder.Definition.Name)
 
 	var err error
-	builder.Object, err = builder.apiClient.Consoles().Get(
-		context.TODO(), builder.Definition.Name, metav1.GetOptions{})
+	builder.Object, err = builder.Get()
 
 	return err == nil || !k8serrors.IsNotFound(err)
 }
@@ -118,15 +175,14 @@ func (builder *Builder) Delete() error {
 	glog.V(100).Infof("Deleting the console object %s", builder.Definition.Name)
 
 	if !builder.Exists() {
-		glog.V(100).Infof("The console object %s does not exist", builder.Definition.Name)
+		glog.V(100).Infof("Console %s does not exist", builder.Definition.Name)
 
 		builder.Object = nil
 
 		return nil
 	}
 
-	err := builder.apiClient.Consoles().Delete(context.TODO(), builder.Definition.Name, metav1.DeleteOptions{})
-
+	err := builder.apiClient.Delete(context.TODO(), builder.Object)
 	if err != nil {
 		return fmt.Errorf("cannot delete console: %w", err)
 	}
@@ -139,22 +195,33 @@ func (builder *Builder) Delete() error {
 // Update renovates the existing cluster console object with cluster console definition in builder.
 func (builder *Builder) Update() (*Builder, error) {
 	if valid, err := builder.validate(); !valid {
-		return builder, err
+		return nil, err
 	}
 
 	glog.V(100).Info("Updating cluster console %s", builder.Definition.Name)
 
-	var err error
-	builder.Object, err = builder.apiClient.Consoles().Update(context.TODO(), builder.Definition,
-		metav1.UpdateOptions{})
+	if !builder.Exists() {
+		glog.V(100).Infof("Console %s does not exist", builder.Definition.Name)
 
-	return builder, err
+		return nil, fmt.Errorf("cannot update non-existent console")
+	}
+
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
+
+	err := builder.apiClient.Update(context.TODO(), builder.Definition)
+	if err != nil {
+		return builder, err
+	}
+
+	builder.Object = builder.Definition
+
+	return builder, nil
 }
 
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
 func (builder *Builder) validate() (bool, error) {
-	resourceCRD := "Console"
+	resourceCRD := "console"
 
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
@@ -172,6 +239,12 @@ func (builder *Builder) validate() (bool, error) {
 		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
 
 		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
+	}
+
+	if builder.errorMsg != "" {
+		glog.V(100).Infof("The %s builder has error message %s", resourceCRD, builder.errorMsg)
+
+		return false, fmt.Errorf(builder.errorMsg)
 	}
 
 	return true, nil
