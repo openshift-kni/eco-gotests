@@ -8,7 +8,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -366,7 +366,7 @@ func VerifyMACVLANConnectivityOnSameNode() {
 }
 
 func defineMacVlanDeployment(dName, nsName, dLabels, netDefName, volName string,
-	dContainer *v1.Container,
+	dContainer *corev1.Container,
 	nodeSelector map[string]string) *deployment.Builder {
 	By("Defining deployment configuration")
 
@@ -400,12 +400,12 @@ func defineMacVlanDeployment(dName, nsName, dLabels, netDefName, volName string,
 	volMode := new(int32)
 	*volMode = 511
 
-	volDefinition := v1.Volume{
+	volDefinition := corev1.Volume{
 		Name: "configs",
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
 				DefaultMode: volMode,
-				LocalObjectReference: v1.LocalObjectReference{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: volName,
 				},
 			},

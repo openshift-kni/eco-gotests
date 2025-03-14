@@ -17,7 +17,7 @@ import (
 	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools"
@@ -71,7 +71,7 @@ var _ = Describe(
 				ibiAdminKubeconfigSecret, err := secret.Pull(APIClient, MGMTConfig.Cluster.Info.ClusterName+"-admin-kubeconfig",
 					MGMTConfig.Cluster.Info.ClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling admin-kubeconfig secret")
-				ibiAdminKubeconfigSecret.Definition.ObjectMeta.CreationTimestamp = v1.Time{}
+				ibiAdminKubeconfigSecret.Definition.ObjectMeta.CreationTimestamp = metav1.Time{}
 				ibiAdminKubeconfigSecret.Definition.ObjectMeta.OwnerReferences = nil
 				ibiAdminKubeconfigSecret.Definition.ObjectMeta.UID = ""
 				ibiAdminKubeconfigSecret.Definition.ObjectMeta.ResourceVersion = ""
@@ -80,7 +80,7 @@ var _ = Describe(
 				ibiAdminPasswordSecret, err := secret.Pull(APIClient, MGMTConfig.Cluster.Info.ClusterName+"-admin-password",
 					MGMTConfig.Cluster.Info.ClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling admin-password secret")
-				ibiAdminPasswordSecret.Definition.ObjectMeta.CreationTimestamp = v1.Time{}
+				ibiAdminPasswordSecret.Definition.ObjectMeta.CreationTimestamp = metav1.Time{}
 				ibiAdminPasswordSecret.Definition.ObjectMeta.OwnerReferences = nil
 				ibiAdminPasswordSecret.Definition.ObjectMeta.UID = ""
 				ibiAdminPasswordSecret.Definition.ObjectMeta.ResourceVersion = ""
@@ -90,7 +90,7 @@ var _ = Describe(
 					APIClient, MGMTConfig.Cluster.Info.ClusterName+"-seed-reconfiguration",
 					MGMTConfig.Cluster.Info.ClusterName)
 				Expect(err).NotTo(HaveOccurred(), "error pulling seed-reconfiguration secret")
-				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.CreationTimestamp = v1.Time{}
+				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.CreationTimestamp = metav1.Time{}
 				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.OwnerReferences = nil
 				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.UID = ""
 				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.ResourceVersion = ""

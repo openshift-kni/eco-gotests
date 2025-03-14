@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ptp"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -67,7 +67,7 @@ func SavePTPStatus(apiClient *clients.Settings, outputFile string, timeInterval 
 
 // SavePodsRestartsInNamespace stores the pod restarts of all pods in a namespace in the outputFile.
 func SavePodsRestartsInNamespace(apiClient *clients.Settings, namespace string, outputFile string) error {
-	podList, err := pod.List(apiClient, namespace, v1.ListOptions{})
+	podList, err := pod.List(apiClient, namespace, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

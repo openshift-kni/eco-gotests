@@ -8,7 +8,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
@@ -37,7 +37,7 @@ const (
 	// SPKBackendSVCTargetPort service's target port.
 	SPKBackendSVCTargetPort = int32(8080)
 	// SPKBackendSVCProtocol service's protocol.
-	SPKBackendSVCProtocol = v1.Protocol("TCP")
+	SPKBackendSVCProtocol = corev1.Protocol("TCP")
 	// SPKBackendDeployName deployment's name.
 	SPKBackendDeployName = "spk-hello-world"
 	// SPKBackendContainerName container's name.
@@ -52,7 +52,7 @@ const (
 	// SPKBackendUDPSVCTargetPort service's target port.
 	SPKBackendUDPSVCTargetPort = int32(8080)
 	// SPKBackendUDPSVCProtocol service's protocol.
-	SPKBackendUDPSVCProtocol = v1.Protocol("UDP")
+	SPKBackendUDPSVCProtocol = corev1.Protocol("UDP")
 	// SPKBackendUDPDeployName deployment's name.
 	SPKBackendUDPDeployName = "udp-mock-server"
 	// SPKBackendUDPContainerName container's name.
@@ -179,8 +179,8 @@ func createUDPSVC() {
 
 	By("Setting IPFamily")
 
-	ipFamily := []v1.IPFamily{"IPv4", "IPv6"}
-	ipStackFamily := v1.IPFamilyPolicyPreferDualStack
+	ipFamily := []corev1.IPFamily{"IPv4", "IPv6"}
+	ipStackFamily := corev1.IPFamilyPolicyPreferDualStack
 
 	svcDemo = svcDemo.WithIPFamily(ipFamily, ipStackFamily)
 
@@ -288,11 +288,11 @@ func createBackendDeployment() {
 
 	glog.V(spkparams.SPKLogLevel).Infof("Setting SCC")
 
-	deployContainer = deployContainer.WithSecurityContext(&v1.SecurityContext{RunAsGroup: nil, RunAsUser: nil})
+	deployContainer = deployContainer.WithSecurityContext(&corev1.SecurityContext{RunAsGroup: nil, RunAsUser: nil})
 
 	By("Adding VolumeMount to container")
 
-	volMount := v1.VolumeMount{
+	volMount := corev1.VolumeMount{
 		Name:      "web-page",
 		MountPath: "/opt/rh/httpd24/root/var/www/html",
 		ReadOnly:  false,
@@ -335,12 +335,12 @@ func createBackendDeployment() {
 	volMode := new(int32)
 	*volMode = 511
 
-	volDefinition := v1.Volume{
+	volDefinition := corev1.Volume{
 		Name: "web-page",
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
 				DefaultMode: volMode,
-				LocalObjectReference: v1.LocalObjectReference{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: SPKBackendCMName,
 				},
 			},
@@ -383,7 +383,7 @@ func createBackendUDPDeployment() {
 
 	glog.V(spkparams.SPKLogLevel).Infof("Setting SCC")
 
-	deployContainer = deployContainer.WithSecurityContext(&v1.SecurityContext{RunAsGroup: nil, RunAsUser: nil})
+	deployContainer = deployContainer.WithSecurityContext(&corev1.SecurityContext{RunAsGroup: nil, RunAsUser: nil})
 
 	By("Obtaining container definition")
 
