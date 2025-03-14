@@ -1,7 +1,6 @@
 package mgmtconfig
 
 import (
-	"encoding/json"
 	"os"
 
 	"github.com/golang/glog"
@@ -75,8 +74,6 @@ type MGMTConfig struct {
 	SiteConfig               bool   `envconfig:"ECO_LCA_IBI_SITECONFIG" default:"true"`
 	ExtraPartName            string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_NAME" default:""`
 	ExtraPartSizeMib         string `envconfig:"ECO_LCA_IBI_MGMT_EXTRA_PARTITION_SIZE" default:"50000"`
-	Reinstall                *ReinstallConfig
-	ReinstallConfigFile      string `envconfig:"ECO_LCA_IBI_REINSTALL_CONFIG_FILE" default:""`
 	ReinstallGenerationLabel string `envconfig:"ECO_LCA_IBI_REINSTALL_GENERATION" default:"generate1"`
 }
 
@@ -119,18 +116,6 @@ func NewMGMTConfig() *MGMTConfig {
 		}
 
 		mgmtConfig.PublicSSHKey = string(content)
-	}
-
-	if mgmtConfig.ReinstallConfigFile != "" {
-		content, err := os.ReadFile(mgmtConfig.ReinstallConfigFile)
-		if err != nil {
-			return &mgmtConfig
-		}
-
-		err = json.Unmarshal(content, mgmtConfig.Reinstall)
-		if err != nil {
-			return &mgmtConfig
-		}
 	}
 
 	return &mgmtConfig

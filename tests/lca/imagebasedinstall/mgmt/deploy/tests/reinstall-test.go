@@ -1,25 +1,23 @@
 package deploy_test
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
+	"github.com/openshift-kni/eco-goinfra/pkg/ibi"
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
+	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
+	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
-
-	v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/deploy/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools"
@@ -57,41 +55,124 @@ var _ = Describe(
 					Skip("Cluster is deployed with siteconfig operator")
 				}
 
-				if MGMTConfig.ReinstallConfigFile == "" {
-					Skip("Reinstall configuration not supplied")
+				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
+
+				By("Load original spoke api client")
+				spokeClient := getSpokeClient()
+
+				By("Pulling existing clusterdeployment")
+				clusterDeployment, err := hive.PullClusterDeployment(APIClient, MGMTConfig.Cluster.Info.ClusterName,
+					MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error pulling clusterdeployment")
+
+				originalClusterID := clusterDeployment.Object.Spec.ClusterMetadata.ClusterID
+
+				By("Pulling existing admin-kubeconfig secret")
+				ibiAdminKubeconfigSecret, err := secret.Pull(APIClient, MGMTConfig.Cluster.Info.ClusterName+"-admin-kubeconfig",
+					MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error pulling admin-kubeconfig secret")
+				ibiAdminKubeconfigSecret.Definition.ObjectMeta.CreationTimestamp = v1.Time{}
+				ibiAdminKubeconfigSecret.Definition.ObjectMeta.OwnerReferences = nil
+				ibiAdminKubeconfigSecret.Definition.ObjectMeta.UID = ""
+				ibiAdminKubeconfigSecret.Definition.ObjectMeta.ResourceVersion = ""
+
+				By("Pulling existing admin-password secret")
+				ibiAdminPasswordSecret, err := secret.Pull(APIClient, MGMTConfig.Cluster.Info.ClusterName+"-admin-password",
+					MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error pulling admin-password secret")
+				ibiAdminPasswordSecret.Definition.ObjectMeta.CreationTimestamp = v1.Time{}
+				ibiAdminPasswordSecret.Definition.ObjectMeta.OwnerReferences = nil
+				ibiAdminPasswordSecret.Definition.ObjectMeta.UID = ""
+				ibiAdminPasswordSecret.Definition.ObjectMeta.ResourceVersion = ""
+
+				By("Pulling existing seed-reconfiguration secret")
+				ibiSeedRecoonfigurationSecret, err := secret.Pull(
+					APIClient, MGMTConfig.Cluster.Info.ClusterName+"-seed-reconfiguration",
+					MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error pulling seed-reconfiguration secret")
+				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.CreationTimestamp = v1.Time{}
+				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.OwnerReferences = nil
+				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.UID = ""
+				ibiSeedRecoonfigurationSecret.Definition.ObjectMeta.ResourceVersion = ""
+
+				By("Listing baremetalhosts")
+				ibiBmhList, err := bmh.List(APIClient, MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error listing BMH resources")
+
+				By("Deleting baremetalhosts")
+				for _, bmhBulider := range ibiBmhList {
+					_, err = bmhBulider.Delete()
+					Expect(err).NotTo(HaveOccurred(), "error deleting BMH resource %s", bmhBulider.Definition.Name)
+					waitForResourceToDelete("baremetalhost", bmhBulider.Exists)
 				}
 
-				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
+				By("Pulling imageclusterinstall")
+				ibiICI, err := ibi.PullImageClusterInstall(APIClient,
+					MGMTConfig.Cluster.Info.ClusterName, MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error pulling imageclusterinstall")
+
+				By("Deleting imageclusterinstall")
+				err = ibiICI.Delete()
+				Expect(err).NotTo(HaveOccurred(), "error deleting imageclusterinstall resource")
+				waitForResourceToDelete("imageclusterinstall", ibiICI.Exists)
+
+				By("Pulling clusterdeployment")
+				ibiCD, err := hive.PullClusterDeployment(APIClient,
+					MGMTConfig.Cluster.Info.ClusterName, MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error pulling clusterdeployment")
+
+				By("Deleting clusterdeployment")
+				err = ibiCD.Delete()
+				Expect(err).NotTo(HaveOccurred(), "error deleting clusterdeployment resource")
+				waitForResourceToDelete("clusterdeployment", ibiCD.Exists)
+
+				By("Pulling managedcluster")
+				ibiManagedCluster, err := ocm.PullManagedCluster(APIClient,
+					MGMTConfig.Cluster.Info.ClusterName)
+				Expect(err).NotTo(HaveOccurred(), "error pulling managedcluster")
+
+				By("Deleting managedcluster")
+				err = ibiManagedCluster.Delete()
+				Expect(err).NotTo(HaveOccurred(), "error deleting managedcluster resource")
+				waitForResourceToDelete("managedcluster", ibiManagedCluster.Exists)
+
+				By("Pulling namespace")
+				ibiNamespace, err := namespace.Pull(APIClient, MGMTConfig.Cluster.Info.ClusterName)
+				if err != nil {
+					Expect(err.Error()).To(ContainSubstring("does not exist"), "error pulling namespace")
+				} else {
+					Expect(err).NotTo(HaveOccurred(), "error pulling namespace")
+					waitForResourceToDelete("namespace", ibiNamespace.Exists)
+				}
+
+				By("Create namespace for IBI reinstallation")
+
+				_, err = namespace.NewBuilder(APIClient, MGMTConfig.Cluster.Info.ClusterName).Create()
+				Expect(err).NotTo(HaveOccurred(), "error creating namespace")
+
+				By("Re-create admin-kubeconfig secret")
+				_, err = ibiAdminKubeconfigSecret.Create()
+				Expect(err).NotTo(HaveOccurred(), "error re-creating admin-kubeconfig secret")
+
+				By("Re-create admin-password secret")
+				_, err = ibiAdminPasswordSecret.Create()
+				Expect(err).NotTo(HaveOccurred(), "error re-creating admin-password secret")
+
+				By("Re-create seed-reconfiguration secret")
+				_, err = ibiSeedRecoonfigurationSecret.Create()
+				Expect(err).NotTo(HaveOccurred(), "error re-creating seed-reconfiguration secret")
 
 				createIBIOResouces(ipv4AddrFamily)
 
-				By("Load admin kubeconfig secret")
-				var adminKubeconfigSecret *v1.Secret
-				adminKubeconfigFile, err := os.ReadFile(MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
-				Expect(err).NotTo(HaveOccurred(), "error reading %s", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
-
-				err = json.Unmarshal(adminKubeconfigFile, &adminKubeconfigSecret)
-				Expect(err).NotTo(HaveOccurred(),
-					"error unmarshalling %s to secret", MGMTConfig.Reinstall.AdminKubeConfigSecretFile)
-
-				adminKubeconfigContent, ok := adminKubeconfigSecret.Data["kubeconfig"]
-				Expect(ok).To(BeTrue(), "error checking for kubeconfig key from admin kubeconfig secret")
-
-				By("Writing spoke admin kubeconfig to file")
-
-				err = os.WriteFile("/tmp/spoke-reinstall-kubeconfig", adminKubeconfigContent, 0644)
-				Expect(err).NotTo(HaveOccurred(), "error writing spoke kubeconfig to file")
-
-				spokeClient = clients.New("/tmp/spoke-reinstall-kubeconfig")
-				Expect(spokeClient).NotTo(BeNil(), "error creating client from spoke kubeconfig file")
-
+				By("Pull spoke cluster version using original client")
 				targetClusterVersion, err := clusterversion.Pull(spokeClient)
 				Expect(err).NotTo(HaveOccurred(), "error pulling target cluster OCP version")
 				Expect(targetClusterVersion.Object.Status.Desired.Version).To(
 					Equal(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion),
 					"error: target cluster version does not match seedimage cluster version")
-				Expect(MGMTConfig.Reinstall.ClusterIdentity).To(Equal(string(targetClusterVersion.Object.Spec.ClusterID)),
+				Expect(originalClusterID).To(Equal(string(targetClusterVersion.Object.Spec.ClusterID)),
 					"error: reinstalled cluster has different cluster identity than original cluster")
+
 			})
 
 		It("through siteconfig operator is successful in an IPv4 environment with DHCP networking",
@@ -150,15 +231,6 @@ var _ = Describe(
 				By("Updating clusterinstance for reinstallation")
 				_, err = clusterInstace.Update(false)
 				Expect(err).NotTo(HaveOccurred(), "error updating clusterinstance")
-
-				for host := range MGMTConfig.Cluster.Info.Hosts {
-					dataImage, err := bmh.PullDataImage(APIClient, host,
-						MGMTConfig.Cluster.Info.ClusterName)
-					Expect(err).NotTo(HaveOccurred(), "error pulling dataimage from cluster")
-
-					err = removeDataImageFinalizer(APIClient, dataImage)
-					Expect(err).NotTo(HaveOccurred(), "error removing dataimage finalizer")
-				}
 
 				By("Waiting for clusterinstance re-installation to trigger")
 				Eventually(func() (bool, error) {
@@ -228,24 +300,9 @@ var _ = Describe(
 			})
 	})
 
-func removeDataImageFinalizer(apiClient *clients.Settings, dataImage *bmh.DataImageBuilder) error {
-	if apiClient == nil {
-		return fmt.Errorf("cannot use nil apiClient to remove dataImage finalizer")
-	}
-
-	if dataImage == nil {
-		return fmt.Errorf("cannot update nil dataImage")
-	}
-
-	dataImage.Definition.ObjectMeta.Finalizers = nil
-
-	err := apiClient.Update(context.TODO(), dataImage.Definition)
-
-	if err != nil {
-		return err
-	}
-
-	dataImage.Object = dataImage.Definition
-
-	return nil
+func waitForResourceToDelete(resourceType string, exists func() bool) {
+	Eventually(func() bool {
+		return !exists()
+	}).WithTimeout(time.Minute*30).WithPolling(time.Second*10).Should(
+		BeTrue(), "error waiting for resource %s to be deleted", resourceType)
 }
