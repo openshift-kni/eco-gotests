@@ -114,7 +114,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
 			tsparams.DefaultTimeout,
 			pod.GetGVR(),
-			service.GetServiceGVR(),
+			service.GetGVR(),
 			nad.GetGVR())
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 	})

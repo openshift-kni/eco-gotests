@@ -247,7 +247,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-require gopkg.in/yaml.v3 v3.0.1 // indirect
+require gopkg.in/yaml.v3 v3.0.1
 
 replace (
 	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
