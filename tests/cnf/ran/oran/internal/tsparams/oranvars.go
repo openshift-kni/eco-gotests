@@ -43,21 +43,6 @@ var (
 )
 
 var (
-	// HwmgrFailedAuthCondition is the condition to match for when the HardwareManager fails to authenticate with
-	// the DTIAS.
-	HwmgrFailedAuthCondition = metav1.Condition{
-		Type:    string(pluginv1alpha1.ConditionTypes.Validation),
-		Reason:  string(pluginv1alpha1.ConditionReasons.Failed),
-		Status:  metav1.ConditionFalse,
-		Message: "401",
-	}
-
-	// PRHardwareProvisionFailedCondition is the ProvisioningRequest condition where hardware provisioning failed.
-	PRHardwareProvisionFailedCondition = metav1.Condition{
-		Type:   string(provisioningv1alpha1.PRconditionTypes.HardwareProvisioned),
-		Reason: string(provisioningv1alpha1.CRconditionReasons.Failed),
-		Status: metav1.ConditionFalse,
-	}
 	// PRValidationFailedCondition is the ProvisioningRequest condition where ProvisioningRequest validation failed.
 	PRValidationFailedCondition = metav1.Condition{
 		Type:   string(provisioningv1alpha1.PRconditionTypes.Validated),
@@ -70,13 +55,6 @@ var (
 		Type:   string(provisioningv1alpha1.PRconditionTypes.Validated),
 		Reason: string(provisioningv1alpha1.CRconditionReasons.Completed),
 		Status: metav1.ConditionTrue,
-	}
-	// PRNodeConfigFailedCondition is the ProvisioningRequest condition where applying the node configuration
-	// failed.
-	PRNodeConfigFailedCondition = metav1.Condition{
-		Type:   string(provisioningv1alpha1.PRconditionTypes.HardwareNodeConfigApplied),
-		Reason: string(provisioningv1alpha1.CRconditionReasons.NotApplied),
-		Status: metav1.ConditionFalse,
 	}
 	// PRConfigurationAppliedCondition is the ProvisioningRequest condition where applying day2 configuration
 	// succeeds.
@@ -93,10 +71,11 @@ var (
 		Status: metav1.ConditionTrue,
 	}
 
-	// CTValidationFailedCondition is the ClusterTemplate condition where the validation failed.
-	CTValidationFailedCondition = metav1.Condition{
-		Type:   string(provisioningv1alpha1.CTconditionTypes.Validated),
-		Reason: string(provisioningv1alpha1.CTconditionReasons.Failed),
-		Status: metav1.ConditionFalse,
+	// CTInvalidSchemaCondition is the ClusterTemplate condition where the validation failed due to invalid schema.
+	CTInvalidSchemaCondition = metav1.Condition{
+		Type:    string(provisioningv1alpha1.CTconditionTypes.Validated),
+		Reason:  string(provisioningv1alpha1.CTconditionReasons.Failed),
+		Status:  metav1.ConditionFalse,
+		Message: "Error validating the clusterInstanceParameters schema",
 	}
 )

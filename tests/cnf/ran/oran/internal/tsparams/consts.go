@@ -38,24 +38,11 @@ const (
 
 	// ImmutableMessage is the message to expect in a Policy's history when an immutable field cannot be updated.
 	ImmutableMessage = "cannot be updated, likely due to immutable fields not matching"
-	// CTMissingSchemaMessage is the ClusterTemplate condition message for when required schema is missing.
-	CTMissingSchemaMessage = "Error validating the clusterInstanceParameters schema"
-	// CTMissingLabelMessage is the ClusterTemplate condition message for when the default ConfigMap is missing an
-	// interface label.
-	CTMissingLabelMessage = "failed to validate the default ConfigMap: 'label' is missing for interface"
 )
 
 const (
 	// TemplateValid is the valid ClusterTemplate used for the provision tests.
 	TemplateValid = "v1"
-	// TemplateNonexistentProfile is the ClusterTemplate version for the nonexistent hardware profile test.
-	TemplateNonexistentProfile = "v2"
-	// TemplateNoHardware is the ClusterTemplate version for the no hardware available test.
-	TemplateNoHardware = "v3"
-	// TemplateMissingLabels is the ClusterTemplate version for the missing interface labels test.
-	TemplateMissingLabels = "v4"
-	// TemplateIncorrectLabel is the ClusterTemplate version for the incorrect boot interface label test.
-	TemplateIncorrectLabel = "v5"
 	// TemplateUpdateProfile is the ClusterTemplate version for the hardware profile update test.
 	TemplateUpdateProfile = "v6"
 	// TemplateInvalid is the ClusterTemplate version for the invalid ClusterTemplate test.
