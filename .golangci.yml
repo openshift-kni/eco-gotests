@@ -1,5 +1,5 @@
 run:
-  go: "1.23"
+  go: "1.24"
   timeout: 15m
 #  modules-download-mode: readonly
 
@@ -16,10 +16,6 @@ linters-settings:
         arguments:
           - disableStutteringCheck
   depguard:
-#    list-type: blacklist
-#    include-go-root: false
-#    packages:
-#      - "github.com/onsi**"
     rules:
       main:
         deny:
@@ -58,6 +54,10 @@ linters-settings:
         - "github.com/stmcginnis/gofish"
         - "github.com/BurntSushi/toml"
         - "github.com/containers/image/v5/pkg/sysregistriesv2"
+        - "gopkg.in/yaml.v2"
+        - "gopkg.in/yaml.v3"
+        - "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
+        - "golang.org/x/crypto/ssh"
   wsl:
     strict-append: false
   gofmt:
@@ -132,12 +132,12 @@ linters:
     - revive
     - staticcheck
     - stylecheck
-    - tenv
     - thelper
     - typecheck
     - unconvert
     - unparam
     - unused
+    - usetesting
     - varnamelen
     - wsl
     - nlreturn

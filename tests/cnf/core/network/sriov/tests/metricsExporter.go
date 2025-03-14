@@ -489,6 +489,7 @@ func fetchScalarFromPromQLoutput(res string) int {
 	err := json.Unmarshal([]byte(res), &outValue)
 	Expect(err).ToNot(HaveOccurred(), "Failed to Unmarshal promQL output from prometheus pod")
 
+	//nolint:forcetypeassert
 	finalVal, err := strconv.Atoi(outValue[0].Value[1].(string))
 	Expect(err).To(Not(HaveOccurred()), "Failed to convert counter value to int")
 
