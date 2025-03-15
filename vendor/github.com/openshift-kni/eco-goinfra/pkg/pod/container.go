@@ -456,7 +456,7 @@ func (builder *ContainerBuilder) GetContainerCfg() (*corev1.Container, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("Failed to build container configuration due to %s", builder.errorMsg)
 
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return builder.definition, nil

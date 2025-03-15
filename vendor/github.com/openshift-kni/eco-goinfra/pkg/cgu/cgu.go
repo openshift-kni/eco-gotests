@@ -511,7 +511,7 @@ func (builder *CguBuilder) WaitUntilBackupStarts(timeout time.Duration) (*CguBui
 	if !builder.Exists() {
 		glog.V(100).Infof("The CGU does not exist on the cluster")
 
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	var err error
@@ -552,7 +552,7 @@ func (builder *CguBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
@@ -564,7 +564,7 @@ func (builder *CguBuilder) validate() (bool, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

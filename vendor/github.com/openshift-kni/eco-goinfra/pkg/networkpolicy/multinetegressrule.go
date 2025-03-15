@@ -242,7 +242,7 @@ func (builder *EgressRuleBuilder) GetEgressRuleCfg() (*v1beta1.MultiNetworkPolic
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("Failed to build Egress rule configuration due to %s", builder.errorMsg)
 
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return builder.definition, nil
@@ -266,7 +266,7 @@ func (builder *EgressRuleBuilder) validate() (bool, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", objectName, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

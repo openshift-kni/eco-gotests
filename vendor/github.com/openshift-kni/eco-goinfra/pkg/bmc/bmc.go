@@ -1079,7 +1079,7 @@ func (bmc *BMC) validate() (bool, error) {
 	if bmc.errorMsg != "" {
 		glog.V(100).Infof("The BMC has an error message: %s", bmc.errorMsg)
 
-		return false, fmt.Errorf(bmc.errorMsg)
+		return false, fmt.Errorf("%s", bmc.errorMsg)
 	}
 
 	return true, nil
