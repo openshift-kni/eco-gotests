@@ -196,6 +196,27 @@ func (builder *ManagedClusterBuilder) Delete() error {
 	return nil
 }
 
+// DeleteAndWait deletes the Cluster then waits up to timeout until the Cluster no longer
+// exists.
+func (builder *ManagedClusterBuilder) DeleteAndWait(timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Deleting cluster %s and waiting up to %s until it is deleted",
+		builder.Definition.Name, timeout)
+
+	err := builder.Delete()
+	if err != nil {
+		return err
+	}
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			return !builder.Exists(), nil
+		})
+}
+
 // Get returns the ManagedCluster object if found.
 func (builder *ManagedClusterBuilder) Get() (*clusterv1.ManagedCluster, error) {
 	if valid, err := builder.validate(); !valid {
@@ -313,7 +334,7 @@ func (builder *ManagedClusterBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
@@ -325,7 +346,7 @@ func (builder *ManagedClusterBuilder) validate() (bool, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

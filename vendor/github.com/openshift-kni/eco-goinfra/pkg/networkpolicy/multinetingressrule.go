@@ -224,7 +224,7 @@ func (builder *IngressRuleBuilder) GetIngressRuleCfg() (*v1beta1.MultiNetworkPol
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("Failed to build Ingress rule configuration due to %s", builder.errorMsg)
 
-		return nil, fmt.Errorf(builder.errorMsg)
+		return nil, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return builder.definition, nil
@@ -242,13 +242,13 @@ func (builder *IngressRuleBuilder) validate() (bool, error) {
 	if builder.definition == nil {
 		glog.V(100).Infof("The %s is undefined", objectName)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(objectName))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(objectName))
 	}
 
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", objectName, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil
