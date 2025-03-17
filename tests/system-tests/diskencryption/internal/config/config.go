@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsconfig"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
