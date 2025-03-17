@@ -20,7 +20,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
@@ -69,7 +69,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(kmmparams.LabelSuite), func() {
 
 		It("should pass malware testing", reportxml.ID("68376"), func() {
 			By("Obtain KMM images for test")
-			pods, _ := pod.List(APIClient, kmmparams.KmmHubOperatorNamespace, v1.ListOptions{
+			pods, _ := pod.List(APIClient, kmmparams.KmmHubOperatorNamespace, metav1.ListOptions{
 				FieldSelector: "status.phase=Running",
 			})
 

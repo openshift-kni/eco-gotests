@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/openshift/api/operator/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/apiservers"
@@ -21,7 +21,7 @@ var imageRegistryCoName = "image-registry"
 var imageRegistryDeploymentName = "image-registry"
 
 // SetManagementState returns true when succeeded to change imageRegistry operator management state.
-func SetManagementState(apiClient *clients.Settings, expectedManagementState v1.ManagementState) error {
+func SetManagementState(apiClient *clients.Settings, expectedManagementState operatorv1.ManagementState) error {
 	irConfigObj, err := imageregistry.Pull(apiClient, imageRegistryObjName)
 
 	if err != nil {

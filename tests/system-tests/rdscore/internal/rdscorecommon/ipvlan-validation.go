@@ -12,7 +12,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -321,7 +321,7 @@ func VerifyIPVLANConnectivityOnSameNode() {
 }
 
 func defineIPVlanDeployment(dName, nsName, dLabels, netDefName, volName string,
-	dContainer *v1.Container,
+	dContainer *corev1.Container,
 	nodeSelector map[string]string) *deployment.Builder {
 	By("Defining deployment configuration")
 
@@ -355,12 +355,12 @@ func defineIPVlanDeployment(dName, nsName, dLabels, netDefName, volName string,
 	volMode := new(int32)
 	*volMode = 511
 
-	volDefinition := v1.Volume{
+	volDefinition := corev1.Volume{
 		Name: "configs",
-		VolumeSource: v1.VolumeSource{
-			ConfigMap: &v1.ConfigMapVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			ConfigMap: &corev1.ConfigMapVolumeSource{
 				DefaultMode: volMode,
-				LocalObjectReference: v1.LocalObjectReference{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: volName,
 				},
 			},
