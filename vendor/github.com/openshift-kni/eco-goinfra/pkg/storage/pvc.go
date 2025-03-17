@@ -85,16 +85,14 @@ func (builder *PVCBuilder) WithPVCAccessMode(accessMode string) (*PVCBuilder, er
 
 	if accessMode == "" {
 		glog.V(100).Infof("Empty accessMode for PVC %s", builder.Definition.Name)
-		builder.errorMsg = "Empty accessMode for PVC requested"
 
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("empty accessMode for PVC requested")
 	}
 
 	if !validatePVCAccessMode(accessMode) {
 		glog.V(100).Infof("Invalid accessMode for PVC %s", accessMode)
-		builder.errorMsg = fmt.Sprintf("Invalid accessMode for PVC %s", accessMode)
 
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("invalid accessMode for PVC %s", accessMode)
 	}
 
 	if builder.Definition.Spec.AccessModes != nil {
@@ -352,7 +350,7 @@ func (builder *PVCBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
@@ -364,7 +362,7 @@ func (builder *PVCBuilder) validate() (bool, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

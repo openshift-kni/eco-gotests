@@ -182,17 +182,13 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 	if name == "" {
 		glog.V(100).Infof("The name of the preflightvalidationocp is empty")
 
-		builder.errorMsg = "preflightvalidationocp 'name' cannot be empty"
-
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("%s", "preflightvalidationocp 'name' cannot be empty")
 	}
 
 	if nsname == "" {
 		glog.V(100).Infof("The namespace of the preflightvalidationocp is empty")
 
-		builder.errorMsg = "preflightvalidationocp 'nsname' cannot be empty"
-
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("%s", "preflightvalidationocp 'nsname' cannot be empty")
 	}
 
 	if !builder.Exists() {
@@ -325,7 +321,7 @@ func (builder *PreflightValidationOCPBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
@@ -337,7 +333,7 @@ func (builder *PreflightValidationOCPBuilder) validate() (bool, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

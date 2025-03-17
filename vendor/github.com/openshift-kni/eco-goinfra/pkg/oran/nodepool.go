@@ -128,7 +128,7 @@ func (builder *NodePoolBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is uninitialized", resourceCRD)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
@@ -140,7 +140,7 @@ func (builder *NodePoolBuilder) validate() (bool, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message %s", resourceCRD, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

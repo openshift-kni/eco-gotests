@@ -198,13 +198,13 @@ func (builder *ModuleLoaderContainerBuilder) validate() (bool, error) {
 	if builder.definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil
@@ -327,13 +327,13 @@ func (builder *DevicePluginContainerBuilder) validate() (bool, error) {
 	if builder.definition == nil {
 		glog.V(100).Infof("The %s is undefined", strings.ToLower(resourceCRD))
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", strings.ToLower(resourceCRD), builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

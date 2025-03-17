@@ -384,7 +384,7 @@ func (builder *ImageBasedUpgradeBuilder) WaitUntilStageComplete(stage string) (*
 	if !builder.Exists() {
 		glog.V(100).Infof("The imagebasedupgrade does not exist on the cluster")
 
-		return builder, fmt.Errorf(builder.errorMsg)
+		return builder, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	if !slices.Contains([]string{idle, "Prep", "Upgrade", "Rollback"}, stage) {
@@ -469,7 +469,7 @@ func (builder *ImageBasedUpgradeBuilder) validate() (bool, error) {
 	if builder.Definition == nil {
 		glog.V(100).Infof("The %s is undefined", resourceCRD)
 
-		return false, fmt.Errorf(msg.UndefinedCrdObjectErrString(resourceCRD))
+		return false, fmt.Errorf("%s", msg.UndefinedCrdObjectErrString(resourceCRD))
 	}
 
 	if builder.apiClient == nil {
@@ -481,7 +481,7 @@ func (builder *ImageBasedUpgradeBuilder) validate() (bool, error) {
 	if builder.errorMsg != "" {
 		glog.V(100).Infof("The %s builder has error message: %s", resourceCRD, builder.errorMsg)
 
-		return false, fmt.Errorf(builder.errorMsg)
+		return false, fmt.Errorf("%s", builder.errorMsg)
 	}
 
 	return true, nil

@@ -371,7 +371,7 @@ func parsePodNetworkObjectText(podnetwork string) (string, string, string, error
 	for i := range allItems {
 		matched, _ := regexp.MatchString("^[a-z0-9]([-a-z0-9]*[a-z0-9])?$", allItems[i])
 		if !matched && len([]rune(allItems[i])) > 0 {
-			return "", "", "", fmt.Errorf(fmt.Sprintf("Failed to parse: one or more items did not match comma-delimited format (must consist of lower case alphanumeric characters). Must start and end with an alphanumeric character), mismatch @ '%v'", allItems[i]))
+			return "", "", "", fmt.Errorf("Failed to parse: one or more items did not match comma-delimited format (must consist of lower case alphanumeric characters). Must start and end with an alphanumeric character), mismatch @ '%v'", allItems[i])
 		}
 	}
 
