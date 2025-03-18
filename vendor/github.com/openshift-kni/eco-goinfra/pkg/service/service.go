@@ -410,14 +410,6 @@ func DefineServicePort(port, targetPort int32, protocol corev1.Protocol) (*corev
 	}, nil
 }
 
-// GetServiceGVR returns service's GroupVersionResource which could be used for Clean function.
-// Deprecated: This function is being name-changed to GetGVR in the future and will be deprecated.
-func GetServiceGVR() schema.GroupVersionResource {
-	return schema.GroupVersionResource{
-		Group: "", Version: "v1", Resource: "services",
-	}
-}
-
 // GetGVR returns service's GroupVersionResource which could be used for Clean function.
 func GetGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}

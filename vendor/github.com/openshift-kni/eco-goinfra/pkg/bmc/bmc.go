@@ -768,6 +768,90 @@ func (bmc *BMC) SetSystemBootOrderReferences(bootOrderReferences []string) error
 	return system.SetBoot(newBoot)
 }
 
+// BootFromCD inserts the image available in isoUrl in the virtual media with virtualMediaID
+// and boots from it only once.
+func (bmc *BMC) BootFromCD(isoURL, virtualMediaID string) error {
+	glog.V(100).Infof("Setting to boot from CD (ISO: %s)", isoURL)
+
+	if len(isoURL) == 0 {
+		glog.V(100).Infof("isoUrl param cannot be empty")
+
+		return fmt.Errorf("isoUrl param cannot be empty")
+	}
+
+	if len(virtualMediaID) == 0 {
+		glog.V(100).Infof("virtualMediaID param cannot be empty")
+
+		return fmt.Errorf("virtualMediaID param cannot be empty")
+	}
+
+	redfishClient, cancel, err := redfishConnect(
+		bmc.host,
+		bmc.redfishUser.Name,
+		bmc.redfishUser.Password,
+		bmc.timeOuts.Redfish)
+	if err != nil {
+		glog.V(100).Infof("Redfish connection error: %v", err)
+
+		return fmt.Errorf("redfish connection error: %w", err)
+	}
+
+	defer func() {
+		redfishClient.Logout()
+		cancel()
+	}()
+
+	system, err := redfishGetSystem(redfishClient, bmc.systemIndex)
+	if err != nil {
+		glog.V(100).Infof("Failed to get redfish system: %v", err)
+
+		return fmt.Errorf("failed to get redfish system: %w", err)
+	}
+
+	glog.V(100).Infof("Setting virtual media: %+v", isoURL)
+
+	virtualMedia, err := system.VirtualMedia()
+	if err != nil {
+		glog.V(100).Infof("Failed to retrieve virtual media: %v", err)
+	}
+
+	var cdrom *redfish.VirtualMedia
+
+	for _, vm := range virtualMedia {
+		if vm.MediaTypes != nil && vm.ID == virtualMediaID {
+			for _, item := range vm.MediaTypes {
+				if item == "CD" {
+					cdrom = vm
+				}
+			}
+		}
+	}
+
+	if cdrom == nil {
+		glog.V(100).Infof("No CD virtual media slot found")
+
+		return fmt.Errorf("no cd virtual media slot found")
+	}
+
+	err = cdrom.InsertMedia(isoURL, true, true)
+	if err != nil {
+		glog.V(100).Infof("Failed to insert virtual media: %v", err)
+
+		return err
+	}
+
+	newBoot := redfish.Boot{
+		BootSourceOverrideEnabled: redfish.OnceBootSourceOverrideEnabled,
+		BootSourceOverrideTarget:  redfish.CdBootSourceOverrideTarget,
+	}
+
+	glog.V(100).Infof("Setting new Boot value: %+v", newBoot)
+
+	err = system.SetBoot(newBoot)
+
+	return err
+}
+
 // RunCLICommand runs a CLI command in the BMC's console over SSH. This method will block until the command has
 // finished, and its output is copied to stdout and/or stderr if applicable. If combineOutput is true, stderr content is
 // merged in stdout. The timeout param is used to avoid the caller to be stuck forever in case something goes wrong or

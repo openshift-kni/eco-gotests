@@ -33,16 +33,19 @@ type Builder struct {
 
 // Pull retrieves an existing imageRegistry object from the cluster.
 func Pull(apiClient *clients.Settings, imageRegistryObjName string) (*Builder, error) {
+	glog.V(100).Infof("Pulling existing imageRegistry Config %s", imageRegistryObjName)
+
 	if apiClient == nil {
 		glog.V(100).Infof("The apiClient is empty")
 
 		return nil, fmt.Errorf("imageRegistry Config 'apiClient' cannot be empty")
 	}
 
-	if imageRegistryObjName == "" {
-		glog.V(100).Infof("The name of the imageRegistry is empty")
+	err := apiClient.AttachScheme(imageregistryv1.Install)
+	if err != nil {
+		glog.V(100).Infof("Failed to attach imageregistry v1 scheme: %v", err)
 
-		return nil, fmt.Errorf("imageRegistry 'imageRegistryObjName' cannot be empty")
+		return nil, err
 	}
 
 	glog.V(100).Infof(
@@ -55,6 +58,12 @@ func Pull(apiClient *clients.Settings, imageRegistryObjName string) (*Builder, e
 				Name: imageRegistryObjName,
 			},
 		},
+	}
+
+	if imageRegistryObjName == "" {
+		glog.V(100).Infof("The name of the imageRegistry is empty")
+
+		return nil, fmt.Errorf("imageRegistry 'imageRegistryObjName' cannot be empty")
 	}
 
 	if !builder.Exists() {
