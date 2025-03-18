@@ -99,13 +99,27 @@ const (
 	CPUArchitectureMulti   CPUArchitecture = "multi"
 )
 
-// TemplateRef is used to specify the installation CR templates
-type TemplateRef struct {
+// Reference represents a namespaced reference to a Kubernetes object.
+// It is commonly used to specify dependencies or related objects in different namespaces.
+type Reference struct {
+	// Name specifies the name of the referenced object.
+	// +kubebuilder:validation:MinLength=1
 	// +required
 	Name string `json:"name"`
+
+	// Namespace specifies the namespace of the referenced object.
+	// +kubebuilder:validation:MinLength=1
 	// +required
 	Namespace string `json:"namespace"`
 }
+
+// TemplateRef is a reference to an installation Custom Resource (CR) template.
+// It provides a way to specify the template to be used for an installation process.
+type TemplateRef Reference
+
+// HostRef is a reference to a BareMetalHost node located in another namespace.
+// It is used to link a resource to a specific BareMetalHost instance.
+type HostRef Reference
 
 // ResourceRef represents the API version and kind of a Kubernetes resource
 type ResourceRef struct {
@@ -166,6 +180,10 @@ type NodeSpec struct {
 	// Hostname is the desired hostname for the host
 	// +required
 	HostName string `json:"hostName"`
+
+	// HostRef is used to specify a reference to a BareMetalHost resource.
+	// +optional
+	HostRef *HostRef `json:"hostRef,omitempty"`
 
 	// CPUArchitecture is the software architecture of the node.
 	// If it is not defined here then it is inheirited from the ClusterInstanceSpec.
