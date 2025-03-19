@@ -22,8 +22,9 @@ import (
 
 const (
 	supportToolsDeployRBACName = "privileged-rdscore-supporttools"
-	supportToolsDeploySAName   = "default"
+	supportToolsDeploySAName   = "rdscore-supporttools-sa"
 	supportToolsRBACRole       = "system:openshift:scc:privileged"
+	supportToolDeploymentName  = "rdscore-supporttools-ns"
 )
 
 // CreateTraceRouteDeployment creates support-tools deployment on the nodes specified in scheduleOnNodes.
@@ -33,7 +34,6 @@ func CreateTraceRouteDeployment(
 	stDeploymentLabel,
 	stImage string,
 	scheduleOnNodes []string) (*deployment.Builder, error) {
-	stDeploymentName := fmt.Sprintf("%s-support-tools", stNamespace)
 
 	glog.V(100).Infof("Create support-tools namespace %s", stNamespace)
 
@@ -53,7 +53,7 @@ func CreateTraceRouteDeployment(
 	stDeployment, err := createTraceRouteDeployment(
 		apiClient,
 		stImage,
-		stDeploymentName,
+		supportToolDeploymentName,
 		stNamespace,
 		stDeploymentLabel,
 		scheduleOnNodes,
@@ -61,10 +61,10 @@ func CreateTraceRouteDeployment(
 
 	if err != nil {
 		glog.V(100).Infof("Failed to create traceroute deployment %s in namespace %s due to %v",
-			stDeploymentName, stNamespace, err)
+			supportToolDeploymentName, stNamespace, err)
 
 		return stDeployment, fmt.Errorf("failed to create traceroute deployment %s in namespace %s: %w",
-			stDeploymentName, stNamespace, err)
+			supportToolDeploymentName, stNamespace, err)
 	}
 
 	glog.V(100).Infof("Creating deployment")
@@ -72,16 +72,16 @@ func CreateTraceRouteDeployment(
 	stDeployment, err = stDeployment.CreateAndWaitUntilReady(5 * time.Minute)
 	if err != nil {
 		glog.V(100).Infof("Failed to create deployment %s in namespace %s: %v",
-			stDeploymentName, stNamespace, err)
+			supportToolDeploymentName, stNamespace, err)
 
 		return nil, fmt.Errorf("failed to create deployment %s in namespace %s: %w",
-			stDeploymentName, stNamespace, err)
+			supportToolDeploymentName, stNamespace, err)
 	}
 
 	if stDeployment == nil {
-		glog.V(100).Infof("deployment %s not found in namespace %s", stDeploymentName, stDeploymentName)
+		glog.V(100).Infof("deployment %s not found in namespace %s", supportToolDeploymentName, stNamespace)
 
-		return nil, fmt.Errorf("deployment %s not found in namespace %s", stDeploymentName, stDeploymentName)
+		return nil, fmt.Errorf("deployment %s not found in namespace %s", supportToolDeploymentName, stNamespace)
 	}
 
 	return stDeployment, nil
