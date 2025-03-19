@@ -191,6 +191,7 @@ type CoreConfig struct {
 	NROPSchedulerName       string      `yaml:"rdscore_nrop_scheduler_name" envconfig:"ECO_RDSCORE_NROP_SCHEDULER_NAME"`
 	//nolint:lll
 	MetalLBFRRTestURLIPv4 string `yaml:"rdscore_metallb_frr_test_url_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_TEST_URL_IPV4"`
+	MetalLBFRRNamespace   string `yaml:"rdscore_frr_namespace" envconfig:"ECO_RDSCORE_METALLB_FRR_NAMESPACE"`
 	MetalLBFRROneIPv4     string `yaml:"rdscore_metallb_frr_one_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_ONE_IPV4"`
 	MetalLBFRROneIPv6     string `yaml:"rdscore_metallb_frr_one_ipv6" envconfig:"ECO_RDSCORE_METALLB_FRR_ONEIPV6"`
 	MetalLBFRRTwoIPv4     string `yaml:"rdscore_metallb_frr_two_ipv4" envconfig:"ECO_RDSCORE_METALLB_FRR_TWO_IPV4"`

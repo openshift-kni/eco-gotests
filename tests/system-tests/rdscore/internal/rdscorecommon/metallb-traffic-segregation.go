@@ -71,7 +71,7 @@ func VerifyMetallbEgressTrafficSegregation(ctx SpecContext) {
 
 	By("Randomly choosing node for the traceroute deployment")
 
-	segregationTestNode, err := getNodeForTest(rdscoreparams.MetalLBOperatorNamespace,
+	segregationTestNode, err := getNodeForTest(RDSCoreConfig.MetalLBFRRNamespace,
 		rdscoreparams.MetalLBFRRPodSelector)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve testing node name: %v", err))
