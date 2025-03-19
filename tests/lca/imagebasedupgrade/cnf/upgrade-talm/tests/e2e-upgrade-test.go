@@ -2,6 +2,7 @@ package upgrade_test
 
 import (
 	"fmt"
+	cnfibuvalidations "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/validations"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,9 +15,10 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfclusterinfo"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfhelper"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/cnfinittools"
-	cnfibuvalidations "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/internal/validations"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/cnf/upgrade-talm/internal/tsparams"
 )
+
+var upgradeSuccessful bool = false
 
 var _ = Describe(
 	"Performing happy path image based upgrade",
@@ -64,6 +66,7 @@ var _ = Describe(
 				_, err = newIbguBuilder.WaitUntilComplete(30 * time.Minute)
 				Expect(err).NotTo(HaveOccurred(), "Prep and Upgrade IBGU did not complete in time.")
 
+				upgradeSuccessful = true
 			})
 
 			By("Saving target sno cluster info after upgrade", func() {
@@ -71,8 +74,50 @@ var _ = Describe(
 				Expect(err).ToNot(HaveOccurred(), "Failed to collect and save target sno cluster info after upgrade")
 			})
 
+			By("Running post-upgrade validations", func() {
+				cnfibuvalidations.PostUpgradeValidations()
+			})
 		})
 
-		cnfibuvalidations.PostUpgradeValidations()
+		if upgradeSuccessful {
+			It("Rollback successful upgrade", reportxml.ID("69058"), func() {
+				By("Deleting upgrade ibgu created on target hub cluster", func() {
+					newIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient,
+						tsparams.IbguName, tsparams.IbguNamespace).
+						WithClusterLabelSelectors(tsparams.ClusterLabelSelector).
+						WithSeedImageRef(cnfinittools.CNFConfig.IbguSeedImage, cnfinittools.CNFConfig.IbguSeedImageVersion).
+						WithOadpContent(cnfinittools.CNFConfig.IbguOadpCmName, cnfinittools.CNFConfig.IbguOadpCmNamespace).
+						WithPlan([]string{"Prep", "Upgrade"}, 5, 30)
 
+					_, err := newIbguBuilder.DeleteAndWait(1 * time.Minute)
+					Expect(err).ToNot(HaveOccurred(), "Failed to delete prep-upgrade ibgu on target hub cluster")
+
+					rollbackIbguBuilder := ibgu.NewIbguBuilder(cnfinittools.TargetHubAPIClient, "rollbackibgu", tsparams.IbguNamespace)
+					rollbackIbguBuilder = rollbackIbguBuilder.WithClusterLabelSelectors(tsparams.ClusterLabelSelector)
+					rollbackIbguBuilder = rollbackIbguBuilder.WithSeedImageRef(
+						cnfinittools.CNFConfig.IbguSeedImage,
+						cnfinittools.CNFConfig.IbguSeedImageVersion)
+					rollbackIbguBuilder = rollbackIbguBuilder.WithOadpContent(
+						cnfinittools.CNFConfig.IbguOadpCmName,
+						cnfinittools.CNFConfig.IbguOadpCmNamespace)
+					rollbackIbguBuilder = rollbackIbguBuilder.WithPlan([]string{"Rollback", "FinalizeRollback"}, 5, 30)
+
+					rollbackIbguBuilder, err = rollbackIbguBuilder.Create()
+					Expect(err).ToNot(HaveOccurred(), "Failed to create rollback Ibgu.")
+
+					_, err = rollbackIbguBuilder.WaitUntilComplete(30 * time.Minute)
+					Expect(err).NotTo(HaveOccurred(), "Rollback IBGU did not complete in time.")
+
+					_, err = rollbackIbguBuilder.DeleteAndWait(1 * time.Minute)
+					Expect(err).ToNot(HaveOccurred(), "Failed to delete rollback ibgu on target hub cluster")
+				})
+
+				// Sleep for 10 seconds to allow talm to reconcile state.
+				// Sometimes if the next test re-creates the CGUs too quickly,
+				// the policies compliance status is not updated correctly.
+				time.Sleep(10 * time.Second)
+
+			})
+
+		}
 	})
