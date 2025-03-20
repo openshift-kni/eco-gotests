@@ -177,6 +177,34 @@ var _ = Describe(
 				Label("egressip", "egressip-ipv6", "egressip-failover"), reportxml.ID("78283"),
 				rdscorecommon.VerifyEgressIPFailOverIPv6)
 
+			It("Verifies pod-level bonded workloads on the same node and different PFs",
+				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("77927"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeDifferentPFs)
+
+			It("Verifies pod-level bonded workloads on the different nodes and same PF",
+				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("78150"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesSamePF)
+
+			It("Verifies pod-level bonded workloads on the different nodes and different PFs",
+				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("78295"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
+
+			It("Verifies pod-level bonded workloads during and after bond active interface fail-over",
+				Label("pod-level-bond", "pod-level-bond-fail-over"), reportxml.ID("79329"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsAfterVFFailOver)
+
+			It("Verifies pod-level bonded workloads after pod bonded interface recovering after failure",
+				Label("pod-level-bond", "pod-level-bond-failure"), reportxml.ID("80489"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsAfterBondInterfaceFailure)
+
+			It("Verifies pod-level bonded workloads after bond interface recovering after both VFs failure",
+				Label("pod-level-bond", "pod-level-bond-failure"), reportxml.ID("80696"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsAfterBothVFsFailure)
+
+			It("Verifies pod-level bonded workloads after pod crashing",
+				Label("pod-level-bond", "pod-level-pod-failure"), reportxml.ID("80490"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsAfterPodCrashing)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure all nodes are Ready and scheduling enabled")
 				rdscorecommon.EnsureInNodeReadiness(ctx)
@@ -430,6 +458,18 @@ var _ = Describe(
 			It("Verify LB application is not reachable from the incorrect FRR container post hard reboot",
 				Label("metallb-segregation"), reportxml.ID("79284"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
+			It("Verifies pod-level bonded workloads on the same node and different PFs post hard reboot",
+				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("79332"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeDifferentPFs)
+
+			It("Verifies pod-level bonded workloads on the different nodes and same PF post hard reboot",
+				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("79334"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesSamePF)
+
+			It("Verifies pod-level bonded workloads on the different nodes and different PFs post hard reboot",
+				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("79336"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -636,5 +676,17 @@ var _ = Describe(
 			It("Verify LB application is not reachable from the incorrect FRR container post soft reboot",
 				Label("metallb-segregation"), reportxml.ID("79285"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
+			It("Verifies pod-level bonded workloads on the same node and different PFs post soft reboot",
+				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("79333"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeDifferentPFs)
+
+			It("Verifies pod-level bonded workloads on the different nodes and same PF post soft reboot",
+				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("79335"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesSamePF)
+
+			It("Verifies pod-level bonded workloads on the different nodes and different PFs post soft reboot",
+				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("79337"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
 		})
 	})
