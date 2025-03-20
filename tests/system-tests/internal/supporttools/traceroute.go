@@ -34,7 +34,6 @@ func CreateTraceRouteDeployment(
 	stDeploymentLabel,
 	stImage string,
 	scheduleOnNodes []string) (*deployment.Builder, error) {
-
 	glog.V(100).Infof("Create support-tools namespace %s", stNamespace)
 
 	err := ensureNamespaceExists(apiClient, stNamespace)
