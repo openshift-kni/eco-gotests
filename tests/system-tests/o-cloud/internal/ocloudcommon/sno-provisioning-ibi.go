@@ -1,6 +1,10 @@
 package ocloudcommon
 
 import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools"
+
 	"bytes"
 	"context"
 	"fmt"
@@ -11,9 +15,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
@@ -31,114 +32,115 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/files"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/sshcommand"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudparams"
 )
 
+// ImageBasedInstallConfigData struct holds the configuration data required for the image based install.
 type ImageBasedInstallConfigData struct {
 	BaseImageName       string
 	SeedImage           string
 	SeedVersion         string
 	Registry            string
 	PullSecret          string
-	SshKey              string
+	SSHKey              string
 	RegistryCertificate string
 	InterfaceName       string
 	InterfaceIpv6       string
-	DnsIpv6             string
+	DNSIpv6             string
 	NextHopIpv6         string
 	NextHopInterface    string
 }
 
 // VerifySuccessfulIbiSnoProvisioning verifies the successful provisioning of a SNO cluster using
-// the Image Based Installer
+// the Image Based Installer.
 func VerifySuccessfulIbiSnoProvisioning(ctx SpecContext) {
 	if OCloudConfig.GenerateSeedImage && !baseImageExists() {
 		generateBaseImage(ctx)
 	}
-	
+
 	installBaseImage(
-		OCloudConfig.Spoke2BMC, 
-		OCloudConfig.IbiBaseImageUrl, 
-		OCloudConfig.VirtualMediaID, 
-		ocloudparams.SshCluster2, 
-		ocloudparams.SpokeSshUser, 
-		ocloudparams.SpokeSshPasskeyPath, 
-		ctx, 
+		OCloudConfig.Spoke2BMC,
+		OCloudConfig.IbiBaseImageURL,
+		OCloudConfig.VirtualMediaID,
+		ocloudparams.SSHCluster2,
+		ocloudparams.SpokeSSHUser,
+		ocloudparams.SpokeSSHPasskeyPath,
+		ctx,
 		time.Minute)
 
-	pr := VerifyProvisionSnoCluster(
+	provisioningRequest := VerifyProvisionSnoCluster(
 		ocloudparams.TemplateName,
 		ocloudparams.TemplateVersion4,
 		ocloudparams.NodeClusterName2,
-		ocloudparams.OCloudSiteId,
+		ocloudparams.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
-	node, nodePool, ns, bmh, ici := verifyAndRetrieveAssociatedCRsForIBI(
+	node, nodePool, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
 		ocloudparams.ClusterName2,
 		ocloudparams.ClusterName2,
 		ocloudparams.ClusterName2,
 		ocloudparams.HostName2,
 		ctx)
 
-	VerifyAllPoliciesInNamespaceAreCompliant(ns.Object.Name, ctx, nil, nil)
-	glog.V(ocloudparams.OCloudLogLevel).Infof("All the policies in namespace %s are Complete", ns.Object.Name)
+	VerifyAllPoliciesInNamespaceAreCompliant(namespace.Object.Name, ctx, nil, nil)
+	glog.V(ocloudparams.OCloudLogLevel).Infof("All the policies in namespace %s are Complete", namespace.Object.Name)
 
-	VerifyProvisioningRequestIsFulfilled(pr)
-	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", pr.Object.Name)
+	VerifyProvisioningRequestIsFulfilled(provisioningRequest)
+	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest.Object.Name)
 
-	deprovisionIbiSnoCluster(pr, ns, node, nodePool, bmh, ici, ctx)
+	deprovisionIbiSnoCluster(provisioningRequest, namespace, node, nodePool, bareMetalHost, imageClusterInstall, ctx)
 }
 
 // VerifyFailedIbiSnoProvisioning verifies the failed provisioning of a SNO cluster using
-// the Image Based Installer
+// the Image Based Installer.
 func VerifyFailedIbiSnoProvisioning(ctx SpecContext) {
 	if OCloudConfig.GenerateSeedImage && !baseImageExists() {
 		generateBaseImage(ctx)
 	}
 
 	installBaseImage(
-		OCloudConfig.Spoke2BMC, 
-		OCloudConfig.IbiBaseImageUrl, 
-		OCloudConfig.VirtualMediaID, 
-		ocloudparams.SshCluster2, 
-		ocloudparams.SpokeSshUser, 
-		ocloudparams.SpokeSshPasskeyPath, 
-		ctx, 
+		OCloudConfig.Spoke2BMC,
+		OCloudConfig.IbiBaseImageURL,
+		OCloudConfig.VirtualMediaID,
+		ocloudparams.SSHCluster2,
+		ocloudparams.SpokeSSHUser,
+		ocloudparams.SpokeSSHPasskeyPath,
+		ctx,
 		time.Minute)
 
-	pr := VerifyProvisionSnoCluster(
+	provisioningRequest := VerifyProvisionSnoCluster(
 		ocloudparams.TemplateName,
 		ocloudparams.TemplateVersion5,
 		ocloudparams.NodeClusterName2,
-		ocloudparams.OCloudSiteId,
+		ocloudparams.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
-	node, nodePool, ns, bmh, ici := verifyAndRetrieveAssociatedCRsForIBI(
+	node, nodePool, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
 		ocloudparams.ClusterName2,
 		ocloudparams.ClusterName2,
 		ocloudparams.ClusterName2,
 		ocloudparams.HostName2,
 		ctx)
 
-	VerifyProvisioningRequestTimeout(pr)
-	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s has timed out", pr.Object.Name)
+	VerifyProvisioningRequestTimeout(provisioningRequest)
+	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s has timed out", provisioningRequest.Object.Name)
 
-	deprovisionIbiSnoCluster(pr, ns, node, nodePool, bmh, ici, ctx)
+	deprovisionIbiSnoCluster(provisioningRequest, namespace, node, nodePool, bareMetalHost, imageClusterInstall, ctx)
 }
 
 // installBaseImage boots a given spoke cluster from CD using the specified base image and virtual media ID,
 // and uses ssh to verify that the installation of the base image has finished before a given time.
 func installBaseImage(
 	spoke *bmc.BMC,
-	isoUrl, virtualMediaID, sshHost, sshUser, sshPassKey string, 
-	ctx context.Context, 
+	isoURL, virtualMediaID, sshHost, sshUser, sshPassKey string,
+	ctx context.Context,
 	timeout time.Duration) {
 	By("Installing base image in target SNO")
-	err := spoke.BootFromCD(isoUrl, virtualMediaID)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error setting virtual media to %s", isoUrl))
+
+	err := spoke.BootFromCD(isoURL, virtualMediaID)
+	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error setting virtual media to %s", isoURL))
 
 	powerState, err := spoke.SystemPowerState()
 	Expect(err).NotTo(HaveOccurred(), "Error getting system power state")
@@ -152,48 +154,59 @@ func installBaseImage(
 	}
 
 	By("Checking if image based install finished in target SNO")
+
 	Eventually(func(ctx context.Context) bool {
 		output := sshcommand.SSHCommand(ocloudparams.CheckIbiCompleted, sshHost, sshUser, sshPassKey)
 		if output.Err == nil && output.SSHOutput != "" {
 			return true
 		}
+
 		return false
 	}).WithTimeout(80*time.Minute).WithPolling(timeout).WithContext(ctx).Should(BeTrue(),
 		"Image based install did not completed")
 }
 
 // generateBaseImage provisions a seed SNO cluster and generates a base image to be used with Image Based Installation.
+//
+//nolint:funlen
 func generateBaseImage(ctx SpecContext) {
 	By("Generating a base image from seed SNO")
-	pr := VerifyProvisionSnoCluster(
+
+	provisioningRequest := VerifyProvisionSnoCluster(
 		ocloudparams.TemplateName,
 		ocloudparams.TemplateVersionSeed,
 		ocloudparams.NodeClusterName1,
-		ocloudparams.OCloudSiteId,
+		ocloudparams.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
-	node, nodePool, ns, ci := VerifyAndRetrieveAssociatedCRsForAI(pr.Object.Name, ocloudparams.ClusterName1, ctx)
+	node, nodePool, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
+		provisioningRequest.Object.Name, ocloudparams.ClusterName1, ctx)
 
-	VerifyAllPoliciesInNamespaceAreCompliant(ns.Object.Name, ctx, nil, nil)
+	VerifyAllPoliciesInNamespaceAreCompliant(namespace.Object.Name, ctx, nil, nil)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("All the policies are compliant")
 
-	VerifyProvisioningRequestIsFulfilled(pr)
-	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", pr.Object.Name)
+	VerifyProvisioningRequestIsFulfilled(provisioningRequest)
+	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest.Object.Name)
 
-	snoApiClient := CreateSnoApiClient(ocloudparams.ClusterName1)
+	snoAPIClient := CreateSnoAPIClient(ocloudparams.ClusterName1)
 
 	By("Verifying the SR-IOV network node states")
-	networkNodeStates, err := sriov.ListNetworkNodeState(snoApiClient, ocloudparams.SriovNamespace)
+
+	networkNodeStates, err := sriov.ListNetworkNodeState(snoAPIClient, ocloudparams.SriovNamespace)
 	Expect(err).NotTo(HaveOccurred(),
 		fmt.Sprintf("Error getting the list of SR-IOV network node states in namespace %s", ocloudparams.SriovNamespace))
 
 	for _, networkNodeState := range networkNodeStates {
-		networkNodeState.WaitUntilSyncStatus("Succeeded", 30*time.Minute)
+		err = networkNodeState.WaitUntilSyncStatus("Succeeded", 30*time.Minute)
+		Expect(err).NotTo(HaveOccurred(),
+			fmt.Sprintf("SR-IOV network node state %s did not succeeded", networkNodeState.Objects.Name))
 	}
 
 	By("Detaching the seed SNO from the hub")
+
 	cluster, err := ocm.PullManagedCluster(HubAPIClient, ocloudparams.ClusterName1)
+
 	if err == nil {
 		err = cluster.DeleteAndWait(time.Minute * 10)
 		Expect(err).NotTo(HaveOccurred(),
@@ -201,7 +214,8 @@ func generateBaseImage(ctx SpecContext) {
 	}
 
 	By("Creating a seedgen secret in the LCA namespace")
-	secret := secret.NewBuilder(snoApiClient, "seedgen", ocloudparams.LifecycleAgentNamespace, corev1.SecretTypeOpaque)
+
+	secret := secret.NewBuilder(snoAPIClient, "seedgen", ocloudparams.LifecycleAgentNamespace, corev1.SecretTypeOpaque)
 	data := make(map[string][]byte)
 	data["seedAuth"] = []byte(OCloudConfig.LocalRegistryAuth)
 	secret.WithData(data)
@@ -210,16 +224,19 @@ func generateBaseImage(ctx SpecContext) {
 		fmt.Sprintf("Error creating seedgen secret in namespace %s: %v", ocloudparams.LifecycleAgentNamespace, err))
 
 	By("Creating a seed generator")
-	seedGenerator := lca.NewSeedGeneratorBuilder(snoApiClient, ocloudparams.SeedGeneratorName)
+
+	seedGenerator := lca.NewSeedGeneratorBuilder(snoAPIClient, ocloudparams.SeedGeneratorName)
 	seedGenerator.WithSeedImage(OCloudConfig.SeedImage)
 	seedGenerator, err = seedGenerator.Create()
 	Expect(err).NotTo(HaveOccurred(),
 		fmt.Sprintf("Error creating seedgenerator seedimage: %v", err))
+
 	_, err = seedGenerator.WaitUntilComplete(30 * time.Minute)
 	Expect(err).NotTo(HaveOccurred(),
 		fmt.Sprintf("Seedgenerator seedimage did not completed: %v", err))
 
 	By("Creating the base image")
+
 	_, err = shell.ExecuteCmd(ocloudparams.CreateImageBasedInstallationConfig)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error creating image-based-installation-config.yaml file: %v", err))
 
@@ -231,6 +248,7 @@ func generateBaseImage(ctx SpecContext) {
 
 	certContent, err := os.ReadFile(ocloudparams.RegistryCertPath)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error reading certificate file: %v", err))
+
 	registryCertificate := removeLastNewline(string(certContent))
 
 	imageBasedConfigData := ImageBasedInstallConfigData{
@@ -239,11 +257,11 @@ func generateBaseImage(ctx SpecContext) {
 		SeedVersion:         OCloudConfig.SeedVersion,
 		Registry:            OCloudConfig.Registry,
 		PullSecret:          OCloudConfig.PullSecret,
-		SshKey:              OCloudConfig.SshKey,
+		SSHKey:              OCloudConfig.SSHKey,
 		RegistryCertificate: registryCertificate,
 		InterfaceName:       OCloudConfig.InterfaceName,
 		InterfaceIpv6:       OCloudConfig.InterfaceIpv6,
-		DnsIpv6:             OCloudConfig.DnsIpv6,
+		DNSIpv6:             OCloudConfig.DNSIpv6,
 		NextHopIpv6:         OCloudConfig.NextHopIpv6,
 		NextHopInterface:    OCloudConfig.NextHopInterface,
 	}
@@ -262,113 +280,132 @@ func generateBaseImage(ctx SpecContext) {
 	Expect(err).NotTo(HaveOccurred(),
 		fmt.Sprintf("Error copying rhcos-ibi.iso image to %s: %v", OCloudConfig.IbiBaseImagePath, err))
 
-	DeprovisionAiSnoCluster(pr, ns, ci, node, nodePool, ctx, nil)
+	DeprovisionAiSnoCluster(provisioningRequest, namespace, clusterInstance, node, nodePool, ctx, nil)
 }
-// verifyBmhDoesNotExist verifies that a given ORAN node does not exist.
-func verifyBmhDoesNotExist(bmh *bmh.BmhBuilder, wg *sync.WaitGroup, ctx SpecContext) {
-	if wg != nil {
-		defer wg.Done()
+
+// verifyBareMetalHostDoesNotExist verifies that a given ORAN node does not exist.
+func verifyBareMetalHostDoesNotExist(bareMetalHost *bmh.BmhBuilder, waitGroup *sync.WaitGroup, ctx SpecContext) {
+	if waitGroup != nil {
+		defer waitGroup.Done()
 		defer GinkgoRecover()
 	}
 
-	By(fmt.Sprintf("Verifying that BMH %s does not exist", bmh.Object.Name))
+	By(fmt.Sprintf("Verifying that BMH %s does not exist", bareMetalHost.Object.Name))
+
 	Eventually(func(ctx context.Context) bool {
-		return !bmh.Exists()
+		return !bareMetalHost.Exists()
 	}).WithTimeout(5*time.Second).WithPolling(time.Second).WithContext(ctx).Should(BeTrue(),
-		fmt.Sprintf("BMH %s still exists", bmh.Object.Name))
+		fmt.Sprintf("BMH %s still exists", bareMetalHost.Object.Name))
 }
 
 // verifyImageClusterInstallDoesNotExist verifies that a given ORAN node pool does not exist.
-func verifyImageClusterInstallDoesNotExist(ici *ibi.ImageClusterInstallBuilder, wg *sync.WaitGroup, ctx SpecContext) {
-	if wg != nil {
-		defer wg.Done()
+func verifyImageClusterInstallDoesNotExist(
+	imageClusterInstall *ibi.ImageClusterInstallBuilder, waitGroup *sync.WaitGroup, ctx SpecContext) {
+	if waitGroup != nil {
+		defer waitGroup.Done()
 		defer GinkgoRecover()
 	}
 
-	By(fmt.Sprintf("Verifying that image cluster install %s does not exist", ici.Object.Name))
+	iciName := imageClusterInstall.Object.Name
+	By(fmt.Sprintf("Verifying that image cluster install %s does not exist", iciName))
 	Eventually(func(ctx context.Context) bool {
-		return !ici.Exists()
+		return !imageClusterInstall.Exists()
 	}).WithTimeout(5*time.Second).WithPolling(time.Second).WithContext(ctx).Should(BeTrue(),
-		fmt.Sprintf("Image cluster install %s still exists", ici.Object.Name))
+		fmt.Sprintf("Image cluster install %s still exists", iciName))
 }
 
 // deprovisionIbiSnoCluster deprovisions a SNO cluster that has been deployed using IBI.
 func deprovisionIbiSnoCluster(
-	pr *oran.ProvisioningRequestBuilder,
-	ns *namespace.Builder,
+	provisioningRequest *oran.ProvisioningRequestBuilder,
+	namespace *namespace.Builder,
 	node *oran.NodeBuilder,
 	nodePool *oran.NodePoolBuilder,
-	bmh *bmh.BmhBuilder,
-	ici *ibi.ImageClusterInstallBuilder,
+	bareMetalHost *bmh.BmhBuilder,
+	imageClusterInstall *ibi.ImageClusterInstallBuilder,
 	ctx SpecContext) {
-
-	By(fmt.Sprintf("Tearing down PR %s", pr.Object.Name))
+	By(fmt.Sprintf("Tearing down PR %s", provisioningRequest.Object.Name))
 
 	var tearDownWg sync.WaitGroup
+
 	tearDownWg.Add(5)
-	go VerifyProvisioningRequestIsDeleted(pr, &tearDownWg, ctx)
-	go VerifyNamespaceDoesNotExist(ns, &tearDownWg, ctx)
+
+	go VerifyProvisioningRequestIsDeleted(provisioningRequest, &tearDownWg, ctx)
+	go VerifyNamespaceDoesNotExist(namespace, &tearDownWg, ctx)
 	go VerifyOranNodeDoesNotExist(node, &tearDownWg, ctx)
 	go VerifyOranNodePoolDoesNotExist(nodePool, &tearDownWg, ctx)
-	go verifyBmhDoesNotExist(bmh, &tearDownWg, ctx)
-	go verifyImageClusterInstallDoesNotExist(ici, &tearDownWg, ctx)
+	go verifyBareMetalHostDoesNotExist(bareMetalHost, &tearDownWg, ctx)
+	go verifyImageClusterInstallDoesNotExist(imageClusterInstall, &tearDownWg, ctx)
+
 	tearDownWg.Wait()
 
-	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s has been removed", pr.Object.Name)
-	downgradeOperatorImages()
+	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s has been removed", provisioningRequest.Object.Name)
 }
 
 // verifyAndRetrieveAssociatedCRsForIBI verifies that a given ORAN node, a given ORAN node pool, a given namespace
 // and a given cluster instance exist and retrieves them.
-func verifyAndRetrieveAssociatedCRsForIBI(nodeId string,
+func verifyAndRetrieveAssociatedCRsForIBI(
+	nodeID string,
 	nodePoolName string,
 	nsName string,
 	hostName string,
-	ctx SpecContext) (*oran.NodeBuilder, *oran.NodePoolBuilder, *namespace.Builder, *bmh.BmhBuilder, *ibi.ImageClusterInstallBuilder) {
+	ctx SpecContext,
+) (
+	*oran.NodeBuilder,
+	*oran.NodePoolBuilder,
+	*namespace.Builder,
+	*bmh.BmhBuilder,
+	*ibi.ImageClusterInstallBuilder,
+) {
 	By(fmt.Sprintf("Verifying that BMH %s exists in namespace %s", hostName, nsName))
-	bmh, err := bmh.Pull(HubAPIClient, hostName, nsName)
+
+	bareMetalHost, err := bmh.Pull(HubAPIClient, hostName, nsName)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to pull BMH %s from namespace %s: %v", hostName, nsName, err))
 
-	err = bmh.WaitUntilInStatus(bmhv1alpha1.StateExternallyProvisioned, 10*time.Minute)
+	err = bareMetalHost.WaitUntilInStatus(bmhv1alpha1.StateExternallyProvisioned, 10*time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to verify that BMH %s is externally provisioned", hostName))
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("BMH %s is externally provisioned", hostName)
 
-	By(fmt.Sprintf("Verifying that Image Cluster Install %s in namespace %s has succeeded", nodeId, nsName))
+	By(fmt.Sprintf("Verifying that Image Cluster Install %s in namespace %s has succeeded", nodeID, nsName))
 
-	ici, err := ibi.PullImageClusterInstall(HubAPIClient, nodeId, nsName)
+	imageClusterInstall, err := ibi.PullImageClusterInstall(HubAPIClient, nodeID, nsName)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull Image Cluster install %s from namespace %s; %v", nodeId, nsName, err))
+		fmt.Sprintf("Failed to pull Image Cluster install %s from namespace %s; %v", nodeID, nsName, err))
 
 	Eventually(func(ctx context.Context) bool {
-		condition, _ := ici.GetCompletedCondition()
+		condition, _ := imageClusterInstall.GetCompletedCondition()
+
 		return condition.Status == "True"
 	}).WithTimeout(60*time.Minute).WithPolling(20*time.Second).WithContext(ctx).Should(BeTrue(),
-		fmt.Sprintf("Image Cluster Install %s is not Completed", nodeId))
+		fmt.Sprintf("Image Cluster Install %s is not Completed", nodeID))
 
-	glog.V(ocloudparams.OCloudLogLevel).Infof("Cluster installation %s has succeeded ", nodeId)
+	glog.V(ocloudparams.OCloudLogLevel).Infof("Cluster installation %s has succeeded ", nodeID)
 
-	ns := VerifyNamespaceExists(nsName)
-	node := VerifyOranNodeExistsInNamespace(nodeId, ocloudparams.OCloudHardwareManagerPluginNamespace)
-	nodePool := VerifyOranNodePoolExistsInNamespace(nodePoolName, ocloudparams.OCloudHardwareManagerPluginNamespace)
+	namespace := VerifyNamespaceExists(nsName)
+	node := VerifyOranNodeExistsInNamespace(nodeID, ocloudparams.OCloudHardwareManagerPluginNamespace)
+	nodePool := VerifyOranNodePoolExistsInNamespace(
+		nodePoolName, ocloudparams.OCloudHardwareManagerPluginNamespace)
 
-	return node, nodePool, ns, bmh, ici
+	return node, nodePool, namespace, bareMetalHost, imageClusterInstall
 }
 
 // baseImageExists returns true if the IBI base image exists false otherwise.
 func baseImageExists() bool {
 	By(fmt.Sprintf("Verifying that file %s exists", OCloudConfig.IbiBaseImagePath))
+
 	_, err := os.Stat(OCloudConfig.IbiBaseImagePath)
+
 	return !os.IsNotExist(err)
 }
 
 // removeLastNewline removes the last new line.
-func removeLastNewline(s string) string {
-	lastNewline := strings.LastIndex(s, "\n")
+func removeLastNewline(originalString string) string {
+	lastNewline := strings.LastIndex(originalString, "\n")
 	if lastNewline == -1 {
-		return s
+		return originalString
 	}
-	return s[:lastNewline] + s[lastNewline+1:]
+
+	return originalString[:lastNewline] + originalString[lastNewline+1:]
 }

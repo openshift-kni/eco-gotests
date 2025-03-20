@@ -5,16 +5,16 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudparams"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudcommon"
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools"
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/tests"
-	"github.com/golang/glog"
 )
 
 var (
@@ -36,16 +36,16 @@ var _ = BeforeSuite(func() {
 
 	ocloudcommon.VerifyNamespaceExists(ocloudparams.OpenshiftGitOpsNamespace)
 	ocloudcommon.VerifyCsvSuccessful(
-		HubAPIClient, 
-		ocloudparams.OpenshiftGitOpsSubscriptionName, 
+		HubAPIClient,
+		ocloudparams.OpenshiftGitOpsSubscriptionName,
 		ocloudparams.OpenshiftGitOpsNamespace)
-	
+
 	ocloudcommon.VerifyNamespaceExists(ocloudparams.OCloudO2ImsNamespace)
 	ocloudcommon.VerifyCsvSuccessful(
-		HubAPIClient, 
-		ocloudparams.OCloudO2ImsSubscriptionName, 
+		HubAPIClient,
+		ocloudparams.OCloudO2ImsSubscriptionName,
 		ocloudparams.OCloudO2ImsNamespace)
-	
+
 	ocloudcommon.VerifyNamespaceExists(ocloudparams.OCloudHardwareManagerPluginNamespace)
 	ocloudcommon.VerifyCsvSuccessful(
 		HubAPIClient,
@@ -58,7 +58,6 @@ var _ = AfterSuite(func() {
 	if err != nil {
 		glog.V(ocloudparams.OCloudLogLevel).Infof("removed tmp/")
 	}
-
 
 })
 

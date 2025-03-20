@@ -1,10 +1,10 @@
 package ocloudinittools
 
 import (
+	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudconfig"
-	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 )
 
 var (

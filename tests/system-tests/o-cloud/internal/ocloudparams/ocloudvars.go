@@ -30,56 +30,58 @@ var (
 	// TemplateName defines the base name of the referenced ClusterTemplate.
 	TemplateName = "sno-ran-du"
 
+	// PolicyTemplateParameters defines the policy template parameters.
 	PolicyTemplateParameters = map[string]any{}
 
-	// TemplateVersion1 defines the version of the referenced ClusterTemplate used for the successful SNO provisioning using AI
+	//nolint:lll
+	// TemplateVersion1 defines the version of the referenced ClusterTemplate used for the successful SNO provisioning using AI.
 	TemplateVersion1 = "v4-18-0-ec3-1"
 
-	// TemplateVersion2 defines the version of the referenced ClusterTemplate used for the failing SNO provisioning using AI
+	//nolint:lll
+	// TemplateVersion2 defines the version of the referenced ClusterTemplate used for the failing SNO provisioning using AI.
 	TemplateVersion2 = "v4-18-0-ec3-2"
 
 	//nolint:lll
-	// TemplateVersion3 defines the version of the referenced ClusterTemplate used for the multicluster provisioning with different templates
+	// TemplateVersion3 defines the version of the referenced ClusterTemplate used for the multicluster provisioning with different templates.
 	TemplateVersion3 = "v4-18-0-ec3-3"
 
 	//nolint:lll
-	// TemplateVersion4 defines the version of the referenced ClusterTemplate used for the successful SNO provisioning using IBI
+	// TemplateVersion4 defines the version of the referenced ClusterTemplate used for the successful SNO provisioning using IBI.
 	TemplateVersion4 = "v4-18-0-ec3-4"
 
 	//nolint:lll
-	// TemplateVersion5 defines the version of the referenced ClusterTemplate used for the failing SNO provisioning using IBI
+	// TemplateVersion5 defines the version of the referenced ClusterTemplate used for the failing SNO provisioning using IBI.
 	TemplateVersion5 = "v4-18-0-ec3-5"
 
-	//nolint:lll
-	// TemplateVersion6 defines the version of the referenced ClusterTemplate used for the Day 2 operations
+	// TemplateVersion6 defines the version of the referenced ClusterTemplate used for the Day 2 operations.
 	TemplateVersion6 = "v4-18-0-ec3-6"
 
 	//nolint:lll
-	// TemplateVersionSeed defines the version of the referenced ClusterTemplate used for the provisioning of the seed cluster for IBI
+	// TemplateVersionSeed defines the version of the referenced ClusterTemplate used for the provisioning of the seed cluster for IBI.
 	TemplateVersionSeed = "v4-18-0-ec3-seed-1"
 
-	// NodeClusterName is the name of the ORAN Node Cluster
+	// NodeClusterName1 is the name of the ORAN Node Cluster.
 	NodeClusterName1 = "nodeCluster1"
 
-	// NodeClusterName is the name of the ORAN Node Cluster
+	// NodeClusterName2 is the name of the ORAN Node Cluster.
 	NodeClusterName2 = "nodeCluster2"
 
-	// OCloudSiteId is the ID of the of the ORAN O-Cloud Site
-	OCloudSiteId = "site1"
+	// OCloudSiteID is the ID of the of the ORAN O-Cloud Site.
+	OCloudSiteID = "site1"
 
-	// ClusterName1
+	// ClusterName1 name of the first cluster.
 	ClusterName1 = "sno02"
 
-	// ClusterName2
+	// ClusterName2 name of the second cluster.
 	ClusterName2 = "sno03"
 
-	// OCloudSiteId2 is the ID of the of the second ORAN O-Cloud Site
-	SshCluster2 = "sno03.oran.telcoqe.eng.rdu2.dc.redhat.com:22"
+	// SSHCluster2 is the address to ssh the second cluster.
+	SSHCluster2 = "sno03.oran.telcoqe.eng.rdu2.dc.redhat.com:22"
 
-	// OCloudSiteId2 is the ID of the of the second ORAN O-Cloud Site
+	// HostName2 is the hostname of the second cluster.
 	HostName2 = "sno03.oran.telcoqe.eng.rdu2.dc.redhat.com"
 
-	// ClusterInstanceParameters1 is the map with the cluster instance parameters for the first cluster
+	// ClusterInstanceParameters1 is the map with the cluster instance parameters for the first cluster.
 	ClusterInstanceParameters1 = map[string]any{
 		"clusterName": "sno02",
 		"nodes": []map[string]any{
@@ -89,7 +91,7 @@ var (
 		},
 	}
 
-	// ClusterInstanceParameters2 is the map with the cluster instance parameters for the second cluster
+	// ClusterInstanceParameters2 is the map with the cluster instance parameters for the second cluster.
 	ClusterInstanceParameters2 = map[string]any{
 		"clusterName": "sno03",
 		"nodes": []map[string]any{
@@ -124,13 +126,21 @@ var (
 		},
 	}
 
-	PTPVersionMajorOld      uint64 = 4
-	PTPVersionMinorOld      uint64 = 18
-	PTPVersionPatchOld      uint64 = 0
+	// PTPVersionMajorOld old major version of the PTP operator.
+	PTPVersionMajorOld uint64 = 4
+	// PTPVersionMinorOld old minor version of the PTP operator.
+	PTPVersionMinorOld uint64 = 18
+	// PTPVersionPatchOld old patch version of the PTP operator.
+	PTPVersionPatchOld uint64 = 0
+	// PTPVersionPrereleaseOld old prerelease version of the PTP operator.
 	PTPVersionPrereleaseOld uint64 = 202501230001
 
-	PTPVersionMajorNew      uint64 = 4
-	PTPVersionMinorNew      uint64 = 18
-	PTPVersionPatchNew      uint64 = 0
+	// PTPVersionMajorNew new major version of the PTP operator.
+	PTPVersionMajorNew uint64 = 4
+	// PTPVersionMinorNew new minor version of the PTP operator.
+	PTPVersionMinorNew uint64 = 18
+	// PTPVersionPatchNew new patch version of the PTP operator.
+	PTPVersionPatchNew uint64 = 0
+	// PTPVersionPrereleaseNew new prerelease version of the PTP operator.
 	PTPVersionPrereleaseNew uint64 = 202502250302
 )

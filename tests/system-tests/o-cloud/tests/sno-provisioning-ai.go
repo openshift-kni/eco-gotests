@@ -19,16 +19,16 @@ var _ = Describe(
 			It("Verifies the failed provisioning of a single SNO cluster using Assisted Installer",
 				ocloudcommon.VerifyFailedSnoProvisioning)
 
-			It("Verifies the succesful E2E simultaneous provisioning of SNO clusters with the same cluster template",
+			It("Verifies the successful E2E simultaneous provisioning of SNO clusters with the same cluster template",
 				ocloudcommon.VerifySimultaneousSnoProvisioningSameClusterTemplate)
 
-			It("Verifies the succesful E2E simultaneous deprovisioning of SNO clusters with the same cluster template",
+			It("Verifies the successful E2E simultaneous deprovisioning of SNO clusters with the same cluster template",
 				ocloudcommon.VerifySimultaneousSnoDeprovisioningSameClusterTemplate)
 
-			It("Verifies the succesful E2E simultaneous provisioning of SNO clusters with different cluster templates",
+			It("Verifies the successful E2E simultaneous provisioning of SNO clusters with different cluster templates",
 				ocloudcommon.VerifySimultaneousSnoProvisioningDifferentClusterTemplates)
 
-			It("Verifies the succesful E2E simultaneous deprovisioning of SNO clusters with different cluster templates",
+			It("Verifies the successful E2E simultaneous deprovisioning of SNO clusters with different cluster templates",
 				ocloudcommon.VerifySimultaneousSnoDeprovisioningDifferentClusterTemplates)
 		})
 	})
