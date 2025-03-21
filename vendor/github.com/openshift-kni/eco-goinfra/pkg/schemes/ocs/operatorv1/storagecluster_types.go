@@ -240,7 +240,7 @@ type ManageCephBlockPools struct {
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
 	VirtualizationStorageClassName string `json:"virtualizationStorageClassName,omitempty"`
 	// PoolSpec specifies the pool specification for the default cephBlockPool
-	PoolSpec rookCephv1.PoolSpec `json:"poolSpec,omitempty"`
+	PoolSpec *rookCephv1.PoolSpec `json:"poolSpec,omitempty"`
 }
 
 // ManageCephNonResilientPools defines how to reconcile ceph non-resilient pools
@@ -248,12 +248,11 @@ type ManageCephNonResilientPools struct {
 	Enable bool `json:"enable,omitempty"`
 	// Count is the number of devices in this set
 	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:default=1
 	Count int `json:"count,omitempty"`
 	// ResourceRequirements (requests/limits) for the devices
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 	// VolumeClaimTemplates is a PVC template for the underlying storage devices
-	VolumeClaimTemplate corev1.PersistentVolumeClaim `json:"volumeClaimTemplate,omitempty"`
+	VolumeClaimTemplate *corev1.PersistentVolumeClaim `json:"volumeClaimTemplate,omitempty"`
 	// StorageClassName specifies the name of the storage class created for ceph non-resilient pools
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
@@ -276,9 +275,9 @@ type ManageCephFilesystems struct {
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
 	StorageClassName string `json:"storageClassName,omitempty"`
 	// MetadataPoolSpec specifies the pool specification for the default cephFS metadata pool
-	MetadataPoolSpec rookCephv1.PoolSpec `json:"metadataPoolSpec,omitempty"`
+	MetadataPoolSpec *rookCephv1.PoolSpec `json:"metadataPoolSpec,omitempty"`
 	// DataPoolSpec specifies the pool specification for the default cephfs data pool
-	DataPoolSpec rookCephv1.PoolSpec `json:"dataPoolSpec,omitempty"`
+	DataPoolSpec *rookCephv1.PoolSpec `json:"dataPoolSpec,omitempty"`
 	// AdditionalDataPools specifies list of additional named cephfs data pools
 	AdditionalDataPools []rookCephv1.NamedPoolSpec `json:"additionalDataPools,omitempty"`
 }
@@ -295,9 +294,9 @@ type ManageCephObjectStores struct {
 	// +kubebuilder:validation:Pattern=^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
 	StorageClassName string `json:"storageClassName,omitempty"`
 	// MetadataPoolSpec specifies the pool specification for the default cephObjectStore metadata pool
-	MetadataPoolSpec rookCephv1.PoolSpec `json:"metadataPoolSpec,omitempty"`
+	MetadataPoolSpec *rookCephv1.PoolSpec `json:"metadataPoolSpec,omitempty"`
 	// DataPoolSpec specifies the pool specification for the default cephObjectStore data pool
-	DataPoolSpec rookCephv1.PoolSpec `json:"dataPoolSpec,omitempty"`
+	DataPoolSpec *rookCephv1.PoolSpec `json:"dataPoolSpec,omitempty"`
 }
 
 // ManageCephObjectStoreUsers defines how to reconcile CephObjectStoreUsers
@@ -313,7 +312,6 @@ type ManageCephToolbox struct {
 // ManageCephRBDMirror defines how to reconcile Ceph RBDMirror
 type ManageCephRBDMirror struct {
 	ReconcileStrategy string `json:"reconcileStrategy,omitempty"`
-	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=1
 	DaemonCount int `json:"daemonCount,omitempty"`
 }
