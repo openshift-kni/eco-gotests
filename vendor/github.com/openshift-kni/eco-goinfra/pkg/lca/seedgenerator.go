@@ -298,7 +298,7 @@ func (builder *SeedGeneratorBuilder) WaitUntilComplete(timeout time.Duration) (*
 				}
 			}
 
-			return false, fmt.Errorf("seedgenerator did not complete")
+			return false, nil
 		})
 
 	if err == nil {
