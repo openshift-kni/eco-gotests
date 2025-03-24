@@ -162,6 +162,8 @@ func VerifyProvisioningRequestIsFulfilled(provisioningRequest *oran.Provisioning
 
 // VerifyProvisioningRequestTimeout verifies that a provisioning request has timed out.
 func VerifyProvisioningRequestTimeout(provisioningRequest *oran.ProvisioningRequestBuilder) {
+	By(fmt.Sprintf("Verifing that PR %s has timed out", provisioningRequest.Object.Name))
+
 	condition := metav1.Condition{
 		Type:   "ConfigurationApplied",
 		Reason: "TimedOut",
