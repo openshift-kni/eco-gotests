@@ -10,6 +10,7 @@ on:
 
 jobs:
   build:
+    if: ${{ github.repository_owner }} == 'openshift-kni'
     runs-on: ubuntu-latest
     env:
       SHELL: /bin/bash
@@ -61,6 +62,7 @@ jobs:
           
   deploy:
     needs: build
+    if: ${{ github.repository_owner }} == 'openshift-kni'
 
     permissions:
       pages: write
