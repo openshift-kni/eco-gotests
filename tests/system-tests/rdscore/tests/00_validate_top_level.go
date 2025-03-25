@@ -177,6 +177,10 @@ var _ = Describe(
 				Label("egressip", "egressip-ipv6", "egressip-failover"), reportxml.ID("78283"),
 				rdscorecommon.VerifyEgressIPFailOverIPv6)
 
+			It("Verifies pod-level bonded workloads on the same node and same PF",
+				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("80958"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeSamePF)
+
 			It("Verifies pod-level bonded workloads on the same node and different PFs",
 				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("77927"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeDifferentPFs)
@@ -202,6 +206,7 @@ var _ = Describe(
 				rdscorecommon.VerifyPodLevelBondWorkloadsAfterBothVFsFailure)
 
 			It("Verifies pod-level bonded workloads after pod crashing",
+				MustPassRepeatedly(3),
 				Label("pod-level-bond", "pod-level-pod-failure"), reportxml.ID("80490"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsAfterPodCrashing)
 
@@ -459,6 +464,10 @@ var _ = Describe(
 				Label("metallb-segregation"), reportxml.ID("79284"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
 
+			It("Verifies pod-level bonded workloads on the same node and same PF post hard reboot",
+				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("80967"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeSamePF)
+
 			It("Verifies pod-level bonded workloads on the same node and different PFs post hard reboot",
 				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("79332"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeDifferentPFs)
@@ -676,6 +685,10 @@ var _ = Describe(
 			It("Verify LB application is not reachable from the incorrect FRR container post soft reboot",
 				Label("metallb-segregation"), reportxml.ID("79285"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
+			It("Verifies pod-level bonded workloads on the same node and same PF post soft reboot",
+				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("80966"),
+				rdscorecommon.VerifyPodLevelBondWorkloadsOnSameNodeSamePF)
 
 			It("Verifies pod-level bonded workloads on the same node and different PFs post soft reboot",
 				Label("pod-level-bond", "pod-level-bond-same-node"), reportxml.ID("79333"),

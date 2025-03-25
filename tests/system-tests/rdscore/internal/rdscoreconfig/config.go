@@ -474,51 +474,37 @@ type CoreConfig struct {
 	EgressIPTcpPort  string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
 	PodLevelBondPort string `yaml:"rdscore_pod_level_bond_port" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PORT"`
 	//nolint:lll,nolintlint
-	PodLevelBond0Namespace string `yaml:"rdscore_pod_level_bond0_ns" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND0_ONE_NS"`
-	//nolint:lll,nolintlint
-	PodLevelBond1Namespace string `yaml:"rdscore_pod_level_bond1_ns" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND1_TWO_NS"`
+	PodLevelBondNamespace string `yaml:"rdscore_pod_level_bond_ns" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_NS"`
 	//nolint:lll,nolintlint
 	PodLevelBondDeployImage string `yaml:"rdscore_pod_level_bond_image" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_IMG"`
-	//nolint:lll,nolintlint
-	PodLevelBondDeployLabel string `yaml:"rdscore_pod_level_bond_label" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_LABEL"`
 	//nolint:lll
-	PodLevelBond0DeploymentOneName string `yaml:"rdscore_pod_level_bond0_1_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND0_ONE_NAME"`
+	PodLevelBondDeploymentOneName string `yaml:"rdscore_pod_level_bond_one_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_ONE_NAME"`
 	//nolint:lll
-	PodLevelBond0DeploymentTwoName string `yaml:"rdscore_pod_level_bond0_2_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND0_TWO_NAME"`
+	PodLevelBondDeploymentTwoName string `yaml:"rdscore_pod_level_bond_two_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_TWO_NAME"`
 	//nolint:lll
-	PodLevelBond1DeploymentOneName string `yaml:"rdscore_pod_level_bond1_1_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND1_ONE_NAME"`
+	PodLevelBondDeploymentOneIPv4 string `yaml:"rdscore_pod_level_bond_one_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_ONE_IPV4"`
 	//nolint:lll
-	PodLevelBond1DeploymentTwoName string `yaml:"rdscore_pod_level_bond1_2_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND1_TWO_NAME"`
+	PodLevelBondDeploymentOneIPv6 string `yaml:"rdscore_pod_level_bond_one_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_ONE_IPV6"`
 	//nolint:lll
-	PodLevelBond0DeploymentOneIPv4 string `yaml:"rdscore_pod_level_bond0_1_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND0_ONE_IPV4"`
+	PodLevelBondDeploymentTwoIPv4 string `yaml:"rdscore_pod_level_bond_two_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_TWO_IPV4"`
 	//nolint:lll
-	PodLevelBond0DeploymentOneIPv6 string `yaml:"rdscore_pod_level_bond0_1_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND0_ONE_IPV6"`
+	PodLevelBondDeploymentTwoIPv6 string `yaml:"rdscore_pod_level_bond_two_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_TWO_IPV6"`
 	//nolint:lll
-	PodLevelBond0DeploymentTwoIPv4 string `yaml:"rdscore_pod_level_bond0_2_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND0_TWO_IPV4"`
+	PodLevelBondPodOneScheduleOnHost string `yaml:"rdscore_pod_level_bond_pod_one_node" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_ONE_NODE"`
 	//nolint:lll
-	PodLevelBond0DeploymentTwoIPv6 string `yaml:"rdscore_pod_level_bond0_2_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND0_TWO_IPV6"`
+	PodLevelBondPodTwoScheduleOnHost string `yaml:"rdscore_pod_level_bond_pod_two_node" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_TWO_NODE"`
 	//nolint:lll
-	PodLevelBond1DeploymentOneIPv4 string `yaml:"rdscore_pod_level_bond1_1_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND1_ONE_IPV4"`
+	PodLevelBondSRIOVNetOne string `yaml:"rdscore_pod_level_bond_sriov_net_one" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_SRIOV_NET_ONE"`
 	//nolint:lll
-	PodLevelBond1DeploymentOneIPv6 string `yaml:"rdscore_pod_level_bond1_1_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND1_ONE_IPV6"`
+	PodLevelBondSRIOVNetTwo string `yaml:"rdscore_pod_level_bond_sriov_net_two" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_SRIOV_NET_TWO"`
 	//nolint:lll
-	PodLevelBond1DeploymentTwoIPv4 string `yaml:"rdscore_pod_level_bond1_2_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND1_TWO_IPV4"`
+	PodLevelBondPodSubnetMaskIPv4 string `yaml:"rdscore_pod_level_bond_pod_subnet_mask_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_SUBNET_MASK_IPV4"`
 	//nolint:lll
-	PodLevelBond1DeploymentTwoIPv6 string `yaml:"rdscore_pod_level_bond1_2_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND1_TWO_IPV6"`
+	PodLevelBondPodSubnetMaskIPv6 string `yaml:"rdscore_pod_level_bond_pod_subnet_mask_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_SUBNET_MASK_IPV6"`
 	//nolint:lll
-	PodLevelBondPrivilegedPodScheduleOnHost string `yaml:"rdscore_pod_level_bond_privileged_pod_node" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PRIVILEGED_POD_NODE"`
-	//nolint:lll
-	PodLevelBondPrivilegedSRIOVNetOne string `yaml:"rdscore_pod_level_bond_privileged_sriov_net_one" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PRIVILEGED_SRIOV_NET_ONE"`
-	//nolint:lll
-	PodLevelBondPrivilegedSRIOVNetTwo string `yaml:"rdscore_pod_level_bond_privileged_sriov_net_two" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PRIVILEGED_SRIOV_NET_TWO"`
-	//nolint:lll
-	PodLevelBondPrivilegedPodSubnetMaskIPv4 string `yaml:"rdscore_pod_level_bond_privileged_pod_subnet_mask_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PRIVILEGED_POD_SUBNET_MASK_IPV4"`
-	//nolint:lll
-	PodLevelBondPrivilegedPodSubnetMaskIPv6 string `yaml:"rdscore_pod_level_bond_privileged_pod_subnet_mask_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PRIVILEGED_POD_SUBNET_MASK_IPV6"`
-	//nolint:lll
-	PodLevelBondPrivilegedPodMacAddr string `yaml:"rdscore_pod_level_bond_privileged_pod_mac_addr" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PRIVILEGED_POD_MAC_ADDR"`
-	WorkerLabelListOption            metav1.ListOptions
-	FRRExpectedNodes                 EnvSliceString `yaml:"rdscore_frr_expected_nodes" envconfig:"ECO_RDSCORE_FRR_EXPECTED_NODES"`
+	PodLevelBondPodMacAddr string `yaml:"rdscore_pod_level_bond_pod_mac_addr" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_MAC_ADDR"`
+	WorkerLabelListOption  metav1.ListOptions
+	FRRExpectedNodes       EnvSliceString `yaml:"rdscore_frr_expected_nodes" envconfig:"ECO_RDSCORE_FRR_EXPECTED_NODES"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.

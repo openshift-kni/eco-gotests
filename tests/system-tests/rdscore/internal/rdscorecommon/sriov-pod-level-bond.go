@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 
@@ -32,13 +34,31 @@ const (
 	podLevelBondPodLabel           = "systemtest-test=rdscore-pod-level-bond-privileged"
 	podLevelBondNetName            = "bond-net"
 	tcpTestPassedMsg               = `TCP test passed as expected`
+	podNetAnnotationPattern        = "k8s.v1.cni.cncf.io/network-status"
 )
 
 var (
 	podLevelBondPodLabelMap = map[string]string{"systemtest-test": "rdscore-pod-level-bond-privileged"}
 )
 
-//nolint:unparam
+type podNetworkAnnotation struct {
+	Name      string   `json:"name"`
+	Interface string   `json:"interface"`
+	Ips       []string `json:"ips,omitempty"`
+	Mac       string   `json:"mac"`
+	Default   bool     `json:"default,omitempty"`
+	DNS       struct {
+	} `json:"dns"`
+	DeviceInfo struct {
+		Type    string `json:"type"`
+		Version string `json:"version"`
+		Pci     struct {
+			PciAddress string `json:"pci-address"`
+		} `json:"pci"`
+	} `json:"device-info,omitempty"`
+}
+
+//nolint:funlen
 func createPrivilegedPodLevelBondDeployment(
 	apiClient *clients.Settings,
 	deploymentName,
@@ -53,7 +73,7 @@ func createPrivilegedPodLevelBondDeployment(
 	bondInfSubMaskIPv4,
 	bondInfSubMaskIPv6,
 	bondInfMacAddr string) error {
-	glog.V(100).Infof("Creating the pod-level bonded deployment test source deployment")
+	glog.V(100).Infof("Ensuring deployment %q doesn't exist in %q namespace", deploymentName, nsName)
 
 	err := cleanUpPodLevelBondDeployment(apiClient, deploymentName, nsName, podLabel)
 	if err != nil {
@@ -64,16 +84,16 @@ func createPrivilegedPodLevelBondDeployment(
 			deploymentName, nsName, err)
 	}
 
-	glog.V(100).Infof("Removing ServiceAccount")
+	glog.V(100).Infof("Removing ServiceAccount %q", podLevelBondDeploymentSAName)
 	deleteServiceAccount(podLevelBondDeploymentSAName, nsName)
 
-	glog.V(100).Infof("Creating ServiceAccount")
+	glog.V(100).Infof("Creating ServiceAccount %q", podLevelBondDeploymentSAName)
 	createServiceAccount(podLevelBondDeploymentSAName, nsName)
 
-	glog.V(100).Infof("Removing Cluster RBAC")
+	glog.V(100).Infof("Removing Cluster RBAC %q in namespace %q", podLevelBondDeploymentRBACName, nsName)
 	deleteClusterRBAC(podLevelBondDeploymentRBACName)
 
-	glog.V(100).Infof("Creating Cluster RBAC")
+	glog.V(100).Infof("Creating Cluster RBAC %q in namespace %q", podLevelBondDeploymentRBACName, nsName)
 	createClusterRBAC(
 		podLevelBondDeploymentRBACName,
 		podLevelBondDeploymentRBACRole,
@@ -88,12 +108,14 @@ func createPrivilegedPodLevelBondDeployment(
 
 	deployContainerCfg, err := deploymentContainer.GetContainerCfg()
 	if err != nil {
+		glog.V(100).Infof("Failed to obtain container definition: %v", err)
+
 		return fmt.Errorf("failed to obtain container definition: %w", err)
 	}
 
-	glog.V(100).Infof("Defining deployment configuration")
+	glog.V(100).Infof("Defining deployment %q in namespace %q configuration", deploymentName, nsName)
 
-	testPodDeployment := definePodLevelBondTestPodDeployment(
+	testPodDeployment, err := definePodLevelBondTestPodDeployment(
 		apiClient,
 		deployContainerCfg,
 		deploymentName,
@@ -108,8 +130,15 @@ func createPrivilegedPodLevelBondDeployment(
 		bondInfSubMaskIPv6,
 		bondInfMacAddr,
 		podLevelBondPodLabelMap)
+	if err != nil {
+		glog.V(100).Infof("Failed to define deployment %s in namespace %s: %v",
+			deploymentName, nsName, err)
 
-	glog.V(100).Infof("Creating deployment")
+		return fmt.Errorf("failed to define deployment %s in namespace %s: %w",
+			deploymentName, nsName, err)
+	}
+
+	glog.V(100).Infof("Creating deployment %q in namespace %q configuration", deploymentName, nsName)
 
 	testPodDeployment, err = testPodDeployment.CreateAndWaitUntilReady(5 * time.Minute)
 	if err != nil {
@@ -130,7 +159,7 @@ func createPrivilegedPodLevelBondDeployment(
 }
 
 func cleanUpPodLevelBondDeployment(apiClient *clients.Settings, deploymentName, nsName, podLabel string) error {
-	_, err := deployment.Pull(APIClient, deploymentName, nsName)
+	_, err := deployment.Pull(apiClient, deploymentName, nsName)
 
 	if err != nil {
 		glog.V(100).Infof("Deployment %s not found in namespace %s, %v", deploymentName, nsName, err)
@@ -148,7 +177,7 @@ func cleanUpPodLevelBondDeployment(apiClient *clients.Settings, deploymentName, 
 			deploymentName, nsName, err)
 	}
 
-	err = apiobjectshelper.EnsureAllPodsRemoved(APIClient, nsName, podLabel)
+	err = apiobjectshelper.EnsureAllPodsRemoved(apiClient, nsName, podLabel)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to delete pods in namespace %s with the label %s: %w", nsName, podLabel, err)
@@ -223,8 +252,32 @@ func definePodLevelBondTestPodDeployment(
 	bondInfSubMaskIPv4,
 	bondInfSubMaskIPv6,
 	bondInfMacAddr string,
-	deployLabels map[string]string) *deployment.Builder {
+	deployLabels map[string]string) (*deployment.Builder, error) {
 	glog.V(100).Infof("Defining deployment %q in %q ns", deploymentName, nsName)
+
+	if bondInfIPv4 == "" {
+		glog.V(100).Infof("Bond interface IPv4 address is missing")
+
+		return nil, fmt.Errorf("bond interface IPv4 address is missing")
+	}
+
+	if bondInfIPv6 == "" {
+		glog.V(100).Infof("Bond interface IPv6 address is missing")
+
+		return nil, fmt.Errorf("bond interface IPv6 address is missing")
+	}
+
+	if bondInfSubMaskIPv4 == "" {
+		glog.V(100).Infof("Bond interface IPv4 address subnet mask is missing")
+
+		return nil, fmt.Errorf("bond interface IPv4 address subnet mask is missing")
+	}
+
+	if bondInfSubMaskIPv6 == "" {
+		glog.V(100).Infof("Bond interface IPv6 address subnet mask is missing")
+
+		return nil, fmt.Errorf("bond interface IPv6 address subnet mask is missing")
+	}
 
 	nodeSelector := map[string]string{"kubernetes.io/hostname": scheduleOnHost}
 
@@ -252,69 +305,15 @@ func definePodLevelBondTestPodDeployment(
 
 	podDeployment = podDeployment.WithServiceAccountName(podLevelBondDeploymentSAName)
 
+	glog.V(100).Infof("Assigning NodeSelector %q to the deployment", nodeSelector)
 	podDeployment = podDeployment.WithNodeSelector(nodeSelector)
 
 	podDeployment = podDeployment.WithSecondaryNetwork(netAnnotations)
 
-	return podDeployment
+	return podDeployment, nil
 }
 
-func generateTCPTraffic(clientPod *pod.Builder, serverIPAddr, serverPort string) (string, error) {
-	By("Generating TCP traffic")
-
-	glog.V(100).Infof("Ensure pod %q in namespace %q is Ready",
-		clientPod.Definition.Name, clientPod.Definition.Namespace)
-
-	err := clientPod.WaitUntilReady(5 * time.Second)
-
-	if err != nil {
-		glog.V(100).Infof("Failed to wait for pod %q in namespace %q to become Ready: %v",
-			clientPod.Definition.Name, clientPod.Definition.Namespace, err)
-
-		return "", fmt.Errorf("failed to wait for pod %q in namespace %q to become Ready: %w",
-			clientPod.Definition.Name, clientPod.Definition.Namespace, err)
-	}
-
-	cmdToRun := []string{"bash", "-c",
-		fmt.Sprintf("testcmd -protocol tcp -port %s -interface net3 -server %s",
-			serverPort, serverIPAddr)}
-
-	glog.V(100).Infof("Execute command: %q", cmdToRun)
-
-	var output string
-
-	err = wait.PollUntilContextTimeout(
-		context.TODO(),
-		time.Second*5,
-		time.Minute*1,
-		true,
-		func(ctx context.Context) (bool, error) {
-			result, err := clientPod.ExecCommand(cmdToRun, clientPod.Object.Spec.Containers[0].Name)
-
-			if err != nil {
-				glog.V(100).Infof("Error running command from within a pod %q: %v",
-					clientPod.Object.Name, err)
-
-				return false, nil
-			}
-
-			glog.V(100).Infof("Successfully executed command from within a pod %q in namespace %q",
-				clientPod.Object.Name, clientPod.Definition.Namespace)
-
-			output = result.String()
-			glog.V(100).Infof("Command's output:\n\t%v", output)
-
-			return true, nil
-		})
-
-	if err != nil {
-		return "", fmt.Errorf("failed to run command from within pod %s: %w", clientPod.Object.Name, err)
-	}
-
-	return output, nil
-}
-
-func generateLongTCPTraffic(
+func generateTCPTraffic(
 	clientPod *pod.Builder,
 	serverIPAddr,
 	serverPort,
@@ -346,7 +345,7 @@ func generateLongTCPTraffic(
 	err = wait.PollUntilContextTimeout(
 		context.TODO(),
 		time.Second*3,
-		time.Minute,
+		time.Minute*2,
 		true,
 		func(ctx context.Context) (bool, error) {
 			result, err := clientPod.ExecCommand(cmdToRun, clientPod.Object.Spec.Containers[0].Name)
@@ -379,32 +378,44 @@ func findInCmdExecOutput(cmdExecOutput, stringToFind string) (bool, error) {
 
 	matchesFound := 0
 
-	if len(cmdExecOutput) != 0 {
-		buf := new(bytes.Buffer)
-		_, err = buf.WriteString(cmdExecOutput)
+	if cmdExecOutput == "" {
+		glog.V(100).Infof("The cmdExecOutput is empty")
 
-		stringToFind, _ := regexp.Compile(stringToFind)
+		return false, fmt.Errorf("the cmdExecOutput is empty")
+	}
 
-		if err != nil {
-			glog.V(100).Infof("error in copying info from the cmdExecOutput to buffer: %v", err)
+	buf := new(bytes.Buffer)
+	_, err = buf.WriteString(cmdExecOutput)
 
-			return false, fmt.Errorf("error in copying info from the cmdExecOutput to buffer: %w", err)
+	if err != nil {
+		glog.V(100).Infof("error in copying info from the cmdExecOutput to buffer: %v", err)
+
+		return false, fmt.Errorf("error in copying info from the cmdExecOutput to buffer: %w", err)
+	}
+
+	stringToFindRegex, err := regexp.Compile(stringToFind)
+
+	if err != nil {
+		glog.V(100).Infof("Failed to compile stringToFind %s: %v", stringToFind, err)
+
+		return false, fmt.Errorf("failed to compile stringToFind %s: %w", stringToFind, err)
+	}
+
+	scanner := bufio.NewScanner(buf)
+
+	for scanner.Scan() {
+		logLine := scanner.Text()
+		if stringToFindRegex.MatchString(logLine) {
+			glog.V(100).Infof("Match for the string %q was found", stringToFind)
+
+			matchesFound++
 		}
+	}
 
-		scanner := bufio.NewScanner(buf)
+	if matchesFound < 1 {
+		glog.V(100).Infof("Expected string %q not found in the output: %s", stringToFind, cmdExecOutput)
 
-		for scanner.Scan() {
-			logLine := scanner.Text()
-			if stringToFind.MatchString(logLine) {
-				matchesFound++
-			}
-		}
-
-		if matchesFound < 1 {
-			glog.V(100).Infof("Expected string %q not found in the output: %s", stringToFind, cmdExecOutput)
-
-			return false, fmt.Errorf("expected string %q not found in the output : %s", stringToFind, cmdExecOutput)
-		}
+		return false, fmt.Errorf("expected string %q not found in the output : %s", stringToFind, cmdExecOutput)
 	}
 
 	return true, nil
@@ -434,11 +445,11 @@ func getBondActiveInterface(clientPod *pod.Builder) (string, error) {
 	glog.V(90).Infof("Getting bond active VF interface for the pod %s in namespace %s",
 		clientPod.Definition.Name, clientPod.Definition.Namespace)
 
-	var output bytes.Buffer
-
-	var result string
-
-	var err error
+	var (
+		output bytes.Buffer
+		result string
+		err    error
+	)
 
 	cmdToRun := []string{"bash", "-c", "cat /sys/class/net/net3/bonding/active_slave"}
 
@@ -534,12 +545,14 @@ func disableBondActiveVFInterface(clientPod *pod.Builder) error {
 	return nil
 }
 
+//nolint:funlen
 func changeInterfaceState(clientPod *pod.Builder, interfaceName string, toDisable bool) error {
-	var output bytes.Buffer
-
-	var expectedInfState, result string
-
-	var err error
+	var (
+		output           bytes.Buffer
+		expectedInfState string
+		result           string
+		err              error
+	)
 
 	if toDisable {
 		expectedInfState = "down"
@@ -547,8 +560,8 @@ func changeInterfaceState(clientPod *pod.Builder, interfaceName string, toDisabl
 		expectedInfState = "up"
 	}
 
-	glog.V(100).Infof("Disable pod-level bond interface %s for the pod %s in namespace %s",
-		interfaceName, clientPod.Definition.Name, clientPod.Definition.Namespace)
+	glog.V(100).Infof("Change pod-level bond interface %s for the pod %s in namespace %s state to the %s",
+		interfaceName, clientPod.Definition.Name, clientPod.Definition.Namespace, expectedInfState)
 
 	cmdToRun := []string{"bash", "-c", fmt.Sprintf("ip link set dev %s %s", interfaceName, expectedInfState)}
 
@@ -575,6 +588,58 @@ func changeInterfaceState(clientPod *pod.Builder, interfaceName string, toDisabl
 			result = output.String()
 
 			glog.V(100).Infof("Command's output:\n\t%v", result)
+
+			return true, nil
+		})
+
+	if err != nil {
+		glog.V(100).Infof("Failed to run command from within pod %q in namespace %q: %v",
+			clientPod.Definition.Name, clientPod.Definition.Namespace, err)
+
+		return fmt.Errorf("failed to run command from within pod %q in namespace %q: %w",
+			clientPod.Definition.Name, clientPod.Definition.Namespace, err)
+	}
+
+	glog.V(100).Infof("Change pod-level bond interface %s for the pod %s in namespace %s state to the %s",
+		interfaceName, clientPod.Definition.Name, clientPod.Definition.Namespace, expectedInfState)
+
+	cmdToRun = []string{"bash", "-c", "ip link show up"}
+
+	glog.V(100).Infof("Execute command: %q", cmdToRun)
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(),
+		time.Second*5,
+		time.Minute*1,
+		true,
+		func(ctx context.Context) (bool, error) {
+			output, err = clientPod.ExecCommand(cmdToRun, clientPod.Object.Spec.Containers[0].Name)
+
+			if err != nil {
+				glog.V(100).Infof("Error running command from within a pod %q in namespace %q: %v",
+					clientPod.Definition.Name, clientPod.Definition.Namespace, err)
+
+				return false, nil
+			}
+
+			glog.V(100).Infof("Successfully executed command from within a pod %q in namespace %q",
+				clientPod.Definition.Name, clientPod.Definition.Namespace)
+
+			result = output.String()
+
+			glog.V(100).Infof("Command's output:\n\t%v", result)
+
+			if toDisable && strings.Contains(result, fmt.Sprintf("%s:", interfaceName)) {
+				glog.V(100).Infof("interface %q not in the state %q", interfaceName, expectedInfState)
+
+				return false, nil
+			}
+
+			if !toDisable && !strings.Contains(result, fmt.Sprintf("%s:", interfaceName)) {
+				glog.V(100).Infof("interface %q not in the state %q", interfaceName, expectedInfState)
+
+				return false, nil
+			}
 
 			return true, nil
 		})
@@ -619,7 +684,14 @@ func inspectPodLevelBondedInterfaceConfig(podObj *pod.Builder, ipv4Addr, ipv6Add
 				podObj.Object.Name, podObj.Definition.Namespace)
 
 			output = result.String()
-			glog.V(100).Infof("Command's output:\n\t%v", output)
+
+			if output == "" {
+				glog.V(100).Infof("The command execution output is empty %q", output)
+
+				return false, nil
+			}
+
+			glog.V(100).Infof("The command execution output:\n\t%v", output)
 
 			return true, nil
 		})
@@ -629,7 +701,7 @@ func inspectPodLevelBondedInterfaceConfig(podObj *pod.Builder, ipv4Addr, ipv6Add
 	}
 
 	if ipv4Addr != "" {
-		glog.V(100).Infof("Ensure ipv4 %s address defined as expected", ipv4Addr)
+		glog.V(100).Infof("Ensure IPv4 %s address defined as expected", ipv4Addr)
 
 		ipv4Found, err := findInCmdExecOutput(output, ipv4Addr)
 
@@ -651,7 +723,7 @@ func inspectPodLevelBondedInterfaceConfig(podObj *pod.Builder, ipv4Addr, ipv6Add
 	}
 
 	if ipv6Addr != "" {
-		glog.V(100).Infof("Ensure ipv6 %s address defined as expected", ipv6Addr)
+		glog.V(100).Infof("Ensure IPv6 %s address defined as expected", ipv6Addr)
 
 		ipv6Found, err := findInCmdExecOutput(output, ipv6Addr)
 
@@ -692,6 +764,18 @@ func getPodObjectByNamePattern(apiClient *clients.Settings, podNamePattern, podN
 				return false, nil
 			}
 
+			if len(podObjList) == 0 {
+				glog.V(100).Infof("No pods %s were found in namespace %q", podNamePattern, podNamespace)
+
+				return false, nil
+			}
+
+			if len(podObjList) > 1 {
+				glog.V(100).Infof("Wrong pods %s count was found in namespace %q", podNamePattern, podNamespace)
+
+				return false, nil
+			}
+
 			podObj = podObjList[0]
 
 			return true, nil
@@ -717,6 +801,47 @@ func getPodObjectByNamePattern(apiClient *clients.Settings, podNamePattern, podN
 	return podObj, nil
 }
 
+func getBondActiveInterfaceSrIovNetworkName(podObj *pod.Builder) (string, error) {
+	podNetAnnotation := podObj.Object.Annotations["k8s.v1.cni.cncf.io/network-status"]
+
+	activeInterfaceName, err := getBondActiveInterface(podObj)
+
+	if err != nil {
+		glog.V(100).Infof("No active interface found for the pod %s in namespace %s: %v",
+			podObj.Definition.Name, podObj.Definition.Namespace, err)
+
+		return "", fmt.Errorf("no active interface found for the pod %s in namespace %s: %w",
+			podObj.Definition.Name, podObj.Definition.Namespace, err)
+	}
+
+	var podNetworkStatusType []podNetworkAnnotation
+	err = json.Unmarshal([]byte(podNetAnnotation), &podNetworkStatusType)
+
+	if err != nil {
+		glog.V(100).Infof("Error unmarshalling pod network status annotation %q: %v", podNetAnnotation, err)
+
+		return "", fmt.Errorf("error unmarshalling pod network status annotation %q: %w", podNetAnnotation, err)
+	}
+
+	for _, networkAnnotation := range podNetworkStatusType {
+		if networkAnnotation.Interface == activeInterfaceName {
+			glog.V(100).Infof("Found sriov network name for the active interface %s in pod %s "+
+				"in namespace %s: %s",
+				activeInterfaceName, podObj.Object.Name, podObj.Object.Namespace, networkAnnotation.Name)
+
+			netName := strings.Split(networkAnnotation.Name, "/")[1]
+
+			return netName, nil
+		}
+	}
+
+	glog.V(100).Infof("Failed to find sriov network name for the active interface %s in pod %s "+
+		"in namespace %s: %v", activeInterfaceName, podObj.Object.Name, podObj.Object.Namespace, podNetworkStatusType)
+
+	return "", fmt.Errorf("failed to find sriov network name for the active interface %s in pod %s "+
+		"in namespace %s: %v", activeInterfaceName, podObj.Object.Name, podObj.Object.Namespace, podNetworkStatusType)
+}
+
 //nolint:funlen
 func verifyPodLevelBondWorkloads(
 	clientDeploymentName,
@@ -727,6 +852,11 @@ func verifyPodLevelBondWorkloads(
 	clientIPv6,
 	serverIPv4,
 	serverIPv6 string) {
+	Expect(clientIPv4 == "" && clientIPv6 == "").ToNot(BeTrue(),
+		"The client IPv4 and client IPv6 should not be empty")
+	Expect(serverIPv4 == "" && serverIPv6 == "").ToNot(BeTrue(),
+		"The server IPv4 and server IPv6 should not be empty")
+
 	By("Ensure client/server pod deployment succeeded and get pods names")
 
 	clientPodObj, err := getPodObjectByNamePattern(APIClient, clientDeploymentName, clientDeploymentNamespace)
@@ -739,7 +869,7 @@ func verifyPodLevelBondWorkloads(
 		fmt.Sprintf("Failed to retrieve server pod-level bond %s object from namespace %s: %v",
 			serverDeploymentName, serverDeploymentNamespace, err))
 
-	By("Inspect pod-level bonded interface for the client pod")
+	By("Inspecting bonded interface within the client pod")
 
 	isFound, err := inspectPodLevelBondedInterfaceConfig(clientPodObj, clientIPv4, clientIPv6)
 	Expect(err).ToNot(HaveOccurred(),
@@ -749,7 +879,7 @@ func verifyPodLevelBondWorkloads(
 		fmt.Sprintf("The pod-level bonded interface for the pod %s in namespace %s not as expected",
 			clientPodObj.Definition.Name, clientPodObj.Definition.Namespace))
 
-	By("Inspect pod-level bonded interface for the server pod")
+	By("Inspecting bonded interface within the server pod")
 
 	isFound, err = inspectPodLevelBondedInterfaceConfig(serverPodObj, serverIPv4, serverIPv6)
 	Expect(err).ToNot(HaveOccurred(),
@@ -762,7 +892,7 @@ func verifyPodLevelBondWorkloads(
 	if serverIPv4 != "" {
 		By("Send data from the client container to the IPv4 address used by the server container")
 
-		output, err := generateTCPTraffic(clientPodObj, serverIPv4, RDSCoreConfig.PodLevelBondPort)
+		output, err := generateTCPTraffic(clientPodObj, serverIPv4, RDSCoreConfig.PodLevelBondPort, "2", "2")
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Failed to generate TCP traffic from the pod %s in namespace %s to the server %s: %v",
 				clientPodObj.Definition.Name, clientPodObj.Definition.Namespace, serverIPv4, err))
@@ -779,7 +909,7 @@ func verifyPodLevelBondWorkloads(
 	if serverIPv6 != "" {
 		By("Send data from the client container to the IPv6 address used by the server container")
 
-		output, err := generateTCPTraffic(clientPodObj, serverIPv6, RDSCoreConfig.PodLevelBondPort)
+		output, err := generateTCPTraffic(clientPodObj, serverIPv6, RDSCoreConfig.PodLevelBondPort, "2", "2")
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Failed to generate TCP traffic from the pod %s in namespace %s to the server %s: %v",
 				clientPodObj.Definition.Name, clientPodObj.Definition.Namespace, serverIPv6, err))
@@ -796,7 +926,7 @@ func verifyPodLevelBondWorkloads(
 	if clientIPv4 != "" {
 		By("Send data from the server container to the IPv4 address used by the client container")
 
-		output, err := generateTCPTraffic(serverPodObj, clientIPv4, RDSCoreConfig.PodLevelBondPort)
+		output, err := generateTCPTraffic(serverPodObj, clientIPv4, RDSCoreConfig.PodLevelBondPort, "2", "2")
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Failed to generate TCP traffic from the pod %s in namespace %s to the server %s: %v",
 				serverPodObj.Definition.Name, serverPodObj.Definition.Namespace, clientIPv4, err))
@@ -813,7 +943,7 @@ func verifyPodLevelBondWorkloads(
 	if clientIPv6 != "" {
 		By("Send data from the client container to the IPv6 address used by the server container")
 
-		output, err := generateTCPTraffic(serverPodObj, clientIPv6, RDSCoreConfig.PodLevelBondPort)
+		output, err := generateTCPTraffic(serverPodObj, clientIPv6, RDSCoreConfig.PodLevelBondPort, "2", "2")
 		Expect(err).ToNot(HaveOccurred(),
 			fmt.Sprintf("Failed to generate TCP traffic from the pod %s in namespace %s to the server %s: %v",
 				serverPodObj.Definition.Name, serverPodObj.Definition.Namespace, clientIPv6, err))
@@ -828,201 +958,233 @@ func verifyPodLevelBondWorkloads(
 	}
 }
 
+func prepareSecondPodLevelBondDeployment(sameNode, samePF bool) {
+	By("Create privileged pod-level bond deployment")
+
+	glog.V(100).Infof("Retrieve client pod-level bond pod %s from the namespace %s",
+		RDSCoreConfig.PodLevelBondDeploymentOneName, RDSCoreConfig.PodLevelBondNamespace)
+
+	clientPod, err := getPodObjectByNamePattern(
+		APIClient,
+		RDSCoreConfig.PodLevelBondDeploymentOneName,
+		RDSCoreConfig.PodLevelBondNamespace)
+
+	if err != nil || clientPod == nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod-Level Bond client deployment not found")
+
+		Skip("Pod-Level Bond client deployment not found. Skipping...")
+	}
+
+	var schedulerOnHost string
+
+	if sameNode && clientPod.Object.Spec.NodeName == RDSCoreConfig.PodLevelBondPodOneScheduleOnHost ||
+		!sameNode && clientPod.Object.Spec.NodeName == RDSCoreConfig.PodLevelBondPodTwoScheduleOnHost {
+		schedulerOnHost = RDSCoreConfig.PodLevelBondPodOneScheduleOnHost
+	}
+
+	if !sameNode && clientPod.Object.Spec.NodeName == RDSCoreConfig.PodLevelBondPodOneScheduleOnHost ||
+		sameNode && clientPod.Object.Spec.NodeName == RDSCoreConfig.PodLevelBondPodTwoScheduleOnHost {
+		schedulerOnHost = RDSCoreConfig.PodLevelBondPodTwoScheduleOnHost
+	}
+
+	Expect(schedulerOnHost).ToNot(Equal(""),
+		fmt.Sprintf("Failed to setup schedulerOnHost value; client pod found: /n%q", clientPod.Definition))
+
+	glog.V(100).Infof("Setup server deployment sriov networks")
+
+	var netOne, netTwo string
+
+	clientSRIOVNetForActiveInterface, err := getBondActiveInterfaceSrIovNetworkName(clientPod)
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to find SRIOV network name for the active client interface: %v", err))
+
+	if samePF && clientSRIOVNetForActiveInterface == RDSCoreConfig.PodLevelBondSRIOVNetOne ||
+		!samePF && clientSRIOVNetForActiveInterface == RDSCoreConfig.PodLevelBondSRIOVNetTwo {
+		netOne = RDSCoreConfig.PodLevelBondSRIOVNetOne
+		netTwo = RDSCoreConfig.PodLevelBondSRIOVNetTwo
+	}
+
+	if !samePF && clientSRIOVNetForActiveInterface == RDSCoreConfig.PodLevelBondSRIOVNetOne ||
+		samePF && clientSRIOVNetForActiveInterface == RDSCoreConfig.PodLevelBondSRIOVNetTwo {
+		netOne = RDSCoreConfig.PodLevelBondSRIOVNetTwo
+		netTwo = RDSCoreConfig.PodLevelBondSRIOVNetOne
+	}
+
+	Expect(netOne).ToNot(Equal(""),
+		fmt.Sprintf("Failed to setup SRIOV networks values; client pod found: /n%q", clientPod.Definition))
+
+	Expect(netTwo).ToNot(Equal(""),
+		fmt.Sprintf("Failed to setup SRIOV networks values; client pod found: /n%q", clientPod.Definition))
+
+	err = createPrivilegedPodLevelBondDeployment(
+		APIClient,
+		RDSCoreConfig.PodLevelBondDeploymentTwoName,
+		RDSCoreConfig.PodLevelBondNamespace,
+		podLevelBondPodLabel,
+		schedulerOnHost,
+		netOne,
+		netTwo,
+		podLevelBondNetName,
+		RDSCoreConfig.PodLevelBondDeploymentTwoIPv4,
+		RDSCoreConfig.PodLevelBondDeploymentTwoIPv6,
+		RDSCoreConfig.PodLevelBondPodSubnetMaskIPv4,
+		RDSCoreConfig.PodLevelBondPodSubnetMaskIPv6,
+		RDSCoreConfig.PodLevelBondPodMacAddr)
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to create priviledged pod-level bond deployment: %v", err))
+}
+
+func verifyConnectivity() {
+	verifyPodLevelBondWorkloads(
+		RDSCoreConfig.PodLevelBondDeploymentOneName,
+		RDSCoreConfig.PodLevelBondNamespace,
+		RDSCoreConfig.PodLevelBondDeploymentTwoName,
+		RDSCoreConfig.PodLevelBondNamespace,
+		RDSCoreConfig.PodLevelBondDeploymentOneIPv4,
+		RDSCoreConfig.PodLevelBondDeploymentOneIPv6,
+		RDSCoreConfig.PodLevelBondDeploymentTwoIPv4,
+		RDSCoreConfig.PodLevelBondDeploymentTwoIPv6)
+}
+
+// VerifyPodLevelBondWorkloadsOnSameNodeSamePF verifies TCP traffic works on the same node and different PFs.
+func VerifyPodLevelBondWorkloadsOnSameNodeSamePF() {
+	prepareSecondPodLevelBondDeployment(true, true)
+
+	verifyConnectivity()
+}
+
 // VerifyPodLevelBondWorkloadsOnSameNodeDifferentPFs verifies TCP traffic works on the same node and different PFs.
 func VerifyPodLevelBondWorkloadsOnSameNodeDifferentPFs() {
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond0DeploymentOneName,
-		RDSCoreConfig.PodLevelBond0Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond0DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond0DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6)
+	prepareSecondPodLevelBondDeployment(true, false)
+
+	verifyConnectivity()
 }
 
 // VerifyPodLevelBondWorkloadsOnDifferentNodesSamePF verifies TCP traffic works on the different nodes and same PF.
 func VerifyPodLevelBondWorkloadsOnDifferentNodesSamePF() {
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond0DeploymentOneName,
-		RDSCoreConfig.PodLevelBond0Namespace,
-		RDSCoreConfig.PodLevelBond0DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond0Namespace,
-		RDSCoreConfig.PodLevelBond0DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond0DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond0DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond0DeploymentTwoIPv6)
+	prepareSecondPodLevelBondDeployment(false, true)
+
+	verifyConnectivity()
 }
 
 // VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs verifies TCP traffic works on the
 // different nodes and different PFs.
 func VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs() {
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond0DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond0Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond0DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond0DeploymentTwoIPv6)
+	prepareSecondPodLevelBondDeployment(false, false)
+
+	verifyConnectivity()
 }
 
 // VerifyPodLevelBondWorkloadsAfterVFFailOver verifies TCP traffic after bond active interface failure
 // (fail-over procedure).
-//
-//nolint:funlen
 func VerifyPodLevelBondWorkloadsAfterVFFailOver() {
-	By("Create privileged pod-level bond deployment")
+	prepareSecondPodLevelBondDeployment(false, true)
 
-	err := createPrivilegedPodLevelBondDeployment(
-		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		podLevelBondPodLabel,
-		RDSCoreConfig.PodLevelBondPrivilegedPodScheduleOnHost,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetOne,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetTwo,
-		podLevelBondNetName,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv4,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodMacAddr)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create priviledged pod-level bond deployment: %v", err))
-
-	By("Verify basic connectivity")
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+	verifyConnectivity()
 
 	By("Retrieve client pod-level bond pod object")
 
 	clientPodObj, err := getPodObjectByNamePattern(
 		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace)
+		RDSCoreConfig.PodLevelBondDeploymentOneName,
+		RDSCoreConfig.PodLevelBondNamespace)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve client pod-level bond %s object from namespace %s: %v",
-			RDSCoreConfig.PodLevelBond1DeploymentOneName, RDSCoreConfig.PodLevelBond1Namespace, err))
+			RDSCoreConfig.PodLevelBondDeploymentOneName, RDSCoreConfig.PodLevelBondNamespace, err))
 
 	By("Retrieve server pod-level bond pod object")
 
 	serverPodObj, err := getPodObjectByNamePattern(
 		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace)
+		RDSCoreConfig.PodLevelBondDeploymentTwoName,
+		RDSCoreConfig.PodLevelBondNamespace)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve server pod-level bond %s object from namespace %s: %v",
-			RDSCoreConfig.PodLevelBond1DeploymentOneName, RDSCoreConfig.PodLevelBond1Namespace, err))
+			RDSCoreConfig.PodLevelBondDeploymentOneName, RDSCoreConfig.PodLevelBondNamespace, err))
+
+	By(fmt.Sprintf("Getting bond's active interface for pod %q in namespace %q",
+		serverPodObj.Definition.Name, serverPodObj.Definition.Namespace))
 
 	activeInf, err := getBondActiveInterface(serverPodObj)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve bond active interface for the pod deployment %s in namespace %s: %v",
 			serverPodObj.Definition.Name, serverPodObj.Definition.Namespace, err))
 
-	glog.V(100).Infof("DEBUG LOG: active interface found - %s", activeInf)
+	go func() {
+		By("Send data from the client container to the IPv4 address used by the server container")
 
-	var output string
+		output, err := generateTCPTraffic(
+			clientPodObj,
+			RDSCoreConfig.PodLevelBondDeploymentTwoIPv4,
+			RDSCoreConfig.PodLevelBondPort,
+			"10",
+			"5")
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Failed to generate TCP traffic from the pod %s in namespace %s to the server %s: %v",
+				clientPodObj.Definition.Name, clientPodObj.Definition.Namespace,
+				RDSCoreConfig.PodLevelBondDeploymentTwoIPv4, err))
 
-	By("Send data from the client container to the IPv4 address used by the server container")
-
-	output, err = generateLongTCPTraffic(
-		clientPodObj,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBondPort,
-		"10",
-		"5")
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to generate TCP traffic from the pod %s in namespace %s to the server %s: %v",
-			clientPodObj.Definition.Name, clientPodObj.Definition.Namespace,
-			RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4, err))
+		testPassed, err := scanClientPodTrafficOutput(output)
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Failed to parse client pod %s from namespace %s output: %v",
+				clientPodObj.Definition.Name, clientPodObj.Definition.Namespace, err))
+		Expect(testPassed).To(Equal(true),
+			fmt.Sprintf("TCP traffic test verification failed for the pod %s in namespace %s; output %s",
+				clientPodObj.Definition.Name, clientPodObj.Definition.Namespace, output))
+	}()
 
 	go func() {
 		time.Sleep(time.Second * 2)
 
 		err = disableBondActiveVFInterface(serverPodObj)
 		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to disable bond active interface for the pod deployment %s in namespace %s: %v",
+			fmt.Sprintf("Failed to disable bond active interface for the pod %s in namespace %s: %v",
 				serverPodObj.Definition.Name, serverPodObj.Definition.Namespace, err))
 	}()
 
-	testPassed, err := scanClientPodTrafficOutput(output)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to parse client pod %s from namespace %s output: %v",
-			clientPodObj.Definition.Name, clientPodObj.Definition.Namespace, err))
-	Expect(testPassed).To(Equal(true),
-		fmt.Sprintf("TCP traffic test verification failed for the pod %s in namespace %s; output %s",
-			clientPodObj.Definition.Name, clientPodObj.Definition.Namespace, output))
+	var ctx SpecContext
 
-	activeInf, err = getBondActiveInterface(serverPodObj)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve bond active interface for the pod deployment %s in namespace %s: %v",
-			serverPodObj.Definition.Name, serverPodObj.Definition.Namespace, err))
+	Eventually(func() bool {
+		newActiveInf, err := getBondActiveInterface(serverPodObj)
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+				"Failed to retrieve new bond active interface for the pod %s in namespace %s: %v",
+				serverPodObj.Definition.Name, serverPodObj.Definition.Namespace, err)
 
-	glog.V(100).Infof("DEBUG LOG: active interface found - %s", activeInf)
+			return false
+		}
 
-	By("Verify basic connectivity")
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+		if newActiveInf == activeInf {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+				"The bond active interface did not changed yet %q", newActiveInf)
+
+			return false
+		}
+
+		return true
+	}).WithContext(ctx).WithPolling(time.Second).WithTimeout(30*time.Second).Should(BeTrue(),
+		"Fail-Over procedure failure; failed to switch to the new bond active interface")
+
+	verifyConnectivity()
 }
 
 // VerifyPodLevelBondWorkloadsAfterBondInterfaceFailure verifies TCP traffic after pod bonded interface
 // recovering after failure.
 func VerifyPodLevelBondWorkloadsAfterBondInterfaceFailure() {
-	By("Create privileged pod-level bond deployment")
+	prepareSecondPodLevelBondDeployment(false, true)
 
-	err := createPrivilegedPodLevelBondDeployment(
-		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		podLevelBondPodLabel,
-		RDSCoreConfig.PodLevelBondPrivilegedPodScheduleOnHost,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetOne,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetTwo,
-		podLevelBondNetName,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv4,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodMacAddr)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create priviledged pod-level bond deployment: %v", err))
-
-	By("Verify basic connectivity")
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+	verifyConnectivity()
 
 	By("Retrieve tested pod-level bond pod object")
 
 	testPodObj, err := getPodObjectByNamePattern(
 		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace)
+		RDSCoreConfig.PodLevelBondDeploymentTwoName,
+		RDSCoreConfig.PodLevelBondNamespace)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve test pod-level bond pod %s object from namespace %s: %v",
-			RDSCoreConfig.PodLevelBond1DeploymentTwoName, RDSCoreConfig.PodLevelBond1Namespace, err))
+			RDSCoreConfig.PodLevelBondDeploymentTwoName, RDSCoreConfig.PodLevelBondNamespace, err))
 
 	By("Disable tested pod bond interface")
 
@@ -1045,60 +1207,25 @@ func VerifyPodLevelBondWorkloadsAfterBondInterfaceFailure() {
 
 	glog.V(100).Infof("DEBUG LOG: active interface found - %s", activeInf)
 
-	By("Verify basic connectivity")
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+	verifyConnectivity()
 }
 
 // VerifyPodLevelBondWorkloadsAfterBothVFsFailure verifies TCP traffic after bond
 // interface recovering after both VFs failure.
 func VerifyPodLevelBondWorkloadsAfterBothVFsFailure() {
-	By("Create privileged pod-level bond deployment")
+	prepareSecondPodLevelBondDeployment(false, true)
 
-	err := createPrivilegedPodLevelBondDeployment(
-		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		podLevelBondPodLabel,
-		RDSCoreConfig.PodLevelBondPrivilegedPodScheduleOnHost,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetOne,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetTwo,
-		podLevelBondNetName,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv4,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodMacAddr)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create priviledged pod-level bond deployment: %v", err))
-
-	By("Verify basic connectivity")
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+	verifyConnectivity()
 
 	By("Retrieve tested pod-level bond pod object")
 
 	testPodObj, err := getPodObjectByNamePattern(
 		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace)
+		RDSCoreConfig.PodLevelBondDeploymentTwoName,
+		RDSCoreConfig.PodLevelBondNamespace)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve test pod-level bond pod %s object from namespace %s: %v",
-			RDSCoreConfig.PodLevelBond1DeploymentTwoName, RDSCoreConfig.PodLevelBond1Namespace, err))
+			RDSCoreConfig.PodLevelBondDeploymentTwoName, RDSCoreConfig.PodLevelBondNamespace, err))
 
 	By("Disable first VF interface (net1)")
 
@@ -1137,87 +1264,41 @@ func VerifyPodLevelBondWorkloadsAfterBothVFsFailure() {
 
 	glog.V(100).Infof("DEBUG LOG: active interface found - %s", activeInf)
 
-	By("Verify basic connectivity")
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+	verifyConnectivity()
 }
 
 // VerifyPodLevelBondWorkloadsAfterPodCrashing verifies TCP traffic works after pod crashing.
 func VerifyPodLevelBondWorkloadsAfterPodCrashing() {
-	By("Create privileged pod-level bond deployment")
+	prepareSecondPodLevelBondDeployment(false, true)
 
-	err := createPrivilegedPodLevelBondDeployment(
-		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		podLevelBondPodLabel,
-		RDSCoreConfig.PodLevelBondPrivilegedPodScheduleOnHost,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetOne,
-		RDSCoreConfig.PodLevelBondPrivilegedSRIOVNetTwo,
-		podLevelBondNetName,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv4,
-		RDSCoreConfig.PodLevelBondPrivilegedPodSubnetMaskIPv6,
-		RDSCoreConfig.PodLevelBondPrivilegedPodMacAddr)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create priviledged pod-level bond deployment: %v", err))
-
-	By("Verify basic connectivity")
-
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+	verifyConnectivity()
 
 	By("Retrieve tested pod-level bond pod object")
 
 	testPodObj, err := getPodObjectByNamePattern(
 		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace)
+		RDSCoreConfig.PodLevelBondDeploymentTwoName,
+		RDSCoreConfig.PodLevelBondNamespace)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve test pod-level bond pod %s object from namespace %s: %v",
-			RDSCoreConfig.PodLevelBond1DeploymentTwoName, RDSCoreConfig.PodLevelBond1Namespace, err))
+			RDSCoreConfig.PodLevelBondDeploymentTwoName, RDSCoreConfig.PodLevelBondNamespace, err))
 
 	By("Delete test pod")
 
 	_, err = testPodObj.DeleteAndWait(time.Second * 30)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to delete test pod-level bond pod %s object from namespace %s: %v",
-			RDSCoreConfig.PodLevelBond1DeploymentTwoName, RDSCoreConfig.PodLevelBond1Namespace, err))
+			RDSCoreConfig.PodLevelBondDeploymentTwoName, RDSCoreConfig.PodLevelBondNamespace, err))
 
 	By("Wait new test pod-level bond pod will be created")
 
 	_, err = getPodObjectByNamePattern(
 		APIClient,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace)
+		RDSCoreConfig.PodLevelBondDeploymentTwoName,
+		RDSCoreConfig.PodLevelBondNamespace)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to retrieve test pod-level bond pod %s object from namespace %s: %v",
-			RDSCoreConfig.PodLevelBond1DeploymentTwoName, RDSCoreConfig.PodLevelBond1Namespace, err))
+			RDSCoreConfig.PodLevelBondDeploymentTwoName, RDSCoreConfig.PodLevelBondNamespace, err))
 
-	By("Verify basic connectivity")
-
-	verifyPodLevelBondWorkloads(
-		RDSCoreConfig.PodLevelBond1DeploymentOneName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoName,
-		RDSCoreConfig.PodLevelBond1Namespace,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentOneIPv6,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv4,
-		RDSCoreConfig.PodLevelBond1DeploymentTwoIPv6)
+	verifyConnectivity()
 }
