@@ -26,9 +26,9 @@ func ReachURLviaFRRroute(ctx SpecContext) {
 	By("Finding MetalLB-FRR pods")
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Searching for pods in %q namespace with %q label",
-		RDSCoreConfig.MetalLBFRRNamespace, rdscoreparams.MetalLBFRRPodSelector)
+		rdscoreparams.MetalLBOperatorNamespace, rdscoreparams.MetalLBFRRPodSelector)
 
-	frrPodList := findPodWithSelector(RDSCoreConfig.MetalLBFRRNamespace,
+	frrPodList := findPodWithSelector(rdscoreparams.MetalLBOperatorNamespace,
 		rdscoreparams.MetalLBFRRPodSelector)
 
 	Expect(len(frrPodList)).ToNot(Equal(0), "No MetalLB FRR pods found")
