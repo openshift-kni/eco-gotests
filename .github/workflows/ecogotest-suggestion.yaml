@@ -39,7 +39,12 @@ jobs:
           #  -d @output.txt)
           #echo "$RESPONSE" > ai_output.txt
           #echo "response=$RESPONSE" >> "$GITHUB_ENV"
-          echo "response='testing comment while the REST is built'" >> "$GITHUB_ENV"
+          FILENAME="workflows/samples/ecogotest_suggestion.txt"
+          echo "Reading content from $MERGED_FILENAME"
+          RESPONSE=$(cat "$FILENAME")
+          echo "response<<EOF" >> $GITHUB_ENV
+          echo "$RESPONSE" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Post AI response as an issue comment
         uses: peter-evans/create-or-update-comment@v4

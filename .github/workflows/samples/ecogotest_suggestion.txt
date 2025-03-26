@@ -1,0 +1,288 @@
+Test Objective
+
+The test validates the functionality of SRIOV (Single Root I/O Virtualization) interfaces in a Kubernetes cluster. It ensures that:
+- All expected SRIOV pods are running in the specified namespace.
+- Each SRIOV pod has the correct network interfaces configured with IP addresses.
+
+The test includes a retry policy to handle transient issues, attempting up to 120 times with a fixed wait time of 10 seconds between each attempt.
+
+Detailed Chain of Thought
+
+
+1. Validate SRIOV Pod Count
+
+- Objective: Verify that the number of SRIOV pods running in the specified namespace matches the expected count.
+- Why: This ensures that all expected SRIOV pods are up and running.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+2. Validate SRIOV Pod Network Interfaces
+
+- Objective: Verify that each SRIOV pod has the correct network interfaces configured with IP addresses.
+- Why: This ensures that the network interfaces are properly set up and configured.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+3. Validate SRIOV Pod IP Addresses
+
+- Objective: Verify that each SRIOV pod has the correct IP addresses assigned to its network interfaces.
+- Why: This ensures that the IP addresses are properly assigned and configured.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+4. Validate SRIOV Pod IP Addresses for a Specific Interface
+
+- Objective: Verify that each SRIOV pod has the correct IP addresses assigned to a specific network interface.
+- Why: This ensures that the IP addresses are properly assigned and configured for a specific interface.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+5. Validate SRIOV Pod Network Interfaces for a Specific Interface
+
+- Objective: Verify that each SRIOV pod has the correct network interfaces configured for a specific interface.
+- Why: This ensures that the network interfaces are properly set up and configured for a specific interface.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+6. Validate SRIOV Pod Count with a Specific Label
+
+- Objective: Verify that the number of SRIOV pods running in the specified namespace with a specific label matches the expected count.
+- Why: This ensures that all expected SRIOV pods with the specific label are up and running.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+7. Validate SRIOV Pod Network Interfaces with a Specific Label
+
+- Objective: Verify that each SRIOV pod with a specific label has the correct network interfaces configured with IP addresses.
+- Why: This ensures that the network interfaces are properly set up and configured for pods with a specific label.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+8. Validate SRIOV Pod IP Addresses with a Specific Label
+
+- Objective: Verify that each SRIOV pod with a specific label has the correct IP addresses assigned to its network interfaces.
+- Why: This ensures that the IP addresses are properly assigned and configured for pods with a specific label.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+9. Validate SRIOV Pod IP Addresses for a Specific Interface with a Specific Label
+
+- Objective: Verify that each SRIOV pod with a specific label has the correct IP addresses assigned to a specific network interface.
+- Why: This ensures that the IP addresses are properly assigned and configured for a specific interface with a specific label.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+10. Validate SRIOV Pod Network Interfaces for a Specific Interface with a Specific Label
+
+- Objective: Verify that each SRIOV pod with a specific label has the correct network interfaces configured for a specific interface.
+- Why: This ensures that the network interfaces are properly set up and configured for a specific interface with a specific label.
+- Imports: `fmt`, `time`, `github.com/openshift-kni/eco-goinfra/pkg/pod`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv`, `github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams`
+- Error Handling: Use `Expect` from Gomega to assert the condition. Retry up to 120 times with a 10-second wait between attempts.
+- Logging: Use `By` from Ginkgo for logging steps.
+
+Complete Test Code
+
+
+package sriov
+
+import (
+	"fmt"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
+)
+
+// ValidateSRIOVPodCount asserts that the number of SRIOV pods running in the specified namespace matches the expected count.
+func ValidateSRIOVPodCount(sriovNamespace string, expectedCount int) {
+	By("Validate SRIOV pods are running")
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace
+		sriovPods, err := pod.List(APIClient, sriovNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s", sriovNamespace)
+		// Check if the number of pods matches the expected count
+		return len(sriovPods) == expectedCount
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected pod count did not match")
+}
+
+// ValidateSRIOVPodNetworkInterfaces asserts that each SRIOV pod has the correct network interfaces configured with IP addresses.
+func ValidateSRIOVPodNetworkInterfaces(sriovNamespace string) {
+	By("Validate SRIOV pod network interfaces")
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace
+		sriovPods, err := pod.List(APIClient, sriovNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s", sriovNamespace)
+		// Check each pod for the correct network interfaces
+		for _, sriovPod := range sriovPods {
+			// Retrieve the network interfaces for the pod
+			interfaces, err := sriovPod.GetNetworkInterfaces()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get network interfaces for pod %s", sriovPod.Definition.Name)
+			// Check if the pod has the correct network interfaces
+			Expect(interfaces).To(ContainElement(tsparams.TestMacVlanNADName), "Pod does not have expected network interface %s", tsparams.TestMacVlanNADName)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected network interfaces were not found")
+}
+
+// ValidateSRIOVPodIPAddresses asserts that each SRIOV pod has the correct IP addresses assigned to its network interfaces.
+func ValidateSRIOVPodIPAddresses(sriovNamespace string) {
+	By("Validate SRIOV pod IP addresses")
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace
+		sriovPods, err := pod.List(APIClient, sriovNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s", sriovNamespace)
+		// Check each pod for the correct IP addresses
+		for _, sriovPod := range sriovPods {
+			// Retrieve the IP addresses for the pod
+			ipAddresses, err := sriovPod.GetIPAddresses()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get IP addresses for pod %s", sriovPod.Definition.Name)
+			// Check if the pod has the correct IP addresses
+			Expect(ipAddresses).To(ContainElement(tsparams.TestMacVlanIPAddr1), "Pod does not have expected IP address %s", tsparams.TestMacVlanIPAddr1)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected IP addresses were not found")
+}
+
+// ValidateSRIOVPodIPAddressesForInterface asserts that each SRIOV pod has the correct IP addresses assigned to a specific network interface.
+func ValidateSRIOVPodIPAddressesForInterface(sriovNamespace, interfaceName string) {
+	By("Validate SRIOV pod IP addresses for interface " + interfaceName)
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace
+		sriovPods, err := pod.List(APIClient, sriovNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s", sriovNamespace)
+		// Check each pod for the correct IP addresses on the specified interface
+		for _, sriovPod := range sriovPods {
+			// Retrieve the IP addresses for the pod
+			ipAddresses, err := sriovPod.GetIPAddressesForInterface(interfaceName)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get IP addresses for interface %s on pod %s", interfaceName, sriovPod.Definition.Name)
+			// Check if the pod has the correct IP addresses on the specified interface
+			Expect(ipAddresses).To(ContainElement(tsparams.TestMacVlanIPAddr1), "Pod does not have expected IP address %s on interface %s", tsparams.TestMacVlanIPAddr1, interfaceName)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected IP addresses were not found on interface %s", interfaceName)
+}
+
+// ValidateSRIOVPodNetworkInterfacesForInterface asserts that each SRIOV pod has the correct network interfaces configured for a specific interface.
+func ValidateSRIOVPodNetworkInterfacesForInterface(sriovNamespace, interfaceName string) {
+	By("Validate SRIOV pod network interfaces for interface " + interfaceName)
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace
+		sriovPods, err := pod.List(APIClient, sriovNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s", sriovNamespace)
+		// Check each pod for the correct network interfaces
+		for _, sriovPod := range sriovPods {
+			// Retrieve the network interfaces for the pod
+			interfaces, err := sriovPod.GetNetworkInterfaces()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get network interfaces for pod %s", sriovPod.Definition.Name)
+			// Check if the pod has the correct network interfaces
+			Expect(interfaces).To(ContainElement(interfaceName), "Pod does not have expected network interface %s", interfaceName)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected network interface %s was not found", interfaceName)
+}
+
+// ValidateSRIOVPodCountWithLabel asserts that the number of SRIOV pods running in the specified namespace with a specific label matches the expected count.
+func ValidateSRIOVPodCountWithLabel(sriovNamespace, label string, expectedCount int) {
+	By("Validate SRIOV pods with label " + label + " are running")
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace with the specified label
+		sriovPods, err := pod.List(APIClient, sriovNamespace, metav1.ListOptions{LabelSelector: label})
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s with label %s", sriovNamespace, label)
+		// Check if the number of pods matches the expected count
+		return len(sriovPods) == expectedCount
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected pod count did not match")
+}
+
+// ValidateSRIOVPodNetworkInterfacesWithLabel asserts that each SRIOV pod with a specific label has the correct network interfaces configured with IP addresses.
+func ValidateSRIOVPodNetworkInterfacesWithLabel(sriovNamespace, label string) {
+	By("Validate SRIOV pod network interfaces with label " + label)
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace with the specified label
+		sriovPods, err := pod.List(APIClient, sriovNamespace, metav1.ListOptions{LabelSelector: label})
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s with label %s", sriovNamespace, label)
+		// Check each pod for the correct network interfaces
+		for _, sriovPod := range sriovPods {
+			// Retrieve the network interfaces for the pod
+			interfaces, err := sriovPod.GetNetworkInterfaces()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get network interfaces for pod %s", sriovPod.Definition.Name)
+			// Check if the pod has the correct network interfaces
+			Expect(interfaces).To(ContainElement(tsparams.TestMacVlanNADName), "Pod does not have expected network interface %s", tsparams.TestMacVlanNADName)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected network interfaces were not found")
+}
+
+// ValidateSRIOVPodIPAddressesWithLabel asserts that each SRIOV pod with a specific label has the correct IP addresses assigned to its network interfaces.
+func ValidateSRIOVPodIPAddressesWithLabel(sriovNamespace, label string) {
+	By("Validate SRIOV pod IP addresses with label " + label)
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace with the specified label
+		sriovPods, err := pod.List(APIClient, sriovNamespace, metav1.ListOptions{LabelSelector: label})
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s with label %s", sriovNamespace, label)
+		// Check each pod for the correct IP addresses
+		for _, sriovPod := range sriovPods {
+			// Retrieve the IP addresses for the pod
+			ipAddresses, err := sriovPod.GetIPAddresses()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get IP addresses for pod %s", sriovPod.Definition.Name)
+			// Check if the pod has the correct IP addresses
+			Expect(ipAddresses).To(ContainElement(tsparams.TestMacVlanIPAddr1), "Pod does not have expected IP address %s", tsparams.TestMacVlanIPAddr1)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected IP addresses were not found")
+}
+
+// ValidateSRIOVPodIPAddressesForInterfaceWithLabel asserts that each SRIOV pod with a specific label has the correct IP addresses assigned to a specific network interface.
+func ValidateSRIOVPodIPAddressesForInterfaceWithLabel(sriovNamespace, label, interfaceName string) {
+	By("Validate SRIOV pod IP addresses for interface " + interfaceName + " with label " + label)
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace with the specified label
+		sriovPods, err := pod.List(APIClient, sriovNamespace, metav1.ListOptions{LabelSelector: label})
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s with label %s", sriovNamespace, label)
+		// Check each pod for the correct IP addresses on the specified interface
+		for _, sriovPod := range sriovPods {
+			// Retrieve the IP addresses for the pod
+			ipAddresses, err := sriovPod.GetIPAddressesForInterface(interfaceName)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get IP addresses for interface %s on pod %s", interfaceName, sriovPod.Definition.Name)
+			// Check if the pod has the correct IP addresses on the specified interface
+			Expect(ipAddresses).To(ContainElement(tsparams.TestMacVlanIPAddr1), "Pod does not have expected IP address %s on interface %s", tsparams.TestMacVlanIPAddr1, interfaceName)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected IP addresses were not found on interface %s", interfaceName)
+}
+
+// ValidateSRIOVPodNetworkInterfacesForInterfaceWithLabel asserts that each SRIOV pod with a specific label has the correct network interfaces configured for a specific interface.
+func ValidateSRIOVPodNetworkInterfacesForInterfaceWithLabel(sriovNamespace, label, interfaceName string) {
+	By("Validate SRIOV pod network interfaces for interface " + interfaceName + " with label " + label)
+	Eventually(func() bool {
+		// Retrieve the list of pods in the specified namespace with the specified label
+		sriovPods, err := pod.List(APIClient, sriovNamespace, metav1.ListOptions{LabelSelector: label})
+		Expect(err).ToNot(HaveOccurred(), "Failed to list pods in namespace %s with label %s", sriovNamespace, label)
+		// Check each pod for the correct network interfaces
+		for _, sriovPod := range sriovPods {
+			// Retrieve the network interfaces for the pod
+			interfaces, err := sriovPod.GetNetworkInterfaces()
+			Expect(err).ToNot(HaveOccurred(), "Failed to get network interfaces for pod %s", sriovPod.Definition.Name)
+			// Check if the pod has the correct network interfaces
+			Expect(interfaces).To(ContainElement(interfaceName), "Pod does not have expected network interface %s", interfaceName)
+		}
+		return true
+	}, time.Second*time.Duration(tsparams.DefaultTimeout), time.Second*10).Should(BeTrue(), "Expected network interface %s was not found", interfaceName)
+}
+
+        
+
+
+      
+This test code includes detailed logging and error handling to ensure that the SRIOV pods are correctly configured and running in the specified namespace. The retry mechanism helps to handle transient issues that might cause the test to fail initially but could be resolved on subsequent attempts.
