@@ -240,7 +240,7 @@ func (builder *Builder) Update(force bool) (*Builder, error) {
 	)
 
 	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
-	builder.Definition.ObjectMeta.ResourceVersion = builder.Object.ObjectMeta.ResourceVersion
+	builder.Definition.ResourceVersion = builder.Object.ResourceVersion
 
 	err := builder.apiClient.Update(context.TODO(), builder.Definition)
 

@@ -42,7 +42,7 @@ func ListInAllNamespaces(apiClient *clients.Settings, options ...client.ListOpti
 	glog.V(100).Infof(logMessage)
 
 	cguList := &v1alpha1.ClusterGroupUpgradeList{}
-	err = apiClient.Client.List(context.TODO(), cguList, &passedOptions)
+	err = apiClient.List(context.TODO(), cguList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list all CGUs in all namespaces due to %s", err.Error())

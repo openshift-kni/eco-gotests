@@ -212,7 +212,7 @@ func (builder *OperatorBuilder) WaitUntilInCondition(
 				return false, fmt.Errorf("network.operator object %s does not exist", builder.Definition.Name)
 			}
 
-			for _, c := range builder.Object.Status.OperatorStatus.Conditions {
+			for _, c := range builder.Object.Status.Conditions {
 				if c.Type == condition && c.Status == status {
 					return true, nil
 				}
