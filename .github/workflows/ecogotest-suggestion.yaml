@@ -39,7 +39,7 @@ jobs:
           #  -d @output.txt)
           #echo "$RESPONSE" > ai_output.txt
           #echo "response=$RESPONSE" >> "$GITHUB_ENV"
-          FILENAME="workflows/samples/ecogotest_suggestion.txt"
+          FILENAME=".github/workflows/samples/ecogotest_suggestion.txt"
           echo "Reading content from $MERGED_FILENAME"
           RESPONSE=$(cat "$FILENAME")
           echo "response<<EOF" >> $GITHUB_ENV
