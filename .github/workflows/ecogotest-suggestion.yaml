@@ -6,17 +6,17 @@ on:
       - labeled
 
 jobs:
-  migrate_issue:
+  process-issue:
     runs-on: ubuntu-latest
-    if: github.event.label.name == 'suggest_code'
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Fetch Comments from Closed Issue
         id: fetch_comments
         env:
-          GH_TOKEN: ${{ secrets.AI_POC_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOURCE_REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
@@ -31,7 +31,7 @@ jobs:
             echo "COMMENT_FOUND=false" >> $GITHUB_ENV
           fi
 
-      - name: Send promt to AI model
+      - name: Send output to AI model
         id: ai_request
         run: |
           #RESPONSE=$(curl -X POST "https://your-ai-model-api.com/process" \
@@ -39,14 +39,15 @@ jobs:
           #  -d @output.txt)
           #echo "$RESPONSE" > ai_output.txt
           #echo "response=$RESPONSE" >> "$GITHUB_ENV"
-          echo "response='here is the eco-gotest suggested by GENI'" >> "$GITHUB_ENV"
+          echo "response='testing comment while the REST is built'" >> "$GITHUB_ENV"
 
       - name: Post AI response as an issue comment
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            🤖 **AI-generated eco-gotest suggestion**:
+            🤖 **AI-generated test case description**:
             ```
             ${{ env.response }}
             ```
+
