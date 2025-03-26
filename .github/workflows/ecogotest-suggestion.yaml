@@ -46,8 +46,10 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           body: |
-            🤖 **AI-generated test case description**:
+            🤖 **AI-generated eco-gotest**:
             ```
             ${{ env.response }}
+
+            Prompt was: ${{ env.COMMENT_BODY }}
             ```
 
