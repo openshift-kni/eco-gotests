@@ -50,6 +50,6 @@ jobs:
             ```
             ${{ env.response }}
 
-            Prompt was: ${{ env.COMMENT_BODY }}
             ```
+            Prompt was: ${{ env.COMMENT_BODY }}
 
