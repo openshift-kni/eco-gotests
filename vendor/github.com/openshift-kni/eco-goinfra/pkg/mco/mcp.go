@@ -322,7 +322,7 @@ func (builder *MCPBuilder) WaitToBeStableFor(stableDuration time.Duration, timeo
 						builder.Object.Status.DegradedMachineCount != 0 {
 						glog.V(100).Infof("MachineConfigPool: %v degraded and has a mismatch in "+
 							"machineCount: %v "+"vs machineCountUpdated: "+"%v vs readyMachineCount: %v and "+
-							"degradedMachineCount is : %v \n", builder.Object.ObjectMeta.Name,
+							"degradedMachineCount is : %v \n", builder.Object.Name,
 							builder.Object.Status.MachineCount, builder.Object.Status.UpdatedMachineCount,
 							builder.Object.Status.ReadyMachineCount, builder.Object.Status.DegradedMachineCount)
 

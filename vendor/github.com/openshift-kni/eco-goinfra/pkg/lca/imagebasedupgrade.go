@@ -137,7 +137,7 @@ func (builder *ImageBasedUpgradeBuilder) Update() (*ImageBasedUpgradeBuilder, er
 					return false, err
 				}
 
-				if ibu.ObjectMeta.Generation == ibu.Status.ObservedGeneration {
+				if ibu.Generation == ibu.Status.ObservedGeneration {
 					builder.Object = ibu
 
 					return true, nil

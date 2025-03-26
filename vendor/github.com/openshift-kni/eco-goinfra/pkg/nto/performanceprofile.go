@@ -344,7 +344,7 @@ func (builder *Builder) WithAnnotations(annotations map[string]string) *Builder 
 		return builder
 	}
 
-	builder.Definition.ObjectMeta.Annotations = annotations
+	builder.Definition.Annotations = annotations
 
 	return builder
 }
