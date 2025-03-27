@@ -162,3 +162,4 @@ rdscore_egressip_ns_two: 'rds-egressip-ns-two'
 rdscore_egressip_ns_label: 'env=sys-qa'
 rdscore_egressip_pod_label: 'app=web'
 rdscore_egressip_tcp_port_number: '9090'
+rdscore_frr_expected_nodes: []
