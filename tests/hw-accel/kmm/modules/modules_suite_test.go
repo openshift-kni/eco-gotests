@@ -71,6 +71,13 @@ var _ = BeforeSuite(func() {
 
 		deploymentCfg := deployment.NewBuilder(APIClient, deploymentName, kmmparams.KmmOperatorNamespace,
 			map[string]string{kmmparams.KmmTestHelperLabelName: ""}, *containerCfg)
+		deploymentCfg.WithToleration(kmmparams.TolerationNoExecuteK8sUnreachable)
+		deploymentCfg.WithToleration(kmmparams.TolerationNoScheduleK8sUnreachable)
+		deploymentCfg.WithToleration(kmmparams.TolerationNoScheduleK8sUnschedulable)
+		deploymentCfg.WithToleration(kmmparams.TolerationNoScheduleK8sDiskPressure)
+		deploymentCfg.WithToleration(kmmparams.TolerationNoExecuteKeyValue)
+		deploymentCfg.WithToleration(kmmparams.TolerationNoScheduleKeyValue)
+
 		deploymentCfg.WithLabel(kmmparams.KmmTestHelperLabelName, "").
 			WithNodeSelector(map[string]string{"kubernetes.io/hostname": node.Object.Name}).
 			WithServiceAccountName("kmm-operator-module-loader")
