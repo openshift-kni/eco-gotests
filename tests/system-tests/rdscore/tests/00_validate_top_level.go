@@ -84,14 +84,14 @@ var _ = Describe(
 				Label("mount-ns", "mount-ns-cnf"), reportxml.ID("75833"),
 				rdscorecommon.VerifyMountNamespaceOnCNFMCP)
 
-			It("Verifies SR-IOV workloads on same node and different networks",
+			It("Verifies SR-IOV workloads on same node and different SR-IOV networks",
 				Label("sriov", "sriov-same-node-different-nets"),
-				reportxml.ID("72258"), MustPassRepeatedly(3),
+				reportxml.ID("81002"), MustPassRepeatedly(3),
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet)
 
-			It("Verifies SR-IOV workloads on different nodes and different networks",
+			It("Verifies SR-IOV workloads on different nodes and different SR-IOV networks",
 				Label("sriov", "sriov-different-nodes-different-nets"),
-				reportxml.ID("72259"), MustPassRepeatedly(3),
+				reportxml.ID("81003"), MustPassRepeatedly(3),
 				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet)
 
 			It("Verifies NUMA-aware workload is deployable", reportxml.ID("73677"), Label("nrop"),
@@ -115,12 +115,12 @@ var _ = Describe(
 			It("Verify IPVLAN workloads on the same node", Label("ipvlan", "validate-new-ipvlan-same-node"),
 				reportxml.ID("75562"), rdscorecommon.VerifyIPVlanOnSameNode)
 
-			It("Verifices SR-IOV workloads on the same node",
-				Label("sriov", "sriov-same-node"), reportxml.ID("71949"), MustPassRepeatedly(3),
+			It("Verifies SR-IOV workloads on the same node and same SR-IOV network",
+				Label("sriov", "sriov-same-node"), reportxml.ID("81001"), MustPassRepeatedly(3),
 				rdscorecommon.VerifySRIOVWorkloadsOnSameNode)
 
-			It("Verifices SR-IOV workloads on different nodes",
-				Label("sriov", "sriov-different-node"), reportxml.ID("71950"), MustPassRepeatedly(3),
+			It("Verifies SR-IOV workloads on different nodes and same SR-IOV network",
+				Label("sriov", "sriov-different-node"), reportxml.ID("80999"), MustPassRepeatedly(3),
 				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodes)
 
 			It(fmt.Sprintf("Verifies %s namespace exists", RDSCoreConfig.NMStateOperatorNamespace),
@@ -416,20 +416,20 @@ var _ = Describe(
 				Label("persistent-storage", "deploy-cephrbd-pvc"), reportxml.ID("71992"), MustPassRepeatedly(3),
 				rdscorecommon.VerifyCephRBDPVC)
 
-			It("Verifies SR-IOV workloads on different nodes post reboot",
-				Label("sriov", "verify-sriov-different-node"), reportxml.ID("71952"),
+			It("Verifies SR-IOV workloads on different nodes and same SR-IOV network post reboot",
+				Label("sriov", "verify-sriov-different-node"), reportxml.ID("80423"),
 				rdscorecommon.VerifySRIOVConnectivityBetweenDifferentNodes)
 
-			It("Verifies SR-IOV workloads on the same node post reboot",
-				Label("sriov", "verify-sriov-same-node"), reportxml.ID("71951"),
+			It("Verifies SR-IOV workloads on the same node and same SR-IOV network post reboot",
+				Label("sriov", "verify-sriov-same-node"), reportxml.ID("80428"),
 				rdscorecommon.VerifySRIOVConnectivityOnSameNode)
 
-			It("Verifies SR-IOV workloads on the same node and different SR-IOV nets post reboot",
-				Label("sriov", "verify-sriov-same-node-diff-nets"), reportxml.ID("72264"),
-				rdscorecommon.VerifySRIOVConnectivityOnSameNodeAndDifferentNets)
+			It("Verifies SR-IOV workloads on the different nodes and different SR-IOV nets post reboot",
+				Label("sriov", "verify-sriov-diff-nodes-diff-nets"), reportxml.ID("80451"),
+				rdscorecommon.VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks)
 
-			It("Verifies SR-IOV workloads on different nodes and different SR-IOV nets post reboot",
-				Label("sriov", "verify-sriov-diff-nodes-diff-nets"), reportxml.ID("72265"),
+			It("Verifies SR-IOV workloads on same node and different SR-IOV nets post reboot",
+				Label("sriov", "verify-sriov-same-node-diff-nets"), reportxml.ID("80450"),
 				rdscorecommon.VerifySRIOVConnectivityOnSameNodeAndDifferentNets)
 
 			It("Verifies MACVLAN workloads on the same node post hard reboot",
@@ -630,29 +630,39 @@ var _ = Describe(
 				Label("persistent-storage", "deploy-cephrbd-pvc"), reportxml.ID("72046"), MustPassRepeatedly(3),
 				rdscorecommon.VerifyCephRBDPVC)
 
-			It("Verifies SR-IOV workloads on different nodes post graceful reboot",
-				Label("sriov", "verify-sriov-different-node"), reportxml.ID("72039"),
+			It("Verifies SR-IOV workloads on different nodes and same SR-IOV net post graceful reboot",
+				Label("sriov", "verify-sriov-different-node"), reportxml.ID("80769"),
 				rdscorecommon.VerifySRIOVConnectivityBetweenDifferentNodes)
 
-			It("Verifies SR-IOV workloads on the same node post graceful reboot",
-				Label("sriov", "verify-sriov-same-node"), reportxml.ID("72038"),
+			It("Verifies SR-IOV workloads on the same node and same SR-IOV net post graceful reboot",
+				Label("sriov", "verify-sriov-same-node"), reportxml.ID("80770"),
 				rdscorecommon.VerifySRIOVConnectivityOnSameNode)
 
-			It("Verifies SR-IOV workloads deployable on the same node after graceful reboot",
-				Label("sriov", "deploy-sriov-same-node"), reportxml.ID("72048"), MustPassRepeatedly(3),
-				rdscorecommon.VerifySRIOVWorkloadsOnSameNode)
-
-			It("Verifies SR-IOV workloads deployable on different nodes after graceful reboot",
-				Label("sriov", "deploy-sriov-different-node"), reportxml.ID("72049"), MustPassRepeatedly(3),
-				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodes)
-
 			It("Verifies SR-IOV workloads on the same node and different SR-IOV nets after graceful reboot",
-				Label("sriov", "verify-sriov-same-node-diff-nets"), reportxml.ID("72260"),
+				Label("sriov", "verify-sriov-same-node-diff-nets"), reportxml.ID("80772"),
 				rdscorecommon.VerifySRIOVConnectivityOnSameNodeAndDifferentNets)
 
 			It("Verifies SR-IOV workloads on different nodes and different SR-IOV nets after graceful reboot",
-				Label("sriov", "verify-sriov-diff-nodes-diff-nets"), reportxml.ID("72261"),
-				rdscorecommon.VerifySRIOVConnectivityOnSameNodeAndDifferentNets)
+				Label("sriov", "verify-sriov-diff-nodes-diff-nets"), reportxml.ID("80773"),
+				rdscorecommon.VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks)
+
+			It("Verifies SR-IOV workloads deployable on the same node and same SR-IOV net after graceful reboot",
+				Label("sriov", "deploy-sriov-same-node"), reportxml.ID("81296"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNode)
+
+			It("Verifies SR-IOV workloads deployable on different nodes and same SR-IOV network after graceful reboot",
+				Label("sriov", "deploy-sriov-different-node"), reportxml.ID("81297"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodes)
+
+			It("Verifies SR-IOV workloads deployable on same node and different SR-IOV networks after graceful reboot",
+				Label("sriov", "deploy-sriov-same-node-different-nets"),
+				reportxml.ID("81298"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnSameNodeDifferentNet)
+
+			It("Verifies SR-IOV workloads on different nodes and different SR-IOV networks after graceful reboot",
+				Label("sriov", "sriov-different-nodes-different-nets"),
+				reportxml.ID("81299"), MustPassRepeatedly(3),
+				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet)
 
 			It("Verifies MACVLAN workloads on the same node post soft reboot",
 				Label("macvlan", "verify-macvlan-same-node"), reportxml.ID("72571"),
