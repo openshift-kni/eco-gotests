@@ -54,7 +54,6 @@ linters-settings:
         - "github.com/stmcginnis/gofish"
         - "github.com/BurntSushi/toml"
         - "github.com/containers/image/v5/pkg/sysregistriesv2"
-        - "gopkg.in/yaml.v2"
         - "gopkg.in/yaml.v3"
         - "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
         - "golang.org/x/crypto/ssh"

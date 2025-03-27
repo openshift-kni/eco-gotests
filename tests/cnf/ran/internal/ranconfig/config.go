@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
