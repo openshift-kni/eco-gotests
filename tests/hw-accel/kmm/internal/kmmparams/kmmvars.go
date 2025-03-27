@@ -45,50 +45,50 @@ var (
 	ReasonSignList = []string{ReasonSignCreated, ReasonBuildStarted, ReasonBuildCompleted, ReasonBuildSucceeded}
 
 	// TolerationNoScheduleK8sUnschedulable represents definition of specific K8s unschedulable taint
-	// seen during cluster upgrades.
-	TolerationNoScheduleK8sUnschedulable = corev1.Toleration{
-		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeUnschedulable),
-		Effect:   corev1.TaintEffectNoSchedule,
-		Operator: corev1.TolerationOpExists,
+	// seen during cluster upgrades
+	TolerationNoScheduleK8sUnschedulable = v1.Toleration{
+		Key:      v1.TaintNodeUnschedulable,
+		Effect:   v1.TaintEffectNoSchedule,
+		Operator: v1.TolerationOpExists,
 	}
 
 	// TolerationNoScheduleK8sUnreachable represents definition of speficic K8s unreachable taint seen
-	// during cluster upgrades.
-	TolerationNoScheduleK8sUnreachable = corev1.Toleration{
-		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeUnreachable),
-		Effect:   corev1.TaintEffectNoSchedule,
-		Operator: corev1.TolerationOpExists,
+	// during cluster upgrades
+	TolerationNoScheduleK8sUnreachable = v1.Toleration{
+		Key:      v1.TaintNodeUnreachable,
+		Effect:   v1.TaintEffectNoSchedule,
+		Operator: v1.TolerationOpExists,
 	}
 
 	// TolerationNoExecuteK8sUnreachable represents definition of specific K8s unreachable taint seen
-	// during cluster upgrades.
-	TolerationNoExecuteK8sUnreachable = corev1.Toleration{
-		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeUnreachable),
-		Effect:   corev1.TaintEffectNoExecute,
-		Operator: corev1.TolerationOpExists,
+	// during cluster upgrades
+	TolerationNoExecuteK8sUnreachable = v1.Toleration{
+		Key:      v1.TaintNodeUnreachable,
+		Effect:   v1.TaintEffectNoExecute,
+		Operator: v1.TolerationOpExists,
 	}
 
 	// TolerationNoScheduleK8sDiskPressure represents definition of specific K8s disk-pressure taint seen
-	// on nodes with low disk space.
-	TolerationNoScheduleK8sDiskPressure = corev1.Toleration{
-		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeDiskPressure),
-		Effect:   corev1.TaintEffectNoSchedule,
-		Operator: corev1.TolerationOpExists,
+	// on nodes with low disk space
+	TolerationNoScheduleK8sDiskPressure = v1.Toleration{
+		Key:      v1.TaintNodeDiskPressure,
+		Effect:   v1.TaintEffectNoSchedule,
+		Operator: v1.TolerationOpExists,
 	}
 
-	// TolerationNoScheduleKeyValue represents definition of dummy taint used in tests.
-	TolerationNoScheduleKeyValue = corev1.Toleration{
-		Key:      "kmm-key",
+	// TolerationNoScheduleKeyValue represents definition of dummy taint used in tests
+	TolerationNoScheduleKeyValue = v1.Toleration{
+		Key:      "key",
 		Value:    "value",
-		Operator: corev1.TolerationOpEqual,
-		Effect:   corev1.TaintEffectNoSchedule,
+		Operator: v1.TolerationOpEqual,
+		Effect:   v1.TaintEffectNoSchedule,
 	}
 
-	// TolerationNoExecuteKeyValue represents definition of dummy taint used in tests.
-	TolerationNoExecuteKeyValue = corev1.Toleration{
-		Key:      "kmm-key",
+	// TolerationNoExecuteKeyValue represents definition of dummy taint used in tests
+	TolerationNoExecuteKeyValue = v1.Toleration{
+		Key:      "key",
 		Value:    "value",
-		Operator: corev1.TolerationOpEqual,
-		Effect:   corev1.TaintEffectNoExecute,
+		Operator: v1.TolerationOpEqual,
+		Effect:   v1.TaintEffectNoExecute,
 	}
 )
