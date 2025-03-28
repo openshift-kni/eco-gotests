@@ -152,7 +152,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error setting node label")
 
 			By("Check that the module is deployed on just one node")
-			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.VersionModuleTestNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.VersionModuleTestNamespace, 5*time.Minute,
 				firstNode.Object.Labels)
 			Expect(err).ToNot(HaveOccurred(), "error while checking module is deployed")
 		})

@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/go-version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -160,14 +159,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 		})
 
 		It("should generate events on nodes when module is loaded", reportxml.ID("68106"), func() {
-			By("Checking if version is greater than 2.0.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.0.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				Skip("Test not supported for versions lower than 2.0.0")
-			}
-
 			By("Getting events from 'default' namespace")
 			eventList, err := events.List(APIClient, "default")
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
