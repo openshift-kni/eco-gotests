@@ -57,3 +57,43 @@ func DownloadFile(fileURL, fileName, targetFolder string) error {
 
 	return err
 }
+
+// CopyFile copies a file from the provided source path to the provided destination path.
+func CopyFile(sourcePath, destinationPath string) error {
+	if sourcePath == "" {
+		glog.V(100).Info("The source path is empty")
+
+		return fmt.Errorf("the source path should be provided")
+	}
+
+	if destinationPath == "" {
+		glog.V(100).Info("The destination path is empty")
+
+		return fmt.Errorf("the destination path should be provided")
+	}
+
+	sourceFile, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("error opening source file: %w", err)
+	}
+	defer sourceFile.Close()
+
+	// Create the destination file
+	destinationFile, err := os.Create(destinationPath)
+	if err != nil {
+		return fmt.Errorf("error creating destination file: %w", err)
+	}
+	defer destinationFile.Close()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+	if err != nil {
+		return fmt.Errorf("error copying file: %w", err)
+	}
+
+	err = destinationFile.Sync()
+	if err != nil {
+		return fmt.Errorf("error syncing destination file: %w", err)
+	}
+
+	return err
+}

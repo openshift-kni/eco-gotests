@@ -1,0 +1,27 @@
+---
+# System Tests O-Cloud default configurations.
+ibi_generate_seed_image: true
+ibi_base_image_path: /opt/cached_disconnected_images/rhcos-ibi.iso
+ibi_base_image_url: http://registry.hub01.oran.telcoqe.eng.rdu2.dc.redhat.com:8080/images/rhcos-ibi.iso
+oran_spoke1_bmc_username: ""
+oran_spoke1_bmc_password: ""
+oran_spoke1_bmc_host: ""
+oran_spoke1_bmc_timeout: "15s"
+
+oran_spoke2_bmc_username: ""
+oran_spoke2_bmc_password: ""
+oran_spoke2_bmc_host: ""
+oran_spoke2_bmc_timeout: "15s"
+
+local_registry_auth: ""
+seed_image: ""
+seed_version: ""
+registry: ""
+ssh_key: ""
+
+registry_certificate: ""
+interface_name: ""
+interface_ipv6: ""
+dns_ipv6: ""
+next_hop_ipv6: ""
+next_hop_interface: ""
