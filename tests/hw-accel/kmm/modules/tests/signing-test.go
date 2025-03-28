@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-version"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/events"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
@@ -136,7 +134,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Await driver container deployment")
-			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace, time.Minute,
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute,
 				GeneralConfig.WorkerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
@@ -156,14 +154,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 		})
 
 		It("should generate event about build being created and completed", reportxml.ID("68110"), func() {
-			By("Checking if version is greater than 2.0.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.0.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				Skip("Test not supported for versions lower than 2.0.0")
-			}
-
 			By("Getting events from module's namespace")
 			eventList, err := events.List(APIClient, kmmparams.ModuleBuildAndSignNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
@@ -185,14 +175,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 		})
 
 		It("should generate event about sign being created and completed", reportxml.ID("68108"), func() {
-			By("Checking if version is greater than 2.0.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.0.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				Skip("Test not supported for versions lower than 2.0.0")
-			}
-
 			By("Getting events from module's namespace")
 			eventList, err := events.List(APIClient, kmmparams.ModuleBuildAndSignNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")

@@ -4,46 +4,32 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/go-version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
-var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLongRun), func() {
+var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSanity), func() {
 
 	Context("Module", Label("firmware"), func() {
-
-		var mcpName string
 
 		moduleName := kmmparams.FirmwareTestNamespace
 		kmodName := "simple-kmod-firmware"
 		serviceAccountName := "firmware-manager"
 		image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
 			tsparams.LocalImageRegistry, kmmparams.FirmwareTestNamespace, kmodName)
-		machineConfigName := "99-worker-kernel-args-firmware-path"
-		machineConfigRole := "machineconfiguration.openshift.io/role"
-		workerKernelArgs := []string{"firmware_class.path=/var/lib/firmware"}
-
-		BeforeAll(func() {
-			By("Collect MachineConfigPoolName")
-			mcpName = get.MachineConfigPoolName(APIClient)
-		})
 
 		AfterEach(func() {
-			mcpName := get.MachineConfigPoolName(APIClient)
 			By("Delete Module")
 			_, _ = kmm.NewModuleBuilder(APIClient, moduleName, kmmparams.FirmwareTestNamespace).Delete()
 
@@ -61,26 +47,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 			By("Delete Namespace")
 			_ = namespace.NewBuilder(APIClient, kmmparams.FirmwareTestNamespace).Delete()
 
-			By("Checking if version is greater than 2.2.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.2.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				By("Delete machine configuration that sets Kernel Arguments on workers")
-				kernelArgsMc, err := mco.PullMachineConfig(APIClient, machineConfigName)
-				Expect(err).ToNot(HaveOccurred(), "error fetching machine configuration object")
-				_ = kernelArgsMc.Delete()
-
-				By("Waiting machine config pool to update")
-				mcp, err := mco.Pull(APIClient, mcpName)
-				Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
-
-				err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
-				Expect(err).To(HaveOccurred(), "the machine configuration did not trigger a mcp update")
-
-				err = mcp.WaitForUpdate(30 * time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
-			}
 		})
 
 		It("should properly build a module with firmware support", reportxml.ID("56675"), func() {
@@ -106,29 +72,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 			crb := define.ModuleCRB(*svcAccount, kmodName)
 			_, err = crb.Create()
 			Expect(err).ToNot(HaveOccurred(), "error creating clusterrolebinding")
-
-			By("Checking if version is greater than 2.2.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.2.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				By("Creating machine configuration that sets the kernelArguments")
-				kernelArgsMc := mco.NewMCBuilder(APIClient, machineConfigName).
-					WithLabel(machineConfigRole, mcpName).
-					WithKernelArguments(workerKernelArgs)
-				_, err = kernelArgsMc.Create()
-				Expect(err).ToNot(HaveOccurred(), "error creating machine configuration")
-
-				By("Waiting machine config pool to update")
-				mcp, err := mco.Pull(APIClient, "worker")
-				Expect(err).ToNot(HaveOccurred(), "error while pulling machineconfigpool")
-
-				err = mcp.WaitToBeStableFor(time.Minute, 2*time.Minute)
-				Expect(err).To(HaveOccurred(), "the machineconfiguration did not trigger a mcp update")
-
-				err = mcp.WaitForUpdate(30 * time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "error while waiting machineconfigpool to get updated")
-			}
 
 			By("Create KernelMapping")
 			kernelMapping := kmm.NewRegExKernelMappingBuilder("^.+$")
