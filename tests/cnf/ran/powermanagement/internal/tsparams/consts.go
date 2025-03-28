@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 )
 
 const (
@@ -17,6 +18,11 @@ const (
 	PowerSaveTimeout = 10 * time.Minute
 	// TestingNamespace is the tests namespace.
 	TestingNamespace = "ran-test"
+
+	// DesiredReservedCoreFreq is the frequency to set the reserved cores to.
+	DesiredReservedCoreFreq = performancev2.CPUfrequency(2500002)
+	// DesiredIsolatedCoreFreq is the frequency to set the isolated cores to.
+	DesiredIsolatedCoreFreq = performancev2.CPUfrequency(2200002)
 
 	// PowerSavingMode is the name of the power saving power state.
 	PowerSavingMode = "powersaving"

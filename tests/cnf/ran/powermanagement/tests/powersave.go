@@ -40,7 +40,10 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 	BeforeAll(func() {
 		nodeList, err = nodes.List(Spoke1APIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get nodes")
-		Expect(len(nodeList)).To(Equal(1), "Currently only SNO clusters are supported")
+
+		if len(nodeList) != 1 {
+			Skip("Power save tests require a SNO cluster")
+		}
 
 		nodeName = nodeList[0].Object.Name
 		perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
