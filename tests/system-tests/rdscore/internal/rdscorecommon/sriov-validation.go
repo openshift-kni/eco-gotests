@@ -2,6 +2,7 @@ package rdscorecommon
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -16,7 +17,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
+	"k8s.io/apimachinery/pkg/util/wait"
 
+	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -28,6 +31,8 @@ import (
 )
 
 const (
+	// SR-IOV operator namespace.
+	sriovNS = "openshift-sriov-network-operator"
 	// Names of deployments.
 	sriovDeploy1OneName = "rdscore-sriov-one"
 	sriovDeploy1TwoName = "rdscore-sriov-two"
@@ -71,42 +76,81 @@ const (
 	sriovRBACRole4 = "system:openshift:scc:privileged"
 )
 
-//nolint:unparam
-func getSRIOVOperatorConfig(nsname string) (bool, error) {
-	if len(strings.TrimSpace(nsname)) == 0 {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Namespace parameter for SR-IOV Operator config is empty")
+func getSRIOVOperatorConfig() (*srIovV1.SriovOperatorConfig, error) {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Retrieving SR-IOV Operator config")
 
-		return false, fmt.Errorf("emtpty namespace parameter")
-	}
-
-	sriovConfigBuiler := sriov.NewOperatorConfigBuilder(APIClient, nsname)
+	sriovConfigBuiler := sriov.NewOperatorConfigBuilder(APIClient, sriovNS)
 
 	Expect(sriovConfigBuiler).ToNot(BeNil(), "Failed to initialize SR-IOV Operator Config structure")
 
-	sriovConfig, err := sriovConfigBuiler.Get()
-
-	Expect(err).ToNot(HaveOccurred(), "Failed to get SR-IOV Operator Config")
-
 	var (
-		featureEnabled bool
-		ok             bool
+		sriovConfig *srIovV1.SriovOperatorConfig
+		err         error
 	)
 
-	if featureEnabled, ok = sriovConfig.Spec.FeatureGates["resourceInjectorMatchCondition"]; !ok {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature 'resourceInjectorMatchCondition' not defined")
+	err = wait.PollUntilContextTimeout(context.TODO(),
+		5*time.Second,
+		1*time.Minute,
+		true,
+		func(ctx context.Context) (bool, error) {
+			var getErr error
 
-		return false, fmt.Errorf("feature 'resourceInjectorMatchCondition' not defined")
+			sriovConfig, getErr = sriovConfigBuiler.Get()
+
+			if getErr != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error retrieving SR-IOV Operator config: %v", getErr)
+
+				return false, nil
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Retrieved SR-IOV Operator config")
+
+			return true, nil
+		})
+
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error retrieving SR-IOV Operator config: %v", err)
+
+		return &srIovV1.SriovOperatorConfig{}, err
 	}
 
-	if !featureEnabled {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature 'resourceInjectorMatchCondition' not enabled")
+	// Expect(err).ToNot(HaveOccurred(), "Failed to get SR-IOV Operator Config")
 
-		return false, fmt.Errorf("feature 'resourceInjectorMatchCondition' not enabled")
+	return sriovConfig, nil
+}
+
+//nolint:unparam
+func getSRIOVConfigOption(sriovConfig *srIovV1.SriovOperatorConfig, option string) (bool, bool) {
+	var (
+		featureEnabled bool
+		optionFound    bool
+	)
+
+	// resourceInjectorMatchCondition
+
+	featureEnabled, optionFound = sriovConfig.Spec.FeatureGates[option]
+
+	if !optionFound {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature %q is not defined in the SR-IOV operator config")
+
+		return optionFound, optionFound
 	}
 
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature 'resourceInjectorMatchCondition' is enabled")
+	// if featureEnabled, ok = sriovConfig.Spec.FeatureGates["resourceInjectorMatchCondition"]; !ok {
+	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature 'resourceInjectorMatchCondition' not defined")
 
-	return true, nil
+	// 	return false, fmt.Errorf("feature 'resourceInjectorMatchCondition' not defined")
+	// }
+
+	// if !featureEnabled {
+	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature 'resourceInjectorMatchCondition' not enabled")
+
+	// 	return false, fmt.Errorf("feature 'resourceInjectorMatchCondition' not enabled")
+	// }
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature %q is defined with value: %v", option, featureEnabled)
+
+	return featureEnabled, optionFound
 }
 
 func createServiceAccount(saName, nsName string) {
@@ -607,16 +651,20 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
-	By("Checking resourceInjectorMatchCondition is set")
+	By("Retrieving SR-IOV Operator config")
 
-	optionSet, oerr := getSRIOVOperatorConfig("openshift-sriov-network-operator")
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
 
 	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
 
-	if !optionSet {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not set")
+	By("Checking resourceInjectorMatchCondition is set")
 
-		Skip("Option 'resourceInjectorMatchCondition' not set")
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
 	}
 
 	By("Checking SR-IOV deployments don't exist")
@@ -788,16 +836,20 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
-	By("Checking resourceInjectorMatchCondition is set")
+	By("Retrieving SR-IOV Operator config")
 
-	optionSet, oerr := getSRIOVOperatorConfig("openshift-sriov-network-operator")
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
 
 	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
 
-	if !optionSet {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not set")
+	By("Checking resourceInjectorMatchCondition is set")
 
-		Skip("Option 'resourceInjectorMatchCondition' not set")
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
 	}
 
 	By("Checking SR-IOV deployments don't exist")
@@ -1099,16 +1151,20 @@ func VerifySRIOVConnectivityOnSameNodeAndDifferentNets() {
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx SpecContext) {
-	By("Checking resourceInjectorMatchCondition is set")
+	By("Retrieving SR-IOV Operator config")
 
-	optionSet, oerr := getSRIOVOperatorConfig("openshift-sriov-network-operator")
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
 
 	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
 
-	if !optionSet {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not set")
+	By("Checking resourceInjectorMatchCondition is set")
 
-		Skip("Option 'resourceInjectorMatchCondition' not set")
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
 	}
 
 	By("Checking SR-IOV deployments don't exist")
@@ -1328,16 +1384,20 @@ func VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks() {
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
-	By("Checking resourceInjectorMatchCondition is set")
+	By("Retrieving SR-IOV Operator config")
 
-	optionSet, oerr := getSRIOVOperatorConfig("openshift-sriov-network-operator")
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
 
 	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
 
-	if !optionSet {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not set")
+	By("Checking resourceInjectorMatchCondition is set")
 
-		Skip("Option 'resourceInjectorMatchCondition' not set")
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
 	}
 
 	By("Checking SR-IOV deployments don't exist")
