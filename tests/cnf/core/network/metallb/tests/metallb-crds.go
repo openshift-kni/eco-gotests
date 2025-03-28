@@ -75,9 +75,6 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		By("Creating nginx test pod")
 		setupNGNXPod(cnfWorkerNodeList[0].Definition.Name)
 
-		By("Creating an IPAddresspool and BGPAdvertisement")
-		ipAddressPool = setupBgpAdvertisementAndIPAddressPool(addressPool)
-
 		By("Generating ConfigMap configuration for the external FRR pod")
 		masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
 
@@ -99,9 +96,8 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		Expect(err).ToNot(HaveOccurred(), "Failed to list pods")
 		bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
-		createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLBIPList[0], bfdProfile.Definition.Name,
-			tsparams.LocalBGPASN, false, 0,
-			frrk8sPods)
+		createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLBIPList[0], bfdProfile.Definition.Name,
+			tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 		By("Checking that BGP and BFD sessions are established and up")
 		verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(l3ClientPod, ipv4NodeAddrList)
@@ -116,8 +112,10 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		addOrDeleteNodeSecIPAddViaFRRK8S("add", cnfWorkerNodeList[0].Object.Name,
 			ipSecondaryInterface1, sriovInterfacesUnderTest[0])
 
-		By("Creating a L2Advertisement")
+		By("Creating an IPAddressPool and BGPAdvertisement")
+		ipAddressPool = setupBgpAdvertisementAndIPAddressPool(addressPool, int32(32))
 
+		By("Creating a L2Advertisement")
 		_, err = metallb.NewL2AdvertisementBuilder(
 			APIClient, "l2advertisement", NetConfig.MlbOperatorNamespace).
 			WithIPAddressPools([]string{ipAddressPool.Definition.Name}).
@@ -140,7 +138,7 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 
 	It("Concurrent Layer2 and Layer3 should work concurrently Layer 2 and Layer 3", reportxml.ID("50059"), func() {
 		By("Creating MetalLB service")
-		setupMetalLbService("service-1", netparam.IPV4Family, ipAddressPool, "Local")
+		setupMetalLbService("service1", netparam.IPV4Family, ipAddressPool, "Local")
 
 		By(fmt.Sprintf("Creating macvlan NAD with the secondary interface %s", sriovInterfacesUnderTest[0]))
 		createExternalNadWithMasterInterface("l2nad", sriovInterfacesUnderTest[0])
@@ -168,7 +166,7 @@ func addOrDeleteNodeSecIPAddViaFRRK8S(action string,
 	secInterface string) {
 	fieldSelector := fmt.Sprintf("spec.nodeName=%s", workerNodeName)
 
-	frrk8sPods, err := pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
+	frrk8sPods, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
 		LabelSelector: tsparams.FRRK8sDefaultLabel, FieldSelector: fieldSelector},
 	)
 	Expect(err).ToNot(HaveOccurred(), "Failed to list frrk8s pods")
