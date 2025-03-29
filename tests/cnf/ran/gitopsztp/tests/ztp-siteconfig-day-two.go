@@ -2,6 +2,7 @@ package tests
 
 import (
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
@@ -15,8 +16,6 @@ import (
 
 var _ = Describe("ZTP Siteconfig Operator's Day 2 configuration Test",
 	Label(tsparams.LabelSiteconfigDayTwoConfigTestCase), func() {
-		var earlyReturnSkip = true
-
 		// These tests use the hub and spoke architecture.
 		BeforeEach(func() {
 			By("verifying that ZTP meets the minimum version")
@@ -26,11 +25,10 @@ var _ = Describe("ZTP Siteconfig Operator's Day 2 configuration Test",
 			if !versionInRange {
 				Skip("ZTP Siteconfig operator tests require ZTP 4.17 or later")
 			}
-
 		})
 
 		AfterEach(func() {
-			if earlyReturnSkip {
+			if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
 				return
 			}
 
@@ -79,7 +77,6 @@ var _ = Describe("ZTP Siteconfig Operator's Day 2 configuration Test",
 					Skip(err.Error())
 				}
 
-				earlyReturnSkip = false
 				Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD clusters app with new git path")
 
 				// Make sure the ClusterInstance CR on hub cluster updated with newly added cluster label.

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
@@ -18,9 +19,8 @@ import (
 
 var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNodeDeletionTestCases), func() {
 	var (
-		plusOneNodeName   string
-		bmhNamespace      string
-		earlyReturnNonSNO = true
+		plusOneNodeName string
+		bmhNamespace    string
 	)
 
 	BeforeEach(func() {
@@ -40,8 +40,6 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 			Skip("Cluster does not contain a single control plane and a single worker node")
 		}
 
-		earlyReturnNonSNO = false
-
 		By("checking that the 'worker' mcp is ready")
 		mcp, err := mco.Pull(Spoke1APIClient, "worker")
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull 'worker' MCP")
@@ -56,7 +54,7 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 	})
 
 	AfterEach(func() {
-		if earlyReturnNonSNO {
+		if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
 			return
 		}
 
