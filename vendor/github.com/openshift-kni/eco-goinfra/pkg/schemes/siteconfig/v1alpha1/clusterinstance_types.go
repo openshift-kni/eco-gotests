@@ -188,7 +188,6 @@ type NodeSpec struct {
 	// CPUArchitecture is the software architecture of the node.
 	// If it is not defined here then it is inheirited from the ClusterInstanceSpec.
 	// +kubebuilder:validation:Enum=x86_64;aarch64
-	// +kubebuilder:default:=x86_64
 	// +optional
 	CPUArchitecture CPUArchitecture `json:"cpuArchitecture,omitempty"`
 
