@@ -2,7 +2,7 @@ package installconfig
 
 import (
 	installerTypes "github.com/openshift/installer/pkg/types"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // NewInstallConfigFromString returns an unmarshalled install-config from provided string.

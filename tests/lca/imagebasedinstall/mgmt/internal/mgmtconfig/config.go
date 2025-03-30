@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/seedimage"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Cluster contains resources information that make up the cluster to be installed.
