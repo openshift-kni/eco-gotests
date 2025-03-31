@@ -4,6 +4,8 @@ import (
 	hardwaremanagementv1alpha1 "github.com/openshift-kni/oran-o2ims/api/hardwaremanagement/v1alpha1"
 	provisioningv1alpha1 "github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1"
 
+	. "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools"
+
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsparams"
 	"github.com/openshift-kni/k8sreporter"
 )
@@ -27,88 +29,37 @@ var (
 		{Cr: &hardwaremanagementv1alpha1.NodePoolList{}},
 	}
 
-	// TemplateName defines the base name of the referenced ClusterTemplate.
-	TemplateName = "sno-ran-du"
-
 	// PolicyTemplateParameters defines the policy template parameters.
 	PolicyTemplateParameters = map[string]any{}
 
-	//nolint:lll
-	// TemplateVersion1 defines the version of the referenced ClusterTemplate used for the successful SNO provisioning using AI.
-	TemplateVersion1 = "v4-18-0-ec3-1"
-
-	//nolint:lll
-	// TemplateVersion2 defines the version of the referenced ClusterTemplate used for the failing SNO provisioning using AI.
-	TemplateVersion2 = "v4-18-0-ec3-2"
-
-	//nolint:lll
-	// TemplateVersion3 defines the version of the referenced ClusterTemplate used for the multicluster provisioning with different templates.
-	TemplateVersion3 = "v4-18-0-ec3-3"
-
-	//nolint:lll
-	// TemplateVersion4 defines the version of the referenced ClusterTemplate used for the successful SNO provisioning using IBI.
-	TemplateVersion4 = "v4-18-0-ec3-4"
-
-	//nolint:lll
-	// TemplateVersion5 defines the version of the referenced ClusterTemplate used for the failing SNO provisioning using IBI.
-	TemplateVersion5 = "v4-18-0-ec3-5"
-
-	// TemplateVersion6 defines the version of the referenced ClusterTemplate used for the Day 2 operations.
-	TemplateVersion6 = "v4-18-0-ec3-6"
-
-	//nolint:lll
-	// TemplateVersionSeed defines the version of the referenced ClusterTemplate used for the provisioning of the seed cluster for IBI.
-	TemplateVersionSeed = "v4-18-0-ec3-seed-1"
-
-	// NodeClusterName1 is the name of the ORAN Node Cluster.
-	NodeClusterName1 = "nodeCluster1"
-
-	// NodeClusterName2 is the name of the ORAN Node Cluster.
-	NodeClusterName2 = "nodeCluster2"
-
-	// OCloudSiteID is the ID of the of the ORAN O-Cloud Site.
-	OCloudSiteID = "site1"
-
-	// ClusterName1 name of the first cluster.
-	ClusterName1 = "sno02"
-
-	// ClusterName2 name of the second cluster.
-	ClusterName2 = "sno03"
-
-	// SSHCluster2 is the address to ssh the second cluster.
-	SSHCluster2 = "sno03.oran.telcoqe.eng.rdu2.dc.redhat.com:22"
-
-	// HostName2 is the hostname of the second cluster.
-	HostName2 = "sno03.oran.telcoqe.eng.rdu2.dc.redhat.com"
-
 	// ClusterInstanceParameters1 is the map with the cluster instance parameters for the first cluster.
 	ClusterInstanceParameters1 = map[string]any{
-		"clusterName": "sno02",
+		"clusterName": OCloudConfig.ClusterName1,
 		"nodes": []map[string]any{
 			{
-				"hostName": "sno02.oran.telcoqe.eng.rdu2.dc.redhat.com",
+				"hostName": OCloudConfig.HostName1,
 			},
 		},
 	}
 
 	// ClusterInstanceParameters2 is the map with the cluster instance parameters for the second cluster.
 	ClusterInstanceParameters2 = map[string]any{
-		"clusterName": "sno03",
+		"clusterName": OCloudConfig.ClusterName2,
 		"nodes": []map[string]any{
 			{
-				"hostName": "sno03.oran.telcoqe.eng.rdu2.dc.redhat.com",
+				"hostName": OCloudConfig.HostName2,
 				"nodeNetwork": map[string]any{
 					"config": map[string]any{
 						"interfaces": []map[string]any{
 							{
-								"name":  "ens3f3",
+								"name":  OCloudConfig.InterfaceName,
 								"type":  "ethertype",
 								"state": "up",
 								"ipv6": map[string]any{
 									"enabled": "true",
 									"address": []map[string]any{
 										{
-											"ip":            "2620:52:9:1698::6",
+											"ip":            OCloudConfig.InterfaceIpv6,
 											"prefix-length": "64",
 										},
 									},
@@ -126,21 +77,55 @@ var (
 		},
 	}
 
-	// PTPVersionMajorOld old major version of the PTP operator.
-	PTPVersionMajorOld uint64 = 4
-	// PTPVersionMinorOld old minor version of the PTP operator.
-	PTPVersionMinorOld uint64 = 18
-	// PTPVersionPatchOld old patch version of the PTP operator.
-	PTPVersionPatchOld uint64 = 0
-	// PTPVersionPrereleaseOld old prerelease version of the PTP operator.
-	PTPVersionPrereleaseOld uint64 = 202501230001
+	// PodmanTagOperatorUpgrade command to create a tag for the redhat-operators upgrade.
+	PodmanTagOperatorUpgrade = "podman tag %s/olm/redhat-operators:v4.18-new %s/olm/redhat-operators:v4.18-day2"
+	// PodmanTagSriovUpgrade command to create a tag for the SR-IOV FEC operator upgrade.
+	PodmanTagSriovUpgrade = "podman tag %s/olm/far-edge-sriov-fec:v4.18-new %s/olm/far-edge-sriov-fec:v4.18-day2"
+	// PodmanPushOperatorUpgrade command to push the redhat-operators upgrade version.
+	PodmanPushOperatorUpgrade = "podman push %s/olm/redhat-operators:v4.18-day2"
+	// PodmanPushSriovUpgrade command to push the SR-IOV FEC operator upgrade version.
+	PodmanPushSriovUpgrade = "podman push %s/olm/far-edge-sriov-fec:v4.18-day2"
+	// PodmanTagOperatorDowngrade command to create a tag for the redhat-operators downgrade.
+	PodmanTagOperatorDowngrade = "podman tag %s/olm/redhat-operators:v4.18-old %s/olm/redhat-operators:v4.18-day2"
+	// PodmanTagSriovDowngrade command to create a tag for the SR-IOV FEC operator downgrade.
+	PodmanTagSriovDowngrade = "podman tag %s/olm/far-edge-sriov-fec:v4.18 %s/olm/far-edge-sriov-fec:v4.18-day2"
+	// PodmanPushOperatorDowngrade command to push the redhat-operators downgrade version.
+	PodmanPushOperatorDowngrade = "podman push %s/olm/redhat-operators:v4.18-day2"
+	// PodmanPushSriovDowngrade command to push the SR-IOV FEC operator downgrade version.
+	PodmanPushSriovDowngrade = "podman push %s/olm/far-edge-sriov-fec:v4.18-day2"
+	//nolint:lll
+	// SnoKubeconfigCreate command to get the SNO kubeconfig file.
+	SnoKubeconfigCreate = "oc -n %s get secret %s-admin-kubeconfig -o json | jq -r .data.kubeconfig | base64 -d > tmp/%s/auth/kubeconfig"
+	//nolint:lll
+	// CreateImageBasedInstallationConfig command to create the image based installation configuration template.
+	CreateImageBasedInstallationConfig = "openshift-install image-based create image-config-template --dir tmp/ibi-iso-workdir"
+	// CreateIsoImage command to create the ISO image.
+	CreateIsoImage = "openshift-install image-based create image --dir tmp/ibi-iso-workdir"
+	//nolint:lll
+	// CheckIbiCompleted command to check that the image based installation has finished.
+	CheckIbiCompleted = "journalctl -u install-rhcos-and-restore-seed.service | grep 'Finished SNO Image-based Installation.'"
 
-	// PTPVersionMajorNew new major version of the PTP operator.
-	PTPVersionMajorNew uint64 = 4
-	// PTPVersionMinorNew new minor version of the PTP operator.
-	PTPVersionMinorNew uint64 = 18
-	// PTPVersionPatchNew new patch version of the PTP operator.
-	PTPVersionPatchNew uint64 = 0
-	// PTPVersionPrereleaseNew new prerelease version of the PTP operator.
-	PTPVersionPrereleaseNew uint64 = 202502250302
+	// SpokeSSHUser ssh user of the spoke cluster.
+	SpokeSSHUser = "core"
+	// SpokeSSHPasskeyPath path to the ssh key of the spoke cluster.
+	SpokeSSHPasskeyPath = "/home/kni/.ssh/id_rsa"
+	// SeedGeneratorName name of the seedgenerator CR.
+	SeedGeneratorName = "seedimage"
+	// RegistryCertPath path to the registry certificate.
+	RegistryCertPath = "/opt/registry/certs/registry.crt"
+	// IbiConfigTemplate template for the image based installation configuration.
+	IbiConfigTemplate = "/home/kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudconfigfiles/ibi-config.yaml.tmpl"
+	// IbiConfigTemplateYaml path to the YAML file with the image based installation configuration.
+	IbiConfigTemplateYaml = "tmp/ibi-iso-workdir/image-based-installation-config.yaml"
+	// IbiBasedImageSourcePath path to the base image.
+	IbiBasedImageSourcePath = "tmp/ibi-iso-workdir/rhcos-ibi.iso"
+
+	// PtpCPURequest is cpu request for the PTP container.
+	PtpCPURequest = "50m"
+	// PtpMemoryRequest is cpu request for the PTP container.
+	PtpMemoryRequest = "100Mi"
+	// PtpCPULimit is cpu limit for the PTP container.
+	PtpCPULimit = "1m"
+	// PtpMemoryLimit is cpu limit for the PTP container.
+	PtpMemoryLimit = "1Mi"
 )

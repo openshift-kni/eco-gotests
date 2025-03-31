@@ -62,25 +62,25 @@ func VerifySuccessfulIbiSnoProvisioning(ctx SpecContext) {
 		OCloudConfig.Spoke2BMC,
 		OCloudConfig.IbiBaseImageURL,
 		OCloudConfig.VirtualMediaID,
-		ocloudparams.SSHCluster2,
+		OCloudConfig.SSHCluster2,
 		ocloudparams.SpokeSSHUser,
 		ocloudparams.SpokeSSHPasskeyPath,
 		ctx,
 		time.Minute)
 
 	provisioningRequest := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion4,
-		ocloudparams.NodeClusterName2,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionIBISuccess,
+		OCloudConfig.NodeClusterName2,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
 	node, nodePool, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
-		ocloudparams.ClusterName2,
-		ocloudparams.ClusterName2,
-		ocloudparams.ClusterName2,
-		ocloudparams.HostName2,
+		OCloudConfig.ClusterName2,
+		OCloudConfig.ClusterName2,
+		OCloudConfig.ClusterName2,
+		OCloudConfig.HostName2,
 		ctx)
 
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace.Object.Name, ctx, nil, nil)
@@ -103,25 +103,25 @@ func VerifyFailedIbiSnoProvisioning(ctx SpecContext) {
 		OCloudConfig.Spoke2BMC,
 		OCloudConfig.IbiBaseImageURL,
 		OCloudConfig.VirtualMediaID,
-		ocloudparams.SSHCluster2,
+		OCloudConfig.SSHCluster2,
 		ocloudparams.SpokeSSHUser,
 		ocloudparams.SpokeSSHPasskeyPath,
 		ctx,
 		time.Minute)
 
 	provisioningRequest := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion5,
-		ocloudparams.NodeClusterName2,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionIBIFailure,
+		OCloudConfig.NodeClusterName2,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
 	node, nodePool, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
-		ocloudparams.ClusterName2,
-		ocloudparams.ClusterName2,
-		ocloudparams.ClusterName2,
-		ocloudparams.HostName2,
+		OCloudConfig.ClusterName2,
+		OCloudConfig.ClusterName2,
+		OCloudConfig.ClusterName2,
+		OCloudConfig.HostName2,
 		ctx)
 
 	VerifyProvisioningRequestTimeout(provisioningRequest)
@@ -173,15 +173,15 @@ func generateBaseImage(ctx SpecContext) {
 	By("Generating a base image from seed SNO")
 
 	provisioningRequest := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersionSeed,
-		ocloudparams.NodeClusterName1,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionSeed,
+		OCloudConfig.NodeClusterName1,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
 	node, nodePool, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
-		provisioningRequest.Object.Name, ocloudparams.ClusterName1, ctx)
+		provisioningRequest.Object.Name, OCloudConfig.ClusterName1, ctx)
 
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace.Object.Name, ctx, nil, nil)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("All the policies are compliant")
@@ -189,7 +189,7 @@ func generateBaseImage(ctx SpecContext) {
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest.Object.Name)
 
-	snoAPIClient := CreateSnoAPIClient(ocloudparams.ClusterName1)
+	snoAPIClient := CreateSnoAPIClient(OCloudConfig.ClusterName1)
 
 	By("Verifying the SR-IOV network node states")
 
@@ -205,12 +205,12 @@ func generateBaseImage(ctx SpecContext) {
 
 	By("Detaching the seed SNO from the hub")
 
-	cluster, err := ocm.PullManagedCluster(HubAPIClient, ocloudparams.ClusterName1)
+	cluster, err := ocm.PullManagedCluster(HubAPIClient, OCloudConfig.ClusterName1)
 
 	if err == nil {
 		err = cluster.DeleteAndWait(time.Minute * 10)
 		Expect(err).NotTo(HaveOccurred(),
-			fmt.Sprintf("Error deleting managed cluster %s", ocloudparams.ClusterName1))
+			fmt.Sprintf("Error deleting managed cluster %s", OCloudConfig.ClusterName1))
 	}
 
 	By("Creating a seedgen secret in the LCA namespace")
@@ -255,7 +255,7 @@ func generateBaseImage(ctx SpecContext) {
 		BaseImageName:       OCloudConfig.BaseImageName,
 		SeedImage:           OCloudConfig.SeedImage,
 		SeedVersion:         OCloudConfig.SeedVersion,
-		Registry:            OCloudConfig.Registry,
+		Registry:            OCloudConfig.Registry5005,
 		PullSecret:          OCloudConfig.PullSecret,
 		SSHKey:              OCloudConfig.SSHKey,
 		RegistryCertificate: registryCertificate,

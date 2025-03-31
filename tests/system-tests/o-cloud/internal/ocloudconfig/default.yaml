@@ -1,8 +1,8 @@
 ---
 # System Tests O-Cloud default configurations.
 ibi_generate_seed_image: true
-ibi_base_image_path: /opt/cached_disconnected_images/rhcos-ibi.iso
-ibi_base_image_url: http://registry.hub01.oran.telcoqe.eng.rdu2.dc.redhat.com:8080/images/rhcos-ibi.iso
+ibi_base_image_path: ""
+ibi_base_image_url: ""
 oran_spoke1_bmc_username: ""
 oran_spoke1_bmc_password: ""
 oran_spoke1_bmc_host: ""
@@ -16,12 +16,45 @@ oran_spoke2_bmc_timeout: "15s"
 local_registry_auth: ""
 seed_image: ""
 seed_version: ""
-registry: ""
+registry_5005: ""
+registry_5000: ""
 ssh_key: ""
-
-registry_certificate: ""
+pull_secret: ""
+registry_certificate: "" 
 interface_name: ""
 interface_ipv6: ""
 dns_ipv6: ""
 next_hop_ipv6: ""
 next_hop_interface: ""
+base_image_name: ""
+virtual_media_id: ""
+
+template_name: ""
+template_version_ai_success: ""
+template_version_ai_failure:  ""
+template_version_different_templates: ""
+template_version_ibi_success: ""
+template_version_ibi_failure: ""
+template_version_day2: ""
+template_version_seed: ""
+
+node_cluster_name_1: ""
+node_cluster_name_2: ""
+ocloud_site_id: ""
+cluster_name_1: ""
+cluster_name_2: ""
+
+ssh_address_cluster_2: ""
+hostname1: ""
+hostname2: ""
+
+ptp_version_major_old: 4
+ptp_version_minor_old: 18
+ptp_version_patch_old: 0
+ptp_version_prerelease_old: 2342
+
+ptp_version_major_new: 4
+ptp_version_minor_new: 18
+ptp_version_patch_new: 0
+ptp_version_prerelease_new: 345435
+

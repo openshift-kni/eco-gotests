@@ -33,25 +33,25 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 	downgradeOperatorImages()
 
 	provisioningRequest1 := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion6,
-		ocloudparams.NodeClusterName1,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionDay2,
+		OCloudConfig.NodeClusterName1,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
 	provisioningRequest2 := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion6,
-		ocloudparams.NodeClusterName2,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionDay2,
+		OCloudConfig.NodeClusterName2,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
 	node1, nodePool1, namespace1, clusterInstance1 := VerifyAndRetrieveAssociatedCRsForAI(
-		provisioningRequest1.Object.Name, ocloudparams.ClusterName1, ctx)
+		provisioningRequest1.Object.Name, OCloudConfig.ClusterName1, ctx)
 	node2, nodePool2, namespace2, clusterInstance2 := VerifyAndRetrieveAssociatedCRsForAI(
-		provisioningRequest2.Object.Name, ocloudparams.ClusterName2, ctx)
+		provisioningRequest2.Object.Name, OCloudConfig.ClusterName2, ctx)
 
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace1.Object.Name, ctx, nil, nil)
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace2.Object.Name, ctx, nil, nil)
@@ -68,22 +68,22 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest2)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest2.Object.Name)
 
-	sno1ApiClient := CreateSnoAPIClient(ocloudparams.ClusterName1)
-	sno2ApiClient := CreateSnoAPIClient(ocloudparams.ClusterName2)
+	sno1ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName1)
+	sno2ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName2)
 
 	verifyPtpOperatorVersionInSno(
 		sno1ApiClient,
-		ocloudparams.PTPVersionMajorOld,
-		ocloudparams.PTPVersionMinorOld,
-		ocloudparams.PTPVersionPatchOld,
-		ocloudparams.PTPVersionPrereleaseOld)
+		OCloudConfig.PTPVersionMajorOld,
+		OCloudConfig.PTPVersionMinorOld,
+		OCloudConfig.PTPVersionPatchOld,
+		OCloudConfig.PTPVersionPrereleaseOld)
 
 	verifyPtpOperatorVersionInSno(
 		sno2ApiClient,
-		ocloudparams.PTPVersionMajorOld,
-		ocloudparams.PTPVersionMinorOld,
-		ocloudparams.PTPVersionPatchOld,
-		ocloudparams.PTPVersionPrereleaseOld)
+		OCloudConfig.PTPVersionMajorOld,
+		OCloudConfig.PTPVersionMinorOld,
+		OCloudConfig.PTPVersionPatchOld,
+		OCloudConfig.PTPVersionPrereleaseOld)
 
 	upgradeOperatorImages()
 
@@ -93,8 +93,8 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 
 	wg1.Add(2)
 
-	go VerifyPoliciesAreNotCompliant(ocloudparams.ClusterName1, ctx, &wg1, &mu1)
-	go VerifyPoliciesAreNotCompliant(ocloudparams.ClusterName2, ctx, &wg1, &mu1)
+	go VerifyPoliciesAreNotCompliant(OCloudConfig.ClusterName1, ctx, &wg1, &mu1)
+	go VerifyPoliciesAreNotCompliant(OCloudConfig.ClusterName2, ctx, &wg1, &mu1)
 
 	wg1.Wait()
 
@@ -103,17 +103,17 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 
 	verifyPtpOperatorVersionInSno(
 		sno1ApiClient,
-		ocloudparams.PTPVersionMajorNew,
-		ocloudparams.PTPVersionMinorNew,
-		ocloudparams.PTPVersionPatchNew,
-		ocloudparams.PTPVersionPrereleaseNew)
+		OCloudConfig.PTPVersionMajorNew,
+		OCloudConfig.PTPVersionMinorNew,
+		OCloudConfig.PTPVersionPatchNew,
+		OCloudConfig.PTPVersionPrereleaseNew)
 
 	verifyPtpOperatorVersionInSno(
 		sno2ApiClient,
-		ocloudparams.PTPVersionMajorNew,
-		ocloudparams.PTPVersionMinorNew,
-		ocloudparams.PTPVersionPatchNew,
-		ocloudparams.PTPVersionPrereleaseNew)
+		OCloudConfig.PTPVersionMajorNew,
+		OCloudConfig.PTPVersionMinorNew,
+		OCloudConfig.PTPVersionPatchNew,
+		OCloudConfig.PTPVersionPrereleaseNew)
 
 	provisioningRequest1, err = oran.PullPR(HubAPIClient, provisioningRequest1.Object.Name)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to retrieve PR %s", provisioningRequest1.Object.Name))
@@ -148,25 +148,25 @@ func VerifyFailedOperatorUpgradeAllSnos(ctx SpecContext) {
 	downgradeOperatorImages()
 
 	provisioningRequest1 := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion6,
-		ocloudparams.NodeClusterName1,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionDay2,
+		OCloudConfig.NodeClusterName1,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
 	provisioningRequest2 := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion6,
-		ocloudparams.NodeClusterName2,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionDay2,
+		OCloudConfig.NodeClusterName2,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
 	node1, nodePool1, namespace1, clusterInstance1 := VerifyAndRetrieveAssociatedCRsForAI(
-		provisioningRequest1.Object.Name, ocloudparams.ClusterName1, ctx)
+		provisioningRequest1.Object.Name, OCloudConfig.ClusterName1, ctx)
 	node2, nodePool2, namespace2, clusterInstance2 := VerifyAndRetrieveAssociatedCRsForAI(
-		provisioningRequest2.Object.Name, ocloudparams.ClusterName2, ctx)
+		provisioningRequest2.Object.Name, OCloudConfig.ClusterName2, ctx)
 
 	var wg1 sync.WaitGroup
 
@@ -191,22 +191,22 @@ func VerifyFailedOperatorUpgradeAllSnos(ctx SpecContext) {
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest2)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest2.Object.Name)
 
-	sno1ApiClient := CreateSnoAPIClient(ocloudparams.ClusterName1)
-	sno2ApiClient := CreateSnoAPIClient(ocloudparams.ClusterName2)
+	sno1ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName1)
+	sno2ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName2)
 
 	verifyPtpOperatorVersionInSno(
 		sno1ApiClient,
-		ocloudparams.PTPVersionMajorOld,
-		ocloudparams.PTPVersionMinorOld,
-		ocloudparams.PTPVersionPatchOld,
-		ocloudparams.PTPVersionPrereleaseOld)
+		OCloudConfig.PTPVersionMajorOld,
+		OCloudConfig.PTPVersionMinorOld,
+		OCloudConfig.PTPVersionPatchOld,
+		OCloudConfig.PTPVersionPrereleaseOld)
 
 	verifyPtpOperatorVersionInSno(
 		sno2ApiClient,
-		ocloudparams.PTPVersionMajorOld,
-		ocloudparams.PTPVersionMinorOld,
-		ocloudparams.PTPVersionPatchOld,
-		ocloudparams.PTPVersionPrereleaseOld)
+		OCloudConfig.PTPVersionMajorOld,
+		OCloudConfig.PTPVersionMinorOld,
+		OCloudConfig.PTPVersionPatchOld,
+		OCloudConfig.PTPVersionPrereleaseOld)
 
 	VerifyAllPodsRunningInNamespace(sno1ApiClient, ocloudparams.PtpNamespace)
 	VerifyAllPodsRunningInNamespace(sno2ApiClient, ocloudparams.PtpNamespace)
@@ -241,8 +241,8 @@ func VerifyFailedOperatorUpgradeAllSnos(ctx SpecContext) {
 
 	wg2.Add(2)
 
-	go VerifyPoliciesAreNotCompliant(ocloudparams.ClusterName1, ctx, &wg2, &mu2)
-	go VerifyPoliciesAreNotCompliant(ocloudparams.ClusterName2, ctx, &wg2, &mu2)
+	go VerifyPoliciesAreNotCompliant(OCloudConfig.ClusterName1, ctx, &wg2, &mu2)
+	go VerifyPoliciesAreNotCompliant(OCloudConfig.ClusterName2, ctx, &wg2, &mu2)
 
 	wg2.Wait()
 
@@ -279,25 +279,25 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 	downgradeOperatorImages()
 
 	provisioningRequest1 := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion6,
-		ocloudparams.NodeClusterName1,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionDay2,
+		OCloudConfig.NodeClusterName1,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
 	provisioningRequest2 := VerifyProvisionSnoCluster(
-		ocloudparams.TemplateName,
-		ocloudparams.TemplateVersion6,
-		ocloudparams.NodeClusterName2,
-		ocloudparams.OCloudSiteID,
+		OCloudConfig.TemplateName,
+		OCloudConfig.TemplateVersionDay2,
+		OCloudConfig.NodeClusterName2,
+		OCloudConfig.OCloudSiteID,
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
 	node1, nodePool1, namespace1, clusterInstance1 := VerifyAndRetrieveAssociatedCRsForAI(
-		provisioningRequest1.Object.Name, ocloudparams.ClusterName1, ctx)
+		provisioningRequest1.Object.Name, OCloudConfig.ClusterName1, ctx)
 	node2, nodePool2, namespace2, clusterInstance2 := VerifyAndRetrieveAssociatedCRsForAI(
-		provisioningRequest2.Object.Name, ocloudparams.ClusterName2, ctx)
+		provisioningRequest2.Object.Name, OCloudConfig.ClusterName2, ctx)
 
 	var wg1 sync.WaitGroup
 
@@ -322,22 +322,22 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest2)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest2.Object.Name)
 
-	sno1ApiClient := CreateSnoAPIClient(ocloudparams.ClusterName1)
-	sno2ApiClient := CreateSnoAPIClient(ocloudparams.ClusterName2)
+	sno1ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName1)
+	sno2ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName2)
 
 	verifyPtpOperatorVersionInSno(
 		sno1ApiClient,
-		ocloudparams.PTPVersionMajorOld,
-		ocloudparams.PTPVersionMinorOld,
-		ocloudparams.PTPVersionPatchOld,
-		ocloudparams.PTPVersionPrereleaseOld)
+		OCloudConfig.PTPVersionMajorOld,
+		OCloudConfig.PTPVersionMinorOld,
+		OCloudConfig.PTPVersionPatchOld,
+		OCloudConfig.PTPVersionPrereleaseOld)
 
 	verifyPtpOperatorVersionInSno(
 		sno2ApiClient,
-		ocloudparams.PTPVersionMajorOld,
-		ocloudparams.PTPVersionMinorOld,
-		ocloudparams.PTPVersionPatchOld,
-		ocloudparams.PTPVersionPrereleaseOld)
+		OCloudConfig.PTPVersionMajorOld,
+		OCloudConfig.PTPVersionMinorOld,
+		OCloudConfig.PTPVersionPatchOld,
+		OCloudConfig.PTPVersionPrereleaseOld)
 
 	VerifyAllPodsRunningInNamespace(sno1ApiClient, ocloudparams.PtpNamespace)
 	VerifyAllPodsRunningInNamespace(sno2ApiClient, ocloudparams.PtpNamespace)
@@ -361,8 +361,8 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 
 	wg2.Add(2)
 
-	go VerifyPoliciesAreNotCompliant(ocloudparams.ClusterName1, ctx, &wg2, &mu2)
-	go VerifyPoliciesAreNotCompliant(ocloudparams.ClusterName2, ctx, &wg2, &mu2)
+	go VerifyPoliciesAreNotCompliant(OCloudConfig.ClusterName1, ctx, &wg2, &mu2)
+	go VerifyPoliciesAreNotCompliant(OCloudConfig.ClusterName2, ctx, &wg2, &mu2)
 
 	wg2.Wait()
 
@@ -370,10 +370,10 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 
 	verifyPtpOperatorVersionInSno(
 		sno2ApiClient,
-		ocloudparams.PTPVersionMajorNew,
-		ocloudparams.PTPVersionMinorNew,
-		ocloudparams.PTPVersionPatchNew,
-		ocloudparams.PTPVersionPrereleaseNew)
+		OCloudConfig.PTPVersionMajorNew,
+		OCloudConfig.PTPVersionMinorNew,
+		OCloudConfig.PTPVersionPatchNew,
+		OCloudConfig.PTPVersionPrereleaseNew)
 
 	provisioningRequest1, err = oran.PullPR(HubAPIClient, provisioningRequest1.Object.Name)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to retrieve PR %s", provisioningRequest1.Object.Name))
@@ -480,30 +480,38 @@ func modifyDeploymentResources(
 
 // upgradeOperatorImages upgrades the operator images.
 func upgradeOperatorImages() {
-	_, err := shell.ExecuteCmd(ocloudparams.PodmanTagOperatorUpgrade)
+	cmd := fmt.Sprintf(ocloudparams.PodmanTagOperatorUpgrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for upgrade: %v", err))
 
-	_, err = shell.ExecuteCmd(ocloudparams.PodmanTagSriovUpgrade)
+	cmd = fmt.Sprintf(ocloudparams.PodmanTagSriovUpgrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for upgrade: %v", err))
 
-	_, err = shell.ExecuteCmd(ocloudparams.PodmanPushOperatorUpgrade)
+	cmd = fmt.Sprintf(ocloudparams.PodmanPushOperatorUpgrade, OCloudConfig.Registry5000)
+	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing redhat-operators image for upgrade: %v", err))
 
-	_, err = shell.ExecuteCmd(ocloudparams.PodmanPushSriovUpgrade)
+	cmd = fmt.Sprintf(ocloudparams.PodmanPushSriovUpgrade, OCloudConfig.Registry5000)
+	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing far-edge-sriov-fec image for upgrade: %v", err))
 }
 
 // downgradeOperatorImages downgrades the operator images.
 func downgradeOperatorImages() {
-	_, err := shell.ExecuteCmd(ocloudparams.PodmanTagOperatorDowngrade)
+	cmd := fmt.Sprintf(ocloudparams.PodmanTagOperatorDowngrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for downgrade: %v", err))
 
-	_, err = shell.ExecuteCmd(ocloudparams.PodmanTagSriovDowngrade)
+	cmd = fmt.Sprintf(ocloudparams.PodmanTagSriovDowngrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for downgrade: %v", err))
 
-	_, err = shell.ExecuteCmd(ocloudparams.PodmanPushOperatorDowngrade)
+	cmd = fmt.Sprintf(ocloudparams.PodmanPushOperatorDowngrade, OCloudConfig.Registry5000)
+	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing redhat-operators image for downgrade: %v", err))
 
-	_, err = shell.ExecuteCmd(ocloudparams.PodmanPushSriovDowngrade)
+	cmd = fmt.Sprintf(ocloudparams.PodmanPushSriovDowngrade, OCloudConfig.Registry5000)
+	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing far-edge-sriov-fec image for downgrade: %v", err))
 }
