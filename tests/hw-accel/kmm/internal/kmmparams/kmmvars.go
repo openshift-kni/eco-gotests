@@ -1,6 +1,8 @@
 package kmmparams
 
 import (
+	"fmt"
+
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -41,4 +43,52 @@ var (
 	ReasonBuildList = []string{ReasonBuildCreated, ReasonBuildStarted, ReasonBuildCompleted, ReasonBuildSucceeded}
 	// ReasonSignList represents expected events to be found for a successful sign job.
 	ReasonSignList = []string{ReasonSignCreated, ReasonBuildStarted, ReasonBuildCompleted, ReasonBuildSucceeded}
+
+	// TolerationNoScheduleK8sUnschedulable represents definition of specific K8s unschedulable taint
+	// seen during cluster upgrades.
+	TolerationNoScheduleK8sUnschedulable = corev1.Toleration{
+		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeUnschedulable),
+		Effect:   corev1.TaintEffectNoSchedule,
+		Operator: corev1.TolerationOpExists,
+	}
+
+	// TolerationNoScheduleK8sUnreachable represents definition of speficic K8s unreachable taint seen
+	// during cluster upgrades.
+	TolerationNoScheduleK8sUnreachable = corev1.Toleration{
+		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeUnreachable),
+		Effect:   corev1.TaintEffectNoSchedule,
+		Operator: corev1.TolerationOpExists,
+	}
+
+	// TolerationNoExecuteK8sUnreachable represents definition of specific K8s unreachable taint seen
+	// during cluster upgrades.
+	TolerationNoExecuteK8sUnreachable = corev1.Toleration{
+		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeUnreachable),
+		Effect:   corev1.TaintEffectNoExecute,
+		Operator: corev1.TolerationOpExists,
+	}
+
+	// TolerationNoScheduleK8sDiskPressure represents definition of specific K8s disk-pressure taint seen
+	// on nodes with low disk space.
+	TolerationNoScheduleK8sDiskPressure = corev1.Toleration{
+		Key:      fmt.Sprintf("kmm-%s", corev1.TaintNodeDiskPressure),
+		Effect:   corev1.TaintEffectNoSchedule,
+		Operator: corev1.TolerationOpExists,
+	}
+
+	// TolerationNoScheduleKeyValue represents definition of dummy taint used in tests.
+	TolerationNoScheduleKeyValue = corev1.Toleration{
+		Key:      "kmm-key",
+		Value:    "value",
+		Operator: corev1.TolerationOpEqual,
+		Effect:   corev1.TaintEffectNoSchedule,
+	}
+
+	// TolerationNoExecuteKeyValue represents definition of dummy taint used in tests.
+	TolerationNoExecuteKeyValue = corev1.Toleration{
+		Key:      "kmm-key",
+		Value:    "value",
+		Operator: corev1.TolerationOpEqual,
+		Effect:   corev1.TaintEffectNoExecute,
+	}
 )

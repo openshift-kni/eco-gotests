@@ -15,14 +15,20 @@ var (
 
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		kmmparams.KmmOperatorNamespace:          "kmm",
-		kmmparams.UseDtkModuleTestNamespace:     "module",
-		kmmparams.SimpleKmodModuleTestNamespace: "module",
-		kmmparams.DevicePluginTestNamespace:     "module",
-		kmmparams.RealtimeKernelNamespace:       "module",
-		kmmparams.FirmwareTestNamespace:         "module",
-		kmmparams.ModuleBuildAndSignNamespace:   "module",
-		kmmparams.InTreeReplacementNamespace:    "module",
+		kmmparams.KmmOperatorNamespace:            "kmm",
+		kmmparams.UseDtkModuleTestNamespace:       "module",
+		kmmparams.SimpleKmodModuleTestNamespace:   "module",
+		kmmparams.DevicePluginTestNamespace:       "module",
+		kmmparams.RealtimeKernelNamespace:         "module",
+		kmmparams.FirmwareTestNamespace:           "module",
+		kmmparams.ModuleBuildAndSignNamespace:     "module",
+		kmmparams.InTreeReplacementNamespace:      "module",
+		kmmparams.UseLocalMultiStageTestNamespace: "module",
+		kmmparams.WebhookModuleTestNamespace:      "module",
+		kmmparams.MultipleModuleTestNamespace:     "module",
+		kmmparams.VersionModuleTestNamespace:      "module",
+		kmmparams.ScannerTestNamespace:            "module",
+		kmmparams.TolerationModuleTestNamespace:   "module",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
