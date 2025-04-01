@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/netip"
+	"slices"
 	"strings"
 	"time"
 
@@ -679,9 +680,23 @@ func getNodeForTest(namespace, deploymentLabel string) (string, error) {
 	glog.V(100).Infof("Getting node name for the app pod with label %s in namespace %s",
 		deploymentLabel, namespace)
 
-	nodeName := podsList[0].Object.Spec.NodeName
+	for _, _pod := range podsList {
+		if len(RDSCoreConfig.FRRExpectedNodes) != 0 {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("User specified list of FRR nodes present: %q",
+				RDSCoreConfig.FRRExpectedNodes)
 
-	return nodeName, nil
+			if !slices.Contains(RDSCoreConfig.FRRExpectedNodes, _pod.Definition.Spec.NodeName) {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q(%q) runs on not user expected node %q. Skipping",
+					_pod.Definition.Name, _pod.Definition.Namespace, _pod.Definition.Spec.NodeName)
+
+				continue
+			}
+
+			return _pod.Definition.Spec.NodeName, nil
+		}
+	}
+
+	return "", fmt.Errorf("no pods with the label %s found in namespace %s", deploymentLabel, namespace)
 }
 
 func getNodesNamesList(apiClient *clients.Settings, options metav1.ListOptions) ([]string, error) {
