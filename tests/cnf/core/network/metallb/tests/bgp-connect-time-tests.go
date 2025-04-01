@@ -97,6 +97,13 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 	})
 
+	AfterAll(func() {
+		By("Removing test label from worker nodes")
+		if len(cnfWorkerNodeList) > 2 {
+			removeNodeLabel(workerNodeList, metalLbTestsLabel)
+		}
+	})
+
 	It("Verify configuration of a FRR node router peer with the connectTime less than the default of 120 seconds",
 		reportxml.ID("74414"), func() {
 
