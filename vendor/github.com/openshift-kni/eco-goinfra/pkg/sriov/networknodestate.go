@@ -204,6 +204,19 @@ func (builder *NetworkNodeStateBuilder) GetPciAddress(sriovInterfaceName string)
 	return interf.PciAddress, nil
 }
 
+// GetTotalVFs returns total VFs under the given interface.
+func (builder *NetworkNodeStateBuilder) GetTotalVFs(sriovInterfaceName string) (int, error) {
+	glog.V(100).Infof("Getting totalvfs under interface %s from SriovNetworkNodeState %s",
+		sriovInterfaceName, builder.nodeName)
+
+	interf, err := builder.findInterfaceByName(sriovInterfaceName)
+	if err != nil {
+		return 0, err
+	}
+
+	return interf.TotalVfs, nil
+}
+
 func (builder *NetworkNodeStateBuilder) findInterfaceByName(sriovInterfaceName string) (*srIovV1.InterfaceExt, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
