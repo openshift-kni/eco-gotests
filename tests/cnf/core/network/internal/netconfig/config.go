@@ -41,6 +41,9 @@ type NetworkConfig struct {
 	SriovInterfaces             string `envconfig:"ECO_CNF_CORE_NET_SRIOV_INTERFACE_LIST"`
 	FrrImage                    string `yaml:"frr_image" envconfig:"ECO_CNF_CORE_NET_FRR_IMAGE"`
 	VLAN                        string `envconfig:"ECO_CNF_CORE_NET_VLAN"`
+	BMCHostNames                string `envconfig:"ECO_CNF_CORE_NET_BMC_HOST_NAMES"`
+	BMCHostUser                 string `envconfig:"ECO_CNF_CORE_NET_BMC_HOST_USER"`
+	BMCHostPass                 string `envconfig:"ECO_CNF_CORE_NET_BMC_HOST_PASS"`
 }
 
 // NewNetConfig returns instance of NetworkConfig config type.
@@ -183,6 +186,37 @@ func (netConfig *NetworkConfig) GetSwitchLagNames() ([]string, error) {
 	}
 
 	return envValue, nil
+}
+
+// GetBMCHostNames checks the environmental variable ECO_CNF_CORE_NET_BMC_HOST_NAMES
+// and returns the value in []string.
+func (netConfig *NetworkConfig) GetBMCHostNames() ([]string, error) {
+	envValue := strings.Split(netConfig.BMCHostNames, ",")
+
+	if len(envValue) == 0 || envValue[0] == "" {
+		return nil, fmt.Errorf("the number of BMC host names is less than 1," +
+			" ECO_CNF_CORE_NET_BMC_HOST_NAMES env var")
+	}
+
+	return envValue, nil
+}
+
+// GetBMCHostUser checks the environmental variable ECO_CNF_CORE_NET_BMC_HOST_USER.
+func (netConfig *NetworkConfig) GetBMCHostUser() (string, error) {
+	if netConfig.BMCHostUser == "" {
+		return "", fmt.Errorf("the user name for a BMC is empty, check ECO_CNF_CORE_NET_BMC_HOST_USER env var")
+	}
+
+	return netConfig.BMCHostUser, nil
+}
+
+// GetBMCHostPass checks the environmental variable ECO_CNF_CORE_NET_BMC_HOST_PASS.
+func (netConfig *NetworkConfig) GetBMCHostPass() (string, error) {
+	if netConfig.BMCHostPass == "" {
+		return "", fmt.Errorf("the password for a BMC is empty, check ECO_CNF_CORE_NET_BMC_HOST_PASS env var")
+	}
+
+	return netConfig.BMCHostPass, nil
 }
 
 // GetClusterVlan checks the environmental variable ECO_CNF_CORE_NET_CLUSTER_VLAN
