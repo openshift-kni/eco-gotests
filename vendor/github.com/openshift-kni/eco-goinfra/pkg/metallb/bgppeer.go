@@ -256,6 +256,33 @@ func (builder *BGPPeerBuilder) Update(force bool) (*BGPPeerBuilder, error) {
 	return builder, err
 }
 
+// WithDynamicASN defines the dynamicASN as either internal (iBGP) or external (eBGP). Both remoteAS and dynamicASN
+// configure the remote ASN. They are mutually exclusive and only one can be used per remote peer.
+func (builder *BGPPeerBuilder) WithDynamicASN(dynamicASN mlbtypesv1beta2.DynamicASNMode) *BGPPeerBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Creating BGPPeer %s in namespace %s using a dynamicASN: %s",
+		builder.Definition.Name, builder.Definition.Namespace, dynamicASN)
+
+	if dynamicASN != "internal" && dynamicASN != "external" {
+		glog.V(100).Infof("The dynamicASN of the BGPPeer is incorrect")
+
+		builder.errorMsg = "bgpPeer 'dynamicASN' must be either internal or external"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.ASN = 0
+	builder.Definition.Spec.DynamicASN = dynamicASN
+
+	return builder
+}
+
 // WithRouterID defines the routerID placed in the BGPPeer spec.
 func (builder *BGPPeerBuilder) WithRouterID(routerID string) *BGPPeerBuilder {
 	if valid, _ := builder.validate(); !valid {

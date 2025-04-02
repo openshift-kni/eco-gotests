@@ -12,13 +12,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
-	"github.com/openshift-kni/eco-goinfra/pkg/nad"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netnmstate"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
@@ -871,33 +868,6 @@ func verifyExternalAdvertisedRoutes(frrPod *pod.Builder, ipv4NodeAddrList, exter
 			Expect(matched).To(BeTrue(), fmt.Sprintf("Expected route %s not found for node %s", expectedRoute, nodeIP))
 		}
 	}
-}
-
-func resetOperatorAndTestNS() {
-	By("Cleaning MetalLb operator namespace")
-
-	metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
-	err = metalLbNs.CleanObjects(
-		tsparams.DefaultTimeout,
-		metallb.GetBGPPeerGVR(),
-		metallb.GetBFDProfileGVR(),
-		metallb.GetBGPPeerGVR(),
-		metallb.GetBGPAdvertisementGVR(),
-		metallb.GetIPAddressPoolGVR(),
-		metallb.GetMetalLbIoGVR(),
-		metallb.GetFrrConfigurationGVR())
-	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
-
-	By("Cleaning test namespace")
-
-	err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
-		tsparams.DefaultTimeout,
-		pod.GetGVR(),
-		service.GetServiceGVR(),
-		configmap.GetGVR(),
-		nad.GetGVR())
-	Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 }
 
 func buildRoutesMapWithSpecificRoutes(podList []*pod.Builder, nextHopList []string) map[string]string {
