@@ -112,11 +112,11 @@ func VerifyProvisionSnoCluster(
 
 	By(fmt.Sprintf("Verifing the successful creation of the %s PR", prName))
 
-	provisioningRequest := oran.NewPRBuilder(HubAPIClient, prName, templateName, templateVersion)
-	provisioningRequest.WithTemplateParameter("nodeClusterName", nodeClusterName)
-	provisioningRequest.WithTemplateParameter("oCloudSiteId", oCloudSiteID)
-	provisioningRequest.WithTemplateParameter("policyTemplateParameters", policyTemplateParameters)
-	provisioningRequest.WithTemplateParameter("clusterInstanceParameters", clusterInstanceParameters)
+	provisioningRequest := oran.NewPRBuilder(HubAPIClient, prName, templateName, templateVersion).
+		WithTemplateParameter("nodeClusterName", nodeClusterName).
+		WithTemplateParameter("oCloudSiteId", oCloudSiteID).
+		WithTemplateParameter("policyTemplateParameters", policyTemplateParameters).
+		WithTemplateParameter("clusterInstanceParameters", clusterInstanceParameters)
 	provisioningRequest, err := provisioningRequest.Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create PR %s", prName)
 
@@ -137,21 +137,8 @@ func VerifyProvisionSnoCluster(
 func VerifyProvisioningRequestIsFulfilled(provisioningRequest *oran.ProvisioningRequestBuilder) {
 	By(fmt.Sprintf("Verifing that PR %s is fulfilled", provisioningRequest.Object.Name))
 
-	condition := metav1.Condition{
-		Type:   "ClusterProvisioned",
-		Reason: "Completed",
-	}
-
-	_, err := provisioningRequest.WaitForCondition(condition, time.Minute*10)
-	Expect(err).ToNot(HaveOccurred(), "PR %s failed, cluster is not provisioned", provisioningRequest.Object.Name)
-
-	condition = metav1.Condition{
-		Type:   "ConfigurationApplied",
-		Reason: "Completed",
-	}
-
-	_, err = provisioningRequest.WaitForCondition(condition, time.Minute*10)
-	Expect(err).ToNot(HaveOccurred(), "PR %s failed, configuration has not been applied", provisioningRequest.Object.Name)
+	_, err := provisioningRequest.WaitUntilFulfilled(time.Minute*10)
+	Expect(err).ToNot(HaveOccurred(), "PR %s is not fulfilled", provisioningRequest.Object.Name)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("provisioningrequest %s is fulfilled", provisioningRequest.Object.Name)
 }
@@ -209,18 +196,12 @@ func VerifyClusterInstanceCompleted(
 	Expect(found).To(BeTrue(),
 		fmt.Sprintf("Failed to verify that Cluster Instance %s is associated to PR %s", ciName, prName))
 
-	Eventually(func(ctx context.Context) bool {
-		clusterInstance, err = siteconfig.PullClusterInstance(HubAPIClient, ciName, nsName)
-		Expect(err).ToNot(HaveOccurred(), "Failed to pull Cluster Instance %q; %v", nsName, err)
-		for _, value := range clusterInstance.Object.Status.Conditions {
-			if value.Type == "Provisioned" && value.Status == "True" {
-				return true
-			}
-		}
+	condition := metav1.Condition{
+		Type:   "Provisioned",
+		Status: "True",
+	}
 
-		return false
-	}).WithTimeout(80*time.Minute).WithPolling(time.Minute).WithContext(ctx).Should(BeTrue(),
-		fmt.Sprintf("ClusterInstance %s is not Completed", ciName))
+	clusterInstance.WaitForCondition(condition, 80*time.Minute)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("clusterinstance %s is completed", ciName)
 
