@@ -657,7 +657,10 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 
 	deploy, err = deploy.CreateAndWaitUntilReady(5 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create deployment %s: %v", deploy.Definition.Name, err))
+		fmt.Sprintf("Failed to create deployment %s: %v", sriovDeploy1OneName, err))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q created in %q namespace",
+		deploy.Definition.Name, deploy.Definition.Namespace)
 
 	By("Defining 2nd deployment")
 
@@ -677,7 +680,10 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 
 	deployTwo, err = deployTwo.CreateAndWaitUntilReady(5 * time.Minute)
 	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to create deployment %s: %v", deployTwo.Definition.Name, err))
+		fmt.Sprintf("Failed to create deployment %s: %v", sriovDeploy1TwoName, err))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deployment %q created in %q namespace",
+		deployTwo.Definition.Name, deployTwo.Definition.Namespace)
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify connectivity between SR-IOV workloads on the same node")
 
