@@ -128,7 +128,7 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest2.Object.Name)
 
 	err = os.RemoveAll("tmp/")
-	Expect(err).NotTo(HaveOccurred(), "Error removing directory /tmp")
+	Expect(err).NotTo(HaveOccurred(), "Error removing directory tmp/")
 
 	var wg2 sync.WaitGroup
 

@@ -3,15 +3,15 @@
 ibi_generate_seed_image: true
 ibi_base_image_path: ""
 ibi_base_image_url: ""
-oran_spoke1_bmc_username: ""
-oran_spoke1_bmc_password: ""
-oran_spoke1_bmc_host: ""
-oran_spoke1_bmc_timeout: "15s"
+spoke1_bmc_username: ""
+spoke1_bmc_password: ""
+spoke1_bmc_host: ""
+spoke1_bmc_timeout: "15s"
 
-oran_spoke2_bmc_username: ""
-oran_spoke2_bmc_password: ""
-oran_spoke2_bmc_host: ""
-oran_spoke2_bmc_timeout: "15s"
+spoke2_bmc_username: ""
+spoke2_bmc_password: ""
+spoke2_bmc_host: ""
+spoke2_bmc_timeout: "15s"
 
 local_registry_auth: ""
 seed_image: ""
