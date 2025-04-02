@@ -484,6 +484,48 @@ func (builder *Builder) Delete() error {
 	return nil
 }
 
+// DeleteGraceful removes a deployment while waiting for specified duration(in seconds)
+// the object should be deleted.
+func (builder *Builder) DeleteGraceful(gracePeriod *int64) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	switch {
+	case gracePeriod == nil:
+		glog.V(100).Infof("gracePeriod cannot be nil")
+
+		return fmt.Errorf("gracePeriod cannot be nil")
+	case *gracePeriod < int64(0):
+		glog.V(100).Infof("gracePeriod(%v) must be non-negative integer", gracePeriod)
+
+		return fmt.Errorf("gracePeriod must be non-negative integer")
+	}
+
+	glog.V(100).Infof("Deleting deployment %s in namespace %s with %v seconds grace period",
+		builder.Definition.Name, builder.Definition.Namespace, *gracePeriod)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("Deployment %s in namespace %s does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		builder.Object = nil
+
+		return nil
+	}
+
+	err := builder.apiClient.Deployments(builder.Definition.Namespace).Delete(
+		context.TODO(), builder.Definition.Name, metav1.DeleteOptions{GracePeriodSeconds: gracePeriod})
+
+	if err != nil {
+		return err
+	}
+
+	builder.Object = nil
+
+	return nil
+}
+
 // CreateAndWaitUntilReady creates a deployment in the cluster and waits until the deployment is available.
 func (builder *Builder) CreateAndWaitUntilReady(timeout time.Duration) (*Builder, error) {
 	if valid, err := builder.validate(); !valid {
