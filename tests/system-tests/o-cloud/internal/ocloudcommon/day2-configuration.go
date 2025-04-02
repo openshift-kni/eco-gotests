@@ -469,9 +469,8 @@ func modifyDeploymentResources(
 						},
 					}
 					_, err = csvObj.Update()
-					Expect(err).ToNot(HaveOccurred(),
-						fmt.Sprintf("failed to update deployment resources %s - %s: %v",
-							subscriptionName, deploymentName, err))
+					Expect(err).ToNot(HaveOccurred(), "failed to update deployment resources %s - %s: %v",
+						subscriptionName, deploymentName, err)
 				}
 			}
 		}

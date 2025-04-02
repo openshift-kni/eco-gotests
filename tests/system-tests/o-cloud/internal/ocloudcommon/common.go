@@ -44,8 +44,7 @@ func VerifyCsvSuccessful(apiClient *clients.Settings, subscriptionName string, n
 	}
 
 	_, err = csvObj.IsSuccessful()
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("failed to verify csv %s in the namespace %s status", csvName, nsName))
+	Expect(err).ToNot(HaveOccurred(), "failed to verify csv %s in the namespace %s status", csvName, nsName)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("csv %s is successful", subscriptionName)
 }
@@ -76,8 +75,7 @@ func VerifyNamespaceExists(nsName string) *namespace.Builder {
 	By(fmt.Sprintf("Verifying that %s namespace exists", nsName))
 
 	namespace, err := namespace.Pull(HubAPIClient, nsName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull namespace %q; %v", nsName, err))
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull namespace %q; %v", nsName, err)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("namespace %s exists", nsName)
 
@@ -120,7 +118,7 @@ func VerifyProvisionSnoCluster(
 	provisioningRequest.WithTemplateParameter("policyTemplateParameters", policyTemplateParameters)
 	provisioningRequest.WithTemplateParameter("clusterInstanceParameters", clusterInstanceParameters)
 	provisioningRequest, err := provisioningRequest.Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create PR %s", prName))
+	Expect(err).ToNot(HaveOccurred(), "Failed to create PR %s", prName)
 
 	condition := metav1.Condition{
 		Type:   "ClusterInstanceProcessed",
@@ -128,7 +126,7 @@ func VerifyProvisionSnoCluster(
 	}
 
 	_, err = provisioningRequest.WaitForCondition(condition, time.Minute*5)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("PR %s is not getting processing", prName))
+	Expect(err).ToNot(HaveOccurred(), "PR %s is not getting processing", prName)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("provisioning request %s has been created", prName)
 
@@ -145,8 +143,7 @@ func VerifyProvisioningRequestIsFulfilled(provisioningRequest *oran.Provisioning
 	}
 
 	_, err := provisioningRequest.WaitForCondition(condition, time.Minute*10)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("PR %s failed, cluster is not provisioned", provisioningRequest.Object.Name))
+	Expect(err).ToNot(HaveOccurred(), "PR %s failed, cluster is not provisioned", provisioningRequest.Object.Name)
 
 	condition = metav1.Condition{
 		Type:   "ConfigurationApplied",
@@ -154,8 +151,7 @@ func VerifyProvisioningRequestIsFulfilled(provisioningRequest *oran.Provisioning
 	}
 
 	_, err = provisioningRequest.WaitForCondition(condition, time.Minute*10)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("PR %s failed, configuration has not been applied", provisioningRequest.Object.Name))
+	Expect(err).ToNot(HaveOccurred(), "PR %s failed, configuration has not been applied", provisioningRequest.Object.Name)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("provisioningrequest %s is fulfilled", provisioningRequest.Object.Name)
 }
@@ -170,8 +166,7 @@ func VerifyProvisioningRequestTimeout(provisioningRequest *oran.ProvisioningRequ
 		Status: "False",
 	}
 	_, err := provisioningRequest.WaitForCondition(condition, time.Minute*100)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("PR %s failed to report timeout", provisioningRequest.Object.Name))
+	Expect(err).ToNot(HaveOccurred(), "PR %s failed to report timeout", provisioningRequest.Object.Name)
 
 	glog.V(ocloudparams.OCloudLogLevel).
 		Infof("provisioningrequest %s has failed (timeout)", provisioningRequest.Object.Name)
@@ -187,8 +182,7 @@ func VerifyProvisioningRequestIsDeleted(
 
 	prName := provisioningRequest.Object.Name
 	err := provisioningRequest.DeleteAndWait(30 * time.Minute)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to delete PR %s: %v", prName, err))
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete PR %s: %v", prName, err)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("provisioningrequest %s deleted", prName)
 }
@@ -200,8 +194,7 @@ func VerifyClusterInstanceCompleted(
 	By(fmt.Sprintf("Verifying that %s PR has a Cluster Instance CR associated in namespace %s", prName, nsName))
 
 	clusterInstance, err := siteconfig.PullClusterInstance(HubAPIClient, ciName, nsName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull Cluster Instance %q; %v", nsName, err))
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull Cluster Instance %q; %v", nsName, err)
 
 	found := false
 
@@ -218,8 +211,7 @@ func VerifyClusterInstanceCompleted(
 
 	Eventually(func(ctx context.Context) bool {
 		clusterInstance, err = siteconfig.PullClusterInstance(HubAPIClient, ciName, nsName)
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to pull Cluster Instance %q; %v", nsName, err))
+		Expect(err).ToNot(HaveOccurred(), "Failed to pull Cluster Instance %q; %v", nsName, err)
 		for _, value := range clusterInstance.Object.Status.Conditions {
 			if value.Type == "Provisioned" && value.Status == "True" {
 				return true
@@ -268,8 +260,7 @@ func VerifyAllPoliciesInNamespaceAreCompliant(
 		}
 		policies, err := ocm.ListPoliciesInAllNamespaces(
 			HubAPIClient, runtimeclient.ListOptions{Namespace: nsName})
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to pull policies from namespaces %s: %v", nsName, err))
+		Expect(err).ToNot(HaveOccurred(), "Failed to pull policies from namespaces %s: %v", nsName, err)
 		if mutex != nil {
 			mutex.Unlock()
 		}
@@ -304,8 +295,7 @@ func VerifyPoliciesAreNotCompliant(
 		}
 		policies, err := ocm.ListPoliciesInAllNamespaces(
 			HubAPIClient, runtimeclient.ListOptions{Namespace: nsName})
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Failed to pull policies from namespace %s: %v", nsName, err))
+		Expect(err).ToNot(HaveOccurred(), "Failed to pull policies from namespace %s: %v", nsName, err)
 		if mutex != nil {
 			mutex.Unlock()
 		}
@@ -329,8 +319,7 @@ func VerifyOranNodeExistsInNamespace(nodeID string, nsName string) *oran.NodeBui
 	listOptions := &runtimeclient.ListOptions{}
 	listOptions.Namespace = nsName
 	oranNodes, err := oran.ListNodes(HubAPIClient, *listOptions)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull oran node list from namespace %s: %v", nsName, err))
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull oran node list from namespace %s: %v", nsName, err)
 
 	nodeFound := false
 	nodeFoundIndex := 0
@@ -380,8 +369,7 @@ func VerifyOranNodePoolExistsInNamespace(nodePoolName string, nsName string) *or
 	By(fmt.Sprintf("Verifying that ORAN node pool %s exists in namespace %s", nodePoolName, nsName))
 
 	oranNodePool, err := oran.PullNodePool(HubAPIClient, nodePoolName, nsName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull oran node pool %s from namespace %s: %v", nodePoolName, nsName, err))
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull oran node pool %s from namespace %s: %v", nodePoolName, nsName, err)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("oran node pool %s exists in namespace %s", nodePoolName, nsName)
 

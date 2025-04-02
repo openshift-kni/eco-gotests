@@ -359,20 +359,17 @@ func verifyAndRetrieveAssociatedCRsForIBI(
 	By(fmt.Sprintf("Verifying that BMH %s exists in namespace %s", hostName, nsName))
 
 	bareMetalHost, err := bmh.Pull(HubAPIClient, hostName, nsName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull BMH %s from namespace %s: %v", hostName, nsName, err))
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull BMH %s from namespace %s: %v", hostName, nsName, err)
 
 	err = bareMetalHost.WaitUntilInStatus(bmhv1alpha1.StateExternallyProvisioned, 10*time.Minute)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to verify that BMH %s is externally provisioned", hostName))
+	Expect(err).ToNot(HaveOccurred(), "Failed to verify that BMH %s is externally provisioned", hostName)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("BMH %s is externally provisioned", hostName)
 
 	By(fmt.Sprintf("Verifying that Image Cluster Install %s in namespace %s has succeeded", nodeID, nsName))
 
 	imageClusterInstall, err := ibi.PullImageClusterInstall(HubAPIClient, nodeID, nsName)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to pull Image Cluster install %s from namespace %s; %v", nodeID, nsName, err))
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull Image Cluster install %s from namespace %s; %v", nodeID, nsName, err)
 
 	Eventually(func(ctx context.Context) bool {
 		condition, _ := imageClusterInstall.GetCompletedCondition()

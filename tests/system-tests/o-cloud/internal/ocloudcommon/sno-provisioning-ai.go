@@ -101,11 +101,11 @@ func VerifySimultaneousSnoDeprovisioningSameClusterTemplate(ctx SpecContext) {
 	prName2 := getProvisioningRequestName(OCloudConfig.ClusterName2)
 
 	provisioningRequest1, err := oran.PullPR(HubAPIClient, prName1)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get PR %s", prName1))
+	Expect(err).ToNot(HaveOccurred(), "Failed to get PR %s", prName1)
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest1)
 
 	provisioningRequest2, err := oran.PullPR(HubAPIClient, prName2)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get PR %s", prName2))
+	Expect(err).ToNot(HaveOccurred(), "Failed to get PR %s", prName2)
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest2)
 
 	By(fmt.Sprintf("Verify that %s PR and %s PR are using the same template version", prName1, prName2))
@@ -181,11 +181,11 @@ func VerifySimultaneousSnoDeprovisioningDifferentClusterTemplates(ctx SpecContex
 	prName2 := getProvisioningRequestName(OCloudConfig.ClusterName2)
 
 	provisioningRequest1, err := oran.PullPR(HubAPIClient, prName1)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get PR %s", prName1))
+	Expect(err).ToNot(HaveOccurred(), "Failed to get PR %s", prName1)
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest1)
 
 	provisioningRequest2, err := oran.PullPR(HubAPIClient, prName2)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get PR %s", prName2))
+	Expect(err).ToNot(HaveOccurred(), "Failed to get PR %s", prName2)
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest2)
 
 	By(fmt.Sprintf("Verify that %s PR and %s PR are using different cluster template versions", prName1, prName2))
