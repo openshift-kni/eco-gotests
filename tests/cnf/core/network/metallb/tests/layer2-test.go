@@ -78,7 +78,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		ipAddressPool := setupL2Advertisement(ipv4metalLbIPList)
 
 		By("Creating a MetalLB service")
-		setupMetalLbService("service-1", netparam.IPV4Family, ipAddressPool, "Cluster")
+		setupMetalLbService(tsparams.MetallbServiceName, netparam.IPV4Family, ipAddressPool, "Cluster")
 
 		By("Creating external Network Attachment Definition")
 		err = define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
@@ -138,6 +138,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		Expect(err).ToNot(HaveOccurred(), "Failed to update metallb object with the new MetalLb label")
 
 		By("Adding test label to compute nodes")
+
 		addNodeLabel(workerNodeList, tsparams.TestLabel)
 
 		By("Validating all metalLb speaker daemonset are running")

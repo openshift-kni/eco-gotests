@@ -15,7 +15,7 @@ var (
 
 	// ReporterNamespacesToDump tells to reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		TestNamespace: "bfd-test",
+		TestNamespace: "bfd-test.go",
 	}
 
 	// ReporterCRDsToDump List of CRDs to dump.
@@ -47,7 +47,7 @@ const (
 	// MasterNodeFRRPodName defines the pod name for the master pod.
 	MasterNodeFRRPodName = "frr-pod-master"
 	// TestNamespace defines the namespace used for test suite.
-	TestNamespace = "bfd-test"
+	TestNamespace = "bfd-test.go"
 	// DaemonsFile configuration to enable bfd daemon in FRR.
 	DaemonsFile = `
 	# This file tells the frr package which daemons to start.

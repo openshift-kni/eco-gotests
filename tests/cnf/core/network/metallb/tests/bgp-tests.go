@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -65,15 +66,12 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err := define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 
-		By("Listing metalLb speakers pod")
-		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-			LabelSelector: tsparams.FRRK8sDefaultLabel,
-		})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
-		Expect(len(frrk8sPods)).To(BeNumerically(">", 0),
-			"Failed the number of frr speaker pods is 0")
-		createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
-			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0, frrk8sPods)
+		By("Verifying that the frrk8sPod deployment is in Ready state and create a list of the pods on " +
+			"worker nodes.")
+		frrk8sPods = verifyAndCreateFRRk8sPodList()
+
+		createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+			tsparams.LocalBGPASN, false, 0, frrk8sPods)
 	})
 
 	AfterEach(func() {
@@ -107,8 +105,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					Skip("bgp test cases doesn't support ipv6 yet")
 				}
 
-				createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
-					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
+				createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+					tsparams.LocalBGPASN, false, 0,
 					frrk8sPods)
 
 				By("Setting test iteration parameters")
@@ -129,7 +127,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 				By("Creating an IPAddressPool and BGPAdvertisement")
-				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool)
+				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool, int32(prefixLen))
 
 				By("Creating a MetalLB service")
 				setupMetalLbService("service-1", ipStack, ipAddressPool, "Cluster")
@@ -139,23 +137,23 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 				By("Checking that BGP session is established and up")
 				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(nodeAddrList))
-
+				time.Sleep(20 * time.Second)
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, ipStack, removePrefixFromIPList(nodeAddrList), addressPool)
+				validatePrefix(frrPod, ipStack, prefixLen, removePrefixFromIPList(nodeAddrList), addressPool)
 			},
 
 			Entry("", netparam.IPV4Family, 32,
 				reportxml.SetProperty("IPStack", netparam.IPV4Family),
-				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet32)),
+				reportxml.SetProperty("PrefixLenght", "32")),
 			Entry("", netparam.IPV4Family, 28,
 				reportxml.SetProperty("IPStack", netparam.IPV4Family),
-				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet28)),
+				reportxml.SetProperty("PrefixLenght", "28")),
 			Entry("", netparam.IPV6Family, 128,
 				reportxml.SetProperty("IPStack", netparam.IPV6Family),
-				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet128)),
+				reportxml.SetProperty("PrefixLenght", "128")),
 			Entry("", netparam.IPV6Family, 64,
 				reportxml.SetProperty("IPStack", netparam.IPV6Family),
-				reportxml.SetProperty("PrefixLenght", netparam.IPSubnet64)),
+				reportxml.SetProperty("PrefixLenght", "64")),
 		)
 
 		It("provides Prometheus BGP metrics", reportxml.ID("47202"), func() {
@@ -170,9 +168,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			frrPod := createFrrPod(
 				masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer,
-				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
-				frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 			By("Checking that BGP session is established and up")
 			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
