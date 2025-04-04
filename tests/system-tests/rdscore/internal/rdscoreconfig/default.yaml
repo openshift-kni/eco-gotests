@@ -163,3 +163,10 @@ rdscore_egressip_ns_label: 'env=sys-qa'
 rdscore_egressip_pod_label: 'app=web'
 rdscore_egressip_tcp_port_number: '9090'
 rdscore_frr_expected_nodes: []
+# Pod-Level Bond
+rdscore_pod_level_bond_ns: 'rds-bonded-sriov-wlkd'
+rdscore_pod_level_bond_one_name: 'rdscore-pod-level-bond-one'
+rdscore_pod_level_bond_two_name: 'rdscore-pod-level-bond-two'
+rdscore_pod_level_bond_port: '9090'
+rdscore_pod_level_bond_sriov_net_one: 'sriov-bonded-net-one'
+rdscore_pod_level_bond_sriov_net_two: 'sriov-bonded-net-two'
