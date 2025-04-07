@@ -114,8 +114,6 @@ func getSRIOVOperatorConfig() (*srIovV1.SriovOperatorConfig, error) {
 		return &srIovV1.SriovOperatorConfig{}, err
 	}
 
-	// Expect(err).ToNot(HaveOccurred(), "Failed to get SR-IOV Operator Config")
-
 	return sriovConfig, nil
 }
 
@@ -126,8 +124,6 @@ func getSRIOVConfigOption(sriovConfig *srIovV1.SriovOperatorConfig, option strin
 		optionFound    bool
 	)
 
-	// resourceInjectorMatchCondition
-
 	featureEnabled, optionFound = sriovConfig.Spec.FeatureGates[option]
 
 	if !optionFound {
@@ -135,18 +131,6 @@ func getSRIOVConfigOption(sriovConfig *srIovV1.SriovOperatorConfig, option strin
 
 		return optionFound, optionFound
 	}
-
-	// if featureEnabled, ok = sriovConfig.Spec.FeatureGates["resourceInjectorMatchCondition"]; !ok {
-	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature 'resourceInjectorMatchCondition' not defined")
-
-	// 	return false, fmt.Errorf("feature 'resourceInjectorMatchCondition' not defined")
-	// }
-
-	// if !featureEnabled {
-	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature 'resourceInjectorMatchCondition' not enabled")
-
-	// 	return false, fmt.Errorf("feature 'resourceInjectorMatchCondition' not enabled")
-	// }
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature %q is defined with value: %v", option, featureEnabled)
 
