@@ -13,9 +13,7 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	provisioningv1alpha1 "github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1"
-	"github.com/stmcginnis/gofish/redfish"
 	"k8s.io/client-go/util/retry"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,9 +45,7 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 			return
 		}
 
-		By("checking spoke 1 power state")
-		powerState, err := BMCClient.SystemPowerState()
-		Expect(err).ToNot(HaveOccurred(), "Failed to get system power state from spoke 1 BMC")
+		var err error
 
 		By("pulling the ProvisioningRequest again to ensure it is valid")
 		prBuilder, err = oran.PullPR(HubAPIClient, tsparams.TestPRName)
@@ -73,12 +69,6 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 
 		By("deleting the test label if it exists")
 		removeTestLabelIfExists()
-
-		if powerState != "On" {
-			By("waiting for spoke 1 to recover")
-			err = cluster.WaitForRecover(Spoke1APIClient, []string{}, 45*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 to recover")
-		}
 	})
 
 	// 77373 - Successful update to ProvisioningRequest clusterInstanceParameters
@@ -225,22 +215,6 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		prBuilder = updatePRUntilNoConflict(prBuilder)
 
 		waitForPolicies(prBuilder)
-	})
-
-	// 77391 - Successful update of hardware profile
-	PIt("successfully updates hardware profile", reportxml.ID("77391"), func() {
-		By("verifying spoke 1 is powered on")
-		powerState, err := BMCClient.SystemPowerState()
-		Expect(err).ToNot(HaveOccurred(), "Failed to get system power state from spoke 1 BMC")
-		Expect(powerState).To(Equal("On"), "Spoke 1 is not powered on")
-
-		By("updating ProvisioningRequest TemplateVersion")
-		prBuilder.Definition.Spec.TemplateVersion = RANConfig.ClusterTemplateAffix + "-" + tsparams.TemplateUpdateProfile
-		prBuilder = updatePRUntilNoConflict(prBuilder)
-
-		By("waiting for spoke 1 to be powered off")
-		err = BMCClient.WaitForSystemPowerState(redfish.OffPowerState, 5*time.Minute)
-		Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 to power off")
 	})
 })
 
