@@ -13,9 +13,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/oran"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/tsparams"
-	pluginv1alpha1 "github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin/v1alpha1"
 	"gopkg.in/yaml.v3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -68,30 +66,6 @@ func NewNoTemplatePR(client *clients.Settings, templateVersion string) *oran.Pro
 		})
 
 	return prBuilder
-}
-
-// GetValidDellHwmgr returns the first HardwareManager with AdaptorID dell-hwmgr and where condition Validation is True.
-func GetValidDellHwmgr(client *clients.Settings) (*oran.HardwareManagerBuilder, error) {
-	hwmgrs, err := oran.ListHardwareManagers(client, runtimeclient.ListOptions{
-		Namespace: tsparams.HardwareManagerNamespace,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, hwmgr := range hwmgrs {
-		if hwmgr.Definition.Spec.AdaptorID != pluginv1alpha1.SupportedAdaptors.Dell {
-			continue
-		}
-
-		for _, condition := range hwmgr.Definition.Status.Conditions {
-			if condition.Type == string(pluginv1alpha1.ConditionTypes.Validation) && condition.Status == metav1.ConditionTrue {
-				return hwmgr, nil
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("no valid HardwareManager with AdaptorID dell-hwmgr exists")
 }
 
 // WaitForNoncompliantImmutable waits up to timeout until one of the policies in namespace is NonCompliant and the
