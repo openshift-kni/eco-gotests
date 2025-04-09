@@ -471,9 +471,40 @@ type CoreConfig struct {
 	//nolint:lll,nolintlint
 	EgressIPRemoteIPv6 string `yaml:"rdscore_egressip_remote_ipv6" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6"`
 	//nolint:lll,nolintlint
-	EgressIPTcpPort       string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
-	WorkerLabelListOption metav1.ListOptions
-	FRRExpectedNodes      EnvSliceString `yaml:"rdscore_frr_expected_nodes" envconfig:"ECO_RDSCORE_FRR_EXPECTED_NODES"`
+	EgressIPTcpPort  string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
+	PodLevelBondPort string `yaml:"rdscore_pod_level_bond_port" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PORT"`
+	//nolint:lll,nolintlint
+	PodLevelBondNamespace string `yaml:"rdscore_pod_level_bond_ns" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_NS"`
+	//nolint:lll,nolintlint
+	PodLevelBondDeployImage string `yaml:"rdscore_pod_level_bond_image" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_IMG"`
+	//nolint:lll
+	PodLevelBondDeploymentOneName string `yaml:"rdscore_pod_level_bond_one_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_ONE_NAME"`
+	//nolint:lll
+	PodLevelBondDeploymentTwoName string `yaml:"rdscore_pod_level_bond_two_name" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_TWO_NAME"`
+	//nolint:lll
+	PodLevelBondDeploymentOneIPv4 string `yaml:"rdscore_pod_level_bond_one_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_ONE_IPV4"`
+	//nolint:lll
+	PodLevelBondDeploymentOneIPv6 string `yaml:"rdscore_pod_level_bond_one_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_ONE_IPV6"`
+	//nolint:lll
+	PodLevelBondDeploymentTwoIPv4 string `yaml:"rdscore_pod_level_bond_two_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_TWO_IPV4"`
+	//nolint:lll
+	PodLevelBondDeploymentTwoIPv6 string `yaml:"rdscore_pod_level_bond_two_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_TWO_IPV6"`
+	//nolint:lll
+	PodLevelBondPodOneScheduleOnHost string `yaml:"rdscore_pod_level_bond_pod_one_node" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_ONE_NODE"`
+	//nolint:lll
+	PodLevelBondPodTwoScheduleOnHost string `yaml:"rdscore_pod_level_bond_pod_two_node" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_TWO_NODE"`
+	//nolint:lll
+	PodLevelBondSRIOVNetOne string `yaml:"rdscore_pod_level_bond_sriov_net_one" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_SRIOV_NET_ONE"`
+	//nolint:lll
+	PodLevelBondSRIOVNetTwo string `yaml:"rdscore_pod_level_bond_sriov_net_two" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_SRIOV_NET_TWO"`
+	//nolint:lll
+	PodLevelBondPodSubnetMaskIPv4 string `yaml:"rdscore_pod_level_bond_pod_subnet_mask_ipv4" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_SUBNET_MASK_IPV4"`
+	//nolint:lll
+	PodLevelBondPodSubnetMaskIPv6 string `yaml:"rdscore_pod_level_bond_pod_subnet_mask_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_SUBNET_MASK_IPV6"`
+	//nolint:lll
+	PodLevelBondPodMacAddr string `yaml:"rdscore_pod_level_bond_pod_mac_addr" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_MAC_ADDR"`
+	WorkerLabelListOption  metav1.ListOptions
+	FRRExpectedNodes       EnvSliceString `yaml:"rdscore_frr_expected_nodes" envconfig:"ECO_RDSCORE_FRR_EXPECTED_NODES"`
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
