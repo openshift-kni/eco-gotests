@@ -153,12 +153,14 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 			By("Check labels are removed on all nodes")
 			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
-			log.Printf("error is: %v", err)
 			Expect(err).To(HaveOccurred(), "error while checking the module is loaded")
 
 		})
 
 		It("should generate events on nodes when module is loaded", reportxml.ID("68106"), func() {
+			By("Waiting events to be flushed")
+			time.Sleep(30 * time.Second)
+
 			By("Getting events from 'default' namespace")
 			eventList, err := events.List(APIClient, "default")
 			Expect(err).ToNot(HaveOccurred(), "Fail to collect events")
@@ -177,8 +179,8 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 					foundModuleUnloadedEvents++
 				}
 			}
-			Expect(totalNodes).To(Equal(foundModuleLoadedEvents), "ModuleLoaded events do not match")
-			Expect(totalNodes).To(Equal(foundModuleUnloadedEvents), "ModuleUnloaded events do not match")
+			Expect(foundModuleLoadedEvents).To(Equal(totalNodes), "ModuleLoaded events do not match")
+			Expect(foundModuleUnloadedEvents).To(Equal(totalNodes), "ModuleUnloaded events do not match")
 		})
 
 		It("should deploy prebuild image", reportxml.ID("53395"), func() {

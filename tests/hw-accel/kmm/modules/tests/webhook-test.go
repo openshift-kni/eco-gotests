@@ -130,7 +130,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		Context("Modprobe", Label("webhook"), func() {
 
-			It("should fail if there are duplications in modulesLoaindOrder", reportxml.ID("62742"), func() {
+			It("should fail if there are duplications in modulesLoadingOrder", reportxml.ID("62742"), func() {
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
