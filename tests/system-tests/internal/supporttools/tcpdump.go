@@ -451,41 +451,57 @@ func ScanTCPDumpPodLogs(
 				return false, nil
 			}
 
-			return true, nil
+			glog.V(100).Infof("debug log for %s: -%s-", tcpdumpPodObj.Definition.Name, tcpdumpLog)
+			glog.V(100).Infof("len(tcpdumpLog) = %d", len(tcpdumpLog))
+
+			buf := new(bytes.Buffer)
+			_, err = buf.WriteString(tcpdumpLog)
+
+			if err != nil {
+				glog.V(100).Infof("error in copying info from pod tcpdumpLog to buffer: %v", err)
+
+				return false, nil
+			}
+
+			scanner := bufio.NewScanner(buf)
+
+			// reset value for the current iteration
+			matchesFound = 0
+
+			for scanner.Scan() {
+				logLine := scanner.Text()
+				if strings.Contains(logLine, searchString) {
+					glog.V(100).Infof("Found match in log line: %s", logLine)
+					logLineExploded := strings.Fields(logLine)
+
+					if len(logLineExploded) != 2 {
+						glog.V(100).Infof("Unexpected logline content: %s", logLine)
+
+						return false, nil
+					}
+
+					matchesFound++
+				}
+			}
+
+			if matchesFound != 0 {
+				glog.V(100).Infof("Found %d matches for %q", matchesFound, searchString)
+
+				return true, nil
+			}
+
+			glog.V(100).Infof("No matches for %q found", searchString)
+
+			return false, nil
 		})
 
-	glog.V(100).Infof("debug log for %s: -%s-", tcpdumpPodObj.Definition.Name, tcpdumpLog)
-	glog.V(100).Infof("len(tcpdumpLog) = %d", len(tcpdumpLog))
+	if err != nil {
+		glog.V(100).Infof("Error processing logs: %v", err)
 
-	if len(tcpdumpLog) != 0 {
-		buf := new(bytes.Buffer)
-		_, err = buf.WriteString(tcpdumpLog)
-
-		if err != nil {
-			glog.V(100).Infof("error in copying info from pod tcpdumpLog to buffer: %v", err)
-
-			return 0, tcpdumpLog, fmt.Errorf("error in copying info from pod tcpdumpLog to buffer: %w", err)
-		}
-
-		scanner := bufio.NewScanner(buf)
-		for scanner.Scan() {
-			logLine := scanner.Text()
-			if strings.Contains(logLine, searchString) {
-				glog.V(100).Infof("Found match in log line: %s", logLine)
-				logLineExploded := strings.Fields(logLine)
-
-				if len(logLineExploded) != 2 {
-					return 0, tcpdumpLog, fmt.Errorf("unexpected logline content: %s", logLine)
-				}
-
-				matchesFound++
-			}
-		}
-
-		return matchesFound, tcpdumpLog, nil
+		return matchesFound, tcpdumpLog, fmt.Errorf("no matches found in tcpdump log: %w", err)
 	}
 
-	return 0, tcpdumpLog, fmt.Errorf("no matches found in tcpdump log")
+	return matchesFound, tcpdumpLog, nil
 }
 
 // sendProbeToHostPort runs curl against a http://targetHost:targetPort.
