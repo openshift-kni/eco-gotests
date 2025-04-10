@@ -292,7 +292,7 @@ var _ = Describe(
 
 			It("Verifies SR-IOV workloads on different nodes and different SR-IOV nets post reboot",
 				Label("sriov", "verify-sriov-diff-nodes-diff-nets"), reportxml.ID("72265"),
-				rdscorecommon.VerifySRIOVConnectivityOnSameNodeAndDifferentNets)
+				rdscorecommon.VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks)
 
 			It("Verifies MACVLAN workloads on the same node post hard reboot",
 				Label("macvlan", "verify-macvlan-same-node"), reportxml.ID("72569"),
@@ -444,7 +444,7 @@ var _ = Describe(
 
 			It("Verifies SR-IOV workloads on different nodes and different SR-IOV nets after graceful reboot",
 				Label("sriov", "verify-sriov-diff-nodes-diff-nets"), reportxml.ID("72261"),
-				rdscorecommon.VerifySRIOVConnectivityOnSameNodeAndDifferentNets)
+				rdscorecommon.VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks)
 
 			It("Verifies MACVLAN workloads on the same node post soft reboot",
 				Label("macvlan", "verify-macvlan-same-node"), reportxml.ID("72571"),
