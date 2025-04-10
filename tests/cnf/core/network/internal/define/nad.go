@@ -82,6 +82,20 @@ func IPVlanNad(apiClient *clients.Settings, name, nsName, intName string, ipam *
 	return createNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
 }
 
+// HostDeviceNad defines and creates HostDeviceNaNetworkAttachmentDefinition on a cluster.
+func HostDeviceNad(
+	apiClient *clients.Settings,
+	name, interfaceName string,
+	nsName string,
+	ipam *nad.IPAM) (*nad.Builder, error) {
+	masterPlugin, err := nad.NewMasterHostDevicePlugin(name, interfaceName).WithIPAM(ipam).GetHostDevicePluginConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return createNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
+}
+
 func createNadWithMasterPlugin(
 	apiClient *clients.Settings, name, nsName string, masterPlugin *nad.MasterPlugin) (*nad.Builder, error) {
 	createdNad, err := nad.NewBuilder(apiClient, name, nsName).WithMasterPlugin(masterPlugin).Create()

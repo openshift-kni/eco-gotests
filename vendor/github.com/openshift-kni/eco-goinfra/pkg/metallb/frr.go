@@ -322,6 +322,44 @@ func (builder *FrrConfigurationBuilder) WithBGPNeighbor(bgpPeerIP string,
 	return builder
 }
 
+// WithBGPUnnumbered defines a single peer interface and ASN number.
+func (builder *FrrConfigurationBuilder) WithBGPUnnumbered(interfaceName string,
+	remoteAS uint32, routerIndex uint) *FrrConfigurationBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Define BGP Neighbor %s with peer inteface %s and ASN %v",
+		builder.Definition.Name, interfaceName, remoteAS)
+
+	if interfaceName == "" {
+		glog.V(100).Infof("The frrConfiguration bgp unnumbered interfaceName can not be empty")
+
+		builder.errorMsg = "frrConfiguration 'interfaceName' of the BGPPeer cannot be empty"
+
+		return builder
+	}
+
+	// Check if the routerIndex is within bounds
+	if routerIndex >= uint(len(builder.Definition.Spec.BGP.Routers)) {
+		glog.V(100).Infof("Invalid routerIndex: %d", routerIndex)
+
+		builder.errorMsg = fmt.Sprintf("invalid routerIndex: %d", routerIndex)
+
+		return builder
+	}
+
+	builder.Definition.Spec.BGP.Routers[routerIndex].Neighbors =
+		append(builder.Definition.Spec.BGP.Routers[routerIndex].Neighbors,
+			frrtypes.Neighbor{
+				Interface: interfaceName,
+				ASN:       remoteAS,
+			})
+
+	return builder
+}
+
 // WithBGPPassword defines the password used between BGP peers to form adjacency and attaches the password using the
 // neighbor index from the neighbor list.
 func (builder *FrrConfigurationBuilder) WithBGPPassword(bgpPassword string,

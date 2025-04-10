@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
@@ -136,6 +137,40 @@ func createBGPPeerAndVerifyIfItsReady(
 
 	bgpPeer := metallb.NewBPGPeerBuilder(APIClient, name, NetConfig.MlbOperatorNamespace,
 		peerIP, tsparams.LocalBGPASN, remoteAsn).WithPassword(tsparams.BGPPassword).WithEBGPMultiHop(eBgpMultiHop)
+
+	if bfdProfileName != "" {
+		bgpPeer.WithBFDProfile(bfdProfileName)
+	}
+
+	if connectTime != 0 {
+		// Convert connectTime int to time.Duration in seconds
+		bgpPeer.WithConnectTime(metav1.Duration{Duration: time.Duration(connectTime) * time.Second})
+	}
+
+	_, err := bgpPeer.Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BGP peer")
+
+	By("Verifying if BGP protocol configured")
+
+	for _, frrk8sPod := range frrk8sPods {
+		Eventually(frr.IsProtocolConfigured,
+			time.Minute, tsparams.DefaultRetryInterval).WithArguments(frrk8sPod, "router bgp").
+			Should(BeTrue(), "BGP is not configured on the Speakers")
+	}
+}
+
+func createBGPPeerUnnumberedAndVerifyIfItsReady(
+	name, dynamicASN, interfaceName, bfdProfileName string, localAS, remoteAsn uint32, eBgpMultiHop bool, connectTime int,
+	frrk8sPods []*pod.Builder) {
+	By("Creating BGP Peer")
+
+	bgpPeer := metallb.NewBGPPeerBuilder(APIClient, name, NetConfig.MlbOperatorNamespace, localAS, remoteAsn).
+		WithPassword(tsparams.BGPPassword).WithEBGPMultiHop(eBgpMultiHop).WithIPUnnumbered(interfaceName).
+		WithHoldTime(metav1.Duration{90 * time.Second}).WithKeepalive(metav1.Duration{30 * time.Second})
+
+	if dynamicASN != "" {
+		bgpPeer.WithDynamicASN(mlbtypesv1beta2.DynamicASNMode(dynamicASN))
+	}
 
 	if bfdProfileName != "" {
 		bgpPeer.WithBFDProfile(bfdProfileName)
@@ -401,6 +436,26 @@ func resetOperatorAndTestNS() {
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 }
 
+func resetTestNSBetweenTestCases() {
+	By("Cleaning MetalLb and openshift-frr-k8s operator namespaces")
+
+	metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
+	err = metalLbNs.CleanObjects(
+		tsparams.DefaultTimeout,
+		metallb.GetBGPPeerGVR(),
+	)
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
+
+	By("Cleaning test namespace")
+
+	err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+		tsparams.DefaultTimeout,
+		pod.GetGVR(),
+		configmap.GetGVR())
+	Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
+}
+
 func validatePrefix(
 	masterNodeFRRPod *pod.Builder, ipProtoVersion string, prefix int, workerNodesAddresses, addressPool []string) {
 	Eventually(func() bool {
@@ -430,7 +485,7 @@ func validatePrefix(
 		}
 	}
 
-	Expect(workerNodesAddresses).To(ContainElements(nextHopAddresses),
+	Expect(nextHopAddresses).To(ContainElements(workerNodesAddresses),
 		"Failed next hop address in not in node addresses list")
 }
 

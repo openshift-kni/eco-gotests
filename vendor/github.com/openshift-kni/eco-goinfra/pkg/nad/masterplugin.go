@@ -573,3 +573,76 @@ func (plugin *MasterBondPlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
 
 	return plugin.masterPlugin, nil
 }
+
+// MasterHostDevicePlugin provides struct for MasterPlugin host-device interface in NetworkAttachmentDefinition.
+type MasterHostDevicePlugin struct {
+	masterPlugin *MasterPlugin
+	errorMsg     string
+}
+
+// GetMasterPluginConfig returns master plugin if error does not occur.
+func (plugin *MasterHostDevicePlugin) GetMasterPluginConfig() (*MasterPlugin, error) {
+	if plugin.errorMsg != "" {
+		return nil, fmt.Errorf("error to build MaterPlugin config due to :%s", plugin.errorMsg)
+	}
+
+	return plugin.masterPlugin, nil
+}
+
+// NewMasterHostDevicePlugin creates new instance of MasterIP hostDevice plugin.
+func NewMasterHostDevicePlugin(name, interfaceName string) *MasterHostDevicePlugin {
+	glog.V(100).Infof(
+		"Initializing new MasterHostDevicePlugin structure %s", name)
+
+	builder := &MasterHostDevicePlugin{
+		masterPlugin: &MasterPlugin{
+			CniVersion: "0.3.1",
+			Name:       name,
+			Type:       "host-device",
+			Device:     interfaceName,
+		},
+	}
+
+	if builder.masterPlugin.Name == "" {
+		glog.V(100).Infof("error MasterHostDevicePlugin can not be empty")
+
+		builder.errorMsg = "MasterHostDevicePlugin name is empty"
+
+		return builder
+	}
+
+	return builder
+}
+
+// WithIPAM defines IPAM configuration to MasterHostDevicePlugin. Default is empty.
+func (plugin *MasterHostDevicePlugin) WithIPAM(ipam *IPAM) *MasterHostDevicePlugin {
+	glog.V(100).Infof("Adding IPAM configuration %v to MasterIPVlanPlugin", ipam)
+
+	if plugin.masterPlugin == nil {
+		glog.V(100).Infof(msg.UndefinedCrdObjectErrString("MasterHostDevicePlugin"))
+		plugin.errorMsg = msg.UndefinedCrdObjectErrString("MasterHostDevicePlugin")
+
+		return plugin
+	}
+
+	if ipam == nil {
+		glog.V(100).Infof("error adding empty ipam to MasterHostDevicePlugin")
+
+		plugin.errorMsg = invalidIpamParameterMsg
+
+		return plugin
+	}
+
+	plugin.masterPlugin.Ipam = ipam
+
+	return plugin
+}
+
+// GetHostDevicePluginConfig returns master plugin if error does not occur.
+func (plugin *MasterHostDevicePlugin) GetHostDevicePluginConfig() (*MasterPlugin, error) {
+	if plugin.errorMsg != "" {
+		return nil, fmt.Errorf("error to build masterPlugin config due to :%s", plugin.errorMsg)
+	}
+
+	return plugin.masterPlugin, nil
+}

@@ -32,6 +32,10 @@ const (
 	BgpPeerName2 = "bgppeer2" // FrrK8WebHookServer is the web hook server running in namespace metallb-system.
 	// BGPTestPeer is the bgppeer name.
 	BGPTestPeer = "testpeer"
+	// BgpPeerDynamicASiBGP variable for iBGP peers.
+	BgpPeerDynamicASiBGP = "internal"
+	// BgpPeerDynamicASeBGP variable for eBGP peers.
+	BgpPeerDynamicASeBGP = "external"
 	// FrrK8WebHookServer is the web hook server running in namespace metallb-system.
 	FrrK8WebHookServer = "frr-k8s-webhook-server"
 	// MetallbServiceName is the name of the metallb service.
@@ -81,7 +85,7 @@ const (
     isisd=no
     pimd=no
     ldpd=no
-    nhrpd=no
+    nhrpd=yes
     eigrpd=no
     babeld=no
     sharpd=no
@@ -158,6 +162,15 @@ bfd
   no bgp default ipv4-unicast
   no bgp network import-check
 `
+
+	// FRRBGPConfigExit exit used in FRR BGP configuration.
+	FRRBGPConfigExit = "exit-address-family\n"
+	// FRRBGPConfigEnd ends the FRR BGP configuration.
+	FRRBGPConfigEnd = "!\nline vty\n!\nend\n"
+	// FRRBGPConfigAddressFamilyV4 enters bgp ipv4 address-family configuration.
+	FRRBGPConfigAddressFamilyV4 = "!\naddress-family ipv4 unicast\n"
+	// FRRBGPConfigAddressFamilyV6 enters bgp ipv6 address-family configuration.
+	FRRBGPConfigAddressFamilyV6 = "!\naddress-family ipv6 unicast\n"
 	// FRRDefaultConfigMapName represents default FRR configMap name.
 	FRRDefaultConfigMapName = "frr-config"
 	// LocalBGPASN represents local BGP AS number.
