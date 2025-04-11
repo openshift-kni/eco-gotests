@@ -586,9 +586,10 @@ var _ = Describe("Multi-NetworkPolicy : Bond CNI", Ordered, Label("bondcnioversr
 		// Wait for 5 seconds for the multi network policy to be configured.
 		time.Sleep(5 * time.Second)
 
-		By("Check egress traffic from pod1 to other 4 pods. Only Pod5 ports should be accessible over IPv6")
+		By("Check egress traffic from pod1 to other 4 pods. Only Pod5 ports should be accessible over IPv6. " +
+			"Pod2 should be accessible over IPv6 and IPv4")
 
-		verifyPaths(testPod1, testPod2, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
+		verifyPaths(testPod1, testPod2, tsparams.AllOpen, tsparams.AllOpen, tsparams.TestData)
 		verifyPaths(testPod1, testPod3, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod4, tsparams.AllClose, tsparams.AllClose, tsparams.TestData)
 		verifyPaths(testPod1, testPod5, tsparams.AllClose, tsparams.AllOpen, tsparams.TestData)
