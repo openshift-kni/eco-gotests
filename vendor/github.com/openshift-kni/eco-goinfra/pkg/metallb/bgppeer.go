@@ -84,6 +84,58 @@ func NewBPGPeerBuilder(
 	return builder
 }
 
+// NewBGPPeerBuilder creates a new instance of BGPPeer.
+func NewBGPPeerBuilder(
+	apiClient *clients.Settings, name, nsname string, asn, remoteASN uint32) *BGPPeerBuilder {
+	glog.V(100).Infof(
+		"Initializing new BGPPeer structure with the following params: %s, %s %s %d %d",
+		name, nsname, asn, remoteASN)
+
+	if apiClient == nil {
+		glog.V(100).Info("BGPPeer 'apiClient' cannot be nil")
+
+		return nil
+	}
+
+	err := apiClient.AttachScheme(mlbtypesv1beta2.AddToScheme)
+	if err != nil {
+		glog.V(100).Infof("Failed to add metallb scheme to client schemes")
+
+		return nil
+	}
+
+	builder := &BGPPeerBuilder{
+		apiClient: apiClient.Client,
+		Definition: &mlbtypesv1beta2.BGPPeer{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: nsname,
+			}, Spec: mlbtypesv1beta2.BGPPeerSpec{
+				MyASN: asn,
+				ASN:   remoteASN,
+			},
+		},
+	}
+
+	if name == "" {
+		glog.V(100).Infof("The name of the BGPPeer is empty")
+
+		builder.errorMsg = "BGPPeer 'name' cannot be empty"
+
+		return builder
+	}
+
+	if nsname == "" {
+		glog.V(100).Infof("The namespace of the BGPPeer is empty")
+
+		builder.errorMsg = "BGPPeer 'nsname' cannot be empty"
+
+		return builder
+	}
+
+	return builder
+}
+
 // Get returns BGPPeer object if found.
 func (builder *BGPPeerBuilder) Get() (*mlbtypesv1beta2.BGPPeer, error) {
 	if valid, err := builder.validate(); !valid {
@@ -256,6 +308,52 @@ func (builder *BGPPeerBuilder) Update(force bool) (*BGPPeerBuilder, error) {
 	}
 
 	return builder, err
+}
+
+// WithBGPPeerIP defines the peer IP address.
+func (builder *BGPPeerBuilder) WithBGPPeerIP(bgpPeerIP string) *BGPPeerBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Creating an BGPPeer %s in namespace %s with IP address: %s",
+		builder.Definition.Name, builder.Definition.Namespace, bgpPeerIP)
+
+	if net.ParseIP(bgpPeerIP) == nil {
+		glog.V(100).Infof("The peerIP of the BGPPeer contains invalid ip address %s", bgpPeerIP)
+
+		builder.errorMsg = "BGPPeer 'bgpPeerIP' of the BGPPeer contains invalid ip address"
+
+		return builder
+	}
+
+	builder.Definition.Spec.Address = bgpPeerIP
+
+	return builder
+}
+
+// WithIPUnnumbered defines the interface to be used with the interface BGPPeer spec.
+func (builder *BGPPeerBuilder) WithIPUnnumbered(interfaceName string) *BGPPeerBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Creating an unnumbered BGPPeer %s in namespace %s with interface: %s",
+		builder.Definition.Name, builder.Definition.Namespace, interfaceName)
+
+	if interfaceName == "" {
+		glog.V(100).Infof("Can not redefine BGPPeer with empty interface string")
+
+		builder.errorMsg = "interface can not be empty string"
+
+		return builder
+	}
+
+	builder.Definition.Spec.Interface = interfaceName
+
+	return builder
 }
 
 // WithDynamicASN defines the dynamicASN as either internal (iBGP) or external (eBGP). Both remoteAS and dynamicASN
