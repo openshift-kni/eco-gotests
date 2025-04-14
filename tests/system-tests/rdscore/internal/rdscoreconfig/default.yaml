@@ -123,6 +123,7 @@ rdscore_kdump_worker_node_label: 'node-role.kubernetes.io/standard='
 rdscore_kdump_cnf_node_label: 'node-role.kubernetes.io/customcnf='
 rdscore_metallb_frr_test_url_ipv4: ''
 rdscore_metallb_frr_test_url_ipv6: ''
+rdscore_frr_namespace: 'metallb-system'
 # Egress Service
 rdscore_egress_service_ns: rds-egress-ns
 rdscore_egress_service_remote_ip: ''
@@ -161,3 +162,11 @@ rdscore_egressip_ns_two: 'rds-egressip-ns-two'
 rdscore_egressip_ns_label: 'env=sys-qa'
 rdscore_egressip_pod_label: 'app=web'
 rdscore_egressip_tcp_port_number: '9090'
+rdscore_frr_expected_nodes: []
+# Pod-Level Bond
+rdscore_pod_level_bond_ns: 'rds-bonded-sriov-wlkd'
+rdscore_pod_level_bond_one_name: 'rdscore-pod-level-bond-one'
+rdscore_pod_level_bond_two_name: 'rdscore-pod-level-bond-two'
+rdscore_pod_level_bond_port: '9090'
+rdscore_pod_level_bond_sriov_net_one: 'sriov-bonded-net-one'
+rdscore_pod_level_bond_sriov_net_two: 'sriov-bonded-net-two'

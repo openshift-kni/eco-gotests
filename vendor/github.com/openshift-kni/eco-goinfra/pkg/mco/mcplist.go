@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	mcv1 "github.com/openshift/api/machineconfiguration/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -45,7 +45,7 @@ func ListMCP(apiClient *clients.Settings, options ...runtimeclient.ListOptions) 
 	glog.V(100).Infof(logMessage)
 
 	mcpList := new(mcv1.MachineConfigPoolList)
-	err = apiClient.Client.List(context.TODO(), mcpList, &passedOptions)
+	err = apiClient.List(context.TODO(), mcpList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list MCP objects due to %s", err.Error())
@@ -142,7 +142,7 @@ func ListMCPWaitToBeStableFor(
 
 							glog.V(100).Infof("MachineConfigPool: %v degraded and has a mismatch in "+
 								"machineCount: %v "+"vs machineCountUpdated: "+"%v vs readyMachineCount: %v and "+
-								"degradedMachineCount is : %v \n", mcp.Object.ObjectMeta.Name,
+								"degradedMachineCount is : %v \n", mcp.Object.Name,
 								mcp.Object.Status.MachineCount, mcp.Object.Status.UpdatedMachineCount,
 								mcp.Object.Status.ReadyMachineCount, mcp.Object.Status.DegradedMachineCount)
 

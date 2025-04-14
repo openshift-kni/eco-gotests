@@ -477,7 +477,7 @@ func restartMetallbFRRPod(node string, metallbFRRRestartFailed *bool, start, fin
 
 		err = wait.PollUntilContextTimeout(context.TODO(), time.Second, time.Minute, true,
 			func(context.Context) (bool, error) {
-				mPodList, err = pod.List(APIClient, rdscoreparams.MetalLBOperatorNamespace,
+				mPodList, err = pod.List(APIClient, RDSCoreConfig.MetalLBFRRNamespace,
 					metav1.ListOptions{LabelSelector: rdscoreparams.MetalLBFRRPodSelector})
 
 				if err != nil {
@@ -545,7 +545,7 @@ func restartMetallbFRRPod(node string, metallbFRRRestartFailed *bool, start, fin
 
 		err = wait.PollUntilContextTimeout(context.TODO(), 3*time.Second, 90*time.Second, true,
 			func(context.Context) (bool, error) {
-				mPodList, err = pod.List(APIClient, "metallb-system",
+				mPodList, err = pod.List(APIClient, RDSCoreConfig.MetalLBFRRNamespace,
 					metav1.ListOptions{LabelSelector: "app=frr-k8s"})
 
 				if err != nil {

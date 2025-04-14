@@ -494,6 +494,12 @@ func verifyDataOnPVC(fNamespace, podLabel, verificationRegex string, cmdToRun []
 				return false
 			}
 
+			if podCommandResult.String() == "" {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Empty string received. Retrying")
+
+				return false
+			}
+
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(fmt.Sprintf("Command's result:\n\t%s",
 				&podCommandResult))
 

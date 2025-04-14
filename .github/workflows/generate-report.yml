@@ -1,0 +1,79 @@
+name: Generate Tests Report
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+      - "release-[0-9].[0-9][0-9]"
+
+jobs:
+  build:
+    if: ${{ github.repository_owner }} == 'openshift-kni'
+    runs-on: ubuntu-latest
+    env:
+      SHELL: /bin/bash
+      XDG_CACHE_HOME: ${{ github.workspace }}/cache
+
+    steps:
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.6
+
+      # Since we only use the checked out repo for the report generation code,
+      # always grab the latest from the default branch rather than the branch
+      # that triggered this action.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Install ginkgo
+        run: make install-ginkgo
+
+      # Actions cache is immutable, so to prevent generating a new cache every
+      # run when we only care about the latest cache, use an artifact instead
+      # and just overwrite every run.
+      - name: Restore report cache
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: report-cache
+          path: ${{ env.XDG_CACHE_HOME }}/eco-gotests
+
+      - name: Generate report
+        run: go run ./internal/report -v 100 -b 'main release-*' -o ./report -a "${ACTION_URL}"
+        env:
+          ACTION_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Upload generated report as artifact
+        id: upload-pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./report
+
+      - name: Save report cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-cache
+          overwrite: true
+          path: ${{ env.XDG_CACHE_HOME }}/eco-gotests
+          
+  deploy:
+    needs: build
+    if: ${{ github.repository_owner }} == 'openshift-kni'
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.upload-pages.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub pages
+        id: upload-pages
+        uses: actions/deploy-pages@v4

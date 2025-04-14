@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-version"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta1"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -132,7 +130,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		Context("Modprobe", Label("webhook"), func() {
 
-			It("should fail if there are duplications in modulesLoaindOrder", reportxml.ID("62742"), func() {
+			It("should fail if there are duplications in modulesLoadingOrder", reportxml.ID("62742"), func() {
 
 				By("Create KernelMapping")
 				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
@@ -235,14 +233,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 		})
 
 		It("should require image tag or digest for container image", reportxml.ID("75990"), func() {
-			By("Checking if version is greater than 2.2.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.2.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				Skip("Test not supported for versions lower than 2.2.0")
-			}
-
 			By("Preparing module")
 			module := &v1beta1.Module{
 				ObjectMeta: metav1.ObjectMeta{
@@ -257,7 +247,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			module.Spec.ModuleLoader.Container.KernelMappings = mappings
 
 			By("Create Module")
-			err = APIClient.Create(context.TODO(), module)
+			err := APIClient.Create(context.TODO(), module)
 			Expect(err).To(HaveOccurred(), "error creating module")
 			glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
 			Expect(err.Error()).To(ContainSubstring("container image must explicitely set a tag or digest")) //nolint:misspell

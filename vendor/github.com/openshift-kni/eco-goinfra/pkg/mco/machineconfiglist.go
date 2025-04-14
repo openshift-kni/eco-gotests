@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	mcv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	mcv1 "github.com/openshift/api/machineconfiguration/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -42,7 +42,7 @@ func ListMC(apiClient *clients.Settings, options ...runtimeclient.ListOptions) (
 	glog.V(100).Infof(logMessage)
 
 	mcList := new(mcv1.MachineConfigList)
-	err = apiClient.Client.List(context.TODO(), mcList, &passedOptions)
+	err = apiClient.List(context.TODO(), mcList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Info("Failed to list MC objects due to %s", err.Error())

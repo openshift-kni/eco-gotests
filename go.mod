@@ -1,6 +1,6 @@
 module github.com/openshift-kni/eco-gotests
 
-go 1.24.1
+go 1.24.2
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -18,11 +18,12 @@ require (
 	github.com/kedacore/keda-olm-operator v0.0.0-20241108231742-8cb33dda32d3
 	github.com/kedacore/keda/v2 v2.16.1
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/klauspost/compress v1.17.11
 	github.com/metal3-io/baremetal-operator/apis v0.9.0
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20250114063637-129b149f6ce9
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/openshift-kni/eco-goinfra v0.0.0-20250317155508-4df6b878ca73 // latest
+	github.com/openshift-kni/eco-goinfra v0.0.0-20250410143325-c79acd1efece // latest
 	github.com/openshift-kni/k8sreporter v1.0.6
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20250120220331-9547280df193 // release-4.18
 	github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250114093602-01c00730991d // release-4.18
@@ -36,7 +37,6 @@ require (
 	github.com/openshift/cluster-node-tuning-operator v0.0.0-20250116110730-90fc6ab88c08 // release-4.18
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/openshift/local-storage-operator v0.0.0-20241213132210-fa575fb5f229 // release-4.18
-	github.com/openshift/machine-config-operator v0.0.1-0.20231024085435-7e1fb719c1ba
 	github.com/operator-framework/api v0.28.0
 	github.com/povsister/scp v0.0.0-20240802064259-28781e87b246
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.78.2
@@ -144,7 +144,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kdomanski/iso9660 v0.2.1 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kube-object-storage/lib-bucket-provisioner v0.0.0-20221122204822-d1a8c34382f1 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
@@ -173,6 +172,7 @@ require (
 	github.com/openshift/custom-resource-status v1.1.3-0.20220503160415-f2fdb4999d87 // indirect
 	github.com/openshift/elasticsearch-operator v0.0.0-20241202183904-81cd6e70c15e // indirect
 	github.com/openshift/library-go v0.0.0-20240903143724-7c5c5d305ac1 // indirect
+	github.com/openshift/machine-config-operator v0.0.1-0.20231024085435-7e1fb719c1ba
 	github.com/otiai10/copy v1.14.0 // indirect
 	github.com/ovn-org/ovn-kubernetes/go-controller v0.0.0-20250122211335-e07ba60f758a // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect

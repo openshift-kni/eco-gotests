@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
@@ -65,11 +66,9 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		err := metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-		By("Collecting information before test")
-		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
-			LabelSelector: tsparams.FRRK8sDefaultLabel,
-		})
-		Expect(err).ToNot(HaveOccurred(), "Failed to list frr pods")
+		By("Verifying that the frrk8sPod deployment is in Ready state and create a list of the pods on " +
+			"worker nodes.")
+		frrk8sPods = verifyAndCreateFRRk8sPodList()
 	})
 
 	AfterEach(func() {
@@ -97,12 +96,19 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 	})
 
+	AfterAll(func() {
+		By("Removing test label from worker nodes")
+		if len(cnfWorkerNodeList) > 2 {
+			removeNodeLabel(workerNodeList, metalLbTestsLabel)
+		}
+	})
+
 	It("Verify configuration of a FRR node router peer with the connectTime less than the default of 120 seconds",
 		reportxml.ID("74414"), func() {
 
 			By("Creating BGP Peers with 10 second retry connect timer")
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
-				64500, false, 10, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 10, frrk8sPods)
 
 			By("Validate BGP Peers with 10 second retry connect timer")
 			Eventually(func() int {
@@ -123,8 +129,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			frrPod := createAndDeployFRRPod()
 
 			By("Creating BGP Peers with 10 second retry connect timer")
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
-				64500, false, 10, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 10, frrk8sPods)
 
 			By("Validate BGP Peers with 10 second retry connect timer")
 			Eventually(func() int {
@@ -149,8 +155,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		reportxml.ID("74417"), func() {
 
 			By("Creating BGP Peers")
-			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
-				64500, false, 0, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 			By("Validate BGP Peers with the default retry connect timer")
 			Eventually(func() int {
@@ -164,7 +170,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				"Failed to fetch BGP connect time")
 
 			By("Update the BGP Peers connect timer to 10 seconds")
-			bgpPeer, err := metallb.PullBGPPeer(APIClient, "testpeer", NetConfig.MlbOperatorNamespace)
+			bgpPeer, err := metallb.PullBGPPeer(APIClient, tsparams.BgpPeerName1, NetConfig.MlbOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to find bgp peer")
 
 			_, err = bgpPeer.WithConnectTime(metav1.Duration{Duration: 10 * time.Second}).Update(true)
@@ -192,7 +198,8 @@ func createAndDeployFRRPod() *pod.Builder {
 	By("Creating static ip annotation")
 
 	staticIPAnnotation := pod.StaticIPAnnotation(
-		frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], "24")})
+		frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0],
+			netparam.IPSubnet24)})
 
 	By("Creating MetalLb configMap")
 

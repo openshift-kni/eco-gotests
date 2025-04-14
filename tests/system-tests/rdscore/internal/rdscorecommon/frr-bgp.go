@@ -2,6 +2,7 @@ package rdscorecommon
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -26,9 +27,9 @@ func ReachURLviaFRRroute(ctx SpecContext) {
 	By("Finding MetalLB-FRR pods")
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Searching for pods in %q namespace with %q label",
-		rdscoreparams.MetalLBOperatorNamespace, rdscoreparams.MetalLBFRRPodSelector)
+		RDSCoreConfig.MetalLBFRRNamespace, rdscoreparams.MetalLBFRRPodSelector)
 
-	frrPodList := findPodWithSelector(rdscoreparams.MetalLBOperatorNamespace,
+	frrPodList := findPodWithSelector(RDSCoreConfig.MetalLBFRRNamespace,
 		rdscoreparams.MetalLBFRRPodSelector)
 
 	Expect(len(frrPodList)).ToNot(Equal(0), "No MetalLB FRR pods found")
@@ -41,6 +42,18 @@ func ReachURLviaFRRroute(ctx SpecContext) {
 				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Empty URL continue")
 
 				continue
+			}
+
+			if len(RDSCoreConfig.FRRExpectedNodes) != 0 {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("User specified list of FRR nodes present: %q",
+					RDSCoreConfig.FRRExpectedNodes)
+
+				if !slices.Contains(RDSCoreConfig.FRRExpectedNodes, _pod.Definition.Spec.NodeName) {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q(%q) runs on not user expected node %q. Skipping",
+						_pod.Definition.Name, _pod.Definition.Namespace, _pod.Definition.Spec.NodeName)
+
+					continue
+				}
 			}
 
 			cmd := fmt.Sprintf("curl -Ls --max-time 5 -o /dev/null -w '%%{http_code}' %s", testURL)

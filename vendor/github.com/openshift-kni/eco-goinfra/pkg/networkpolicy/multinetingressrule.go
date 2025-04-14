@@ -66,7 +66,7 @@ func (builder *IngressRuleBuilder) WithProtocol(protocol corev1.Protocol) *Ingre
 
 	glog.V(100).Infof("Adding protocol %s to IngressRule", protocol)
 
-	if !(protocol == corev1.ProtocolTCP || protocol == corev1.ProtocolUDP || protocol == corev1.ProtocolSCTP) {
+	if protocol != corev1.ProtocolTCP && protocol != corev1.ProtocolUDP && protocol != corev1.ProtocolSCTP {
 		glog.V(100).Infof("invalid protocol argument")
 
 		builder.errorMsg = "invalid protocol argument. Allowed protocols: TCP, UDP & SCTP"
