@@ -4,6 +4,7 @@ import (
 	moduleV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta1"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/k8sreporter"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -29,10 +30,12 @@ var (
 		kmmparams.VersionModuleTestNamespace:      "module",
 		kmmparams.ScannerTestNamespace:            "module",
 		kmmparams.TolerationModuleTestNamespace:   "module",
+		kmmparams.DefaultNodesNamespace:           "nodes",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &moduleV1Beta1.ModuleList{}},
+		{Cr: &corev1.EventList{}},
 	}
 )
