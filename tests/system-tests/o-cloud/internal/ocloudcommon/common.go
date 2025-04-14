@@ -26,6 +26,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -137,7 +138,7 @@ func VerifyProvisionSnoCluster(
 func VerifyProvisioningRequestIsFulfilled(provisioningRequest *oran.ProvisioningRequestBuilder) {
 	By(fmt.Sprintf("Verifing that PR %s is fulfilled", provisioningRequest.Object.Name))
 
-	_, err := provisioningRequest.WaitUntilFulfilled(time.Minute*10)
+	_, err := provisioningRequest.WaitUntilFulfilled(time.Minute * 10)
 	Expect(err).ToNot(HaveOccurred(), "PR %s is not fulfilled", provisioningRequest.Object.Name)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("provisioningrequest %s is fulfilled", provisioningRequest.Object.Name)
@@ -201,7 +202,8 @@ func VerifyClusterInstanceCompleted(
 		Status: "True",
 	}
 
-	clusterInstance.WaitForCondition(condition, 80*time.Minute)
+	clusterInstance, err = clusterInstance.WaitForCondition(condition, 80*time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Clusterinstance is not provisioned %s: %v", ciName, err)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("clusterinstance %s is completed", ciName)
 
@@ -235,25 +237,9 @@ func VerifyAllPoliciesInNamespaceAreCompliant(
 
 	By(fmt.Sprintf("Verifying that all the policies in namespace %s are Compliant", nsName))
 
-	Eventually(func(ctx context.Context) bool {
-		if mutex != nil {
-			mutex.Lock()
-		}
-		policies, err := ocm.ListPoliciesInAllNamespaces(
-			HubAPIClient, runtimeclient.ListOptions{Namespace: nsName})
-		Expect(err).ToNot(HaveOccurred(), "Failed to pull policies from namespaces %s: %v", nsName, err)
-		if mutex != nil {
-			mutex.Unlock()
-		}
-		for _, policy := range policies {
-			if policy.Object.Status.ComplianceState != "Compliant" {
-				return false
-			}
-		}
-
-		return true
-	}).WithTimeout(100*time.Minute).WithPolling(30*time.Second).WithContext(ctx).Should(BeTrue(),
-		fmt.Sprintf("Failed to verify that all the policies in namespace %s are Compliant", nsName))
+	err := ocm.WaitForAllPoliciesComplianceState(
+		HubAPIClient, policiesv1.Compliant, 100*time.Minute, runtimeclient.ListOptions{Namespace: nsName})
+	Expect(err).ToNot(HaveOccurred(), "Failed to verify that all the policies in namespace %s are Compliant", nsName)
 
 	glog.V(ocloudparams.OCloudLogLevel).Infof("all the policies in namespace %s are compliant", nsName)
 }
