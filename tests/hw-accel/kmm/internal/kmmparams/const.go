@@ -217,6 +217,8 @@ const (
 	VersionModuleTestNamespace = "modver"
 	// TolerationModuleTestNamespace represents test case namespace name.
 	TolerationModuleTestNamespace = "79205-tol"
+	// DefaultNodesNamespace represents namespace of the nodes events.
+	DefaultNodesNamespace = "default"
 	// PreflightTemplateImage represents image against which preflightvalidationocp will build against.
 	PreflightTemplateImage = "quay.io/openshift-release-dev/ocp-release:4.16.15-%s"
 	// PreflightName represents preflightvalidation ocp object name.
