@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -206,14 +207,24 @@ func setupTestCase(ipAddressPool1, ipAddressPool2 *metallb.IPAddressPoolBuilder,
 	frrk8sPods []*pod.Builder) (*pod.Builder, *pod.Builder) {
 	By("Creating two MetalLB service")
 
-	setupMetalLbService("service-1", netparam.IPV4Family, ipAddressPool1, "Cluster")
-	setupMetalLbService("service-2", netparam.IPV4Family, ipAddressPool2, "Cluster")
+	setupMetalLbService(
+		tsparams.MetallbServiceName,
+		netparam.IPV4Family,
+		tsparams.LabelValue1,
+		ipAddressPool1,
+		corev1.ServiceExternalTrafficPolicyTypeCluster)
+	setupMetalLbService(
+		tsparams.MetallbServiceName2,
+		netparam.IPV4Family,
+		tsparams.LabelValue1,
+		ipAddressPool2,
+		corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 	By("Creating nginx test pod on worker node 0")
-	setupNGNXPod(workerNodeList[0].Definition.Name)
+	setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 	By("Creating nginx test pod on worker node 1")
-	setupNGNXPod(workerNodeList[1].Definition.Name)
+	setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue1)
 
 	By("Creating External NAD for master FRR pods")
 	createExternalNad(tsparams.ExternalMacVlanNADName)

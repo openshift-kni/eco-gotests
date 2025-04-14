@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -126,13 +127,18 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 				By("Creating an IPAddressPool and BGPAdvertisement")
-				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool, prefixLen)
+				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(tsparams.BGPAdvAndAddressPoolName, addressPool, prefixLen)
 
 				By("Creating a MetalLB service")
-				setupMetalLbService("service-1", ipStack, ipAddressPool, "Cluster")
+				setupMetalLbService(
+					tsparams.MetallbServiceName,
+					ipStack,
+					tsparams.LabelValue1,
+					ipAddressPool,
+					corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 				By("Creating nginx test pod on worker node")
-				setupNGNXPod(workerNodeList[0].Definition.Name)
+				setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 				By("Checking that BGP session is established and up")
 				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(nodeAddrList))

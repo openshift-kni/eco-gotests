@@ -23,6 +23,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -73,7 +74,7 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		Expect(err).ToNot(HaveOccurred(), "Failed create MetalLB CR")
 
 		By("Creating nginx test pod")
-		setupNGNXPod(cnfWorkerNodeList[0].Definition.Name)
+		setupNGNXPod(cnfWorkerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 		By("Generating ConfigMap configuration for the external FRR pod")
 		masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
@@ -113,7 +114,8 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 			ipSecondaryInterface1, sriovInterfacesUnderTest[0])
 
 		By("Creating an IPAddressPool and BGPAdvertisement")
-		ipAddressPool = setupBgpAdvertisementAndIPAddressPool(addressPool, netparam.IPSubnetInt32)
+		ipAddressPool = setupBgpAdvertisementAndIPAddressPool(
+			tsparams.BGPAdvAndAddressPoolName, addressPool, netparam.IPSubnetInt32)
 
 		By("Creating a L2Advertisement")
 		_, err = metallb.NewL2AdvertisementBuilder(
@@ -138,7 +140,12 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 
 	It("Concurrent Layer2 and Layer3 should work concurrently Layer 2 and Layer 3", reportxml.ID("50059"), func() {
 		By("Creating MetalLB service")
-		setupMetalLbService(tsparams.MetallbServiceName, netparam.IPV4Family, ipAddressPool, "Local")
+		setupMetalLbService(
+			tsparams.MetallbServiceName,
+			netparam.IPV4Family,
+			tsparams.LabelValue1,
+			ipAddressPool,
+			corev1.ServiceExternalTrafficPolicyTypeLocal)
 
 		By(fmt.Sprintf("Creating macvlan NAD with the secondary interface %s", sriovInterfacesUnderTest[0]))
 		createExternalNadWithMasterInterface("l2nad", sriovInterfacesUnderTest[0])

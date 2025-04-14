@@ -36,6 +36,14 @@ const (
 	FrrK8WebHookServer = "frr-k8s-webhook-server"
 	// MetallbServiceName is the name of the metallb service.
 	MetallbServiceName = "service-1"
+	// MetallbServiceName2 is the name of the second metallb service.
+	MetallbServiceName2 = "service-2"
+	// BGPAdvAndAddressPoolName BGPAdvAndAdressPoolName is the name of the BgpAdvertisement and IPAddressPool.
+	BGPAdvAndAddressPoolName = "bgp-test"
+	// LabelValue1 is the value name for the label1.
+	LabelValue1 = "nginx1"
+	// LabelValue2 is the value name for the label2.
+	LabelValue2 = "nginx2"
 	// BlockBGPBFDPorts adds an input rule blocking TCP & UDP ports for BGP and BFD.
 	// chain custom_chain_INPUT {
 	//    type filter hook input priority 1; policy accept;
