@@ -224,10 +224,17 @@ func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []s
 
 func verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
+		Eventually(func() bool {
+			neighborState, _ := frr.BGPNeighborshipHasState(frrPod, peerAddress, "Established")
+
+			return neighborState
+		}, 30*time.Second, 5*time.Second).Should(BeFalse(),
+			fmt.Sprintf("BGP session to %s should not be Established, but it is", peerAddress))
+
 		Consistently(frr.BGPNeighborshipHasState,
 			time.Minute, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
-			Not(BeTrue()), "Failed BGP status is Established")
+			Not(BeTrue()), fmt.Sprintf("BGP session to %s unexpectedly reached Established state", peerAddress))
 	}
 }
 
