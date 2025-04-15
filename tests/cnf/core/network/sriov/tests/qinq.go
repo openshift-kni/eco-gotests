@@ -1033,7 +1033,7 @@ func defineCreateSriovNetPolices(vfioPCIName, vfioPCIResName, sriovInterface,
 
 	switch reqDriver {
 	case "vfio-pci":
-		if sriovDeviceID == netparam.MlxDeviceID {
+		if sriovDeviceID == netparam.MlxDeviceID || sriovDeviceID == netparam.MlxBFDeviceID {
 			_, err := sriovPolicy.WithRDMA(true).WithDevType("netdevice").Create()
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create Mellanox sriovnetwork policy %s",
 				vfioPCIName))
