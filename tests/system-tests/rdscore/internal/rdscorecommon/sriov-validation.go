@@ -2,6 +2,7 @@ package rdscorecommon
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -15,7 +16,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
+	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
+	"k8s.io/apimachinery/pkg/util/wait"
 
+	srIovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	multus "gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -27,6 +31,8 @@ import (
 )
 
 const (
+	// SR-IOV operator namespace.
+	sriovNS = "openshift-sriov-network-operator"
 	// Names of deployments.
 	sriovDeploy1OneName = "rdscore-sriov-one"
 	sriovDeploy1TwoName = "rdscore-sriov-two"
@@ -69,6 +75,67 @@ const (
 	sriovRBACRole3 = "system:openshift:scc:privileged"
 	sriovRBACRole4 = "system:openshift:scc:privileged"
 )
+
+func getSRIOVOperatorConfig() (*srIovV1.SriovOperatorConfig, error) {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Retrieving SR-IOV Operator config")
+
+	sriovConfigBuiler := sriov.NewOperatorConfigBuilder(APIClient, sriovNS)
+
+	Expect(sriovConfigBuiler).ToNot(BeNil(), "Failed to initialize SR-IOV Operator Config structure")
+
+	var (
+		sriovConfig *srIovV1.SriovOperatorConfig
+		err         error
+	)
+
+	err = wait.PollUntilContextTimeout(context.TODO(),
+		5*time.Second,
+		1*time.Minute,
+		true,
+		func(ctx context.Context) (bool, error) {
+			var getErr error
+
+			sriovConfig, getErr = sriovConfigBuiler.Get()
+
+			if getErr != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error retrieving SR-IOV Operator config: %v", getErr)
+
+				return false, nil
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Retrieved SR-IOV Operator config")
+
+			return true, nil
+		})
+
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error retrieving SR-IOV Operator config: %v", err)
+
+		return &srIovV1.SriovOperatorConfig{}, err
+	}
+
+	return sriovConfig, nil
+}
+
+//nolint:unparam
+func getSRIOVConfigOption(sriovConfig *srIovV1.SriovOperatorConfig, option string) (bool, bool) {
+	var (
+		featureEnabled bool
+		optionFound    bool
+	)
+
+	featureEnabled, optionFound = sriovConfig.Spec.FeatureGates[option]
+
+	if !optionFound {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature %q is not defined in the SR-IOV operator config")
+
+		return optionFound, optionFound
+	}
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Feature %q is defined with value: %v", option, featureEnabled)
+
+	return featureEnabled, optionFound
+}
 
 func createServiceAccount(saName, nsName string) {
 	By(fmt.Sprintf("Creating ServiceAccount %q in %q namespace",
@@ -568,6 +635,22 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
+	By("Retrieving SR-IOV Operator config")
+
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
+
+	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
+
+	By("Checking resourceInjectorMatchCondition is set")
+
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
+	}
+
 	By("Checking SR-IOV deployments don't exist")
 
 	deleteDeployments(sriovDeploy1OneName, RDSCoreConfig.WlkdSRIOVOneNS)
@@ -737,6 +820,22 @@ func VerifySRIOVWorkloadsOnSameNode(ctx SpecContext) {
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnDifferentNodes(ctx SpecContext) {
+	By("Retrieving SR-IOV Operator config")
+
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
+
+	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
+
+	By("Checking resourceInjectorMatchCondition is set")
+
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
+	}
+
 	By("Checking SR-IOV deployments don't exist")
 
 	deleteDeployments(sriovDeploy2OneName, RDSCoreConfig.WlkdSRIOVOneNS)
@@ -1036,6 +1135,22 @@ func VerifySRIOVConnectivityOnSameNodeAndDifferentNets() {
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnSameNodeDifferentNet(ctx SpecContext) {
+	By("Retrieving SR-IOV Operator config")
+
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
+
+	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
+
+	By("Checking resourceInjectorMatchCondition is set")
+
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
+	}
+
 	By("Checking SR-IOV deployments don't exist")
 
 	deleteDeployments(sriovDeploy3OneName, RDSCoreConfig.WlkdSRIOV3NS)
@@ -1253,6 +1368,22 @@ func VerifySRIOVConnectivityOnDifferentNodesAndDifferentNetworks() {
 //
 //nolint:funlen
 func VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx SpecContext) {
+	By("Retrieving SR-IOV Operator config")
+
+	SriovOperatorConfig, oerr := getSRIOVOperatorConfig()
+
+	Expect(oerr).ToNot(HaveOccurred(), "Failed to retrieved SR-IOV Operator Config")
+
+	By("Checking resourceInjectorMatchCondition is set")
+
+	optionSet, ok := getSRIOVConfigOption(SriovOperatorConfig, "resourceInjectorMatchCondition")
+
+	if !ok || !optionSet {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'resourceInjectorMatchCondition' not defined or disabled")
+
+		Skip("Option 'resourceInjectorMatchCondition' not defined or enabled")
+	}
+
 	By("Checking SR-IOV deployments don't exist")
 
 	deleteDeployments(sriovDeploy4OneName, RDSCoreConfig.WlkdSRIOV4NS)
