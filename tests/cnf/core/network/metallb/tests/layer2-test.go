@@ -24,6 +24,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -78,7 +79,12 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		ipAddressPool := setupL2Advertisement(ipv4metalLbIPList)
 
 		By("Creating a MetalLB service")
-		setupMetalLbService(tsparams.MetallbServiceName, netparam.IPV4Family, ipAddressPool, "Cluster")
+		setupMetalLbService(
+			tsparams.MetallbServiceName,
+			netparam.IPV4Family,
+			tsparams.LabelValue1,
+			ipAddressPool,
+			corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 		By("Creating external Network Attachment Definition")
 		err = define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
@@ -121,7 +127,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 
 	It("Validate MetalLB Layer 2 functionality", reportxml.ID("42936"), func() {
 		By("Creating nginx test pod on worker node")
-		setupNGNXPod(workerNodeList[0].Definition.Name)
+		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 		By("Getting announcing node name")
 		announcingNodeName := getLBServiceAnnouncingNodeName()
@@ -146,8 +152,8 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 			BeEquivalentTo(len(workerNodeList)), "Failed to run metalLb speakers on top of nodes with test label")
 
 		By("Creating nginx test pod on worker nodes")
-		setupNGNXPod(workerNodeList[0].Definition.Name)
-		setupNGNXPod(workerNodeList[1].Definition.Name)
+		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+		setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue1)
 
 		By("Getting announcing node name")
 		announcingNodeName := getLBServiceAnnouncingNodeName()

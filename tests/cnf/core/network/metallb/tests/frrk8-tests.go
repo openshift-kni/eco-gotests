@@ -23,6 +23,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -335,13 +336,19 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Fail to set iteration parameters")
 
 			By("Creating an IPAddressPool and BGPAdvertisement")
-			ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool, netparam.IPSubnetInt32)
+			ipAddressPool := setupBgpAdvertisementAndIPAddressPool(
+				tsparams.BGPAdvAndAddressPoolName, addressPool, netparam.IPSubnetInt32)
 
 			By("Creating a MetalLB service")
-			setupMetalLbService(tsparams.MetallbServiceName, netparam.IPV4Family, ipAddressPool, "Cluster")
+			setupMetalLbService(
+				tsparams.MetallbServiceName,
+				netparam.IPV4Family,
+				tsparams.LabelValue1,
+				ipAddressPool,
+				corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 			By("Creating nginx test pod on worker node")
-			setupNGNXPod(workerNodeList[0].Definition.Name)
+			setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 		})
 
 		AfterAll(func() {
@@ -641,13 +648,19 @@ func deployTestPods(addressPool, hubIPAddresses, externalAdvertisedIPv4Routes,
 	externalAdvertisedIPv6Routes []string) *pod.Builder {
 	By("Creating an IPAddressPool and BGPAdvertisement")
 
-	ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool, netparam.IPSubnetInt32)
+	ipAddressPool := setupBgpAdvertisementAndIPAddressPool(tsparams.BGPAdvAndAddressPoolName,
+		addressPool, netparam.IPSubnetInt32)
 
 	By("Creating a MetalLB service")
-	setupMetalLbService(tsparams.MetallbServiceName, netparam.IPV4Family, ipAddressPool, "Cluster")
+	setupMetalLbService(
+		tsparams.MetallbServiceName,
+		netparam.IPV4Family,
+		tsparams.LabelValue1,
+		ipAddressPool,
+		corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 	By("Creating nginx test pod on worker node")
-	setupNGNXPod(workerNodeList[0].Definition.Name)
+	setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 	By("Creating External NAD")
 

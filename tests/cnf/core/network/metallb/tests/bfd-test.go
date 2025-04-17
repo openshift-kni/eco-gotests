@@ -246,13 +246,15 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				}
 
 				By("Creating an IPAddressPool and BGPAdvertisement for bfd tests")
-				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool, prefixLen)
+				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(
+					tsparams.BGPAdvAndAddressPoolName, addressPool, prefixLen)
 
 				By("Creating a MetalLB service")
-				setupMetalLbService(tsparams.MetallbServiceName, ipStack, ipAddressPool, externalTrafficPolicy)
+				setupMetalLbService(
+					tsparams.MetallbServiceName, ipStack, tsparams.LabelValue1, ipAddressPool, externalTrafficPolicy)
 
 				By("Creating nginx test pod on worker node")
-				setupNGNXPod(workerNodeList[0].Definition.Name)
+				setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 				By("Creating internal NAD")
 				masterBridgePlugin, err := nad.NewMasterBridgePlugin("internalnad", "br0").

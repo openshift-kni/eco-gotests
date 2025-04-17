@@ -158,16 +158,17 @@ func createBGPPeerAndVerifyIfItsReady(
 	}
 }
 
-func setupBgpAdvertisementAndIPAddressPool(addressPool []string, prefixLen int) *metallb.IPAddressPoolBuilder {
+func setupBgpAdvertisementAndIPAddressPool(
+	name string, addressPool []string, prefixLen int) *metallb.IPAddressPoolBuilder {
 	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
 		APIClient,
-		"addresspool",
+		name,
 		NetConfig.MlbOperatorNamespace,
 		[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
 
 	_, err = metallb.
-		NewBGPAdvertisementBuilder(APIClient, "bgpadvertisement", NetConfig.MlbOperatorNamespace).
+		NewBGPAdvertisementBuilder(APIClient, name, NetConfig.MlbOperatorNamespace).
 		WithIPAddressPools([]string{ipAddressPool.Definition.Name}).
 		WithCommunities([]string{"65535:65282"}).
 		WithLocalPref(100).
@@ -306,13 +307,14 @@ func createFrrHubPod(name, nodeName, configmapName string, defaultCMD []string,
 
 func setupMetalLbService(
 	name,
-	ipStack string,
+	ipStack,
+	labelValue string,
 	ipAddressPool *metallb.IPAddressPoolBuilder,
 	extTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
 	servicePort, err := service.DefineServicePort(80, 80, "TCP")
 	Expect(err).ToNot(HaveOccurred(), "Failed to define service port")
 	_, err = service.NewBuilder(APIClient, name, tsparams.TestNamespaceName,
-		map[string]string{"app": "nginx1"}, *servicePort).
+		map[string]string{"app": labelValue}, *servicePort).
 		WithExternalTrafficPolicy(extTrafficPolicy).
 		WithIPFamily([]corev1.IPFamily{corev1.IPFamily(ipStack)}, corev1.IPFamilyPolicySingleStack).
 		WithAnnotation(map[string]string{"metallb.universe.tf/address-pool": ipAddressPool.Definition.Name}).
@@ -320,11 +322,11 @@ func setupMetalLbService(
 	Expect(err).ToNot(HaveOccurred(), "Failed to create MetalLB Service")
 }
 
-func setupNGNXPod(nodeName string) {
+func setupNGNXPod(nodeName, labelValue string) {
 	_, err := pod.NewBuilder(
 		APIClient, "mlbnginxtpod"+nodeName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 		DefineOnNode(nodeName).
-		WithLabel("app", "nginx1").
+		WithLabel("app", labelValue).
 		RedefineDefaultCMD(cmd.DefineNGNXAndSleep()).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
