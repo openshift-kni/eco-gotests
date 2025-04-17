@@ -269,7 +269,7 @@ func defineTestResources(role, pfName, nicVendor, deviceType, workerNode string,
 	if dpdk {
 		podBuilder = defineDPDKPod(role, deviceType, workerNode)
 	} else {
-		podBuilder = definePod(role, deviceType, workerNode)
+		podBuilder = sriovenv.DefinePod(role+"pod", role, role+deviceType, workerNode, true)
 	}
 
 	return testResource{sriovPolicy, sriovNetwork, podBuilder}
@@ -312,38 +312,6 @@ func defineNetwork(role, devType string) *sriov.NetworkBuilder {
 		WithLogLevel(netparam.LogLevelDebug)
 
 	return network
-}
-
-func definePod(role, devType, worker string) *pod.Builder {
-	var podbuild *pod.Builder
-
-	var netAnnotation []*types.NetworkSelectionElement
-
-	switch role {
-	case "client":
-		netAnnotation = []*types.NetworkSelectionElement{
-			{
-				Name:       role + devType,
-				MacRequest: tsparams.ClientMacAddress,
-				IPRequest:  []string{tsparams.ClientIPv4IPAddress},
-			},
-		}
-	case "server":
-		netAnnotation = []*types.NetworkSelectionElement{
-			{
-				Name:       role + devType,
-				MacRequest: tsparams.ServerMacAddress,
-				IPRequest:  []string{tsparams.ServerIPv4IPAddress},
-			},
-		}
-	}
-
-	podbuild = pod.NewBuilder(APIClient, role+"pod", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-		WithNodeSelector(map[string]string{"kubernetes.io/hostname": worker}).
-		WithSecondaryNetwork(netAnnotation).
-		WithPrivilegedFlag()
-
-	return podbuild
 }
 
 func defineDPDKPod(role, devType, worker string) *pod.Builder {
