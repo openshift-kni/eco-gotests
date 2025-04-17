@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -71,8 +72,11 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			By("Verifying that the frrk8sPod deployment is in Ready state and create a list of the pods on " +
 				"worker nodes.")
 			frrk8sPods := verifyAndCreateFRRk8sPodList()
+
+			By("Creating BFD profile.")
 			bfdProfile := createBFDProfileAndVerifyIfItsReady(frrk8sPods)
 
+			By("Creating BGP peer config.")
 			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], bfdProfile.Definition.Name,
 				tsparams.RemoteBGPASN, false, 0, frrk8sPods)
 
@@ -95,13 +99,9 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 			By("Checking that BGP and BFD sessions are established and up")
 			verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
-
-			By("Set Local GW mode")
-			setLocalGWMode(false)
 		})
 
 		It("basic functionality should provide fast link failure detection", reportxml.ID("47188"), func() {
-			scaleDownMetalLbSpeakers()
 			testBFDFailOver()
 			testBFDFailBack()
 		})
@@ -127,15 +127,8 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		})
 
 		AfterEach(func() {
-			By("Removing label from Workers")
-			removeNodeLabel(workerNodeList, tsparams.MetalLbSpeakerLabel)
-
-			By("Resetting MetalLB speakerNodeSelector to default value")
-			metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull MetalLB object")
-			_, err = metalLbIo.RemoveLabel("metal").
-				WithSpeakerNodeSelector(workerLabelMap).Update(false)
-			Expect(err).ToNot(HaveOccurred(), "Failed to reset MetalLB SpeakerNodeSelector to default value")
+			By("Removing custom nft table if exists")
+			removeNFTTable(workerNodeList[0].Object.Name)
 
 			By("Cleaning MetalLb operator namespace")
 			metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
@@ -168,6 +161,9 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		})
 
 		AfterEach(func() {
+			By("Removing custom nft table if exists")
+			removeNFTTable(workerNodeList[0].Object.Name)
+
 			By("Cleaning MetalLb operator namespace")
 			metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
@@ -187,16 +183,6 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					frrconfig.ContainerName, speakerRoutesMap)
 				Expect(err).ToNot(HaveOccurred(), out)
 			}
-
-			By("Removing label from Workers")
-			removeNodeLabel(workerNodeList, tsparams.MetalLbSpeakerLabel)
-
-			By("Resetting MetalLB speakerNodeSelector to default value")
-			metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "Failed to pull metallb object")
-			_, err = metalLbIo.RemoveLabel("metal").
-				WithSpeakerNodeSelector(workerLabelMap).Update(false)
-			Expect(err).ToNot(HaveOccurred(), "Failed to reset metallb SpeakerNodeSelector to default value")
 
 			By("Cleaning test namespace")
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
@@ -308,7 +294,6 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				httpOutput, err := cmd.Curl(frrPod, masterClientPodIP, addressPool[0], ipStack, tsparams.FRRSecondContainerName)
 				Expect(err).ToNot(HaveOccurred(), httpOutput)
 
-				scaleDownMetalLbSpeakers()
 				testBFDFailOver()
 
 				By("Running http check after fail-over")
@@ -344,6 +329,9 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 	})
 
 	AfterAll(func() {
+		By("Removing custom nft table if exists")
+		removeNFTTable(workerNodeList[0].Object.Name)
+
 		if len(cnfWorkerNodeList) > 2 {
 			removeNodeLabel(workerNodeList, metalLbTestsLabel)
 		}
@@ -381,51 +369,24 @@ func createFrrPodOnMasterNodeAndWaitUntilRunning(
 		name,
 	)
 }
-
-func scaleDownMetalLbSpeakers() {
-	By("Changing the label selector for MetalLb speakers")
-
-	metalLbIo, err := metallb.Pull(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace)
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull metallb.io object")
-	_, err = metalLbIo.WithSpeakerNodeSelector(tsparams.MetalLbSpeakerLabel).Update(false)
-	Expect(err).ToNot(HaveOccurred(), "Failed to update metallb object with the new MetalLb label")
-
-	By("Verifying that the MetalLb speakers are not running on nodes after label update")
-	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		BeZero(), "Failed to scale down metalLb speaker pods to zero")
-}
-
 func testBFDFailOver() {
-	By("Adding metalLb label to compute nodes")
-	addNodeLabel(workerNodeList, tsparams.MetalLbSpeakerLabel)
-
-	By("Pulling metalLb speaker daemonset")
-	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		Not(BeZero()), "Failed to run metalLb speakers on top of nodes with test label")
+	By("Checking that BGP and BFD sessions are established and up")
 
 	frrPod, err := pod.Pull(APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull frr test pod")
 
-	By("Checking that BGP and BFD sessions are established and up")
 	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
-	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
-
-	By("Removing Speaker pod from one of the compute nodes")
 
 	firstWorkerNode, err := nodes.Pull(APIClient, workerNodeList[0].Object.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
-	_, err = firstWorkerNode.RemoveLabel(netenv.MapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-	Expect(err).ToNot(HaveOccurred(), "Failed to remove metalLb label from worker node")
-
-	By("Verifying that cluster has reduced the number of speakers by 1")
-	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		BeEquivalentTo(len(workerNodeList)-1), "The number of running speaker pods is not expected")
-	By("Verifying that FRR pod still has BFD and BGP session UP with one of the MetalLb speakers")
 
 	secondWorkerNode, err := nodes.Pull(APIClient, workerNodeList[1].Object.Name)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull compute node object")
 	secondWorkerIP, err := secondWorkerNode.ExternalIPv4Network()
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect external node ip")
+
+	By("Blocking BGP and BFD ports on a first compute node via nft rules")
+	blockBFDBGPPortsViaNFT(workerNodeList[0].Object.Name)
 
 	// Sleep until BFD timeout
 	time.Sleep(1200 * time.Millisecond)
@@ -443,25 +404,18 @@ func testBFDFailOver() {
 	bpgUp, err = frr.BGPNeighborshipHasState(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "Established")
 	Expect(err).ToNot(HaveOccurred(), "Failed to collect BGP state")
 	Expect(bpgUp).Should(BeFalse(), "BGP is not in expected down state")
-	Expect(netenv.BFDHasStatus(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "down")).
-		ShouldNot(HaveOccurred(), "BFD is not in expected down state")
+	Expect(netenv.BFDHasStatus(frrPod, ipaddr.RemovePrefix(firstWorkerNodeIP), "up")).
+		Should(HaveOccurred(), "BFD is not expected to be in Up state")
 }
 
 func testBFDFailBack() {
-	By("Bringing Speaker pod back by labeling node")
+	By("Removing created nft table on a first compute node")
+	removeNFTTable(workerNodeList[0].Object.Name)
 
-	firstWorkerNode, err := nodes.Pull(APIClient, workerNodeList[0].Object.Name)
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull worker node object")
-	_, err = firstWorkerNode.WithNewLabel(netenv.MapFirstKeyValue(tsparams.MetalLbSpeakerLabel)).Update()
-	Expect(err).ToNot(HaveOccurred(), "Failed to append metalLb label to worker node")
-
-	By("Check if speakers daemonSet is UP and running")
+	By("Checking that BGP and BFD sessions are established and up")
 
 	frrPod, err := pod.Pull(APIClient, tsparams.FRRContainerName, tsparams.TestNamespaceName)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull frr test pod")
-
-	metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
-		BeEquivalentTo(len(workerNodeList)), "The number of running speaker pods is not expected")
 	verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, ipv4NodeAddrList)
 }
 
@@ -533,4 +487,41 @@ func buildRoutesMap(podList []*pod.Builder, nextHopList []string) (map[string]st
 	}
 
 	return routesMap, nil
+}
+
+func blockBFDBGPPortsViaNFT(nodeName string) {
+	commands := []string{
+		"nft add table inet my_table",
+		"nft add chain inet my_table my_chain { type filter hook input priority 1 \\; policy accept \\; }",
+		"nft add rule inet my_table my_chain tcp dport 179 drop",
+		"nft add rule inet my_table my_chain tcp sport 179 drop",
+		"nft add rule inet my_table my_chain udp dport 3784 drop",
+		"nft add rule inet my_table my_chain udp sport 3784 drop",
+		"nft add rule inet my_table my_chain udp dport 4784 drop",
+		"nft add rule inet my_table my_chain udp sport 4784 drop",
+	}
+
+	for _, command := range commands {
+		output, err := cluster.ExecCmdWithStdout(
+			APIClient, command, metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to run command %s: %s", command, output))
+	}
+}
+
+func removeNFTTable(nodeName string) {
+	_, err := cluster.ExecCmdWithStdout(
+		APIClient, "nft list table inet my_table",
+		metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
+
+	// If table doesn't exist, skip deletion
+	if err != nil && strings.Contains(err.Error(), "failed executing command") {
+		By(fmt.Sprintf("nft table already deleted on node %s, skipping\n", nodeName))
+
+		return
+	}
+
+	_, err = cluster.ExecCmdWithStdout(
+		APIClient, "nft delete table inet my_table",
+		metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete nft table")
 }
