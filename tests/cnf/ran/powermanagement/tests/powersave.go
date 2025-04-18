@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -39,8 +40,15 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 
 	BeforeAll(func() {
 		nodeList, err = nodes.List(Spoke1APIClient)
-		Expect(err).ToNot(HaveOccurred(), "Failed to get nodes")
-		Expect(len(nodeList)).To(Equal(1), "Currently only SNO clusters are supported")
+		Expect(err).ToNot(HaveOccurred(), "Failed to list cluster nodes")
+
+		if len(nodeList) != 1 {
+			Skip("Power saving tests only support SNO clusters")
+		}
+
+		if nodeList[0].Object.Status.NodeInfo.Architecture != "amd64" {
+			Skip("Power saving tests only support Intel nodes")
+		}
 
 		nodeName = nodeList[0].Object.Name
 		perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
@@ -50,6 +58,10 @@ var _ = Describe("Per-core runtime power states tuning", Label(tsparams.LabelPow
 	})
 
 	AfterAll(func() {
+		if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
+			return
+		}
+
 		perfProfile, err = helper.GetPerformanceProfileWithCPUSet()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get performance profile")
 

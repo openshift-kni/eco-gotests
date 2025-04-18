@@ -88,15 +88,24 @@ func SetCPUFreq(
 	desiredReservedCoreFreq *performancev2.CPUfrequency) error {
 	glog.V(tsparams.LogLevel).Infof("Set Reserved and Isolated CPU Frequency on performance profile")
 
-	if perfProfile.Definition.Spec.HardwareTuning == nil {
-		perfProfile.Definition.Spec.HardwareTuning = &performancev2.HardwareTuning{}
+	// Exists will ensure that perfProfile.Object is up to date.
+	if !perfProfile.Exists() {
+		glog.V(tsparams.LogLevel).Infof(
+			"Performance profile %s provided to SetCPUFreq does not exist", perfProfile.Definition.Name)
+
+		return fmt.Errorf("performance profile %s does not exist", perfProfile.Definition.Name)
 	}
 
-	// Update PerfProfile with new CPU Frequencies
-	perfProfile.Definition.Spec.HardwareTuning.IsolatedCpuFreq = desiredIsolatedCoreFreq
-	perfProfile.Definition.Spec.HardwareTuning.ReservedCpuFreq = desiredReservedCoreFreq
-	_, err := perfProfile.Update(true)
+	// Replace the resource version with the latest value to prevent conflicts.
+	perfProfile.Definition.ResourceVersion = perfProfile.Object.ResourceVersion
 
+	// Update PerfProfile with new CPU Frequencies
+	perfProfile.Definition.Spec.HardwareTuning = &performancev2.HardwareTuning{
+		IsolatedCpuFreq: desiredIsolatedCoreFreq,
+		ReservedCpuFreq: desiredReservedCoreFreq,
+	}
+
+	_, err := perfProfile.Update(false)
 	if err != nil {
 		return err
 	}
@@ -113,10 +122,8 @@ func SetCPUFreq(
 		return err
 	}
 
-	isolatedCPUsList := isolatedCPUSet.List()
-	isolatedCPUNumber := isolatedCPUsList[0]
-	reservedCPUsList := reservedCPUSet.List()
-	reservedCCPUNumber := reservedCPUsList[0]
+	isolatedCPUNumber := isolatedCPUSet.List()[0]
+	reservedCCPUNumber := reservedCPUSet.List()[0]
 
 	spokeCommandIsolatedCPUs := fmt.Sprintf("cat /sys/devices/system/cpu/cpufreq/policy%v/scaling_max_freq",
 		isolatedCPUNumber)
