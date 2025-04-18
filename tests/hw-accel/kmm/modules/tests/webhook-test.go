@@ -230,27 +230,119 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
 				Expect(err.Error()).To(ContainSubstring("load and unload rawArgs must be set when moduleName is unset"))
 			})
+
+			It("should require image tag or digest for container image", reportxml.ID("75990"), func() {
+				By("Preparing module")
+				module := &v1beta1.Module{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "nomodule-raw",
+						Namespace: nSpace,
+					},
+				}
+				module.Spec.Selector = GeneralConfig.WorkerLabelMap
+				kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something"}
+				var KerMapList []v1beta1.KernelMapping
+				mappings := append(KerMapList, kerMap)
+				module.Spec.ModuleLoader.Container.KernelMappings = mappings
+
+				By("Create Module")
+				err := APIClient.Create(context.TODO(), module)
+				Expect(err).To(HaveOccurred(), "error creating module")
+				glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
+				Expect(err.Error()).To(ContainSubstring("container image must explicitely set a tag or digest")) //nolint:misspell
+			})
 		})
 
-		It("should require image tag or digest for container image", reportxml.ID("75990"), func() {
-			By("Preparing module")
-			module := &v1beta1.Module{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "nomodule-raw",
-					Namespace: nSpace,
-				},
-			}
-			module.Spec.Selector = GeneralConfig.WorkerLabelMap
-			kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something"}
-			var KerMapList []v1beta1.KernelMapping
-			mappings := append(KerMapList, kerMap)
-			module.Spec.ModuleLoader.Container.KernelMappings = mappings
+		Context("Tolerations", Label("wehbook"), func() {
 
-			By("Create Module")
-			err := APIClient.Create(context.TODO(), module)
-			Expect(err).To(HaveOccurred(), "error creating module")
-			glog.V(kmmparams.KmmLogLevel).Infof("err is: %s", err)
-			Expect(err.Error()).To(ContainSubstring("container image must explicitely set a tag or digest")) //nolint:misspell
+			It("should allow only specific effects", reportxml.ID("81516"), func() {
+
+				By("Create KernelMapping")
+				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
+					tsparams.LocalImageRegistry, kmmparams.WebhookModuleTestNamespace, "my-kmod")
+				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
+					WithContainerImage(image).
+					BuildKernelMappingConfig()
+				Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+				By("Create moduleLoader container")
+				moduleLoader, err := kmm.NewModLoaderContainerBuilder("kmod-a").
+					WithKernelMapping(kernelMapping).
+					BuildModuleLoaderContainerCfg()
+				Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+				By("Create Module")
+				_, err = kmm.NewModuleBuilder(APIClient, "webhook-toleration-effect", nSpace).
+					WithNodeSelector(GeneralConfig.WorkerLabelMap).
+					WithModuleLoaderContainer(moduleLoader).
+					WithToleration("dummy-key",
+						"Exists",
+						"",
+						"BadEffect", nil).
+					Create()
+				Expect(err).To(HaveOccurred(), "error creating module")
+				Expect(err.Error()).To(ContainSubstring("Toleration[0] invalid effect 'BadEffect'"))
+			})
+
+			It("should allow only specific operator", reportxml.ID("81515"), func() {
+
+				By("Create KernelMapping")
+				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
+					tsparams.LocalImageRegistry, kmmparams.WebhookModuleTestNamespace, "my-kmod")
+				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
+					WithContainerImage(image).
+					BuildKernelMappingConfig()
+				Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+				By("Create moduleLoader container")
+				moduleLoader, err := kmm.NewModLoaderContainerBuilder("kmod-a").
+					WithKernelMapping(kernelMapping).
+					BuildModuleLoaderContainerCfg()
+				Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+				By("Create Module")
+				_, err = kmm.NewModuleBuilder(APIClient, "webhook-toleration-bad-op", nSpace).
+					WithNodeSelector(GeneralConfig.WorkerLabelMap).
+					WithModuleLoaderContainer(moduleLoader).
+					WithToleration("dummy-key",
+						"Existss",
+						"",
+						"NoSchedule", nil).
+					Create()
+				Expect(err).To(HaveOccurred(), "error creating module")
+				Expect(err.Error()).To(
+					ContainSubstring("Toleration[0] invalid operator 'Existss', allowed values are ['Equal', 'Exists']"))
+			})
+
+			It("should check value is empty for operator Exists", reportxml.ID("81514"), func() {
+
+				By("Create KernelMapping")
+				image := fmt.Sprintf("%s/%s/%s:$KERNEL_FULL_VERSION",
+					tsparams.LocalImageRegistry, kmmparams.WebhookModuleTestNamespace, "my-kmod")
+				kernelMapping, err := kmm.NewRegExKernelMappingBuilder("^.+$").
+					WithContainerImage(image).
+					BuildKernelMappingConfig()
+				Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
+
+				By("Create moduleLoader container")
+				moduleLoader, err := kmm.NewModLoaderContainerBuilder("kmod-a").
+					WithKernelMapping(kernelMapping).
+					BuildModuleLoaderContainerCfg()
+				Expect(err).ToNot(HaveOccurred(), "error creating moduleloadercontainer")
+
+				By("Create Module")
+				_, err = kmm.NewModuleBuilder(APIClient, "webhook-value-not-empty", nSpace).
+					WithNodeSelector(GeneralConfig.WorkerLabelMap).
+					WithModuleLoaderContainer(moduleLoader).
+					WithToleration("dummy-key",
+						"Exists",
+						"not-empty",
+						"NoSchedule", nil).
+					Create()
+				Expect(err).To(HaveOccurred(), "error creating module")
+				Expect(err.Error()).To(ContainSubstring("Toleration[0] value must be empty when operator is 'Exists'"))
+			})
+
 		})
 	})
 })
