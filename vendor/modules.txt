@@ -579,7 +579,7 @@ github.com/opencontainers/runtime-spec/specs-go
 ## explicit; go 1.22.0
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20250417144724-7890f75e7612
+# github.com/openshift-kni/eco-goinfra v0.0.0-20250421213755-b1bf597b8e8d
 ## explicit; go 1.24.2
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -894,7 +894,7 @@ github.com/openshift/cluster-logging-operator/internal/utils/sets
 # github.com/openshift/cluster-nfd-operator v0.0.0-20250116132220-e601a6278a42
 ## explicit; go 1.22
 github.com/openshift/cluster-nfd-operator/api/v1
-# github.com/openshift/cluster-node-tuning-operator v0.0.0-20250116110730-90fc6ab88c08
+# github.com/openshift/cluster-node-tuning-operator v0.0.0-20250408112936-4f58be155c79
 ## explicit; go 1.22.0
 github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v1
 github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2

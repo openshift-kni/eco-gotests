@@ -9,7 +9,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	v2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
+	performanceprofilev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,9 +18,9 @@ import (
 // Builder provides a struct for PerformanceProfile object from the cluster and a PerformanceProfile definition.
 type Builder struct {
 	// PerformanceProfile definition, used to create the PerformanceProfile object.
-	Definition *v2.PerformanceProfile
+	Definition *performanceprofilev2.PerformanceProfile
 	// Created PerformanceProfile object.
-	Object *v2.PerformanceProfile
+	Object *performanceprofilev2.PerformanceProfile
 	// Used to store latest error message upon defining or mutating PerformanceProfile definition.
 	errorMsg string
 	// api client to interact with the cluster.
@@ -40,24 +40,24 @@ func NewBuilder(
 		return nil
 	}
 
-	err := apiClient.AttachScheme(v2.AddToScheme)
+	err := apiClient.AttachScheme(performanceprofilev2.AddToScheme)
 	if err != nil {
 		glog.V(100).Infof("Failed to add node-tuning-operator v2 scheme to client schemes")
 
 		return nil
 	}
 
-	isolatedCPUSet := v2.CPUSet(cpuIsolated)
-	reservedCPUSet := v2.CPUSet(cpuReserved)
+	isolatedCPUSet := performanceprofilev2.CPUSet(cpuIsolated)
+	reservedCPUSet := performanceprofilev2.CPUSet(cpuReserved)
 
 	builder := &Builder{
 		apiClient: apiClient.Client,
-		Definition: &v2.PerformanceProfile{
+		Definition: &performanceprofilev2.PerformanceProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
-			Spec: v2.PerformanceProfileSpec{
-				CPU: &v2.CPU{
+			Spec: performanceprofilev2.PerformanceProfileSpec{
+				CPU: &performanceprofilev2.CPU{
 					Isolated: &isolatedCPUSet,
 					Reserved: &reservedCPUSet,
 				},
@@ -111,7 +111,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 		return nil, fmt.Errorf("performanceProfile 'apiClient' cannot be empty")
 	}
 
-	err := apiClient.AttachScheme(v2.AddToScheme)
+	err := apiClient.AttachScheme(performanceprofilev2.AddToScheme)
 	if err != nil {
 		glog.V(100).Infof("Failed to add node-tuning-operator v2 scheme to client schemes")
 
@@ -120,7 +120,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 
 	builder := &Builder{
 		apiClient: apiClient.Client,
-		Definition: &v2.PerformanceProfile{
+		Definition: &performanceprofilev2.PerformanceProfile{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
@@ -143,7 +143,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 }
 
 // WithHugePages defines the HugePages in the PerformanceProfile. hugePageSize allowed values are 2M, 1G.
-func (builder *Builder) WithHugePages(hugePageSize string, hugePages []v2.HugePage) *Builder {
+func (builder *Builder) WithHugePages(hugePageSize string, hugePages []performanceprofilev2.HugePage) *Builder {
 	glog.V(100).Infof("Adding hugePages to PerformanceProfile %s, size %s, hugePages %v",
 		builder.Definition.Name, hugePageSize, hugePages)
 
@@ -177,7 +177,7 @@ func (builder *Builder) WithHugePages(hugePageSize string, hugePages []v2.HugePa
 		return builder
 	}
 
-	pageSize := v2.HugePageSize(hugePageSize)
+	pageSize := performanceprofilev2.HugePageSize(hugePageSize)
 
 	if builder.Definition.Spec.HugePages != nil {
 		builder.Definition.Spec.HugePages.DefaultHugePagesSize = &pageSize
@@ -186,7 +186,7 @@ func (builder *Builder) WithHugePages(hugePageSize string, hugePages []v2.HugePa
 		return builder
 	}
 
-	builder.Definition.Spec.HugePages = &v2.HugePages{
+	builder.Definition.Spec.HugePages = &performanceprofilev2.HugePages{
 		DefaultHugePagesSize: &pageSize,
 		Pages:                hugePages,
 	}
@@ -266,7 +266,7 @@ func (builder *Builder) WithNumaTopology(topologyPolicy string) *Builder {
 		return builder
 	}
 
-	builder.Definition.Spec.NUMA = &v2.NUMA{TopologyPolicy: &topologyPolicy}
+	builder.Definition.Spec.NUMA = &performanceprofilev2.NUMA{TopologyPolicy: &topologyPolicy}
 
 	return builder
 }
@@ -280,7 +280,7 @@ func (builder *Builder) WithRTKernel() *Builder {
 	}
 
 	trueFlag := true
-	builder.Definition.Spec.RealTimeKernel = &v2.RealTimeKernel{Enabled: &trueFlag}
+	builder.Definition.Spec.RealTimeKernel = &performanceprofilev2.RealTimeKernel{Enabled: &trueFlag}
 
 	return builder
 }
@@ -311,7 +311,7 @@ func (builder *Builder) WithWorkloadHints(rtHint, perPodPowerMgmtHint, highPower
 	}
 
 	if builder.Definition.Spec.WorkloadHints == nil {
-		builder.Definition.Spec.WorkloadHints = &v2.WorkloadHints{
+		builder.Definition.Spec.WorkloadHints = &performanceprofilev2.WorkloadHints{
 			RealTime:              &rtHint,
 			PerPodPowerManagement: &perPodPowerMgmtHint,
 			HighPowerConsumption:  &highPowerHint,
@@ -350,7 +350,7 @@ func (builder *Builder) WithAnnotations(annotations map[string]string) *Builder 
 }
 
 // WithNet defines the net in the PerformanceProfile.
-func (builder *Builder) WithNet(userLevelNetworking bool, devices []v2.Device) *Builder {
+func (builder *Builder) WithNet(userLevelNetworking bool, devices []performanceprofilev2.Device) *Builder {
 	glog.V(100).Infof("Adding net field to the PerformanceProfile %s", builder.Definition.Name)
 
 	if valid, _ := builder.validate(); !valid {
@@ -365,7 +365,7 @@ func (builder *Builder) WithNet(userLevelNetworking bool, devices []v2.Device) *
 		return builder
 	}
 
-	netField := v2.Net{
+	netField := performanceprofilev2.Net{
 		UserLevelNetworking: &userLevelNetworking,
 		Devices:             devices,
 	}
@@ -437,14 +437,14 @@ func (builder *Builder) Exists() bool {
 }
 
 // Get fetches the defined PerformanceProfile from the cluster.
-func (builder *Builder) Get() (*v2.PerformanceProfile, error) {
+func (builder *Builder) Get() (*performanceprofilev2.PerformanceProfile, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
 
 	glog.V(100).Infof("Getting PerformanceProfile %s", builder.Definition.Name)
 
-	module := &v2.PerformanceProfile{}
+	module := &performanceprofilev2.PerformanceProfile{}
 
 	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
 		Name: builder.Definition.Name,

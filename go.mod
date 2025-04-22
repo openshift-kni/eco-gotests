@@ -23,7 +23,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20250114063637-129b149f6ce9
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/openshift-kni/eco-goinfra v0.0.0-20250417144724-7890f75e7612 // latest
+	github.com/openshift-kni/eco-goinfra v0.0.0-20250421213755-b1bf597b8e8d // latest
 	github.com/openshift-kni/k8sreporter v1.0.6
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20250120220331-9547280df193 // release-4.18
 	github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250114093602-01c00730991d // release-4.18
@@ -34,7 +34,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20241107164952-923091dd2b1a
 	github.com/openshift/cluster-logging-operator v0.0.0-20241003210634-afb65cea19d1 // release-5.9
 	github.com/openshift/cluster-nfd-operator v0.0.0-20250116132220-e601a6278a42 // release-4.18
-	github.com/openshift/cluster-node-tuning-operator v0.0.0-20250116110730-90fc6ab88c08 // release-4.18
+	github.com/openshift/cluster-node-tuning-operator v0.0.0-20250408112936-4f58be155c79 // release-4.18
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/openshift/local-storage-operator v0.0.0-20241213132210-fa575fb5f229 // release-4.18
 	github.com/operator-framework/api v0.28.0
