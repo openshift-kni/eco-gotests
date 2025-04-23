@@ -112,7 +112,9 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 				By("Creating nginx test pod on worker node")
-				setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+				setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+					workerNodeList[0].Definition.Name,
+					tsparams.LabelValue1)
 
 				By("Checking that BGP session is established and up")
 				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(nodeAddrList))

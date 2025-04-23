@@ -101,7 +101,9 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 
 	It("Validate MetalLB Layer 2 functionality", reportxml.ID("42936"), func() {
 		By("Creating nginx test pod on worker node")
-		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+		setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+			workerNodeList[0].Definition.Name,
+			tsparams.LabelValue1)
 
 		By("Getting announcing node name")
 		announcingNodeName := getLBServiceAnnouncingNodeName()
@@ -126,8 +128,12 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 			BeEquivalentTo(len(workerNodeList)), "Failed to run metalLb speakers on top of nodes with test label")
 
 		By("Creating nginx test pod on worker nodes")
-		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
-		setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue1)
+		setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+			workerNodeList[0].Definition.Name,
+			tsparams.LabelValue1)
+		setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[1].Definition.Name,
+			workerNodeList[1].Definition.Name,
+			tsparams.LabelValue1)
 
 		By("Getting announcing node name")
 		announcingNodeName := getLBServiceAnnouncingNodeName()

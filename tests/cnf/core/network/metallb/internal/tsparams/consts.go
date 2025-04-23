@@ -44,6 +44,8 @@ const (
 	LabelValue1 = "nginx1"
 	// LabelValue2 is the value name for the label2.
 	LabelValue2 = "nginx2"
+	// MLBNginxPodName represents the pod name used for the MetalLB NGINX configuration.
+	MLBNginxPodName = "mlbnginxtpod"
 	// FRRBaseConfig represents FRR daemon minimal configuration.
 	FRRBaseConfig = `!
 frr defaults traditional

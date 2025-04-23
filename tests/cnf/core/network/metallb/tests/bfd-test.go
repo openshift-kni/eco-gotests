@@ -213,7 +213,9 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					tsparams.MetallbServiceName, ipStack, tsparams.LabelValue1, ipAddressPool, externalTrafficPolicy)
 
 				By("Creating nginx test pod on worker node")
-				setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+				setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+					workerNodeList[0].Definition.Name,
+					tsparams.LabelValue1)
 
 				By("Creating internal NAD")
 				masterBridgePlugin, err := nad.NewMasterBridgePlugin("internalnad", "br0").

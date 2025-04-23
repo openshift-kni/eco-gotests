@@ -25,7 +25,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	mlbcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
@@ -364,12 +363,12 @@ func setupMetalLbService(
 	Expect(err).ToNot(HaveOccurred(), "Failed to create MetalLB Service")
 }
 
-func setupNGNXPod(nodeName, labelValue string) {
+func setupNGNXPod(podName, nodeName, labelValue string) {
 	_, err := pod.NewBuilder(
-		APIClient, "mlbnginxtpod"+nodeName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 		DefineOnNode(nodeName).
 		WithLabel("app", labelValue).
-		RedefineDefaultCMD(mlbcmd.DefineNGNXAndSleep()).
+		RedefineDefaultCMD([]string{"/bin/bash", "-c", "nginx && sleep INF"}).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
 }

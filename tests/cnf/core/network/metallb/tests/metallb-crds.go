@@ -45,7 +45,9 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		Expect(err).ToNot(HaveOccurred(), "Failed create MetalLB CR")
 
 		By("Creating nginx test pod")
-		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+		setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+			workerNodeList[0].Definition.Name,
+			tsparams.LabelValue1)
 
 		By("Generating ConfigMap configuration for the external FRR pod")
 		masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, true)

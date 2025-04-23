@@ -8,11 +8,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 )
 
-// DefineNGNXAndSleep runs NGNX server.
-func DefineNGNXAndSleep() []string {
-	return []string{"/bin/bash", "-c", "nginx && sleep INF"}
-}
-
 // DefineRouteAndSleep creates route and appends sleep CMD.
 func DefineRouteAndSleep(dstNet, nextHop string) []string {
 	cmd := DefineRoute(dstNet, nextHop)
