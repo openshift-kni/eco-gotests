@@ -45,10 +45,10 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		Expect(err).ToNot(HaveOccurred(), "Failed create MetalLB CR")
 
 		By("Creating nginx test pod")
-		setupNGNXPod(cnfWorkerNodeList[0].Definition.Name, tsparams.LabelValue1)
+		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 		By("Generating ConfigMap configuration for the external FRR pod")
-		masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
+		masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, true)
 
 		By("Creating External NAD")
 		err = define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
@@ -97,13 +97,19 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		Expect(err).ToNot(HaveOccurred(), "An unexpected error occurred while creating L2Advertisement.")
 	})
 
-	AfterAll(func() {
+	AfterEach(func() {
 		By("Removing IP to a secondary interface from the worker 0")
 		addOrDeleteNodeSecIPAddViaFRRK8S("del", workerNodeList[0].Object.Name,
 			ipSecondaryInterface1, sriovInterfacesUnderTest[0])
 
 		By("Removing MetalLB CRs and cleaning the test ns")
 		resetOperatorAndTestNS()
+	})
+
+	AfterAll(func() {
+		if len(cnfWorkerNodeList) > 2 {
+			removeNodeLabel(workerNodeList, metalLbTestsLabel)
+		}
 
 		By("Reverting GW mode to the Sharing")
 		setLocalGWMode(false)
