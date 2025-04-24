@@ -56,6 +56,9 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		Expect(len(cnfWorkerNodeList)).To(BeNumerically(">", 1),
 			"Worker node list is less then 2")
 
+		By("Selecting worker node for BFD tests")
+		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
+
 		By("Retrieving available IPv4 addresses for MetalLB testing")
 		ipv4metalLBIPList, _, err = metallbenv.GetMetalLbIPByIPStack()
 		Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
@@ -65,21 +68,21 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 
 		By("Retrieving external IPv4 addresses of worker nodes")
 		ipv4NodeAddrList, err := nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
 		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
 
 		By("Setup MetalLB CR")
-		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, NetConfig.WorkerLabelMap)
+		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 		Expect(err).ToNot(HaveOccurred(), "Failed create MetalLB CR")
 
 		By("Creating nginx test pod")
-		setupNGNXPod(cnfWorkerNodeList[0].Definition.Name)
+		setupNGNXPod(workerNodeList[0].Definition.Name)
 
 		By("Creating an IPAddresspool and BGPAdvertisement")
 		ipAddressPool = setupBgpAdvertisementAndIPAddressPool(addressPool)
 
 		By("Generating ConfigMap configuration for the external FRR pod")
-		masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, false)
+		masterConfigMap := createConfigMap(tsparams.LocalBGPASN, ipv4NodeAddrList, false, true)
 
 		By("Creating External NAD")
 		err = define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
@@ -113,7 +116,7 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		sriovInterfacesUnderTest, err = NetConfig.GetSriovInterfaces(1)
 		Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
-		addOrDeleteNodeSecIPAddViaFRRK8S("add", cnfWorkerNodeList[0].Object.Name,
+		addOrDeleteNodeSecIPAddViaFRRK8S("add", workerNodeList[0].Object.Name,
 			ipSecondaryInterface1, sriovInterfacesUnderTest[0])
 
 		By("Creating a L2Advertisement")
@@ -126,13 +129,19 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		Expect(err).ToNot(HaveOccurred(), "An unexpected error occurred while creating L2Advertisement.")
 	})
 
-	AfterAll(func() {
+	AfterEach(func() {
 		By("Removing IP to a secondary interface from the worker 0")
-		addOrDeleteNodeSecIPAddViaFRRK8S("del", cnfWorkerNodeList[0].Object.Name,
+		addOrDeleteNodeSecIPAddViaFRRK8S("del", workerNodeList[0].Object.Name,
 			ipSecondaryInterface1, sriovInterfacesUnderTest[0])
 
 		By("Removing MetalLB CRs and cleaning the test ns")
 		resetOperatorAndTestNS()
+	})
+
+	AfterAll(func() {
+		if len(cnfWorkerNodeList) > 2 {
+			removeNodeLabel(workerNodeList, metalLbTestsLabel)
+		}
 
 		By("Reverting GW mode to the Sharing")
 		setLocalGWMode(false)
@@ -149,7 +158,7 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		staticIPAnnotation := pod.StaticIPAnnotation("l2nad", []string{ipSecondaryInterface2})
 
 		l2ClientPod, err := pod.NewBuilder(APIClient, "l2client", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-			DefineOnNode(cnfWorkerNodeList[1].Object.Name).
+			DefineOnNode(workerNodeList[1].Object.Name).
 			WithSecondaryNetwork(staticIPAnnotation).
 			CreateAndWaitUntilRunning(time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create l2 client pod")
