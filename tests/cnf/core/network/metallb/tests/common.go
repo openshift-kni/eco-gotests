@@ -25,13 +25,15 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
+	mlbcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // test cases variables that are accessible across entire package.
@@ -47,6 +49,58 @@ var (
 	metalLbTestsLabel  = map[string]string{"metallb": "metallbtests"}
 	frrK8WebHookServer = "frr-k8s-webhook-server"
 )
+
+// Initializes and validates Vars:
+// ipv4metalLbIPList, ipv6metalLbIPList,
+// cnfWorkerNodeList, workerLabelMap, ipv4NodeAddrList,
+// workerNodeList, masterNodeList.
+func validateEnvVarAndGetNodeList() {
+	var err error
+
+	By("Fetching IPv4 and IPv6 IPs from ENV VAR to be used for External FRR Pod")
+
+	ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
+	Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
+	Expect(len(ipv4metalLbIPList)).To(BeNumerically(">=", 2))
+	Expect(len(ipv6metalLbIPList)).To(BeNumerically(">=", 2))
+
+	By("Selecting Worker nodes for the test")
+
+	cnfWorkerNodeList, err = nodes.List(APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+	Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+
+	workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForMlbTests(cnfWorkerNodeList, metalLbTestsLabel)
+
+	By("Validating whether the IPv4 addresses of ENV VAR are in the same subnet as Worker Nodes external IPv4 range")
+
+	ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
+		APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
+
+	err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
+	Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
+
+	By("Listing Master Nodes")
+
+	masterNodeList, err = nodes.List(APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+	Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
+	Expect(len(masterNodeList)).To(BeNumerically(">=", 1))
+}
+
+func setWorkerNodeListAndLabelForMlbTests(
+	workerNodeList []*nodes.Builder, nodeSelector map[string]string) (map[string]string, []*nodes.Builder) {
+	if len(workerNodeList) > 2 {
+		By(fmt.Sprintf(
+			"Worker node number is greater than 2. Limit worker nodes for bfd test using label %v", nodeSelector))
+		addNodeLabel(workerNodeList[:2], nodeSelector)
+
+		return metalLbTestsLabel, workerNodeList[:2]
+	}
+
+	return NetConfig.WorkerLabelMap, workerNodeList
+}
 
 func removeNodeLabel(workerNodeList []*nodes.Builder, nodeSelector map[string]string) {
 	updateNodeLabel(workerNodeList, nodeSelector, true)
@@ -70,19 +124,6 @@ func updateNodeLabel(workerNodeList []*nodes.Builder, nodeLabel map[string]strin
 		_, err = worker.Update()
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to update node's labels %s", worker.Definition.Name))
 	}
-}
-
-func setWorkerNodeListAndLabelForBfdTests(
-	workerNodeList []*nodes.Builder, nodeSelector map[string]string) (map[string]string, []*nodes.Builder) {
-	if len(workerNodeList) > 2 {
-		By(fmt.Sprintf(
-			"Worker node number is greater than 2. Limit worker nodes for bfd test using label %v", nodeSelector))
-		addNodeLabel(workerNodeList[:2], nodeSelector)
-
-		return metalLbTestsLabel, workerNodeList[:2]
-	}
-
-	return NetConfig.WorkerLabelMap, workerNodeList
 }
 
 func createConfigMap(
@@ -327,7 +368,7 @@ func setupNGNXPod(nodeName, labelValue string) {
 		APIClient, "mlbnginxtpod"+nodeName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 		DefineOnNode(nodeName).
 		WithLabel("app", labelValue).
-		RedefineDefaultCMD(cmd.DefineNGNXAndSleep()).
+		RedefineDefaultCMD(mlbcmd.DefineNGNXAndSleep()).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
 }

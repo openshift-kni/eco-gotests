@@ -10,10 +10,9 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nmstate"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
@@ -24,9 +23,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -41,35 +38,10 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 		hubPodWorker0                = "hub-pod-worker-0"
 		hubPodWorker1                = "hub-pod-worker-1"
 		frrCongigAllowAll            = "frrconfig-allow-all"
-		err                          error
 	)
 
 	BeforeAll(func() {
-
-		By("Getting MetalLb load balancer ip addresses")
-		ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
-		Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
-
-		By("List CNF worker nodes in cluster")
-		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-
-		By("Selecting worker node for BGP tests")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
-
-		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-
-		By("Listing master nodes")
-		masterNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
-			"Failed to detect master nodes")
+		validateEnvVarAndGetNodeList()
 	})
 
 	AfterAll(func() {
@@ -123,7 +95,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
 				validatePrefix(frrPod, netparam.IPV4Family, netparam.IPSubnetInt32,
@@ -163,7 +135,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
 				validatePrefix(frrPod, netparam.IPV4Family, netparam.IPSubnetInt32,
@@ -200,7 +172,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
 				validatePrefix(frrPod, netparam.IPV4Family, netparam.IPSubnetInt32,
@@ -451,7 +423,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
 				validatePrefix(frrPod, netparam.IPV4Family, netparam.IPSubnetInt32,
@@ -525,7 +497,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 					tsparams.RemoteBGPASN, true, 0, frrk8sPods)
 
 				By("Checking that BGP session is established and up")
-				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 				By("Validating BGP route prefix")
 				validatePrefix(frrPod, netparam.IPV4Family, netparam.IPSubnetInt32,
@@ -742,7 +714,7 @@ func createConfigMapWithStaticRoutes(
 	enableMultiHop, enableBFD bool) *configmap.Builder {
 	frrBFDConfig := frr.DefineBGPConfigWithStaticRouteAndNetwork(
 		bgpAsn, tsparams.LocalBGPASN, hubIPAddresses, externalAdvertisedIPv4Routes,
-		externalAdvertisedIPv6Routes, cmd.RemovePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
+		externalAdvertisedIPv6Routes, netcmd.RemovePrefixFromIPList(nodeAddrList), enableMultiHop, enableBFD)
 	configMapData := frrconfig.DefineBaseConfig(frrconfig.DaemonsFile, frrBFDConfig, "")
 	masterConfigMap, err := configmap.NewBuilder(APIClient, "frr-master-node-config", tsparams.TestNamespaceName).
 		WithData(configMapData).Create()
@@ -753,7 +725,7 @@ func createConfigMapWithStaticRoutes(
 
 func verifyExternalAdvertisedRoutes(frrPod *pod.Builder, ipv4NodeAddrList, externalExpectedRoutes []string) {
 	// Get advertised routes from FRR pod, now returned as a map of node IPs to their advertised routes
-	advertisedRoutesMap, err := frr.GetBGPAdvertisedRoutes(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+	advertisedRoutesMap, err := frr.GetBGPAdvertisedRoutes(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 	Expect(err).ToNot(HaveOccurred(), "Failed to find advertised routes")
 
 	// Iterate through each node in the advertised routes map
@@ -774,7 +746,7 @@ func verifyExternalAdvertisedRoutes(frrPod *pod.Builder, ipv4NodeAddrList, exter
 func createSecondaryInterfaceOnNode(policyName, nodeName, interfaceName, ipv4Address, ipv6Address string,
 	vlanID uint16) {
 	secondaryInterface := nmstate.NewPolicyBuilder(APIClient, policyName, map[string]string{
-		"kubernetes.io/hostname": nodeName,
+		corev1.LabelHostname: nodeName,
 	})
 
 	secondaryInterface.WithVlanInterfaceIP(interfaceName, ipv4Address, ipv6Address, vlanID)

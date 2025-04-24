@@ -10,11 +10,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
@@ -23,42 +22,13 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFailure, func() {
 	var frrk8sPods []*pod.Builder
 
 	BeforeAll(func() {
-		var (
-			err error
-		)
-
-		By("Getting MetalLb load balancer ip addresses")
-		ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
-		Expect(err).ToNot(HaveOccurred(), "An error occurred while "+
-			"determining the IP addresses from ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable.")
-
-		By("Getting external nodes ip addresses")
-		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-
-		By("Selecting worker node for BGP tests")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
-
-		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-
-		By("Listing master nodes")
-		masterNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
-			"Failed to detect master nodes")
+		validateEnvVarAndGetNodeList()
 	})
 
 	BeforeEach(func() {
@@ -77,13 +47,12 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
 		err = metalLbNs.CleanObjects(
 			tsparams.DefaultTimeout,
+			metallb.GetBGPAdvertisementGVR(),
 			metallb.GetBGPPeerGVR(),
 			metallb.GetBFDProfileGVR(),
-			metallb.GetBGPPeerGVR(),
-			metallb.GetBGPAdvertisementGVR(),
+			metallb.GetL2AdvertisementGVR(),
 			metallb.GetIPAddressPoolGVR(),
-			metallb.GetMetalLbIoGVR(),
-			metallb.GetFrrConfigurationGVR())
+			metallb.GetMetalLbIoGVR())
 		Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
 		By("Cleaning test namespace")
@@ -148,7 +117,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			Expect(err).ToNot(HaveOccurred(), "Failed to reset BGP connection")
 
 			By("Verify that BGP session is re-established and up in less then 10 seconds")
-			verifyMaxReConnectTime(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList), time.Second*10)
+			verifyMaxReConnectTime(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList), time.Second*10)
 		})
 
 	It("Update the timer to less then the default on an existing BGP connection",
@@ -214,7 +183,7 @@ func createAndDeployFRRPod() *pod.Builder {
 }
 
 func verifyMaxReConnectTime(frrPod *pod.Builder, peerAddrList []string, maxConnectTime time.Duration) {
-	for _, peerAddress := range cmd.RemovePrefixFromIPList(peerAddrList) {
+	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
 			maxConnectTime, time.Second).
 			WithArguments(frrPod, peerAddress, "Established").Should(

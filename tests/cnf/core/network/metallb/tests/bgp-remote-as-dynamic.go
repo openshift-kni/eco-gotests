@@ -7,11 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
@@ -20,14 +19,11 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRemoteASTestCases),
 	ContinueOnFailure, func() {
 		var (
-			err                          error
 			dynamicASiBGP                = "internal"
 			dynamicASeBGP                = "external"
 			frrExternalMasterIPAddress   = "172.16.0.1"
@@ -37,30 +33,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 		)
 
 		BeforeAll(func() {
-			By("Getting MetalLb load balancer ip addresses")
-			ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
-			Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
-
-			By("List CNF worker nodes in cluster")
-			cnfWorkerNodeList, err = nodes.List(APIClient,
-				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-			Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-
-			By("Selecting worker node for BGP tests")
-			workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-			ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-				APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
-			Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
-
-			err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-			Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-
-			By("Listing master nodes")
-			masterNodeList, err = nodes.List(APIClient,
-				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-			Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-			Expect(len(masterNodeList)).To(BeNumerically(">", 0),
-				"Failed to detect master nodes")
+			validateEnvVarAndGetNodeList()
 		})
 
 		AfterAll(func() {
@@ -69,10 +42,6 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 		})
 
 		Context("single hop", func() {
-			var (
-				externalAdvertisedIPv4Routes = []string{"192.168.100.0/24", "192.168.200.0/24"}
-			)
-
 			AfterEach(func() {
 				By("Clean metallb operator and test namespaces")
 				resetOperatorAndTestNS()
@@ -85,7 +54,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						externalAdvertisedIPv6Routes, dynamicASeBGP, tsparams.RemoteBGPASN)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
@@ -101,7 +70,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						externalAdvertisedIPv6Routes, dynamicASiBGP, tsparams.LocalBGPASN)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
@@ -117,7 +86,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						externalAdvertisedIPv6Routes, dynamicASiBGP, tsparams.RemoteBGPASN)
 
 					By("Checking that BGP session is down")
-					verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received is incorrect and marked as 0 on the FRR nodes")
 					Eventually(func() error {
@@ -162,7 +131,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, dynamicASiBGP, false)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
@@ -181,7 +150,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, dynamicASeBGP, true)
 
 					By("Checking that BGP session is established and up")
-					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 					By("Validating external FRR AS number received on the FRR nodes")
 					Eventually(func() error {
