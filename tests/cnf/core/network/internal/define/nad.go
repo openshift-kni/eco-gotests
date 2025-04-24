@@ -92,6 +92,20 @@ func createNadWithMasterPlugin(
 	return createdNad, nil
 }
 
+// HostDeviceNad defines and creates HostDeviceNetworkAttachmentDefinition on a cluster.
+func HostDeviceNad(
+	apiClient *clients.Settings,
+	name,
+	interfaceName,
+	nsName string) (*nad.Builder, error) {
+	masterPlugin, err := nad.NewMasterHostDevicePlugin(name, interfaceName).GetHostDevicePluginConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return createNadWithMasterPlugin(apiClient, name, nsName, masterPlugin)
+}
+
 // CreateExternalNad creates an external network-attachment-definition using the br-ex interface.
 func CreateExternalNad(apiClient *clients.Settings, name, testNameSpace string) error {
 	glog.V(90).Info("Creating external BR-EX NetworkAttachmentDefinition")
