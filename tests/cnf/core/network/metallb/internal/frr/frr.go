@@ -120,6 +120,15 @@ type (
 
 	// BGPNeighborGRStatus is a map of GRStatus per peer.
 	BGPNeighborGRStatus map[string]GRStatus
+
+	// InterfaceDetails retrieved from FRR pod interface.
+	InterfaceDetails struct {
+		IPAddresses []struct {
+			Address    string `json:"address"`
+			Secondary  bool   `json:"secondary"`
+			Unnumbered bool   `json:"unnumbered"`
+		} `json:"ipAddresses"`
+	}
 )
 
 // DefineBaseConfig defines minimal required FRR configuration.
@@ -169,6 +178,8 @@ func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []strin
 }
 
 // DefineBGPConfigWithStaticRouteAndNetwork defines BGP config file with static route and network.
+//
+//nolint:goconst
 func DefineBGPConfigWithStaticRouteAndNetwork(localBGPASN, remoteBGPASN int, hubPodIPs,
 	advertisedIPv4Routes, advertisedIPv6Routes, neighborsIPAddresses []string,
 	multiHop, bfd bool) string {
@@ -644,4 +655,93 @@ func CheckFRRConfigLine(frrPod *pod.Builder, config string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// DefineBGPConfigWithUnnumbered defines BGP config file with static route and network.
+func DefineBGPConfigWithUnnumbered(localBGPASN, remoteBGPASN int, interfaceName string,
+	advertisedIPv4Routes, advertisedIPv6Routes []string, multiHop, bfd bool) string {
+	bgpConfig := tsparams.FRRBaseConfig +
+		fmt.Sprintf("interface %s", interfaceName) +
+		"\n ipv6 nd ra-interval 10" +
+		"\n no ipv6 nd suppress-ra" +
+		"\n exit\n!\n" +
+		fmt.Sprintf("router bgp %d\n", localBGPASN) +
+		tsparams.FRRDefaultBGPPreConfig
+	bgpConfig += "!\n  neighbor unnumbered peer-group\n"
+	bgpConfig += fmt.Sprintf("  neighbor %s interface peer-group unnumbered\n", interfaceName)
+
+	if bfd {
+		bgpConfig += "  neighbor unnumbered bfd\n"
+	}
+
+	if multiHop {
+		bgpConfig += "  neighbor unnumbered ebgp-multihop 2\n"
+	}
+
+	bgpConfig += fmt.Sprintf("  neighbor unnumbered remote-as %d\n", remoteBGPASN)
+	bgpConfig += fmt.Sprintf("  neighbor unnumbered password %s\n", tsparams.BGPPassword)
+	bgpConfig += "  neighbor unnumbered timers 30 90\n  neighbor unnumbered bfd\n"
+
+	bgpConfig += "!\naddress-family ipv4 unicast\n"
+	bgpConfig += "  neighbor unnumbered activate\n"
+
+	for _, route := range advertisedIPv4Routes {
+		bgpConfig += fmt.Sprintf("  network %s\n", route)
+	}
+
+	bgpConfig += "exit-address-family\n"
+
+	// Add network commands only once for IPv6
+	bgpConfig += "!\naddress-family ipv6 unicast\n"
+	bgpConfig += "  neighbor unnumbered activate\n"
+
+	for _, route := range advertisedIPv6Routes {
+		bgpConfig += fmt.Sprintf("  network %s\n", route)
+	}
+
+	bgpConfig += "exit-address-family\n"
+	bgpConfig += "!\nroute-map RMAP permit 10"
+	bgpConfig += "\nset ipv6 next-hop prefer-global\n"
+	bgpConfig += "!\nipv6 nht resolve-via-default\n"
+	bgpConfig += "!\nline vty\n!\nend\n"
+
+	return bgpConfig
+}
+
+// GetInterfaceStatus returns BGP interface details from an FRR pod.
+func GetInterfaceStatus(frrPod *pod.Builder, interfaceName string, containerName []string) (*InterfaceDetails, error) {
+	cName := "frr"
+	if len(containerName) > 0 {
+		cName = containerName[0]
+	}
+
+	glog.V(90).Infof("Getting interface status from container: %s of pod: %s", cName, frrPod.Definition.Name)
+
+	cmd := fmt.Sprintf("show interface %s json", interfaceName)
+	interfaceStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, cmd), tsparams.FRRContainerName)
+
+	if err != nil {
+		glog.V(90).Infof(fmt.Sprintf("Failed to execute command show interface %s json", interfaceName))
+
+		return nil, err
+	}
+
+	// JSON is a map[string]InterfaceDetails
+	ifaceMap := make(map[string]InterfaceDetails)
+	err = json.Unmarshal(interfaceStateOut.Bytes(), &ifaceMap)
+
+	if err != nil {
+		glog.V(90).Infof("Failed to unmarshal JSON: %s", interfaceStateOut.String())
+
+		return nil, err
+	}
+
+	iface, ok := ifaceMap[interfaceName]
+	if !ok {
+		glog.V(90).Infof("Failed to find interface: %s", interfaceName)
+
+		return nil, err
+	}
+
+	return &iface, nil
 }
