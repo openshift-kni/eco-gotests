@@ -445,8 +445,9 @@ func (builder *PolicyBuilder) WithEthernetInterface(interfaceName, ipv4Address, 
 			}},
 		},
 		Ipv6: InterfaceIpv6{
-			Enabled: true,
-			Dhcp:    false,
+			Enabled:  true,
+			Dhcp:     false,
+			Autoconf: false,
 			Address: []InterfaceIPAddress{{
 				PrefixLen: 64,
 				IP:        net.ParseIP(ipv6Address),
