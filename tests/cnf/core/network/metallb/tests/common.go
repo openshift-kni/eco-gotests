@@ -439,7 +439,7 @@ func validatePrefix(
 		}
 	}
 
-	Expect(workerNodesAddresses).To(ContainElements(nextHopAddresses),
+	Expect(nextHopAddresses).To(ContainElements(workerNodesAddresses),
 		"Failed next hop address in not in node addresses list")
 }
 

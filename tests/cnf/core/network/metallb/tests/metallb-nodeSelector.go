@@ -275,9 +275,9 @@ func verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1 *pod.Builder, nodeAddrLis
 
 	By("Validating BGP route prefix on Frr Master 0")
 	validatePrefix(frrPod0, netparam.IPV4Family, netparam.IPSubnetInt32,
-		removePrefixFromIPList(nodeAddrList), addressPool1)
+		removePrefixFromIPList([]string{nodeAddrList[0]}), addressPool1)
 
 	By("Validating BGP route prefix on Frr Master 1")
 	validatePrefix(frrPod1, netparam.IPV4Family, netparam.IPSubnetInt32,
-		removePrefixFromIPList(nodeAddrList), addressPool2)
+		removePrefixFromIPList([]string{nodeAddrList[1]}), addressPool2)
 }
