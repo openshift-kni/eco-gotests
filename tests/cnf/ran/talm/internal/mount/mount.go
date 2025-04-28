@@ -118,12 +118,13 @@ func unmountLoopback(client *clients.Settings, loopbackDevicePath, findmntOutput
 			return false, err
 		}
 
-		if deviceType == "part" {
+		switch deviceType {
+		case "part":
 			safeToDeleteBackupDir = false
 
 			glog.V(tsparams.LogLevel).Infof(
 				"partition detected for %s, will not attempt to delete the folder (only the content if any)", tsparams.BackupPath)
-		} else if deviceType == "loop" {
+		case "loop":
 			if loopbackDevicePath == devicePath {
 				// unmount and detach the loop device
 				_, err := cluster.ExecCommandOnSNOWithRetries(client, ranparam.RetryCount,
