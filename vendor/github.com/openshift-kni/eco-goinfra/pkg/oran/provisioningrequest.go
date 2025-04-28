@@ -4,15 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/google/uuid"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	provisioningv1alpha1 "github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -33,19 +32,21 @@ type ProvisioningRequestBuilder struct {
 
 // NewPRBuilder creates a new instance of a ProvisioningRequest builder.
 func NewPRBuilder(
-	apiClient *clients.Settings, name, templateName, templateVersion string) *ProvisioningRequestBuilder {
+	apiClient runtimeclient.Client, name, templateName, templateVersion string) *ProvisioningRequestBuilder {
 	glog.V(100).Infof(
 		"Initializing new ProvisioningRequest structure with the following params: "+
 			"name: %s, templateName: %s, templateVersion: %s",
 		name, templateName, templateVersion)
 
-	if apiClient == nil {
+	// Since we accept an interface, providing a nil *clients.Settings results in an interface with a nil concrete
+	// type, which must be checked using reflection.
+	if apiClient == nil || reflect.ValueOf(apiClient).IsNil() {
 		glog.V(100).Infof("The apiClient of the ProvisioningRequest is nil")
 
 		return nil
 	}
 
-	err := apiClient.AttachScheme(provisioningv1alpha1.AddToScheme)
+	err := provisioningv1alpha1.AddToScheme(apiClient.Scheme())
 	if err != nil {
 		glog.V(100).Infof("Failed to add provisioning v1alpha1 scheme to client schemes: %v", err)
 
@@ -53,12 +54,15 @@ func NewPRBuilder(
 	}
 
 	builder := &ProvisioningRequestBuilder{
-		apiClient: apiClient.Client,
+		apiClient: apiClient,
 		Definition: &provisioningv1alpha1.ProvisioningRequest{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
 			Spec: provisioningv1alpha1.ProvisioningRequestSpec{
+				// Name is supposed to be human readable, but is required for the O2IMS API. We default
+				// to using the ID and consumers can override it if desired.
+				Name:            name,
 				TemplateName:    templateName,
 				TemplateVersion: templateVersion,
 			},
@@ -175,16 +179,18 @@ func (builder *ProvisioningRequestBuilder) WithTemplateParameters(
 }
 
 // PullPR pulls an existing ProvisioningRequest into a Builder struct.
-func PullPR(apiClient *clients.Settings, name string) (*ProvisioningRequestBuilder, error) {
+func PullPR(apiClient runtimeclient.Client, name string) (*ProvisioningRequestBuilder, error) {
 	glog.V(100).Infof("Pulling existing ProvisioningRequest %s from cluster", name)
 
-	if apiClient == nil {
+	// Since we accept an interface, providing a nil *clients.Settings results in an interface with a nil concrete
+	// type, which must be checked using reflection.
+	if apiClient == nil || reflect.ValueOf(apiClient).IsNil() {
 		glog.V(100).Infof("The apiClient of the ProvisioningRequest is nil")
 
 		return nil, fmt.Errorf("provisioningRequest 'apiClient' cannot be nil")
 	}
 
-	err := apiClient.AttachScheme(provisioningv1alpha1.AddToScheme)
+	err := provisioningv1alpha1.AddToScheme(apiClient.Scheme())
 	if err != nil {
 		glog.V(100).Infof("Failed to add provisioning v1alpha1 scheme to client schemes: %v", err)
 
@@ -192,7 +198,7 @@ func PullPR(apiClient *clients.Settings, name string) (*ProvisioningRequestBuild
 	}
 
 	builder := &ProvisioningRequestBuilder{
-		apiClient: apiClient.Client,
+		apiClient: apiClient,
 		Definition: &provisioningv1alpha1.ProvisioningRequest{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
@@ -232,8 +238,6 @@ func (builder *ProvisioningRequestBuilder) Get() (*provisioningv1alpha1.Provisio
 	}, provisioningRequest)
 
 	if err != nil {
-		glog.V(100).Infof("Failed to get ProvisioningRequest object %s: %v", builder.Definition.Name, err)
-
 		return nil, err
 	}
 
@@ -251,7 +255,11 @@ func (builder *ProvisioningRequestBuilder) Exists() bool {
 	var err error
 	builder.Object, err = builder.Get()
 
-	return err == nil || !k8serrors.IsNotFound(err)
+	if err != nil {
+		glog.V(100).Infof("ProvisioningRequest %s does not exist: %v", builder.Definition.Name, err)
+	}
+
+	return err == nil
 }
 
 // Create makes a ProvisioningRequest on the cluster if it does not already exist.
@@ -414,18 +422,37 @@ func (builder *ProvisioningRequestBuilder) WaitForCondition(
 
 // WaitUntilFulfilled waits up to timeout until the ProvisioningRequest is in the fulfilled phase. Changes to the
 // template will not be accepted until it is fulfilled.
+//
+// This function is equivalent to WaitUntilFulfilledAfter with a zero-valued start time.
 func (builder *ProvisioningRequestBuilder) WaitUntilFulfilled(
 	timeout time.Duration) (*ProvisioningRequestBuilder, error) {
-	if valid, err := builder.validate(); !valid {
+	err := builder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, time.Time{}, timeout)
+	if err != nil {
 		return nil, err
 	}
 
-	glog.V(100).Infof("Waiting up to %s until ProvisioningRequest %s is fulfilled", timeout, builder.Definition.Name)
+	return builder, nil
+}
+
+// WaitForPhaseAfter waits up to timeout until the ProvisioningRequest is in the provided phase and was updated after
+// the provided start time. This can be used to ensure the ProvisioningRequest is not only in the provided phase, but
+// also has been updated after changes are made to the ProvisioningRequest.
+//
+// A zero-valued start time will cause the start time to be ignored and the function will wait until the
+// ProvisioningRequest is in the provided phase regardless of the update time.
+func (builder *ProvisioningRequestBuilder) WaitForPhaseAfter(
+	phase provisioningv1alpha1.ProvisioningPhase, start time.Time, timeout time.Duration) error {
+	if valid, err := builder.validate(); !valid {
+		return err
+	}
+
+	glog.V(100).Infof("Waiting up to %s until ProvisioningRequest %s is fulfilled after %s",
+		timeout, builder.Definition.Name, start)
 
 	if !builder.Exists() {
 		glog.V(100).Infof("ProvisioningRequest %s does not exist", builder.Definition.Name)
 
-		return nil, fmt.Errorf("cannot wait for non-existent ProvisioningRequest")
+		return fmt.Errorf("cannot wait for non-existent ProvisioningRequest")
 	}
 
 	err := wait.PollUntilContextTimeout(
@@ -440,16 +467,18 @@ func (builder *ProvisioningRequestBuilder) WaitUntilFulfilled(
 			}
 
 			builder.Definition = builder.Object
-			fulfilled := builder.Definition.Status.ProvisioningStatus.ProvisioningPhase == provisioningv1alpha1.StateFulfilled
 
-			return fulfilled, nil
+			inPhase := builder.Definition.Status.ProvisioningStatus.ProvisioningPhase == phase
+			updatedAfterStart := builder.Definition.Status.ProvisioningStatus.UpdateTime.After(start)
+
+			return inPhase && (updatedAfterStart || start.IsZero()), nil
 		})
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return builder, nil
+	return nil
 }
 
 // validate checks that the builder, definition, and apiClient are properly initialized and there is no errorMsg.
