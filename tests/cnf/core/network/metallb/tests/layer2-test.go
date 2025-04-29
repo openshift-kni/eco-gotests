@@ -21,13 +21,11 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
+	mlbcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), ContinueOnFailure, func() {
@@ -36,35 +34,11 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		err           error
 	)
 	BeforeAll(func() {
-		By("Getting MetalLb load balancer ip addresses")
-		ipv4metalLbIPList, _, err = metallbenv.GetMetalLbIPByIPStack()
-		Expect(err).ToNot(HaveOccurred(), "Unexpected error occurred while "+
-			"getting the IP addresses from the ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable.")
-
-		By("Getting external nodes ip addresses")
-		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-
-		By("Selecting worker node for Layer-2 tests")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
+		validateEnvVarAndGetNodeList()
 
 		By("Creating a new instance of MetalLB Speakers on workers")
 		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, NetConfig.WorkerLabelMap)
 		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
-
-		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-
-		By("Listing master nodes")
-		masterNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
-			"Failed to detect master nodes")
 	})
 
 	AfterAll(func() {
@@ -214,7 +188,7 @@ func trafficTest(clientTestPod *pod.Builder, nodeName string) {
 
 	By("Running http check")
 
-	httpOutput, err := cmd.Curl(clientTestPod, ipv4metalLbIPList[1], ipv4metalLbIPList[0], netparam.IPV4Family)
+	httpOutput, err := mlbcmd.Curl(clientTestPod, ipv4metalLbIPList[1], ipv4metalLbIPList[0], netparam.IPV4Family)
 	Expect(err).ToNot(HaveOccurred(), httpOutput)
 }
 
@@ -245,7 +219,7 @@ func getLBServiceAnnouncingNodeName() string {
 }
 
 func arpingTest(client *pod.Builder, destIPAddr, nodeName string) {
-	arpingOutput, err := cmd.Arping(client, destIPAddr)
+	arpingOutput, err := mlbcmd.Arping(client, destIPAddr)
 	Expect(err).ToNot(HaveOccurred(), "Failed to run arping command")
 
 	output := strings.Split(arpingOutput, "\n")

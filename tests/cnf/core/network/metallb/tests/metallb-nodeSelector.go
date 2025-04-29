@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
@@ -17,7 +16,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFailure, func() {
@@ -38,37 +36,13 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 	)
 
 	BeforeAll(func() {
-
-		By("Getting MetalLb load balancer ip addresses")
-		ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
-		Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
-
-		By("List CNF worker nodes in cluster")
-		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-
-		By("Selecting worker node for BGP tests")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
-
-		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
+		validateEnvVarAndGetNodeList()
 
 		By("Collecting information before test")
 		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 			LabelSelector: tsparams.LabelFRRNode,
 		})
 		Expect(err).ToNot(HaveOccurred(), "Failed to list frrk8s pods")
-
-		By("Listing master nodes")
-		masterNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
-			"Failed to detect master nodes")
 
 		By("Setting test iteration parameters")
 		_, _, _, nodeAddrList, addressPool, _, err =
@@ -77,11 +51,11 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 		Expect(err).ToNot(HaveOccurred(), "Fail to set iteration parameters")
 
 		worker0NodeLabel = []metav1.LabelSelector{
-			{MatchLabels: map[string]string{netparam.LabelHostName: workerNodeList[0].Definition.Name}},
+			{MatchLabels: map[string]string{corev1.LabelHostname: workerNodeList[0].Definition.Name}},
 		}
 
 		worker1NodeLabel = []metav1.LabelSelector{
-			{MatchLabels: map[string]string{netparam.LabelHostName: workerNodeList[1].Definition.Name}},
+			{MatchLabels: map[string]string{corev1.LabelHostname: workerNodeList[1].Definition.Name}},
 		}
 	})
 

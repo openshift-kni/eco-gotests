@@ -25,44 +25,22 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
+	mlbcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFailure, func() {
 
 	BeforeAll(func() {
-		var err error
-		By("Getting MetalLb load balancer ip addresses")
-		ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
-		Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
-
-		if len(ipv4metalLbIPList) < 2 {
-			Skip("MetalLb BFD tests require 2 ip addresses. Please check ECO_CNF_CORE_NET_MLB_ADDR_LIST env var")
-		}
-
-		By("Getting external nodes ip addresses")
-		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-
-		By("Selecting worker node for BFD tests")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-
-		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
+		validateEnvVarAndGetNodeList()
 
 		By("Creating a new instance of MetalLB Speakers on workers")
-		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
-		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
+		err := metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
+		Expect(err).ToNot(HaveOccurred(), "Failed to create/recreate metalLb daemonset")
 
-		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
 		err = define.CreateExternalNad(APIClient, frrconfig.ExternalMacVlanNADName, tsparams.TestNamespaceName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create a network-attachment-definition")
 	})
@@ -87,11 +65,6 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 			staticIPAnnotation := pod.StaticIPAnnotation(
 				frrconfig.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0],
 					netparam.IPSubnet24)})
-
-			By("Listing control-plane nodes")
-			masterNodeList, err := nodes.List(APIClient,
-				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-			Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
 
 			By("Creating FRR Pod with network and IP address")
 			frrPod := createFrrPod(
@@ -250,34 +223,29 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 					WithMasterPlugin(masterBridgePlugin).Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create internal NAD")
 
-				By("Discovering Master nodes")
-				masterNodes, err := nodes.List(APIClient,
-					metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-				Expect(err).ToNot(HaveOccurred(), "Failed to discover control-plane nodes")
-
 				By("Creating FRR pod one on master node")
 				createFrrPodOnMasterNodeAndWaitUntilRunning("frronmaster1",
 					mlbAddressList[0], subMast, frrMasterIPs[0], bridgeNad.Definition.Name,
-					masterNodes[0].Object.Name, addressPool[0], nodeAddrList[0])
+					masterNodeList[0].Object.Name, addressPool[0], nodeAddrList[0])
 
 				By("Creating FRR pod two on master node")
 				createFrrPodOnMasterNodeAndWaitUntilRunning("frronmaster2",
 					mlbAddressList[1], subMast, frrMasterIPs[1], bridgeNad.Definition.Name,
-					masterNodes[0].Object.Name, addressPool[0], nodeAddrList[1])
+					masterNodeList[0].Object.Name, addressPool[0], nodeAddrList[1])
 
 				By("Creating client pod config map")
 				masterConfigMap := createConfigMap(int(neighbourASN), nodeAddrList, eBgpMultiHop, true)
 
 				By("Creating FRR pod in the test namespace")
 				frrPod := createFrrPod(
-					masterNodes[0].Object.Name,
+					masterNodeList[0].Object.Name,
 					masterConfigMap.Object.Name,
 					[]string{},
 					pod.StaticIPAnnotation(bridgeNad.Definition.Name, []string{fmt.Sprintf("%s/%s", masterClientPodIP, subMast)}))
 
 				// Add static routes from client towards Speaker via router internal IPs
 				for index, workerAddress := range netcmd.RemovePrefixFromIPList(nodeAddrList) {
-					buffer, err := cmd.SetRouteOnPod(frrPod, workerAddress, frrMasterIPs[index])
+					buffer, err := mlbcmd.SetRouteOnPod(frrPod, workerAddress, frrMasterIPs[index])
 					Expect(err).ToNot(HaveOccurred(), buffer.String())
 				}
 				By("Adding static routes to the speakers")
@@ -291,13 +259,13 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 				verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(nodeAddrList))
 
 				By("Running http check")
-				httpOutput, err := cmd.Curl(frrPod, masterClientPodIP, addressPool[0], ipStack, tsparams.FRRSecondContainerName)
+				httpOutput, err := mlbcmd.Curl(frrPod, masterClientPodIP, addressPool[0], ipStack, tsparams.FRRSecondContainerName)
 				Expect(err).ToNot(HaveOccurred(), httpOutput)
 
 				testBFDFailOver()
 
 				By("Running http check after fail-over")
-				httpOutput, err = cmd.Curl(frrPod, masterClientPodIP, addressPool[0], ipStack, tsparams.FRRSecondContainerName)
+				httpOutput, err = mlbcmd.Curl(frrPod, masterClientPodIP, addressPool[0], ipStack, tsparams.FRRSecondContainerName)
 				// If externalTrafficPolicy is Local, the server pod should be unreachable.
 				switch externalTrafficPolicy {
 				case corev1.ServiceExternalTrafficPolicyTypeLocal:
@@ -364,7 +332,7 @@ func createFrrPodOnMasterNodeAndWaitUntilRunning(
 	createFrrPod(
 		masterNodeName,
 		"",
-		cmd.DefineRouteAndSleep(mlbPoolIP, ipaddr.RemovePrefix(nodeAddr)),
+		mlbcmd.DefineRouteAndSleep(mlbPoolIP, ipaddr.RemovePrefix(nodeAddr)),
 		podMasterOneNetCfg,
 		name,
 	)
@@ -503,7 +471,7 @@ func blockBFDBGPPortsViaNFT(nodeName string) {
 
 	for _, command := range commands {
 		output, err := cluster.ExecCmdWithStdout(
-			APIClient, command, metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
+			APIClient, command, metav1.ListOptions{LabelSelector: corev1.LabelHostname + "=" + nodeName})
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to run command %s: %s", command, output))
 	}
 }
@@ -511,7 +479,7 @@ func blockBFDBGPPortsViaNFT(nodeName string) {
 func removeNFTTable(nodeName string) {
 	_, err := cluster.ExecCmdWithStdout(
 		APIClient, "nft list table inet my_table",
-		metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
+		metav1.ListOptions{LabelSelector: corev1.LabelHostname + "=" + nodeName})
 
 	// If table doesn't exist, skip deletion
 	if err != nil && strings.Contains(err.Error(), "failed executing command") {
@@ -522,6 +490,6 @@ func removeNFTTable(nodeName string) {
 
 	_, err = cluster.ExecCmdWithStdout(
 		APIClient, "nft delete table inet my_table",
-		metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
+		metav1.ListOptions{LabelSelector: corev1.LabelHostname + "=" + nodeName})
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete nft table")
 }

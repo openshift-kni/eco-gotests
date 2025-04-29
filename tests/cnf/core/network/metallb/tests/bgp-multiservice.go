@@ -3,28 +3,24 @@ package tests
 import (
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
+	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
-	"k8s.io/apimachinery/pkg/labels"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("MetalLB BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFailure, func() {
@@ -35,22 +31,7 @@ var _ = Describe("MetalLB BGP", Ordered, Label(tsparams.LabelBGPTestCases), Cont
 	)
 
 	BeforeAll(func() {
-		By("Getting MetalLb load balancer ip addresses")
-		ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
-		Expect(err).ToNot(HaveOccurred(), "An error occurred while "+
-			"determining the IP addresses from ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable.")
-
-		By("Selecting worker nodes for BGP tests")
-		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
-
-		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
+		validateEnvVarAndGetNodeList()
 
 		By("Creating a new instance of MetalLB Speakers on workers")
 		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
@@ -71,8 +52,7 @@ var _ = Describe("MetalLB BGP", Ordered, Label(tsparams.LabelBGPTestCases), Cont
 			metallb.GetBFDProfileGVR(),
 			metallb.GetBGPAdvertisementGVR(),
 			metallb.GetIPAddressPoolGVR(),
-			metallb.GetMetalLbIoGVR(),
-			metallb.GetFrrConfigurationGVR())
+			metallb.GetMetalLbIoGVR())
 		Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
 		By("Cleaning test namespace")
@@ -115,11 +95,6 @@ var _ = Describe("MetalLB BGP", Ordered, Label(tsparams.LabelBGPTestCases), Cont
 		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue2)
 		setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue2)
 
-		By("Listing master nodes")
-		masterNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-
 		By("Creating an IBGP BGP Peer")
 		frrk8sPods := verifyAndCreateFRRk8sPodList()
 		createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
@@ -141,7 +116,7 @@ var _ = Describe("MetalLB BGP", Ordered, Label(tsparams.LabelBGPTestCases), Cont
 			masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 		By("Checking that BGP session is established and up")
-		verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, cmd.RemovePrefixFromIPList(ipv4NodeAddrList))
+		verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
 
 		By("Validating BGP routes to service")
 		validatePrefix(
