@@ -153,29 +153,28 @@ func runInjectorTests(matchCondition bool, workerNode string) {
 	By("Fetching MutatingWebhookConfigurations/network-resources-injector-config and " +
 		"Verify FailurePolicy and MatchConditions")
 
-	resourceInjectorWebhook, err := webhook.PullMutatingConfiguration(APIClient, "network-resources-injector-config")
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull MutatingWebhookConfiguration")
+	Eventually(func() error {
+		resourceInjectorWebhook, err := webhook.PullMutatingConfiguration(APIClient, "network-resources-injector-config")
+		if err != nil {
+			return err
+		}
 
-	var checked bool
-
-	for _, injectorWebhook := range resourceInjectorWebhook.Object.Webhooks {
-		if injectorWebhook.Name == "network-resources-injector-config.k8s.io" {
-			checked = true
-
-			if matchCondition {
-				Expect(*injectorWebhook.FailurePolicy).Should(Equal(admv1.Fail))
-				Expect(len(injectorWebhook.MatchConditions)).Should(BeNumerically(">", 0),
-					"MatchConditions field is expected to be set")
-			} else {
-				Expect(*injectorWebhook.FailurePolicy).Should(Equal(admv1.Ignore))
-				Expect(len(injectorWebhook.MatchConditions)).Should(BeNumerically("==", 0),
-					"MatchConditions field is not expected to be set")
+		for _, injectorWebhook := range resourceInjectorWebhook.Object.Webhooks {
+			if injectorWebhook.Name == "network-resources-injector-config.k8s.io" {
+				if matchCondition {
+					if *injectorWebhook.FailurePolicy == admv1.Fail && len(injectorWebhook.MatchConditions) > 0 {
+						return nil
+					}
+				} else {
+					if *injectorWebhook.FailurePolicy == admv1.Ignore && len(injectorWebhook.MatchConditions) == 0 {
+						return nil
+					}
+				}
 			}
 		}
-	}
 
-	Expect(checked).To(BeTrue(),
-		"resourceInjectorWebhook does not have network-resources-injector-config.k8s.io Webhook")
+		return errors.New("network-resources-injector-config.k8s.io webhook not found")
+	}, time.Minute, 2*time.Second).Should(BeNil(), "MutatingWebhookConfiguration validation failed")
 
 	By("Creating Sriov Pod and Delete it after it is in Running state")
 
