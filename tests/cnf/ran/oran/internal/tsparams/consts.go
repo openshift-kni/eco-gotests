@@ -43,8 +43,6 @@ const (
 const (
 	// TemplateValid is the valid ClusterTemplate used for the provision tests.
 	TemplateValid = "v1"
-	// TemplateUpdateProfile is the ClusterTemplate version for the hardware profile update test.
-	TemplateUpdateProfile = "v6"
 	// TemplateInvalid is the ClusterTemplate version for the invalid ClusterTemplate test.
 	TemplateInvalid = "v7"
 	// TemplateUpdateDefaults is the ClusterTemplate version for the ClusterInstance defaults update test.
