@@ -293,10 +293,6 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 			err := metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 
-			By("Creating a new instance of MetalLB Speakers on workers")
-			err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
-			Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
-
 			By("Verifying that the frrk8sPod deployment is in Ready state and create a list of the pods on " +
 				"worker nodes.")
 			frrk8sPods = verifyAndCreateFRRk8sPodList()

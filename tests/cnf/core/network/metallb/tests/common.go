@@ -118,6 +118,7 @@ func updateNodeLabel(workerNodeList []*nodes.Builder, nodeLabel map[string]strin
 		if removeLabel {
 			worker.RemoveLabel(netenv.MapFirstKeyValue(nodeLabel))
 		} else {
+			worker.RemoveLabel(netenv.MapFirstKeyValue(nodeLabel))
 			worker.WithNewLabel(netenv.MapFirstKeyValue(nodeLabel))
 		}
 
@@ -502,7 +503,7 @@ func verifyAndCreateFRRk8sPodList() []*pod.Builder {
 
 	frrk8sPods := []*pod.Builder{}
 
-	for _, node := range cnfWorkerNodeList {
+	for _, node := range workerNodeList {
 		var frrk8sPodList []*pod.Builder
 
 		Eventually(func() error {

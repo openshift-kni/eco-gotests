@@ -81,7 +81,7 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		sriovInterfacesUnderTest, err = NetConfig.GetSriovInterfaces(1)
 		Expect(err).ToNot(HaveOccurred(), "Failed to retrieve SR-IOV interfaces for testing")
 
-		addOrDeleteNodeSecIPAddViaFRRK8S("add", cnfWorkerNodeList[0].Object.Name,
+		addOrDeleteNodeSecIPAddViaFRRK8S("add", workerNodeList[0].Object.Name,
 			ipSecondaryInterface1, sriovInterfacesUnderTest[0])
 
 		By("Creating an IPAddressPool and BGPAdvertisement")
@@ -99,7 +99,7 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 
 	AfterAll(func() {
 		By("Removing IP to a secondary interface from the worker 0")
-		addOrDeleteNodeSecIPAddViaFRRK8S("del", cnfWorkerNodeList[0].Object.Name,
+		addOrDeleteNodeSecIPAddViaFRRK8S("del", workerNodeList[0].Object.Name,
 			ipSecondaryInterface1, sriovInterfacesUnderTest[0])
 
 		By("Removing MetalLB CRs and cleaning the test ns")
@@ -125,7 +125,7 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		staticIPAnnotation := pod.StaticIPAnnotation("l2nad", []string{ipSecondaryInterface2})
 
 		l2ClientPod, err := pod.NewBuilder(APIClient, "l2client", tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
-			DefineOnNode(cnfWorkerNodeList[1].Object.Name).
+			DefineOnNode(workerNodeList[1].Object.Name).
 			WithSecondaryNetwork(staticIPAnnotation).
 			CreateAndWaitUntilRunning(5 * time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to create l2 client pod")
