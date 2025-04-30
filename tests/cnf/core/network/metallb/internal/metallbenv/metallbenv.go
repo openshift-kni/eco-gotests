@@ -118,7 +118,20 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, node
 	glog.V(90).Infof("Verifying if the FRR webhook server is deployed and ready")
 
 	// Check FRR Webhook Server Readiness **(LAST STEP)**
-	frrk8sWebhookDeployment, err := deployment.Pull(APIClient, tsparams.FrrK8WebHookServer, NetConfig.Frrk8sNamespace)
+	var frrk8sWebhookDeployment *deployment.Builder
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			frrk8sWebhookDeployment, err = deployment.Pull(APIClient, tsparams.FrrK8WebHookServer, NetConfig.Frrk8sNamespace)
+			if err != nil {
+				glog.V(90).Infof("Error pulling frrk8s webhook %s in namespace %s, retrying...",
+					tsparams.FrrK8WebHookServer, NetConfig.Frrk8sNamespace)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
 	if err != nil {
 		return fmt.Errorf("failed to pull the frrk8s webhook server: %w", err)
 	}
