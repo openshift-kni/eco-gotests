@@ -3,6 +3,7 @@ package deploy_test
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -124,15 +125,21 @@ var _ = Describe(
 			Expect(err).ToNot(HaveOccurred(), "failed to convert the extra partition size to int64: %s", err)
 
 			By("Validate size of extra partition")
-			execCmd := "lsblk -o size -b -n " + MGMTConfig.ExtraPartName
-			cmdOutput, err := cluster.ExecCmdWithStdout(spokeClient, execCmd)
-			Expect(err).ToNot(HaveOccurred(), "failed getting the size for extrapartition: %s", err)
-			for _, stdout := range cmdOutput {
-				Expect(strings.ReplaceAll(stdout, "\n", "")).To(Equal(
-					strconv.Itoa(int(extraPartSizeMibInt)*1024*1024)),
-					"error: the extra partition size doesn't match the expected value")
-			}
+			Eventually(func() (string, error) {
+				execCmd := "lsblk -o size -b -n " + MGMTConfig.ExtraPartName
+				cmdOutput, err := cluster.ExecCmdWithStdout(spokeClient, execCmd)
+				if err != nil {
+					return "", nil
+				}
 
+				for _, stdout := range cmdOutput {
+					return strings.ReplaceAll(stdout, "\n", ""), nil
+				}
+
+				return "", nil
+
+			}).WithTimeout(time.Minute*20).WithPolling(time.Second*5).Should(
+				Equal(strconv.Itoa(int(extraPartSizeMibInt)*1024*1024)), "error waiting for imageclusterinstall to complete")
 		})
 
 		It("successfully adds CA bundle", reportxml.ID("77795"), func() {
