@@ -2,9 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"net"
-	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -18,7 +15,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,8 +69,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		Expect(err).ToNot(HaveOccurred(), "Fail to list speaker pods")
 		Expect(len(frrk8sPods)).To(BeNumerically(">", 0),
 			"Failed the number of frr speaker pods is 0")
-		createBGPPeerAndVerifyIfItsReady(
-			ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0, frrk8sPods)
+		createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+			tsparams.LocalBGPASN, false, 0, frrk8sPods)
 	})
 
 	AfterEach(func() {
@@ -108,8 +104,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					Skip("bgp test cases doesn't support ipv6 yet")
 				}
 
-				createBGPPeerAndVerifyIfItsReady(
-					ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
+				createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+					tsparams.LocalBGPASN, false, 0,
 					frrk8sPods)
 
 				By("Setting test iteration parameters")
@@ -130,10 +126,10 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 					masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
 				By("Creating an IPAddressPool and BGPAdvertisement")
-				ipAddressPool := setupBgpAdvertisement(addressPool, int32(prefixLen))
+				ipAddressPool := setupBgpAdvertisementAndIPAddressPool(addressPool)
 
 				By("Creating a MetalLB service")
-				setupMetalLbService(ipStack, ipAddressPool, "Cluster")
+				setupMetalLbService("service-1", ipStack, ipAddressPool, "Cluster")
 
 				By("Creating nginx test pod on worker node")
 				setupNGNXPod(workerNodeList[0].Definition.Name)
@@ -142,7 +138,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 				verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(nodeAddrList))
 
 				By("Validating BGP route prefix")
-				validatePrefix(frrPod, ipStack, removePrefixFromIPList(nodeAddrList), addressPool, prefixLen)
+				validatePrefix(frrPod, ipStack, removePrefixFromIPList(nodeAddrList), addressPool)
 			},
 
 			Entry("", netparam.IPV4Family, 32,
@@ -171,9 +167,8 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			frrPod := createFrrPod(
 				masterNodeList[0].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation)
 
-			createBGPPeerAndVerifyIfItsReady(
-				ipv4metalLbIPList[0], "", tsparams.LocalBGPASN, false, 0,
-				frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
+				tsparams.LocalBGPASN, false, 0, frrk8sPods)
 
 			By("Checking that BGP session is established and up")
 			verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, removePrefixFromIPList(ipv4NodeAddrList))
@@ -224,33 +219,3 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		})
 	})
 })
-
-func validatePrefix(
-	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string, prefixLength int) {
-	Eventually(
-		frr.GetBGPStatus, time.Minute, tsparams.DefaultRetryInterval).
-		WithArguments(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test").ShouldNot(BeNil())
-
-	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
-	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
-	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefixLength))
-	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
-	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
-
-	var nextHopAddresses []string
-
-	for _, nextHop := range bgpStatus.Routes[subnet.String()] {
-		Expect(nextHop.PrefixLen).To(BeNumerically("==", prefixLength),
-			"Failed prefix length is not in expected value")
-
-		for _, nHop := range nextHop.Nexthops {
-			nextHopAddresses = append(nextHopAddresses, nHop.IP)
-		}
-	}
-
-	Expect(workerNodesAddresses).To(ContainElements(nextHopAddresses),
-		"Failed next hop address in not in node addresses list")
-
-	_, err = frr.GetBGPCommunityStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion))
-	Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp community status")
-}

@@ -2,6 +2,8 @@ package tests
 
 import (
 	"fmt"
+	"net"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -125,11 +127,11 @@ func createExternalNadWithMasterInterface(name, masterInterface string) {
 }
 
 func createBGPPeerAndVerifyIfItsReady(
-	peerIP, bfdProfileName string, remoteAsn uint32, eBgpMultiHop bool, connectTime int,
+	name, peerIP, bfdProfileName string, remoteAsn uint32, eBgpMultiHop bool, connectTime int,
 	frrk8sPods []*pod.Builder) {
 	By("Creating BGP Peer")
 
-	bgpPeer := metallb.NewBPGPeerBuilder(APIClient, "testpeer", NetConfig.MlbOperatorNamespace,
+	bgpPeer := metallb.NewBPGPeerBuilder(APIClient, name, NetConfig.MlbOperatorNamespace,
 		peerIP, tsparams.LocalBGPASN, remoteAsn).WithPassword(tsparams.BGPPassword).WithEBGPMultiHop(eBgpMultiHop)
 
 	if bfdProfileName != "" {
@@ -153,7 +155,27 @@ func createBGPPeerAndVerifyIfItsReady(
 	}
 }
 
-func setupBgpAdvertisement(addressPool []string, prefixLen int32) *metallb.IPAddressPoolBuilder {
+func setupBgpAdvertisement(
+	name,
+	communities,
+	ipAddressPool string,
+	localPreference uint32,
+	bgpPeers []string,
+	nodeSelectors []metav1.LabelSelector) {
+	builder := metallb.NewBGPAdvertisementBuilder(APIClient, name, NetConfig.MlbOperatorNamespace).
+		WithIPAddressPools([]string{ipAddressPool}).
+		WithCommunities([]string{communities}).
+		WithLocalPref(localPreference).
+		WithAggregationLength4(32)
+	if len(nodeSelectors) > 0 {
+		builder = builder.WithNodeSelector(nodeSelectors).WithPeers(bgpPeers)
+	}
+
+	_, err := builder.Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
+}
+
+func setupBgpAdvertisementAndIPAddressPool(addressPool []string) *metallb.IPAddressPoolBuilder {
 	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
 		APIClient,
 		"address-pool",
@@ -161,13 +183,8 @@ func setupBgpAdvertisement(addressPool []string, prefixLen int32) *metallb.IPAdd
 		[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
 
-	_, err = metallb.
-		NewBGPAdvertisementBuilder(APIClient, "bgpadvertisement", NetConfig.MlbOperatorNamespace).
-		WithIPAddressPools([]string{ipAddressPool.Definition.Name}).
-		WithCommunities([]string{"65535:65282"}).
-		WithLocalPref(100).
-		WithAggregationLength4(prefixLen).Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
+	setupBgpAdvertisement("bgpadvertisement", tsparams.NoAdvertiseCommunity, ipAddressPool.Definition.Name,
+		100, []string{}, []metav1.LabelSelector{})
 
 	return ipAddressPool
 }
@@ -271,13 +288,14 @@ func createFrrHubPod(name, nodeName, configmapName string, defaultCMD []string,
 }
 
 func setupMetalLbService(
+	name,
 	ipStack string,
 	ipAddressPool *metallb.IPAddressPoolBuilder,
 	extTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
 	servicePort, err := service.DefineServicePort(80, 80, "TCP")
 	Expect(err).ToNot(HaveOccurred(), "Failed to define service port")
 
-	_, err = service.NewBuilder(APIClient, "service-mlb", tsparams.TestNamespaceName,
+	_, err = service.NewBuilder(APIClient, name, tsparams.TestNamespaceName,
 		map[string]string{"app": "nginx1"}, *servicePort).
 		WithExternalTrafficPolicy(extTrafficPolicy).
 		WithIPFamily([]corev1.IPFamily{corev1.IPFamily(ipStack)}, corev1.IPFamilyPolicySingleStack).
@@ -285,7 +303,6 @@ func setupMetalLbService(
 		Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create MetalLB Service")
 }
-
 func setupNGNXPod(nodeName string) {
 	_, err := pod.NewBuilder(
 		APIClient, "mlbnginxtpod"+nodeName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
@@ -374,4 +391,31 @@ func resetOperatorAndTestNS() {
 		configmap.GetGVR(),
 		nad.GetGVR())
 	Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
+}
+
+func validatePrefix(
+	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string) {
+	Eventually(
+		frr.GetBGPStatus, time.Minute, tsparams.DefaultRetryInterval).
+		WithArguments(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test").ShouldNot(BeNil())
+
+	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
+	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], 32))
+	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
+	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
+
+	var nextHopAddresses []string
+
+	for _, route := range bgpStatus.Routes[subnet.String()] {
+		Expect(route.PrefixLen).To(BeNumerically("==", 32),
+			"Failed prefix length is not in expected value")
+
+		for _, nHop := range route.Nexthops {
+			nextHopAddresses = append(nextHopAddresses, nHop.IP)
+		}
+	}
+
+	Expect(workerNodesAddresses).To(ContainElements(nextHopAddresses),
+		"Failed next hop address in not in node addresses list")
 }

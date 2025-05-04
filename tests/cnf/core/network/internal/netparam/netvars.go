@@ -9,6 +9,8 @@ import (
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
 	Labels = append(coreparams.Labels, Label)
+	// LabelHostName contains the key for the hostname label.
+	LabelHostName = "kubernetes.io/hostname"
 	// OperatorConfigDaemon defaults SR-IOV config daemon daemonset.
 	OperatorConfigDaemon = "sriov-network-config-daemon"
 	// OperatorDevicePlugin defaults SR-IOV device plugin daemonset.
