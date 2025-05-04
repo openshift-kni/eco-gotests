@@ -35,6 +35,8 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 		bgpAdvertisementName2 = "bgpadvertisement2"
 	)
 
+	var ipAddressPool *metallb.IPAddressPoolBuilder
+
 	BeforeAll(func() {
 		validateEnvVarAndGetNodeList()
 
@@ -70,6 +72,9 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 		By("Creating a new instance of MetalLB Speakers on workers")
 		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
+
+		By("Create a single IPAddressPool")
+		ipAddressPool = createIPAddressPool(ipaddressPoolName1, addressPool)
 	})
 
 	AfterEach(func() {
@@ -81,9 +86,6 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 
 		It("Advertise a single IPAddressPool with different attributes using the node selector option",
 			reportxml.ID("53987"), func() {
-
-				By("Create a single IPAddressPool")
-				ipAddressPool := createIPAddressPool(ipaddressPoolName1, addressPool)
 
 				By("Setup test case with services, test pods and bgppeers")
 				frrPod0, frrPod1 := setupTestCase(ipAddressPool, ipAddressPool, frrk8sPods)
@@ -115,6 +117,65 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 					strings.ToLower(netparam.IPV4Family))
 				Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp community status")
 				Expect(len(bgpStatus.Routes)).To(Equal(2))
+			})
+
+		It("Update the node selector option with a label that does not exist",
+			reportxml.ID("61336"), func() {
+				By("Setup test case with services, test pods and bgppeers")
+				frrPod0, frrPod1 := setupTestCase(ipAddressPool, ipAddressPool, frrk8sPods)
+
+				By("Create a bgpadvertisement for BGPPeer1 and IP AddressPool1.")
+				setupBgpAdvertisement(bgpAdvertisementName1, tsparams.NoAdvertiseCommunity, ipaddressPoolName1, 100,
+					[]string{tsparams.BgpPeerName1}, worker0NodeLabel)
+
+				By("Create a bgpadvertisement for BGPPeer2 and IP AddressPool1.")
+				setupBgpAdvertisement(bgpAdvertisementName2, tsparams.CustomCommunity, ipaddressPoolName1,
+					100, []string{tsparams.BgpPeerName2}, worker1NodeLabel)
+
+				By("Verify BGP Establishement and service route advertisement.")
+				verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1, nodeAddrList, addressPool, addressPool)
+
+				By("Create a non existing label to use in test case.")
+				nonExistingLabel := []metav1.LabelSelector{
+					{MatchLabels: map[string]string{corev1.LabelHostname: "non-existing-label"}},
+				}
+
+				By("Update bgpadvertisement2 node selector option with a non existing node label.")
+				updateBgpAdvertisement(bgpAdvertisementName2, nonExistingLabel)
+
+				verifyBGPStatusAndRouteAfterLabelUpdate(frrPod0, frrPod1, removePrefixFromIPList(ipv4NodeAddrList),
+					addressPool)
+			})
+
+		It("Remove from node label used in the node selector option",
+			reportxml.ID("53991"), func() {
+
+				By("Setup test case with services, test pods and bgppeers")
+				frrPod0, frrPod1 := setupTestCase(ipAddressPool, ipAddressPool, frrk8sPods)
+
+				By("Adding test label to compute nodes")
+				addNodeLabel(workerNodeList, metalLbTestsLabel)
+
+				testMetallbNodeLabel := []metav1.LabelSelector{
+					{MatchLabels: metalLbTestsLabel},
+				}
+
+				By("Create a bgpadvertisement for BGPPeer1 and IP AddressPool1.")
+				setupBgpAdvertisement(bgpAdvertisementName1, tsparams.NoAdvertiseCommunity, ipaddressPoolName1,
+					100, []string{tsparams.BgpPeerName1}, worker0NodeLabel)
+
+				By("Create a bgpadvertisement for BGPPeer2 and IP AddressPool1.")
+				setupBgpAdvertisement(bgpAdvertisementName2, tsparams.CustomCommunity, ipaddressPoolName1,
+					100, []string{tsparams.BgpPeerName2}, testMetallbNodeLabel)
+
+				By("Verify BGP Establishement and service route advertisement.")
+				verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1, nodeAddrList, addressPool, addressPool)
+
+				By("Remove custom metallb test label from nodes")
+				removeNodeLabel(workerNodeList, metalLbTestsLabel)
+
+				verifyBGPStatusAndRouteAfterLabelUpdate(frrPod0, frrPod1, removePrefixFromIPList(ipv4NodeAddrList),
+					addressPool)
 			})
 	})
 
@@ -162,6 +223,45 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 					strings.ToLower(netparam.IPV4Family))
 				Expect(err).ToNot(HaveOccurred(), "Failed to collect bgp community status")
 				Expect(len(bgpStatus.Routes)).To(Equal(1))
+			})
+
+		It("Update the node selector option with a label that does not exist",
+			reportxml.ID("53989"), func() {
+				By("Create two IPAddressPools")
+				ipAddressPool1 := createIPAddressPool(ipaddressPoolName1, addressPool)
+				ipAddressPool2 := createIPAddressPool(ipaddressPoolName2, addressPool2)
+
+				By("Setup test case with services, test pods and bgppeers")
+				frrPod0, frrPod1 := setupTestCase(ipAddressPool1, ipAddressPool2, frrk8sPods)
+
+				By("Creating a BGPAdvertisement with the nodeSelector to bgppeer1")
+				setupBgpAdvertisement(bgpAdvertisementName1, tsparams.NoAdvertiseCommunity, ipaddressPoolName1,
+					100, []string{tsparams.BgpPeerName1}, worker0NodeLabel)
+
+				By("Creating a BGPAdvertisement with the nodeSelector to bgppeer2")
+				setupBgpAdvertisement(bgpAdvertisementName2, tsparams.CustomCommunity, ipaddressPoolName2,
+					200, []string{tsparams.BgpPeerName2}, worker1NodeLabel)
+
+				verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1, nodeAddrList, addressPool, addressPool2)
+
+				By("Validate Local Preference from Frr node0")
+				err = frr.ValidateLocalPref(frrPod0, 100, strings.ToLower(netparam.IPV4Family))
+				Expect(err).ToNot(HaveOccurred(), "Fail to validate local preference")
+
+				By("Validate Local Preference from Frr node1")
+				err = frr.ValidateLocalPref(frrPod1, 200, strings.ToLower(netparam.IPV4Family))
+				Expect(err).ToNot(HaveOccurred(), "Fail to validate local preference")
+
+				By("Create a non existing label to use in test case.")
+				nonExistingLabel := []metav1.LabelSelector{
+					{MatchLabels: map[string]string{corev1.LabelHostname: "non-existing-label"}},
+				}
+
+				By("Update bgpadvertisement2 node selector option with a non existing node label.")
+				updateBgpAdvertisement(bgpAdvertisementName2, nonExistingLabel)
+
+				verifyBGPStatusAndRouteAfterLabelUpdate(frrPod0, frrPod1, removePrefixFromIPList(ipv4NodeAddrList),
+					addressPool)
 			})
 	})
 })
@@ -254,4 +354,20 @@ func verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1 *pod.Builder, nodeAddrLis
 	By("Validating BGP route prefix on Frr Master 1")
 	validatePrefix(frrPod1, netparam.IPV4Family, netparam.IPSubnetInt32,
 		removePrefixFromIPList([]string{nodeAddrList[1]}), addressPool2)
+}
+
+func verifyBGPStatusAndRouteAfterLabelUpdate(frrPod0, frrPod1 *pod.Builder, nodeAddrList, addressPool []string) {
+	By("Checking that BGP session is established and up on Frr Master 0")
+	verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod0, removePrefixFromIPList(ipv4NodeAddrList))
+
+	By("Checking that BGP session is established and up on Frr Master 1")
+	verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod1, removePrefixFromIPList(ipv4NodeAddrList))
+
+	By("Validating BGP route prefix on Frr Master 0")
+	validatePrefix(frrPod0, netparam.IPV4Family, netparam.IPSubnetInt32,
+		removePrefixFromIPList([]string{nodeAddrList[0]}), []string{addressPool[0]})
+
+	By("Validating BGP route prefix on Frr Master 1")
+	validatePrefix(frrPod1, netparam.IPV4Family, netparam.IPSubnetInt32,
+		removePrefixFromIPList([]string{nodeAddrList[1]}), []string{addressPool[1]}, true)
 }
