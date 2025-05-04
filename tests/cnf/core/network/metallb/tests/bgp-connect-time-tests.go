@@ -105,8 +105,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		reportxml.ID("74414"), func() {
 
 			By("Creating BGP Peers with 10 second retry connect timer")
-			createBGPPeerAndVerifyIfItsReady(ipv4metalLbIPList[0], "", 64500, false,
-				10, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
+				64500, false, 10, frrk8sPods)
 
 			By("Validate BGP Peers with 10 second retry connect timer")
 			Eventually(func() int {
@@ -127,8 +127,8 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 			frrPod := createAndDeployFRRPod()
 
 			By("Creating BGP Peers with 10 second retry connect timer")
-			createBGPPeerAndVerifyIfItsReady(ipv4metalLbIPList[0], "", 64500, false,
-				10, frrk8sPods)
+			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
+				64500, false, 10, frrk8sPods)
 
 			By("Validate BGP Peers with 10 second retry connect timer")
 			Eventually(func() int {
@@ -153,7 +153,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 		reportxml.ID("74417"), func() {
 
 			By("Creating BGP Peers")
-			createBGPPeerAndVerifyIfItsReady(ipv4metalLbIPList[0], "",
+			createBGPPeerAndVerifyIfItsReady(tsparams.BGPTestPeer, ipv4metalLbIPList[0], "",
 				64500, false, 0, frrk8sPods)
 
 			By("Validate BGP Peers with the default retry connect timer")
