@@ -24,7 +24,7 @@ const (
 	supportToolsDeployRBACName = "privileged-rdscore-supporttools"
 	supportToolsDeploySAName   = "rdscore-supporttools-sa"
 	supportToolsRBACRole       = "system:openshift:scc:privileged"
-	supportToolDeploymentName  = "rdscore-supporttools-ns"
+	tracerouteDeploymentName   = "traceroute"
 )
 
 // CreateTraceRouteDeployment creates support-tools deployment on the nodes specified in scheduleOnNodes.
@@ -52,7 +52,7 @@ func CreateTraceRouteDeployment(
 	stDeployment, err := createTraceRouteDeployment(
 		apiClient,
 		stImage,
-		supportToolDeploymentName,
+		tracerouteDeploymentName,
 		stNamespace,
 		stDeploymentLabel,
 		scheduleOnNodes,
@@ -60,10 +60,10 @@ func CreateTraceRouteDeployment(
 
 	if err != nil {
 		glog.V(100).Infof("Failed to create traceroute deployment %s in namespace %s due to %v",
-			supportToolDeploymentName, stNamespace, err)
+			tracerouteDeploymentName, stNamespace, err)
 
 		return stDeployment, fmt.Errorf("failed to create traceroute deployment %s in namespace %s: %w",
-			supportToolDeploymentName, stNamespace, err)
+			tracerouteDeploymentName, stNamespace, err)
 	}
 
 	glog.V(100).Infof("Creating deployment")
@@ -71,16 +71,16 @@ func CreateTraceRouteDeployment(
 	stDeployment, err = stDeployment.CreateAndWaitUntilReady(5 * time.Minute)
 	if err != nil {
 		glog.V(100).Infof("Failed to create deployment %s in namespace %s: %v",
-			supportToolDeploymentName, stNamespace, err)
+			tracerouteDeploymentName, stNamespace, err)
 
 		return nil, fmt.Errorf("failed to create deployment %s in namespace %s: %w",
-			supportToolDeploymentName, stNamespace, err)
+			tracerouteDeploymentName, stNamespace, err)
 	}
 
 	if stDeployment == nil {
-		glog.V(100).Infof("deployment %s not found in namespace %s", supportToolDeploymentName, stNamespace)
+		glog.V(100).Infof("deployment %s not found in namespace %s", tracerouteDeploymentName, stNamespace)
 
-		return nil, fmt.Errorf("deployment %s not found in namespace %s", supportToolDeploymentName, stNamespace)
+		return nil, fmt.Errorf("deployment %s not found in namespace %s", tracerouteDeploymentName, stNamespace)
 	}
 
 	return stDeployment, nil

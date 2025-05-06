@@ -191,112 +191,26 @@ var _ = Describe(
 
 				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
 
-				By("Load original spoke api client")
-				spokeClient := getSpokeClient()
+				reinstallWithClusterInstance(ipv4AddrFamily)
+			})
 
-				By("Enable cluster reinstallation")
-				scoConfig, err := configmap.Pull(APIClient, "siteconfig-operator-configuration", tsparams.RHACMNamespace)
-				Expect(err).NotTo(HaveOccurred(), "error pulling siteconfig-operator-configuration configmap")
-
-				scoConfig.Definition.Data["allowReinstalls"] = "true"
-				_, err = scoConfig.Update()
-				Expect(err).NotTo(HaveOccurred(), "error updating siteconfig-operator-configuration configmap to allow reinstalls")
-
-				By("Pulling existing clusterdeployment")
-				clusterDeployment, err := hive.PullClusterDeployment(APIClient, MGMTConfig.Cluster.Info.ClusterName,
-					MGMTConfig.Cluster.Info.ClusterName)
-				Expect(err).NotTo(HaveOccurred(), "error pulling clusterdeployment")
-
-				originalClusterID := clusterDeployment.Object.Spec.ClusterMetadata.ClusterID
-
-				By("Pulling existing clusterinstance")
-				clusterInstace, err := siteconfig.PullClusterInstance(APIClient, MGMTConfig.Cluster.Info.ClusterName,
-					MGMTConfig.Cluster.Info.ClusterName)
-				Expect(err).NotTo(HaveOccurred(), "error pulling clusterinstance")
-
-				for idx := range clusterInstace.Definition.Spec.Nodes {
-					for _, host := range MGMTConfig.Cluster.Info.Hosts {
-						clusterInstace.Definition.Spec.Nodes[idx].BmcAddress = host.BMC.URLv4
-						clusterInstace.Definition.Spec.Nodes[idx].BootMACAddress = host.BMC.MACAddress
-					}
+		It("through siteconfig operator is successful in an IPv6 proxy-enabled environment with DHCP networking",
+			reportxml.ID("no-testcase"), func() {
+				if MGMTConfig.StaticNetworking {
+					Skip("Cluster is deployed with static networking")
 				}
 
-				if clusterInstace.Definition.Spec.Reinstall == nil {
-					clusterInstace.Definition.Spec.Reinstall = new(siteconfigv1alpha1.ReinstallSpec)
+				if !MGMTConfig.SiteConfig {
+					Skip("Cluster is deployed without siteconfig operator")
 				}
 
-				clusterInstace.Definition.Spec.Reinstall.Generation = MGMTConfig.ReinstallGenerationLabel
-				clusterInstace.Definition.Spec.Reinstall.PreservationMode = "ClusterIdentity"
+				if MGMTConfig.SeedClusterInfo.Proxy.HTTPProxy == "" && MGMTConfig.SeedClusterInfo.Proxy.HTTPSProxy == "" {
+					Skip("Cluster not installed with proxy")
+				}
 
-				By("Updating clusterinstance for reinstallation")
-				_, err = clusterInstace.Update(false)
-				Expect(err).NotTo(HaveOccurred(), "error updating clusterinstance")
+				tsparams.ReporterNamespacesToDump[MGMTConfig.Cluster.Info.ClusterName] = reporterNamespaceToDump
 
-				By("Waiting for clusterinstance re-installation to trigger")
-				Eventually(func() (bool, error) {
-					clusterInstace.Object, err = clusterInstace.Get()
-					if err != nil {
-						return false, err
-					}
-
-					if clusterInstace.Object.Status.Reinstall == nil || clusterInstace.Object.Status.Reinstall.Conditions == nil {
-						return false, nil
-					}
-
-					for _, condition := range clusterInstace.Object.Status.Reinstall.Conditions {
-						if condition.Type == string(siteconfigv1alpha1.ReinstallRequestProcessed) {
-							return condition.Status == "True" && condition.Reason == string(siteconfigv1alpha1.Completed), nil
-						}
-					}
-
-					return false, nil
-				}).WithTimeout(time.Minute*40).WithPolling(time.Second*10).Should(
-					BeTrue(), "error waiting for clusterinstance to begin re-install")
-
-				By("Waiting for clusterinstance to start provisioning")
-				Eventually(func() (bool, error) {
-					clusterInstace.Object, err = clusterInstace.Get()
-					if err != nil {
-						return false, err
-					}
-
-					for _, condition := range clusterInstace.Object.Status.Conditions {
-						if condition.Type == string(siteconfigv1alpha1.ClusterProvisioned) {
-							return condition.Status == falseStatus && condition.Reason == string(siteconfigv1alpha1.InProgress), nil
-
-						}
-					}
-
-					return false, nil
-				}).WithTimeout(time.Minute*5).WithPolling(time.Second*10).Should(
-					BeTrue(), "error waiting for clusterinstance to start provisioning")
-
-				By("Waiting for clusterinstance to finish provisioning")
-				Eventually(func() (bool, error) {
-					clusterInstace.Object, err = clusterInstace.Get()
-					if err != nil {
-						return false, err
-					}
-
-					for _, condition := range clusterInstace.Object.Status.Conditions {
-						if condition.Type == string(siteconfigv1alpha1.ClusterProvisioned) {
-							return condition.Status == trueStatus && condition.Reason == string(siteconfigv1alpha1.Completed), nil
-
-						}
-					}
-
-					return false, nil
-				}).WithTimeout(time.Minute*30).WithPolling(time.Second*10).Should(
-					BeTrue(), "error waiting for clusterinstance to finish provisioning")
-
-				By("Pull spoke cluster version using original client")
-				targetClusterVersion, err := clusterversion.Pull(spokeClient)
-				Expect(err).NotTo(HaveOccurred(), "error pulling target cluster OCP version")
-				Expect(targetClusterVersion.Object.Status.Desired.Version).To(
-					Equal(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion),
-					"error: target cluster version does not match seedimage cluster version")
-				Expect(originalClusterID).To(Equal(string(targetClusterVersion.Object.Spec.ClusterID)),
-					"error: reinstalled cluster has different cluster identity than original cluster")
+				reinstallWithClusterInstance(ipv6AddrFamily)
 			})
 	})
 
@@ -305,4 +219,128 @@ func waitForResourceToDelete(resourceType string, exists func() bool) {
 		return !exists()
 	}).WithTimeout(time.Minute*30).WithPolling(time.Second*10).Should(
 		BeTrue(), "error waiting for resource %s to be deleted", resourceType)
+}
+
+//nolint:gocognit,funlen
+func reinstallWithClusterInstance(addressFamily string) {
+	By("Load original spoke api client")
+
+	spokeClient := getSpokeClient()
+
+	By("Enable cluster reinstallation")
+
+	scoConfig, err := configmap.Pull(APIClient, "siteconfig-operator-configuration", tsparams.RHACMNamespace)
+	Expect(err).NotTo(HaveOccurred(), "error pulling siteconfig-operator-configuration configmap")
+
+	scoConfig.Definition.Data["allowReinstalls"] = "true"
+	_, err = scoConfig.Update()
+	Expect(err).NotTo(HaveOccurred(), "error updating siteconfig-operator-configuration configmap to allow reinstalls")
+
+	By("Pulling existing clusterdeployment")
+
+	clusterDeployment, err := hive.PullClusterDeployment(APIClient, MGMTConfig.Cluster.Info.ClusterName,
+		MGMTConfig.Cluster.Info.ClusterName)
+	Expect(err).NotTo(HaveOccurred(), "error pulling clusterdeployment")
+
+	originalClusterID := clusterDeployment.Object.Spec.ClusterMetadata.ClusterID
+
+	By("Pulling existing clusterinstance")
+
+	clusterInstace, err := siteconfig.PullClusterInstance(APIClient, MGMTConfig.Cluster.Info.ClusterName,
+		MGMTConfig.Cluster.Info.ClusterName)
+	Expect(err).NotTo(HaveOccurred(), "error pulling clusterinstance")
+
+	for idx := range clusterInstace.Definition.Spec.Nodes {
+		for _, host := range MGMTConfig.Cluster.Info.Hosts {
+			if addressFamily == ipv4AddrFamily {
+				clusterInstace.Definition.Spec.Nodes[idx].BmcAddress = host.BMC.URLv4
+			} else {
+				clusterInstace.Definition.Spec.Nodes[idx].BmcAddress = host.BMC.URLv6
+			}
+
+			clusterInstace.Definition.Spec.Nodes[idx].BootMACAddress = host.BMC.MACAddress
+		}
+	}
+
+	if clusterInstace.Definition.Spec.Reinstall == nil {
+		clusterInstace.Definition.Spec.Reinstall = new(siteconfigv1alpha1.ReinstallSpec)
+	}
+
+	clusterInstace.Definition.Spec.Reinstall.Generation = MGMTConfig.ReinstallGenerationLabel
+	clusterInstace.Definition.Spec.Reinstall.PreservationMode = "ClusterIdentity"
+
+	By("Updating clusterinstance for reinstallation")
+
+	_, err = clusterInstace.Update(false)
+	Expect(err).NotTo(HaveOccurred(), "error updating clusterinstance")
+
+	By("Waiting for clusterinstance re-installation to trigger")
+
+	Eventually(func() (bool, error) {
+		clusterInstace.Object, err = clusterInstace.Get()
+		if err != nil {
+			return false, err
+		}
+
+		if clusterInstace.Object.Status.Reinstall == nil || clusterInstace.Object.Status.Reinstall.Conditions == nil {
+			return false, nil
+		}
+
+		for _, condition := range clusterInstace.Object.Status.Reinstall.Conditions {
+			if condition.Type == string(siteconfigv1alpha1.ReinstallRequestProcessed) {
+				return condition.Status == "True" && condition.Reason == string(siteconfigv1alpha1.Completed), nil
+			}
+		}
+
+		return false, nil
+	}).WithTimeout(time.Minute*40).WithPolling(time.Second*10).Should(
+		BeTrue(), "error waiting for clusterinstance to begin re-install")
+
+	By("Waiting for clusterinstance to start provisioning")
+
+	Eventually(func() (bool, error) {
+		clusterInstace.Object, err = clusterInstace.Get()
+		if err != nil {
+			return false, err
+		}
+
+		for _, condition := range clusterInstace.Object.Status.Conditions {
+			if condition.Type == string(siteconfigv1alpha1.ClusterProvisioned) {
+				return condition.Status == falseStatus && condition.Reason == string(siteconfigv1alpha1.InProgress), nil
+
+			}
+		}
+
+		return false, nil
+	}).WithTimeout(time.Minute*5).WithPolling(time.Second*10).Should(
+		BeTrue(), "error waiting for clusterinstance to start provisioning")
+
+	By("Waiting for clusterinstance to finish provisioning")
+
+	Eventually(func() (bool, error) {
+		clusterInstace.Object, err = clusterInstace.Get()
+		if err != nil {
+			return false, err
+		}
+
+		for _, condition := range clusterInstace.Object.Status.Conditions {
+			if condition.Type == string(siteconfigv1alpha1.ClusterProvisioned) {
+				return condition.Status == trueStatus && condition.Reason == string(siteconfigv1alpha1.Completed), nil
+
+			}
+		}
+
+		return false, nil
+	}).WithTimeout(time.Minute*30).WithPolling(time.Second*10).Should(
+		BeTrue(), "error waiting for clusterinstance to finish provisioning")
+
+	By("Pull spoke cluster version using original client")
+
+	targetClusterVersion, err := clusterversion.Pull(spokeClient)
+	Expect(err).NotTo(HaveOccurred(), "error pulling target cluster OCP version")
+	Expect(targetClusterVersion.Object.Status.Desired.Version).To(
+		Equal(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion),
+		"error: target cluster version does not match seedimage cluster version")
+	Expect(originalClusterID).To(Equal(string(targetClusterVersion.Object.Spec.ClusterID)),
+		"error: reinstalled cluster has different cluster identity than original cluster")
 }

@@ -7,7 +7,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/go-version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -154,19 +153,13 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 			By("Check labels are removed on all nodes")
 			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
-			log.Printf("error is: %v", err)
 			Expect(err).To(HaveOccurred(), "error while checking the module is loaded")
 
 		})
 
 		It("should generate events on nodes when module is loaded", reportxml.ID("68106"), func() {
-			By("Checking if version is greater than 2.0.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.0.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				Skip("Test not supported for versions lower than 2.0.0")
-			}
+			By("Waiting events to be flushed")
+			time.Sleep(30 * time.Second)
 
 			By("Getting events from 'default' namespace")
 			eventList, err := events.List(APIClient, "default")
@@ -186,8 +179,8 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 					foundModuleUnloadedEvents++
 				}
 			}
-			Expect(totalNodes).To(Equal(foundModuleLoadedEvents), "ModuleLoaded events do not match")
-			Expect(totalNodes).To(Equal(foundModuleUnloadedEvents), "ModuleUnloaded events do not match")
+			Expect(foundModuleLoadedEvents).To(Equal(totalNodes), "ModuleLoaded events do not match")
+			Expect(foundModuleUnloadedEvents).To(Equal(totalNodes), "ModuleUnloaded events do not match")
 		})
 
 		It("should deploy prebuild image", reportxml.ID("53395"), func() {

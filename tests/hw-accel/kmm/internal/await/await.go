@@ -126,11 +126,11 @@ func ModuleObjectDeleted(apiClient *clients.Settings, moduleName, nsName string,
 }
 
 // PreflightStageDone awaits preflightvalidationocp to be in stage Done.
-func PreflightStageDone(apiClinet *clients.Settings, preflight, module, nsname string,
+func PreflightStageDone(apiClient *clients.Settings, preflight, module, nsname string,
 	timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			pre, err := kmm.PullPreflightValidationOCP(apiClinet, preflight,
+			pre, err := kmm.PullPreflightValidationOCP(apiClient, preflight,
 				nsname)
 
 			if err != nil {

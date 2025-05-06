@@ -19,4 +19,7 @@ const (
 	LabelRdmaMetricsAPITestCases = "rdmametricsapi"
 	// LabelMlxSecureBoot represents Mellanox secure boot label that can be used for test cases selection.
 	LabelMlxSecureBoot = "mlxsecureboot"
+	// LabelWebhookInjector represents sriov webhook injector match conditions tests that can be used
+	// for test cases selection.
+	LabelWebhookInjector = "webhook-resource-injector"
 )

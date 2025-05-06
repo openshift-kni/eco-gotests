@@ -3,11 +3,14 @@ package tsparams
 import (
 	"time"
 
+	nadv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
+	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/k8sreporter"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var (
@@ -17,18 +20,24 @@ var (
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
 		"openshift-performance-addon-operator": "performance",
-		"metallb-system":                       "metallb-system",
-		"metallb-test":                         "other",
+		NetConfig.MlbOperatorNamespace:         "metallb-system",
+		TestNamespaceName:                      "other",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: setUnstructured(metallb.IPAddressPoolList)},
+		{Cr: setUnstructured("L2AdvertisementList")},
 		{Cr: setUnstructured(metallb.BGPAdvertisementListKind)},
-		{Cr: setUnstructured(metallb.IPAddressPoolList)},
 		{Cr: setUnstructured(metallb.BFDProfileList)},
 		{Cr: setUnstructured(metallb.BGPPeerListKind)},
 		{Cr: setUnstructured(metallb.MetalLBList)},
+		{Cr: setUnstructured("FRRConfigurationList")},
+		{Cr: &appsv1.DaemonSetList{}, Namespace: &NetConfig.MlbOperatorNamespace},
+		{Cr: &appsv1.DeploymentList{}, Namespace: &NetConfig.Frrk8sNamespace},
+		{Cr: &nadv1.NetworkAttachmentDefinitionList{}, Namespace: &TestNamespaceName},
+		{Cr: &corev1.ConfigMapList{}, Namespace: &TestNamespaceName},
+		{Cr: &corev1.ServiceList{}, Namespace: &TestNamespaceName},
 	}
 	// TestNamespaceName metalLb namespace where all test cases are performed.
 	TestNamespaceName = "metallb-tests"
@@ -86,10 +95,10 @@ var (
 func setUnstructured(kind string) *unstructured.UnstructuredList {
 	resource := &unstructured.UnstructuredList{}
 
-	gvk := schema.GroupVersionKind{
-		Group:   metallb.APIGroup,
-		Version: metallb.APIVersion,
-		Kind:    kind,
+	gvk := metallb.GetMetalLbIoGVR().GroupVersion().WithKind(kind)
+
+	if kind == "FRRConfigurationList" {
+		gvk = metallb.GetFrrConfigurationGVR().GroupVersion().WithKind(kind)
 	}
 
 	resource.SetGroupVersionKind(gvk)

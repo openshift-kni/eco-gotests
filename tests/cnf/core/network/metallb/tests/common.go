@@ -11,6 +11,7 @@ import (
 	typesGomega "github.com/onsi/gomega/types"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
+	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -24,27 +25,82 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/ipaddr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
+	mlbcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/prometheus"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
 	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // test cases variables that are accessible across entire package.
 var (
-	ipv4metalLbIPList []string
-	ipv4NodeAddrList  []string
-	ipv6metalLbIPList []string
-	ipv6NodeAddrList  []string
-	cnfWorkerNodeList []*nodes.Builder
-	workerNodeList    []*nodes.Builder
-	masterNodeList    []*nodes.Builder
-	workerLabelMap    map[string]string
-	metalLbTestsLabel = map[string]string{"metallb": "metallbtests"}
+	ipv4metalLbIPList  []string
+	ipv4NodeAddrList   []string
+	ipv6metalLbIPList  []string
+	ipv6NodeAddrList   []string
+	cnfWorkerNodeList  []*nodes.Builder
+	workerNodeList     []*nodes.Builder
+	masterNodeList     []*nodes.Builder
+	workerLabelMap     map[string]string
+	metalLbTestsLabel  = map[string]string{"metallb": "metallbtests"}
+	frrK8WebHookServer = "frr-k8s-webhook-server"
 )
+
+// Initializes and validates Vars:
+// ipv4metalLbIPList, ipv6metalLbIPList,
+// cnfWorkerNodeList, workerLabelMap, ipv4NodeAddrList,
+// workerNodeList, masterNodeList.
+func validateEnvVarAndGetNodeList() {
+	var err error
+
+	By("Fetching IPv4 and IPv6 IPs from ENV VAR to be used for External FRR Pod")
+
+	ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
+	Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
+	Expect(len(ipv4metalLbIPList)).To(BeNumerically(">=", 2))
+	Expect(len(ipv6metalLbIPList)).To(BeNumerically(">=", 2))
+
+	By("Selecting Worker nodes for the test")
+
+	cnfWorkerNodeList, err = nodes.List(APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+	Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
+
+	workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForMlbTests(cnfWorkerNodeList, metalLbTestsLabel)
+
+	By("Validating whether the IPv4 addresses of ENV VAR are in the same subnet as Worker Nodes external IPv4 range")
+
+	ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
+		APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
+	Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
+
+	err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
+	Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
+
+	By("Listing Master Nodes")
+
+	masterNodeList, err = nodes.List(APIClient,
+		metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
+	Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
+	Expect(len(masterNodeList)).To(BeNumerically(">=", 1))
+}
+
+func setWorkerNodeListAndLabelForMlbTests(
+	workerNodeList []*nodes.Builder, nodeSelector map[string]string) (map[string]string, []*nodes.Builder) {
+	if len(workerNodeList) > 2 {
+		By(fmt.Sprintf(
+			"Worker node number is greater than 2. Limit worker nodes for bfd test using label %v", nodeSelector))
+		addNodeLabel(workerNodeList[:2], nodeSelector)
+
+		return metalLbTestsLabel, workerNodeList[:2]
+	}
+
+	return NetConfig.WorkerLabelMap, workerNodeList
+}
 
 func removeNodeLabel(workerNodeList []*nodes.Builder, nodeSelector map[string]string) {
 	updateNodeLabel(workerNodeList, nodeSelector, true)
@@ -62,25 +118,13 @@ func updateNodeLabel(workerNodeList []*nodes.Builder, nodeLabel map[string]strin
 		if removeLabel {
 			worker.RemoveLabel(netenv.MapFirstKeyValue(nodeLabel))
 		} else {
+			worker.RemoveLabel(netenv.MapFirstKeyValue(nodeLabel))
 			worker.WithNewLabel(netenv.MapFirstKeyValue(nodeLabel))
 		}
 
 		_, err = worker.Update()
 		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Fail to update node's labels %s", worker.Definition.Name))
 	}
-}
-
-func setWorkerNodeListAndLabelForBfdTests(
-	workerNodeList []*nodes.Builder, nodeSelector map[string]string) (map[string]string, []*nodes.Builder) {
-	if len(workerNodeList) > 2 {
-		By(fmt.Sprintf(
-			"Worker node number is greater than 2. Limit worker nodes for bfd test using label %v", nodeSelector))
-		addNodeLabel(workerNodeList[:2], nodeSelector)
-
-		return metalLbTestsLabel, workerNodeList[:2]
-	}
-
-	return NetConfig.WorkerLabelMap, workerNodeList
 }
 
 func createConfigMap(
@@ -156,6 +200,26 @@ func createBGPPeerAndVerifyIfItsReady(
 	}
 }
 
+func setupBgpAdvertisementAndIPAddressPool(
+	name string, addressPool []string, prefixLen int) *metallb.IPAddressPoolBuilder {
+	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
+		APIClient,
+		name,
+		NetConfig.MlbOperatorNamespace,
+		[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
+
+	_, err = metallb.
+		NewBGPAdvertisementBuilder(APIClient, name, NetConfig.MlbOperatorNamespace).
+		WithIPAddressPools([]string{ipAddressPool.Definition.Name}).
+		WithCommunities([]string{"65535:65282"}).
+		WithLocalPref(100).
+		WithAggregationLength4(int32(prefixLen)).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
+
+	return ipAddressPool
+}
+
 func setupBgpAdvertisement(
 	name,
 	communities,
@@ -174,20 +238,6 @@ func setupBgpAdvertisement(
 
 	_, err := builder.Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
-}
-
-func setupBgpAdvertisementAndIPAddressPool(addressPool []string) *metallb.IPAddressPoolBuilder {
-	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
-		APIClient,
-		"address-pool",
-		NetConfig.MlbOperatorNamespace,
-		[]string{fmt.Sprintf("%s-%s", addressPool[0], addressPool[1])}).Create()
-	Expect(err).ToNot(HaveOccurred(), "Failed to create IPAddressPool")
-
-	setupBgpAdvertisement("bgpadvertisement", tsparams.NoAdvertiseCommunity, ipAddressPool.Definition.Name,
-		100, []string{}, []metav1.LabelSelector{})
-
-	return ipAddressPool
 }
 
 func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
@@ -217,10 +267,17 @@ func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []s
 
 func verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
+		Eventually(func() bool {
+			neighborState, _ := frr.BGPNeighborshipHasState(frrPod, peerAddress, "Established")
+
+			return neighborState
+		}, 30*time.Second, 5*time.Second).Should(BeFalse(),
+			fmt.Sprintf("BGP session to %s should not be Established, but it is", peerAddress))
+
 		Consistently(frr.BGPNeighborshipHasState,
 			time.Minute, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
-			Not(BeTrue()), "Failed BGP status is Established")
+			Not(BeTrue()), fmt.Sprintf("BGP session to %s unexpectedly reached Established state", peerAddress))
 	}
 }
 
@@ -292,14 +349,14 @@ func createFrrHubPod(name, nodeName, configmapName string, defaultCMD []string,
 
 func setupMetalLbService(
 	name,
-	ipStack string,
+	ipStack,
+	labelValue string,
 	ipAddressPool *metallb.IPAddressPoolBuilder,
 	extTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
 	servicePort, err := service.DefineServicePort(80, 80, "TCP")
 	Expect(err).ToNot(HaveOccurred(), "Failed to define service port")
-
 	_, err = service.NewBuilder(APIClient, name, tsparams.TestNamespaceName,
-		map[string]string{"app": "nginx1"}, *servicePort).
+		map[string]string{"app": labelValue}, *servicePort).
 		WithExternalTrafficPolicy(extTrafficPolicy).
 		WithIPFamily([]corev1.IPFamily{corev1.IPFamily(ipStack)}, corev1.IPFamilyPolicySingleStack).
 		WithAnnotation(map[string]string{"metallb.universe.tf/address-pool": ipAddressPool.Definition.Name}).
@@ -307,12 +364,12 @@ func setupMetalLbService(
 	Expect(err).ToNot(HaveOccurred(), "Failed to create MetalLB Service")
 }
 
-func setupNGNXPod(nodeName string) {
+func setupNGNXPod(nodeName, labelValue string) {
 	_, err := pod.NewBuilder(
 		APIClient, "mlbnginxtpod"+nodeName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 		DefineOnNode(nodeName).
-		WithLabel("app", "nginx1").
-		RedefineDefaultCMD(cmd.DefineNGNXAndSleep()).
+		WithLabel("app", labelValue).
+		RedefineDefaultCMD(mlbcmd.DefineNGNXAndSleep()).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
 }
@@ -362,7 +419,7 @@ func metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
 }
 
 func resetOperatorAndTestNS() {
-	By("Cleaning MetalLb operator namespace")
+	By("Cleaning MetalLb and openshift-frr-k8s operator namespaces")
 
 	metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
 	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
@@ -374,6 +431,13 @@ func resetOperatorAndTestNS() {
 		metallb.GetBGPAdvertisementGVR(),
 		metallb.GetIPAddressPoolGVR(),
 		metallb.GetMetalLbIoGVR(),
+	)
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
+
+	frrk8sNs, err := namespace.Pull(APIClient, NetConfig.Frrk8sNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull openshift-frr-k8s operator namespace")
+	err = frrk8sNs.CleanObjects(
+		tsparams.DefaultTimeout,
 		metallb.GetFrrConfigurationGVR())
 	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
 
@@ -389,21 +453,27 @@ func resetOperatorAndTestNS() {
 }
 
 func validatePrefix(
-	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string) {
-	Eventually(
-		frr.GetBGPStatus, time.Minute, tsparams.DefaultRetryInterval).
-		WithArguments(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test").ShouldNot(BeNil())
+	masterNodeFRRPod *pod.Builder, ipProtoVersion string, prefix int, workerNodesAddresses, addressPool []string) {
+	Eventually(func() bool {
+		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+		if err != nil {
+			return false
+		}
+
+		return len(bgpStatus.Routes) > 0
+	}, time.Minute, tsparams.DefaultRetryInterval).
+		Should(BeTrue(), "Expected BGP status to contain routes, but it was empty")
 
 	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
 	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
-	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], 32))
+	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefix))
 	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
 	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
 
 	var nextHopAddresses []string
 
 	for _, route := range bgpStatus.Routes[subnet.String()] {
-		Expect(route.PrefixLen).To(BeNumerically("==", 32),
+		Expect(route.PrefixLen).To(BeNumerically("==", prefix),
 			"Failed prefix length is not in expected value")
 
 		for _, nHop := range route.Nexthops {
@@ -411,7 +481,7 @@ func validatePrefix(
 		}
 	}
 
-	Expect(workerNodesAddresses).To(ContainElements(nextHopAddresses),
+	Expect(nextHopAddresses).To(ContainElements(workerNodesAddresses),
 		"Failed next hop address in not in node addresses list")
 }
 
@@ -422,4 +492,39 @@ func removePrefixFromIPList(ipAddressList []string) []string {
 	}
 
 	return ipAddressListWithoutPrefix
+}
+
+func verifyAndCreateFRRk8sPodList() []*pod.Builder {
+	frrk8sWebhookDeployment, err := deployment.Pull(
+		APIClient, frrK8WebHookServer, NetConfig.Frrk8sNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Fail to pull frr-k8s-webhook-server")
+	Expect(frrk8sWebhookDeployment.IsReady(30*time.Second)).To(BeTrue(),
+		"frr-k8s-webhook-server deployment is not ready")
+
+	frrk8sPods := []*pod.Builder{}
+
+	for _, node := range workerNodeList {
+		var frrk8sPodList []*pod.Builder
+
+		Eventually(func() error {
+			pods, err := pod.List(APIClient, NetConfig.Frrk8sNamespace, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Definition.Name),
+				LabelSelector: tsparams.FRRK8sDefaultLabel,
+			})
+			if err != nil {
+				return err
+			}
+			if len(pods) == 0 {
+				return fmt.Errorf("no FRR k8s pod found on node %s", node.Definition.Name)
+			}
+
+			frrk8sPodList = pods
+
+			return nil
+		}, 30*time.Second, 2*time.Second).Should(Succeed(), "Failed to find FRR k8s pod on node %s", node.Definition.Name)
+
+		frrk8sPods = append(frrk8sPods, frrk8sPodList[0])
+	}
+
+	return frrk8sPods
 }

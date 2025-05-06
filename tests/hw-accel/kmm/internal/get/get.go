@@ -200,5 +200,5 @@ func operatorVersion(apiClient *clients.Settings, namePattern, namespace string)
 		return csvVersion, nil
 	}
 
-	return nil, err
+	return nil, fmt.Errorf("no matching CSV were found")
 }

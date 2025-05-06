@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
@@ -15,8 +14,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/frr"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/metallbenv"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFailure, func() {
@@ -37,37 +36,13 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 	)
 
 	BeforeAll(func() {
-
-		By("Getting MetalLb load balancer ip addresses")
-		ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
-		Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
-
-		By("List CNF worker nodes in cluster")
-		cnfWorkerNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
-
-		By("Selecting worker node for BGP tests")
-		workerLabelMap, workerNodeList = setWorkerNodeListAndLabelForBfdTests(cnfWorkerNodeList, metalLbTestsLabel)
-		ipv4NodeAddrList, err = nodes.ListExternalIPv4Networks(
-			APIClient, metav1.ListOptions{LabelSelector: labels.Set(workerLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Failed to collect external nodes ip addresses")
-
-		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
-		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
+		validateEnvVarAndGetNodeList()
 
 		By("Collecting information before test")
 		frrk8sPods, err = pod.List(APIClient, NetConfig.MlbOperatorNamespace, metav1.ListOptions{
 			LabelSelector: tsparams.LabelFRRNode,
 		})
 		Expect(err).ToNot(HaveOccurred(), "Failed to list frrk8s pods")
-
-		By("Listing master nodes")
-		masterNodeList, err = nodes.List(APIClient,
-			metav1.ListOptions{LabelSelector: labels.Set(NetConfig.ControlPlaneLabelMap).String()})
-		Expect(err).ToNot(HaveOccurred(), "Fail to list master nodes")
-		Expect(len(masterNodeList)).To(BeNumerically(">", 0),
-			"Failed to detect master nodes")
 
 		By("Setting test iteration parameters")
 		_, _, _, nodeAddrList, addressPool, _, err =
@@ -76,11 +51,11 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 		Expect(err).ToNot(HaveOccurred(), "Fail to set iteration parameters")
 
 		worker0NodeLabel = []metav1.LabelSelector{
-			{MatchLabels: map[string]string{netparam.LabelHostName: workerNodeList[0].Definition.Name}},
+			{MatchLabels: map[string]string{corev1.LabelHostname: workerNodeList[0].Definition.Name}},
 		}
 
 		worker1NodeLabel = []metav1.LabelSelector{
-			{MatchLabels: map[string]string{netparam.LabelHostName: workerNodeList[1].Definition.Name}},
+			{MatchLabels: map[string]string{corev1.LabelHostname: workerNodeList[1].Definition.Name}},
 		}
 	})
 
@@ -206,14 +181,24 @@ func setupTestCase(ipAddressPool1, ipAddressPool2 *metallb.IPAddressPoolBuilder,
 	frrk8sPods []*pod.Builder) (*pod.Builder, *pod.Builder) {
 	By("Creating two MetalLB service")
 
-	setupMetalLbService("service-1", netparam.IPV4Family, ipAddressPool1, "Cluster")
-	setupMetalLbService("service-2", netparam.IPV4Family, ipAddressPool2, "Cluster")
+	setupMetalLbService(
+		tsparams.MetallbServiceName,
+		netparam.IPV4Family,
+		tsparams.LabelValue1,
+		ipAddressPool1,
+		corev1.ServiceExternalTrafficPolicyTypeCluster)
+	setupMetalLbService(
+		tsparams.MetallbServiceName2,
+		netparam.IPV4Family,
+		tsparams.LabelValue1,
+		ipAddressPool2,
+		corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 	By("Creating nginx test pod on worker node 0")
-	setupNGNXPod(workerNodeList[0].Definition.Name)
+	setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
 
 	By("Creating nginx test pod on worker node 1")
-	setupNGNXPod(workerNodeList[1].Definition.Name)
+	setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue1)
 
 	By("Creating External NAD for master FRR pods")
 	createExternalNad(tsparams.ExternalMacVlanNADName)
@@ -221,12 +206,14 @@ func setupTestCase(ipAddressPool1, ipAddressPool2 *metallb.IPAddressPoolBuilder,
 	By("Creating static ip annotation for FRR master 0")
 
 	staticIPAnnotation0 := pod.StaticIPAnnotation(
-		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0], netparam.IPSubnet24)})
+		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[0],
+			netparam.IPSubnet24)})
 
 	By("Creating static ip annotation for FRR master 1")
 
 	staticIPAnnotation1 := pod.StaticIPAnnotation(
-		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[1], netparam.IPSubnet24)})
+		tsparams.ExternalMacVlanNADName, []string{fmt.Sprintf("%s/%s", ipv4metalLbIPList[1],
+			netparam.IPSubnet24)})
 
 	By("Creating MetalLb configMap for FRR master pods")
 
@@ -243,13 +230,11 @@ func setupTestCase(ipAddressPool1, ipAddressPool2 *metallb.IPAddressPoolBuilder,
 		masterNodeList[1].Object.Name, masterConfigMap.Definition.Name, []string{}, staticIPAnnotation1, "frr-master1")
 
 	By("Create two BGPPeers")
-	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "",
-		tsparams.LocalBGPASN, false,
-		0, frrk8sPods)
+	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName1, ipv4metalLbIPList[0], "", tsparams.LocalBGPASN,
+		false, 0, frrk8sPods)
 
-	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName2, ipv4metalLbIPList[1], "",
-		tsparams.LocalBGPASN, false,
-		0, frrk8sPods)
+	createBGPPeerAndVerifyIfItsReady(tsparams.BgpPeerName2, ipv4metalLbIPList[1], "", tsparams.LocalBGPASN,
+		false, 0, frrk8sPods)
 
 	return frrPod0, frrPod1
 }
@@ -263,8 +248,10 @@ func verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1 *pod.Builder, nodeAddrLis
 	verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod1, removePrefixFromIPList(ipv4NodeAddrList))
 
 	By("Validating BGP route prefix on Frr Master 0")
-	validatePrefix(frrPod0, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool1)
+	validatePrefix(frrPod0, netparam.IPV4Family, netparam.IPSubnetInt32,
+		removePrefixFromIPList([]string{nodeAddrList[0]}), addressPool1)
 
 	By("Validating BGP route prefix on Frr Master 1")
-	validatePrefix(frrPod1, netparam.IPV4Family, removePrefixFromIPList(nodeAddrList), addressPool2)
+	validatePrefix(frrPod1, netparam.IPV4Family, netparam.IPSubnetInt32,
+		removePrefixFromIPList([]string{nodeAddrList[1]}), addressPool2)
 }

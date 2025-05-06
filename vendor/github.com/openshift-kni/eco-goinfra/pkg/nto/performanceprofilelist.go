@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	v2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
+	performanceprofilev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -21,7 +21,7 @@ func ListProfiles(apiClient *clients.Settings, options ...goclient.ListOptions) 
 		return nil, fmt.Errorf("the apiClient cannot be nil")
 	}
 
-	err := apiClient.AttachScheme(v2.AddToScheme)
+	err := apiClient.AttachScheme(performanceprofilev2.AddToScheme)
 	if err != nil {
 		glog.V(100).Infof("Failed to add node-tuning-operator v2 scheme to client schemes")
 
@@ -41,7 +41,7 @@ func ListProfiles(apiClient *clients.Settings, options ...goclient.ListOptions) 
 
 	glog.V(100).Infof(logMessage)
 
-	var performanceProfiles v2.PerformanceProfileList
+	var performanceProfiles performanceprofilev2.PerformanceProfileList
 	err = apiClient.List(context.TODO(), &performanceProfiles, &passedOptions)
 
 	if err != nil {

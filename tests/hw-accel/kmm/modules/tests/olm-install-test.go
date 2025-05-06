@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
@@ -50,14 +48,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 		})
 
 		It("Webhook server should be properly installed", reportxml.ID("72719"), func() {
-			By("Checking if version is greater than 2.1.0")
-			currentVersion, err := get.KmmOperatorVersion(APIClient)
-			Expect(err).ToNot(HaveOccurred(), "failed to get current KMM version")
-			featureFromVersion, _ := version.NewVersion("2.1.0")
-			if currentVersion.LessThan(featureFromVersion) {
-				Skip("Test not supported for versions lower than 2.1.0")
-			}
-
 			By("Listing deployments in operator namespace")
 			deploymentList, err := deployment.List(APIClient, kmmparams.KmmOperatorNamespace)
 			Expect(err).NotTo(HaveOccurred(), "error getting deployment list")

@@ -65,6 +65,14 @@ var _ = Describe("TALM precache", Label(tsparams.LabelPreCacheTestCases), func()
 					errorList := setup.CleanupTestResourcesOnHub(HubAPIClient, tsparams.TestNamespace, suffix)
 					Expect(errorList).To(BeEmpty(), "Failed to clean up resources on hub for suffix %s", suffix)
 				}
+
+				// Cleanup test resources on hub does not account for the CGU, which does not have a
+				// suffix. Therefore, it must be deleted separately to ensure proper cleanup.
+				cguBuilder, err := cgu.Pull(HubAPIClient, tsparams.CguName, tsparams.TestNamespace)
+				if err == nil {
+					_, err = cguBuilder.DeleteAndWait(5 * time.Minute)
+					Expect(err).ToNot(HaveOccurred(), "Failed to delete the test CGU")
+				}
 			})
 
 			// 48902 Tests image precaching - operators
@@ -691,6 +699,7 @@ func copyPoliciesWithSubscription(policies []*ocm.PolicyBuilder) ([]string, []st
 			// this will never get created so the name is just a placeholder
 			tempNs := namespace.NewBuilder(HubAPIClient, "make-it-non-compliant").Definition
 
+			copiedConfigPolicy.Name = policy.Definition.Name + suffix
 			copiedConfigPolicy.Spec.ObjectTemplates = append(
 				copiedConfigPolicy.Spec.ObjectTemplates, &configurationPolicyv1.ObjectTemplate{
 					ObjectDefinition: runtime.RawExtension{Object: tempNs},

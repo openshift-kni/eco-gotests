@@ -51,6 +51,7 @@ type (
 		Mode             string      `json:"mode,omitempty"`
 		Plugins          *[]Plugin   `json:"plugins,omitempty"`
 		Bridge           string      `json:"bridge,omitempty"`
+		Device           string      `json:"device,omitempty"`
 		Ipam             *IPAM       `json:"ipam,omitempty"`
 		LinksInContainer bool        `json:"linksInContainer,omitempty"`
 		LinkInContainer  bool        `json:"linkInContainer,omitempty"`

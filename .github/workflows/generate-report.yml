@@ -17,11 +17,6 @@ jobs:
       XDG_CACHE_HOME: ${{ github.workspace }}/cache
 
     steps:
-      - name: Set up Go 1.23
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.23.6
-
       # Since we only use the checked out repo for the report generation code,
       # always grab the latest from the default branch rather than the branch
       # that triggered this action.
@@ -29,8 +24,22 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
       - name: Install ginkgo
         run: make install-ginkgo
+
+      # Artifacts are scoped per workflow run, so we have to get the last run
+      # of this workflow to download the cache. Since the current run would be
+      # the last, we actually get the second-to-last run returned.
+      - name: Get last workflow run ID
+        id: get-last-run
+        run: echo last-run=$(gh run list -R "${{ github.repository }}" -w "${{ github.workflow }}" --json databaseId -q '.[1].databaseId' -L 2) >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Actions cache is immutable, so to prevent generating a new cache every
       # run when we only care about the latest cache, use an artifact instead
@@ -41,6 +50,8 @@ jobs:
         with:
           name: report-cache
           path: ${{ env.XDG_CACHE_HOME }}/eco-gotests
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.get-last-run.outputs.last-run }}
 
       - name: Generate report
         run: go run ./internal/report -v 100 -b 'main release-*' -o ./report -a "${ACTION_URL}"

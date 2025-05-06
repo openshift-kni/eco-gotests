@@ -4,6 +4,7 @@ import (
 	moduleV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta1"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/k8sreporter"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -15,18 +16,26 @@ var (
 
 	// ReporterNamespacesToDump tells to the reporter from where to collect logs.
 	ReporterNamespacesToDump = map[string]string{
-		kmmparams.KmmOperatorNamespace:          "kmm",
-		kmmparams.UseDtkModuleTestNamespace:     "module",
-		kmmparams.SimpleKmodModuleTestNamespace: "module",
-		kmmparams.DevicePluginTestNamespace:     "module",
-		kmmparams.RealtimeKernelNamespace:       "module",
-		kmmparams.FirmwareTestNamespace:         "module",
-		kmmparams.ModuleBuildAndSignNamespace:   "module",
-		kmmparams.InTreeReplacementNamespace:    "module",
+		kmmparams.KmmOperatorNamespace:            "kmm",
+		kmmparams.UseDtkModuleTestNamespace:       "module",
+		kmmparams.SimpleKmodModuleTestNamespace:   "module",
+		kmmparams.DevicePluginTestNamespace:       "module",
+		kmmparams.RealtimeKernelNamespace:         "module",
+		kmmparams.FirmwareTestNamespace:           "module",
+		kmmparams.ModuleBuildAndSignNamespace:     "module",
+		kmmparams.InTreeReplacementNamespace:      "module",
+		kmmparams.UseLocalMultiStageTestNamespace: "module",
+		kmmparams.WebhookModuleTestNamespace:      "module",
+		kmmparams.MultipleModuleTestNamespace:     "module",
+		kmmparams.VersionModuleTestNamespace:      "module",
+		kmmparams.ScannerTestNamespace:            "module",
+		kmmparams.TolerationModuleTestNamespace:   "module",
+		kmmparams.DefaultNodesNamespace:           "nodes",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &moduleV1Beta1.ModuleList{}},
+		{Cr: &corev1.EventList{}},
 	}
 )

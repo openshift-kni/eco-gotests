@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"os"
@@ -14,29 +15,44 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/oran"
+	oranapi "github.com/openshift-kni/eco-goinfra/pkg/oran/api"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/secret"
 	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/tsparams"
+	provisioningv1alpha1 "github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ContinueOnError is deliberately left out of this Ordered container. If the invalid ProvisioningRequest does not
 // become valid again, we cannot test provisioning with a valid ProvisioningRequest.
-var _ = Describe("ORAN Provision Tests", Label(tsparams.LabelProvision), Ordered, func() {
+var _ = Describe("ORAN Provision Tests", Label(tsparams.LabelProvision), Ordered, ContinueOnFailure, func() {
+	var o2imsAPIClient runtimeclient.Client
+
+	BeforeEach(func() {
+		var err error
+
+		By("creating the O2IMS API client")
+		o2imsAPIClient, err = oranapi.NewClientBuilder(RANConfig.O2IMSBaseURL).
+			WithToken(RANConfig.O2IMSToken).
+			WithTLSConfig(&tls.Config{InsecureSkipVerify: true}).
+			BuildProvisioning()
+		Expect(err).ToNot(HaveOccurred(), "Failed to create the O2IMS API client")
+	})
+
 	// 77393 - Apply a ProvisioningRequest with missing required input parameter
 	It("recovers provisioning when invalid ProvisioningRequest is updated", reportxml.ID("77393"), func() {
 		By("verifying the ProvisioningRequest does not already exist")
-		_, err := oran.PullPR(HubAPIClient, tsparams.TestPRName)
+		_, err := oran.PullPR(o2imsAPIClient, tsparams.TestPRName)
 		if err == nil {
 			Skip("cannot run provisioning tests if the ProvisioningRequest already exists")
 		}
 
 		By("creating a ProvisioningRequest with invalid policyTemplateParameters")
-		prBuilder := helper.NewProvisioningRequest(HubAPIClient, tsparams.TemplateValid).
+		prBuilder := helper.NewProvisioningRequest(o2imsAPIClient, tsparams.TemplateValid).
 			WithTemplateParameter(tsparams.PolicyTemplateParamsKey, map[string]any{
 				// By using an integer when the schema specifies a string we can create an invalid
 				// ProvisioningRequest without being stopped by the webhook.
@@ -46,17 +62,19 @@ var _ = Describe("ORAN Provision Tests", Label(tsparams.LabelProvision), Ordered
 		prBuilder, err = prBuilder.Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create an invalid ProvisioningRequest")
 
-		By("checking the ProvisioningRequest status for a failure")
-		prBuilder, err = prBuilder.WaitForCondition(tsparams.PRValidationFailedCondition, time.Minute)
+		By("waiting for the ProvisioningRequest to be failed")
+		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFailed, time.Time{}, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for the ProvisioningRequest to fail")
+
+		updateTime := time.Now()
 
 		By("updating the ProvisioningRequest with valid policyTemplateParameters")
 		prBuilder = prBuilder.WithTemplateParameter(tsparams.PolicyTemplateParamsKey, map[string]any{})
 		prBuilder, err = prBuilder.Update()
 		Expect(err).ToNot(HaveOccurred(), "Failed to update the ProvisioningRequest to add nodeClusterName")
 
-		By("waiting for ProvisioningRequest validation to succeed")
-		_, err = prBuilder.WaitForCondition(tsparams.PRValidationSucceededCondition, time.Minute)
+		By("waiting for ProvisioningRequest to start progressing")
+		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateProgressing, updateTime, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest validation to succeed")
 	})
 
@@ -78,19 +96,17 @@ var _ = Describe("ORAN Provision Tests", Label(tsparams.LabelProvision), Ordered
 		// 77394 - Apply a valid ProvisioningRequest
 		It("successfully provisions and generates the correct resources", reportxml.ID("77394"), func() {
 			By("pulling the ProvisioningRequest")
-			prBuilder, err := oran.PullPR(HubAPIClient, tsparams.TestPRName)
+			prBuilder, err := oran.PullPR(o2imsAPIClient, tsparams.TestPRName)
 			if err != nil {
 				By("creating the ProvisioningRequest since it does not exist")
-				prBuilder, err = helper.NewProvisioningRequest(HubAPIClient, tsparams.TemplateValid).Create()
+				prBuilder, err = helper.NewProvisioningRequest(o2imsAPIClient, tsparams.TemplateValid).Create()
 				Expect(err).ToNot(HaveOccurred(), "Failed to create ProvisioningRequest since it does not exist")
 			}
 
-			By("waiting for the ProvisioningRequest to apply configuration")
-			prBuilder, err = prBuilder.WaitForCondition(tsparams.PRConfigurationAppliedCondition, 2*time.Hour)
-			Expect(err).ToNot(HaveOccurred(), "Failed to wait for the ProvisioningRequest to apply configuration")
-
 			By("waiting for the ProvisioningRequest to be fulfilled")
-			_, err = prBuilder.WaitUntilFulfilled(time.Minute)
+			// Since we know the ProvisioningRequest did not already start as fulfilled, we do not need to
+			// use WaitForPhaseAfter.
+			_, err = prBuilder.WaitUntilFulfilled(2 * time.Hour)
 			Expect(err).ToNot(HaveOccurred(), "Failed to wait for the ProvisioningRequest to be fulfilled")
 
 			By("verifying provisioning succeeded")

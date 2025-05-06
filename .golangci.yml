@@ -87,6 +87,7 @@ linters-settings:
       - github.com/openshift-kni/eco-gotests/tests/accel/internal/accelinittools
       - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools
       - github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/diskencryptioninittools
+      - github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools
     # https://staticcheck.io/docs/options#checks
     checks:
       - all
@@ -205,6 +206,9 @@ issues:
     - path: 'tests/system-tests/diskencryption/internal/diskencryptioninittools'
       linters:
         - gochecknoinits
+    - path: 'tests/system-tests/o-cloud/internal/ocloudinittools'
+      linters:
+        - gochecknoinits
     - path: 'tests/lca/imagebasedupgrade/mgmt/internal/mgmtinittools'
       linters:
         - gochecknoinits
@@ -230,6 +234,9 @@ issues:
       linters:
         - depguard
     - path: "tests/system-tests/spk/internal/.*"
+      linters:
+        - depguard
+    - path: "tests/system-tests/o-cloud/internal/.*"
       linters:
         - depguard
     - path: "tests/system-tests/vcore/internal/.*"

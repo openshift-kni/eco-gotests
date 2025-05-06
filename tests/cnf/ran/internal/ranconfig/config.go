@@ -50,6 +50,8 @@ type HubConfig struct {
 	ZTPVersion          string
 	HubOperatorVersions map[ranparam.HubOperatorName]string
 	HubKubeconfig       string `envconfig:"ECO_CNF_RAN_KUBECONFIG_HUB"`
+	O2IMSBaseURL        string `envconfig:"ECO_CNF_RAN_O2IMS_BASE_URL"`
+	O2IMSToken          string `envconfig:"ECO_CNF_RAN_O2IMS_TOKEN"`
 }
 
 // Spoke1Config contains the configuration for the spoke 1 cluster, which should always be present.

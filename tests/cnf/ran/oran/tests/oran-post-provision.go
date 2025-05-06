@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"crypto/tls"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -8,16 +9,13 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/oran"
+	oranapi "github.com/openshift-kni/eco-goinfra/pkg/oran/api"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	provisioningv1alpha1 "github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1"
-	"github.com/stmcginnis/gofish/redfish"
-	"k8s.io/client-go/util/retry"
-	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -25,12 +23,21 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 	var (
 		prBuilder      *oran.ProvisioningRequestBuilder
 		originalPRSpec *provisioningv1alpha1.ProvisioningRequestSpec
+		o2imsAPIClient runtimeclient.Client
 	)
 
 	BeforeEach(func() {
-		By("saving the original ProvisioningRequest spec")
 		var err error
-		prBuilder, err = oran.PullPR(HubAPIClient, tsparams.TestPRName)
+
+		By("creating the O2IMS API client")
+		o2imsAPIClient, err = oranapi.NewClientBuilder(RANConfig.O2IMSBaseURL).
+			WithToken(RANConfig.O2IMSToken).
+			WithTLSConfig(&tls.Config{InsecureSkipVerify: true}).
+			BuildProvisioning()
+		Expect(err).ToNot(HaveOccurred(), "Failed to create the O2IMS API client")
+
+		By("saving the original ProvisioningRequest spec")
+		prBuilder, err = oran.PullPR(o2imsAPIClient, tsparams.TestPRName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull spoke 1 ProvisioningRequest")
 
 		copiedSpec := prBuilder.Definition.Spec
@@ -47,24 +54,22 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 			return
 		}
 
-		By("checking spoke 1 power state")
-		powerState, err := BMCClient.SystemPowerState()
-		Expect(err).ToNot(HaveOccurred(), "Failed to get system power state from spoke 1 BMC")
-
-		By("pulling the ProvisioningRequest again to ensure it is valid")
-		prBuilder, err = oran.PullPR(HubAPIClient, tsparams.TestPRName)
+		By("pulling the ProvisioningRequest again to ensure valid builder")
+		prBuilder, err := oran.PullPR(o2imsAPIClient, tsparams.TestPRName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull the ProvisioningRequest again")
+
+		restoreTime := time.Now()
 
 		By("restoring the original ProvisioningRequest spec")
 		prBuilder.Definition.Spec = *originalPRSpec
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		prBuilder, err = prBuilder.Update()
 		Expect(err).ToNot(HaveOccurred(), "Failed to restore spoke 1 ProvisioningRequest")
 
-		By("waiting for original ProvisioningRequest to apply")
-		waitForPolicies(prBuilder)
-
 		By("waiting for ProvisioningRequest to be fulfilled")
-		prBuilder, err = prBuilder.WaitUntilFulfilled(time.Minute)
+		// Since all of the post-provision tests end with the ProvisioningRequest being updated, successful
+		// cleanup should always ensure the ProvisioningRequest is fulfilled only after the previous step
+		// restores it.
+		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, restoreTime, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
 
 		By("deleting the second test ConfigMap if it exists")
@@ -73,12 +78,6 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 
 		By("deleting the test label if it exists")
 		removeTestLabelIfExists()
-
-		if powerState != "On" {
-			By("waiting for spoke 1 to recover")
-			err = cluster.WaitForRecover(Spoke1APIClient, []string{}, 45*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 to recover")
-		}
 	})
 
 	// 77373 - Successful update to ProvisioningRequest clusterInstanceParameters
@@ -98,7 +97,9 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		clusterInstanceParams["extraLabels"] = map[string]any{"ManagedCluster": map[string]string{tsparams.TestName: ""}}
 		prBuilder = prBuilder.WithTemplateParameters(templateParameters)
 
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		prBuilder, err = prBuilder.Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
+
 		waitForLabels()
 	})
 
@@ -112,21 +113,13 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 			tsparams.TestName: tsparams.TestNewValue,
 		})
 
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		updateTime := time.Now()
+		prBuilder, err := prBuilder.Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
 
-		By("waiting to ensure the policy status updates")
-		// This test case updates a previously compliant policy so if we check the compliance state too soon we
-		// risk a situation where the policy has been updated but its compliance state has not been.
-		time.Sleep(15 * time.Second)
-
-		DeferCleanup(func() {
-			By("waiting to ensure the policy status updates")
-			// The same issue that happens on the cleanup side of this test case, so wait again to ensure
-			// the next test case is not affected.
-			time.Sleep(15 * time.Second)
-		})
-
-		waitForPolicies(prBuilder)
+		By("waiting for ProvisioningRequest to be fulfilled again")
+		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, updateTime, time.Minute)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
 
 		By("verifying the test ConfigMap has the new value")
 		verifyCM(tsparams.TestName, tsparams.TestNewValue)
@@ -139,7 +132,8 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 
 		By("updating the ProvisioningRequest TemplateVersion")
 		prBuilder.Definition.Spec.TemplateVersion = RANConfig.ClusterTemplateAffix + "-" + tsparams.TemplateUpdateDefaults
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		_, err := prBuilder.Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
 
 		waitForLabels()
 	})
@@ -149,11 +143,16 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		By("verifying the test ConfigMap exists and has the original value")
 		verifyCM(tsparams.TestName, tsparams.TestOriginalValue)
 
+		updateTime := time.Now()
+
 		By("updating the ProvisioningRequest TemplateVersion")
 		prBuilder.Definition.Spec.TemplateVersion = RANConfig.ClusterTemplateAffix + "-" + tsparams.TemplateUpdateExisting
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		prBuilder, err := prBuilder.Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
 
-		waitForPolicies(prBuilder)
+		By("waiting for the ProvisioningRequest to be fulfilled")
+		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, updateTime, time.Minute)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
 
 		By("verifying the test ConfigMap has the new value")
 		verifyCM(tsparams.TestName, tsparams.TestNewValue)
@@ -168,11 +167,16 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		_, err := configmap.Pull(Spoke1APIClient, tsparams.TestName2, tsparams.TestName)
 		Expect(err).To(HaveOccurred(), "Second test ConfigMap already exists on spoke 1")
 
+		updateTime := time.Now()
+
 		By("updating the ProvisioningRequest TemplateVersion")
 		prBuilder.Definition.Spec.TemplateVersion = RANConfig.ClusterTemplateAffix + "-" + tsparams.TemplateAddNew
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		prBuilder, err = prBuilder.Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
 
-		waitForPolicies(prBuilder)
+		By("waiting for the ProvisioningRequest to be fulfilled")
+		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, updateTime, time.Minute)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
 
 		By("verifying the test ConfigMap has the original value")
 		verifyCM(tsparams.TestName, tsparams.TestOriginalValue)
@@ -195,11 +199,16 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		_, err := configmap.Pull(Spoke1APIClient, tsparams.TestName2, tsparams.TestName)
 		Expect(err).To(HaveOccurred(), "Second test ConfigMap already exists on spoke 1")
 
+		updateTime := time.Now()
+
 		By("updating the ProvisioningRequest TemplateVersion")
 		prBuilder.Definition.Spec.TemplateVersion = RANConfig.ClusterTemplateAffix + "-" + tsparams.TemplateUpdateSchema
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		prBuilder, err = prBuilder.Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
 
-		waitForPolicies(prBuilder)
+		By("waiting for the ProvisioningRequest to be fulfilled")
+		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, updateTime, time.Minute)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
 
 		By("verifying the test ConfigMap has the original value")
 		verifyCM(tsparams.TestName, tsparams.TestOriginalValue)
@@ -214,33 +223,15 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		prBuilder = prBuilder.WithTemplateParameter(tsparams.PolicyTemplateParamsKey, map[string]string{
 			tsparams.HugePagesSizeKey: "2G",
 		})
-		prBuilder = updatePRUntilNoConflict(prBuilder)
+		_, err := prBuilder.Update()
+		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
 
 		By("waiting for policy to go NonCompliant")
-		err := helper.WaitForNoncompliantImmutable(HubAPIClient, RANConfig.Spoke1Name, time.Minute)
+		err = helper.WaitForNoncompliantImmutable(HubAPIClient, RANConfig.Spoke1Name, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for a spoke 1 policy to go NonCompliant due to immutable field")
 
-		By("fixing the policyTemplateParameters")
-		prBuilder = prBuilder.WithTemplateParameter(tsparams.PolicyTemplateParamsKey, map[string]string{})
-		prBuilder = updatePRUntilNoConflict(prBuilder)
-
-		waitForPolicies(prBuilder)
-	})
-
-	// 77391 - Successful update of hardware profile
-	PIt("successfully updates hardware profile", reportxml.ID("77391"), func() {
-		By("verifying spoke 1 is powered on")
-		powerState, err := BMCClient.SystemPowerState()
-		Expect(err).ToNot(HaveOccurred(), "Failed to get system power state from spoke 1 BMC")
-		Expect(powerState).To(Equal("On"), "Spoke 1 is not powered on")
-
-		By("updating ProvisioningRequest TemplateVersion")
-		prBuilder.Definition.Spec.TemplateVersion = RANConfig.ClusterTemplateAffix + "-" + tsparams.TemplateUpdateProfile
-		prBuilder = updatePRUntilNoConflict(prBuilder)
-
-		By("waiting for spoke 1 to be powered off")
-		err = BMCClient.WaitForSystemPowerState(redfish.OffPowerState, 5*time.Minute)
-		Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 to power off")
+		// The AfterEach block will restore the ProvisioningRequest to its original state, so there is no need to
+		// restore it here. If it fails to be restored, the test will fail there.
 	})
 })
 
@@ -295,61 +286,4 @@ func waitForLabels() {
 
 	_, err = mcl.WaitForLabel(tsparams.TestName, time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 ManagedCluster to have the label")
-}
-
-// waitForPolicies waits first for the policies to compliant then for prBuilder to have the ConfigurationApplied
-// condition and be fulfilled.
-func waitForPolicies(prBuilder *oran.ProvisioningRequestBuilder) {
-	// If we do not wait for the policies to propagate to the spoke, we risk checking the old, already compliant
-	// policies on the spoke. This will fail tests that rely on new policies updating resources on the spoke.
-	By("waiting for policies to propagate to spoke")
-
-	templateName := tsparams.ClusterTemplateName + "." + prBuilder.Definition.Spec.TemplateVersion
-	templateNamespace := tsparams.ClusterTemplateName + "-" + RANConfig.ClusterTemplateAffix
-	clusterTemplate, err := oran.PullClusterTemplate(HubAPIClient, templateName, templateNamespace)
-	Expect(err).ToNot(HaveOccurred(), "Failed to pull ClusterTemplate corresponding to the ProvisioningRequest")
-
-	policyVersion, err := helper.GetPolicyVersionForTemplate(HubAPIClient, clusterTemplate)
-	Expect(err).ToNot(HaveOccurred(),
-		"Failed to get policy version for TemplateVersion %s", prBuilder.Definition.Spec.TemplateVersion)
-
-	err = helper.WaitForPolicyVersion(Spoke1APIClient, RANConfig.Spoke1Name, policyVersion, 2*time.Minute)
-	Expect(err).ToNot(HaveOccurred(), "Failed to wait for policies to propagate to the spoke")
-
-	By("waiting for ProvisioningRequest to have the correct policies")
-
-	err = helper.WaitForPRPolicyVersion(prBuilder, policyVersion, 2*time.Minute)
-	Expect(err).ToNot(HaveOccurred(),
-		"Failed to wait for the ProvisioningRequest to have the correct policy version %s", policyVersion)
-
-	By("waiting for policies to be compliant")
-
-	err = ocm.WaitForAllPoliciesComplianceState(
-		Spoke1APIClient, policiesv1.Compliant, time.Minute, runtimeclient.ListOptions{Namespace: RANConfig.Spoke1Name})
-	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 policies to be compliant")
-
-	By("verifying the ProvisioningRequest status is updated")
-
-	prBuilder, err = prBuilder.WaitForCondition(tsparams.PRConfigurationAppliedCondition, time.Minute)
-	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 ProvisioningRequest to have ConfigurationApplied")
-
-	By("verifying the ProvisioningRequest is fulfilled")
-
-	_, err = prBuilder.WaitUntilFulfilled(time.Minute)
-	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 ProvisioningRequest to be fulfilled")
-}
-
-// updatePRUntilNoConflict retries updating the prBuilder until it does not return an error due to conflict. This
-// usually happens due to duplicate updates to provisioningStatus by the operator after the ConfigurationApplied
-// condition is true.
-func updatePRUntilNoConflict(prBuilder *oran.ProvisioningRequestBuilder) *oran.ProvisioningRequestBuilder {
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		// Any error will cause the returned prBuilder to be nil, so ignore the returned builder while retrying.
-		_, err := prBuilder.Update()
-
-		return err
-	})
-	Expect(err).ToNot(HaveOccurred(), "Failed to update ProvisioningRequest until no conflict encountered")
-
-	return prBuilder
 }

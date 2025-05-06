@@ -13,11 +13,14 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/sriov"
 
 	sriovV1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
+	"github.com/openshift-kni/eco-goinfra/pkg/nad"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/sriov/internal/tsparams"
+	"gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -71,6 +74,29 @@ func CreateSriovPolicyAndWaitUntilItsApplied(sriovPolicy *sriov.PolicyBuilder, t
 	}
 
 	return nil
+}
+
+// CreateSriovNetworkAndWaitForNADCreation creates a SriovNetwork and waits for NAD Creation on the test namespace.
+func CreateSriovNetworkAndWaitForNADCreation(sNet *sriov.NetworkBuilder, timeout time.Duration) error {
+	glog.V(90).Infof("Creating SriovNetwork %s and waiting for net-attach-def to be created", sNet.Definition.Name)
+
+	sriovNetwork, err := sNet.Create()
+	if err != nil {
+		return err
+	}
+
+	return wait.PollUntilContextTimeout(context.TODO(),
+		time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err = nad.Pull(APIClient, sriovNetwork.Object.Name, sriovNetwork.Object.Spec.NetworkNamespace)
+			if err != nil {
+				glog.V(100).Infof("Failed to get NAD %s in namespace %s: %v",
+					sriovNetwork.Object.Name, sriovNetwork.Object.Spec.NetworkNamespace, err)
+
+				return false, nil
+			}
+
+			return true, nil
+		})
 }
 
 // WaitUntilVfsCreated waits until all expected SR-IOV VFs are created.
@@ -326,4 +352,39 @@ func ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(
 	}
 
 	return nil
+}
+
+// DefinePod returns basic test pod definition with and without secondary interface.
+func DefinePod(name, role, ifName, worker string, secondaryInterface bool) *pod.Builder {
+	glog.V(90).Infof("Defining test pod %s on worker %s", name, worker)
+
+	podbuild := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		WithNodeSelector(map[string]string{corev1.LabelHostname: worker}).
+		WithPrivilegedFlag()
+
+	if secondaryInterface {
+		var netAnnotation []*types.NetworkSelectionElement
+
+		if role == "server" {
+			netAnnotation = []*types.NetworkSelectionElement{
+				{
+					Name:       ifName,
+					MacRequest: tsparams.ServerMacAddress,
+					IPRequest:  []string{tsparams.ServerIPv4IPAddress},
+				},
+			}
+		} else {
+			netAnnotation = []*types.NetworkSelectionElement{
+				{
+					Name:       ifName,
+					MacRequest: tsparams.ClientMacAddress,
+					IPRequest:  []string{tsparams.ClientIPv4IPAddress},
+				},
+			}
+		}
+
+		podbuild.WithSecondaryNetwork(netAnnotation)
+	}
+
+	return podbuild
 }
