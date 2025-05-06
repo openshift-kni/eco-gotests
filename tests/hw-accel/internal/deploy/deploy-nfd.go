@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -295,6 +296,11 @@ func newNfdBuilder(namespace string, enableTopology bool, image string) (*nodefe
 		return nil, err
 	}
 
+	almExamples, err = editAlmExample(almExamples)
+	if err != nil {
+		return nil, err
+	}
+
 	nfdBuilder := nodefeature.NewBuilderFromObjectString(APIClient, almExamples)
 	nfdBuilder.Definition.Spec.TopologyUpdater = enableTopology
 
@@ -427,4 +433,32 @@ func (n *NfdAPIResource) removeResource(resourceName string,
 	}
 
 	return nil
+}
+
+func editAlmExample(almExample string) (string, error) {
+	var items []map[string]interface{}
+	err := json.Unmarshal([]byte(almExample), &items)
+
+	if err != nil {
+		glog.Errorf("Failed to unmarshal JSON: %v", err)
+
+		return "", err
+	}
+
+	var filtered []map[string]interface{}
+
+	for _, item := range items {
+		if kind, ok := item["kind"]; ok && kind == "NodeFeatureDiscovery" {
+			filtered = append(filtered, item)
+		}
+	}
+
+	output, err := json.MarshalIndent(filtered, "", "  ")
+	if err != nil {
+		glog.Errorf("Failed to marshal filtered JSON: %v", err)
+
+		return "", err
+	}
+
+	return string(output), nil
 }
