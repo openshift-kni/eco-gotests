@@ -108,13 +108,13 @@ var (
 	// SpokeSSHUser ssh user of the spoke cluster.
 	SpokeSSHUser = "core"
 	// SpokeSSHPasskeyPath path to the ssh key of the spoke cluster.
-	SpokeSSHPasskeyPath = "/home/kni/.ssh/id_rsa"
+	SpokeSSHPasskeyPath = "/opt/id_rsa"
 	// SeedGeneratorName name of the seedgenerator CR.
 	SeedGeneratorName = "seedimage"
 	// RegistryCertPath path to the registry certificate.
-	RegistryCertPath = "/opt/registry/certs/registry.crt"
+	RegistryCertPath = "/opt/registry.crt"
 	// IbiConfigTemplate template for the image based installation configuration.
-	IbiConfigTemplate = "/home/kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudconfigfiles/ibi-config.yaml.tmpl"
+	IbiConfigTemplate = "/opt/ibi-config.yaml.tmpl"
 	// IbiConfigTemplateYaml path to the YAML file with the image based installation configuration.
 	IbiConfigTemplateYaml = "tmp/ibi-iso-workdir/image-based-installation-config.yaml"
 	// IbiBasedImageSourcePath path to the base image.

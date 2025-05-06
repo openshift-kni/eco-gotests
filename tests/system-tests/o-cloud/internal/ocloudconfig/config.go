@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	// PathToDefaultOCloudParamsFile path to config file with default o-cloud parameters.
-	PathToDefaultOCloudParamsFile = "./default.yaml"
+	// PathToOCloudParamsFile path to config file with o-cloud parameters.
+	PathToOCloudParamsFile = "/opt/deployment_config.yaml"
 )
 
 // OCloudConfig type keeps o-cloud configuration.
@@ -149,7 +149,7 @@ func NewOCloudConfig() *OCloudConfig {
 
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
-	confFile := filepath.Join(baseDir, PathToDefaultOCloudParamsFile)
+	confFile := filepath.Join(baseDir, PathToOCloudParamsFile)
 	err := readFile(&ocloudConf, confFile)
 
 	if err != nil {
