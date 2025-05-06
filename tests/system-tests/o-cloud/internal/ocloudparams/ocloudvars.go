@@ -77,22 +77,22 @@ var (
 		},
 	}
 
-	// PodmanTagOperatorUpgrade command to create a tag for the redhat-operators upgrade.
-	PodmanTagOperatorUpgrade = "podman tag %s/olm/redhat-operators:v4.18-new %s/olm/redhat-operators:v4.18-day2"
-	// PodmanTagSriovUpgrade command to create a tag for the SR-IOV FEC operator upgrade.
-	PodmanTagSriovUpgrade = "podman tag %s/olm/far-edge-sriov-fec:v4.18-new %s/olm/far-edge-sriov-fec:v4.18-day2"
-	// PodmanPushOperatorUpgrade command to push the redhat-operators upgrade version.
-	PodmanPushOperatorUpgrade = "podman push %s/olm/redhat-operators:v4.18-day2"
-	// PodmanPushSriovUpgrade command to push the SR-IOV FEC operator upgrade version.
-	PodmanPushSriovUpgrade = "podman push %s/olm/far-edge-sriov-fec:v4.18-day2"
-	// PodmanTagOperatorDowngrade command to create a tag for the redhat-operators downgrade.
-	PodmanTagOperatorDowngrade = "podman tag %s/olm/redhat-operators:v4.18-old %s/olm/redhat-operators:v4.18-day2"
-	// PodmanTagSriovDowngrade command to create a tag for the SR-IOV FEC operator downgrade.
-	PodmanTagSriovDowngrade = "podman tag %s/olm/far-edge-sriov-fec:v4.18 %s/olm/far-edge-sriov-fec:v4.18-day2"
-	// PodmanPushOperatorDowngrade command to push the redhat-operators downgrade version.
-	PodmanPushOperatorDowngrade = "podman push %s/olm/redhat-operators:v4.18-day2"
-	// PodmanPushSriovDowngrade command to push the SR-IOV FEC operator downgrade version.
-	PodmanPushSriovDowngrade = "podman push %s/olm/far-edge-sriov-fec:v4.18-day2"
+	// BuildahTagOperatorUpgrade command to create a tag for the redhat-operators upgrade.
+	BuildahTagOperatorUpgrade = "buildah tag %s/olm/redhat-operators:v4.18-new %s/olm/redhat-operators:v4.18-day2"
+	// BuildahTagSriovUpgrade command to create a tag for the SR-IOV FEC operator upgrade.
+	BuildahTagSriovUpgrade = "buildah tag %s/olm/far-edge-sriov-fec:v4.18-new %s/olm/far-edge-sriov-fec:v4.18-day2"
+	// BuildahPushOperatorUpgrade command to push the redhat-operators upgrade version.
+	BuildahPushOperatorUpgrade = "buildah push %s/olm/redhat-operators:v4.18-day2"
+	// BuildahPushSriovUpgrade command to push the SR-IOV FEC operator upgrade version.
+	BuildahPushSriovUpgrade = "buildah push %s/olm/far-edge-sriov-fec:v4.18-day2"
+	// BuildahTagOperatorDowngrade command to create a tag for the redhat-operators downgrade.
+	BuildahTagOperatorDowngrade = "buildah tag %s/olm/redhat-operators:v4.18-old %s/olm/redhat-operators:v4.18-day2"
+	// BuildahTagSriovDowngrade command to create a tag for the SR-IOV FEC operator downgrade.
+	BuildahTagSriovDowngrade = "buildah tag %s/olm/far-edge-sriov-fec:v4.18 %s/olm/far-edge-sriov-fec:v4.18-day2"
+	// BuildahPushOperatorDowngrade command to push the redhat-operators downgrade version.
+	BuildahPushOperatorDowngrade = "buildah push %s/olm/redhat-operators:v4.18-day2"
+	// BuildahPushSriovDowngrade command to push the SR-IOV FEC operator downgrade version.
+	BuildahPushSriovDowngrade = "buildah push %s/olm/far-edge-sriov-fec:v4.18-day2"
 	//nolint:lll
 	// SnoKubeconfigCreate command to get the SNO kubeconfig file.
 	SnoKubeconfigCreate = "oc -n %s get secret %s-admin-kubeconfig -o json | jq -r .data.kubeconfig | base64 -d > tmp/%s/auth/kubeconfig"

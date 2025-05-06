@@ -11,8 +11,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudcommon"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/tests"
 )
@@ -28,30 +26,6 @@ func TestOCloud(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "O-Cloud SystemTests Suite", Label(ocloudparams.Labels...), reporterConfig)
 }
-
-var _ = BeforeSuite(func() {
-	ocloudcommon.VerifyNamespaceExists(ocloudparams.AcmNamespace)
-	ocloudcommon.VerifyCsvSuccessful(HubAPIClient, ocloudparams.AcmSubscriptionName, ocloudparams.AcmNamespace)
-	ocloudcommon.VerifyAllPodsRunningInNamespace(HubAPIClient, ocloudparams.AcmNamespace)
-
-	ocloudcommon.VerifyNamespaceExists(ocloudparams.OpenshiftGitOpsNamespace)
-	ocloudcommon.VerifyCsvSuccessful(
-		HubAPIClient,
-		ocloudparams.OpenshiftGitOpsSubscriptionName,
-		ocloudparams.OpenshiftGitOpsNamespace)
-
-	ocloudcommon.VerifyNamespaceExists(ocloudparams.OCloudO2ImsNamespace)
-	ocloudcommon.VerifyCsvSuccessful(
-		HubAPIClient,
-		ocloudparams.OCloudO2ImsSubscriptionName,
-		ocloudparams.OCloudO2ImsNamespace)
-
-	ocloudcommon.VerifyNamespaceExists(ocloudparams.OCloudHardwareManagerPluginNamespace)
-	ocloudcommon.VerifyCsvSuccessful(
-		HubAPIClient,
-		ocloudparams.OCloudHardwareManagerPluginSubscriptionName,
-		ocloudparams.OCloudHardwareManagerPluginNamespace)
-})
 
 var _ = AfterSuite(func() {
 	err := os.RemoveAll("tmp/")

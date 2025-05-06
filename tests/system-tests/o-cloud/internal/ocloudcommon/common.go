@@ -17,38 +17,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
-	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/oran"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
 
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/csv"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-// VerifyCsvSuccessful verifies that a specific subscription exists.
-func VerifyCsvSuccessful(apiClient *clients.Settings, subscriptionName string, nsName string) {
-	By(fmt.Sprintf("Verifying that csv %s is successful", subscriptionName))
-
-	csvName, err := csv.GetCurrentCSVNameFromSubscription(apiClient, subscriptionName, nsName)
-	if err != nil {
-		Skip(fmt.Sprintf("csv %s not found in namespace %s", csvName, nsName))
-	}
-
-	csvObj, err := olm.PullClusterServiceVersion(apiClient, csvName, nsName)
-	if err != nil {
-		Skip(fmt.Sprintf("failed to pull %q csv from the %s namespace", csvName, nsName))
-	}
-
-	_, err = csvObj.IsSuccessful()
-	Expect(err).ToNot(HaveOccurred(), "failed to verify csv %s in the namespace %s status", csvName, nsName)
-
-	glog.V(ocloudparams.OCloudLogLevel).Infof("csv %s is successful", subscriptionName)
-}
 
 // VerifyAllPodsRunningInNamespace verifies that all the pods in a given namespace are running.
 func VerifyAllPodsRunningInNamespace(apiClient *clients.Settings, nsName string) {
