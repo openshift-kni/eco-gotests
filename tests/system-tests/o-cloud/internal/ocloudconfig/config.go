@@ -147,13 +147,10 @@ func NewOCloudConfig() *OCloudConfig {
 	var ocloudConf OCloudConfig
 	ocloudConf.SystemTestsConfig = systemtestsconfig.NewSystemTestsConfig()
 
-	_, filename, _, _ := runtime.Caller(0)
-	baseDir := filepath.Dir(filename)
-	confFile := filepath.Join(baseDir, PathToOCloudParamsFile)
-	err := readFile(&ocloudConf, confFile)
+	err := readFile(&ocloudConf, PathToOCloudParamsFile)
 
 	if err != nil {
-		log.Printf("Error to read config file %s", confFile)
+		log.Printf("Error to read config file %s", PathToOCloudParamsFile)
 
 		return nil
 	}
