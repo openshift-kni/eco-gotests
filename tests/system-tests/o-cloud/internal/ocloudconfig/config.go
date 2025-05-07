@@ -3,8 +3,6 @@ package ocloudconfig
 import (
 	"log"
 	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
