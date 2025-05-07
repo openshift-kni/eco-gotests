@@ -316,7 +316,9 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 			By("Creating nginx test pod on worker node")
-			setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+			setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+				workerNodeList[0].Definition.Name,
+				tsparams.LabelValue1)
 		})
 
 		AfterAll(func() {
@@ -628,7 +630,9 @@ func deployTestPods(addressPool, hubIPAddresses, externalAdvertisedIPv4Routes,
 		corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 	By("Creating nginx test pod on worker node")
-	setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+	setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+		workerNodeList[0].Definition.Name,
+		tsparams.LabelValue1)
 
 	By("Creating External NAD")
 
