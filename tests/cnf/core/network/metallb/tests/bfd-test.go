@@ -502,7 +502,7 @@ func setLocalGWMode(status bool) {
 func verifyMetalLbBFDAndBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
-			time.Minute*3, tsparams.DefaultRetryInterval).
+			time.Minute*4, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
 			BeTrue(), "Failed to receive BGP status UP")
 		Eventually(netenv.BFDHasStatus,

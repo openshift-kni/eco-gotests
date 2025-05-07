@@ -93,20 +93,25 @@ func BFDHasStatus(frrPod *pod.Builder, bfdPeer string, status string) error {
 		return err
 	}
 
-	var result []netparam.BFDDescription
+	var peers []netparam.BFDDescription
 
-	err = json.Unmarshal(bfdStatusOut.Bytes(), &result)
+	err = json.Unmarshal(bfdStatusOut.Bytes(), &peers)
 	if err != nil {
 		return err
 	}
 
-	for _, peer := range result {
-		if peer.BFDPeer == bfdPeer && peer.BFDStatus != status {
-			return fmt.Errorf("%s bfd status is %s (expected %s)", peer.BFDPeer, peer.BFDStatus, status)
+	for _, peer := range peers {
+		if peer.BFDPeer == bfdPeer {
+			if peer.BFDStatus != status {
+				return fmt.Errorf("BFD peer %s on pod %s has status %s (expected %s)",
+					bfdPeer, frrPod.Object.Name, peer.BFDStatus, status)
+			}
+
+			return nil
 		}
 	}
 
-	return nil
+	return fmt.Errorf("BFD peer %s not found on pod %s", bfdPeer, frrPod.Object.Name)
 }
 
 // MapFirstKeyValue returns the first key-value pair found in the input map.
