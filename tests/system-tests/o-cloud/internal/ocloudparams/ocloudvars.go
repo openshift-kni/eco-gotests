@@ -77,22 +77,18 @@ var (
 		},
 	}
 
-	// BuildahTagOperatorUpgrade command to create a tag for the redhat-operators upgrade.
-	BuildahTagOperatorUpgrade = "buildah tag %s/olm/redhat-operators:v4.18-new %s/olm/redhat-operators:v4.18-day2"
-	// BuildahTagSriovUpgrade command to create a tag for the SR-IOV FEC operator upgrade.
-	BuildahTagSriovUpgrade = "buildah tag %s/olm/far-edge-sriov-fec:v4.18-new %s/olm/far-edge-sriov-fec:v4.18-day2"
-	// BuildahPushOperatorUpgrade command to push the redhat-operators upgrade version.
-	BuildahPushOperatorUpgrade = "buildah push %s/olm/redhat-operators:v4.18-day2"
-	// BuildahPushSriovUpgrade command to push the SR-IOV FEC operator upgrade version.
-	BuildahPushSriovUpgrade = "buildah push %s/olm/far-edge-sriov-fec:v4.18-day2"
-	// BuildahTagOperatorDowngrade command to create a tag for the redhat-operators downgrade.
-	BuildahTagOperatorDowngrade = "buildah tag %s/olm/redhat-operators:v4.18-old %s/olm/redhat-operators:v4.18-day2"
-	// BuildahTagSriovDowngrade command to create a tag for the SR-IOV FEC operator downgrade.
-	BuildahTagSriovDowngrade = "buildah tag %s/olm/far-edge-sriov-fec:v4.18 %s/olm/far-edge-sriov-fec:v4.18-day2"
-	// BuildahPushOperatorDowngrade command to push the redhat-operators downgrade version.
-	BuildahPushOperatorDowngrade = "buildah push %s/olm/redhat-operators:v4.18-day2"
-	// BuildahPushSriovDowngrade command to push the SR-IOV FEC operator downgrade version.
-	BuildahPushSriovDowngrade = "buildah push %s/olm/far-edge-sriov-fec:v4.18-day2"
+	//nolint:lll
+	// SkopeoRedhatOperatorsUpgrade command to create a tag for the redhat-operators upgrade.
+	SkopeoRedhatOperatorsUpgrade = "skopeo copy --authfile %s --tls-verify=false docker://%s/olm/redhat-operators:v4.18-new docker://%s/olm/redhat-operators:v4.18-day2"
+	//nolint:lll
+	// SkopeoSriovUpgrade command to create a tag for the SR-IOV FEC operator upgrade.
+	SkopeoSriovUpgrade = "skopeo copy --authfile %s --tls-verify=false docker://%s/olm/far-edge-sriov-fec:v4.18-new docker://%s/olm/far-edge-sriov-fec:v4.18-day2"
+	//nolint:lll
+	// SkopeoRedhatOperatorsDowngrade command to create a tag for the redhat-operators downgrade.
+	SkopeoRedhatOperatorsDowngrade = "skopeo copy --authfile %s --tls-verify=false docker://%s/olm/redhat-operators:v4.18-old docker://%s/olm/redhat-operators:v4.18-day2"
+	//nolint:lll
+	// SkopeoSriovDowngrade command to create a tag for the SR-IOV FEC operator downgrade.
+	SkopeoSriovDowngrade = "skopeo copy --authfile %s --tls-verify=false docker://%s/olm/far-edge-sriov-fec:v4.18 docker://%s/olm/far-edge-sriov-fec:v4.18-day2"
 	//nolint:lll
 	// SnoKubeconfigCreate command to get the SNO kubeconfig file.
 	SnoKubeconfigCreate = "oc -n %s get secret %s-admin-kubeconfig -o json | jq -r .data.kubeconfig | base64 -d > tmp/%s/auth/kubeconfig"
@@ -108,13 +104,13 @@ var (
 	// SpokeSSHUser ssh user of the spoke cluster.
 	SpokeSSHUser = "core"
 	// SpokeSSHPasskeyPath path to the ssh key of the spoke cluster.
-	SpokeSSHPasskeyPath = "/home/kni/.ssh/id_rsa"
+	SpokeSSHPasskeyPath = "/opt/id_rsa"
 	// SeedGeneratorName name of the seedgenerator CR.
 	SeedGeneratorName = "seedimage"
 	// RegistryCertPath path to the registry certificate.
-	RegistryCertPath = "/opt/registry/certs/registry.crt"
+	RegistryCertPath = "/opt/registry.crt"
 	// IbiConfigTemplate template for the image based installation configuration.
-	IbiConfigTemplate = "/home/kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudconfigfiles/ibi-config.yaml.tmpl"
+	IbiConfigTemplate = "/opt/ibi-config.yaml.tmpl"
 	// IbiConfigTemplateYaml path to the YAML file with the image based installation configuration.
 	IbiConfigTemplateYaml = "tmp/ibi-iso-workdir/image-based-installation-config.yaml"
 	// IbiBasedImageSourcePath path to the base image.
