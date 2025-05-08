@@ -136,6 +136,9 @@ type OCloudConfig struct {
 	PTPVersionPatchNew uint64 `yaml:"ptp_version_patch_new" envconfig:"ECO_OCLOUD_PTP_VERSION_PATCH_NEW"`
 	// PTPVersionPrereleaseNew new prerelease version of the PTP operator.
 	PTPVersionPrereleaseNew uint64 `yaml:"ptp_version_prerelease_new" envconfig:"ECO_OCLOUD_PTP_VERSION_PRERELEASE_NEW"`
+
+	// AuthfilePath path to the Authfile for Skopeo commands
+	AuthfilePath string `yaml:"authfile_path" envconfig:"ECO_OCLOUD_AUTHFILE_PATH"`
 }
 
 // NewOCloudConfig returns instance of OCloudConfig config type.

@@ -479,38 +479,26 @@ func modifyDeploymentResources(
 
 // upgradeOperatorImages upgrades the operator images.
 func upgradeOperatorImages() {
-	cmd := fmt.Sprintf(ocloudparams.BuildahTagOperatorUpgrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	cmd := fmt.Sprintf(ocloudparams.SkopeoRedhatOperatorsUpgrade, 
+		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for upgrade: %v", err))
 
-	cmd = fmt.Sprintf(ocloudparams.BuildahTagSriovUpgrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovUpgrade, 
+		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for upgrade: %v", err))
-
-	cmd = fmt.Sprintf(ocloudparams.BuildahPushOperatorUpgrade, OCloudConfig.Registry5000)
-	_, err = shell.ExecuteCmd(cmd)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing redhat-operators image for upgrade: %v", err))
-
-	cmd = fmt.Sprintf(ocloudparams.BuildahPushSriovUpgrade, OCloudConfig.Registry5000)
-	_, err = shell.ExecuteCmd(cmd)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing far-edge-sriov-fec image for upgrade: %v", err))
 }
 
 // downgradeOperatorImages downgrades the operator images.
 func downgradeOperatorImages() {
-	cmd := fmt.Sprintf(ocloudparams.BuildahTagOperatorDowngrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	cmd := fmt.Sprintf(ocloudparams.SkopeoRedhatOperatorsDowngrade, 
+		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for downgrade: %v", err))
 
-	cmd = fmt.Sprintf(ocloudparams.BuildahTagSriovDowngrade, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
+	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovDowngrade, 
+		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for downgrade: %v", err))
-
-	cmd = fmt.Sprintf(ocloudparams.BuildahPushOperatorDowngrade, OCloudConfig.Registry5000)
-	_, err = shell.ExecuteCmd(cmd)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing redhat-operators image for downgrade: %v", err))
-
-	cmd = fmt.Sprintf(ocloudparams.BuildahPushSriovDowngrade, OCloudConfig.Registry5000)
-	_, err = shell.ExecuteCmd(cmd)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error pushing far-edge-sriov-fec image for downgrade: %v", err))
 }
