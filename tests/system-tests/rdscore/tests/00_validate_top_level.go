@@ -210,6 +210,10 @@ var _ = Describe(
 				Label("pod-level-bond", "pod-level-pod-failure"), reportxml.ID("80490"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsAfterPodCrashing)
 
+			It("Verify cluster log forwarding to the Kafka broker",
+				Label("log-forwarding", "kafka"), reportxml.ID("81882"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure all nodes are Ready and scheduling enabled")
 				rdscorecommon.EnsureInNodeReadiness(ctx)
@@ -479,6 +483,10 @@ var _ = Describe(
 			It("Verifies pod-level bonded workloads on the different nodes and different PFs post hard reboot",
 				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("79336"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
+
+			It("Verify cluster log forwarding to the Kafka broker post hard reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81884"),
+				rdscorecommon.VerifyLogForwardingToKafka)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -711,5 +719,9 @@ var _ = Describe(
 			It("Verifies pod-level bonded workloads on the different nodes and different PFs post soft reboot",
 				Label("pod-level-bond", "pod-level-bond-diff-node"), reportxml.ID("79337"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
+
+			It("Verify cluster log forwarding to the Kafka broker post soft reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81883"),
+				rdscorecommon.VerifyLogForwardingToKafka)
 		})
 	})
