@@ -195,10 +195,14 @@ func setupTestCase(ipAddressPool1, ipAddressPool2 *metallb.IPAddressPoolBuilder,
 		corev1.ServiceExternalTrafficPolicyTypeCluster)
 
 	By("Creating nginx test pod on worker node 0")
-	setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
+	setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[0].Definition.Name,
+		workerNodeList[0].Definition.Name,
+		tsparams.LabelValue1)
 
 	By("Creating nginx test pod on worker node 1")
-	setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue1)
+	setupNGNXPod(tsparams.MLBNginxPodName+workerNodeList[1].Definition.Name,
+		workerNodeList[1].Definition.Name,
+		tsparams.LabelValue1)
 
 	By("Creating External NAD for master FRR pods")
 	createExternalNad(tsparams.ExternalMacVlanNADName)

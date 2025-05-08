@@ -771,7 +771,11 @@ func getPodObjectByNamePattern(apiClient *clients.Settings, podNamePattern, podN
 			}
 
 			if len(podObjList) > 1 {
-				glog.V(100).Infof("Wrong pods %s count was found in namespace %q", podNamePattern, podNamespace)
+				glog.V(100).Infof("Wrong pod %s count %d was found in namespace %q", podNamePattern, len(podObjList), podNamespace)
+
+				for _, _pod := range podObjList {
+					glog.V(100).Infof("Pod %q is in %q phase", _pod.Definition.Name, _pod.Object.Status.Phase)
+				}
 
 				return false, nil
 			}

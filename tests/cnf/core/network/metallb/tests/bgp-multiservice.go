@@ -81,8 +81,12 @@ var _ = Describe("MetalLB BGP", Ordered, Label(tsparams.LabelBGPTestCases), Cont
 			ipAddressPool1,
 			corev1.ServiceExternalTrafficPolicyTypeCluster)
 
-		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue1)
-		setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue1)
+		setupNGNXPod("mlbnginxtpod1"+workerNodeList[0].Definition.Name,
+			workerNodeList[0].Definition.Name,
+			tsparams.LabelValue1)
+		setupNGNXPod("mlbnginxtpod1"+workerNodeList[1].Definition.Name,
+			workerNodeList[1].Definition.Name,
+			tsparams.LabelValue1)
 
 		By("Creating service 2 with 2 backend pods")
 		setupMetalLbService(
@@ -92,8 +96,12 @@ var _ = Describe("MetalLB BGP", Ordered, Label(tsparams.LabelBGPTestCases), Cont
 			ipAddressPool2,
 			corev1.ServiceExternalTrafficPolicyTypeCluster)
 
-		setupNGNXPod(workerNodeList[0].Definition.Name, tsparams.LabelValue2)
-		setupNGNXPod(workerNodeList[1].Definition.Name, tsparams.LabelValue2)
+		setupNGNXPod("mlbnginxtpod2"+workerNodeList[0].Definition.Name,
+			workerNodeList[0].Definition.Name,
+			tsparams.LabelValue2)
+		setupNGNXPod("mlbnginxtpod2"+workerNodeList[1].Definition.Name,
+			workerNodeList[1].Definition.Name,
+			tsparams.LabelValue2)
 
 		By("Creating an IBGP BGP Peer")
 		frrk8sPods := verifyAndCreateFRRk8sPodList()

@@ -17,7 +17,7 @@ RUN tar -C /tmp/ -zxvf /tmp/helm-v3.13.2-linux-amd64.tar.gz && \
     rm /tmp/openshift-client-linux.tar.gz && \
     tar -C /usr/local/bin -xzf /tmp/openshift-install-linux.tar.gz && \
     rm /tmp/openshift-install-linux.tar.gz && \
-    dnf install -y python3-pip jq iputils buildah && \
+    dnf install -y python3-pip jq iputils skopeo && \
     python3 -m pip install https://github.com/ansible/ansible/archive/refs/tags/v2.15.9.tar.gz && \
     dnf clean all && rm -rf /var/cache/yum
 

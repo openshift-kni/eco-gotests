@@ -25,7 +25,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
-	clov1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
 )
 
 // VerifyLokiSuite container that contains tests for LokiStack and ClusterLogging verification.
@@ -53,7 +52,7 @@ func VerifyLokiSuite() {
 
 			It(fmt.Sprintf("Verify Cluster Logging instance %s is running in namespace %s",
 				vcoreparams.CLOInstanceName, vcoreparams.CLONamespace),
-				Label("loki"), reportxml.ID("59494"), CreateCLOInstance)
+				Label("loki"), reportxml.ID("59494"), CreateClusterLogForwarderInstance)
 		})
 }
 
@@ -284,16 +283,15 @@ func CreateLokiStackInstance(ctx SpecContext) {
 	time.Sleep(3 * time.Minute)
 } // func CreateLokiStackInstance (ctx SpecContext)
 
-// CreateCLOInstance asserts ClusterLogging instance can be created and running.
-//
-//nolint:funlen
-func CreateCLOInstance(ctx SpecContext) {
+// CreateClusterLogForwarderInstance asserts ClusterLogging instance can be created and running.
+func CreateClusterLogForwarderInstance(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Verify clusterLogging instance %s is running in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
 	var err error
 
-	clusterLoggingObj := clusterlogging.NewBuilder(APIClient, vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
+	clusterLoggingObj := clusterlogging.NewClusterLogForwarderBuilder(
+		APIClient, vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
 	if clusterLoggingObj.Exists() {
 		_ = clusterLoggingObj.Delete()
@@ -302,34 +300,36 @@ func CreateCLOInstance(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Infof("Create new Cluster Logging instance %s in namespace %s",
 		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace)
 
-	_, err = clusterLoggingObj.
-		WithManagementState(clov1.ManagementStateManaged).
-		WithLogStore(clov1.LogStoreSpec{
-			Type:      "lokistack",
-			LokiStack: clov1.LokiStackStoreSpec{Name: "logging-loki"},
-		}).
-		WithCollection(clov1.CollectionSpec{
-			Type: "vector",
-			CollectorSpec: clov1.CollectorSpec{
-				Tolerations: []corev1.Toleration{{
-					Key:      "node-role.kubernetes.io/infra",
-					Operator: "Exists",
-				}, {
-					Key:      "node.ocs.openshift.io/storage",
-					Operator: "Equal",
-					Value:    "true",
-					Effect:   "NoSchedule",
-				}},
-			}}).
-		WithVisualization(clov1.VisualizationSpec{
-			Type:         "ocp-console",
-			NodeSelector: map[string]string{"node-role.kubernetes.io/infra": ""},
-			Tolerations: []corev1.Toleration{{
-				Key:      "node-role.kubernetes.io/infra",
-				Operator: "Exists",
-			}}}).Create()
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create clusterLogging instance %s in namespace %s; %v",
-		vcoreparams.CLOInstanceName, vcoreparams.CLONamespace, err))
+	//nolint:godox
+	// ToDo need to be replaced with the ClusterLogForwarding object.
+	// _, err = clusterLoggingObj.
+	//	WithManagementState(clov1.ManagementStateManaged).
+	//	WithLogStore(clov1.LogStoreSpec{
+	//		Type:      "lokistack",
+	//		LokiStack: clov1.LokiStackStoreSpec{Name: "logging-loki"},
+	//	}).
+	//	WithCollection(clov1.CollectionSpec{
+	//		Type: "vector",
+	//		CollectorSpec: clov1.CollectorSpec{
+	//			Tolerations: []corev1.Toleration{{
+	//				Key:      "node-role.kubernetes.io/infra",
+	//				Operator: "Exists",
+	//			}, {
+	//				Key:      "node.ocs.openshift.io/storage",
+	//				Operator: "Equal",
+	//				Value:    "true",
+	//				Effect:   "NoSchedule",
+	//			}},
+	//		}}).
+	//	WithVisualization(clov1.VisualizationSpec{
+	//		Type:         "ocp-console",
+	//		NodeSelector: map[string]string{"node-role.kubernetes.io/infra": ""},
+	//		Tolerations: []corev1.Toleration{{
+	//			Key:      "node-role.kubernetes.io/infra",
+	//			Operator: "Exists",
+	//		}}}).Create()
+	// Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to create clusterLogging instance %s in namespace %s; %v",
+	//	vcoreparams.CLOInstanceName, vcoreparams.CLONamespace, err))
 
 	glog.V(90).Infof("Check clusterLogging instance deployment")
 
@@ -380,4 +380,4 @@ func CreateCLOInstance(ctx SpecContext) {
 
 	_, err = consoleoperatorObj.WithPlugins([]string{"logging-view-plugin"}, false).Update()
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to enable logging-view-pluggin due to %v", err))
-} // func CreateCLOInstance (ctx SpecContext)
+} // func CreateClusterLogForwarderInstance (ctx SpecContext)

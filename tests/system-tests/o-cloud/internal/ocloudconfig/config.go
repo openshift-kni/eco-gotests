@@ -3,8 +3,6 @@ package ocloudconfig
 import (
 	"log"
 	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -14,8 +12,8 @@ import (
 )
 
 const (
-	// PathToDefaultOCloudParamsFile path to config file with default o-cloud parameters.
-	PathToDefaultOCloudParamsFile = "./default.yaml"
+	// PathToOCloudParamsFile path to config file with o-cloud parameters.
+	PathToOCloudParamsFile = "/opt/deployment_config.yaml"
 )
 
 // OCloudConfig type keeps o-cloud configuration.
@@ -138,6 +136,9 @@ type OCloudConfig struct {
 	PTPVersionPatchNew uint64 `yaml:"ptp_version_patch_new" envconfig:"ECO_OCLOUD_PTP_VERSION_PATCH_NEW"`
 	// PTPVersionPrereleaseNew new prerelease version of the PTP operator.
 	PTPVersionPrereleaseNew uint64 `yaml:"ptp_version_prerelease_new" envconfig:"ECO_OCLOUD_PTP_VERSION_PRERELEASE_NEW"`
+
+	// AuthfilePath path to the Authfile for Skopeo commands
+	AuthfilePath string `yaml:"authfile_path" envconfig:"ECO_OCLOUD_AUTHFILE_PATH"`
 }
 
 // NewOCloudConfig returns instance of OCloudConfig config type.
@@ -147,13 +148,10 @@ func NewOCloudConfig() *OCloudConfig {
 	var ocloudConf OCloudConfig
 	ocloudConf.SystemTestsConfig = systemtestsconfig.NewSystemTestsConfig()
 
-	_, filename, _, _ := runtime.Caller(0)
-	baseDir := filepath.Dir(filename)
-	confFile := filepath.Join(baseDir, PathToDefaultOCloudParamsFile)
-	err := readFile(&ocloudConf, confFile)
+	err := readFile(&ocloudConf, PathToOCloudParamsFile)
 
 	if err != nil {
-		log.Printf("Error to read config file %s", confFile)
+		log.Printf("Error to read config file %s", PathToOCloudParamsFile)
 
 		return nil
 	}
