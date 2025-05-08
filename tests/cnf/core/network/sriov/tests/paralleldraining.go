@@ -197,6 +197,9 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 					sriovNodeStateList[2].Objects.Annotations["sriovnetwork.openshift.io/current-state"]))
 
 			By("Removing the test labels from the workers")
+			workerNodeList, err = nodes.List(APIClient,
+				metav1.ListOptions{LabelSelector: labels.Set(NetConfig.WorkerLabelMap).String()})
+			Expect(err).ToNot(HaveOccurred(), "Failed to discover worker nodes")
 			removeLabelFromWorkersIfExists(workerNodeList, testLabel1)
 
 			By("Removing SriovNetworkPoolConfig with maxUnavailable set to 0 and waiting for all workers to drain")
