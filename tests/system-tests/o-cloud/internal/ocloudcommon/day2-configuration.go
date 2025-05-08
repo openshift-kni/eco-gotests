@@ -479,12 +479,12 @@ func modifyDeploymentResources(
 
 // upgradeOperatorImages upgrades the operator images.
 func upgradeOperatorImages() {
-	cmd := fmt.Sprintf(ocloudparams.SkopeoRedhatOperatorsUpgrade, 
+	cmd := fmt.Sprintf(ocloudparams.SkopeoRedhatOperatorsUpgrade,
 		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for upgrade: %v", err))
 
-	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovUpgrade, 
+	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovUpgrade,
 		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for upgrade: %v", err))
@@ -492,12 +492,12 @@ func upgradeOperatorImages() {
 
 // downgradeOperatorImages downgrades the operator images.
 func downgradeOperatorImages() {
-	cmd := fmt.Sprintf(ocloudparams.SkopeoRedhatOperatorsDowngrade, 
+	cmd := fmt.Sprintf(ocloudparams.SkopeoRedhatOperatorsDowngrade,
 		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for downgrade: %v", err))
 
-	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovDowngrade, 
+	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovDowngrade,
 		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err = shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for downgrade: %v", err))
