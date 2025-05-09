@@ -3,15 +3,17 @@ package rdscorecommon
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 	"strings"
 	"time"
+
+	"github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
+	"github.com/openshift-kni/eco-goinfra/pkg/dns"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 )
@@ -19,6 +21,7 @@ import (
 const (
 	kcatDeploymentName      = "kcat"
 	kcatDeploymentNamespace = "default"
+	logMessageCnt           = 2000
 )
 
 var (
@@ -56,7 +59,7 @@ type kafkaRecord struct {
 		PodName       string `json:"pod_name,omitempty"`
 		PodOwner      string `json:"pod_owner,omitempty"`
 	} `json:"kubernetes,omitempty"`
-	ApiVersion string `json:"apiVersion,omitempty"`
+	APIVersion string `json:"apiVersion,omitempty"`
 	AuditID    string `json:"auditID,omitempty"`
 	AuditLevel string `json:"k8s_audit_level,omitempty"`
 	Kind       string `json:"kind,omitempty"`
@@ -65,7 +68,8 @@ type kafkaRecord struct {
 	LogType    string `json:"log_type"`
 	Message    string `json:"message,omitempty"`
 	ObjectRef  struct {
-		ApiVersion      string `json:"apiVersion,omitempty"`
+		APIGroup        string `json:"apiGroup,omitempty"`
+		APIVersion      string `json:"apiVersion,omitempty"`
 		Name            string `json:"name,omitempty"`
 		Namespace       string `json:"namespace,omitempty"`
 		Resource        string `json:"resource,omitempty"`
@@ -84,7 +88,7 @@ type kafkaRecord struct {
 	RequestReceivedTimestamp string `json:"requestReceivedTimestamp,omitempty"`
 	RequestURI               string `json:"requestURI,omitempty"`
 	ResponseStatus           struct {
-		Code     int `json:"code"`
+		Code     int `json:"code,omitempty"`
 		Metadata struct {
 		} `json:"metadata,omitempty"`
 	} `json:"responseStatus,omitempty"`
@@ -109,8 +113,12 @@ type kafkaRecord struct {
 }
 
 // VerifyLogForwardingToKafka Verify cluster log forwarding to the Kafka aggregator.
-func VerifyLogForwardingToKafka(ctx SpecContext) {
+//
+//nolint:funlen
+func VerifyLogForwardingToKafka() {
 	By("Insure CLO deployed")
+
+	var ctx SpecContext
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Verify CLO namespace %s defined", rdscoreparams.CLONamespace)
 
@@ -139,32 +147,37 @@ func VerifyLogForwardingToKafka(ctx SpecContext) {
 		"Failed to retrieve ClusterLogForwarder %s from the namespace %q; %v",
 		rdscoreparams.CLOInstanceName, rdscoreparams.CLONamespace, err))
 
-	clfOutput := clusterLogForwarder.Spec.Outputs
-	glog.V(100).Infof("DEBUG: spec - %v", clusterLogForwarder.Spec)
-	glog.V(100).Infof("DEBUG: clfOutput - %v", clfOutput)
+	clfOutput := clusterLogForwarder.Object.Spec.Outputs
 	Expect(len(clfOutput)).ToNot(Equal(0), fmt.Sprintf(
 		"No collector defined in the ClusterLogForwarder %s from the namespace %q",
 		rdscoreparams.CLOInstanceName, rdscoreparams.CLONamespace))
 
+	var kafkaURL, kafkaUser string
+
 	for _, collector := range clfOutput {
 		if collector.Type == "kafka" {
-			glog.V(100).Infof("DEBUG collector.Kafka.Brokers: %s", collector.Kafka.Brokers)
-			glog.V(100).Infof("DEBUG collector.URL: %s", collector.URL)
+			clfKafkaURL := collector.Kafka.URL
+
+			glog.V(100).Infof("collector.URL: %s", clfKafkaURL)
+
+			kafkaURL = strings.Split(clfKafkaURL, "/")[2]
+			kafkaUser = strings.Split(clfKafkaURL, "/")[3]
 		}
 	}
 
 	By("Getting cluster domain")
-	// ToDo waiting for the infra to be merged
-	clusterDomain := "kni-qe-3.lab.eng.rdu2.redhat.com"
 
-	clfKafkaURL := "tcp://vran-qe-kafka.kni-qe-11.lab.eng.rdu2.redhat.com:9092/vran-qe"
-	kafkaURL := strings.Split(clfKafkaURL, "/")[2]
-	kafkaUser := strings.Split(clfKafkaURL, "/")[3]
+	clusterDNS, err := dns.Pull(APIClient)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+		"Failed to retrieve clusterDNS object cluster from the namespace default; %v", err))
+
+	clusterDomain := clusterDNS.Object.Spec.BaseDomain
+	glog.V(100).Infof("DEBUG: clusterDomain: %s", clusterDomain)
 
 	By("Build query request command")
 
-	cmdToRun := []string{"/bin/sh", "-c", fmt.Sprintf("kcat -b %s -C -t %s -C -q -o end -c 1000 | grep %s",
-		kafkaURL, kafkaUser, clusterDomain)}
+	cmdToRun := []string{"/bin/sh", "-c", fmt.Sprintf("kcat -b %s -C -t %s -C -q -o end -c %d | grep %s",
+		kafkaURL, kafkaUser, logMessageCnt, clusterDomain)}
 
 	By("Retrieve kcat pod object")
 
@@ -217,6 +230,7 @@ func VerifyLogForwardingToKafka(ctx SpecContext) {
 
 		logMessages = append(logMessages, logMessage)
 	}
+
 	Expect(len(logMessages)).ToNot(Equal(0),
 		fmt.Sprintf("No forwarded to the kafka %s log messages found", kafkaURL))
 
@@ -225,11 +239,13 @@ func VerifyLogForwardingToKafka(ctx SpecContext) {
 			"Verify %s type log messages were forwarded to the kafka server %s", logType, kafkaURL)
 
 		messageCnt := 0
+
 		for _, logMessage := range logMessages {
 			if logMessage.LogType == logType {
 				messageCnt++
 			}
 		}
+
 		Expect(messageCnt).ToNot(Equal(0),
 			fmt.Sprintf("No forwarded to the kafka %s log messages of the %s type found", kafkaURL, logType))
 
