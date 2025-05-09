@@ -452,26 +452,18 @@ type CoreConfig struct {
 	EgressIPNodeTwo string `yaml:"rdscore_wlkd_egressip_node_two" envconfig:"ECO_SYSTEM_RDSCORE_EGRESSIP_NODE_TWO"`
 	//nolint:lll,nolintlint
 	EgressIPNodeThree string `yaml:"rdscore_wlkd_egressip_node_three" envconfig:"ECO_SYSTEM_RDSCORE_EGRESSIP_NODE_THREE"`
+	EgressIPTcpPort   string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
 	//nolint:lll,nolintlint
-	NonEgressIPNode string `yaml:"rdscore_wlkd_non_egressip_node" envconfig:"ECO_SYSTEM_RDSCORE_NON_EGRESSIP_NODE"`
-	//nolint:lll,nolintlint
+	NonEgressIPNode        string `yaml:"rdscore_wlkd_non_egressip_node" envconfig:"ECO_SYSTEM_RDSCORE_NON_EGRESSIP_NODE"`
 	EgressIPNamespaceLabel string `yaml:"rdscore_egressip_ns_label" envconfig:"ECO_RDSCORE_EGRESSIP_NS_LABEL"`
+	EgressIPPodLabel       string `yaml:"rdscore_egressip_pod_label" envconfig:"ECO_RDSCORE_EGRESSIP_POD_LABEL"`
+	EgressIPNamespaceOne   string `yaml:"rdscore_egressip_ns_one" envconfig:"ECO_RDSCORE_EGRESSIP_NS_ONE"`
+	EgressIPNamespaceTwo   string `yaml:"rdscore_egressip_ns_two" envconfig:"ECO_RDSCORE_EGRESSIP_NS_TWO"`
+	EgressIPv4             string `yaml:"rdscore_egressip_ipv4" envconfig:"ECO_RDSCORE_EGRESSIP_IPV4"`
+	EgressIPv6             string `yaml:"rdscore_egressip_ipv6" envconfig:"ECO_RDSCORE_EGRESSIP_IPV6"`
+	EgressIPRemoteIPv4     string `yaml:"rdscore_egressip_remote_ipv4" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV4"`
+	EgressIPRemoteIPv6     string `yaml:"rdscore_egressip_remote_ipv6" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6"`
 	//nolint:lll,nolintlint
-	EgressIPPodLabel string `yaml:"rdscore_egressip_pod_label" envconfig:"ECO_RDSCORE_EGRESSIP_POD_LABEL"`
-	//nolint:lll,nolintlint
-	EgressIPNamespaceOne string `yaml:"rdscore_egressip_ns_one" envconfig:"ECO_RDSCORE_EGRESSIP_NS_ONE"`
-	//nolint:lll,nolintlint
-	EgressIPNamespaceTwo string `yaml:"rdscore_egressip_ns_two" envconfig:"ECO_RDSCORE_EGRESSIP_NS_TWO"`
-	//nolint:lll,nolintlint
-	EgressIPv4 string `yaml:"rdscore_egressip_ipv4" envconfig:"ECO_RDSCORE_EGRESSIP_IPV4"`
-	//nolint:lll,nolintlint
-	EgressIPv6 string `yaml:"rdscore_egressip_ipv6" envconfig:"ECO_RDSCORE_EGRESSIP_IPV6"`
-	//nolint:lll,nolintlint
-	EgressIPRemoteIPv4 string `yaml:"rdscore_egressip_remote_ipv4" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV4"`
-	//nolint:lll,nolintlint
-	EgressIPRemoteIPv6 string `yaml:"rdscore_egressip_remote_ipv6" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6"`
-	//nolint:lll,nolintlint
-	EgressIPTcpPort  string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
 	PodLevelBondPort string `yaml:"rdscore_pod_level_bond_port" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_PORT"`
 	//nolint:lll,nolintlint
 	PodLevelBondNamespace string `yaml:"rdscore_pod_level_bond_ns" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_NS"`
@@ -502,9 +494,40 @@ type CoreConfig struct {
 	//nolint:lll
 	PodLevelBondPodSubnetMaskIPv6 string `yaml:"rdscore_pod_level_bond_pod_subnet_mask_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_SUBNET_MASK_IPV6"`
 	//nolint:lll
-	PodLevelBondPodMacAddr string `yaml:"rdscore_pod_level_bond_pod_mac_addr" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_MAC_ADDR"`
-	WorkerLabelListOption  metav1.ListOptions
+	PodLevelBondPodMacAddr string         `yaml:"rdscore_pod_level_bond_pod_mac_addr" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_MAC_ADDR"`
 	FRRExpectedNodes       EnvSliceString `yaml:"rdscore_frr_expected_nodes" envconfig:"ECO_RDSCORE_FRR_EXPECTED_NODES"`
+	RootlessDPDKNamespace  string         `yaml:"rdscore_rootless_dpdk_ns" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NS"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientDeploymentName string `yaml:"rdscore_rootless_dpdk_client_deployment_name" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_DEPLOYMENT_NAME"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNetworkOne string `yaml:"rdscore_rootless_dpdk_network_one" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NETWORK_ONE"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNetworkTwo string `yaml:"rdscore_rootless_dpdk_network_two" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NETWORK_TWO"`
+	//nolint:lll,nolintlint
+	RootlessDPDKVlanID string `yaml:"rdscore_rootless_dpdk_vlan_id" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_VLAN_ID"`
+	//nolint:lll,nolintlint
+	RootlessDPDKDummyVlanID string `yaml:"rdscore_rootless_dpdk_dummy_vlan_id" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_DUMMY_VLAN_ID"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNodeOne string `yaml:"rdscore_rootless_dpdk_node_one" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NODE_ONE"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNodeTwo string `yaml:"rdscore_rootless_dpdk_node_two" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NODE_TWO"`
+	//nolint:lll,nolintlint
+	RootlessDPDKDeploymentSA string `yaml:"rdscore_rootless_dpdk_deployment_sa" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_DEPLOYMENT_SA"`
+	//nolint:lll,nolintlint
+	RootlessDPDKPolicyTwo string `yaml:"rdscore_rootless_dpdk_policy_two" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_POLICY_TWO"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientVlanMac string `yaml:"rdscore_rootless_dpdk_client_vlan_mac" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_VLAN_MAC"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientMacVlanMac string `yaml:"rdscore_rootless_dpdk_client_macvlan_mac" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_MACVLAN_MAC"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientIPVlanMac string `yaml:"rdscore_rootless_dpdk_client_ipvlan_mac" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_IPVLAN_MAC"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientIPVlanIPv4 string `yaml:"rdscore_rootless_dpdk_client_ipvlan_ipv4" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_IPVLAN_IPV4"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientIPVlanIPv4Dummy string `yaml:"rdscore_rootless_dpdk_client_ipvlan_ipv4_dummy" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_IPVLAN_IPV4_DUMMY"`
+	//nolint:lll,nolintlint
+	DpdkTestContainer     string `yaml:"rdscore_dpdk_test_container" envconfig:"ECO_RDSCORE_DPDK_TEST_CONTAINER"`
+	WorkerLabelListOption metav1.ListOptions
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
