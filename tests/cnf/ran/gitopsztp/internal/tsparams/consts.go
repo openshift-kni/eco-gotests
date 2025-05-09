@@ -37,6 +37,9 @@ const (
 	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
 	LabelBiosDayZeroTests = "ztp-bios-day-zero"
 
+	// LabelDeploymentTypeTestCases is the label for deployment type checking.
+	LabelDeploymentTypeTestCases = "ztp-deployment-type"
+
 	// MultiClusterHubOperator is the name of the multi cluster hub operator.
 	MultiClusterHubOperator = "multiclusterhub-operator"
 	// AcmPolicyGeneratorName is the name of the ACM policy generator container.
