@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
@@ -59,6 +60,8 @@ func validateEnvVarAndGetNodeList() {
 	By("Fetching IPv4 and IPv6 IPs from ENV VAR to be used for External FRR Pod")
 
 	ipv4metalLbIPList, ipv6metalLbIPList, err = metallbenv.GetMetalLbIPByIPStack()
+	fmt.Println("ipv4metalLbIPList", ipv4metalLbIPList)
+	fmt.Println("ipv6metalLbIPList", ipv6metalLbIPList)
 	Expect(err).ToNot(HaveOccurred(), tsparams.MlbAddressListError)
 	Expect(len(ipv4metalLbIPList)).To(BeNumerically(">=", 2))
 	Expect(len(ipv6metalLbIPList)).To(BeNumerically(">=", 2))
@@ -199,6 +202,41 @@ func createBGPPeerAndVerifyIfItsReady(
 	}
 }
 
+func createBGPPeerUnnumberedAndVerifyIfItsReady(
+	name, dynamicASN, interfaceName, bfdProfileName string, localAS, remoteAsn uint32, eBgpMultiHop bool, connectTime int,
+	frrk8sPod *pod.Builder, nodeSelector map[string]string) {
+	By("Creating BGP Peer")
+
+	bgpPeer := metallb.NewBGPPeerBuilder(APIClient, name, NetConfig.MlbOperatorNamespace, localAS, remoteAsn).
+		WithPassword(tsparams.BGPPassword).WithEBGPMultiHop(eBgpMultiHop).WithIPUnnumbered(interfaceName).
+		WithNodeSelector(nodeSelector).WithHoldTime(metav1.Duration{
+		Duration: 90 * time.Second,
+	}).WithKeepalive(metav1.Duration{Duration: 30 * time.Second})
+
+	if dynamicASN != "" {
+		bgpPeer.WithDynamicASN(mlbtypesv1beta2.DynamicASNMode(dynamicASN))
+	}
+
+	if bfdProfileName != "" {
+		bgpPeer.WithBFDProfile(bfdProfileName)
+	}
+
+	if connectTime != 0 {
+		// Convert connectTime int to time.Duration in seconds
+		bgpPeer.WithConnectTime(metav1.Duration{Duration: time.Duration(connectTime) * time.Second})
+	}
+
+	_, err := bgpPeer.Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BGP peer")
+
+	By("Verifying if BGP protocol configured")
+
+	Eventually(frr.IsProtocolConfigured,
+		time.Minute, tsparams.DefaultRetryInterval).WithArguments(frrk8sPod, "router bgp").
+		Should(BeTrue(), "BGP is not configured on the Speakers")
+
+}
+
 func setupBgpAdvertisementAndIPAddressPool(
 	name string, addressPool []string, prefixLen int) *metallb.IPAddressPoolBuilder {
 	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
@@ -258,7 +296,7 @@ func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
 func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
-			time.Minute*3, tsparams.DefaultRetryInterval).
+			time.Minute*4, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
 			BeTrue(), "Failed to receive BGP status UP")
 	}

@@ -24,8 +24,6 @@ import (
 var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRemoteASTestCases),
 	ContinueOnFailure, func() {
 		var (
-			dynamicASiBGP                = "internal"
-			dynamicASeBGP                = "external"
 			frrExternalMasterIPAddress   = "172.16.0.1"
 			hubIPv4ExternalAddresses     = []string{"172.16.0.10", "172.16.0.11"}
 			externalAdvertisedIPv4Routes = []string{"192.168.100.0/24", "192.168.200.0/24"}
@@ -51,7 +49,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 				reportxml.ID("76821"), func() {
 					By("Setup test cases with Frr Node AS 64500 and external Frr AS 64501")
 					frrk8sPods, frrPod := setupBGPRemoteASTestCase(hubIPv4ExternalAddresses, externalAdvertisedIPv4Routes,
-						externalAdvertisedIPv6Routes, dynamicASeBGP, tsparams.RemoteBGPASN)
+						externalAdvertisedIPv6Routes, tsparams.BgpPeerDynamicASeBGP, tsparams.RemoteBGPASN)
 
 					By("Checking that BGP session is established and up")
 					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
@@ -67,7 +65,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 				reportxml.ID("76822"), func() {
 					By("Setup test cases with Frr Node AS 64500 and external Frr AS 64500")
 					frrk8sPods, frrPod := setupBGPRemoteASTestCase(hubIPv4ExternalAddresses, externalAdvertisedIPv4Routes,
-						externalAdvertisedIPv6Routes, dynamicASiBGP, tsparams.LocalBGPASN)
+						externalAdvertisedIPv6Routes, tsparams.BgpPeerDynamicASiBGP, tsparams.LocalBGPASN)
 
 					By("Checking that BGP session is established and up")
 					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
@@ -83,7 +81,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 				reportxml.ID("76825"), func() {
 					By("Setup test cases with Frr Node AS 64500 and misconfigured iBGP external Frr AS 64501")
 					frrk8sPods, frrPod := setupBGPRemoteASTestCase(hubIPv4ExternalAddresses, externalAdvertisedIPv4Routes,
-						externalAdvertisedIPv6Routes, dynamicASiBGP, tsparams.RemoteBGPASN)
+						externalAdvertisedIPv6Routes, tsparams.BgpPeerDynamicASiBGP, tsparams.RemoteBGPASN)
 
 					By("Checking that BGP session is down")
 					verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
@@ -128,7 +126,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						frrExternalMasterIPAddress, tsparams.LocalBGPASN, false)
 
 					By("Creating a BGP Peer with dynamicASN")
-					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, dynamicASiBGP, false)
+					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, tsparams.BgpPeerDynamicASiBGP, false)
 
 					By("Checking that BGP session is established and up")
 					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
@@ -147,7 +145,7 @@ var _ = Describe("BGP remote-dynamicAS", Ordered, Label(tsparams.LabelDynamicRem
 						frrExternalMasterIPAddress, tsparams.RemoteBGPASN, true)
 
 					By("Creating a BGP Peer with dynamicASN")
-					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, dynamicASeBGP, true)
+					createBGPPeerWithDynamicASN(frrExternalMasterIPAddress, tsparams.BgpPeerDynamicASeBGP, true)
 
 					By("Checking that BGP session is established and up")
 					verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod, netcmd.RemovePrefixFromIPList(ipv4NodeAddrList))
