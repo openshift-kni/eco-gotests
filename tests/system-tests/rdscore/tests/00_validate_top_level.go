@@ -526,7 +526,6 @@ var _ = Describe(
 				MustPassRepeatedly(3), reportxml.ID("79336"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
 
-<<<<<<< HEAD
 			It("Verifies rootless DPDK on the same node, single VF with multiple VLANs post hard reboot",
 				Label("dpdk", "dpdk-vlan", "dpdk-same-node"), reportxml.ID("81423"),
 				rdscorecommon.VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans)
@@ -543,15 +542,14 @@ var _ = Describe(
 				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81430"),
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
 
+			It("Verify cluster log forwarding to the Kafka broker post hard reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81884"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")
 				rdscorecommon.CleanupRootlessDPDKServerDeployment()
 			})
-=======
-			It("Verify cluster log forwarding to the Kafka broker post hard reboot",
-				Label("log-forwarding", "kafka"), reportxml.ID("81884"),
-				rdscorecommon.VerifyLogForwardingToKafka)
->>>>>>> 03d0f192 (System Test: Log Forwarding test, Kafka)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -789,7 +787,6 @@ var _ = Describe(
 				MustPassRepeatedly(3), reportxml.ID("79337"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
 
-<<<<<<< HEAD
 			It("Verifies rootless DPDK on the same node, single VF with multiple VLANs post soft reboot",
 				Label("dpdk", "dpdk-vlan", "dpdk-same-node"), reportxml.ID("81416"),
 				rdscorecommon.VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans)
@@ -806,14 +803,13 @@ var _ = Describe(
 				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81422"),
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
 
+			It("Verify cluster log forwarding to the Kafka broker post soft reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81883"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")
 				rdscorecommon.CleanupRootlessDPDKServerDeployment()
 			})
-=======
-			It("Verify cluster log forwarding to the Kafka broker post soft reboot",
-				Label("log-forwarding", "kafka"), reportxml.ID("81883"),
-				rdscorecommon.VerifyLogForwardingToKafka)
->>>>>>> 03d0f192 (System Test: Log Forwarding test, Kafka)
 		})
 	})
