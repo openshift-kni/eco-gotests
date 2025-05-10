@@ -1,3 +1,17 @@
+/*
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1
 
 import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
@@ -30,6 +44,10 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 // For example namespace 'openshift-*' matches 'openshift-apiserver' or 'openshift-authentication.
 // Resource '*/status' matches 'Pod/status' or 'Deployment/status'
 //
+// Events which include both a 'resource' and 'subresource' are evaluated by combing those
+// fields with a forward slash.  This means rules that rely upon a resource type that may or
+// may not include the subresource should be adjusted to cover all the required use-cases (i.e. ['pod','pod/*']).
+//
 // ## Default Rules
 //
 // Events that do not match any rule in the policy are filtered as follows:
@@ -48,7 +66,6 @@ import auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 // [Kube Audit Policy]: https://kubernetes.io/docs/reference/config-api/apiserver-audit.v1/#audit-k8s-io-v1-Policy
 // [Kubernetes Auditing]: https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/
 type KubeAPIAudit struct {
-
 	// Rules specify the audit Level a request should be recorded at.
 	// A request may match multiple rules, in which case the FIRST matching rule is used.
 	// PolicyRules are strictly ordered.
@@ -58,15 +75,16 @@ type KubeAPIAudit struct {
 
 	// OmitStages is a list of stages for which no events are created.
 	// Note that this can also be specified per rule in which case the union of both are omitted.
-	// +optional
+	//
+	// +kubebuilder:validation:Optional
 	OmitStages []auditv1.Stage `json:"omitStages,omitempty"`
 
 	// OmitResponseCodes is a list of HTTP status code for which no events are created.
 	// If this field is missing or null, the default value used is [404, 409, 422, 429]
 	// (NotFound, Conflict, UnprocessableEntity, TooManyRequests)
 	// If it is the empty list [], then no status codes are omitted.
-	// Otherwise this field should be a list of integer status codes to omit.
+	// Otherwise, this field should be a list of integer status codes to omit.
 	//
-	// +optional
+	// +kubebuilder:validation:Optional
 	OmitResponseCodes *[]int `json:"omitResponseCodes,omitempty"`
 }

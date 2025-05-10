@@ -24,6 +24,10 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	nodeNetConfPolIntError = "nodenetworkconfigurationpolicy 'interfaceName' cannot be empty"
+)
+
 var (
 	// allowedBondModes represents all allowed modes for Bond interface.
 	allowedBondModes = []string{"balance-rr", "active-backup", "balance-xor", "broadcast", "802.3ad"}
@@ -411,7 +415,7 @@ func (builder *PolicyBuilder) WithEthernetInterface(interfaceName, ipv4Address, 
 	if interfaceName == "" {
 		glog.V(100).Infof("The interfaceName can not be empty string")
 
-		builder.errorMsg = "nodenetworkconfigurationpolicy 'interfaceName' cannot be empty"
+		builder.errorMsg = nodeNetConfPolIntError
 
 		return builder
 	}
@@ -458,6 +462,39 @@ func (builder *PolicyBuilder) WithEthernetInterface(interfaceName, ipv4Address, 
 	return builder.withInterface(newInterface)
 }
 
+// WithEthernetIPv6LinkLocalInterface enables IPv6 and adds link-local address to interface configuration in the
+// NodeNetworkConfigurationPolicy.
+func (builder *PolicyBuilder) WithEthernetIPv6LinkLocalInterface(interfaceName string) *PolicyBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof("Creating NodeNetworkConfigurationPolicy %s with an ethernet interface %s",
+		builder.Definition.Name, interfaceName)
+
+	if interfaceName == "" {
+		glog.V(100).Infof("The interfaceName can not be empty string")
+
+		builder.errorMsg = nodeNetConfPolIntError
+
+		return builder
+	}
+
+	newInterface := NetworkInterface{
+		Name:  interfaceName,
+		Type:  "ethernet",
+		State: "up",
+		Ipv4: InterfaceIpv4{
+			Enabled: false,
+		},
+		Ipv6: InterfaceIpv6{
+			Enabled: true,
+		},
+	}
+
+	return builder.withInterface(newInterface)
+}
+
 // WithAbsentInterface appends the configuration for an absent interface to the NodeNetworkConfigurationPolicy.
 func (builder *PolicyBuilder) WithAbsentInterface(interfaceName string) *PolicyBuilder {
 	if valid, _ := builder.validate(); !valid {
@@ -470,7 +507,7 @@ func (builder *PolicyBuilder) WithAbsentInterface(interfaceName string) *PolicyB
 	if interfaceName == "" {
 		glog.V(100).Infof("The interfaceName can not be empty string")
 
-		builder.errorMsg = "nodenetworkconfigurationpolicy 'interfaceName' cannot be empty"
+		builder.errorMsg = nodeNetConfPolIntError
 
 		return builder
 	}

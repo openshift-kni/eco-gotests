@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	clov1 "github.com/openshift/cluster-logging-operator/api/logging/v1"
+	observabilityv1 "github.com/openshift/cluster-logging-operator/api/observability/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,9 +17,9 @@ import (
 // cluster and a clusterlogforwarder definition.
 type ClusterLogForwarderBuilder struct {
 	// clusterlogforwarder definition, used to create the clusterlogforwarder object.
-	Definition *clov1.ClusterLogForwarder
+	Definition *observabilityv1.ClusterLogForwarder
 	// Created clusterlogforwarder object.
-	Object *clov1.ClusterLogForwarder
+	Object *observabilityv1.ClusterLogForwarder
 	// api client to interact with the cluster.
 	apiClient goclient.Client
 	// errorMsg is processed before clusterlogforwarder object is created.
@@ -38,16 +38,16 @@ func NewClusterLogForwarderBuilder(
 		return nil
 	}
 
-	err := apiClient.AttachScheme(clov1.AddToScheme)
+	err := apiClient.AttachScheme(observabilityv1.AddToScheme)
 	if err != nil {
-		glog.V(100).Infof("Failed to add clov1 scheme to client schemes")
+		glog.V(100).Infof("Failed to add observabilityv1 scheme to client schemes")
 
 		return nil
 	}
 
 	builder := &ClusterLogForwarderBuilder{
 		apiClient: apiClient.Client,
-		Definition: &clov1.ClusterLogForwarder{
+		Definition: &observabilityv1.ClusterLogForwarder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -74,8 +74,61 @@ func NewClusterLogForwarderBuilder(
 	return builder
 }
 
+// WithManagementState sets the clusterlogforwarder operator's managementState configuration.
+func (builder *ClusterLogForwarderBuilder) WithManagementState(
+	managementState observabilityv1.ManagementState) *ClusterLogForwarderBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if managementState != observabilityv1.ManagementStateManaged &&
+		managementState != observabilityv1.ManagementStateUnmanaged {
+		glog.V(100).Infof("The management state of the clusterlogforwarder is unsupported: %s;"+
+			"accepted only %s or %s",
+			managementState, observabilityv1.ManagementStateManaged, observabilityv1.ManagementStateUnmanaged)
+
+		builder.errorMsg = fmt.Sprintf("the management state of the clusterlogforwarder is unsupported: \"%s\";"+
+			"accepted only %s or %s states",
+			managementState, observabilityv1.ManagementStateManaged, observabilityv1.ManagementStateUnmanaged)
+
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting clusterlogforwarder %s in namespace %s with the managementState config: %v",
+		builder.Definition.Name, builder.Definition.Namespace, managementState)
+
+	builder.Definition.Spec.ManagementState = managementState
+
+	return builder
+}
+
+// WithServiceAccount sets the clusterlogforwarder operator's serviceAccount configuration.
+func (builder *ClusterLogForwarderBuilder) WithServiceAccount(serviceAccount string) *ClusterLogForwarderBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	if serviceAccount == "" {
+		glog.V(100).Infof("The serviceAccount of the clusterlogforwarder is empty")
+
+		builder.errorMsg = "clusterlogforwarder 'serviceAccount' cannot be empty"
+
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Setting clusterlogforwarder %s in namespace %s with the serviceAccount config: %v",
+		builder.Definition.Name, builder.Definition.Namespace, serviceAccount)
+
+	builder.Definition.Spec.ServiceAccount.Name = serviceAccount
+
+	return builder
+}
+
 // WithOutput sets the output on the clusterlogforwarder definition.
-func (builder *ClusterLogForwarderBuilder) WithOutput(outputSpec *clov1.OutputSpec) *ClusterLogForwarderBuilder {
+func (builder *ClusterLogForwarderBuilder) WithOutput(
+	outputSpec *observabilityv1.OutputSpec) *ClusterLogForwarderBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -92,7 +145,7 @@ func (builder *ClusterLogForwarderBuilder) WithOutput(outputSpec *clov1.OutputSp
 	}
 
 	if builder.Definition.Spec.Outputs == nil {
-		builder.Definition.Spec.Outputs = []clov1.OutputSpec{*outputSpec}
+		builder.Definition.Spec.Outputs = []observabilityv1.OutputSpec{*outputSpec}
 	} else {
 		builder.Definition.Spec.Outputs = append(builder.Definition.Spec.Outputs, *outputSpec)
 	}
@@ -101,7 +154,8 @@ func (builder *ClusterLogForwarderBuilder) WithOutput(outputSpec *clov1.OutputSp
 }
 
 // WithPipeline sets the pipeline on the clusterlogforwarder definition.
-func (builder *ClusterLogForwarderBuilder) WithPipeline(pipelineSpec *clov1.PipelineSpec) *ClusterLogForwarderBuilder {
+func (builder *ClusterLogForwarderBuilder) WithPipeline(
+	pipelineSpec *observabilityv1.PipelineSpec) *ClusterLogForwarderBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
@@ -118,7 +172,7 @@ func (builder *ClusterLogForwarderBuilder) WithPipeline(pipelineSpec *clov1.Pipe
 	}
 
 	if builder.Definition.Spec.Pipelines == nil {
-		builder.Definition.Spec.Pipelines = []clov1.PipelineSpec{*pipelineSpec}
+		builder.Definition.Spec.Pipelines = []observabilityv1.PipelineSpec{*pipelineSpec}
 	} else {
 		builder.Definition.Spec.Pipelines = append(builder.Definition.Spec.Pipelines, *pipelineSpec)
 	}
@@ -136,16 +190,16 @@ func PullClusterLogForwarder(apiClient *clients.Settings, name, nsname string) (
 		return nil, fmt.Errorf("clusterlogforwarder 'apiClient' cannot be empty")
 	}
 
-	err := apiClient.AttachScheme(clov1.AddToScheme)
+	err := apiClient.AttachScheme(observabilityv1.AddToScheme)
 	if err != nil {
-		glog.V(100).Infof("Failed to add clov1 scheme to client schemes")
+		glog.V(100).Infof("Failed to add observabilityv1 scheme to client schemes")
 
 		return nil, err
 	}
 
 	builder := &ClusterLogForwarderBuilder{
 		apiClient: apiClient.Client,
-		Definition: &clov1.ClusterLogForwarder{
+		Definition: &observabilityv1.ClusterLogForwarder{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -173,7 +227,7 @@ func PullClusterLogForwarder(apiClient *clients.Settings, name, nsname string) (
 }
 
 // Get returns clusterlogforwarder object if found.
-func (builder *ClusterLogForwarderBuilder) Get() (*clov1.ClusterLogForwarder, error) {
+func (builder *ClusterLogForwarderBuilder) Get() (*observabilityv1.ClusterLogForwarder, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -181,7 +235,7 @@ func (builder *ClusterLogForwarderBuilder) Get() (*clov1.ClusterLogForwarder, er
 	glog.V(100).Infof("Getting clusterlogforwarder %s in namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	clusterLogForwarder := &clov1.ClusterLogForwarder{}
+	clusterLogForwarder := &observabilityv1.ClusterLogForwarder{}
 	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
 		Name:      builder.Definition.Name,
 		Namespace: builder.Definition.Namespace,
