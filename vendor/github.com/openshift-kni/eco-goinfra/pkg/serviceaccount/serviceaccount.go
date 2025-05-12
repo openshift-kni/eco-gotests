@@ -3,15 +3,18 @@ package serviceaccount
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	corev1Typed "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/utils/ptr"
 )
 
 // Builder provides struct for serviceaccount object containing connection to the cluster and the
@@ -115,6 +118,49 @@ func (builder *Builder) Create() (*Builder, error) {
 	}
 
 	return builder, err
+}
+
+// CreateToken creates a new token for the builder's service account using the provided duration and audiences. The zero
+// values of duration and audiences are both allowed. Note that the duration of the token returned is not guaranteed to
+// match the requested duration. Its expiration will be logged, however.
+func (builder *Builder) CreateToken(duration time.Duration, audiences ...string) (string, error) {
+	if valid, err := builder.validate(); !valid {
+		return "", err
+	}
+
+	glog.V(100).Infof("Creating token for serviceaccount %s in namespace %s with duration %s",
+		builder.Definition.Name, builder.Definition.Namespace, duration)
+
+	if !builder.Exists() {
+		glog.V(100).Infof("Cannot create a token for serviceaccount %s in namespace %s because it does not exist",
+			builder.Definition.Name, builder.Definition.Namespace)
+
+		return "", fmt.Errorf("serviceaccount %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	var durationSeconds *int64
+	if floatDuration := duration.Round(time.Second).Seconds(); floatDuration > 0 {
+		durationSeconds = ptr.To(int64(floatDuration))
+	}
+
+	tokenRequest := &authenticationv1.TokenRequest{
+		Spec: authenticationv1.TokenRequestSpec{
+			Audiences:         audiences,
+			ExpirationSeconds: durationSeconds,
+		},
+	}
+	tokenRequest, err := builder.apiClient.CreateToken(
+		context.TODO(), builder.Definition.Name, tokenRequest, metav1.CreateOptions{})
+
+	if err != nil {
+		return "", err
+	}
+
+	glog.V(100).Infof("Successfully created token for serviceaccount %s in namespace %s with expiration %s",
+		builder.Definition.Name, builder.Definition.Namespace, tokenRequest.Status.ExpirationTimestamp.Format(time.RFC3339))
+
+	return tokenRequest.Status.Token, nil
 }
 
 // Delete removes a serviceaccount.
