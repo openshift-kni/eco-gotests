@@ -158,40 +158,6 @@ var _ = Describe(
 				Label("persistent-storage", "odf-cephrbd-pvc"), reportxml.ID("71989"), MustPassRepeatedly(3),
 				rdscorecommon.VerifyCephRBDPVC)
 
-			It("Verify eIPv4 address from the list of defined used for the assigned pods in a single eIP namespace",
-				Label("egressip", "egressip-ipv4", "egressip-single-ns"), reportxml.ID("78105"),
-				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv4)
-
-			It("Verify eIPv6 address from the list of defined used for the assigned pods in a single eIP namespace",
-				Label("egressip", "egressip-ipv6", "egressip-single-ns"), reportxml.ID("78135"),
-				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv6)
-
-			It("Verify eIPv4 address from the list of defined used for the assigned pods in two eIP namespaces",
-				Label("egressip", "egressip-ipv4", "egressip-two-ns"), reportxml.ID("75060"),
-				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv4)
-
-			It("Verify eIPv6 address from the list of defined used for the assigned pods in two eIP namespaces",
-				Label("egressip", "egressip-ipv6", "egressip-two-ns"), reportxml.ID("78136"),
-				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv6)
-
-			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
-				"eIP namespace, but with the wrong pod label",
-				Label("egressip", "egressip-single-ns"), reportxml.ID("78106"),
-				rdscorecommon.VerifyEgressIPOneNamespaceOneNodeWrongPodLabel)
-
-			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
-				"eIP namespace with the wrong label",
-				Label("egressip", "egressip-one-ns"), reportxml.ID("78109"),
-				rdscorecommon.VerifyEgressIPWrongNsLabel)
-
-			It("Verify eIPv4 address assigned to the next available node after node reboot; fail-over",
-				Label("egressip", "egressip-ipv4", "egressip-failover"), reportxml.ID("78280"),
-				rdscorecommon.VerifyEgressIPFailOverIPv4)
-
-			It("Verify eIPv6 address assigned to the next available node after node reboot; fail-over",
-				Label("egressip", "egressip-ipv6", "egressip-failover"), reportxml.ID("78283"),
-				rdscorecommon.VerifyEgressIPFailOverIPv6)
-
 			It("Verifies pod-level bonded workloads on the same node and same PF",
 				Label("pod-level-bond", "pod-level-bond-same-node"),
 				MustPassRepeatedly(3), reportxml.ID("80958"),
@@ -248,6 +214,40 @@ var _ = Describe(
 			It("Verify cluster log forwarding to the Kafka broker",
 				Label("log-forwarding", "kafka"), reportxml.ID("81882"),
 				rdscorecommon.VerifyLogForwardingToKafka)
+
+			It("Verify eIPv4 address from the list of defined used for the assigned pods in a single eIP namespace",
+				Label("egressip", "egressip-ipv4", "egressip-single-ns"), reportxml.ID("78105"),
+				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv4)
+
+			It("Verify eIPv6 address from the list of defined used for the assigned pods in a single eIP namespace",
+				Label("egressip", "egressip-ipv6", "egressip-single-ns"), reportxml.ID("78135"),
+				rdscorecommon.VerifyEgressIPOneNamespaceThreeNodesBalancedEIPTrafficIPv6)
+
+			It("Verify eIPv4 address from the list of defined used for the assigned pods in two eIP namespaces",
+				Label("egressip", "egressip-ipv4", "egressip-two-ns"), reportxml.ID("75060"),
+				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv4)
+
+			It("Verify eIPv6 address from the list of defined used for the assigned pods in two eIP namespaces",
+				Label("egressip", "egressip-ipv6", "egressip-two-ns"), reportxml.ID("78136"),
+				rdscorecommon.VerifyEgressIPTwoNamespacesThreeNodesIPv6)
+
+			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
+				"eIP namespace, but with the wrong pod label",
+				Label("egressip", "egressip-single-ns"), reportxml.ID("78106"),
+				rdscorecommon.VerifyEgressIPOneNamespaceOneNodeWrongPodLabel)
+
+			It("Verify eIP address from the list of defined does not used for the assigned pods in single "+
+				"eIP namespace with the wrong label",
+				Label("egressip", "egressip-one-ns"), reportxml.ID("78109"),
+				rdscorecommon.VerifyEgressIPWrongNsLabel)
+
+			It("Verify eIPv4 address assigned to the next available node after node reboot; fail-over",
+				Label("egressip", "egressip-ipv4", "egressip-failover"), reportxml.ID("78280"),
+				rdscorecommon.VerifyEgressIPFailOverIPv4)
+
+			It("Verify eIPv6 address assigned to the next available node after node reboot; fail-over",
+				Label("egressip", "egressip-ipv6", "egressip-failover"), reportxml.ID("78283"),
+				rdscorecommon.VerifyEgressIPFailOverIPv6)
 
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")
@@ -526,7 +526,6 @@ var _ = Describe(
 				MustPassRepeatedly(3), reportxml.ID("79336"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
 
-<<<<<<< HEAD
 			It("Verifies rootless DPDK on the same node, single VF with multiple VLANs post hard reboot",
 				Label("dpdk", "dpdk-vlan", "dpdk-same-node"), reportxml.ID("81423"),
 				rdscorecommon.VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans)
@@ -543,15 +542,14 @@ var _ = Describe(
 				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81430"),
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
 
+			It("Verify cluster log forwarding to the Kafka broker post hard reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81884"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")
 				rdscorecommon.CleanupRootlessDPDKServerDeployment()
 			})
-=======
-			It("Verify cluster log forwarding to the Kafka broker post hard reboot",
-				Label("log-forwarding", "kafka"), reportxml.ID("81884"),
-				rdscorecommon.VerifyLogForwardingToKafka)
->>>>>>> 03d0f192 (System Test: Log Forwarding test, Kafka)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -789,7 +787,6 @@ var _ = Describe(
 				MustPassRepeatedly(3), reportxml.ID("79337"),
 				rdscorecommon.VerifyPodLevelBondWorkloadsOnDifferentNodesDifferentPFs)
 
-<<<<<<< HEAD
 			It("Verifies rootless DPDK on the same node, single VF with multiple VLANs post soft reboot",
 				Label("dpdk", "dpdk-vlan", "dpdk-same-node"), reportxml.ID("81416"),
 				rdscorecommon.VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans)
@@ -806,14 +803,13 @@ var _ = Describe(
 				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81422"),
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
 
+			It("Verify cluster log forwarding to the Kafka broker post soft reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81883"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")
 				rdscorecommon.CleanupRootlessDPDKServerDeployment()
 			})
-=======
-			It("Verify cluster log forwarding to the Kafka broker post soft reboot",
-				Label("log-forwarding", "kafka"), reportxml.ID("81883"),
-				rdscorecommon.VerifyLogForwardingToKafka)
->>>>>>> 03d0f192 (System Test: Log Forwarding test, Kafka)
 		})
 	})

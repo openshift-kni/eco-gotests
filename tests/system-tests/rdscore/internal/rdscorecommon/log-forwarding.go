@@ -162,22 +162,32 @@ func VerifyLogForwardingToKafka() {
 
 			kafkaURL = strings.Split(clfKafkaURL, "/")[2]
 			kafkaUser = strings.Split(clfKafkaURL, "/")[3]
+
+			break
 		}
 	}
 
-	By("Getting cluster domain")
+	kafkaLogsLabel := RDSCoreConfig.KafkaLogsLabel
 
-	clusterDNS, err := dns.Pull(APIClient)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
-		"Failed to retrieve clusterDNS object cluster from the namespace default; %v", err))
+	if kafkaLogsLabel == "" {
+		By("Getting cluster domain")
 
-	clusterDomain := clusterDNS.Object.Spec.BaseDomain
-	glog.V(100).Infof("DEBUG: clusterDomain: %s", clusterDomain)
+		clusterDNS, err := dns.Pull(APIClient)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+			"Failed to retrieve clusterDNS object cluster from the namespace default; %v", err))
+
+		clusterDomain := clusterDNS.Object.Spec.BaseDomain
+		Expect(clusterDomain).ToNot(Equal(""), "cluster domain is empty")
+
+		glog.V(100).Infof("DEBUG: clusterDomain: %s", clusterDomain)
+
+		kafkaLogsLabel = clusterDomain
+	}
 
 	By("Build query request command")
 
 	cmdToRun := []string{"/bin/sh", "-c", fmt.Sprintf("kcat -b %s -C -t %s -C -q -o end -c %d | grep %s",
-		kafkaURL, kafkaUser, logMessageCnt, clusterDomain)}
+		kafkaURL, kafkaUser, logMessageCnt, kafkaLogsLabel)}
 
 	By("Retrieve kcat pod object")
 
