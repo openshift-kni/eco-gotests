@@ -599,7 +599,6 @@ github.com/openshift-kni/eco-goinfra/pkg/configmap
 github.com/openshift-kni/eco-goinfra/pkg/console
 github.com/openshift-kni/eco-goinfra/pkg/daemonset
 github.com/openshift-kni/eco-goinfra/pkg/deployment
-github.com/openshift-kni/eco-goinfra/pkg/dns
 github.com/openshift-kni/eco-goinfra/pkg/egressip
 github.com/openshift-kni/eco-goinfra/pkg/egressservice
 github.com/openshift-kni/eco-goinfra/pkg/events

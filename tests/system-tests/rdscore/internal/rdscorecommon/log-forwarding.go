@@ -162,22 +162,32 @@ func VerifyLogForwardingToKafka() {
 
 			kafkaURL = strings.Split(clfKafkaURL, "/")[2]
 			kafkaUser = strings.Split(clfKafkaURL, "/")[3]
+
+			break
 		}
 	}
 
-	By("Getting cluster domain")
+	kafkaLogsLabel := RDSCoreConfig.KafkaLogsLabel
 
-	clusterDNS, err := dns.Pull(APIClient)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
-		"Failed to retrieve clusterDNS object cluster from the namespace default; %v", err))
+	if kafkaLogsLabel == "" {
+		By("Getting cluster domain")
 
-	clusterDomain := clusterDNS.Object.Spec.BaseDomain
-	glog.V(100).Infof("DEBUG: clusterDomain: %s", clusterDomain)
+		clusterDNS, err := dns.Pull(APIClient)
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+			"Failed to retrieve clusterDNS object cluster from the namespace default; %v", err))
+
+		clusterDomain := clusterDNS.Object.Spec.BaseDomain
+		Expect(clusterDomain).ToNot(Equal(""), "cluster domain is empty")
+
+		glog.V(100).Infof("DEBUG: clusterDomain: %s", clusterDomain)
+
+		kafkaLogsLabel = clusterDomain
+	}
 
 	By("Build query request command")
 
 	cmdToRun := []string{"/bin/sh", "-c", fmt.Sprintf("kcat -b %s -C -t %s -C -q -o end -c %d | grep %s",
-		kafkaURL, kafkaUser, logMessageCnt, clusterDomain)}
+		kafkaURL, kafkaUser, logMessageCnt, kafkaLogsLabel)}
 
 	By("Retrieve kcat pod object")
 
@@ -209,13 +219,21 @@ func VerifyLogForwardingToKafka() {
 
 		result = output.String()
 
+		if result == "" {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+				"Empty result received from within a pod %q in namespace %q",
+				kcatPodObj.Definition.Name, kcatPodObj.Definition.Namespace)
+
+			return false
+		}
+
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Command's output:\n\t%v", result)
 
 		return true
 	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(6*time.Minute).Should(BeTrue(),
 		"pods matching label() still present")
 
-	By("Analise received logs")
+	By("Analyse received logs")
 
 	result = strings.TrimSpace(result)
 
@@ -232,7 +250,7 @@ func VerifyLogForwardingToKafka() {
 	}
 
 	Expect(len(logMessages)).ToNot(Equal(0),
-		fmt.Sprintf("No forwarded to the kafka %s log messages found", kafkaURL))
+		fmt.Sprintf("No log messages forwarded to the kafka %s found", kafkaURL))
 
 	for _, logType := range logTypes {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
@@ -247,9 +265,9 @@ func VerifyLogForwardingToKafka() {
 		}
 
 		Expect(messageCnt).ToNot(Equal(0),
-			fmt.Sprintf("No forwarded to the kafka %s log messages of the %s type found", kafkaURL, logType))
+			fmt.Sprintf("No log messages of %s type forwarded to the kafka %s were found", kafkaURL, logType))
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Was found %d %s log messages forwarded to the kafka server",
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d %s log messages forwarded to the kafka server",
 			messageCnt, logType)
 	}
 }
