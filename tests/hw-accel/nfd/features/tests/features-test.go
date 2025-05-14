@@ -317,7 +317,7 @@ func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource,
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 	By("Check that pods are in running state")
 
-	res, err := wait.ForPod(APIClient, hwaccelparams.NFDNamespace)
+	res, err := wait.ForPodsRunning(APIClient, 15*time.Minute, hwaccelparams.NFDNamespace)
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(res).To(BeTrue())
 	By("Check feature labels exists")
@@ -330,7 +330,7 @@ func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource,
 		}
 
 		return allNodeLabels
-	}).WithTimeout(50 * time.Second).ShouldNot(HaveLen(0))
+	}).WithTimeout(5 * time.Minute).ShouldNot(HaveLen(0))
 }
 
 func skipIfConfigNotSet(nfdConfig *nfdconfig.NfdConfig) {

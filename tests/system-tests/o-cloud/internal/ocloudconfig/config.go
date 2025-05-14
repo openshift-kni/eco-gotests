@@ -3,6 +3,8 @@ package ocloudconfig
 import (
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -12,8 +14,8 @@ import (
 )
 
 const (
-	// PathToOCloudParamsFile path to config file with o-cloud parameters.
-	PathToOCloudParamsFile = "/opt/deployment_config.yaml"
+	// PathToDefaultOCloudParamsFile path to config file with o-cloud parameters.
+	PathToDefaultOCloudParamsFile = "./default.yaml"
 )
 
 // OCloudConfig type keeps o-cloud configuration.
@@ -148,10 +150,13 @@ func NewOCloudConfig() *OCloudConfig {
 	var ocloudConf OCloudConfig
 	ocloudConf.SystemTestsConfig = systemtestsconfig.NewSystemTestsConfig()
 
-	err := readFile(&ocloudConf, PathToOCloudParamsFile)
+	_, filename, _, _ := runtime.Caller(0)
+	baseDir := filepath.Dir(filename)
+	confFile := filepath.Join(baseDir, PathToDefaultOCloudParamsFile)
+	err := readFile(&ocloudConf, confFile)
 
 	if err != nil {
-		log.Printf("Error to read config file %s", PathToOCloudParamsFile)
+		log.Printf("Error to read config file %s", confFile)
 
 		return nil
 	}

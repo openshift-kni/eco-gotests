@@ -292,9 +292,6 @@ github.com/go-task/slim-sprig/v3
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
-# github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
-## explicit
-github.com/golang-collections/collections/set
 # github.com/golang/glog v1.2.4
 ## explicit; go 1.19
 github.com/golang/glog
@@ -586,8 +583,8 @@ github.com/opencontainers/runtime-spec/specs-go
 ## explicit; go 1.22.0
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20250506145143-99edd8b86412
-## explicit; go 1.24.2
+# github.com/openshift-kni/eco-goinfra v0.0.0-20250510181931-b6562393aff3
+## explicit; go 1.24.3
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
 github.com/openshift-kni/eco-goinfra/pkg/assisted
@@ -896,12 +893,9 @@ github.com/openshift/client-go/security/applyconfigurations/internal
 github.com/openshift/client-go/security/applyconfigurations/security/v1
 github.com/openshift/client-go/security/clientset/versioned/scheme
 github.com/openshift/client-go/security/clientset/versioned/typed/security/v1
-# github.com/openshift/cluster-logging-operator v0.0.0-20241003210634-afb65cea19d1
+# github.com/openshift/cluster-logging-operator/api/observability v0.0.0-20250422180113-5bae4ccfc5ef
 ## explicit; go 1.21
-github.com/openshift/cluster-logging-operator/api/logging/v1
-github.com/openshift/cluster-logging-operator/internal/constants
-github.com/openshift/cluster-logging-operator/internal/status
-github.com/openshift/cluster-logging-operator/internal/utils/sets
+github.com/openshift/cluster-logging-operator/api/observability/v1
 # github.com/openshift/cluster-nfd-operator v0.0.0-20250116132220-e601a6278a42
 ## explicit; go 1.22
 github.com/openshift/cluster-nfd-operator/api/v1

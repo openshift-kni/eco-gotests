@@ -46,8 +46,6 @@ github.com/PaesslerAG/jsonpath v0.1.1/go.mod h1:lVboNxFGal/VwW6d9JzIy56bUsYAP6tH
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
-github.com/ViaQ/logerr/v2 v2.1.0 h1:8WwzuNa1x+a6tRUl+6sFel83A/QxlFBUaFW2FyG2zzY=
-github.com/ViaQ/logerr/v2 v2.1.0/go.mod h1:/qoWLm3YG40Sv5u75s4fvzjZ5p36xINzaxU2L+DJ9uw=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/agnivade/levenshtein v1.1.0 h1:n6qGwyHG61v3ABce1rPVZklEYRT8NFpCMrpZdBUbYGM=
 github.com/agnivade/levenshtein v1.1.0/go.mod h1:veldBMzWxcCG2ZvUTKD2kJNRdCk5hVbJomOvKkmgYbo=
@@ -296,8 +294,6 @@ github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5x
 github.com/gogo/protobuf v1.3.1/go.mod h1:SlYgWuQ5SjCEi6WLHjHCa1yvBfUnHcTbrrZtXPKa29o=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
 github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
-github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 h1:zN2lZNZRflqFyxVaTIU61KNKQ9C0055u9CAfpmqUvo4=
-github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3/go.mod h1:nPpo7qLxd6XL3hWJG/O60sR8ZKfMCiIoNap5GvD12KU=
 github.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzqecmYZeUEB8OUGHkxJ+I=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
 github.com/golang/glog v1.2.4 h1:CNNw5U8lSiiBk7druxtSHHTsRWcxKoac6kZKm2peBBc=
@@ -639,8 +635,8 @@ github.com/opencontainers/runtime-spec v1.2.0 h1:z97+pHb3uELt/yiAWD691HNHQIF07bE
 github.com/opencontainers/runtime-spec v1.2.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20241213003211-a57a58a5c4f2 h1:Ts3yv2vE8LtfFmXvhUcyLsZ7YBHT84/vEWR9SHbFj2M=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20241213003211-a57a58a5c4f2/go.mod h1:TYB+3zGmMhqOmyZ6FCbtNZSndvRDcfh16U7wgYGpe/8=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250506145143-99edd8b86412 h1:R6uk57Le8xpu+GVlzjnc2JQ1Rz1V/Lp6HTTWi3W8Btc=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250506145143-99edd8b86412/go.mod h1:VzwXpWE1O9T/Y7BGuw0mBc4mHS0Yaan4PXCqh6ssCN8=
+github.com/openshift-kni/eco-goinfra v0.0.0-20250510181931-b6562393aff3 h1:bBUFHb6OWgQ3CpTrtPnsV8ixVQDpsF5TXMv0bpavgRk=
+github.com/openshift-kni/eco-goinfra v0.0.0-20250510181931-b6562393aff3/go.mod h1:fOHk3tdfiI67tPRxxoWBPklncKm/cPZaGqpEzdFIzCY=
 github.com/openshift-kni/k8sreporter v1.0.6 h1:aaxDzZx3s9bo1I3nopR63RGVZxcJgR94j5X87aDihYo=
 github.com/openshift-kni/k8sreporter v1.0.6/go.mod h1:tX6LOg0m0oXje7WNLFo8LKHC9Ix8VV0a7vUc6eyeFBQ=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20250120220331-9547280df193 h1:pdJAfmQwUvqAKcjaMGNqICbuZ7a20sGxm4JFymc1mmw=
@@ -657,8 +653,8 @@ github.com/openshift/api v0.0.0-20250123044544-55c9ecba501f h1:krG0zbwiSdTj1QEhm
 github.com/openshift/api v0.0.0-20250123044544-55c9ecba501f/go.mod h1:Shkl4HanLwDiiBzakv+con/aMGnVE2MAGvoKp5oyYUo=
 github.com/openshift/client-go v0.0.0-20241107164952-923091dd2b1a h1:h3F55x+zOXwSG4okUlXmOlU/5CQ7Ve2HKxYjseJPVoY=
 github.com/openshift/client-go v0.0.0-20241107164952-923091dd2b1a/go.mod h1:JBIcn1JfD/JCpGYnRRT0+HLxrleF/Y7T3Y/t0p8o5jk=
-github.com/openshift/cluster-logging-operator v0.0.0-20241003210634-afb65cea19d1 h1:wHc3FvG1CTkAfOQ6GoAahRc+TDgDapEwnn77zssj3Ac=
-github.com/openshift/cluster-logging-operator v0.0.0-20241003210634-afb65cea19d1/go.mod h1:iLuWnS7rFs5XMY8Y5yZKFwLBWeo/7n7ts1kxJe3pElI=
+github.com/openshift/cluster-logging-operator/api/observability v0.0.0-20250422180113-5bae4ccfc5ef h1:btjgRrxWTbrSRVLf9oIJiAUykmv+dG0N8ImEx9RuhyE=
+github.com/openshift/cluster-logging-operator/api/observability v0.0.0-20250422180113-5bae4ccfc5ef/go.mod h1:iYbyyrn/zt46Tl9lEr30u4ZPRQpDSGjqKrerALwSBXs=
 github.com/openshift/cluster-nfd-operator v0.0.0-20250116132220-e601a6278a42 h1:KIuhz/5L/EdFeF5dEJzZYz24Ep4ujIyulDoZyQRKbkA=
 github.com/openshift/cluster-nfd-operator v0.0.0-20250116132220-e601a6278a42/go.mod h1:98dESXqY6bLo+T5f7BPlFDlmr5NVVySXV/3S3XuajMM=
 github.com/openshift/cluster-node-tuning-operator v0.0.0-20250408112936-4f58be155c79 h1:OooAFD1RR0tjmw0a0M8RrxnIwBoHqYEwbDQIsr2QyrE=
