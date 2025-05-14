@@ -7,7 +7,12 @@ import (
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
+
+	"github.com/golang/glog"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -86,18 +91,30 @@ func ForNodeReadiness(apiClient *clients.Settings,
 	return true, nil
 }
 
-// ForPod check that all pods in namespace are in running state.
-func ForPod(apiClient *clients.Settings, nsname string) (bool, error) {
-	podList, err := pod.List(apiClient, nsname, metav1.ListOptions{})
+// ForPodsRunning check that all pods in namespace are in running state.
+func ForPodsRunning(apiClient *clients.Settings, timeout time.Duration, nsname string) (bool, error) {
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			pods, err := get.PodStatus(apiClient, hwaccelparams.NFDNamespace)
+			if err != nil {
+				return false, err
+			}
+
+			for _, pod := range pods {
+				if pod.State != string(corev1.PodRunning) {
+					glog.V(nfdparams.LogLevel).Infof("pod %s is in %s state", pod.Name, pod.State)
+
+					return false, nil // not ready yet
+				}
+			}
+
+			glog.V(nfdparams.LogLevel).Info("all pods are in running status")
+
+			return true, nil
+		})
+
 	if err != nil {
 		return false, err
-	}
-
-	for _, onePod := range podList {
-		err = onePod.WaitUntilRunning(8 * time.Minute)
-		if err != nil {
-			return false, err
-		}
 	}
 
 	return true, nil

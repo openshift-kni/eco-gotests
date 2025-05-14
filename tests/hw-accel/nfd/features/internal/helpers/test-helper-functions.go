@@ -3,15 +3,13 @@ package helpers
 import (
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/search"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/wait"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -44,25 +42,14 @@ func CheckLabelsExist(nodelabels map[string][]string, labelsToSearch, blackList 
 // CheckPodStatus check if each pod is in a running status.
 func CheckPodStatus(apiClient *clients.Settings) error {
 	verifyPodStatus := func() error {
-		_, err := wait.ForPod(apiClient, hwaccelparams.NFDNamespace)
+		statusCheck, err := wait.ForPodsRunning(apiClient, 15*time.Minute, hwaccelparams.NFDNamespace)
 		if err != nil {
 			return err
 		}
 
-		glog.V(nfdparams.LogLevel).Info("validate all pods are running")
-
-		podlist, err := get.PodStatus(apiClient, hwaccelparams.NFDNamespace)
-		if err != nil {
-			return err
+		if !statusCheck {
+			return fmt.Errorf("all pods in namespace %s are not running", hwaccelparams.NFDNamespace)
 		}
-
-		for _, pod := range podlist {
-			if pod.State != "Running" {
-				return fmt.Errorf("pod: %v is in %v status", pod.Name, pod.State)
-			}
-		}
-
-		glog.V(nfdparams.LogLevel).Info("all pods are in running status")
 
 		return nil
 	}
