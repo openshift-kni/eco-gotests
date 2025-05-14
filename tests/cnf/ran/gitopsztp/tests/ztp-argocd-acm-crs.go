@@ -1,11 +1,14 @@
 package tests
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
@@ -20,7 +23,8 @@ import (
 var _ = Describe("ZTP Argo CD ACM CR Tests", Label(tsparams.LabelArgoCdAcmCrsTestCases), func() {
 	var (
 		acmPolicyGeneratorImage string
-		// oldAcmPolicyGeneratorContainer corev1.Container
+		policiesApp             *argocd.ApplicationBuilder
+		originalPoliciesGitPath string
 	)
 
 	BeforeEach(func() {
@@ -31,6 +35,14 @@ var _ = Describe("ZTP Argo CD ACM CR Tests", Label(tsparams.LabelArgoCdAcmCrsTes
 		if !versionInRange {
 			Skip("ZTP Argo CD ACM CRs tests require ZTP 4.12 or later")
 		}
+
+		By("saving the original policies app source")
+		policiesApp, err = argocd.PullApplication(
+			HubAPIClient, tsparams.ArgoCdPoliciesAppName, ranparam.OpenshiftGitOpsNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original policies app")
+
+		originalPoliciesGitPath, err = gitdetails.GetGitPath(policiesApp)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original policies app git path")
 
 		By("determining the container image for ACM CR integration")
 		multiClusterDeployment, err := deployment.Pull(
@@ -45,21 +57,31 @@ var _ = Describe("ZTP Argo CD ACM CR Tests", Label(tsparams.LabelArgoCdAcmCrsTes
 	})
 
 	AfterEach(func() {
+		if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
+			return
+		}
+
 		By("resetting the policies app back to the original settings")
-		err := gitdetails.SetGitDetailsInArgoCd(
-			tsparams.ArgoCdPoliciesAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName], true, false)
-		Expect(err).ToNot(HaveOccurred(), "Failed to reset the git details for the policies app")
+		policiesApp.Definition.Spec.Source.Path = originalPoliciesGitPath
+		policiesApp, err := policiesApp.Update(true)
+		Expect(err).ToNot(HaveOccurred(), "Failed to update the policies app back to the original settings")
+
+		By("waiting for the policies app to sync")
+		err = policiesApp.WaitForSourceUpdate(true, tsparams.ArgoCdChangeTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for the policies app to sync")
 	})
 
 	// 54236 - Evaluating use of ACM's version of PolicyGenTemplates with our ZTP flow. This enables user created
 	// content that does not depend on our ZTP container but works "seamlessly" with it.
 	It("should use ACM CRs to template a policy, deploy it, and validate it succeeded", reportxml.ID("54236"), func() {
-		exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdPoliciesAppName, tsparams.ZtpTestPathAcmCrs, true)
-		if !exists {
-			Skip(err.Error())
+		By("checking if the ztp test path exists")
+		if !policiesApp.DoesGitPathExist(tsparams.ZtpTestPathAcmCrs) {
+			Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathAcmCrs))
 		}
 
-		Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
+		By("updating the policies app git path")
+		err := gitdetails.UpdateAndWaitForSync(policiesApp, true, tsparams.ZtpTestPathAcmCrs)
+		Expect(err).ToNot(HaveOccurred(), "Failed to update the policies app git path")
 
 		By("waiting for policies to be created")
 		policy, err := helper.WaitForPolicyToExist(

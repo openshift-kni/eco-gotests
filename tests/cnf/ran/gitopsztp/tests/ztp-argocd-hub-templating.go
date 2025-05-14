@@ -1,12 +1,15 @@
 package tests
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/cgu"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
@@ -26,6 +29,11 @@ import (
 )
 
 var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdHubTemplatingTestCases), func() {
+	var (
+		policiesApp             *argocd.ApplicationBuilder
+		originalPoliciesGitPath string
+	)
+
 	BeforeEach(func() {
 		By("checking the ZTP version")
 		versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.12", "")
@@ -35,16 +43,32 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 			Skip("This test requires a ZTP version of at least 4.12")
 		}
 
+		By("saving the original policies app source")
+		policiesApp, err = argocd.PullApplication(
+			HubAPIClient, tsparams.ArgoCdPoliciesAppName, ranparam.OpenshiftGitOpsNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original policies app")
+
+		originalPoliciesGitPath, err = gitdetails.GetGitPath(policiesApp)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original policies app git path")
+
 		By("ensuring the test namespace exists")
 		_, err = namespace.NewBuilder(HubAPIClient, tsparams.TestNamespace).Create()
 		Expect(err).ToNot(HaveOccurred(), "Failed to create the test namespace")
 	})
 
 	AfterEach(func() {
+		if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
+			return
+		}
+
 		By("resetting the policies app back to the original settings")
-		err := gitdetails.SetGitDetailsInArgoCd(
-			tsparams.ArgoCdPoliciesAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName], true, false)
-		Expect(err).ToNot(HaveOccurred(), "Failed to reset the git details for the policies app")
+		policiesApp.Definition.Spec.Source.Path = originalPoliciesGitPath
+		policiesApp, err := policiesApp.Update(true)
+		Expect(err).ToNot(HaveOccurred(), "Failed to update the policies app back to the original settings")
+
+		By("waiting for the policies app to sync")
+		err = policiesApp.WaitForSourceUpdate(true, tsparams.ArgoCdChangeTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for the policies app to sync")
 
 		By("removing the hub templating leftovers if any exist")
 		network, err := sriov.PullNetwork(Spoke1APIClient, tsparams.TestNamespace, RANConfig.SriovOperatorNamespace)
@@ -64,7 +88,7 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 
 	// 54240 - Hub-side ACM templating with TALM
 	It("should report an error for using autoindent function where not allowed", reportxml.ID("54240"), func() {
-		setupHubTemplateTest(tsparams.ZtpTestPathTemplatingAutoIndent)
+		setupHubTemplateTest(policiesApp, tsparams.ZtpTestPathTemplatingAutoIndent)
 
 		By("validating TALM reported a policy error")
 		assertTalmPodLog(HubAPIClient, "policy has hub template error")
@@ -103,7 +127,7 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 				Expect(err).ToNot(HaveOccurred(), "Failed to clean up hub templating secret")
 			})
 
-			setupHubTemplateTest(validTestPath)
+			setupHubTemplateTest(policiesApp, validTestPath)
 
 			By("validating the policy reaches compliant status")
 			policy, err := ocm.PullPolicy(HubAPIClient, tsparams.HubTemplatingPolicyName, tsparams.TestNamespace)
@@ -116,15 +140,17 @@ var _ = Describe("ZTP Argo CD Hub Templating Tests", Label(tsparams.LabelArgoCdH
 })
 
 // setupHubTemplateTest extracts the core setup logic for the hub templating test cases.
-func setupHubTemplateTest(ztpTestPath string) {
-	By("updating the Argo CD git path")
+func setupHubTemplateTest(app *argocd.ApplicationBuilder, ztpTestPath string) {
+	By("checking if the ztp test path exists")
 
-	exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdPoliciesAppName, ztpTestPath, true)
-	if !exists {
-		Skip(err.Error())
+	if !app.DoesGitPathExist(ztpTestPath) {
+		Skip(fmt.Sprintf("git path '%s' could not be found", ztpTestPath))
 	}
 
-	Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
+	By("updating the policies app git path")
+
+	err := gitdetails.UpdateAndWaitForSync(app, true, ztpTestPath)
+	Expect(err).ToNot(HaveOccurred(), "Failed to update the policies app git path")
 
 	By("waiting for the policy to exist")
 
