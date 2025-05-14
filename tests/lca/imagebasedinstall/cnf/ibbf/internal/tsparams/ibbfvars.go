@@ -7,6 +7,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfinittools"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfparams"
 	"github.com/openshift-kni/k8sreporter"
 )
@@ -24,6 +25,13 @@ const (
 	// LCAKlusterletNamespace is the namespace that contains the klusterlet.
 	LCAKlusterletNamespace = "open-cluster-management-agent"
 )
+
+// ArgoCdGitDetails is the details for a single app in ArgoCD.
+type ArgoCdGitDetails struct {
+	Repo   string
+	Branch string
+	Path   string
+}
 
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
@@ -52,4 +60,15 @@ var (
 
 	// ClusterLabelSelector is the cluster label passed to IBGUs.
 	ClusterLabelSelector = map[string]string{"common": "true"}
+
+	// ArgoCdApps is the slice of the Argo CD app names defined in this package.
+	ArgoCdApps = []string{
+		ArgoCdClustersAppName,
+		ArgoCdPoliciesAppName,
+	}
+	// ArgoCdAppDetails contains more details for each of the ArgoCdApps.
+	ArgoCdAppDetails = map[string]ArgoCdGitDetails{}
+
+	// SpokeNamespace is the name of the spoke cluster namespace on the hub.
+	SpokeNamespace = cnfinittools.CNFConfig.SpokeName
 )

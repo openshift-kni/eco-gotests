@@ -10,16 +10,16 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/ibbf/internal/tsparams"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfinittools"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/internal/ibiparams"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // GetArgoCdAppGitDetails initializes tsparams.ArgoCdAppDetails with the details for each of tsparams.ArgoCdApps.
 func GetArgoCdAppGitDetails() error {
 	for _, app := range tsparams.ArgoCdApps {
-		argoCdApp, err := argocd.PullApplication(HubAPIClient, app, ranparam.OpenshiftGitOpsNamespace)
+		argoCdApp, err := argocd.PullApplication(cnfinittools.TargetHubAPIClient, app, ibiparams.OpenshiftGitOpsNamespace)
 		if err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func GetArgoCdAppGitDetails() error {
 // SetGitDetailsInArgoCd updates the git details for the provided Argo CD app.
 func SetGitDetailsInArgoCd(
 	appName string, gitDetails tsparams.ArgoCdGitDetails, waitForSync, syncMustBeValid bool) error {
-	app, err := argocd.PullApplication(HubAPIClient, appName, ranparam.OpenshiftGitOpsNamespace)
+	app, err := argocd.PullApplication(cnfinittools.TargetHubAPIClient, appName, ibiparams.OpenshiftGitOpsNamespace)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func waitForArgoCdChangeToComplete(appName string, syncMustBeValid bool, timeout
 		context.TODO(), tsparams.ArgoCdChangeInterval, timeout, true, func(ctx context.Context) (done bool, err error) {
 			glog.V(tsparams.LogLevel).Infof("Checking if change to Argo CD app %s is complete", appName)
 
-			app, err := argocd.PullApplication(HubAPIClient, appName, ranparam.OpenshiftGitOpsNamespace)
+			app, err := argocd.PullApplication(cnfinittools.TargetHubAPIClient, appName, ibiparams.OpenshiftGitOpsNamespace)
 			if err != nil {
 				return false, err
 			}

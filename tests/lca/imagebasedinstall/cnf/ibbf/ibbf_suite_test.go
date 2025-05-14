@@ -1,4 +1,4 @@
-package ibbf_test
+package ibbftests
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/ibbf/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/ibbf/tests"
 	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfinittools"
+
 	"runtime"
 	"testing"
 )

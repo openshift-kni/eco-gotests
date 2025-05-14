@@ -51,10 +51,4 @@ const (
 	RollbackCguName = "cgu-ibu-rollback"
 	// RollbackPolicyName is the name of managed policy for ibu rollback stage validation.
 	RollbackPolicyName = "group-ibu-rollback-stage-policy"
-
-	// ArgoCdClustersAppName is the name of the clusters app in Argo CD.
-	ArgoCdClustersAppName = "clusters"
-
-	// IBBFTestPath is the name of the path to IBBF test siteconfig
-	IBBFTestPath = "ibbf_test"
 )

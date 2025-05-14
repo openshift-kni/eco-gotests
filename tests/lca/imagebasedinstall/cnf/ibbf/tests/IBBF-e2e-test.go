@@ -1,4 +1,4 @@
-package tests
+package ibbftests
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -7,10 +7,10 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/ibbf/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/ibbf/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfclusterinfo"
-	. "github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfinittools"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/gitdetails"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfinittools"
+
 	"time"
 )
 
@@ -20,30 +20,15 @@ const (
 )
 
 var _ = Describe(
-	"Performing upgrade prep abort flow",
-	Label(tsparams.LabelPrepAbortFlow), func() {
+	"Performing Image-Based Break/Fix Flow",
+	Label(tsparams.LabelIBBFe2e), func() {
 
-		BeforeEach(func() {
+		It("IBBF Flow", reportxml.ID("78333"), func() {
 
-			By("Fetching target sno cluster name", func() {
-				err := cnfclusterinfo.PreUpgradeClusterInfo.SaveClusterInfo()
-				Expect(err).ToNot(HaveOccurred(), "Failed to extract target sno cluster name")
+			By("enabling cluster reinstallation in SiteconfigOperator")
 
-				tsparams.TargetSnoClusterName = cnfclusterinfo.PreUpgradeClusterInfo.Name
-			})
-		})
-
-		It("IBBF Flow", reportxml.ID("68956"), func() {
-
-			By("Saving target sno cluster info prior to IBBF", func() {
-				err := cnfclusterinfo.PostUpgradeClusterInfo.SaveClusterInfo()
-				Expect(err).ToNot(HaveOccurred(), "Failed to collect and save target sno cluster before IBBF")
-			})
-
-			// Enalble reinstall in SiteconfigOperator
-			By("Enable cluster reinstallation")
-
-			scoConfig, err := configmap.Pull(TargetHubAPIClient, "siteconfig-operator-configuration", tsparams.RHACMNamespace)
+			scoConfig, err := configmap.Pull(cnfinittools.TargetHubAPIClient, "siteconfig-operator-configuration",
+				tsparams.RHACMNamespace)
 			Expect(err).NotTo(HaveOccurred(), "error pulling siteconfig-operator-configuration configmap")
 
 			scoConfig.Definition.Data["allowReinstalls"] = "true"
@@ -51,18 +36,23 @@ var _ = Describe(
 			Expect(err).NotTo(HaveOccurred(), "error updating siteconfig-operator-configuration configmap to allow reinstalls")
 
 			// Create test configmap in spoke namespace on hub
-			cm, err := configmap.NewBuilder(TargetHubAPIClient, "test", tsparams.SpokeNamespace).
+			configMap, err := configmap.NewBuilder(
+				cnfinittools.TargetHubAPIClient, tsparams.TestCMName, tsparams.SpokeNamespace).
 				WithData(map[string]string{"testValue": "true"}).Create()
-			Expect(err).NotTo(HaveOccurred())
-			// Apply preservation label to configmap
-			cm.Definition.ObjectMeta.SetLabels(map[string]string{"siteconfig.open-cluster-management.io/preserve": ""})
-			//Update configmap
-			cm.Update()
+			Expect(err).NotTo(HaveOccurred(), "error creating configmap")
 
-			clusterInstace, err := siteconfig.PullClusterInstance(TargetHubAPIClient, "helix54", tsparams.SpokeNamespace)
+			// Apply preservation label to configmap
+			configMap.Definition.ObjectMeta.SetLabels(map[string]string{"siteconfig.open-cluster-management.io/preserve": ""})
+
+			// Update configmap
+			_, err = configMap.Update()
+			Expect(err).NotTo(HaveOccurred(), "error updating configmap")
+
+			clusterInstace, err := siteconfig.PullClusterInstance(
+				cnfinittools.TargetHubAPIClient, "helix54", tsparams.SpokeNamespace)
 			Expect(err).NotTo(HaveOccurred(), "error pulling clusterinstance")
 
-			By("Change Policies App to IBBF  ", func() {
+			By("changing policies app to point to IBBF test target directory  ", func() {
 				exists, err := gitdetails.UpdateArgoCdAppGitPath(
 					tsparams.ArgoCdClustersAppName, tsparams.IBBFTestPath, true)
 				if !exists {
@@ -131,9 +121,9 @@ var _ = Describe(
 				BeTrue(), "error waiting for clusterinstance to finish provisioning")
 		})
 
-		It("Tests for preserved configmap", reportxml.ID("TBF"), func() {
+		It("verifying test configmap was preserved post-IBBF", reportxml.ID("TBF"), func() {
 
-			_, err := configmap.Pull(TargetHubAPIClient, "test", tsparams.SpokeNamespace)
+			_, err := configmap.Pull(cnfinittools.TargetHubAPIClient, tsparams.TestCMName, tsparams.SpokeNamespace)
 			Expect(err).NotTo(HaveOccurred(), "Preserved configmap is missing after IBBF")
 
 		})
@@ -141,8 +131,7 @@ var _ = Describe(
 		AfterEach(func() {
 
 		})
-		//Update report ID
-		It("IBBF Workflow", reportxml.ID("TBD"), func() {
+		It("IBBF Workflow", reportxml.ID("78333"), func() {
 
 		})
 	})

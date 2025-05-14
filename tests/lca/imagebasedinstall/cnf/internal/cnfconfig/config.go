@@ -8,6 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/cnf/internal/cnfparams"
+	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/internal/ibiconfig"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,9 +19,10 @@ const (
 
 // CNFConfig type contains cnf configuration.
 type CNFConfig struct {
-	*ibuconfig.IBUConfig
-	TargetHubKubeConfig string `envconfig:"ECO_LCA_IBU_CNF_KUBECONFIG_TARGET_HUB"`
-	TargetSNOKubeConfig string `envconfig:"ECO_LCA_IBU_CNF_KUBECONFIG_TARGET_SNO"`
+	*ibiconfig.IBIConfig
+	TargetHubKubeConfig string `envconfig:"ECO_LCA_IBI_CNF_KUBECONFIG_TARGET_HUB"`
+	TargetSNOKubeConfig string `envconfig:"ECO_LCA_IBI_CNF_KUBECONFIG_TARGET_SNO"`
+	SpokeName           string `envconfig:"ECO_CNF_RAN_SPOKE1_NAME"`
 }
 
 // NewCNFConfig returns instance of CNFConfig type.
@@ -28,7 +30,7 @@ func NewCNFConfig() *CNFConfig {
 	glog.V(cnfparams.CNFLogLevel).Info("Creating new CNFConfig struct")
 
 	var cnfConfig CNFConfig
-	cnfConfig.IBUConfig = ibuconfig.NewIBUConfig()
+	cnfConfig.IBIConfig = ibiconfig.NewIBIConfig()
 
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)

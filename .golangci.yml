@@ -181,6 +181,9 @@ linters:
           - gochecknoinits
         path: tests/lca/imagebasedupgrade/cnf/internal/cnfinittools
       - linters:
+         - gochecknoinits
+        path: tests/lca/imagebasedinstall/cnf/internal/cnfinittools
+      - linters:
           - gochecknoinits
         path: tests/hw-accel/kmm/internal/kmminittools
       - linters:
