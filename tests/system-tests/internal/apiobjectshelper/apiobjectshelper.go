@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/rbac"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-goinfra/pkg/serviceaccount"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -336,6 +337,45 @@ func EnsureAllPodsRemoved(
 
 	if err != nil {
 		return fmt.Errorf("pods matching label(%q) still present in namespace %q",
+			podLabel, nsName)
+	}
+
+	return nil
+}
+
+// EnsureUnhealthyPodsRemoved Ensure all unhealthy deployment pods in namespace were removed.
+func EnsureUnhealthyPodsRemoved(
+	apiClient *clients.Settings,
+	nsName, podLabel string) error {
+	glog.V(100).Infof("Ensuring unhealthy pods in %q namespace with label %q are gone", nsName, podLabel)
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(),
+		time.Second*30,
+		time.Minute*6,
+		true,
+		func(ctx context.Context) (bool, error) {
+			oldPods, _ := pod.List(apiClient, nsName,
+				metav1.ListOptions{LabelSelector: podLabel})
+
+			for _, _pod := range oldPods {
+				if !_pod.IsHealthy() || _pod.Object.Status.Phase != corev1.PodRunning {
+					_, err := _pod.DeleteAndWait(30 * time.Second)
+
+					if err != nil {
+						glog.V(100).Infof("Failed to delete unhealthy pod %s from the %s namespace",
+							_pod.Definition.Name, _pod.Definition.Namespace)
+
+						return false, nil
+					}
+				}
+			}
+
+			return true, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("unhealthy pods matching label(%q) still present in namespace %q",
 			podLabel, nsName)
 	}
 

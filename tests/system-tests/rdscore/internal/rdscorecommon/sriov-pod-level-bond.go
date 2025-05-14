@@ -31,14 +31,15 @@ const (
 	podLevelBondDeploymentRBACName = "privileged-rdscore-pod-level-bond"
 	podLevelBondDeploymentRBACRole = "system:openshift:scc:privileged"
 	podLevelBondDeploymentSAName   = "rdscore-pod-level-bond-sa"
-	podLevelBondPodLabel           = "systemtest-test=rdscore-pod-level-bond-privileged"
+	podLevelBondClientPodLabel     = "systemtest-test=rdscore-pod-level-bond"
+	podLevelBondServerPodLabel     = "systemtest-test=rdscore-pod-level-bond-privileged"
 	podLevelBondNetName            = "bond-net"
 	tcpTestPassedMsg               = `TCP test passed as expected`
 	podNetAnnotationPattern        = "k8s.v1.cni.cncf.io/network-status"
 )
 
 var (
-	podLevelBondPodLabelMap = map[string]string{"systemtest-test": "rdscore-pod-level-bond-privileged"}
+	podLevelBondServerPodLabelMap = map[string]string{"systemtest-test": "rdscore-pod-level-bond-privileged"}
 )
 
 type podNetworkAnnotation struct {
@@ -129,7 +130,7 @@ func createPrivilegedPodLevelBondDeployment(
 		bondInfSubMaskIPv4,
 		bondInfSubMaskIPv6,
 		bondInfMacAddr,
-		podLevelBondPodLabelMap)
+		podLevelBondServerPodLabelMap)
 	if err != nil {
 		glog.V(100).Infof("Failed to define deployment %s in namespace %s: %v",
 			deploymentName, nsName, err)
@@ -1025,7 +1026,7 @@ func prepareSecondPodLevelBondDeployment(sameNode, samePF bool) {
 		APIClient,
 		RDSCoreConfig.PodLevelBondDeploymentTwoName,
 		RDSCoreConfig.PodLevelBondNamespace,
-		podLevelBondPodLabel,
+		podLevelBondServerPodLabel,
 		schedulerOnHost,
 		netOne,
 		netTwo,
@@ -1305,4 +1306,15 @@ func VerifyPodLevelBondWorkloadsAfterPodCrashing() {
 			RDSCoreConfig.PodLevelBondDeploymentTwoName, RDSCoreConfig.PodLevelBondNamespace, err))
 
 	verifyConnectivity()
+}
+
+// CleanUpUnhealthyPodLevelBondClientPods cleans up unhealthy pod-level bond client pods.
+func CleanUpUnhealthyPodLevelBondClientPods() {
+	err := apiobjectshelper.EnsureUnhealthyPodsRemoved(
+		APIClient,
+		RDSCoreConfig.PodLevelBondNamespace,
+		podLevelBondClientPodLabel)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+		"Failed to delete unhealthy pods in namespace %s with the label %s: %v",
+		RDSCoreConfig.PodLevelBondNamespace, podLevelBondClientPodLabel, err))
 }

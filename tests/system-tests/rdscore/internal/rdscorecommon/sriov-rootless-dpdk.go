@@ -29,6 +29,7 @@ const (
 	serverDPDKDeploymentName = "rootless-dpdk-server"
 	dpdkServerMac            = "60:00:00:00:00:04"
 	serverPodLabel           = "rds-app=rootless-dpdk-server"
+	clientPodLabel           = "rds-app=rootless-dpdk-client"
 	maxMulticastNoiseRate    = 5000
 	minimumExpectedDPDKRate  = 1000000
 	hugePages                = "2Gi"
@@ -646,6 +647,14 @@ func isPCIAddressAvailable(clientPod *pod.Builder) bool {
 	}
 
 	return true
+}
+
+// CleanUpUnhealthyRootlessDPDKClientPods cleans up unhealthy client pods.
+func CleanUpUnhealthyRootlessDPDKClientPods() {
+	err := apiobjectshelper.EnsureUnhealthyPodsRemoved(APIClient, deploymentNamespace, clientPodLabel)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf(
+		"Failed to delete unhealthy pods in namespace %s with the label %s: %v",
+		deploymentNamespace, clientPodLabel, err))
 }
 
 // VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans deploy workloads with Rootless DPDK pods

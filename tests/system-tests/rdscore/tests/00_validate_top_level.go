@@ -25,6 +25,14 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			BeforeEach(func(ctx SpecContext) {
+				By("Ensure unhealthy rootless DPDK client pods were deleted")
+				rdscorecommon.CleanUpUnhealthyRootlessDPDKClientPods()
+
+				By("Ensure unhealthy pod-level bond client pods were deleted")
+				rdscorecommon.CleanUpUnhealthyPodLevelBondClientPods()
+			})
+
 			It("Verify EgressService with Cluster ExternalTrafficPolicy",
 				Label("egress", "egress-etp-cluster", "egress-etp-cluster-loadbalancer"),
 				reportxml.ID("76485"),
@@ -288,6 +296,14 @@ var _ = Describe(
 
 				By("Creating SR-IOV workload on different nodes and different SR-IOV networks")
 				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx)
+			})
+
+			BeforeEach(func(ctx SpecContext) {
+				By("Ensure unhealthy rootless DPDK client pods were deleted")
+				rdscorecommon.CleanUpUnhealthyRootlessDPDKClientPods()
+
+				By("Ensure unhealthy pod-level bond client pods were deleted")
+				rdscorecommon.CleanUpUnhealthyPodLevelBondClientPods()
 			})
 
 			It("Verifies ungraceful cluster reboot",
@@ -578,6 +594,14 @@ var _ = Describe(
 
 				By("Creating SR-IOV workload on different nodes and different SR-IOV networks")
 				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx)
+			})
+
+			BeforeEach(func(ctx SpecContext) {
+				By("Ensure unhealthy rootless DPDK client pods were deleted")
+				rdscorecommon.CleanUpUnhealthyRootlessDPDKClientPods()
+
+				By("Ensure unhealthy pod-level bond client pods were deleted")
+				rdscorecommon.CleanUpUnhealthyPodLevelBondClientPods()
 			})
 
 			It("Verifies graceful cluster reboot",
