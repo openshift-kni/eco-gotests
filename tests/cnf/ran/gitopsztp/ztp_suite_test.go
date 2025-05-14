@@ -12,7 +12,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/tests"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
@@ -35,9 +34,6 @@ var _ = BeforeSuite(func() {
 	if !rancluster.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient}) {
 		Skip("not all of the required clusters are present")
 	}
-
-	err := gitdetails.GetArgoCdAppGitDetails()
-	Expect(err).ToNot(HaveOccurred(), "Failed to get current data from ArgoCD")
 })
 
 var _ = BeforeEach(func() {

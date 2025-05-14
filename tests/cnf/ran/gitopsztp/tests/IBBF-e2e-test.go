@@ -3,6 +3,7 @@ package tests
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
@@ -36,16 +37,14 @@ var _ = Describe(
 		})
 
 		It("tests HW replacement via IBBF", reportxml.ID("78333"), func() {
+			By("getting the clusters app")
+			clustersApp, err := argocd.PullApplication(
+				HubAPIClient, tsparams.ArgoCdClustersAppName, ranparam.OpenshiftGitOpsNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get the clusters app")
 
-			gitDetails := tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName]
-			testGitPath := gitdetails.JoinGitPaths([]string{
-				gitDetails.Path,
-				tsparams.ZtpTestPathIBBFe2e,
-			})
-
-			By("Checking if the git path exists")
-			if !gitdetails.DoesGitPathExist(gitDetails.Repo, gitDetails.Branch, testGitPath+tsparams.ZtpKustomizationPath) {
-				Skip(fmt.Sprintf("git path '%s' could not be found", testGitPath))
+			By("checking if the git path exists")
+			if !clustersApp.DoesGitPathExist(tsparams.ZtpTestPathIBBFe2e) {
+				Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathIBBFe2e))
 			}
 
 			By("Enabling cluster reinstallation in SiteconfigOperator")
@@ -88,16 +87,10 @@ var _ = Describe(
 				HubAPIClient, RANConfig.Spoke1Name, spokeNamespace)
 			Expect(err).ToNot(HaveOccurred(), "error pulling clusterinstance")
 
-			By("Changing policies app to point to IBBF test target directory")
+			By("Changing clusters app to point to IBBF test target directory")
 
-			gitDetails.Path = testGitPath
-
-			err = gitdetails.SetGitDetailsInArgoCd(
-				tsparams.ArgoCdClustersAppName,
-				gitDetails,
-				true,
-				true)
-			Expect(err).ToNot(HaveOccurred(), "Failed to update ArgoCD with new get details")
+			err = gitdetails.UpdateAndWaitForSync(clustersApp, true, tsparams.ZtpTestPathIBBFe2e)
+			Expect(err).ToNot(HaveOccurred(), "Failed to update ArgoCD with new git details")
 
 			By("Waiting for clusterinstance re-installation to trigger")
 

@@ -4,17 +4,25 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 )
 
 var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdClustersAppTestCases), func() {
+	var (
+		clustersApp             *argocd.ApplicationBuilder
+		originalClustersGitPath string
+	)
+
 	BeforeEach(func() {
 		By("verifying that ZTP meets the minimum version")
 		versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.11", "")
@@ -24,24 +32,40 @@ var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdCluster
 			Skip("ZTP Argo CD clusters app tests require ZTP 4.11 or later")
 		}
 
+		By("saving the original clusters app source")
+		clustersApp, err = argocd.PullApplication(
+			HubAPIClient, tsparams.ArgoCdClustersAppName, ranparam.OpenshiftGitOpsNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app")
+
+		originalClustersGitPath, err = gitdetails.GetGitPath(clustersApp)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app git path")
 	})
 
 	AfterEach(func() {
+		if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
+			return
+		}
+
 		By("resetting the clusters app back to the original settings")
-		err := gitdetails.SetGitDetailsInArgoCd(
-			tsparams.ArgoCdClustersAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName], true, false)
-		Expect(err).ToNot(HaveOccurred(), "Failed to reset clusters app git details")
+		clustersApp.Definition.Spec.Source.Path = originalClustersGitPath
+		clustersApp, err := clustersApp.Update(true)
+		Expect(err).ToNot(HaveOccurred(), "Failed to update the clusters app with the original git path")
+
+		By("waiting for the clusters app to sync")
+		err = clustersApp.WaitForSourceUpdate(true, tsparams.ArgoCdChangeTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for the clusters app to sync")
 	})
 
 	// 54238 - User modification of klustletaddonconfig via gitops
 	It("should override the KlusterletAddonConfiguration and verify the change", reportxml.ID("54238"), func() {
-		exists, err := gitdetails.UpdateArgoCdAppGitPath(
-			tsparams.ArgoCdClustersAppName, tsparams.ZtpTestPathClustersApp, true)
-		if !exists {
-			Skip(err.Error())
+		By("checking if the ztp test path exists")
+		if !clustersApp.DoesGitPathExist(tsparams.ZtpTestPathClustersApp) {
+			Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathClustersApp))
 		}
 
-		Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
+		By("updating the clusters app git path")
+		err := gitdetails.UpdateAndWaitForSync(clustersApp, true, tsparams.ZtpTestPathClustersApp)
+		Expect(err).ToNot(HaveOccurred(), "Failed to update the clusters app git path")
 
 		By("validating the klusterlet addon change occurred")
 		kac, err := ocm.PullKAC(HubAPIClient, RANConfig.Spoke1Name, RANConfig.Spoke1Name)
@@ -53,17 +77,9 @@ var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdCluster
 
 	// 60619 - Image creation fails when NMstateConfig CR is empty
 	It("should not have NMStateConfig CR when nodeNetwork section not in siteConfig", reportxml.ID("60619"), func() {
-		// Update the git path manually so we can potentially skip the test before checking if the NM State
-		// Config exists.
-		gitDetails := tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName]
-		testGitPath := gitdetails.JoinGitPaths([]string{
-			gitDetails.Path,
-			tsparams.ZtpTestPathRemoveNmState,
-		})
-
-		By("checking if the git path exists")
-		if !gitdetails.DoesGitPathExist(gitDetails.Repo, gitDetails.Branch, testGitPath+tsparams.ZtpKustomizationPath) {
-			Skip(fmt.Sprintf("git path '%s' could not be found", testGitPath))
+		By("checking if the ztp test path exists")
+		if !clustersApp.DoesGitPathExist(tsparams.ZtpTestPathRemoveNmState) {
+			Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathRemoveNmState))
 		}
 
 		By("checking if the NM state config exists on hub")
@@ -71,15 +87,9 @@ var _ = Describe("ZTP Argo CD Clusters Tests", Label(tsparams.LabelArgoCdCluster
 		Expect(err).ToNot(HaveOccurred(), "Failed to list NM state configs")
 		Expect(nmStateConfigList).ToNot(BeEmpty(), "Failed to find NM state config")
 
-		gitDetails.Path = testGitPath
-
-		By("updating the Argo CD clusters app with the remove NM state git path")
-		err = gitdetails.SetGitDetailsInArgoCd(
-			tsparams.ArgoCdClustersAppName,
-			gitDetails,
-			true,
-			true)
-		Expect(err).ToNot(HaveOccurred(), "Failed to update the Argo CD app with new git details")
+		By("updating the clusters app git path")
+		err = gitdetails.UpdateAndWaitForSync(clustersApp, true, tsparams.ZtpTestPathRemoveNmState)
+		Expect(err).ToNot(HaveOccurred(), "Failed to update the clusters app git path")
 
 		By("validate the NM state config is gone on hub")
 		nmStateConfigList, err = assisted.ListNmStateConfigsInAllNamespaces(HubAPIClient)

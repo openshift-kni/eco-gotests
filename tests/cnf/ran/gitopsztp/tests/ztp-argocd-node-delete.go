@@ -1,10 +1,13 @@
 package tests
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
 	"github.com/openshift-kni/eco-goinfra/pkg/mco"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
@@ -13,14 +16,16 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 )
 
 var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNodeDeletionTestCases), func() {
 	var (
-		plusOneNodeName   string
-		bmhNamespace      string
-		earlyReturnNonSNO = true
+		plusOneNodeName         string
+		bmhNamespace            string
+		clustersApp             *argocd.ApplicationBuilder
+		originalClustersGitPath string
 	)
 
 	BeforeEach(func() {
@@ -40,8 +45,6 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 			Skip("Cluster does not contain a single control plane and a single worker node")
 		}
 
-		earlyReturnNonSNO = false
-
 		By("checking that the 'worker' mcp is ready")
 		mcp, err := mco.Pull(Spoke1APIClient, "worker")
 		Expect(err).ToNot(HaveOccurred(), "Failed to pull 'worker' MCP")
@@ -53,17 +56,29 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		bmhNamespace, err = nodedelete.GetBmhNamespace(HubAPIClient, plusOneNodeName)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get BMH namespace")
 		Expect(bmhNamespace).ToNot(BeEmpty(), "BMH namespace cannot be empty")
+
+		By("saving the original clusters app source")
+		clustersApp, err = argocd.PullApplication(
+			HubAPIClient, tsparams.ArgoCdClustersAppName, ranparam.OpenshiftGitOpsNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app")
+
+		originalClustersGitPath, err = gitdetails.GetGitPath(clustersApp)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app git path")
 	})
 
 	AfterEach(func() {
-		if earlyReturnNonSNO {
+		if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
 			return
 		}
 
 		By("resetting the clusters app back to the original settings")
-		err := gitdetails.SetGitDetailsInArgoCd(
-			tsparams.ArgoCdClustersAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName], true, true)
-		Expect(err).ToNot(HaveOccurred(), "Failed to reset clusters app git details")
+		clustersApp.Definition.Spec.Source.Path = originalClustersGitPath
+		updatedClustersApp, err := clustersApp.Update(true)
+		Expect(err).ToNot(HaveOccurred(), "Failed to update the clusters app back to the original settings")
+
+		By("waiting for the clusters app to sync")
+		err = updatedClustersApp.WaitForSourceUpdate(true, tsparams.ArgoCdChangeTimeout)
+		Expect(err).ToNot(HaveOccurred(), "Failed to wait for the clusters app to sync")
 
 		By("checking that the cluster is back to SNO+1")
 		err = rancluster.WaitForNumberOfNodes(Spoke1APIClient, 2, 45*time.Minute)
@@ -82,12 +97,11 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 	// 72463 - Delete and re-add a worker node from cluster
 	It("should delete a worker node from the cluster", reportxml.ID("72463"), func() {
 		By("updating the Argo CD git path to apply crAnnotation")
-		exists, err := gitdetails.UpdateArgoCdAppGitPath(
-			tsparams.ArgoCdClustersAppName, tsparams.ZtpTestPathNodeDeleteAddAnnotation, true)
-		if !exists {
-			Skip(err.Error())
+		if !clustersApp.DoesGitPathExist(tsparams.ZtpTestPathNodeDeleteAddAnnotation) {
+			Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathNodeDeleteAddAnnotation))
 		}
 
+		err := gitdetails.UpdateAndWaitForSync(clustersApp, true, tsparams.ZtpTestPathNodeDeleteAddAnnotation)
 		Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
 
 		By("waiting for the crAnnotation to be added to the worker node")
@@ -97,13 +111,16 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		_, err = bareMetalHost.WaitUntilAnnotationExists(tsparams.NodeDeletionCrAnnotation, tsparams.ArgoCdChangeTimeout)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for BMH annotation")
 
+		// This time the path not being found is an error since if one path for the test is found, the other
+		// being missing is an actual issue, not just a skip because the test is not applicable.
 		By("updating the Argo CD app to apply the suppression to the spec")
-		exists, err = gitdetails.UpdateArgoCdAppGitPath(
-			tsparams.ArgoCdClustersAppName, tsparams.ZtpTestPathNodeDeleteAddSuppression, false)
-		if !exists {
-			Skip(err.Error())
-		}
+		exists := clustersApp.DoesGitPathExist(tsparams.ZtpTestPathNodeDeleteAddSuppression)
+		Expect(exists).To(BeTrue(), "Already applied node delete crAnnotation but cannot find node delete suppression path")
 
+		// Since UpdateAndWaitForSync appends the git path, we need to reset it first to the original path
+		// before appending the new path.
+		clustersApp.Definition.Spec.Source.Path = originalClustersGitPath
+		err = gitdetails.UpdateAndWaitForSync(clustersApp, false, tsparams.ZtpTestPathNodeDeleteAddSuppression)
 		Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
 
 		By("waiting for the worker node to be removed")

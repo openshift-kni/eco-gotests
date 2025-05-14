@@ -1,21 +1,28 @@
 package tests
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
-
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
 )
 
 var _ = Describe("ZTP Siteconfig Operator's Day 2 configuration Test",
 	Label(tsparams.LabelSiteconfigDayTwoConfigTestCase), func() {
-		var earlyReturnSkip = true
+		var (
+			clustersApp             *argocd.ApplicationBuilder
+			originalClustersGitPath string
+		)
 
 		// These tests use the hub and spoke architecture.
 		BeforeEach(func() {
@@ -27,20 +34,30 @@ var _ = Describe("ZTP Siteconfig Operator's Day 2 configuration Test",
 				Skip("ZTP Siteconfig operator tests require ZTP 4.17 or later")
 			}
 
+			By("saving the original clusters app source")
+			clustersApp, err = argocd.PullApplication(
+				HubAPIClient, tsparams.ArgoCdClustersAppName, ranparam.OpenshiftGitOpsNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app")
+
+			originalClustersGitPath, err = gitdetails.GetGitPath(clustersApp)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app git path")
 		})
 
 		AfterEach(func() {
-			if earlyReturnSkip {
+			if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
 				return
 			}
 
 			// Remove newly added custom label from the ClusterInstance CR underneath “extraLabels” field
 			// after the spoke cluster deployed using git flow.
 			By("resetting the clusters app back to the original settings")
-			err := gitdetails.SetGitDetailsInArgoCd(
-				tsparams.ArgoCdClustersAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName],
-				true, false)
-			Expect(err).ToNot(HaveOccurred(), "Failed to reset clusters app git details")
+			clustersApp.Definition.Spec.Source.Path = originalClustersGitPath
+			clustersApp, err := clustersApp.Update(true)
+			Expect(err).ToNot(HaveOccurred(), "Failed to update the clusters app git path")
+
+			By("waiting for the clusters app to sync")
+			err = clustersApp.WaitForSourceUpdate(true, tsparams.ArgoCdChangeTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait for the clusters app to sync")
 
 			// Make sure the newly added cluster label removed from ClusterInstance CR on hub cluster.
 			// $ oc get clusterinstance <spoke cluster name> -n <spoke namespace>
@@ -67,19 +84,17 @@ var _ = Describe("ZTP Siteconfig Operator's Day 2 configuration Test",
 		// 75342 - Verify modification of cluster labels in ClusterInstance CR using git flows after installation.
 		It("Verify modification of cluster labels in ClusterInstance CR using git flows after installation",
 			reportxml.ID("75342"), func() {
+				By("checking if ztp test path exists")
+				if !clustersApp.DoesGitPathExist(tsparams.ZtpTestPathNewClusterLabel) {
+					Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathNewClusterLabel))
+				}
 
 				// Add a new custom label to the ClusterInstance CR underneath “extraLabels” field.
 				// after the spoke cluster deployed using git flow.
 				// Test step 1-Update the ztp-test git path to reference a new custom label addition.
 				// in clusterinstance.yaml as day-2 configuration.
 				By("updating the Argo CD clusters app with the new custom label reference git path")
-				exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdClustersAppName,
-					tsparams.ZtpTestPathNewClusterLabel, true)
-				if !exists {
-					Skip(err.Error())
-				}
-
-				earlyReturnSkip = false
+				err := gitdetails.UpdateAndWaitForSync(clustersApp, true, tsparams.ZtpTestPathNewClusterLabel)
 				Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD clusters app with new git path")
 
 				// Make sure the ClusterInstance CR on hub cluster updated with newly added cluster label.
