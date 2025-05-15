@@ -53,6 +53,8 @@ var (
 	FrrDsName = "frr-k8s"
 	// FRRK8sDefaultLabel represents the default metalLb FRRK8S pod label.
 	FRRK8sDefaultLabel = "component=frr-k8s"
+	// SpeakerLabel represent label of metallb speaker pods.
+	SpeakerLabel = "component=speaker"
 	// FRRK8sNodeLabel represents the default metalLb FRRK8S node label.
 	FRRK8sNodeLabel = "app=frr-k8s"
 	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
@@ -90,6 +92,10 @@ var (
 		"frrk8s_bgp_updates_total", "frrk8s_bgp_updates_total_received", "frrk8s_bgp_announced_prefixes_total",
 		"frrk8s_bgp_received_prefixes_total",
 	}
+	// LBipv4Range represents the LoadBalancer IPv4 Address Pool.
+	LBipv4Range = []string{"3.3.3.1", "3.3.3.240"}
+	// ExtFrrConnectedPool represents custom network prefixes to advertise from external FRR pod.
+	ExtFrrConnectedPool = []string{"80.80.80.80/32", "40.40.40.40/32"}
 )
 
 func setUnstructured(kind string) *unstructured.UnstructuredList {

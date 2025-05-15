@@ -14,37 +14,19 @@ import (
 
 type (
 	bgpDescription struct {
-		BGPState string `json:"bgpState"`
+		BGPState         string `json:"bgpState"`
+		BGPHoldTime      int    `json:"bgpTimerHoldTimeMsecs"`
+		BGPKeepAliveTime int    `json:"bgpTimerKeepAliveIntervalMsecs"`
 	}
 
 	bgpStatus struct {
-		VrfID         int    `json:"vrfId"`
-		VrfName       string `json:"vrfName"`
-		TableVersion  int    `json:"tableVersion"`
-		RouterID      string `json:"routerId"`
-		DefaultLocPrf int    `json:"defaultLocPrf"`
-		LocalAS       int    `json:"localAS"`
-		Routes        map[string][]struct {
-			Valid     bool   `json:"valid"`
-			Multipath bool   `json:"multipath,omitempty"`
-			PathFrom  string `json:"pathFrom"`
-			Prefix    string `json:"prefix"`
-			PrefixLen int    `json:"prefixLen"`
-			LocalPref uint32 `json:"locPrf"`
-			Network   string `json:"network"`
-			Metric    int    `json:"metric"`
-			Weight    int    `json:"weight"`
-			PeerID    string `json:"peerId"`
-			Path      string `json:"path"`
-			Origin    string `json:"origin"`
-			Nexthops  []struct {
-				IP       string `json:"ip"`
-				Hostname string `json:"hostname"`
-				Afi      string `json:"afi"`
-				Used     bool   `json:"used"`
-			} `json:"nexthops"`
-			Bestpath bool `json:"bestpath,omitempty"`
-		} `json:"routes"`
+		VrfID         int                `json:"vrfId"`
+		VrfName       string             `json:"vrfName"`
+		TableVersion  int                `json:"tableVersion"`
+		RouterID      string             `json:"routerId"`
+		DefaultLocPrf int                `json:"defaultLocPrf"`
+		LocalAS       int                `json:"localAS"`
+		Routes        map[string][]Route `json:"routes"`
 	}
 
 	// Route creates a struct of routes from the output of the "show ip bgp json" command.
@@ -54,6 +36,7 @@ type (
 		PathFrom  string `json:"pathFrom"`
 		Prefix    string `json:"prefix"`
 		PrefixLen int    `json:"prefixLen"`
+		LocalPref uint32 `json:"locPrf"`
 		Network   string `json:"network"`
 		Metric    int    `json:"metric"`
 		Weight    int    `json:"weight"`
@@ -150,6 +133,8 @@ func DefineBaseConfig(daemonsConfig, frrConfig, vtyShConfig string) map[string]s
 }
 
 // DefineBGPConfig returns string which represents BGP config file peering to all given IP addresses.
+//
+//nolint:goconst
 func DefineBGPConfig(localBGPASN, remoteBGPASN int, neighborsIPAddresses []string, multiHop, bfd bool) string {
 	bgpConfig := tsparams.FRRBaseConfig +
 		fmt.Sprintf("router bgp %d\n", localBGPASN) +
@@ -226,6 +211,45 @@ func DefineBGPConfigWithStaticRouteAndNetwork(localBGPASN, remoteBGPASN int, hub
 	bgpConfig += "exit-address-family\n"
 
 	bgpConfig += "!\nline vty\n!\nend\n"
+
+	return bgpConfig
+}
+
+// DefineBGPConfigWithIPv4Network defines BGP config file with network advertising only ipv4.
+func DefineBGPConfigWithIPv4Network(localBGPASN, remoteBGPASN int,
+	advertisedIPv4Routes, neighborsIPAddresses []string,
+	multiHop, bfd bool) string {
+	bgpConfig := tsparams.FRRBaseConfig +
+		fmt.Sprintf("router bgp %d\n", localBGPASN) +
+		tsparams.FRRDefaultBGPPreConfig
+
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s remote-as %d\n  neighbor %s password %s\n",
+			ipAddress, remoteBGPASN, ipAddress, tsparams.BGPPassword)
+
+		if bfd {
+			bgpConfig += fmt.Sprintf("  neighbor %s bfd\n", ipAddress)
+		}
+
+		if multiHop {
+			bgpConfig += fmt.Sprintf("  neighbor %s ebgp-multihop 2\n", ipAddress)
+		}
+	}
+
+	bgpConfig += "!\naddress-family ipv4 unicast\n"
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+	}
+
+	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv4Routes[0])
+	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv4Routes[1])
+
+	bgpConfig += "exit-address-family\n!\naddress-family ipv6 unicast\n"
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+	}
+
+	bgpConfig += "exit-address-family\n!\nline vty\n!\nend\n"
 
 	return bgpConfig
 }
@@ -579,4 +603,45 @@ func ValidateLocalPref(frrPod *pod.Builder, localPref uint32, ipFamily string) e
 	}
 
 	return nil
+}
+
+// VerifyBGPNeighborTimer verifies that a given BGP neighbor has mentioned holdTimer and keepAliveTimer.
+func VerifyBGPNeighborTimer(
+	frrPod *pod.Builder,
+	neighborIPAddress string,
+	holdTimer, keepAliveTimer int,
+) (bool, error) {
+	var result map[string]bgpDescription
+
+	glog.Infof("Verifying BGP Neighbor Timers for neighbor %s", neighborIPAddress)
+
+	bgpStateOut, err := frrPod.ExecCommand(append(netparam.VtySh, "sh ip bgp neighbor json"))
+	if err != nil {
+		return false, err
+	}
+
+	err = json.Unmarshal(bgpStateOut.Bytes(), &result)
+	if err != nil {
+		return false, err
+	}
+
+	return result[neighborIPAddress].BGPHoldTime == holdTimer &&
+		result[neighborIPAddress].BGPKeepAliveTime == keepAliveTimer, nil
+}
+
+// CheckFRRConfigLine checks for a configuration line.
+func CheckFRRConfigLine(frrPod *pod.Builder, config string) (bool, error) {
+	frrConf, err := runningConfig(frrPod)
+	if err != nil {
+		return false, err
+	}
+
+	frrConfList := strings.Split(frrConf, "!")
+	for _, configLine := range frrConfList {
+		if strings.Contains(configLine, config) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
