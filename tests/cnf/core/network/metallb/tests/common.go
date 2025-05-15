@@ -239,6 +239,15 @@ func setupBgpAdvertisement(
 	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
 }
 
+func updateBgpAdvertisementWithNodeSelector(
+	name string,
+	nodeSelectors []metav1.LabelSelector) {
+	builder, err := metallb.PullBGPAdvertisement(APIClient, name, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull existing BGPAdvertisement")
+	_, err = builder.WithNodeSelector(nodeSelectors).Update(true)
+	Expect(err).ToNot(HaveOccurred(), "Failed to update BGPAdvertisement")
+}
+
 func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
 	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
 		APIClient,
@@ -452,7 +461,15 @@ func resetOperatorAndTestNS() {
 }
 
 func validatePrefix(
-	masterNodeFRRPod *pod.Builder, ipProtoVersion string, prefix int, workerNodesAddresses, addressPool []string) {
+	masterNodeFRRPod *pod.Builder,
+	ipProtoVersion string,
+	prefix int,
+	workerNodesAddresses,
+	addressPool []string,
+	noRouteCheck ...bool, // Optional boolean argument
+) {
+	var nextHopAddresses []string
+
 	Eventually(func() bool {
 		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
 		if err != nil {
@@ -465,23 +482,27 @@ func validatePrefix(
 
 	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
 	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
+
 	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefix))
 	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
-	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
 
-	var nextHopAddresses []string
+	if len(noRouteCheck) > 0 && noRouteCheck[0] {
+		Expect(bgpStatus.Routes).ToNot(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
+	} else {
+		Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
 
-	for _, route := range bgpStatus.Routes[subnet.String()] {
-		Expect(route.PrefixLen).To(BeNumerically("==", prefix),
-			"Failed prefix length is not in expected value")
+		for _, route := range bgpStatus.Routes[subnet.String()] {
+			Expect(route.PrefixLen).To(BeNumerically("==", prefix),
+				"Failed prefix length is not in expected value")
 
-		for _, nHop := range route.Nexthops {
-			nextHopAddresses = append(nextHopAddresses, nHop.IP)
+			for _, nHop := range route.Nexthops {
+				nextHopAddresses = append(nextHopAddresses, nHop.IP)
+			}
 		}
-	}
 
-	Expect(nextHopAddresses).To(ContainElements(workerNodesAddresses),
-		"Failed next hop address in not in node addresses list")
+		Expect(nextHopAddresses).To(ContainElements(workerNodesAddresses),
+			"Failed next hop address is not in node addresses list")
+	}
 }
 
 func removePrefixFromIPList(ipAddressList []string) []string {
