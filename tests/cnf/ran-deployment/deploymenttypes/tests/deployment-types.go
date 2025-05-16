@@ -407,19 +407,10 @@ func getClusterType(cluster *clients.Settings) {
 
 	for nodeNum := range nodes {
 		nodeName := nodes[nodeNum].Definition.Name
-		isControlPlane, isWorker := false, false
+		// isControlPlane, isWorker := false, false
 
-		_, isControlPlane = nodes[nodeNum].Object.Labels[RANConfig.ControlPlaneLabel]
-		_, isWorker = nodes[nodeNum].Object.Labels[RANConfig.WorkerLabel]
-		// for label := range nodes[nodeNum].Object.Labels {
-		// 	if strings.Contains(label, RANConfig.ControlPlaneLabel) {
-		// 		isControlPlane = true
-		// 	}
-
-		// 	if strings.Contains(label, RANConfig.WorkerLabel) {
-		// 		isWorker = true
-		// 	}
-		// }
+		_, isControlPlane := nodes[nodeNum].Object.Labels[RANConfig.ControlPlaneLabel]
+		_, isWorker := nodes[nodeNum].Object.Labels[RANConfig.WorkerLabel]
 
 		Expect(isWorker || isControlPlane).To(BeTrueBecause("Node %s has neither control-plane nor worker label?", nodeName))
 
