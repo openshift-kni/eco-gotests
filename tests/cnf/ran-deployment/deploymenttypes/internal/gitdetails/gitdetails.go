@@ -39,7 +39,7 @@ func GetGitPath(app *argocd.ApplicationBuilder) (string, error) {
 	return app.Definition.Spec.Source.Path, nil
 }
 
-// GetGitRepoURL retrieves the git URL from the provided Argo CD application. It returns an error if it encounters any nil
+// GetGitRepoUrl retrieves the git URL from the provided Argo CD application. It returns an error if it encounters any nil
 // pointers trying to access the source path.
 func GetGitRepoUrl(app *argocd.ApplicationBuilder) (string, error) {
 
@@ -54,8 +54,8 @@ func GetGitRepoUrl(app *argocd.ApplicationBuilder) (string, error) {
 	return app.Definition.Spec.Source.RepoURL, nil
 }
 
-// GetGitRepoURL retrieves the git revision from the provided Argo CD application. It returns an error if it encounters any nil
-// pointers trying to access the source path.
+// GetGitTargetRevision retrieves the git revision from the provided Argo CD application. It returns an error if it
+// encounters any nil pointers trying to access the source path.
 func GetGitTargetRevision(app *argocd.ApplicationBuilder) (string, error) {
 
 	err := checkAppSpecSource(app)
