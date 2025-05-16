@@ -260,15 +260,26 @@ func rmGitCloneDirs() {
 // clusters and policies apps are cloned separately to allow for
 // the case where they point to different repos/branches/paths.
 func gitCloneToDirs() (siteconfigRepo *git.Repository, policiesRepo *git.Repository) {
-	remoteSiteConfig := clustersApp.Object.Spec.Source.RepoURL
-	branchSiteConfig := clustersApp.Object.Spec.Source.TargetRevision
-	pathSiteConfig := clustersApp.Object.Spec.Source.Path
+	remoteSiteConfig, err := gitdetails.GetGitRepoUrl(clustersApp)
 
-	remotePolicies := policiesApp.Object.Spec.Source.RepoURL
-	branchPolicies := policiesApp.Object.Spec.Source.TargetRevision
-	pathPolicies := policiesApp.Object.Spec.Source.Path
+	Expect(err).ToNot(HaveOccurred(), "Failed to get clusters app git URL")
+	branchSiteConfig, err := gitdetails.GetGitTargetRevision(clustersApp)
 
-	siteconfigRepo, err := git.PlainClone(gitSiteConfigCloneDir, false, &git.CloneOptions{
+	Expect(err).ToNot(HaveOccurred(), "Failed to get clusters app git branch")
+
+	pathSiteConfig, err := gitdetails.GetGitPath(clustersApp)
+	Expect(err).ToNot(HaveOccurred(), "Failed to get clusters app git path")
+
+	remotePolicies, err := gitdetails.GetGitRepoUrl(policiesApp)
+	Expect(err).ToNot(HaveOccurred(), "Failed to get policies app git URL")
+
+	branchPolicies, err := gitdetails.GetGitPath(policiesApp)
+	Expect(err).ToNot(HaveOccurred(), "Failed to get policies app git branch")
+
+	pathPolicies, err := gitdetails.GetGitPath(policiesApp)
+	Expect(err).ToNot(HaveOccurred(), "Failed to get policies app git path")
+
+	siteconfigRepo, err = git.PlainClone(gitSiteConfigCloneDir, false, &git.CloneOptions{
 		URL:           remoteSiteConfig,
 		Tags:          git.NoTags,
 		ReferenceName: plumbing.ReferenceName(branchSiteConfig),
