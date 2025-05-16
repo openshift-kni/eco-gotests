@@ -13,7 +13,6 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/internal/cnfconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/version"
-	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"gopkg.in/yaml.v2"
 )
 
@@ -177,7 +176,8 @@ func (ranconfig *RANConfig) newSpoke1Config(configFile string) {
 		glog.V(ranparam.LogLevel).Infof("Failed to instantiate Spoke1Config: %v", err)
 	}
 
-	ranconfig.Spoke1Config.Spoke1APIClient = inittools.APIClient
+	// ranconfig.Spoke1Config.Spoke1APIClient = inittools.APIClient
+	ranconfig.Spoke1Config.Spoke1APIClient = clients.New(ranconfig.Spoke1Config.Spoke1Kubeconfig)
 
 	if spoke1Kubeconfig := ranconfig.Spoke1Config.Spoke1Kubeconfig; spoke1Kubeconfig != "" {
 		spoke1Name, err := version.GetClusterName(spoke1Kubeconfig)

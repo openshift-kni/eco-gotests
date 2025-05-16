@@ -4,7 +4,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/ranconfig"
-	"github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 )
 
 var (
@@ -21,7 +20,7 @@ var (
 )
 
 func init() {
-	Spoke1APIClient = inittools.APIClient
+	Spoke1APIClient = RANConfig.Spoke1APIClient
 	RANConfig = ranconfig.NewRANConfig()
 	HubAPIClient = RANConfig.HubAPIClient
 	Spoke2APIClient = RANConfig.Spoke2APIClient
