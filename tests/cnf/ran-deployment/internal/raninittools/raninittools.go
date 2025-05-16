@@ -20,9 +20,9 @@ var (
 )
 
 func init() {
-	Spoke1APIClient = RANConfig.Spoke1APIClient
 	RANConfig = ranconfig.NewRANConfig()
 	HubAPIClient = RANConfig.HubAPIClient
+	Spoke1APIClient = RANConfig.Spoke1APIClient
 	Spoke2APIClient = RANConfig.Spoke2APIClient
 	BMCClient = RANConfig.Spoke1BMC
 }
