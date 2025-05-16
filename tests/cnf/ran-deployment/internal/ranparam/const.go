@@ -1,16 +1,16 @@
 package ranparam
 
 import (
-	"time"
-
 	"github.com/golang/glog"
 )
 
 const (
 	// Label represents the label for the ran test cases.
 	Label = "ran"
-	// LabelNoContainer is the label for RAN test cases that should not be executed in a container.
-	LabelNoContainer = "no-container"
+	/*
+		// LabelNoContainer is the label for RAN test cases that should not be executed in a container.
+		LabelNoContainer = "no-container"
+	*/
 	// AcmOperatorNamespace ACM's namespace.
 	AcmOperatorNamespace = "rhacm"
 	// MceOperatorNamespace is the namespace for the MCE operator.
@@ -25,16 +25,20 @@ const (
 	OpenshiftGitOpsNamespace = "openshift-gitops"
 	// OpenshiftGitopsRepoServer ocp git repo server.
 	OpenshiftGitopsRepoServer = "openshift-gitops-repo-server"
-	// PtpContainerName is the name of the container in the PTP daemon pod.
-	PtpContainerName = "linuxptp-daemon-container"
-	// PtpDaemonsetLabelSelector is the label selector to find the PTP daemon pod.
-	PtpDaemonsetLabelSelector = "app=linuxptp-daemon"
+	/*
+		// PtpContainerName is the name of the container in the PTP daemon pod.
+		PtpContainerName = "linuxptp-daemon-container"
+		// PtpDaemonsetLabelSelector is the label selector to find the PTP daemon pod.
+		PtpDaemonsetLabelSelector = "app=linuxptp-daemon"
+	*/
 	// LogLevel is the verbosity for ran/internal packages.
 	LogLevel glog.Level = 80
-	// RetryInterval retry interval for node exec commands.
-	RetryInterval = 10 * time.Second
-	// RetryCount retry count for node exec commands.
-	RetryCount = 3
+	/*
+		// RetryInterval retry interval for node exec commands.
+		RetryInterval = 10 * time.Second
+		// RetryCount retry count for node exec commands.
+		RetryCount = 3
+	*/
 )
 
 // HubOperatorName represets the possible operator names that may have associated versions on the hub cluster.
@@ -52,11 +56,13 @@ const (
 )
 
 // ClusterType represents spoke cluster type.
-type ClusterType string
+// type ClusterType string
 
+/*
 const (
 	// SNOCluster represents spoke cluster type as single-node openshift (SNO) cluster.
 	SNOCluster ClusterType = "SNO"
 	// HighlyAvailableCluster represents spoke cluster type as multi-node openshift (MNO) cluster.
 	HighlyAvailableCluster ClusterType = "HighlyAvailable"
 )
+*/

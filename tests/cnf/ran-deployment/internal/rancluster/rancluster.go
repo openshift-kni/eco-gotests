@@ -1,23 +1,14 @@
 package rancluster
 
 import (
-	"context"
 	"fmt"
-	"time"
 
-	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/ranparam"
+
+	// . "github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/tsparams"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // AreClustersPresent checks all of the provided clusters and returns false if any are nil.
@@ -31,6 +22,7 @@ func AreClustersPresent(clusters []*clients.Settings) bool {
 	return true
 }
 
+/*
 // GetPlusOneWorkerName gets the name of the one worker in a SNO+1 cluster.
 func GetPlusOneWorkerName(client *clients.Settings) (string, error) {
 	workers, err := ListNodesByLabel(client, RANConfig.WorkerLabelMap)
@@ -246,7 +238,7 @@ func PowerOnWithRetries(bmcClient *bmc.BMC, retries uint) error {
 
 	return err
 }
-
+*/
 // GetSpokeClusterName gets the spoke cluster name as string.
 func GetSpokeClusterName(hubAPIClient, spokeAPIClient *clients.Settings) (string, error) {
 	spokeClusterVersion, err := cluster.GetOCPClusterVersion(spokeAPIClient)
