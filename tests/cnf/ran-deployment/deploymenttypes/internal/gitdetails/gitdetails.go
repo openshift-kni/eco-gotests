@@ -48,7 +48,7 @@ func GetGitRepoUrl(app *argocd.ApplicationBuilder) (string, error) {
 		return "", err
 	}
 
-	if len(app.Definition.Spec.Source.Path) <= 0 {
+	if len(app.Definition.Spec.Source.RepoURL) <= 0 {
 		return "", fmt.Errorf("application git RepoURL is empty")
 	}
 	return app.Definition.Spec.Source.RepoURL, nil
@@ -66,7 +66,7 @@ func GetGitTargetRevision(app *argocd.ApplicationBuilder) (string, error) {
 	if len(app.Definition.Spec.Source.TargetRevision) <= 0 {
 		return "", fmt.Errorf("application git TargetRevision is empty")
 	}
-	return app.Definition.Spec.Source.RepoURL, nil
+	return app.Definition.Spec.Source.TargetRevision, nil
 }
 
 // UpdateAndWaitForSync appends elements to the git path of the provided Argo CD application and waits for the source to
