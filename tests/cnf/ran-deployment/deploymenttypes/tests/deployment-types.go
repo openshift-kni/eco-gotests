@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
@@ -23,6 +24,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/deploymenttypes/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/deploymenttypes/internal/tsparams"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/raninittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/ranparam"
 	"gopkg.in/yaml.v3"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,6 +64,9 @@ var (
 	ignorePaths    [3]string = [3]string{"source-crs/", "custom-crs/", "extra-manifest/"}
 	isAgentInstall           = false
 	isImageInstall           = false
+
+	policiesApp *argocd.ApplicationBuilder
+	clustersApp *argocd.ApplicationBuilder
 )
 
 var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.LabelDeploymentTypeTestCases), func() {
@@ -106,12 +111,23 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 			glog.V(tsparams.LogLevel).Infof("Second cluster KUBECONFIG not available")
 		}
 
-		err = gitdetails.GetArgoCdAppGitDetails()
-		Expect(err).ToNot(HaveOccurred(), "Failed to retrieve apps git details")
-		glog.V(tsparams.LogLevel).Infof("Successful retreival of apps git details")
+		policiesApp, err = argocd.PullApplication(
+			HubAPIClient, tsparams.ArgoCdPoliciesAppName, ranparam.OpenshiftGitOpsNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the policies app")
 
-		pathSiteConfig = tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName].Path
-		pathPolicies = tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName].Path
+		pathPolicies, err = gitdetails.GetGitPath(policiesApp)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the policies app git path")
+		Expect(pathPolicies).ToNot(BeEmpty(), "Failed to get policies app git path value")
+
+		clustersApp, err = argocd.PullApplication(
+			HubAPIClient, tsparams.ArgoCdClustersAppName, ranparam.OpenshiftGitOpsNamespace)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the clusters app")
+
+		pathSiteConfig, err = gitdetails.GetGitPath(clustersApp)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get the clusters app git path")
+		Expect(pathSiteConfig).ToNot(BeEmpty(), "Failed to get clusters app git path value")
+
+		glog.V(tsparams.LogLevel).Infof("Successful retreival of apps git details")
 
 		mkGitCloneDirs()
 
@@ -244,13 +260,13 @@ func rmGitCloneDirs() {
 // clusters and policies apps are cloned separately to allow for
 // the case where they point to different repos/branches/paths.
 func gitCloneToDirs() (siteconfigRepo *git.Repository, policiesRepo *git.Repository) {
-	remoteSiteConfig := tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName].Repo
-	branchSiteConfig := tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName].Branch
-	pathSiteConfig := tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName].Path
+	remoteSiteConfig := clustersApp.Object.Spec.Source.RepoURL
+	branchSiteConfig := clustersApp.Object.Spec.Source.TargetRevision
+	pathSiteConfig := clustersApp.Object.Spec.Source.Path
 
-	remotePolicies := tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName].Repo
-	branchPolicies := tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName].Branch
-	pathPolicies := tsparams.ArgoCdAppDetails[tsparams.ArgoCdPoliciesAppName].Path
+	remotePolicies := policiesApp.Object.Spec.Source.RepoURL
+	branchPolicies := policiesApp.Object.Spec.Source.TargetRevision
+	pathPolicies := policiesApp.Object.Spec.Source.Path
 
 	siteconfigRepo, err := git.PlainClone(gitSiteConfigCloneDir, false, &git.CloneOptions{
 		URL:           remoteSiteConfig,
