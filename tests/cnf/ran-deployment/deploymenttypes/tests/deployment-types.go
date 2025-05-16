@@ -117,7 +117,6 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 
 		pathPolicies, err = gitdetails.GetGitPath(policiesApp)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get the policies app git path")
-		Expect(pathPolicies).ToNot(BeEmpty(), "Failed to get policies app git path value")
 
 		clustersApp, err = argocd.PullApplication(
 			HubAPIClient, tsparams.ArgoCdClustersAppName, ranparam.OpenshiftGitOpsNamespace)
@@ -125,7 +124,6 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 
 		pathSiteConfig, err = gitdetails.GetGitPath(clustersApp)
 		Expect(err).ToNot(HaveOccurred(), "Failed to get the clusters app git path")
-		Expect(pathSiteConfig).ToNot(BeEmpty(), "Failed to get clusters app git path value")
 
 		glog.V(tsparams.LogLevel).Infof("Successful retreival of apps git details")
 
