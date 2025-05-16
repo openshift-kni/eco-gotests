@@ -7,7 +7,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/deploymenttypes/internal/tsparams"
 )
 
-// checkAppSpecSource checks that the app.Definition.Spec.Source tree exists
+// checkAppSpecSource checks that the app.Definition.Spec.Source tree exists.
 func checkAppSpecSource(app *argocd.ApplicationBuilder) error {
 	if app == nil {
 		return fmt.Errorf("application is nil")
@@ -39,8 +39,8 @@ func GetGitPath(app *argocd.ApplicationBuilder) (string, error) {
 	return app.Definition.Spec.Source.Path, nil
 }
 
-// GetGitRepoURL retrieves the git URL from the provided Argo CD application. It returns an error if it encounters any nil
-// pointers trying to access the source path.
+// GetGitRepoURL retrieves the git URL from the provided Argo CD application. It returns an error
+// if it encounters any nil pointers trying to access the source path.
 func GetGitRepoURL(app *argocd.ApplicationBuilder) (string, error) {
 	err := checkAppSpecSource(app)
 	if err != nil {
