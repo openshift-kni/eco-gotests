@@ -12,18 +12,19 @@ import (
 	certificatesv1 "k8s.io/api/certificates/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
 
+/*
 // ArgoCdGitDetails is the details for a single app in ArgoCD.
 type ArgoCdGitDetails struct {
 	Repo   string
 	Branch string
 	Path   string
 }
+*/
 
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
@@ -68,15 +69,19 @@ var (
 		{Cr: &certificatesv1.CertificateSigningRequestList{}},
 	}
 
-	// ArgoCdApps is the slice of the Argo CD app names defined in this package.
+/*
+// ArgoCdApps is the slice of the Argo CD app names defined in this package.
+
 	ArgoCdApps = []string{
 		ArgoCdClustersAppName,
 		ArgoCdPoliciesAppName,
 	}
-	// ArgoCdAppDetails contains more details for each of the ArgoCdApps.
-	ArgoCdAppDetails = map[string]ArgoCdGitDetails{}
 
-	// ImageRegistryPolicies is a slice of all the policies the image registry test creates.
+// ArgoCdAppDetails contains more details for each of the ArgoCdApps.
+ArgoCdAppDetails = map[string]ArgoCdGitDetails{}
+
+// ImageRegistryPolicies is a slice of all the policies the image registry test creates.
+
 	ImageRegistryPolicies = []string{
 		"image-registry-policy-sc",
 		"image-registry-policy-pvc",
@@ -84,8 +89,9 @@ var (
 		"image-registry-policy-config",
 	}
 
-	// CINonExistentExtraManifestConfigMapCondition is the condition when referencing non-existent.
-	// extra-manifest config map in ClusterInstance CR.
+// CINonExistentExtraManifestConfigMapCondition is the condition when referencing non-existent.
+// extra-manifest config map in ClusterInstance CR.
+
 	CINonExistentExtraManifestConfigMapCondition = metav1.Condition{
 		Type:    ClusterInstanceValidatedType,
 		Status:  metav1.ConditionFalse,
@@ -93,8 +99,9 @@ var (
 		Reason:  ClusterInstanceFailReason,
 	}
 
-	// CINonExistentClusterTemplateConfigMapCondition is the condition when referencing non-existent.
-	// cluster templates config map in ClusterInstance CR.
+// CINonExistentClusterTemplateConfigMapCondition is the condition when referencing non-existent.
+// cluster templates config map in ClusterInstance CR.
+
 	CINonExistentClusterTemplateConfigMapCondition = metav1.Condition{
 		Type:    ClusterInstanceValidatedType,
 		Status:  metav1.ConditionFalse,
@@ -102,8 +109,9 @@ var (
 		Reason:  ClusterInstanceFailReason,
 	}
 
-	// CIInvalidTemplateRefCondition is the condition when referencing invalid.
-	// node level template in ClusterInstance CR.
+// CIInvalidTemplateRefCondition is the condition when referencing invalid.
+// node level template in ClusterInstance CR.
+
 	CIInvalidTemplateRefCondition = metav1.Condition{
 		Type:    ClusterInstanceValidatedType,
 		Status:  metav1.ConditionFalse,
@@ -111,8 +119,9 @@ var (
 		Reason:  ClusterInstanceFailReason,
 	}
 
-	// CIValidTemplateRefCondition is the condition when referencing valid.
-	// cluster & node level template in ClusterInstance CR.
+// CIValidTemplateRefCondition is the condition when referencing valid.
+// cluster & node level template in ClusterInstance CR.
+
 	CIValidTemplateRefCondition = metav1.Condition{
 		Type:    ProvisionedType,
 		Status:  metav1.ConditionFalse,
@@ -120,12 +129,14 @@ var (
 		Reason:  ClusterInstanceInProgressReason,
 	}
 
-	// CIDuplicateClusterNameCondition is the condition when referencing duplicate.
-	// cluster name in ClusterInstance CR.
+// CIDuplicateClusterNameCondition is the condition when referencing duplicate.
+// cluster name in ClusterInstance CR.
+
 	CIDuplicateClusterNameCondition = metav1.Condition{
 		Type:    RenderedTemplatesValidatedType,
 		Status:  metav1.ConditionFalse,
 		Message: RenderedManifestsFailMessage,
 		Reason:  ClusterInstanceFailReason,
 	}
+*/
 )
