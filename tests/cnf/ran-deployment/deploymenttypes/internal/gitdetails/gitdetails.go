@@ -27,45 +27,45 @@ func checkAppSpecSource(app *argocd.ApplicationBuilder) error {
 // GetGitPath retrieves the git path from the provided Argo CD application. It returns an error if it encounters any nil
 // pointers trying to access the source path.
 func GetGitPath(app *argocd.ApplicationBuilder) (string, error) {
-
 	err := checkAppSpecSource(app)
 	if err != nil {
 		return "", err
 	}
 
-	if len(app.Definition.Spec.Source.Path) <= 0 {
+	if len(app.Definition.Spec.Source.Path) == 0 {
 		return "", fmt.Errorf("application git Path is empty")
 	}
+
 	return app.Definition.Spec.Source.Path, nil
 }
 
-// GetGitRepoUrl retrieves the git URL from the provided Argo CD application. It returns an error if it encounters any nil
+// GetGitRepoURL retrieves the git URL from the provided Argo CD application. It returns an error if it encounters any nil
 // pointers trying to access the source path.
-func GetGitRepoUrl(app *argocd.ApplicationBuilder) (string, error) {
-
+func GetGitRepoURL(app *argocd.ApplicationBuilder) (string, error) {
 	err := checkAppSpecSource(app)
 	if err != nil {
 		return "", err
 	}
 
-	if len(app.Definition.Spec.Source.RepoURL) <= 0 {
+	if len(app.Definition.Spec.Source.RepoURL) == 0 {
 		return "", fmt.Errorf("application git RepoURL is empty")
 	}
+
 	return app.Definition.Spec.Source.RepoURL, nil
 }
 
 // GetGitTargetRevision retrieves the git revision from the provided Argo CD application. It returns an error if it
 // encounters any nil pointers trying to access the source path.
 func GetGitTargetRevision(app *argocd.ApplicationBuilder) (string, error) {
-
 	err := checkAppSpecSource(app)
 	if err != nil {
 		return "", err
 	}
 
-	if len(app.Definition.Spec.Source.TargetRevision) <= 0 {
+	if len(app.Definition.Spec.Source.TargetRevision) == 0 {
 		return "", fmt.Errorf("application git TargetRevision is empty")
 	}
+
 	return app.Definition.Spec.Source.TargetRevision, nil
 }
 

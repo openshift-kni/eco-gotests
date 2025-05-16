@@ -258,7 +258,7 @@ func rmGitCloneDirs() {
 // clusters and policies apps are cloned separately to allow for
 // the case where they point to different repos/branches/paths.
 func gitCloneToDirs() (siteconfigRepo *git.Repository, policiesRepo *git.Repository) {
-	remoteSiteConfig, err := gitdetails.GetGitRepoUrl(clustersApp)
+	remoteSiteConfig, err := gitdetails.GetGitRepoURL(clustersApp)
 	Expect(err).ToNot(HaveOccurred(), "Failed to get clusters app git URL")
 
 	branchSiteConfig, err := gitdetails.GetGitTargetRevision(clustersApp)
@@ -267,7 +267,7 @@ func gitCloneToDirs() (siteconfigRepo *git.Repository, policiesRepo *git.Reposit
 	pathSiteConfig, err := gitdetails.GetGitPath(clustersApp)
 	Expect(err).ToNot(HaveOccurred(), "Failed to get clusters app git path")
 
-	remotePolicies, err := gitdetails.GetGitRepoUrl(policiesApp)
+	remotePolicies, err := gitdetails.GetGitRepoURL(policiesApp)
 	Expect(err).ToNot(HaveOccurred(), "Failed to get policies app git URL")
 
 	branchPolicies, err := gitdetails.GetGitTargetRevision(policiesApp)
