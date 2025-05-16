@@ -9,6 +9,8 @@ const (
 	LabelBGPTestCases = "bgp"
 	// LabelDynamicRemoteASTestCases represents dynamic-remote-as label that can be used for test cases selection.
 	LabelDynamicRemoteASTestCases = "dynamic-remote-as"
+	// LabelBGPUnnumbered represents bgp-unnumbered label that can be used for test cases selection.
+	LabelBGPUnnumbered = "bgp-unnumbered"
 	// LabelLayer2TestCases represents layer2 label that can be used for test cases selection.
 	LabelLayer2TestCases = "layer2"
 	// LabelFRRTestCases represents frrk8 label that can be used for test cases selection.
@@ -32,6 +34,12 @@ const (
 	BgpPeerName2 = "bgppeer2" // FrrK8WebHookServer is the web hook server running in namespace metallb-system.
 	// BGPTestPeer is the bgppeer name.
 	BGPTestPeer = "testpeer"
+	// BgpPeerDynamicASiBGP variable for iBGP peers.
+	BgpPeerDynamicASiBGP = "internal"
+	// BgpPeerDynamicASeBGP variable for eBGP peers.
+	BgpPeerDynamicASeBGP = "external"
+	// BfdProfileName bfd profile name.
+	BfdProfileName = "bfdprofile"
 	// FrrK8WebHookServer is the web hook server running in namespace metallb-system.
 	FrrK8WebHookServer = "frr-k8s-webhook-server"
 	// MetallbServiceName is the name of the metallb service.
