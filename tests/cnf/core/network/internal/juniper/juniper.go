@@ -3,7 +3,6 @@ package juniper
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/golang/glog"
 )
 
@@ -125,6 +124,14 @@ func DeleteInterfaces(currentSession *JunosSession, interfaceNames []string) err
 	}
 
 	return currentSession.Config(commands)
+}
+
+func WaitForSwitchInterfaceUp(currentSession *JunosSession, switchLagName string) (bool, error) {
+	isBondInterfaceUp, err := IsSwitchInterfaceUp(currentSession, switchLagName)
+	if err != nil {
+		return false, fmt.Errorf("failed to get status of switch LAG interface %s: %w", switchLagName, err)
+	}
+	return isBondInterfaceUp, nil
 }
 
 func restoreInterfaceConfigs(currentSession *JunosSession) error {

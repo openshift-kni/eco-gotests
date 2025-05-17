@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/juniper"
 	"net"
 	"regexp"
 	"strconv"
@@ -87,7 +88,7 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		workerNodeList              = []*nodes.Builder{}
 		srIovInterfacesUnderTest    []string
 		sriovDeviceID               string
-		switchCredentials           *sriovenv.SwitchCredentials
+		switchCredentials           *juniper.SwitchCredentials
 		switchConfig                *netconfig.NetworkConfig
 		switchInterfaces            []string
 		serverIPV4IP, _, _          = net.ParseCIDR(tsparams.ServerIPv4IPAddress)
@@ -119,7 +120,7 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 		Expect(sriovDeviceID).ToNot(BeEmpty(), "Expected sriovDeviceID not to be empty")
 
 		By("Configure lab switch interface to support VLAN double tagging")
-		switchCredentials, err = sriovenv.NewSwitchCredentials()
+		switchCredentials, err = juniper.NewSwitchCredentials()
 		Expect(err).ToNot(HaveOccurred(), "Failed to get switch credentials")
 
 		switchConfig = netconfig.NewNetConfig()
@@ -843,7 +844,7 @@ func validateDot1Encapsulation(fileOutput, dot1X string) error {
 	return nil
 }
 
-func enableDot1ADonSwitchInterfaces(credentials *sriovenv.SwitchCredentials, switchInterfaces []string) error {
+func enableDot1ADonSwitchInterfaces(credentials *juniper.SwitchCredentials, switchInterfaces []string) error {
 	jnpr, err := cmd.NewSession(credentials.SwitchIP, credentials.User, credentials.Password)
 	if err != nil {
 		return err
@@ -863,7 +864,7 @@ func enableDot1ADonSwitchInterfaces(credentials *sriovenv.SwitchCredentials, swi
 	return nil
 }
 
-func disableQinQOnSwitch(switchCredentials *sriovenv.SwitchCredentials, switchInterfaces []string) error {
+func disableQinQOnSwitch(switchCredentials *juniper.SwitchCredentials, switchInterfaces []string) error {
 	jnpr, err := cmd.NewSession(switchCredentials.SwitchIP, switchCredentials.User, switchCredentials.Password)
 	if err != nil {
 		return err
