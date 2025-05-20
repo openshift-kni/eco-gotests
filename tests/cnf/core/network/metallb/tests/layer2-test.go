@@ -37,7 +37,7 @@ var _ = Describe("Layer2", Ordered, Label(tsparams.LabelLayer2TestCases), Contin
 		validateEnvVarAndGetNodeList()
 
 		By("Creating a new instance of MetalLB Speakers on workers")
-		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, NetConfig.WorkerLabelMap)
+		err = metallbenv.CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(tsparams.DefaultTimeout, workerLabelMap)
 		Expect(err).ToNot(HaveOccurred(), "Failed to recreate metalLb daemonset")
 	})
 
@@ -208,7 +208,7 @@ func getLBServiceAnnouncingNodeName() string {
 	var allEvents []string
 
 	sort.Slice(serviceEvents, func(i int, j int) bool {
-		return serviceEvents[i].Object.LastTimestamp.Before(&serviceEvents[i].Object.LastTimestamp)
+		return serviceEvents[i].Object.LastTimestamp.Before(&serviceEvents[j].Object.LastTimestamp)
 	})
 	Expect(len(serviceEvents)).To(BeNumerically(">", 0), "No events were found")
 
