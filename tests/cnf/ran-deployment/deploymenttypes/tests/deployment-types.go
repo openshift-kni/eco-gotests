@@ -399,7 +399,7 @@ func checkForHubSideTemplate(content []byte) {
 	}
 }
 
-// Determine the cluster type as one of: standard, 3node, SNO, SNO+Worker.
+// getCluterType determines the cluster type as one of: standard, 3node, SNO, SNO+Worker.
 func getClusterType(cluster *clients.Settings) {
 	var (
 		bothCount         = 0
@@ -456,6 +456,7 @@ func getClusterType(cluster *clients.Settings) {
 	}
 }
 
+// getDeploymentType determines the deployment type as one of: AgentClusterInstall or ImageClusterInstall
 func getDeploymentType(cluster *clients.Settings, clusterDeploymentsList []*hive.ClusterDeploymentBuilder) {
 	klusterlet, err := ocm.PullKlusterlet(cluster, ocm.KlusterletName)
 	Expect(err).ToNot(HaveOccurred(), "Failed to get klusterlet")
