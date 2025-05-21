@@ -549,8 +549,8 @@ func getLinkRx(runningPod *pod.Builder, linkName string) (int, error) {
 
 	err = wait.PollUntilContextTimeout(
 		context.TODO(),
-		time.Second,
-		time.Second*30,
+		3*time.Second,
+		2*time.Minute,
 		true,
 		func(ctx context.Context) (bool, error) {
 			linkRawInfo, err = runningPod.ExecCommand(
