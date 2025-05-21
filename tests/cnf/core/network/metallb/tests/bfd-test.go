@@ -315,9 +315,6 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 		err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
 			tsparams.DefaultTimeout, pod.GetGVR(), nad.GetGVR())
 		Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
-
-		By("Reverting Local GW mode")
-		setLocalGWMode(false)
 	})
 })
 

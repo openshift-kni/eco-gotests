@@ -112,9 +112,6 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		if len(cnfWorkerNodeList) > 2 {
 			removeNodeLabel(workerNodeList, metalLbTestsLabel)
 		}
-
-		By("Reverting GW mode to the Sharing")
-		setLocalGWMode(false)
 	})
 
 	It("Concurrent Layer2 and Layer3 should work concurrently Layer 2 and Layer 3", reportxml.ID("50059"), func() {
