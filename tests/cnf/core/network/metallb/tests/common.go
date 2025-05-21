@@ -267,8 +267,13 @@ func setupBgpAdvertisement(
 		WithCommunities([]string{communities}).
 		WithLocalPref(localPreference).
 		WithAggregationLength4(32)
+
 	if len(nodeSelectors) > 0 {
-		builder = builder.WithNodeSelector(nodeSelectors).WithPeers(bgpPeers)
+		builder = builder.WithNodeSelector(nodeSelectors)
+	}
+
+	if len(bgpPeers) > 0 {
+		builder = builder.WithPeers(bgpPeers)
 	}
 
 	_, err := builder.Create()
@@ -414,6 +419,17 @@ func setupNGNXPod(podName, nodeName, labelValue string) {
 		DefineOnNode(nodeName).
 		WithLabel("app", labelValue).
 		RedefineDefaultCMD([]string{"/bin/bash", "-c", "nginx && sleep INF"}).
+		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
+	Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
+}
+
+func setupNGNXPodAndSCTPServer(podName, nodeName, labelValue string) {
+	_, err := pod.NewBuilder(
+		APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
+		DefineOnNode(nodeName).
+		WithLabel("app", labelValue).
+		RedefineDefaultCMD([]string{"/bin/bash", "-c",
+			"nginx && /usr/bin/testcmd -listen -interface eth0 -port 50000 -protocol sctp"}).
 		WithPrivilegedFlag().CreateAndWaitUntilRunning(tsparams.DefaultTimeout)
 	Expect(err).ToNot(HaveOccurred(), "Failed to create nginx test pod")
 }
