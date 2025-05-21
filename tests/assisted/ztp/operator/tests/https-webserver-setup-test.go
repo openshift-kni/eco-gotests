@@ -23,11 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+//nolint:lll
 const (
 	serverName          = "https-webserver"
 	nsname              = "httpdtest"
 	containerPort       = 8443
-	httpdContainerImage = "registry.redhat.io/rhel8/httpd-24"
+	httpdContainerImage = "registry.redhat.io/rhel8/httpd-24@sha256:e79826192005406f8a4cedcaabc544cd3fb71a9ffd30d35da0ce7f2d149b974b"
 	httpsPVCQuantity    = "20Gi"
 )
 
@@ -49,6 +50,12 @@ var _ = Describe(
 				By("Validating that the environment is connected")
 				connectionReq, msg := meets.HubConnectedRequirement()
 				if !connectionReq {
+					Skip(msg)
+				}
+
+				By("Validating that the environment is IPv4")
+				singeStackIpv4Req, msg := meets.HubSingleStackIPv4Requirement()
+				if !singeStackIpv4Req {
 					Skip(msg)
 				}
 
