@@ -245,6 +245,10 @@ var _ = Describe(
 				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("77490"),
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
 
+			It("Verify cluster log forwarding to the Kafka broker",
+				Label("log-forwarding", "kafka"), reportxml.ID("81882"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")
 				rdscorecommon.CleanupRootlessDPDKServerDeployment()
@@ -538,6 +542,10 @@ var _ = Describe(
 				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81430"),
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
 
+			It("Verify cluster log forwarding to the Kafka broker post hard reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81884"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")
 				rdscorecommon.CleanupRootlessDPDKServerDeployment()
@@ -794,6 +802,10 @@ var _ = Describe(
 			It("Verifies rootless DPDK pod workloads on the different nodes, multiple IP-VLANs post soft reboot",
 				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81422"),
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
+
+			It("Verify cluster log forwarding to the Kafka broker post soft reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81883"),
+				rdscorecommon.VerifyLogForwardingToKafka)
 
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure rootless DPDK server deployment was deleted")

@@ -527,6 +527,7 @@ type CoreConfig struct {
 	RootlessDPDKClientIPVlanIPv4Dummy string `yaml:"rdscore_rootless_dpdk_client_ipvlan_ipv4_dummy" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_IPVLAN_IPV4_DUMMY"`
 	//nolint:lll,nolintlint
 	DpdkTestContainer     string `yaml:"rdscore_dpdk_test_container" envconfig:"ECO_RDSCORE_DPDK_TEST_CONTAINER"`
+	KafkaLogsLabel        string `yaml:"rdscore_kafka_logs_label" envconfig:"ECO_RDSCORE_KAFKA_LOGS_LABEL"`
 	WorkerLabelListOption metav1.ListOptions
 }
 
