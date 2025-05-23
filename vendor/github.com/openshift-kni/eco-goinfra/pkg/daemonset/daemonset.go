@@ -437,11 +437,8 @@ func (builder *Builder) IsReady(timeout time.Duration) bool {
 	// Polls every retryInterval to determine if daemonset is available.
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), retryInterval, timeout, true, func(ctx context.Context) (bool, error) {
-			if !builder.Exists() {
-				return false, fmt.Errorf("daemonset %s is not present on cluster", builder.Object.Name)
-			}
-
 			var err error
+
 			builder.Object, err = builder.apiClient.Get(
 				context.TODO(), builder.Definition.Name, metav1.GetOptions{})
 
