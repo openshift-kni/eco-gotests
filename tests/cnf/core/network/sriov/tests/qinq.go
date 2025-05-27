@@ -1096,9 +1096,10 @@ func defineAndCreateNADs(nadCVLAN100, nadCVLAN101, nadMasterBond0, intNet1 strin
 func setVFPromiscMode(nodeName, srIovInterfacesUnderTest, sriovDeviceID, onOff string) {
 	promiscVFCommand := fmt.Sprintf("ethtool --set-priv-flags %s vf-true-promisc-support %s",
 		srIovInterfacesUnderTest, onOff)
-	if sriovDeviceID == netparam.MlxDeviceID || sriovDeviceID == netparam.MlxBFDeviceID {
-		promiscVFCommand = fmt.Sprintf("ip link set %s promisc on",
-			srIovInterfacesUnderTest)
+	if sriovDeviceID == netparam.MlxDeviceID || sriovDeviceID == netparam.MlxBFDeviceID ||
+		sriovDeviceID == netparam.MlxConnectX6 {
+		promiscVFCommand = fmt.Sprintf("ip link set %s promisc %s",
+			srIovInterfacesUnderTest, onOff)
 	}
 
 	output, err := cmd.RunCommandOnHostNetworkPod(nodeName, NetConfig.SriovOperatorNamespace, promiscVFCommand)
