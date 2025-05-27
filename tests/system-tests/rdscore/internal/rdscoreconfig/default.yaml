@@ -170,3 +170,5 @@ rdscore_pod_level_bond_two_name: 'rdscore-pod-level-bond-two'
 rdscore_pod_level_bond_port: '9090'
 rdscore_pod_level_bond_sriov_net_one: 'sriov-bonded-net-one'
 rdscore_pod_level_bond_sriov_net_two: 'sriov-bonded-net-two'
+# Log Forwarding
+rdscore_kafka_logs_label: ''
