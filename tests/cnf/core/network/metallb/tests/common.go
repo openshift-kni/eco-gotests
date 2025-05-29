@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlbtypesv1beta2"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/internal/coreparams"
 	netcmd "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/cmd"
@@ -199,6 +200,41 @@ func createBGPPeerAndVerifyIfItsReady(
 	}
 }
 
+//nolint:unparam
+func createBGPPeerUnnumberedAndVerifyIfItsReady(
+	name, dynamicASN, interfaceName, bfdProfileName string, localAS, remoteAsn uint32, eBgpMultiHop bool, connectTime int,
+	frrk8sPod *pod.Builder, nodeSelector map[string]string) {
+	By("Creating BGP Peer")
+
+	bgpPeer := metallb.NewBGPPeerBuilder(APIClient, name, NetConfig.MlbOperatorNamespace, localAS, remoteAsn).
+		WithPassword(tsparams.BGPPassword).WithEBGPMultiHop(eBgpMultiHop).WithIPUnnumbered(interfaceName).
+		WithNodeSelector(nodeSelector).WithHoldTime(metav1.Duration{
+		Duration: 90 * time.Second,
+	}).WithKeepalive(metav1.Duration{Duration: 30 * time.Second})
+
+	if dynamicASN != "" {
+		bgpPeer.WithDynamicASN(mlbtypesv1beta2.DynamicASNMode(dynamicASN))
+	}
+
+	if bfdProfileName != "" {
+		bgpPeer.WithBFDProfile(bfdProfileName)
+	}
+
+	if connectTime != 0 {
+		// Convert connectTime int to time.Duration in seconds
+		bgpPeer.WithConnectTime(metav1.Duration{Duration: time.Duration(connectTime) * time.Second})
+	}
+
+	_, err := bgpPeer.Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create BGP peer")
+
+	By("Verifying if BGP protocol configured")
+
+	Eventually(frr.IsProtocolConfigured,
+		time.Minute, tsparams.DefaultRetryInterval).WithArguments(frrk8sPod, "router bgp").
+		Should(BeTrue(), "BGP is not configured on the Speakers")
+}
+
 func setupBgpAdvertisementAndIPAddressPool(
 	name string, addressPool []string, prefixLen int) *metallb.IPAddressPoolBuilder {
 	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
@@ -239,6 +275,15 @@ func setupBgpAdvertisement(
 	Expect(err).ToNot(HaveOccurred(), "Failed to create BGPAdvertisement")
 }
 
+func updateBgpAdvertisementWithNodeSelector(
+	name string,
+	nodeSelectors []metav1.LabelSelector) {
+	builder, err := metallb.PullBGPAdvertisement(APIClient, name, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull existing BGPAdvertisement")
+	_, err = builder.WithNodeSelector(nodeSelectors).Update(true)
+	Expect(err).ToNot(HaveOccurred(), "Failed to update BGPAdvertisement")
+}
+
 func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
 	ipAddressPool, err := metallb.NewIPAddressPoolBuilder(
 		APIClient,
@@ -258,7 +303,7 @@ func setupL2Advertisement(addressPool []string) *metallb.IPAddressPoolBuilder {
 func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
 	for _, peerAddress := range netcmd.RemovePrefixFromIPList(peerAddrList) {
 		Eventually(frr.BGPNeighborshipHasState,
-			time.Minute*3, tsparams.DefaultRetryInterval).
+			time.Minute*4, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
 			BeTrue(), "Failed to receive BGP status UP")
 	}
@@ -452,7 +497,15 @@ func resetOperatorAndTestNS() {
 }
 
 func validatePrefix(
-	masterNodeFRRPod *pod.Builder, ipProtoVersion string, prefix int, workerNodesAddresses, addressPool []string) {
+	masterNodeFRRPod *pod.Builder,
+	ipProtoVersion string,
+	prefix int,
+	workerNodesAddresses,
+	addressPool []string,
+	noRouteCheck ...bool, // Optional boolean argument
+) {
+	var nextHopAddresses []string
+
 	Eventually(func() bool {
 		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
 		if err != nil {
@@ -465,23 +518,27 @@ func validatePrefix(
 
 	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
 	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
+
 	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefix))
 	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
-	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
 
-	var nextHopAddresses []string
+	if len(noRouteCheck) > 0 && noRouteCheck[0] {
+		Expect(bgpStatus.Routes).ToNot(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
+	} else {
+		Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
 
-	for _, route := range bgpStatus.Routes[subnet.String()] {
-		Expect(route.PrefixLen).To(BeNumerically("==", prefix),
-			"Failed prefix length is not in expected value")
+		for _, route := range bgpStatus.Routes[subnet.String()] {
+			Expect(route.PrefixLen).To(BeNumerically("==", prefix),
+				"Failed prefix length is not in expected value")
 
-		for _, nHop := range route.Nexthops {
-			nextHopAddresses = append(nextHopAddresses, nHop.IP)
+			for _, nHop := range route.Nexthops {
+				nextHopAddresses = append(nextHopAddresses, nHop.IP)
+			}
 		}
-	}
 
-	Expect(nextHopAddresses).To(ContainElements(workerNodesAddresses),
-		"Failed next hop address in not in node addresses list")
+		Expect(nextHopAddresses).To(ContainElements(workerNodesAddresses),
+			"Failed next hop address is not in node addresses list")
+	}
 }
 
 func removePrefixFromIPList(ipAddressList []string) []string {

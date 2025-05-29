@@ -1155,58 +1155,51 @@ func (builder *Builder) WithTerminationGracePeriodSeconds(terminationGracePeriod
 
 // GetLog connects to a pod and fetches log.
 func (builder *Builder) GetLog(logStartTime time.Duration, containerName string) (string, error) {
-	if valid, err := builder.validate(); !valid {
-		return "", err
-	}
-
-	logStart := int64(logStartTime.Seconds())
-	req := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name, &corev1.PodLogOptions{
-		SinceSeconds: &logStart, Container: containerName})
-	log, err := req.Stream(context.TODO())
-
+	// GetLogsWithOptions already handles validation, so no need to duplicate it here.
+	logs, err := builder.GetLogsWithOptions(&corev1.PodLogOptions{
+		SinceSeconds: ptr.To(int64(logStartTime.Seconds())),
+		Container:    containerName,
+	})
 	if err != nil {
 		return "", err
 	}
 
-	defer func() {
-		_ = log.Close()
-	}()
-
-	buf := new(bytes.Buffer)
-	_, err = io.Copy(buf, log)
-
-	if err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
+	return string(logs), nil
 }
 
 // GetFullLog connects to a pod and fetches the full log since pod creation.
 func (builder *Builder) GetFullLog(containerName string) (string, error) {
+	// GetLogsWithOptions already handles validation, so no need to duplicate it here.
+	logs, err := builder.GetLogsWithOptions(&corev1.PodLogOptions{Container: containerName})
+	if err != nil {
+		return "", err
+	}
+
+	return string(logs), nil
+}
+
+// GetLogsWithOptions retrieves logs from a pod using the provided options. No validation is performed on the provided
+// options. The options may be nil.
+func (builder *Builder) GetLogsWithOptions(options *corev1.PodLogOptions) ([]byte, error) {
 	if valid, err := builder.validate(); !valid {
-		return "", err
+		return nil, err
 	}
 
-	logStream, err := builder.apiClient.Pods(builder.Definition.Namespace).GetLogs(builder.Definition.Name,
-		&corev1.PodLogOptions{Container: containerName}).Stream(context.TODO())
-
+	logReader, err := builder.apiClient.Pods(builder.Definition.Namespace).
+		GetLogs(builder.Definition.Name, options).
+		Stream(context.TODO())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	defer func() {
-		_ = logStream.Close()
-	}()
+	defer logReader.Close()
 
-	logBuffer := new(bytes.Buffer)
-	_, err = io.Copy(logBuffer, logStream)
-
+	logs, err := io.ReadAll(logReader)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return logBuffer.String(), nil
+	return logs, nil
 }
 
 // GetGVR returns pod's GroupVersionResource which could be used for Clean function.

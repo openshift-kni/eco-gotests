@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/metallb/mlboperator"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/metallb/internal/tsparams"
@@ -64,7 +65,8 @@ func DoesClusterSupportMetalLbTests(requiredCPNodeNumber, requiredWorkerNodeNumb
 
 // CreateNewMetalLbDaemonSetAndWaitUntilItsRunning creates or recreates the new metalLb daemonset and waits until
 // daemonset is in Ready state.
-func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, nodeLabel map[string]string) error {
+func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, nodeLabel map[string]string,
+	logLevel ...mlboperator.MetalLBLogLevel) error {
 	glog.V(90).Infof("Verifying if MetalLB daemonset is running")
 
 	// Check if MetalLB DaemonSet already exists
@@ -82,6 +84,10 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, node
 
 	// Create new MetalLB DaemonSet
 	metalLbIo = metallb.NewBuilder(APIClient, tsparams.MetalLbIo, NetConfig.MlbOperatorNamespace, nodeLabel)
+	if len(logLevel) > 0 {
+		metalLbIo.Definition.Spec.LogLevel = logLevel[0]
+	}
+
 	_, err = metalLbIo.Create()
 
 	if err != nil {
