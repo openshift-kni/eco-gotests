@@ -79,4 +79,8 @@ bfd
 	LocalBGPASN = 64500
 	// RemoteBGPASN represents remote BGP AS number.
 	RemoteBGPASN = 64501
+	// ETPLocal represents externalTrafficPolicy Local.
+	ETPLocal = "Local"
+	// ETPCluster represents externalTrafficPolicy Cluster.
+	ETPCluster = "Cluster"
 )
