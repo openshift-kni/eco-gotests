@@ -34,7 +34,7 @@ const (
 	podLevelBondPodLabel           = "systemtest-test=rdscore-pod-level-bond-privileged"
 	podLevelBondNetName            = "bond-net"
 	tcpTestPassedMsg               = `TCP test passed as expected`
-	podNetAnnotationPattern        = "k8s.v1.cni.cncf.io/network-status"
+	mtuSize                        = "8900"
 )
 
 var (
@@ -200,6 +200,8 @@ func definePodLevelBondDeploymentContainer() *pod.ContainerBuilder {
 		"tcp",
 		"-port",
 		RDSCoreConfig.PodLevelBondPort,
+		"-mtu",
+		mtuSize,
 	}
 
 	glog.V(100).Infof("Creating container %q", cName)
@@ -335,8 +337,8 @@ func generateTCPTraffic(
 	}
 
 	cmdToRun := []string{"bash", "-c",
-		fmt.Sprintf("testcmd -protocol tcp -port %s -interface net3 -packages %s -timeoutTCP %s -server %s",
-			serverPort, packetsNumber, timeout, serverIPAddr)}
+		fmt.Sprintf("testcmd -protocol tcp -port %s -interface net3 -packages %s -timeoutTCP %s -server %s -mtu %s",
+			serverPort, packetsNumber, timeout, serverIPAddr, mtuSize)}
 
 	glog.V(100).Infof("Execute command: %q", cmdToRun)
 
