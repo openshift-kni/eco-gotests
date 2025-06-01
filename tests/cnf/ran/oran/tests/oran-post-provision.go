@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/helper"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/oran/internal/tsparams"
 	provisioningv1alpha1 "github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1"
+	policiesv1 "open-cluster-management.io/governance-policy-propagator/api/v1"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -71,6 +72,9 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		// restores it.
 		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, restoreTime, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
+
+		By("ensuring policies are the right version")
+		ensurePoliciesVersion(prBuilder)
 
 		By("deleting the second test ConfigMap if it exists")
 		err = configmap.NewBuilder(Spoke1APIClient, tsparams.TestName2, tsparams.TestName).Delete()
@@ -135,6 +139,9 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		_, err := prBuilder.Update()
 		Expect(err).ToNot(HaveOccurred(), "Failed to update spoke 1 ProvisioningRequest")
 
+		By("ensuring policies are the right version")
+		ensurePoliciesVersion(prBuilder)
+
 		waitForLabels()
 	})
 
@@ -153,6 +160,9 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		By("waiting for the ProvisioningRequest to be fulfilled")
 		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, updateTime, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
+
+		By("ensuring policies are the right version")
+		ensurePoliciesVersion(prBuilder)
 
 		By("verifying the test ConfigMap has the new value")
 		verifyCM(tsparams.TestName, tsparams.TestNewValue)
@@ -177,6 +187,9 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		By("waiting for the ProvisioningRequest to be fulfilled")
 		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, updateTime, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
+
+		By("ensuring policies are the right version")
+		ensurePoliciesVersion(prBuilder)
 
 		By("verifying the test ConfigMap has the original value")
 		verifyCM(tsparams.TestName, tsparams.TestOriginalValue)
@@ -209,6 +222,9 @@ var _ = Describe("ORAN Post-provision Tests", Label(tsparams.LabelPostProvision)
 		By("waiting for the ProvisioningRequest to be fulfilled")
 		err = prBuilder.WaitForPhaseAfter(provisioningv1alpha1.StateFulfilled, updateTime, time.Minute)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for ProvisioningRequest to become fulfilled")
+
+		By("ensuring policies are the right version")
+		ensurePoliciesVersion(prBuilder)
 
 		By("verifying the test ConfigMap has the original value")
 		verifyCM(tsparams.TestName, tsparams.TestOriginalValue)
@@ -286,6 +302,40 @@ func waitForLabels() {
 
 	_, err = mcl.WaitForLabel(tsparams.TestName, time.Minute)
 	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 ManagedCluster to have the label")
+}
+
+// ensurePoliciesVersion gets the desired version for the spoke 1 policies and waits for them to be updated. After, it
+// waits for the policies to all be Compliant and the ProvisioningRequest to be fulfilled.
+//
+// This function is assumed to be called after the ProvisioningRequest has been updated and becomes fulfilled so that
+// the ClusterInstance extraLabels have been updated to the newest policy selector.
+func ensurePoliciesVersion(prBuilder *oran.ProvisioningRequestBuilder) {
+	By("checking the ClusterInstance policy label")
+
+	clusterInstance, err := siteconfig.PullClusterInstance(HubAPIClient, RANConfig.Spoke1Name, RANConfig.Spoke1Name)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull spoke 1 ClusterInstance")
+
+	mclLabels, ok := clusterInstance.Definition.Spec.ExtraLabels["ManagedCluster"]
+	Expect(ok).To(BeTrue(), "Spoke 1 ClusterInstance does not have ManagedCluster extraLabels")
+
+	desiredVersion, ok := mclLabels[tsparams.PolicySelectorLabel]
+	Expect(ok).To(BeTrue(), "Spoke 1 ClusterInstance does not have the policy selector label")
+
+	By("waiting for policies to be updated to the desired version")
+
+	err = helper.WaitForPolicyVersion(HubAPIClient, desiredVersion, time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 policies to be updated to the desired version")
+
+	By("waiting for policies to be Compliant")
+
+	err = ocm.WaitForAllPoliciesComplianceState(
+		HubAPIClient, policiesv1.Compliant, time.Minute, runtimeclient.ListOptions{Namespace: RANConfig.Spoke1Name})
+	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 policies to be Compliant")
+
+	By("waiting for ProvisioningRequest to be fulfilled")
+
+	_, err = prBuilder.WaitUntilFulfilled(time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Failed to wait for spoke 1 ProvisioningRequest to be fulfilled")
 }
 
 // getStartTime saves the current time, waits until the next second, then returns the saved time. Since Kubernetes only
