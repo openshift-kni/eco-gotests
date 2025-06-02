@@ -17,7 +17,8 @@ type (
 		BGPState string `json:"bgpState"`
 	}
 
-	bgpStatus struct {
+	// BGPStatus struct includes BGP status info.
+	BGPStatus struct {
 		VrfID         int    `json:"vrfId"`
 		VrfName       string `json:"vrfName"`
 		TableVersion  int    `json:"tableVersion"`
@@ -273,14 +274,14 @@ func SetStaticRoute(frrPod *pod.Builder, action, destIP string, nextHopMap map[s
 }
 
 // GetBGPStatus returns bgp status output from frr pod.
-func GetBGPStatus(frrPod *pod.Builder, protocolVersion string, containerName ...string) (*bgpStatus, error) {
+func GetBGPStatus(frrPod *pod.Builder, protocolVersion string, containerName ...string) (*BGPStatus, error) {
 	glog.V(90).Infof("Getting bgp status from pod: %s", frrPod.Definition.Name)
 
 	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s json", protocolVersion), containerName...)
 }
 
 // GetBGPCommunityStatus returns bgp community status from frr pod.
-func GetBGPCommunityStatus(frrPod *pod.Builder, ipProtocolVersion string) (*bgpStatus, error) {
+func GetBGPCommunityStatus(frrPod *pod.Builder, ipProtocolVersion string) (*BGPStatus, error) {
 	glog.V(90).Infof("Getting bgp community status from container on pod: %s", frrPod.Definition.Name)
 
 	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, "65535:65282"))
@@ -347,7 +348,7 @@ func ValidateBGPRemoteAS(frrk8sPods []*pod.Builder, bgpPeerIP string, expectedRe
 	return fmt.Errorf("no BGP neighbor with RemoteAS %d found for peer %s", expectedRemoteAS, bgpPeerIP)
 }
 
-func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bgpStatus, error) {
+func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*BGPStatus, error) {
 	cName := "frr"
 
 	if len(containerName) > 0 {
@@ -362,11 +363,11 @@ func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bg
 		return nil, err
 	}
 
-	bgpStatus := bgpStatus{}
+	bgpStatus := BGPStatus{}
 
 	err = json.Unmarshal(bgpStateOut.Bytes(), &bgpStatus)
 	if err != nil {
-		glog.V(90).Infof("Failed to Unmarshal bgpStatus string: %s in to bgpStatus struct", bgpStateOut.String())
+		glog.V(90).Infof("Failed to Unmarshal BGPStatus string: %s in to BGPStatus struct", bgpStateOut.String())
 
 		return nil, err
 	}
