@@ -21,7 +21,7 @@ import (
 const (
 	kcatDeploymentName      = "kcat"
 	kcatDeploymentNamespace = "default"
-	logMessageCnt           = 2000
+	logMessageCnt           = 1000
 )
 
 var (
@@ -200,7 +200,7 @@ func VerifyLogForwardingToKafka() {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Execute command: %q", cmdToRun)
 
-	var result string
+	var logMessages []kafkaRecord
 
 	Eventually(func() bool {
 		output, err := kcatPodObj.ExecCommand(cmdToRun, kcatPodObj.Object.Spec.Containers[0].Name)
@@ -217,7 +217,7 @@ func VerifyLogForwardingToKafka() {
 			"Successfully executed command from within a pod %q in namespace %q",
 			kcatPodObj.Definition.Name, kcatPodObj.Definition.Namespace)
 
-		result = output.String()
+		result := output.String()
 
 		if result == "" {
 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
@@ -227,47 +227,54 @@ func VerifyLogForwardingToKafka() {
 			return false
 		}
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Command's output:\n\t%v", result)
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Analyse received logs:\n\t%v", result)
+
+		result = strings.TrimSpace(result)
+
+		for _, line := range strings.Split(result, "\n") {
+			var logMessage kafkaRecord
+
+			err = json.Unmarshal([]byte(line), &logMessage)
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error unmarshalling kafka record %q: %v", line, err)
+
+				return false
+			}
+
+			logMessages = append(logMessages, logMessage)
+		}
+
+		if len(logMessages) == 0 {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("No log messages forwarded to the kafka %s found", kafkaURL)
+
+			return false
+		}
+
+		for _, logType := range logTypes {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+				"Verify %s type log messages were forwarded to the kafka server %s", logType, kafkaURL)
+
+			messageCnt := 0
+
+			for _, logMessage := range logMessages {
+				if logMessage.LogType == logType {
+					messageCnt++
+				}
+			}
+
+			if messageCnt == 0 {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+					"No log messages of %s type forwarded to the kafka %s were found", kafkaURL, logType)
+
+				return false
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d %s log messages forwarded to the kafka server",
+				messageCnt, logType)
+		}
 
 		return true
 	}).WithContext(ctx).WithPolling(3*time.Second).WithTimeout(6*time.Minute).Should(BeTrue(),
 		"pods matching label() still present")
-
-	By("Analyse received logs")
-
-	result = strings.TrimSpace(result)
-
-	var logMessages []kafkaRecord
-
-	for _, line := range strings.Split(result, "\n") {
-		var logMessage kafkaRecord
-
-		err = json.Unmarshal([]byte(line), &logMessage)
-		Expect(err).ToNot(HaveOccurred(),
-			fmt.Sprintf("Error unmarshalling kafka record %q: %v", line, err))
-
-		logMessages = append(logMessages, logMessage)
-	}
-
-	Expect(len(logMessages)).ToNot(Equal(0),
-		fmt.Sprintf("No log messages forwarded to the kafka %s found", kafkaURL))
-
-	for _, logType := range logTypes {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
-			"Verify %s type log messages were forwarded to the kafka server %s", logType, kafkaURL)
-
-		messageCnt := 0
-
-		for _, logMessage := range logMessages {
-			if logMessage.LogType == logType {
-				messageCnt++
-			}
-		}
-
-		Expect(messageCnt).ToNot(Equal(0),
-			fmt.Sprintf("No log messages of %s type forwarded to the kafka %s were found", kafkaURL, logType))
-
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d %s log messages forwarded to the kafka server",
-			messageCnt, logType)
-	}
 }
