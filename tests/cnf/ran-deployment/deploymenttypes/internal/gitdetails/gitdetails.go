@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
-	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
+	argocdtypes "github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
 )
 
 // GetGitSource gets the ApplicationSource from the ApplicationsBuilder.
-func GetGitSource(app *argocd.ApplicationBuilder) (*v1alpha1.ApplicationSource, error) {
+func GetGitSource(app *argocd.ApplicationBuilder) (*argocdtypes.ApplicationSource, error) {
 	appSourceInfo := app.Object.Spec.GetSource()
 
 	switch {

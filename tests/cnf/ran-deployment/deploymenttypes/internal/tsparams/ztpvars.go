@@ -4,7 +4,7 @@ import (
 	sriovv1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	cguv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator"
-	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
+	argocdtypes "github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
@@ -42,7 +42,7 @@ var (
 		{Cr: &corev1.ConfigMapList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &corev1.SecretList{}, Namespace: ptr.To(TestNamespace)},
 		{Cr: &argocdoperator.ArgoCDList{}},
-		{Cr: &v1alpha1.ApplicationList{}},
+		{Cr: &argocdtypes.ApplicationList{}},
 	}
 
 	// ReporterSpokeCRsToDump is the CRs the reporter should dump on the spokes.

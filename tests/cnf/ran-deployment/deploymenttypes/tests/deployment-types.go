@@ -91,8 +91,6 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		Expect(Spoke1APIClient).ToNot(BeNil(), "Spoke1APIClient is nil")
 		Expect(Spoke1APIClient.KubeconfigPath).ToNot(BeEmpty(), "KUBECONFIG for first cluster is not provided.")
 
-		getClusterType(Spoke1APIClient)
-
 		err := ocm.WaitForAllPoliciesComplianceState(
 			HubAPIClient, policiesv1.Compliant, time.Minute, runtimeclient.ListOptions{Namespace: RANConfig.Spoke1Name})
 		if err != nil {
