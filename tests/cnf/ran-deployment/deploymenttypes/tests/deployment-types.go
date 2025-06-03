@@ -97,6 +97,8 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 			Expect(err).ToNot(HaveOccurred(), "Failed to verify all policies are compliant for spoke %s", RANConfig.Spoke1Name)
 		}
 
+		getClusterType(Spoke1APIClient)
+
 		clusterDeploymentsList, err = hive.ListClusterDeploymentsInAllNamespaces(HubAPIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to Get ClusterDeployments list")
 		getDeploymentType(Spoke1APIClient, clusterDeploymentsList)
