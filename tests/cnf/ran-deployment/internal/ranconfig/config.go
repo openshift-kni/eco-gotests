@@ -184,17 +184,15 @@ func (ranconfig *RANConfig) newSpoke1Config() {
 
 	// glog.V(ranparam.LogLevel).Infof("Creating new Spoke1Config struct from file %s", configFile)
 
-	// ranconfig.Spoke1Config = new(Spoke1Config)
+	ranconfig.Spoke1Config = new(Spoke1Config)
 
 	// err := readConfig(ranconfig.Spoke1Config, configFile)
 	// if err != nil {
 	// 	glog.V(ranparam.LogLevel).Infof("Failed to instantiate Spoke1Config: %v", err)
 	// }
 
-	// ranconfig.Spoke1Config.Spoke1APIClient = inittools.APIClient
-	ranconfig.Spoke1Config.Spoke1APIClient = clients.New(ranconfig.Spoke1Config.Spoke1Kubeconfig)
-
 	if spoke1Kubeconfig := ranconfig.Spoke1Config.Spoke1Kubeconfig; spoke1Kubeconfig != "" {
+		ranconfig.Spoke1Config.Spoke1APIClient = clients.New(ranconfig.Spoke1Config.Spoke1Kubeconfig)
 		spoke1Name, err := version.GetClusterName(spoke1Kubeconfig)
 		if err != nil {
 			glog.V(ranparam.LogLevel).Infof("Failed to get spoke 1 name from kubeconfig at %s: %v", spoke1Kubeconfig, err)
