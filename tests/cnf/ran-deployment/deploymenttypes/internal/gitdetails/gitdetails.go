@@ -15,7 +15,7 @@ func GetGitSource(app *argocd.ApplicationBuilder) (*argocdtypes.ApplicationSourc
 	case len(appSourceInfo.RepoURL) == 0:
 		return nil, fmt.Errorf("%s application git RepoURL is empty", app.Object.Name)
 	case len(appSourceInfo.Path) == 0:
-		return nil, fmt.Errorf("%s application it Path is empty", app.Object.Name)
+		return nil, fmt.Errorf("%s application git Path is empty", app.Object.Name)
 	case len(appSourceInfo.TargetRevision) == 0:
 		return nil, fmt.Errorf("%s application git TargetRevision is empty", app.Object.Name)
 	}

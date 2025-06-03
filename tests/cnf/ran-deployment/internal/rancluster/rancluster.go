@@ -1,13 +1,7 @@
 package rancluster
 
 import (
-	"fmt"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/hive"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 )
 
 // AreClustersPresent checks all of the provided clusters and returns false if any are nil.
@@ -21,6 +15,7 @@ func AreClustersPresent(clusters []*clients.Settings) bool {
 	return true
 }
 
+/*
 // GetSpokeClusterName gets the spoke cluster name as string.
 func GetSpokeClusterName(hubAPIClient, spokeAPIClient *clients.Settings) (string, error) {
 	spokeClusterVersion, err := cluster.GetOCPClusterVersion(spokeAPIClient)
@@ -62,3 +57,4 @@ func GetNodeNames(spokeAPIClient *clients.Settings) ([]string, error) {
 
 	return nodeNames, nil
 }
+*/

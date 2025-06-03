@@ -1,17 +1,12 @@
 package version
 
 import (
-	"errors"
 	"fmt"
-	"math"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
-	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	configv1 "github.com/openshift/api/config/v1"
@@ -24,6 +19,8 @@ var inputStringRegex = regexp.MustCompile(`(\d+)\.(\d+)`)
 // inputs to this function should contain dot separated positive intergers, e.g. "1.0.0" or "4.10". Each string input
 // must contain at least two dot separarted integers but may also contain more, though only the first two are compared.
 // Digits are compared per position, so 4.Y is not less than 5.0 if Y > 0.
+
+/*
 func IsVersionStringInRange(version, minimum, maximum string) (bool, error) {
 	versionDigits := getInputIntegers(version)
 	minimumDigits := getInputIntegers(minimum)
@@ -67,7 +64,7 @@ func IsVersionStringInRange(version, minimum, maximum string) (bool, error) {
 	// At the end if we never returned then all the digits were in valid range
 	return true, nil
 }
-
+*/
 // GetOCPVersion uses the cluster version on a given cluster to find the latest OCP version, returning the desired
 // version if the latest version could not be found.
 func GetOCPVersion(client *clients.Settings) (string, error) {
@@ -117,6 +114,7 @@ func GetClusterName(kubeconfigPath string) (string, error) {
 
 // GetOperatorVersionFromCsv returns operator version from csv, or an empty string if no CSV for the provided operator
 // is found.
+/*
 func GetOperatorVersionFromCsv(client *clients.Settings, operatorName, operatorNamespace string) (string, error) {
 	csv, err := olm.ListClusterServiceVersion(client, operatorNamespace)
 	if err != nil {
@@ -131,7 +129,8 @@ func GetOperatorVersionFromCsv(client *clients.Settings, operatorName, operatorN
 
 	return "", fmt.Errorf("could not find version for operator %s in namespace %s", operatorName, operatorNamespace)
 }
-
+*/
+/*
 // GetZTPVersionFromArgoCd is used to fetch the version of the ztp-site-generate init container.
 func GetZTPVersionFromArgoCd(client *clients.Settings, name, namespace string) (string, error) {
 	ztpDeployment, err := deployment.Pull(client, name, namespace)
@@ -159,7 +158,8 @@ func GetZTPVersionFromArgoCd(client *clients.Settings, name, namespace string) (
 
 	return "", errors.New("unable to identify ZTP version")
 }
-
+*/
+/*
 // getInputIntegers returns the first two dot-separated integers in the input string. A nil return value indicates a
 // malformed input string.
 func getInputIntegers(input string) []int {
@@ -182,3 +182,4 @@ func getInputIntegers(input string) []int {
 
 	return integers
 }
+*/
