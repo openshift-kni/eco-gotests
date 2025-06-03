@@ -7,7 +7,8 @@ import (
 	// "time"
 
 	"github.com/golang/glog"
-	// "github.com/kelseyhightower/envconfig"
+	"github.com/kelseyhightower/envconfig"
+
 	// "github.com/openshift-kni/eco-goinfra/pkg/bmc"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/internal/cnfconfig"
@@ -90,12 +91,12 @@ func NewRANConfig() *RANConfig {
 	//	baseDir := filepath.Dir(filename)
 	//	configFile := filepath.Join(baseDir, PathToDefaultCnfRanParamsFile)
 
-	// err := readConfig(&ranConfig, configFile)
-	// if err != nil {
-	// 	glog.V(ranparam.LogLevel).Infof("Error reading main RAN Config: %v", err)
+	err := readEnv(&ranConfig)
+	if err != nil {
+		glog.V(ranparam.LogLevel).Infof("Error reading main RAN Environment: %v", err)
 
-	// 	return nil
-	// }
+		return nil
+	}
 
 	ranConfig.newHubConfig()
 	ranConfig.newSpoke1Config()
@@ -286,10 +287,10 @@ func readFile[C any](config *C, configFile string) error {
 
 	return err
 }
+*/
 
 func readEnv[C any](config *C) error {
 	err := envconfig.Process("", config)
 
 	return err
 }
-*/
