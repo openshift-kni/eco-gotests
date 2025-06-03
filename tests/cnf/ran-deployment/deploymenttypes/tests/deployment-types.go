@@ -84,11 +84,13 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 	)
 
 	BeforeAll(func() {
-
 		// Determine if cluster deployments were successful, check for compliant policies for each cluster
+		Expect(HubAPIClient).ToNot(BeNil(), "HubAPIClient is nil")
 		Expect(HubAPIClient.KubeconfigPath).ToNot(BeEmpty(), "KUBECONFIG for hub cluster is not provided.")
 
+		Expect(Spoke1APIClient).ToNot(BeNil(), "Spoke1APIClient is nil")
 		Expect(Spoke1APIClient.KubeconfigPath).ToNot(BeEmpty(), "KUBECONFIG for first cluster is not provided.")
+
 		getClusterType(Spoke1APIClient)
 
 		err := ocm.WaitForAllPoliciesComplianceState(
@@ -105,7 +107,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		Expect(err).ToNot(HaveOccurred(), "Failed to Get ClusterDeployments list")
 		getDeploymentType(Spoke1APIClient, clusterDeploymentsList)
 
-		if Spoke2APIClient.KubeconfigPath != "" {
+		if Spoke2APIClient != nil && Spoke2APIClient.KubeconfigPath != "" {
 			err = ocm.WaitForAllPoliciesComplianceState(
 				HubAPIClient, policiesv1.Compliant, time.Minute, runtimeclient.ListOptions{Namespace: RANConfig.Spoke2Name})
 			if err != nil {
@@ -117,7 +119,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 				getClusterType(Spoke2APIClient)
 			}
 		} else {
-			glog.V(tsparams.LogLevel).Infof("Second cluster KUBECONFIG not available")
+			glog.V(tsparams.LogLevel).Infof("Second cluster is not available")
 			isMultiCluster = singleCluster
 		}
 
