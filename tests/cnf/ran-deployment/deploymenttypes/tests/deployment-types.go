@@ -43,9 +43,9 @@ const (
 	clusterInstAgentKind deploymentType = "ClusterInstance AgentClusterInstall"
 
 	pgtKind           policyType = "PolicyGenTemplate"
-	acmpgKind         policyType = "ACM PolicyGenerator"
+	acmpgKind         policyType = "PolicyGenerator"
 	pgtHubSideTempl   policyType = "PolicyGenTemplate with hub-side templating"
-	acmpgHubSideTempl policyType = "ACM PolicyGenerator with hub-side templating"
+	acmpgHubSideTempl policyType = "PolicyGenerator with hub-side templating"
 
 	multiCluster  multiClusterType = "multi cluster"
 	singleCluster multiClusterType = "single cluster"
@@ -360,7 +360,7 @@ func getFilesInfo(repo *git.Repository, path string) {
 				}
 			}
 
-			glog.V(ranparam.LogLevel).Info(fmt.Sprintf("DEBUG %+v", policyTemplate))
+			glog.V(ranparam.LogLevel).Info(fmt.Sprintf("DEBUG policyTemplate %+v", policyTemplate))
 
 			return nil
 		}
