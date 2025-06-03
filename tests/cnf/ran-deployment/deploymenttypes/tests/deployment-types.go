@@ -86,6 +86,9 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 	BeforeAll(func() {
 
 		// Determine if cluster deployments were successful, check for compliant policies for each cluster
+		Expect(Spoke1APIClient.KubeconfigPath).ToNot(BeEmpty(), "KUBECONFIG for first cluster is not provided.")
+		getClusterType(Spoke1APIClient)
+
 		err := ocm.WaitForAllPoliciesComplianceState(
 			HubAPIClient, policiesv1.Compliant, time.Minute, runtimeclient.ListOptions{Namespace: RANConfig.Spoke1Name})
 		if err != nil {
@@ -93,8 +96,6 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 				"Failed to verify all policies are compliant for spoke %s: %v", RANConfig.Spoke1Name, err)
 			Expect(err).ToNot(HaveOccurred(), "Failed to verify all policies are compliant for spoke %s", RANConfig.Spoke1Name)
 		}
-		Expect(Spoke1APIClient.KubeconfigPath).ToNot(BeEmpty(), "KUBECONFIG for first cluster is not provided.")
-		getClusterType(Spoke1APIClient)
 
 		clusterDeploymentsList, err = hive.ListClusterDeploymentsInAllNamespaces(HubAPIClient)
 		Expect(err).ToNot(HaveOccurred(), "Failed to Get ClusterDeployments list")
