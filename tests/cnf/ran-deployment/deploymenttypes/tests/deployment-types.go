@@ -86,6 +86,8 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 	BeforeAll(func() {
 
 		// Determine if cluster deployments were successful, check for compliant policies for each cluster
+		Expect(HubAPIClient.KubeconfigPath).ToNot(BeEmpty(), "KUBECONFIG for hub cluster is not provided.")
+
 		Expect(Spoke1APIClient.KubeconfigPath).ToNot(BeEmpty(), "KUBECONFIG for first cluster is not provided.")
 		getClusterType(Spoke1APIClient)
 
@@ -103,8 +105,6 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		Expect(err).ToNot(HaveOccurred(), "Failed to Get ClusterDeployments list")
 		getDeploymentType(Spoke1APIClient, clusterDeploymentsList)
 
-		isMultiCluster = singleCluster
-
 		if Spoke2APIClient.KubeconfigPath != "" {
 			err = ocm.WaitForAllPoliciesComplianceState(
 				HubAPIClient, policiesv1.Compliant, time.Minute, runtimeclient.ListOptions{Namespace: RANConfig.Spoke2Name})
@@ -118,6 +118,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 			}
 		} else {
 			glog.V(tsparams.LogLevel).Infof("Second cluster KUBECONFIG not available")
+			isMultiCluster = singleCluster
 		}
 
 		policiesApp, err = argocd.PullApplication(
@@ -198,7 +199,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 				Skip(fmt.Sprintf("Not %s policy type", kindValue))
 			}
 
-			By(fmt.Sprintf("Polcy type  is %s", kindValue))
+			By(fmt.Sprintf("Polcy type is %s", kindValue))
 
 		},
 		func(policyValue *policyType, kindValue policyType) string {
@@ -360,8 +361,6 @@ func getFilesInfo(repo *git.Repository, path string) {
 				}
 			}
 
-			glog.V(ranparam.LogLevel).Info(fmt.Sprintf("DEBUG policyTemplate %+v", policyTemplate))
-
 			return nil
 		}
 
@@ -425,14 +424,14 @@ func getClusterType(cluster *clients.Settings) {
 	nodes, err := nodes.List(cluster)
 	Expect(err).ToNot(HaveOccurred(), "Failed to get nodes list")
 
-	for nodeNum := range nodes {
-		nodeName := nodes[nodeNum].Definition.Name
+	for _, node := range nodes {
+		nodeName := node.Definition.Name
 		// isControlPlane, isWorker := false, false
 
-		_, isControlPlane := nodes[nodeNum].Object.Labels[RANConfig.ControlPlaneLabel]
-		_, isWorker := nodes[nodeNum].Object.Labels[RANConfig.WorkerLabel]
+		_, isControlPlane := node.Object.Labels[RANConfig.ControlPlaneLabel]
+		_, isWorker := node.Object.Labels[RANConfig.WorkerLabel]
 
-		Expect(isWorker || isControlPlane).To(BeTrueBecause("Node %s has neither control-plane nor worker label?", nodeName))
+		Expect(isWorker || isControlPlane).To(BeTrue(), "Node %s has neither control-plane nor worker label?", nodeName)
 
 		switch {
 		case isControlPlane:
