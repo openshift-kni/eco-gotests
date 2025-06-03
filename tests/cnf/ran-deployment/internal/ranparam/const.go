@@ -6,22 +6,22 @@ import (
 
 const (
 	// Label represents the label for the ran test cases.
-	Label = "ran-deployment"
+	Label string = "ran-deployment"
 
 	// AcmOperatorNamespace ACM's namespace.
-	AcmOperatorNamespace = "rhacm"
+	AcmOperatorNamespace string = "rhacm"
 	// MceOperatorNamespace is the namespace for the MCE operator.
-	MceOperatorNamespace = "multicluster-engine"
+	MceOperatorNamespace string = "multicluster-engine"
 	// TalmOperatorHubNamespace TALM namespace.
-	TalmOperatorHubNamespace = "topology-aware-lifecycle-manager"
+	TalmOperatorHubNamespace string = "topology-aware-lifecycle-manager"
 	// TalmContainerName is the name of the container in the talm pod.
-	TalmContainerName = "manager"
+	TalmContainerName string = "manager"
 	// OpenshiftOperatorNamespace is the namespace where operators are.
-	OpenshiftOperatorNamespace = "openshift-operators"
+	OpenshiftOperatorNamespace string = "openshift-operators"
 	// OpenshiftGitOpsNamespace is the namespace for the GitOps operator.
-	OpenshiftGitOpsNamespace = "openshift-gitops"
+	OpenshiftGitOpsNamespace string = "openshift-gitops"
 	// OpenshiftGitopsRepoServer ocp git repo server.
-	OpenshiftGitopsRepoServer = "openshift-gitops-repo-server"
+	OpenshiftGitopsRepoServer string = "openshift-gitops-repo-server"
 
 	// LogLevel is the verbosity for ran/internal packages.
 	LogLevel glog.Level = 80

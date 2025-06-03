@@ -30,41 +30,46 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type (
+	deploymentType   string
+	policyType       string
+	clusterType      string
+	multiClusterType string
+)
+
 const (
-	gitSiteConfigCloneDir      string = "ztp-deployment-siteconfig"
-	gitPolicyTemplatesCloneDir string = "ztp-deployment-policy-templates"
-	siteconfigKind             string = "SiteConfig"
-	clusterinstanceKind        string = "ClusterInstance"
-	pgtKind                    string = "PolicyGenTemplate"
-	acmpgKind                  string = "PolicyGenerator"
-	multiCluster               string = "Mutiple spoke clusters"
-	snoCluster                 string = "SNO Cluster"
-	snoPlusWorker              string = "SNO+Worker Cluster"
-	threeNodeCluster           string = "3 Node Cluster"
-	standardCluster            string = "Standard Cluster"
+	siteconfigKind       deploymentType = "SiteConfig"
+	clusterInstImageKind deploymentType = "ClusterInstance ImageClusterInstall"
+	clusterInstAgentKind deploymentType = "ClusterInstance AgentClusterInstall"
+
+	pgtKind           policyType = "PolicyGenTemplate"
+	acmpgKind         policyType = "ACM PolicyGenerator"
+	pgtHubSideTempl   policyType = "PolicyGenTemplate with hub-side templating"
+	acmpgHubSideTempl policyType = "ACM PolicyGenerator with hub-side templating"
+
+	multiCluster  multiClusterType = "multi cluster"
+	singleCluster multiClusterType = "single cluster"
+
+	snoCluster       clusterType = "SNO Cluster"
+	snoPlusWorker    clusterType = "SNO+Worker Cluster"
+	threeNodeCluster clusterType = "3 Node Cluster"
+	standardCluster  clusterType = "Standard Cluster"
+
 	kustSubstring              string = "/kustomization.y"
 	kustKind                   string = "Kustomization"
-	imageInstallKind           string = "ImageClusterInstall"
-	agentInstallKind           string = "AgentClusterInstall"
+	gitSiteConfigCloneDir      string = "ztp-deployment-siteconfig"
+	gitPolicyTemplatesCloneDir string = "ztp-deployment-policy-templates"
 )
 
 var (
-	reHubSideTemplate  = regexp.MustCompile(`\{\{\s*hub[^\r\n]+hub\s*\}\}`)
-	hasHubSideTemplate = false
-	isClusterInstance  = false
-	isSiteConfig       = false
-	isPGT              = false
-	isACMPG            = false
-	isMultiCluster     = false
-	isSNO              = false
-	isSnoPlusWorker    = false
-	isThreeNodeCluster = false
-	isStandardCluster  = false
+	reHubSideTemplate = regexp.MustCompile(`\{\{\s*hub[^\r\n]+hub\s*\}\}`)
 
-	ignorePaths    [3]string = [3]string{"source-crs/", "custom-crs/", "extra-manifest/"}
-	isAgentInstall           = false
-	isImageInstall           = false
+	deploymentMethod deploymentType
+	policyTemplate   policyType
+	isMultiCluster   multiClusterType
+	clusterKind      clusterType
 
+	ignorePaths [3]string = [3]string{"source-crs/", "custom-crs/", "extra-manifest/"}
 	policiesApp *argocd.ApplicationBuilder
 	clustersApp *argocd.ApplicationBuilder
 )
@@ -95,6 +100,8 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		Expect(err).ToNot(HaveOccurred(), "Failed to Get ClusterDeployments list")
 		getDeploymentType(Spoke1APIClient, clusterDeploymentsList)
 
+		isMultiCluster = singleCluster
+
 		if Spoke2APIClient.KubeconfigPath != "" {
 			err = ocm.WaitForAllPoliciesComplianceState(
 				HubAPIClient, policiesv1.Compliant, time.Minute, runtimeclient.ListOptions{Namespace: RANConfig.Spoke2Name})
@@ -103,9 +110,8 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 					"Failed to verify all policies are compliant for spoke %s: %v", RANConfig.Spoke2Name, err)
 				Expect(err).ToNot(HaveOccurred(), "Failed to verify all policies are compliant for spoke %s", RANConfig.Spoke2Name)
 			} else {
-				isMultiCluster = true
+				isMultiCluster = multiCluster
 				getClusterType(Spoke2APIClient)
-				getDeploymentType(Spoke2APIClient, clusterDeploymentsList)
 			}
 		} else {
 			glog.V(tsparams.LogLevel).Infof("Second cluster KUBECONFIG not available")
@@ -147,95 +153,81 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		rmGitCloneDirs()
 	})
 
-	DescribeTable("Checking install methods",
-		func(methodKind *bool, methodValue string, foundKind *bool, kindValue string) {
-			if !*foundKind {
-				glog.V(tsparams.LogLevel).Infof("Not %s install kind", kindValue)
-				Skip(fmt.Sprintf("Not %s install kind", kindValue))
+	FIt(fmt.Sprintf("When deployment is %s", multiCluster), reportxml.ID("80498"), func() {
+		multiple := &isMultiCluster
+
+		Expect(*multiple == singleCluster || *multiple == multiCluster).To(BeTrueBecause(
+			"Deployment must either be single cluster or multi cluster"))
+
+		if *multiple == singleCluster {
+			Skip(fmt.Sprintf("Not %s deployment", multiCluster))
+		}
+
+		By("Deployment is multi cluster")
+	})
+
+	PDescribeTable("Checking install method",
+		func(methodValue *deploymentType, kindValue deploymentType) {
+
+			Expect(*methodValue).ToNot(BeEmpty(), "deployMethod should not be empty")
+
+			if *methodValue != kindValue {
+				Skip(fmt.Sprintf("Not %s install method", kindValue))
 			}
-			if !*methodKind {
-				glog.V(tsparams.LogLevel).Infof("Not %s install method", methodValue)
-				Skip(fmt.Sprintf("Not %s install method", methodValue))
-			} else {
-				glog.V(tsparams.LogLevel).Infof("%s install method via %s", methodValue, kindValue)
-			}
+
+			By(fmt.Sprintf("Install method is %s", kindValue))
+
 		},
-		func(methodKind *bool, methodValue string, foundKind *bool, kindValue string) string {
-			return fmt.Sprintf("When deployment method is %s via %s", methodValue, kindValue)
+		func(methodValue *deploymentType, kindValue deploymentType) string {
+			return fmt.Sprintf("When deployment method is %s", kindValue)
 		},
-		Entry(nil, &isImageInstall, imageInstallKind,
-			&isClusterInstance, clusterinstanceKind, reportxml.ID("80495")),
-		Entry(nil, &isAgentInstall, agentInstallKind,
-			&isClusterInstance, clusterinstanceKind, reportxml.ID("80494")),
+		Entry(nil, &deploymentMethod, clusterInstImageKind, reportxml.ID("80495")),
+		Entry(nil, &deploymentMethod, clusterInstAgentKind, reportxml.ID("80494")),
+		Entry(nil, &deploymentMethod, siteconfigKind, reportxml.ID("80493")),
 	)
 
-	DescribeTable("Checking deployment kinds",
-		func(foundKind *bool, kindValue string) {
-			if !*foundKind {
-				glog.V(tsparams.LogLevel).Infof("Not %s spoke deployment", kindValue)
-				Skip(fmt.Sprintf("Not %s spoke deployment", kindValue))
-			} else {
-				glog.V(tsparams.LogLevel).Infof("%s spoke deployment found", kindValue)
+	PDescribeTable("Checking policy kind",
+		func(polcyValue *policyType, kindValue policyType) {
+
+			Expect(*polcyValue).ToNot(BeEmpty(), "polcyTemplate should not be empty")
+
+			if *polcyValue != kindValue {
+				Skip(fmt.Sprintf("Not %s policy type", kindValue))
 			}
+
+			By(fmt.Sprintf("Polcy type  is %s", kindValue))
+
 		},
-		Entry(fmt.Sprintf("When deployment is %s", multiCluster),
-			&isMultiCluster, multiCluster, reportxml.ID("80498")),
-		Entry(fmt.Sprintf("When deployment method is %s", siteconfigKind),
-			&isSiteConfig, siteconfigKind, reportxml.ID("80493")),
+		func(polcyValue *policyType, kindValue policyType) string {
+			return fmt.Sprintf("When policy type is %s", kindValue)
+		},
+		Entry(nil, &policyTemplate, pgtKind, reportxml.ID("80496")),
+		Entry(nil, &policyTemplate, acmpgKind, reportxml.ID("80502")),
+		Entry(nil, &policyTemplate, pgtHubSideTempl, reportxml.ID("80501")),
+		Entry(nil, &policyTemplate, acmpgHubSideTempl, reportxml.ID("80503")),
 	)
 
-	DescribeTable("Checking policy kinds",
-		func(foundKind *bool, foundHST *bool, checkForHST bool, kindValue string) {
-			if !*foundKind {
-				glog.V(tsparams.LogLevel).Infof("Not %s spoke deployment", kindValue)
-				Skip(fmt.Sprintf("Not %s spoke deployment", kindValue))
-			} else {
-				glog.V(tsparams.LogLevel).Infof("%s spoke deployment found", kindValue)
+	PDescribeTable("Checking cluster type",
+		func(clusterValue *clusterType, kindValue clusterType) {
 
-				switch {
-				case checkForHST && *foundHST:
-					glog.V(tsparams.LogLevel).Infof("Hub-side templating found (expected)")
-				case checkForHST && !*foundHST:
-					glog.V(tsparams.LogLevel).Infof("Hub-side templating not found")
-					Skip("Hub-side templating not found")
-				case !checkForHST && *foundHST:
-					glog.V(tsparams.LogLevel).Infof("Hub-side templating found")
-					Skip("Hub-side templating found")
-				case !checkForHST && !*foundHST:
-					glog.V(tsparams.LogLevel).Infof("Hub-side templating not found (expected)")
-				}
-			}
-		},
-		func(foundKind *bool, foundHST *bool, checkForHST bool, kindValue string) string {
-			if checkForHST {
-				return fmt.Sprintf("When policy template is %s with hub-side templating", kindValue)
+			Expect(*clusterValue).ToNot(BeEmpty(), "polcyTemplate should not be empty")
+
+			if *clusterValue != kindValue {
+				Skip(fmt.Sprintf("Not %s cluster type", kindValue))
 			}
 
-			return fmt.Sprintf("When policy template is %s without hub-side templating", kindValue)
+			By(fmt.Sprintf("Cluster type is %s", kindValue))
+
 		},
-		Entry(nil, &isPGT, &hasHubSideTemplate, false, pgtKind, reportxml.ID("80496")),
-		Entry(nil, &isACMPG, &hasHubSideTemplate, false, acmpgKind, reportxml.ID("80502")),
-		Entry(nil, &isPGT, &hasHubSideTemplate, true, pgtKind, reportxml.ID("80501")),
-		Entry(nil, &isACMPG, &hasHubSideTemplate, true, acmpgKind, reportxml.ID("80503")),
+		func(clusterValue *clusterType, kindValue clusterType) string {
+			return fmt.Sprintf("When cluster type is %s", kindValue)
+		},
+		Entry(nil, &clusterKind, snoCluster, reportxml.ID("80497")),
+		Entry(nil, &clusterKind, snoPlusWorker, reportxml.ID("81679")),
+		Entry(nil, &clusterKind, threeNodeCluster, reportxml.ID("80499")),
+		Entry(nil, &clusterKind, standardCluster, reportxml.ID("80500")),
 	)
 
-	DescribeTable("Checking cluster types",
-		func(foundType *bool, typeValue string) {
-			if !*foundType {
-				glog.V(tsparams.LogLevel).Infof("Not cluster type %s", typeValue)
-				Skip(fmt.Sprintf("Not cluster type %s", typeValue))
-			} else {
-				glog.V(tsparams.LogLevel).Infof("Spoke cluster type %s found", typeValue)
-			}
-		},
-		func(foundType *bool, typeValue string) string {
-			return fmt.Sprintf("When cluster type is %s", typeValue)
-		},
-		Entry(nil, &isSNO, snoCluster, reportxml.ID("80497")),
-		Entry(nil, &isSnoPlusWorker, snoPlusWorker, reportxml.ID("81679")),
-		Entry(nil, &isThreeNodeCluster, threeNodeCluster, reportxml.ID("80499")),
-		Entry(nil, &isStandardCluster, standardCluster, reportxml.ID("80500")),
-	)
 })
 
 // Clean up git clone dirs if they exist and create empty dirctories for git clone targets.
@@ -345,18 +337,24 @@ func getFilesInfo(repo *git.Repository, path string) {
 
 			// Determine deployment and policy types
 			switch kind {
-			case siteconfigKind:
-				isSiteConfig = true
-			case clusterinstanceKind:
-				isClusterInstance = true
-			case pgtKind:
-				isPGT = true
+			case string(siteconfigKind):
+				deploymentMethod = siteconfigKind
+			case string(pgtKind):
+				hasHST := checkForHubSideTemplate(contentBytes)
 
-				checkForHubSideTemplate(contentBytes)
-			case acmpgKind:
-				isACMPG = true
+				if !hasHST && policyTemplate != pgtHubSideTempl {
+					policyTemplate = pgtKind
+				} else if hasHST {
+					policyTemplate = pgtHubSideTempl
+				}
+			case string(acmpgKind):
+				hasHST := checkForHubSideTemplate(contentBytes)
 
-				checkForHubSideTemplate(contentBytes)
+				if !hasHST && policyTemplate != acmpgHubSideTempl {
+					policyTemplate = acmpgKind
+				} else if hasHST {
+					policyTemplate = acmpgHubSideTempl
+				}
 			}
 
 			return nil
@@ -393,16 +391,16 @@ func getYAMLKind(fileData []byte, fileName string) string {
 }
 
 // Check file for hub-side templating syntax.
-func checkForHubSideTemplate(content []byte) {
+func checkForHubSideTemplate(content []byte) bool {
 	if reHubSideTemplate.Match(content) {
-		hasHubSideTemplate = true
+		return true
 	}
+	return false
 }
 
 // getCluterType determines the cluster type as one of: standard, 3node, SNO, SNO+Worker.
 func getClusterType(cluster *clients.Settings) {
 	var (
-		bothCount         = 0
 		workerCount       = 0
 		controlPlaneCount = 0
 	)
@@ -432,8 +430,6 @@ func getClusterType(cluster *clients.Settings) {
 		Expect(isWorker || isControlPlane).To(BeTrueBecause("Node %s has neither control-plane nor worker label?", nodeName))
 
 		switch {
-		case isControlPlane && isWorker:
-			bothCount++
 		case isControlPlane:
 			controlPlaneCount++
 		case isWorker:
@@ -442,50 +438,53 @@ func getClusterType(cluster *clients.Settings) {
 	}
 
 	glog.V(tsparams.LogLevel).Infof(
-		"bothCount: %d\ncontrolPlaneCount: %d\nworkerCount: %d", bothCount, controlPlaneCount, workerCount)
+		"controlPlaneCount: %d\nworkerCount: %d", controlPlaneCount, workerCount)
 
 	switch {
 	case (controlPlaneCount == 3) && (workerCount == 2):
-		isStandardCluster = true
-	case (bothCount == 3) && (workerCount == 0):
-		isThreeNodeCluster = true
-	case (bothCount == 1) && (workerCount == 1):
-		isSnoPlusWorker = true
-	case bothCount == 1:
-		isSNO = true
+		clusterKind = standardCluster
+	case (controlPlaneCount == 3) && (workerCount == 3):
+		clusterKind = threeNodeCluster
+	case (controlPlaneCount == 1) && (workerCount == 2):
+		clusterKind = snoPlusWorker
+	case (controlPlaneCount == 1) && (workerCount == 1):
+		clusterKind = snoCluster
 	}
 }
 
-// getDeploymentType determines the deployment type as one of: AgentClusterInstall or ImageClusterInstall
+// getDeploymentType determines the deployment type as one of:
+// SiteConfig with AgentClusterInstall, ClusterInstance with AgentClusterInstall, or ClusterInstance with ImageClusterInstall.
 func getDeploymentType(cluster *clients.Settings, clusterDeploymentsList []*hive.ClusterDeploymentBuilder) {
-	klusterlet, err := ocm.PullKlusterlet(cluster, ocm.KlusterletName)
-	Expect(err).ToNot(HaveOccurred(), "Failed to get klusterlet")
+	if deploymentMethod != siteconfigKind {
+		klusterlet, err := ocm.PullKlusterlet(cluster, ocm.KlusterletName)
+		Expect(err).ToNot(HaveOccurred(), "Failed to get klusterlet")
 
-	clusterName := klusterlet.Object.Spec.ClusterName
-	Expect(clusterName).ToNot(BeEmpty(), "Failed to get clustername")
+		clusterName := klusterlet.Object.Spec.ClusterName
+		Expect(clusterName).ToNot(BeEmpty(), "Failed to get clustername")
 
-	for _, clusterDeployment := range clusterDeploymentsList {
-		deploymentClusterName := clusterDeployment.Object.Spec.ClusterName
-		clusterDeploymentName := clusterDeployment.Object.GetObjectMeta().GetName()
+		for _, clusterDeployment := range clusterDeploymentsList {
+			deploymentClusterName := clusterDeployment.Object.Spec.ClusterName
+			clusterDeploymentName := clusterDeployment.Object.GetObjectMeta().GetName()
 
-		Expect(clusterName).ToNot(BeEmpty(),
-			fmt.Sprintf("clusterdeployment %s does not have ClusterName value",
-				clusterDeploymentName))
+			Expect(clusterName).ToNot(BeEmpty(),
+				fmt.Sprintf("clusterdeployment %s does not have ClusterName value",
+					clusterDeploymentName))
 
-		if clusterName != deploymentClusterName {
-			continue
-		}
+			if clusterName != deploymentClusterName {
+				continue
+			}
 
-		installKind := clusterDeployment.Object.Spec.ClusterInstallRef.Kind
-		Expect(installKind).ToNot(BeEmpty(),
-			fmt.Sprintf("clusterdeployment %s does not have ClusterInstallRef.Kind value",
-				clusterDeploymentName))
+			installKind := clusterDeployment.Object.Spec.ClusterInstallRef.Kind
+			Expect(installKind).ToNot(BeEmpty(),
+				fmt.Sprintf("clusterdeployment %s does not have ClusterInstallRef.Kind value",
+					clusterDeploymentName))
 
-		switch installKind {
-		case imageInstallKind:
-			isImageInstall = true
-		case agentInstallKind:
-			isAgentInstall = true
+			switch installKind {
+			case "ImageClusterInstall":
+				deploymentMethod = clusterInstImageKind
+			case "AgentClusterInstall":
+				deploymentMethod = clusterInstAgentKind
+			}
 		}
 	}
 }

@@ -8,17 +8,17 @@ import (
 
 const (
 	// LabelSuite is the label for all the tests in this suite.
-	LabelSuite = "deploymenttypes"
+	LabelSuite string = "deploymenttypes"
 	// LabelDeploymentTypeTestCases is the label for deployment type checking.
-	LabelDeploymentTypeTestCases = "deployment-types"
+	LabelDeploymentTypeTestCases string = "deployment-types"
 	// ImageRegistryName is the name of the image registry config.
-	ImageRegistryName = "cluster"
+	ImageRegistryName string = "cluster"
 	// ImageRegistryNamespace is the namespace for the image registry and where its PVC is.
-	ImageRegistryNamespace = "openshift-image-registry"
+	ImageRegistryNamespace string = "openshift-image-registry"
 	// ArgoCdPoliciesAppName is the name of the policies app in Argo CD.
-	ArgoCdPoliciesAppName = "policies"
+	ArgoCdPoliciesAppName string = "policies"
 	// ArgoCdClustersAppName is the name of the clusters app in Argo CD.
-	ArgoCdClustersAppName = "clusters"
+	ArgoCdClustersAppName string = "clusters"
 
 	// ArgoCdChangeTimeout is the time to use for polling for changes to Argo CD.
 	ArgoCdChangeTimeout = 10 * time.Minute
