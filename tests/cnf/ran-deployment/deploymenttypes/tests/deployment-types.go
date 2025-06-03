@@ -190,18 +190,18 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 	)
 
 	FDescribeTable("Checking policy kind",
-		func(polcyValue *policyType, kindValue policyType) {
+		func(policyValue *policyType, kindValue policyType) {
 
-			Expect(*polcyValue).ToNot(BeEmpty(), "polcyTemplate should not be empty")
+			Expect(*policyValue).ToNot(BeEmpty(), "policyTemplate should not be empty")
 
-			if *polcyValue != kindValue {
+			if *policyValue != kindValue {
 				Skip(fmt.Sprintf("Not %s policy type", kindValue))
 			}
 
 			By(fmt.Sprintf("Polcy type  is %s", kindValue))
 
 		},
-		func(polcyValue *policyType, kindValue policyType) string {
+		func(policyValue *policyType, kindValue policyType) string {
 			return fmt.Sprintf("When policy type is %s", kindValue)
 		},
 		Entry(nil, &policyTemplate, pgtKind, reportxml.ID("80496")),
@@ -213,7 +213,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 	FDescribeTable("Checking cluster type",
 		func(clusterValue *clusterType, kindValue clusterType) {
 
-			Expect(*clusterValue).ToNot(BeEmpty(), "polcyTemplate should not be empty")
+			Expect(*clusterValue).ToNot(BeEmpty(), "clusterKind should not be empty")
 
 			if *clusterValue != kindValue {
 				Skip(fmt.Sprintf("Not %s cluster type", kindValue))
