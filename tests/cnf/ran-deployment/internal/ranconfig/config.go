@@ -291,7 +291,9 @@ func readFile[C any](config *C, configFile string) error {
 */
 
 func readEnv[C any](config *C) error {
-	err := envconfig.Process("", config)
+	var err error
+	//err := envconfig.Process("", config)
+	envconfig.MustProcess("", config)
 
 	return err
 }
