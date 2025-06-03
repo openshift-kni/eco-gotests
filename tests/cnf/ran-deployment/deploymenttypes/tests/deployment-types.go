@@ -169,7 +169,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		By("Deployment is multi cluster")
 	})
 
-	PDescribeTable("Checking install method",
+	FDescribeTable("Checking install method",
 		func(methodValue *deploymentType, kindValue deploymentType) {
 
 			Expect(*methodValue).ToNot(BeEmpty(), "deployMethod should not be empty")
@@ -189,7 +189,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		Entry(nil, &deploymentMethod, siteconfigKind, reportxml.ID("80493")),
 	)
 
-	PDescribeTable("Checking policy kind",
+	FDescribeTable("Checking policy kind",
 		func(polcyValue *policyType, kindValue policyType) {
 
 			Expect(*polcyValue).ToNot(BeEmpty(), "polcyTemplate should not be empty")
@@ -210,7 +210,7 @@ var _ = Describe("Cluster Deployment Types Tests", Ordered, Label(tsparams.Label
 		Entry(nil, &policyTemplate, acmpgHubSideTempl, reportxml.ID("80503")),
 	)
 
-	PDescribeTable("Checking cluster type",
+	FDescribeTable("Checking cluster type",
 		func(clusterValue *clusterType, kindValue clusterType) {
 
 			Expect(*clusterValue).ToNot(BeEmpty(), "polcyTemplate should not be empty")
