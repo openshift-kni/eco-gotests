@@ -6,8 +6,6 @@ import (
 	// "runtime"
 	// "time"
 
-	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/kelseyhightower/envconfig"
 
@@ -119,7 +117,6 @@ func (ranconfig *RANConfig) newHubConfig() {
 	// 	glog.V(ranparam.LogLevel).Infof("Failed to instantiate HubConfig: %v", err)
 	// }
 
-	glog.V(ranparam.LogLevel).Info(fmt.Sprintf("DEBUG %+v", *ranconfig.HubConfig))
 	if ranconfig.HubConfig.HubKubeconfig == "" {
 		glog.V(ranparam.LogLevel).Info("No kubeconfig found for hub")
 

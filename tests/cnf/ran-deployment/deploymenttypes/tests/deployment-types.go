@@ -360,6 +360,8 @@ func getFilesInfo(repo *git.Repository, path string) {
 				}
 			}
 
+			glog.V(ranparam.LogLevel).Info(fmt.Sprintf("DEBUG %+v", policyTemplate))
+
 			return nil
 		}
 
