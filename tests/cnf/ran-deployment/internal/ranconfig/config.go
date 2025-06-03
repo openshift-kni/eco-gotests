@@ -87,6 +87,9 @@ func NewRANConfig() *RANConfig {
 	glog.V(ranparam.LogLevel).Infof("Creating new RANConfig struct")
 
 	var ranConfig RANConfig
+	ranConfig.HubConfig = new(HubConfig)
+	ranConfig.Spoke1Config = new(Spoke1Config)
+	ranConfig.Spoke2Config = new(Spoke2Config)
 	ranConfig.CNFConfig = cnfconfig.NewCNFConfig()
 
 	//	_, filename, _, _ := runtime.Caller(0)
@@ -110,8 +113,6 @@ func NewRANConfig() *RANConfig {
 func (ranconfig *RANConfig) newHubConfig() {
 	// glog.V(ranparam.LogLevel).Infof("Creating new HubConfig struct from file %s", configFile)
 	var err error
-
-	ranconfig.HubConfig = new(HubConfig)
 
 	// err := readConfig(ranconfig.HubConfig, configFile)
 	// if err != nil {
@@ -187,8 +188,6 @@ func (ranconfig *RANConfig) newSpoke1Config() {
 
 	// glog.V(ranparam.LogLevel).Infof("Creating new Spoke1Config struct from file %s", configFile)
 
-	ranconfig.Spoke1Config = new(Spoke1Config)
-
 	// err := readConfig(ranconfig.Spoke1Config, configFile)
 	// if err != nil {
 	// 	glog.V(ranparam.LogLevel).Infof("Failed to instantiate Spoke1Config: %v", err)
@@ -232,8 +231,6 @@ func (ranconfig *RANConfig) newSpoke1Config() {
 func (ranconfig *RANConfig) newSpoke2Config() {
 	var err error
 	// glog.V(ranparam.LogLevel).Infof("Creating new Spoke2Config struct from file %s", configFile)
-
-	ranconfig.Spoke2Config = new(Spoke2Config)
 
 	// err := readConfig(ranconfig.Spoke2Config, configFile)
 	// if err != nil {
