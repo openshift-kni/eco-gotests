@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -358,6 +359,13 @@ var _ = Describe(
 				Skip("XY portion of the OCP version between seed and target clusters is identical")
 			}
 
+			By("Check if seed and target have 2 y-stream versions apart")
+			seedYInt, _ := strconv.Atoi(strings.Split(seedImageClusterVersionXY, ".")[1])
+			originalYInt, _ := strconv.Atoi(strings.Split(originalClusterVersionXY, ".")[1])
+			if seedYInt-originalYInt == 2 {
+				Skip("The y-stream version of the seed is 2 releases apart from the target")
+			}
+
 			upgrade()
 		})
 
@@ -379,6 +387,31 @@ var _ = Describe(
 
 			if seedImageClusterVersionXY != originalClusterVersionXY {
 				Skip("XY portion of the OCP version between seed and target clusters is different")
+			}
+
+			upgrade()
+		})
+
+		It("upgrades the connected cluster to a y-stream +2 version", reportxml.ID("82294"), func() {
+			By("Check if the target cluster is connected")
+			connected, err := cluster.Connected(APIClient)
+
+			if !connected {
+				Skip("Target cluster is disconnected")
+			}
+
+			if err != nil {
+				Skip(fmt.Sprintf("Encountered an error while getting cluster connection info: %s", err.Error()))
+			}
+
+			By("Check if seed and target are 2 y-stream releases apart")
+			seedImageClusterVersionXY, err := ClusterVersionXY(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion)
+			Expect(err).NotTo(HaveOccurred(), "error retrieving the XY portion of the seed cluster version")
+
+			seedYInt, _ := strconv.Atoi(strings.Split(seedImageClusterVersionXY, ".")[1])
+			originalYInt, _ := strconv.Atoi(strings.Split(originalClusterVersionXY, ".")[1])
+			if seedYInt-originalYInt != 2 {
+				Skip("The y-stream version of the seed is not 2 releases apart from the target")
 			}
 
 			upgrade()
