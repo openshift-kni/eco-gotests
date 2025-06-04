@@ -227,15 +227,18 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 func validatePrefix(
 	masterNodeFRRPod *pod.Builder, ipProtoVersion string, workerNodesAddresses, addressPool []string, prefixLength int) {
-	Eventually(
-		frr.GetBGPStatus, time.Minute, tsparams.DefaultRetryInterval).
-		WithArguments(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test").ShouldNot(BeNil())
-
-	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
-	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
 	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefixLength))
 	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
-	Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
+
+	var bgpStatus *frr.BGPStatus
+
+	Eventually(func(g Gomega) {
+		bgpStatus, err = frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+		g.Expect(err).ToNot(HaveOccurred(), "Failed to get BGP status")
+
+		g.Expect(bgpStatus.Routes).To(HaveKey(subnet.String()),
+			fmt.Sprintf("Subnet %s not found.", subnet.String()))
+	}, time.Minute, tsparams.DefaultRetryInterval).Should(Succeed())
 
 	var nextHopAddresses []string
 
