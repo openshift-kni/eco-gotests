@@ -425,7 +425,7 @@ func getClusterType(cluster *clients.Settings) {
 	Expect(err).ToNot(HaveOccurred(), "Failed to get nodes list")
 
 	glog.V(tsparams.LogLevel).Infof(
-		"DEBUG ControlPlaneLabel %s -- WorkerLabel %s\n", RANConfig.ControlPlaneLabel, RANConfig.WorkerLabel)
+		"DEBUG ControlPlaneLabel \"%s\" -- WorkerLabel \"%s\"\n", RANConfig.ControlPlaneLabel, RANConfig.WorkerLabel)
 
 	for _, node := range nodes {
 		nodeName := node.Definition.Name
