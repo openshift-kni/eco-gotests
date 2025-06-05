@@ -491,6 +491,70 @@ func (builder *CIBuilder) WaitForCondition(expected metav1.Condition, timeout ti
 	return builder, err
 }
 
+// WaitForReinstallCondition waits until the ClusterInstance
+// has a reinstall condition that matches the expected, checking only the Type, Status, Reason, and Message fields.
+// For the message field, it matches if the message contains the expected.
+// Zero fields in the expected condition are ignored.
+func (builder *CIBuilder) WaitForReinstallCondition(expected metav1.Condition,
+	timeout time.Duration) (*CIBuilder, error) {
+	if valid, err := builder.validate(); !valid {
+		return builder, err
+	}
+
+	if !builder.Exists() {
+		glog.V(100).Infof("The clusterinstance does not exist on the cluster")
+
+		return builder, fmt.Errorf(
+			"clusterinstance object %s does not exist in namespace %s", builder.Definition.Name, builder.Definition.Namespace)
+	}
+
+	err := wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			var err error
+			builder.Object, err = builder.Get()
+
+			if err != nil {
+				glog.V(100).Info("failed to get clusterinstance %s/%s: %v",
+					builder.Definition.Namespace, builder.Definition.Name, err)
+
+				return false, nil
+			}
+
+			if builder.Object.Status.Reinstall == nil || builder.Object.Status.Reinstall.Conditions == nil {
+				glog.V(100).Info("failed to get reinstall status %s/%s: %v",
+					builder.Definition.Namespace, builder.Definition.Name, err)
+
+				return false, nil
+			}
+
+			builder.Definition = builder.Object
+
+			for _, condition := range builder.Object.Status.Reinstall.Conditions {
+				if expected.Type != "" && condition.Type != expected.Type {
+					continue
+				}
+
+				if expected.Status != "" && condition.Status != expected.Status {
+					continue
+				}
+
+				if expected.Reason != "" && condition.Reason != expected.Reason {
+					continue
+				}
+
+				if expected.Message != "" && !strings.Contains(condition.Message, expected.Message) {
+					continue
+				}
+
+				return true, nil
+			}
+
+			return false, nil
+		})
+
+	return builder, err
+}
+
 // WaitForExtraLabel waits up to timeout until the ExtraLabel label exists for manifest of kind.
 func (builder *CIBuilder) WaitForExtraLabel(kind, label string, timeout time.Duration) (*CIBuilder, error) {
 	if valid, err := builder.validate(); !valid {
