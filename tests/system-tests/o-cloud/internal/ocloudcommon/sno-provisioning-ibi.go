@@ -211,6 +211,7 @@ func generateBaseImage(ctx SpecContext) {
 		err = cluster.DeleteAndWait(time.Minute * 10)
 		Expect(err).NotTo(HaveOccurred(),
 			fmt.Sprintf("Error deleting managed cluster %s", OCloudConfig.ClusterName1))
+		time.Sleep(30 * time.Second)
 	}
 
 	By("Creating a seedgen secret in the LCA namespace")
@@ -373,8 +374,11 @@ func verifyAndRetrieveAssociatedCRsForIBI(
 
 	Eventually(func(ctx context.Context) bool {
 		condition, _ := imageClusterInstall.GetCompletedCondition()
+		if condition != nil {
+			return condition.Status == "True"
+		}
 
-		return condition.Status == "True"
+		return false
 	}).WithTimeout(60*time.Minute).WithPolling(20*time.Second).WithContext(ctx).Should(BeTrue(),
 		fmt.Sprintf("Image Cluster Install %s is not Completed", nodeID))
 
@@ -393,6 +397,9 @@ func baseImageExists() bool {
 	By(fmt.Sprintf("Verifying that file %s exists", OCloudConfig.IbiBaseImagePath))
 
 	_, err := os.Stat(OCloudConfig.IbiBaseImagePath)
+	if err != nil {
+		glog.V(ocloudparams.OCloudLogLevel).Infof("file %s (base image) does not exist", OCloudConfig.IbiBaseImagePath)
+	}
 
 	return !os.IsNotExist(err)
 }
