@@ -444,6 +444,7 @@ func getClusterType(cluster *clients.Settings) {
 		if isControlPlane {
 			controlPlaneCount++
 		}
+
 		if isWorker {
 			workerCount++
 		}
