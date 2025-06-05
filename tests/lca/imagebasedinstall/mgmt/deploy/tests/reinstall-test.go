@@ -1,12 +1,15 @@
 package deploy_test
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
+	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/clusterversion"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
@@ -101,6 +104,13 @@ var _ = Describe(
 
 				By("Deleting baremetalhosts")
 				for _, bmhBulider := range ibiBmhList {
+					dataImage, err := bmh.PullDataImage(APIClient, bmhBulider.Object.Name,
+						MGMTConfig.Cluster.Info.ClusterName)
+					Expect(err).NotTo(HaveOccurred(), "error pulling dataimage from cluster")
+
+					err = removeDataImageFinalizer(APIClient, dataImage)
+					Expect(err).NotTo(HaveOccurred(), "error removing dataimage finalizer")
+
 					_, err = bmhBulider.Delete()
 					Expect(err).NotTo(HaveOccurred(), "error deleting BMH resource %s", bmhBulider.Definition.Name)
 					waitForResourceToDelete("baremetalhost", bmhBulider.Exists)
@@ -221,6 +231,28 @@ func waitForResourceToDelete(resourceType string, exists func() bool) {
 		BeTrue(), "error waiting for resource %s to be deleted", resourceType)
 }
 
+func removeDataImageFinalizer(apiClient *clients.Settings, dataImage *bmh.DataImageBuilder) error {
+	if apiClient == nil {
+		return fmt.Errorf("cannot use nil apiClient to remove dataImage finalizer")
+	}
+
+	if dataImage == nil {
+		return fmt.Errorf("cannot update nil dataImage")
+	}
+
+	dataImage.Definition.ObjectMeta.Finalizers = nil
+
+	err := apiClient.Update(context.TODO(), dataImage.Definition)
+
+	if err != nil {
+		return err
+	}
+
+	dataImage.Object = dataImage.Definition
+
+	return nil
+}
+
 //nolint:gocognit,funlen
 func reinstallWithClusterInstance(addressFamily string) {
 	By("Load original spoke api client")
@@ -273,6 +305,15 @@ func reinstallWithClusterInstance(addressFamily string) {
 
 	_, err = clusterInstace.Update(false)
 	Expect(err).NotTo(HaveOccurred(), "error updating clusterinstance")
+
+	for host := range MGMTConfig.Cluster.Info.Hosts {
+		dataImage, err := bmh.PullDataImage(APIClient, host,
+			MGMTConfig.Cluster.Info.ClusterName)
+		Expect(err).NotTo(HaveOccurred(), "error pulling dataimage from cluster")
+
+		err = removeDataImageFinalizer(APIClient, dataImage)
+		Expect(err).NotTo(HaveOccurred(), "error removing dataimage finalizer")
+	}
 
 	By("Waiting for clusterinstance re-installation to trigger")
 
