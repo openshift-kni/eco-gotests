@@ -14,7 +14,6 @@ import (
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/hive"
@@ -429,7 +428,6 @@ func getClusterType(cluster *clients.Settings) {
 
 	for _, node := range nodes {
 		nodeName := node.Definition.Name
-		// isControlPlane, isWorker := false, false
 
 		glog.V(tsparams.LogLevel).Infof("node.Object.Labels -- %#v", node.Object.Labels)
 
@@ -449,12 +447,6 @@ func getClusterType(cluster *clients.Settings) {
 			workerCount++
 		}
 
-		// switch {
-		// case isControlPlane:
-		// 	controlPlaneCount++
-		// case isWorker:
-		// 	workerCount++
-		// }
 	}
 
 	glog.V(tsparams.LogLevel).Infof(
