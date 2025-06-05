@@ -433,8 +433,10 @@ func getClusterType(cluster *clients.Settings) {
 
 		glog.V(tsparams.LogLevel).Infof("node.Object.Labels -- %#v", node.Object.Labels)
 
-		_, isControlPlane := node.Object.Labels[RANConfig.ControlPlaneLabel]
-		_, isWorker := node.Object.Labels[RANConfig.WorkerLabel]
+		cpl, isControlPlane := node.Object.Labels[RANConfig.ControlPlaneLabel]
+		wkr, isWorker := node.Object.Labels[RANConfig.WorkerLabel]
+
+		glog.V(tsparams.LogLevel).Infof("DEBUG cpl %s -- wkr %s", cpl, wkr)
 
 		Expect(isWorker || isControlPlane).To(BeTrue(), "Node %s has neither control-plane nor worker label?", nodeName)
 
