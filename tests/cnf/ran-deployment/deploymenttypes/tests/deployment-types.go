@@ -431,7 +431,7 @@ func getClusterType(cluster *clients.Settings) {
 		nodeName := node.Definition.Name
 		// isControlPlane, isWorker := false, false
 
-		glog.V(tsparams.LogLevel).Infof("node.Object.Labels -- %+v", node.Object.Labels)
+		glog.V(tsparams.LogLevel).Infof("node.Object.Labels -- %#v", node.Object.Labels)
 
 		_, isControlPlane := node.Object.Labels[RANConfig.ControlPlaneLabel]
 		_, isWorker := node.Object.Labels[RANConfig.WorkerLabel]
