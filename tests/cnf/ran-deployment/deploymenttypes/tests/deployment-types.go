@@ -424,6 +424,9 @@ func getClusterType(cluster *clients.Settings) {
 	nodes, err := nodes.List(cluster)
 	Expect(err).ToNot(HaveOccurred(), "Failed to get nodes list")
 
+	glog.V(tsparams.LogLevel).Infof(
+		"DEBUG ControlPlaneLabel %s -- WorkerLabel %s\n", RANConfig.ControlPlaneLabel, RANConfig.WorkerLabel)
+
 	for _, node := range nodes {
 		nodeName := node.Definition.Name
 		// isControlPlane, isWorker := false, false
@@ -442,7 +445,7 @@ func getClusterType(cluster *clients.Settings) {
 	}
 
 	glog.V(tsparams.LogLevel).Infof(
-		"controlPlaneCount: %d\nworkerCount: %d", controlPlaneCount, workerCount)
+		"controlPlaneCount: %d -- workerCount: %d", controlPlaneCount, workerCount)
 
 	switch {
 	case (controlPlaneCount == 3) && (workerCount == 2):
