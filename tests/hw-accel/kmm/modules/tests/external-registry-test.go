@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"log"
 	"time"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -169,14 +169,21 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 			foundModuleLoadedEvents := 0
 			foundModuleUnloadedEvents := 0
+
+			messageModuleLoaded := get.ModuleLoadedMessage(localNsName, moduleName)
+			messageModuleUnloaded := get.ModuleUnloadedMessage(localNsName, moduleName)
+
 			for _, event := range eventList {
+				glog.V(kmmparams.KmmLogLevel).Infof("Reason: %s, Message: %s", event.Object.Reason, event.Object.Message)
 				if event.Object.Reason == kmmparams.ReasonModuleLoaded &&
-					event.Object.Message == get.ModuleLoadedMessage(localNsName, moduleName) {
+					event.Object.Message == messageModuleLoaded {
 					foundModuleLoadedEvents++
+					glog.V(kmmparams.KmmLogLevel).Infof("ModuleLoaded events: %d", foundModuleLoadedEvents)
 				}
 				if event.Object.Reason == kmmparams.ReasonModuleUnloaded &&
-					event.Object.Message == get.ModuleUnloadedMessage(localNsName, moduleName) {
+					event.Object.Message == messageModuleUnloaded {
 					foundModuleUnloadedEvents++
+					glog.V(kmmparams.KmmLogLevel).Infof("ModuleUnloaded events: %d", foundModuleUnloadedEvents)
 				}
 			}
 			Expect(foundModuleLoadedEvents).To(Equal(totalNodes), "ModuleLoaded events do not match")
@@ -239,7 +246,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 			By("Check labels are removed on all nodes")
 			_, err = check.NodeLabel(APIClient, kmodName, localNsName, GeneralConfig.WorkerLabelMap)
-			log.Printf("error is: %v", err)
 			Expect(err).To(HaveOccurred(), "error while checking the module is loaded")
 
 		})
