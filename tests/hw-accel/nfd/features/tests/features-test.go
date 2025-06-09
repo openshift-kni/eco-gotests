@@ -303,7 +303,10 @@ var _ = Describe("NFD", Ordered, func() {
 	})
 })
 
-func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource, nfdConfig *nfdconfig.NfdConfig, enableTopology bool) {
+func runNodeDiscoveryAndTestLabelExistence(
+	nfdManager *nfdDeploy.NfdAPIResource,
+	nfdConfig *nfdconfig.NfdConfig,
+	enableTopology bool) {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		_, err := get.PodStatus(APIClient, hwaccelparams.NFDNamespace)
 		glog.Error(err)

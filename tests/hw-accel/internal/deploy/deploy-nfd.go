@@ -317,6 +317,8 @@ func deployNfdCR(namespace string, enableTopology bool, image string) error {
 		return err
 	}
 
+	glog.V(logLevel).Infof("Deploying NFD CR %v", nfdBuilder.Definition)
+
 	_, err = nfdBuilder.Create()
 	if err != nil {
 		return err
