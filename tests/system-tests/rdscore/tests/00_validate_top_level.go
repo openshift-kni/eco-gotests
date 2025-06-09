@@ -177,7 +177,26 @@ var _ = Describe(
 				Label("egressip", "egressip-ipv6", "egressip-failover"), reportxml.ID("78283"),
 				rdscorecommon.VerifyEgressIPFailOverIPv6)
 
+			It("Verifies Multus-Tap CNI for rootless DPDK on the same node, single VF with multiple VLANs",
+				Label("dpdk", "dpdk-vlan", "dpdk-same-node"), reportxml.ID("77195"),
+				rdscorecommon.VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans)
+
+			It("Verifies Multus-Tap CNI for rootless DPDK pod workloads on the different nodes, multiple VLANs",
+				Label("dpdk", "dpdk-vlan", "dpdk-different-nodes"), reportxml.ID("81388"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleVlans)
+
+			It("Verifies Multus-Tap CNI for rootless DPDK pod workloads on the different nodes, multiple MACVLANs",
+				Label("dpdk", "dpdk-mac-vlan", "dpdk-different-nodes"), reportxml.ID("77488"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleMacVlans)
+
+			It("Verifies Multus-Tap CNI for rootless DPDK pod workloads on the different nodes, multiple IP-VLANs",
+				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("77490"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
+
 			AfterEach(func(ctx SpecContext) {
+				By("Ensure rootless DPDK server deployment was deleted")
+				rdscorecommon.CleanupRootlessDPDKServerDeployment()
+
 				By("Ensure all nodes are Ready and scheduling enabled")
 				rdscorecommon.EnsureInNodeReadiness(ctx)
 			})
@@ -430,6 +449,27 @@ var _ = Describe(
 			It("Verify LB application is not reachable from the incorrect FRR container post hard reboot",
 				Label("metallb-segregation"), reportxml.ID("79284"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
+			It("Verifies rootless DPDK on the same node, single VF with multiple VLANs post hard reboot",
+				Label("dpdk", "dpdk-vlan", "dpdk-same-node"), reportxml.ID("81423"),
+				rdscorecommon.VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans)
+
+			It("Verifies rootless DPDK pod workloads on the different nodes, multiple VLANs post hard reboot",
+				Label("dpdk", "dpdk-vlan", "dpdk-different-nodes"), reportxml.ID("81426"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleVlans)
+
+			It("Verifies rootless DPDK pod workloads on the different nodes, multiple MACVLANs post hard reboot",
+				Label("dpdk", "dpdk-mac-vlan", "dpdk-different-nodes"), reportxml.ID("81428"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleMacVlans)
+
+			It("Verifies rootless DPDK pod workloads on the different nodes, multiple IP-VLANs post hard reboot",
+				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81430"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
+
+			AfterEach(func(ctx SpecContext) {
+				By("Ensure rootless DPDK server deployment was deleted")
+				rdscorecommon.CleanupRootlessDPDKServerDeployment()
+			})
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -636,5 +676,26 @@ var _ = Describe(
 			It("Verify LB application is not reachable from the incorrect FRR container post soft reboot",
 				Label("metallb-segregation"), reportxml.ID("79285"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
+			It("Verifies rootless DPDK on the same node, single VF with multiple VLANs post soft reboot",
+				Label("dpdk", "dpdk-vlan", "dpdk-same-node"), reportxml.ID("81416"),
+				rdscorecommon.VerifyRootlessDPDKOnTheSameNodeSingleVFMultipleVlans)
+
+			It("Verifies rootless DPDK pod workloads on the different nodes, multiple VLANs post soft reboot",
+				Label("dpdk", "dpdk-vlan", "dpdk-different-nodes"), reportxml.ID("81418"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleVlans)
+
+			It("Verifies rootless DPDK pod workloads on the different nodes, multiple MACVLANs post soft reboot",
+				Label("dpdk", "dpdk-mac-vlan", "dpdk-different-nodes"), reportxml.ID("81420"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleMacVlans)
+
+			It("Verifies rootless DPDK pod workloads on the different nodes, multiple IP-VLANs post soft reboot",
+				Label("dpdk", "dpdk-ip-vlan", "dpdk-different-nodes"), reportxml.ID("81422"),
+				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
+
+			AfterEach(func(ctx SpecContext) {
+				By("Ensure rootless DPDK server deployment was deleted")
+				rdscorecommon.CleanupRootlessDPDKServerDeployment()
+			})
 		})
 	})
