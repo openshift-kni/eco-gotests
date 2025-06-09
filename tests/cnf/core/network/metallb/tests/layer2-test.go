@@ -208,7 +208,7 @@ func getLBServiceAnnouncingNodeName() string {
 	var allEvents []string
 
 	sort.Slice(serviceEvents, func(i int, j int) bool {
-		return serviceEvents[i].Object.LastTimestamp.Before(&serviceEvents[j].Object.LastTimestamp)
+		return serviceEvents[i].Object.FirstTimestamp.Before(&serviceEvents[j].Object.FirstTimestamp)
 	})
 	Expect(len(serviceEvents)).To(BeNumerically(">", 0), "No events were found")
 
