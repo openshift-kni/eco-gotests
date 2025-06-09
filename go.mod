@@ -1,6 +1,8 @@
 module github.com/openshift-kni/eco-gotests
 
-go 1.24.1
+go 1.24.3
+
+toolchain go1.24.4
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -23,7 +25,7 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20250114063637-129b149f6ce9
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/openshift-kni/eco-goinfra v0.0.0-20250324132615-67ce644b5c5a // relase-4.18
+	github.com/openshift-kni/eco-goinfra v0.0.0-20250608162050-64d131df744e // relase-4.18
 	github.com/openshift-kni/k8sreporter v1.0.6
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20250120220331-9547280df193 // release-4.18
 	github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250114093602-01c00730991d // release-4.18
@@ -34,7 +36,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20241107164952-923091dd2b1a
 	github.com/openshift/cluster-logging-operator v0.0.0-20241003210634-afb65cea19d1 // release-5.9
 	github.com/openshift/cluster-nfd-operator v0.0.0-20250116132220-e601a6278a42 // release-4.18
-	github.com/openshift/cluster-node-tuning-operator v0.0.0-20250116110730-90fc6ab88c08 // release-4.18
+	github.com/openshift/cluster-node-tuning-operator v0.0.0-20250408112936-4f58be155c79 // release-4.18
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/openshift/local-storage-operator v0.0.0-20241213132210-fa575fb5f229 // release-4.18
 	github.com/operator-framework/api v0.28.0
@@ -248,6 +250,8 @@ require (
 )
 
 require gopkg.in/yaml.v3 v3.0.1
+
+require github.com/openshift/cluster-logging-operator/api/observability v0.0.0-20250422180113-5bae4ccfc5ef // indirect
 
 replace (
 	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16

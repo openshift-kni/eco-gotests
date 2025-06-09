@@ -42,7 +42,7 @@ func ListNodePools(apiClient *clients.Settings, options ...runtimeclient.ListOpt
 	glog.V(100).Info(logMessage)
 
 	nodePoolList := new(hardwaremanagementv1alpha1.NodePoolList)
-	err = apiClient.Client.List(context.TODO(), nodePoolList, &passedOptions)
+	err = apiClient.List(context.TODO(), nodePoolList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list NodePools in all namespaces due to %v", err)

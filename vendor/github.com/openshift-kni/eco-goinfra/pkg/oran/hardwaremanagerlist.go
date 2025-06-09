@@ -43,7 +43,7 @@ func ListHardwareManagers(
 	glog.V(100).Info(logMessage)
 
 	hwmgrList := new(pluginv1alpha1.HardwareManagerList)
-	err = apiClient.Client.List(context.TODO(), hwmgrList, &passedOptions)
+	err = apiClient.List(context.TODO(), hwmgrList, &passedOptions)
 
 	if err != nil {
 		glog.V(100).Infof("Failed to list HardwareManagers in all namespaces due to %v", err)

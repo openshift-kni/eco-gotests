@@ -29,9 +29,10 @@ type InterfaceIpv4 struct {
 
 // InterfaceIpv6 enables an IPv6 address on an interface.
 type InterfaceIpv6 struct {
-	Enabled bool                 `yaml:"enabled,omitempty"`
-	Dhcp    bool                 `json:"dhcp,omitempty"`
-	Address []InterfaceIPAddress `yaml:"address,omitempty"`
+	Enabled  bool                 `yaml:"enabled,omitempty"`
+	Dhcp     bool                 `json:"dhcp,omitempty"`
+	Autoconf bool                 `json:"autoconf,omitempty"`
+	Address  []InterfaceIPAddress `yaml:"address,omitempty"`
 }
 
 // InterfaceIPAddress is a struct for constructing an IP with prefix.

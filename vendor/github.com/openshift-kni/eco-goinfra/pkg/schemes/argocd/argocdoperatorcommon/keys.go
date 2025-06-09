@@ -44,9 +44,6 @@ const (
 	// ArgoCDKeyBackupKey is the "backup key" key for ConfigMaps.
 	ArgoCDKeyBackupKey = "backup.key"
 
-	// ArgoCDKeyConfigManagementPlugins is the configuration key for config management plugins.
-	ArgoCDKeyConfigManagementPlugins = "configManagementPlugins"
-
 	// ArgoCDKeyComponent is the resource component key for labels.
 	ArgoCDKeyComponent = "app.kubernetes.io/component"
 
@@ -130,12 +127,6 @@ const (
 
 	// ArgoCDKeyResourceTrackingMethod is the configuration key for resource tracking method
 	ArgoCDKeyResourceTrackingMethod = "application.resourceTrackingMethod"
-
-	// ArgoCDKeyRepositories is the configuration key for repositories.
-	ArgoCDKeyRepositories = "repositories"
-
-	// ArgoCDKeyRepositoryCredentials is the configuration key for repository.credentials.
-	ArgoCDKeyRepositoryCredentials = "repository.credentials"
 
 	// ArgoCDKeyServerSecretKey is the server secret key property name for the Argo secret.
 	ArgoCDKeyServerSecretKey = "server.secretkey"
