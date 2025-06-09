@@ -177,6 +177,10 @@ var _ = Describe(
 				Label("egressip", "egressip-ipv6", "egressip-failover"), reportxml.ID("78283"),
 				rdscorecommon.VerifyEgressIPFailOverIPv6)
 
+			It("Verify cluster log forwarding to the Kafka broker",
+				Label("log-forwarding", "kafka"), reportxml.ID("81882"),
+				rdscorecommon.VerifyLogForwardingToKafka)
+
 			AfterEach(func(ctx SpecContext) {
 				By("Ensure all nodes are Ready and scheduling enabled")
 				rdscorecommon.EnsureInNodeReadiness(ctx)
@@ -430,6 +434,10 @@ var _ = Describe(
 			It("Verify LB application is not reachable from the incorrect FRR container post hard reboot",
 				Label("metallb-segregation"), reportxml.ID("79284"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
+			It("Verify cluster log forwarding to the Kafka broker post hard reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81884"),
+				rdscorecommon.VerifyLogForwardingToKafka)
 		})
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
@@ -636,5 +644,9 @@ var _ = Describe(
 			It("Verify LB application is not reachable from the incorrect FRR container post soft reboot",
 				Label("metallb-segregation"), reportxml.ID("79285"),
 				rdscorecommon.VerifyMetallbMockupAppNotReachableFromOtherFRR)
+
+			It("Verify cluster log forwarding to the Kafka broker post soft reboot",
+				Label("log-forwarding", "kafka"), reportxml.ID("81883"),
+				rdscorecommon.VerifyLogForwardingToKafka)
 		})
 	})

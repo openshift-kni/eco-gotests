@@ -472,6 +472,7 @@ type CoreConfig struct {
 	EgressIPRemoteIPv6 string `yaml:"rdscore_egressip_remote_ipv6" envconfig:"ECO_RDSCORE_EGRESSIP_REMOTE_IPV6"`
 	//nolint:lll,nolintlint
 	EgressIPTcpPort       string `yaml:"rdscore_egressip_tcp_port_number" envconfig:"ECO_RDSCORE_EGRESSIP_TCP_PORT_NUMBER"`
+	KafkaLogsLabel        string `yaml:"rdscore_kafka_logs_label" envconfig:"ECO_RDSCORE_KAFKA_LOGS_LABEL"`
 	WorkerLabelListOption metav1.ListOptions
 }
 

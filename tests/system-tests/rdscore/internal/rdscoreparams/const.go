@@ -39,4 +39,16 @@ const (
 
 	// MetalLBFRRContainerName name of the FRR container within a pod.
 	MetalLBFRRContainerName = "frr"
+
+	// CLONamespace namespace of the CLO deployment.
+	CLONamespace = "openshift-logging"
+
+	// CLOName is a cluster logging operator name.
+	CLOName = "cluster-logging"
+
+	// CLODeploymentName is a cluster logging operator deployment name.
+	CLODeploymentName = "cluster-logging-operator"
+
+	// CLOInstanceName is a cluster logging instance name.
+	CLOInstanceName = "instance"
 )
