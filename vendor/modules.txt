@@ -711,6 +711,7 @@ github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupg
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
 # github.com/openshift-kni/eco-goinfra v0.0.0-20250804125007-b3a45d3293c0
 ## explicit; go 1.24.5
+github.com/openshift-kni/eco-goinfra/pkg/amdgpu
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
 github.com/openshift-kni/eco-goinfra/pkg/assisted
@@ -770,6 +771,7 @@ github.com/openshift-kni/eco-goinfra/pkg/rbac
 github.com/openshift-kni/eco-goinfra/pkg/reportxml
 github.com/openshift-kni/eco-goinfra/pkg/route
 github.com/openshift-kni/eco-goinfra/pkg/scc
+github.com/openshift-kni/eco-goinfra/pkg/schemes/amd/gpu-operator/api/v1alpha1
 github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator
 github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperatorcommon
 github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes
