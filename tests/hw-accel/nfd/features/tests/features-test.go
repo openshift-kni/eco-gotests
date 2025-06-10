@@ -52,7 +52,7 @@ var _ = Describe("NFD", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in cleaning labels\n %s", err))
 
 			By("Creating nfd")
-			runNodeDiscoveryAndTestLabelExistence(nfdManager, true)
+			runNodeDiscoveryAndTestLabelExistence(nfdManager, nfdConfig, true)
 
 			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
 			if !labelExist || labelsError != nil {
@@ -303,7 +303,10 @@ var _ = Describe("NFD", Ordered, func() {
 	})
 })
 
-func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource, enableTopology bool) {
+func runNodeDiscoveryAndTestLabelExistence(
+	nfdManager *nfdDeploy.NfdAPIResource,
+	nfdConfig *nfdconfig.NfdConfig,
+	enableTopology bool) {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		_, err := get.PodStatus(APIClient, hwaccelparams.NFDNamespace)
 		glog.Error(err)
@@ -312,8 +315,7 @@ func runNodeDiscoveryAndTestLabelExistence(nfdManager *nfdDeploy.NfdAPIResource,
 	})
 
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
-
-	err = nfdManager.DeployNfd(15*int(time.Minute), enableTopology, "")
+	err = nfdManager.DeployNfd(15*int(time.Minute), enableTopology, nfdConfig.Image)
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
 	By("Check that pods are in running state")
 
