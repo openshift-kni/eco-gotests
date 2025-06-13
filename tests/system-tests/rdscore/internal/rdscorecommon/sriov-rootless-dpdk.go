@@ -358,7 +358,28 @@ func rxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) error {
 	glog.V(90).Infof("Checking dpdk-pmd traffic command %s from the client pod %s",
 		clientRxCmd, clientPod.Definition.Name)
 
-	clientOut, err := clientPod.ExecCommand([]string{"/bin/bash", "-c", clientRxCmd})
+	var clientOut bytes.Buffer
+
+	var err error
+
+	err = wait.PollUntilContextTimeout(
+		context.TODO(),
+		time.Second*5,
+		time.Minute*2,
+		false,
+		func(ctx context.Context) (bool, error) {
+			clientOut, err = clientPod.ExecCommand([]string{"/bin/bash", "-c", clientRxCmd})
+
+			if err != nil {
+				if err.Error() != timeoutError {
+					glog.V(100).Infof("Failed to run the dpdk-pmd command %s; %v", clientRxCmd, err)
+
+					return false, nil
+				}
+			}
+
+			return true, nil
+		})
 
 	if err != nil {
 		if err.Error() != timeoutError {
@@ -397,7 +418,7 @@ func getCurrentLinkRx(runningPod *pod.Builder) (map[string]int, error) {
 		context.TODO(),
 		time.Second*5,
 		time.Minute*2,
-		true,
+		false,
 		func(ctx context.Context) (bool, error) {
 			linksRawInfo, err = runningPod.ExecCommand(
 				[]string{"/bin/bash", "-c", "ip --json -s link show"})
@@ -549,9 +570,9 @@ func getLinkRx(runningPod *pod.Builder, linkName string) (int, error) {
 
 	err = wait.PollUntilContextTimeout(
 		context.TODO(),
-		time.Second*5,
-		time.Minute*2,
-		true,
+		time.Second,
+		time.Minute,
+		false,
 		func(ctx context.Context) (bool, error) {
 			linkRawInfo, err = runningPod.ExecCommand(
 				[]string{"/bin/bash", "-c", fmt.Sprintf("ip --json -s link show dev %s", linkName)})

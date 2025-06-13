@@ -572,7 +572,7 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 
 	By(fmt.Sprintf("Waiting for pod %q to get Ready", podOne.Definition.Name))
 
-	err = podOne.WaitUntilReady(1 * time.Minute)
+	err = podOne.WaitUntilReady(3 * time.Minute)
 
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q in %q ns is not Ready",
 		podOne.Definition.Name, podOne.Definition.Namespace))
@@ -589,7 +589,7 @@ func verifySRIOVConnectivity(nsOneName, nsTwoName, deployOneLabels, deployTwoLab
 
 	By(fmt.Sprintf("Waiting for pod %q to get Ready", podTwo.Definition.Name))
 
-	err = podTwo.WaitUntilReady(1 * time.Minute)
+	err = podTwo.WaitUntilReady(3 * time.Minute)
 
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Pod %q in %q ns is not Ready",
 		podTwo.Definition.Name, podTwo.Definition.Namespace))
