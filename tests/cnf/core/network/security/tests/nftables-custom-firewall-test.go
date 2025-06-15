@@ -106,15 +106,15 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		By("Remove the static route to the external Pod network on each worker node")
 		addDeleteStaticRouteOnWorkerNodes(testPodList, routeMap, "del", hubIPv4Network)
 
-		By(fmt.Sprintf("Disables nftables on %s if active", cnfWorkerNodeList[0].Definition.Name))
-		disableNftablesIfActive(cnfWorkerNodeList[0].Definition.Name)
-
 		err = netenv.WaitForMcpStable(APIClient, 35*time.Minute, 1*time.Minute, NetConfig.CnfMcpLabel)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for MCP to be stable")
 	})
 
 	Context("custom firewall", func() {
 		AfterEach(func() {
+			By(fmt.Sprintf("Disables nftables on %s if active", cnfWorkerNodeList[0].Definition.Name))
+			disableNftablesIfActive(cnfWorkerNodeList[0].Definition.Name)
+
 			By("Define and delete a NFTables custom rule")
 			createMCAndWaitforMCPStable(tsparams.CustomFirewallDelete, mcNftablesName)
 
