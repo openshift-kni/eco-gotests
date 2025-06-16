@@ -504,7 +504,38 @@ type CoreConfig struct {
 	PodLevelBondPodSubnetMaskIPv6 string `yaml:"rdscore_pod_level_bond_pod_subnet_mask_ipv6" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_SUBNET_MASK_IPV6"`
 	//nolint:lll
 	PodLevelBondPodMacAddr string `yaml:"rdscore_pod_level_bond_pod_mac_addr" envconfig:"ECO_RDSCORE_POD_LEVEL_BOND_POD_MAC_ADDR"`
-	WorkerLabelListOption  metav1.ListOptions
+	RootlessDPDKNamespace  string `yaml:"rdscore_rootless_dpdk_ns" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NS"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientDeploymentName string `yaml:"rdscore_rootless_dpdk_client_deployment_name" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_DEPLOYMENT_NAME"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNetworkOne string `yaml:"rdscore_rootless_dpdk_network_one" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NETWORK_ONE"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNetworkTwo string `yaml:"rdscore_rootless_dpdk_network_two" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NETWORK_TWO"`
+	//nolint:lll,nolintlint
+	RootlessDPDKVlanID string `yaml:"rdscore_rootless_dpdk_vlan_id" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_VLAN_ID"`
+	//nolint:lll,nolintlint
+	RootlessDPDKDummyVlanID string `yaml:"rdscore_rootless_dpdk_dummy_vlan_id" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_DUMMY_VLAN_ID"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNodeOne string `yaml:"rdscore_rootless_dpdk_node_one" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NODE_ONE"`
+	//nolint:lll,nolintlint
+	RootlessDPDKNodeTwo string `yaml:"rdscore_rootless_dpdk_node_two" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_NODE_TWO"`
+	//nolint:lll,nolintlint
+	RootlessDPDKDeploymentSA string `yaml:"rdscore_rootless_dpdk_deployment_sa" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_DEPLOYMENT_SA"`
+	//nolint:lll,nolintlint
+	RootlessDPDKPolicyTwo string `yaml:"rdscore_rootless_dpdk_policy_two" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_POLICY_TWO"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientVlanMac string `yaml:"rdscore_rootless_dpdk_client_vlan_mac" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_VLAN_MAC"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientMacVlanMac string `yaml:"rdscore_rootless_dpdk_client_macvlan_mac" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_MACVLAN_MAC"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientIPVlanMac string `yaml:"rdscore_rootless_dpdk_client_ipvlan_mac" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_IPVLAN_MAC"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientIPVlanIPv4 string `yaml:"rdscore_rootless_dpdk_client_ipvlan_ipv4" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_IPVLAN_IPV4"`
+	//nolint:lll,nolintlint
+	RootlessDPDKClientIPVlanIPv4Dummy string `yaml:"rdscore_rootless_dpdk_client_ipvlan_ipv4_dummy" envconfig:"ECO_RDSCORE_ROOTLESS_DPDK_CLIENT_IPVLAN_IPV4_DUMMY"`
+	//nolint:lll,nolintlint
+	DpdkTestContainer     string `yaml:"rdscore_dpdk_test_container" envconfig:"ECO_RDSCORE_DPDK_TEST_CONTAINER"`
+	WorkerLabelListOption metav1.ListOptions
 }
 
 // NewCoreConfig returns instance of CoreConfig config type.
