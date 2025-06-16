@@ -48,15 +48,5 @@ ssh_address_cluster_2: ""
 hostname1: ""
 hostname2: ""
 
-ptp_version_major_old: 4
-ptp_version_minor_old: 18
-ptp_version_patch_old: 0
-ptp_version_prerelease_old: 2342
-
-ptp_version_major_new: 4
-ptp_version_minor_new: 18
-ptp_version_patch_new: 0
-ptp_version_prerelease_new: 345435
-
 authfile_path: /home/kni/.docker/config.json
 
