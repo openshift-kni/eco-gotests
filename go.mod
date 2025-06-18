@@ -250,7 +250,7 @@ require (
 )
 
 replace (
-	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
+	github.com/imdario/mergo => dario.cat/mergo v1.0.2
 	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20250102160645-f496851fbd0d // release-4.18
 	github.com/kubernetes-incubator/external-storage => github.com/libopenstorage/external-storage v5.2.1-0.20190425001840-d5e6a33a1729+incompatible
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.9.0
