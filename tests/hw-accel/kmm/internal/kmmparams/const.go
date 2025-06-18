@@ -228,15 +228,15 @@ const (
 	// ReasonBuildCompleted represents event reason for a build completed.
 	ReasonBuildCompleted = "BuildCompleted"
 	// ReasonBuildCreated represents event reason for a build created.
-	ReasonBuildCreated = "BuildCreated"
+	ReasonBuildCreated = "BuildimageCreated"
 	// ReasonBuildStarted represents event reason for a build started.
 	ReasonBuildStarted = "BuildStarted"
 	// ReasonBuildSucceeded represents event reason for a build succeeded.
-	ReasonBuildSucceeded = "BuildSucceeded"
+	ReasonBuildSucceeded = "BuildimageSucceeded"
 	// ReasonSignCreated represents event reason for a sign created.
-	ReasonSignCreated = "SignCreated"
+	ReasonSignCreated = "SignimageCreated"
 	// ReasonSignSucceeded represents event reason for a sign succeeded.
-	ReasonSignSucceeded = "SignSucceeded"
+	ReasonSignSucceeded = "SignimageSucceeded"
 	// ReasonModuleLoaded represents event reason for a module loaded.
 	ReasonModuleLoaded = "ModuleLoaded"
 	// ReasonModuleUnloaded represents event reason for a module unloaded.
