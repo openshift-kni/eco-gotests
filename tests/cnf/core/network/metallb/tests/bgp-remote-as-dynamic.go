@@ -267,12 +267,12 @@ func setupBGPRemoteASMultiHopTest(ipv4metalLbIPList, hubIPv4ExternalAddresses, e
 	By("Creating FRR Hub pod on worker node 0")
 
 	_ = createFrrHubPod(hubPodWorkerName[0],
-		workerNodeList[0].Object.Name, hubConfigMap.Definition.Name, []string{}, hub0BRstaticIPAnnotation)
+		workerNodeList[0].Object.Name, hubConfigMap.Definition.Name, tsparams.IPForwardAndSleepCmd, hub0BRstaticIPAnnotation)
 
 	By("Creating FRR Hub pod on worker node 1")
 
 	_ = createFrrHubPod(hubPodWorkerName[1],
-		workerNodeList[1].Object.Name, hubConfigMap.Definition.Name, []string{}, hub1BRstaticIPAnnotation)
+		workerNodeList[1].Object.Name, hubConfigMap.Definition.Name, tsparams.IPForwardAndSleepCmd, hub1BRstaticIPAnnotation)
 
 	By("Creating configmap and MetalLb Master pod")
 

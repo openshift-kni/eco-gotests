@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/define"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
@@ -97,6 +98,12 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 			WithInterfaces([]string{sriovInterfacesUnderTest[0]}).
 			Create()
 		Expect(err).ToNot(HaveOccurred(), "An unexpected error occurred while creating L2Advertisement.")
+
+		By("Enabling IPForwarding on a DUT interface")
+		output, err := cluster.ExecCmdWithStdout(APIClient,
+			fmt.Sprintf("sudo sysctl -w net.ipv4.conf.%s.forwarding=1", sriovInterfacesUnderTest[0]),
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", workerNodeList[0].Object.Name)})
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to enable IPForwarding on a DUT interface: %s", output))
 	})
 
 	AfterEach(func() {
@@ -112,6 +119,12 @@ var _ = Describe("MetalLb New CRDs", Ordered, Label("newcrds"), ContinueOnFailur
 		if len(cnfWorkerNodeList) > 2 {
 			removeNodeLabel(workerNodeList, metalLbTestsLabel)
 		}
+
+		By("Disabling IPForwarding on a DUT interface")
+		output, err := cluster.ExecCmdWithStdout(APIClient,
+			fmt.Sprintf("sudo sysctl -w net.ipv4.conf.%s.forwarding=0", sriovInterfacesUnderTest[0]),
+			metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", workerNodeList[0].Object.Name)})
+		Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to disable IPForwarding on a DUT interface: %s", output))
 
 		By("Reverting GW mode to the Sharing")
 		setLocalGWMode(false)
