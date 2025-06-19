@@ -356,8 +356,8 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 				srIovPolicyNetDevice,
 				NetConfig.SriovOperatorNamespace,
 				srIovPolicyResNameNetDevice,
-				10,
-				[]string{fmt.Sprintf("%s#0-9", srIovInterfacesUnderTest[0])},
+				5,
+				[]string{fmt.Sprintf("%s#0-4", srIovInterfacesUnderTest[0])},
 				NetConfig.WorkerLabelMap).Create()
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to create sriovnetwork policy %s",
 				srIovPolicyNetDevice))
@@ -645,11 +645,6 @@ var _ = Describe("QinQ", Ordered, Label(tsparams.LabelQinQTestCases), ContinueOn
 			By("Removing NMState policies")
 			err = nmstate.CleanAllNMStatePolicies(APIClient)
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
-
-			if sriovenv.IsMellanoxDevice(srIovInterfacesUnderTest[0], workerNodeList[0].Object.Name) {
-				err = sriovenv.ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, srIovInterfacesUnderTest[0], false, 0)
-				Expect(err).ToNot(HaveOccurred(), "Failed to configure Mellanox firmware")
-			}
 		})
 	})
 
@@ -1027,8 +1022,8 @@ func defineCreateSriovNetPolices(vfioPCIName, vfioPCIResName, sriovInterface,
 		vfioPCIName,
 		NetConfig.SriovOperatorNamespace,
 		vfioPCIResName,
-		6,
-		[]string{fmt.Sprintf("%s#0-5", sriovInterface)},
+		5,
+		[]string{fmt.Sprintf("%s#0-4", sriovInterface)},
 		NetConfig.WorkerLabelMap).WithVhostNet(true)
 
 	switch reqDriver {

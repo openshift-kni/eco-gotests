@@ -109,11 +109,6 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 				By("Removing NMState policies")
 				err = nmstate.CleanAllNMStatePolicies(APIClient)
 				Expect(err).ToNot(HaveOccurred(), "Failed to remove all NMState policies")
-
-				if sriovenv.IsMellanoxDevice(sriovInterfacesUnderTest[0], workerNodeList[0].Object.Name) {
-					err = sriovenv.ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, sriovInterfacesUnderTest[0], false, 0)
-					Expect(err).ToNot(HaveOccurred(), "Failed to configure Mellanox firmware")
-				}
 			})
 
 			AfterEach(func() {
@@ -376,7 +371,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 					sriovAndResourceNameExManagedTrue,
 					NetConfig.SriovOperatorNamespace,
 					sriovAndResourceNameExManagedTrue,
-					3, []string{fmt.Sprintf("%s#%d-%d", pfInterface, 2, 2)}, NetConfig.WorkerLabelMap).
+					5, []string{fmt.Sprintf("%s#%d-%d", pfInterface, 2, 2)}, NetConfig.WorkerLabelMap).
 					WithExternallyManaged(true)
 
 				err = sriovenv.CreateSriovPolicyAndWaitUntilItsApplied(sriovPolicy, tsparams.MCOWaitTimeout)
