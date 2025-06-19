@@ -106,9 +106,6 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		By("Remove the static route to the external Pod network on each worker node")
 		addDeleteStaticRouteOnWorkerNodes(testPodList, routeMap, "del", hubIPv4Network)
 
-		By(fmt.Sprintf("Disables nftables on %s if active", cnfWorkerNodeList[0].Definition.Name))
-		disableNftablesIfActive(cnfWorkerNodeList[0].Definition.Name)
-
 		err = netenv.WaitForMcpStable(APIClient, 35*time.Minute, 1*time.Minute, NetConfig.CnfMcpLabel)
 		Expect(err).ToNot(HaveOccurred(), "Failed to wait for MCP to be stable")
 	})
@@ -475,30 +472,6 @@ func activateNftablesIfInactive(nodeName string) {
 			// Verify that nftables is now active
 			verifyNftablesStatus("active", nodeName)
 			Expect(err).ToNot(HaveOccurred(), "Failed to start nftables service on "+nodeName)
-		}
-	}
-}
-
-func disableNftablesIfActive(nodeName string) {
-	// Get the current status of the nftables service
-	statuses, err := cluster.ExecCmdWithStdout(APIClient,
-		"systemctl is-active nftables.service | cat -",
-		metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
-	Expect(err).ToNot(HaveOccurred(), "Failed to check nftables service status")
-	Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for nftables service")
-
-	// Iterate through the statuses of the nodes
-	for nodeName, status := range statuses {
-		status = strings.TrimSpace(status)
-		if status == "active" {
-			// Execute the command to stop and disable nftables service
-			_, err := cluster.ExecCmdWithStdout(APIClient,
-				"systemctl stop nftables.service",
-				metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
-			Expect(err).ToNot(HaveOccurred(), "Failed to stop nftables service on "+nodeName)
-
-			// Verify that nftables is now inactive
-			verifyNftablesStatus("inactive", nodeName)
 		}
 	}
 }
