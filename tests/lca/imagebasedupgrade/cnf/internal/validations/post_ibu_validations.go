@@ -336,12 +336,10 @@ func ValidateNoImagesPulled() {
 			catSrc, err := olm.ListCatalogSources(TargetSNOAPIClient, "openshift-marketplace")
 			Expect(err).ToNot(HaveOccurred(), "Failed to list catalog sources")
 
-			excludeImages := "| grep -v "
-			for i, catalogSource := range catSrc {
-				excludeImages += catalogSource.Definition.Spec.Image
-				if i < len(catSrc)-1 {
-					excludeImages += " | grep -v "
-				}
+			// Kcat image is excluded from the check as it is pulled during test 71398
+			excludeImages := "| grep -v kcat"
+			for _, catalogSource := range catSrc {
+				excludeImages += fmt.Sprintf("|grep -v %s", catalogSource.Definition.Spec.Image)
 			}
 
 			logCmd := "journalctl -l --system | grep Pulling | grep image:"
