@@ -58,6 +58,8 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 						err = fmt.Errorf("BuildPod %s has failed", podObj.Object.Name)
 						glog.V(kmmparams.KmmLogLevel).Info(err)
 
+						buildPod[nsname] = ""
+
 						return false, err
 					}
 
