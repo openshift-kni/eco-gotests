@@ -20,15 +20,16 @@ import (
 
 var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFailure, func() {
 	var (
-		nodeAddrList     []string
-		addressPool      []string
-		frrk8sPods       []*pod.Builder
-		frrPod0          *pod.Builder
-		frrPod1          *pod.Builder
-		ipAddressPool    *metallb.IPAddressPoolBuilder
-		worker0NodeLabel []metav1.LabelSelector
-		worker1NodeLabel []metav1.LabelSelector
-		err              error
+		nodeAddrList       []string
+		addressPool        []string
+		frrk8sPods         []*pod.Builder
+		frrPod0            *pod.Builder
+		frrPod1            *pod.Builder
+		ipAddressPool      *metallb.IPAddressPoolBuilder
+		worker0NodeLabel   []metav1.LabelSelector
+		worker1NodeLabel   []metav1.LabelSelector
+		err                error
+		metalLbTestsLabel2 = map[string]string{"metallb2": "metallbtests"}
 	)
 
 	const (
@@ -149,10 +150,10 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 			reportxml.ID("53991"), func() {
 
 				By("Adding test label to compute nodes")
-				addNodeLabel(workerNodeList, metalLbTestsLabel)
+				addNodeLabel(workerNodeList, metalLbTestsLabel2)
 
 				testMetallbNodeLabel := []metav1.LabelSelector{
-					{MatchLabels: metalLbTestsLabel},
+					{MatchLabels: metalLbTestsLabel2},
 				}
 
 				By("Create a bgpadvertisement for BGPPeer1 and IP AddressPool1.")
@@ -167,7 +168,7 @@ var _ = Describe("MetalLB NodeSelector", Ordered, Label(tsparams.LabelBGPTestCas
 				verifyBGPConnectivityAndPrefixes(frrPod0, frrPod1, nodeAddrList, addressPool, addressPool)
 
 				By("Remove custom metallb test label from nodes")
-				removeNodeLabel(workerNodeList, metalLbTestsLabel)
+				removeNodeLabel(workerNodeList, metalLbTestsLabel2)
 
 				verifyBGPStatusAndRouteAfterLabelUpdate(frrPod0, frrPod1, removePrefixFromIPList(ipv4NodeAddrList),
 					addressPool)

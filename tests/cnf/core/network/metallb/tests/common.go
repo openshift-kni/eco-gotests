@@ -522,25 +522,35 @@ func validatePrefix(
 ) {
 	var nextHopAddresses []string
 
-	Eventually(func() bool {
-		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
-		if err != nil {
-			return false
-		}
-
-		return len(bgpStatus.Routes) > 0
-	}, time.Minute, tsparams.DefaultRetryInterval).
-		Should(BeTrue(), "Expected BGP status to contain routes, but it was empty")
-
-	bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
-	Expect(err).ToNot(HaveOccurred(), "Failed to verify bgp status")
-
 	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", addressPool[0], prefix))
 	Expect(err).ToNot(HaveOccurred(), "Failed to parse CIDR")
 
 	if len(noRouteCheck) > 0 && noRouteCheck[0] {
-		Expect(bgpStatus.Routes).ToNot(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
+		Eventually(func() bool {
+			bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+			if err != nil {
+				return false
+			}
+
+			_, exists := bgpStatus.Routes[subnet.String()]
+
+			return !exists
+		}, time.Minute, tsparams.DefaultRetryInterval).
+			Should(BeTrue(), "Expected BGP status to not contain prefix")
 	} else {
+		Eventually(func() bool {
+			bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+			if err != nil {
+				return false
+			}
+
+			return len(bgpStatus.Routes) > 0
+		}, time.Minute, tsparams.DefaultRetryInterval).
+			Should(BeTrue(), "Expected BGP status to contain routes, but it was empty")
+
+		bgpStatus, err := frr.GetBGPStatus(masterNodeFRRPod, strings.ToLower(ipProtoVersion), "test")
+
+		Expect(err).NotTo(HaveOccurred(), "Failed to get BGP status")
 		Expect(bgpStatus.Routes).To(HaveKey(subnet.String()), "Failed to verify subnet in bgp status output")
 
 		for _, route := range bgpStatus.Routes[subnet.String()] {
