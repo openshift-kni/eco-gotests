@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/go-version"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
@@ -139,22 +138,6 @@ func PreflightImage(arch string) string {
 	}
 
 	return fmt.Sprintf(kmmparams.PreflightTemplateImage, arch)
-}
-
-// PreflightReason returns the reason of a preflightvalidationocp check.
-func PreflightReason(apiClient *clients.Settings, preflight, module, nsname string) (string, error) {
-	pre, _ := kmm.PullPreflightValidationOCP(apiClient, preflight, nsname)
-
-	preflightValidationOCP, err := pre.Get()
-
-	if err == nil {
-		reason := preflightValidationOCP.Status.CRStatuses[module].StatusReason
-		glog.V(kmmparams.KmmLogLevel).Infof("VerificationStatus: %s", reason)
-
-		return reason, nil
-	}
-
-	return "", err
 }
 
 // ModuleLoadedMessage returns message for a module loaded event.
