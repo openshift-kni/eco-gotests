@@ -42,6 +42,6 @@ func init() {
 			return
 		}
 
-		glog.Fatalf("can not load ApiClient. Please check your KUBECONFIG env var")
+		glog.Exitf("can not load ApiClient. Please check your KUBECONFIG env var")
 	}
 }
