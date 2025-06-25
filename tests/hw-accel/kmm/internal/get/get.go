@@ -148,6 +148,24 @@ func ModuleLoadedMessage(module, nsname string) string {
 	return message
 }
 
+// PreflightReason returns the reason of a preflightvalidationocp check.
+/**
+func PreflightReason(apiClient *clients.Settings, preflight, module, nsname string) (string, error) {
+	pre, _ := kmm.PullPreflightValidationOCP(apiClient, preflight, nsname)
+
+	preflightValidationOCP, err := pre.Get()
+
+	if err == nil {
+		reason := preflightValidationOCP.Status.CRStatuses[module].StatusReason
+		glog.V(kmmparams.KmmLogLevel).Infof("VerificationStatus: %s", reason)
+
+		return reason, nil
+	}
+
+	return "", err
+}
+**/
+
 // ModuleUnloadedMessage returns message for a module unloaded event.
 func ModuleUnloadedMessage(module, nsname string) string {
 	message := fmt.Sprintf("Module %s/%s unloaded from the kernel", nsname, module)
