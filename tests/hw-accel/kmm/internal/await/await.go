@@ -58,6 +58,8 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 						err = fmt.Errorf("BuildPod %s has failed", podObj.Object.Name)
 						glog.V(kmmparams.KmmLogLevel).Info(err)
 
+						buildPod[nsname] = ""
+
 						return false, err
 					}
 
@@ -125,6 +127,7 @@ func ModuleObjectDeleted(apiClient *clients.Settings, moduleName, nsName string,
 		})
 }
 
+/**
 // PreflightStageDone awaits preflightvalidationocp to be in stage Done.
 func PreflightStageDone(apiClient *clients.Settings, preflight, module, nsname string,
 	timeout time.Duration) error {
@@ -149,6 +152,7 @@ func PreflightStageDone(apiClient *clients.Settings, preflight, module, nsname s
 			return false, err
 		})
 }
+**/
 
 func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 	timeout time.Duration, selector map[string]string) error {

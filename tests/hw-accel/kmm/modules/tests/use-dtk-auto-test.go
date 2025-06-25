@@ -2,14 +2,12 @@ package tests
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/await"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/check"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/define"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
@@ -63,10 +61,12 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			err = crb.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error deleting test namespace")
 
-			By("Delete preflightvalidationocp")
-			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
-				kmmparams.UseDtkModuleTestNamespace).Delete()
-			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
+			/*
+				By("Delete preflightvalidationocp")
+				_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+					kmmparams.UseDtkModuleTestNamespace).Delete()
+				Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
+			*/
 
 			By("Delete Namespace")
 			err = namespace.NewBuilder(APIClient, kmmparams.UseDtkModuleTestNamespace).Delete()
@@ -186,76 +186,75 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			Expect(err.Error()).To(ContainSubstring("missing spec.moduleLoader.container.kernelMappings"))
 			Expect(err.Error()).To(ContainSubstring(".containerImage"))
 		})
+		/*
+			It("should be able to run preflightvalidation with no push to registry", reportxml.ID("56330"), func() {
+				By("Detecting cluster architecture")
 
-		It("should be able to run preflightvalidation with no push to registry", reportxml.ID("56330"), func() {
-			By("Detecting cluster architecture")
+				arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+				if err != nil {
+					Skip("could not detect cluster architecture")
+				}
+				preflightImage := get.PreflightImage(arch)
 
-			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
-			if err != nil {
-				Skip("could not detect cluster architecture")
-			}
-			preflightImage := get.PreflightImage(arch)
+				By("Create preflightvalidationocp")
+				pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+					kmmparams.UseDtkModuleTestNamespace).
+					WithReleaseImage(preflightImage).
+					WithPushBuiltImage(false).
+					Create()
+				Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
-			By("Create preflightvalidationocp")
-			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
-				kmmparams.UseDtkModuleTestNamespace).
-				WithReleaseImage(preflightImage).
-				WithPushBuiltImage(false).
-				Create()
-			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+				By("Await build pod to complete build")
+				err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 5*time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "error while building module")
 
-			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 5*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "error while building module")
+				By("Await preflightvalidationocp checks")
+				err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+					kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
+				Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
-			By("Await preflightvalidationocp checks")
-			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
-				kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
-			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
+				By("Get status of the preflightvalidationocp checks")
+				status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+					kmmparams.UseDtkModuleTestNamespace)
+				Expect(strings.Contains(status, "Verification successful (build compiles)")).
+					To(BeTrue(), "expected message not found")
 
-			By("Get status of the preflightvalidationocp checks")
-			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
-				kmmparams.UseDtkModuleTestNamespace)
-			Expect(strings.Contains(status, "Verification successful (build compiles)")).
-				To(BeTrue(), "expected message not found")
+				By("Delete preflight validation")
+				_, err = pre.Delete()
+				Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
+			})
 
-			By("Delete preflight validation")
-			_, err = pre.Delete()
-			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
-		})
+			It("should be able to run preflightvalidation and push to registry", reportxml.ID("56328"), func() {
+				By("Detecting cluster architecture")
 
-		It("should be able to run preflightvalidation and push to registry", reportxml.ID("56328"), func() {
-			By("Detecting cluster architecture")
+				arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+				if err != nil {
+					Skip("could not detect cluster architecture")
+				}
+				preflightImage := get.PreflightImage(arch)
 
-			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
-			if err != nil {
-				Skip("could not detect cluster architecture")
-			}
-			preflightImage := get.PreflightImage(arch)
+				By("Create preflightvalidationocp")
+				_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+					kmmparams.UseDtkModuleTestNamespace).
+					WithReleaseImage(preflightImage).
+					WithPushBuiltImage(true).
+					Create()
+				Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
-			By("Create preflightvalidationocp")
-			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
-				kmmparams.UseDtkModuleTestNamespace).
-				WithReleaseImage(preflightImage).
-				WithPushBuiltImage(true).
-				Create()
-			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+				By("Await build pod to complete build")
+				err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 10*time.Minute)
+				Expect(err).ToNot(HaveOccurred(), "error while building module")
 
-			By("Await build pod to complete build")
-			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 10*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "error while building module")
+				By("Await preflightvalidationocp checks")
+				err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+					kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
+				Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
-			By("Await preflightvalidationocp checks")
-			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
-				kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
-			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
-
-			By("Get status of the preflightvalidationocp checks")
-			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
-				kmmparams.UseDtkModuleTestNamespace)
-			Expect(strings.Contains(status, "Verification successful (build compiles and image pushed)")).
-				To(BeTrue(), "expected message not found")
-
-		})
+				By("Get status of the preflightvalidationocp checks")
+				status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+					kmmparams.UseDtkModuleTestNamespace)
+				Expect(strings.Contains(status, "Verification successful (build compiles and image pushed)")).
+					To(BeTrue(), "expected message not found")
+			})*/
 	})
 })

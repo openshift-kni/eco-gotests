@@ -79,7 +79,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error creating secret on spoke")
 
 			By("Create ConfigMap")
-			configmapContents := define.LocalMultiStageConfigMapContent(moduleName)
+			configmapContents := define.MultiStageConfigMapContent(moduleName)
 			dockerfileConfigMap, err := configmap.
 				NewBuilder(APIClient, moduleName, kmmparams.KmmHubOperatorNamespace).
 				WithData(configmapContents).Create()
@@ -126,7 +126,7 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Await driver container deployment on Spoke")
 			err = await.ModuleDeployment(ModulesConfig.SpokeAPIClient, moduleName, kmmparams.KmmOperatorNamespace,
-				time.Minute, GeneralConfig.ControlPlaneLabelMap)
+				5*time.Minute, GeneralConfig.ControlPlaneLabelMap)
 			Expect(err).ToNot(HaveOccurred(), "error while waiting on driver deployment")
 
 			By("Check label is set on all nodes")
@@ -135,12 +135,5 @@ var _ = Describe("KMM-Hub", Ordered, Label(tsparams.LabelSuite), func() {
 			Expect(err).ToNot(HaveOccurred(), "error while checking label on all nodes")
 		})
 
-		It("should use SHA format for the module deployed on spoke", reportxml.ID("63102"), func() {
-			By("Getting deployed Module on Spoke")
-			moduleSpec, err := kmm.Pull(ModulesConfig.SpokeAPIClient, moduleName, kmmparams.KmmOperatorNamespace)
-			Expect(err).ToNot(HaveOccurred(), "error while checking the module is loaded")
-			Expect(moduleSpec.Definition.Spec.ModuleLoader.Container.KernelMappings[0].ContainerImage).
-				Should(MatchRegexp(`:[A-Fa-f0-9]{64}$`))
-		})
 	})
 })

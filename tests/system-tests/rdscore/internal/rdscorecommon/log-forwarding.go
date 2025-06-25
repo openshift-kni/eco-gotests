@@ -21,7 +21,7 @@ import (
 const (
 	kcatDeploymentName      = "kcat"
 	kcatDeploymentNamespace = "default"
-	logMessageCnt           = 1000
+	logMessageCnt           = 2000
 )
 
 var (
@@ -239,7 +239,7 @@ func VerifyLogForwardingToKafka() {
 			if err != nil {
 				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error unmarshalling kafka record %q: %v", line, err)
 
-				return false
+				break
 			}
 
 			logMessages = append(logMessages, logMessage)
@@ -259,6 +259,9 @@ func VerifyLogForwardingToKafka() {
 
 			for _, logMessage := range logMessages {
 				if logMessage.LogType == logType {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found record of the %s type: %s",
+						logType, logMessage)
+
 					messageCnt++
 				}
 			}

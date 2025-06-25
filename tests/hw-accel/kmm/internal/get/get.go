@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/go-version"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
@@ -141,7 +140,16 @@ func PreflightImage(arch string) string {
 	return fmt.Sprintf(kmmparams.PreflightTemplateImage, arch)
 }
 
+// ModuleLoadedMessage returns message for a module loaded event.
+func ModuleLoadedMessage(module, nsname string) string {
+	message := fmt.Sprintf("Module %s/%s loaded into the kernel", nsname, module)
+	glog.V(kmmparams.KmmLogLevel).Infof("Return: '%s'", message)
+
+	return message
+}
+
 // PreflightReason returns the reason of a preflightvalidationocp check.
+/**
 func PreflightReason(apiClient *clients.Settings, preflight, module, nsname string) (string, error) {
 	pre, _ := kmm.PullPreflightValidationOCP(apiClient, preflight, nsname)
 
@@ -156,14 +164,7 @@ func PreflightReason(apiClient *clients.Settings, preflight, module, nsname stri
 
 	return "", err
 }
-
-// ModuleLoadedMessage returns message for a module loaded event.
-func ModuleLoadedMessage(module, nsname string) string {
-	message := fmt.Sprintf("Module %s/%s loaded into the kernel", nsname, module)
-	glog.V(kmmparams.KmmLogLevel).Infof("Return: '%s'", message)
-
-	return message
-}
+**/
 
 // ModuleUnloadedMessage returns message for a module unloaded event.
 func ModuleUnloadedMessage(module, nsname string) string {
