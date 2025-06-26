@@ -51,19 +51,24 @@ var _ = Describe(
 
 		})
 		It("Hard reboot nodes", reportxml.ID("42736"), Label("HardReboot"), func() {
-			By("Retrieve nodes list")
+			By("Retrieve worker nodes list")
+			workerListOptions := metav1.ListOptions{
+				LabelSelector: "node-role.kubernetes.io/worker",
+			}
 			nodeList, err := nodes.List(
 				APIClient,
-				metav1.ListOptions{},
+				workerListOptions,
 			)
 			Expect(err).ToNot(HaveOccurred(), "Error listing nodes.")
 
+			Expect(len(nodeList)).ToNot(Equal(0), "No worker nodes found in the cluster")
+
 			for r := 0; r < RanDuTestConfig.HardRebootIterations; r++ {
-				By("Hard rebooting cluster")
+				By("Hard rebooting worker nodes")
 				fmt.Printf("Hard reboot iteration no. %d\n", r)
 				for _, node := range nodeList {
-					By("Reboot node")
-					fmt.Printf("Reboot node %s", node.Definition.Name)
+					By("Reboot worker node")
+					fmt.Printf("Reboot worker node %s", node.Definition.Name)
 					err = reboot.HardRebootNode(node.Definition.Name, randuparams.TestNamespaceName)
 					Expect(err).ToNot(HaveOccurred(), "Error rebooting the nodes.")
 
