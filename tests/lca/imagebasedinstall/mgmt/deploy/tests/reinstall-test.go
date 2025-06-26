@@ -49,7 +49,7 @@ var _ = Describe(
 		})
 
 		It("through IBI operator is successful in a connected environment with static networking",
-			reportxml.ID("no-test"), func() {
+			reportxml.ID("83059"), func() {
 				if !MGMTConfig.StaticNetworking {
 					Skip("Cluster is deployed without static networking")
 				}
@@ -186,7 +186,7 @@ var _ = Describe(
 			})
 
 		It("through siteconfig operator is successful in an IPv4 environment with DHCP networking",
-			reportxml.ID("no-testcase"), func() {
+			reportxml.ID("83060"), func() {
 				if MGMTConfig.StaticNetworking {
 					Skip("Cluster is deployed with static networking")
 				}
@@ -205,7 +205,7 @@ var _ = Describe(
 			})
 
 		It("through siteconfig operator is successful in an IPv6 proxy-enabled environment with DHCP networking",
-			reportxml.ID("no-testcase"), func() {
+			reportxml.ID("83061"), func() {
 				if MGMTConfig.StaticNetworking {
 					Skip("Cluster is deployed with static networking")
 				}
