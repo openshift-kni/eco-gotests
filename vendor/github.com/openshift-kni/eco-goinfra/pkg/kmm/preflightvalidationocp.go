@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
-	moduleV1Beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta1"
+	kmmv1beta2 "github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,9 +17,9 @@ import (
 // containing connection to the cluster and the preflightvalidationocp definitions.
 type PreflightValidationOCPBuilder struct {
 	// PreflightValidationOCP definition. Used to create a PreflightValidationOCP object.
-	Definition *moduleV1Beta1.PreflightValidationOCP
+	Definition *kmmv1beta2.PreflightValidationOCP
 	// Created PreflightValidationOCP object.
-	Object *moduleV1Beta1.PreflightValidationOCP
+	Object *kmmv1beta2.PreflightValidationOCP
 	// ApiClient to interact with the cluster.
 	apiClient *clients.Settings
 	// errorMsg is processed before the object is created or updated.
@@ -42,16 +42,16 @@ func NewPreflightValidationOCPBuilder(
 		return nil
 	}
 
-	err := apiClient.AttachScheme(moduleV1Beta1.AddToScheme)
+	err := apiClient.AttachScheme(kmmv1beta2.AddToScheme)
 	if err != nil {
-		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+		glog.V(100).Infof("Failed to add module v1beta2 scheme to client schemes")
 
 		return nil
 	}
 
 	builder := &PreflightValidationOCPBuilder{
 		apiClient: apiClient,
-		Definition: &moduleV1Beta1.PreflightValidationOCP{
+		Definition: &kmmv1beta2.PreflightValidationOCP{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -78,35 +78,41 @@ func NewPreflightValidationOCPBuilder(
 	return builder
 }
 
-// WithReleaseImage sets the image for which the preflightvalidationocp checks the module.
-func (builder *PreflightValidationOCPBuilder) WithReleaseImage(image string) *PreflightValidationOCPBuilder {
+// WithKernelVersion sets the image for which the preflightvalidationocp checks the module.
+func (builder *PreflightValidationOCPBuilder) WithKernelVersion(kernelVersion string) *PreflightValidationOCPBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
 
-	if image == "" {
-		builder.errorMsg = "invald 'image' argument can not be nil"
+	if kernelVersion == "" {
+		builder.errorMsg = "invalid 'kernelVersion' argument can not be nil"
 
 		return builder
 	}
 
-	glog.V(100).Infof("Creating new PreflightValidationOCP with release image: %s",
-		image)
+	glog.V(100).Infof("Creating new PreflightValidationOCP with kernelVersion: %s",
+		kernelVersion)
 
-	builder.Definition.Spec.ReleaseImage = image
+	builder.Definition.Spec.KernelVersion = kernelVersion
 
 	return builder
 }
 
-// WithUseRTKernel specifies if the kernel is realtime.
-func (builder *PreflightValidationOCPBuilder) WithUseRTKernel(flag bool) *PreflightValidationOCPBuilder {
+// WithDtkImage specifies if the kernel is realtime.
+func (builder *PreflightValidationOCPBuilder) WithDtkImage(dtkImage string) *PreflightValidationOCPBuilder {
 	if valid, _ := builder.validate(); !valid {
 		return builder
 	}
 
-	glog.V(100).Infof("Creating new PreflightValidationOCP with UseRTKernel set to: %s", flag)
+	if dtkImage == "" {
+		builder.errorMsg = "invalid 'dtkImage' argument can not be nil"
 
-	builder.Definition.Spec.UseRTKernel = flag
+		return builder
+	}
+
+	glog.V(100).Infof("Creating new PreflightValidationOCP with dtkImage set to: %s", dtkImage)
+
+	builder.Definition.Spec.DTKImage = dtkImage
 
 	return builder
 }
@@ -117,7 +123,7 @@ func (builder *PreflightValidationOCPBuilder) WithPushBuiltImage(push bool) *Pre
 		return builder
 	}
 
-	glog.V(100).Infof("Creating new PreflightValidaionOCP with PushBuiltImage set to: %s", push)
+	glog.V(100).Infof("Creating new PreflightValidationOCP with PushBuiltImage set to: %s", push)
 
 	builder.Definition.Spec.PushBuiltImage = push
 
@@ -159,19 +165,19 @@ func PullPreflightValidationOCP(apiClient *clients.Settings,
 	if apiClient == nil {
 		glog.V(100).Infof("The apiClient is empty")
 
-		return nil, fmt.Errorf("preflightvalidation 'apiClient' cannot be empty")
+		return nil, fmt.Errorf("preflightvalidationocp 'apiClient' cannot be empty")
 	}
 
-	err := apiClient.AttachScheme(moduleV1Beta1.AddToScheme)
+	err := apiClient.AttachScheme(kmmv1beta2.AddToScheme)
 	if err != nil {
-		glog.V(100).Infof("Failed to add module v1beta1 scheme to client schemes")
+		glog.V(100).Infof("Failed to add module v1beta2 scheme to client schemes")
 
 		return nil, err
 	}
 
 	builder := &PreflightValidationOCPBuilder{
 		apiClient: apiClient,
-		Definition: &moduleV1Beta1.PreflightValidationOCP{
+		Definition: &kmmv1beta2.PreflightValidationOCP{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -239,7 +245,7 @@ func (builder *PreflightValidationOCPBuilder) Update() (*PreflightValidationOCPB
 	return builder, err
 }
 
-// Exists checks if the defined preflightvalidationocp has already need created.
+// Exists checks if the defined preflightvalidationocp has already been created.
 func (builder *PreflightValidationOCPBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
@@ -285,7 +291,7 @@ func (builder *PreflightValidationOCPBuilder) Delete() (*PreflightValidationOCPB
 }
 
 // Get fetches the defined preflightvalidationocp from the cluster.
-func (builder *PreflightValidationOCPBuilder) Get() (*moduleV1Beta1.PreflightValidationOCP, error) {
+func (builder *PreflightValidationOCPBuilder) Get() (*kmmv1beta2.PreflightValidationOCP, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -293,7 +299,7 @@ func (builder *PreflightValidationOCPBuilder) Get() (*moduleV1Beta1.PreflightVal
 	glog.V(100).Infof("Getting preflightvalidationocp %s from namespace %s",
 		builder.Definition.Name, builder.Definition.Namespace)
 
-	preflightvalidationocp := &moduleV1Beta1.PreflightValidationOCP{}
+	preflightvalidationocp := &kmmv1beta2.PreflightValidationOCP{}
 
 	err := builder.apiClient.Get(context.TODO(), goclient.ObjectKey{
 		Name:      builder.Definition.Name,
@@ -301,6 +307,9 @@ func (builder *PreflightValidationOCPBuilder) Get() (*moduleV1Beta1.PreflightVal
 	}, preflightvalidationocp)
 
 	if err != nil {
+		glog.V(100).Infof("Preflightvalidationocp object %s does not exist in namespace %s",
+			builder.Definition.Name, builder.Definition.Namespace)
+
 		return nil, err
 	}
 
@@ -325,7 +334,7 @@ func (builder *PreflightValidationOCPBuilder) validate() (bool, error) {
 	}
 
 	if builder.apiClient == nil {
-		glog.V(100).Infof("The %s builder apiclient is nil", resourceCRD)
+		glog.V(100).Infof("The %s builder apiClient is nil", resourceCRD)
 
 		return false, fmt.Errorf("%s builder cannot have nil apiClient", resourceCRD)
 	}

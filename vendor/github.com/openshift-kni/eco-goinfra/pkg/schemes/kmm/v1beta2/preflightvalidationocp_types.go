@@ -25,14 +25,15 @@ import (
 // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
 // +kubebuilder:validation:Required
 type PreflightValidationOCPSpec struct {
-	// releaseImage describes the OCP release image that all Modules need to be checked against.
+	// KernelVersion describes the kernel image that all Modules need to be checked against.
 	// +kubebuilder:validation:Required
-	ReleaseImage string `json:"releaseImage"`
+	KernelVersion string `json:"kernelVersion"`
 
-	// Boolean flag that determines whether the preflight should be checked with RT kernel version
-	// instead of Full kernel version
+	// DTKImage contains the DTK image that will be used during in-cluster Build verification
+	// for all the modules. In case no Module in the cluster contains build section, no DTK image
+	// should be provided
 	// +optional
-	UseRTKernel bool `json:"useRTKernel"`
+	DTKImage string `json:"dtkImage"`
 
 	// Boolean flag that determines whether images build during preflight must also
 	// be pushed to a defined repository
