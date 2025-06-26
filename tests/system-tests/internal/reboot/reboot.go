@@ -1,12 +1,15 @@
 package reboot
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	systemtestsscc "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/scc"
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/internal/systemtestsinittools"
@@ -15,10 +18,46 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // HardRebootNode executes ipmitool chassis power cycle on a node.
 func HardRebootNode(nodeName string, nsName string) error {
+	err := setupHardRebootDeployment(nodeName, nsName)
+	if err != nil {
+		return err
+	}
+
+	ipmiPods, err := prepareRebootResources(nodeName, nsName)
+	if err != nil {
+		return err
+	}
+
+	err = executeRebootCommand(ipmiPods)
+	if err != nil {
+		return err
+	}
+
+	err = waitForNodeRebootCycle(nodeName)
+	if err != nil {
+		return err
+	}
+
+	err = waitForAPIServerReady()
+	if err != nil {
+		return err
+	}
+
+	err = cleanupRebootDeployment(nsName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// setupHardRebootDeployment sets up the privileged deployment for hard reboot.
+func setupHardRebootDeployment(nodeName, nsName string) error {
 	err := systemtestsscc.AddPrivilegedSCCtoDefaultSA(nsName)
 	if err != nil {
 		return err
@@ -28,10 +67,11 @@ func HardRebootNode(nodeName string, nsName string) error {
 	glog.V(90).Infof("Cleaning up any of the existing ipmitool images. Exec cmd %v", rmiCmdToExec)
 	_, err = remote.ExecuteOnNodeWithDebugPod(rmiCmdToExec, nodeName)
 
-	if err != nil {
-		return err
-	}
+	return err
+}
 
+// prepareRebootResources creates the deployment and gets necessary resources.
+func prepareRebootResources(nodeName, nsName string) ([]*pod.Builder, error) {
 	deployContainer := pod.NewContainerBuilder(systemtestsparams.HardRebootDeploymentName,
 		SystemTestsTestConfig.IpmiToolImage, []string{"sleep", "86400"})
 
@@ -41,7 +81,7 @@ func HardRebootNode(nodeName string, nsName string) error {
 
 	deployContainerCfg, err := deployContainer.GetContainerCfg()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	createDeploy := deployment.NewBuilder(APIClient, systemtestsparams.HardRebootDeploymentName, nsName,
@@ -50,7 +90,7 @@ func HardRebootNode(nodeName string, nsName string) error {
 
 	_, err = createDeploy.CreateAndWaitUntilReady(300 * time.Second)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	listOptions := metav1.ListOptions{
@@ -60,42 +100,149 @@ func HardRebootNode(nodeName string, nsName string) error {
 	ipmiPods, err := pod.List(APIClient, nsName, listOptions)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// pull openshift apiserver deployment object to wait for after the node reboot.
-	openshiftAPIDeploy, err := deployment.Pull(APIClient, "apiserver", "openshift-apiserver")
+	return ipmiPods, nil
+}
 
-	if err != nil {
-		return err
-	}
-
+// executeRebootCommand executes the ipmitool power cycle command.
+func executeRebootCommand(ipmiPods []*pod.Builder) error {
 	cmdToExec := []string{"ipmitool", "chassis", "power", "cycle"}
 
 	glog.V(90).Infof("Exec cmd %v on pod %s", cmdToExec, ipmiPods[0].Definition.Name)
-	_, err = ipmiPods[0].ExecCommand(cmdToExec)
+	_, err := ipmiPods[0].ExecCommand(cmdToExec)
 
+	return err
+}
+
+// waitForNodeRebootCycle waits for the node to go down and come back up.
+func waitForNodeRebootCycle(nodeName string) error {
+	// Check if this is a single node cluster
+	allNodes, err := nodes.List(APIClient, metav1.ListOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list nodes to determine cluster size: %w", err)
 	}
 
-	// wait for one minute for the node to reboot
-	time.Sleep(1 * time.Minute)
+	isSingleNodeCluster := len(allNodes) == 1
+	glog.V(90).Infof("Cluster has %d nodes, single node cluster: %v", len(allNodes), isSingleNodeCluster)
 
-	// wait for the openshift apiserver deployment to be available
+	if !isSingleNodeCluster {
+		err = waitForNodeNotReady(nodeName)
+		if err != nil {
+			glog.V(90).Infof("Warning: Node %s did not become NotReady within timeout, continuing...", nodeName)
+		} else {
+			glog.V(90).Infof("Node %s successfully went NotReady", nodeName)
+		}
+	} else {
+		glog.V(90).Infof("Single node cluster detected - skipping NotReady check")
+		// wait for one minute for the node to reboot
+		time.Sleep(1 * time.Minute)
+	}
+
+	return waitForNodeReady(nodeName)
+}
+
+// waitForNodeNotReady waits for the node to become NotReady.
+func waitForNodeNotReady(nodeName string) error {
+	glog.V(90).Infof("Waiting for node %s to become NotReady after power cycle", nodeName)
+
+	return wait.PollUntilContextTimeout(
+		context.TODO(),
+		5*time.Second,
+		10*time.Minute,
+		true,
+		func(ctx context.Context) (bool, error) {
+			node, nodeErr := nodes.Pull(APIClient, nodeName)
+			if nodeErr != nil {
+				glog.V(90).Infof("Error pulling node %s: %v", nodeName, nodeErr)
+
+				return false, nil // Node might be unreachable, which is expected
+			}
+
+			for _, condition := range node.Object.Status.Conditions {
+				if condition.Type == corev1.NodeReady {
+					if condition.Status != corev1.ConditionTrue {
+						glog.V(90).Infof("Node %s is NotReady: %s", nodeName, condition.Reason)
+
+						return true, nil
+					}
+				}
+			}
+
+			return false, nil
+		})
+}
+
+// waitForNodeReady waits for the node to become Ready.
+func waitForNodeReady(nodeName string) error {
+	glog.V(90).Infof("Waiting for node %s to become Ready again", nodeName)
+
+	// Wait for node to become Ready (indicating it's back up)
+	err := wait.PollUntilContextTimeout(
+		context.TODO(),
+		10*time.Second,
+		25*time.Minute,
+		true,
+		func(ctx context.Context) (bool, error) {
+			node, nodeErr := nodes.Pull(APIClient, nodeName)
+			if nodeErr != nil {
+				glog.V(90).Infof("Error pulling node %s (expected during reboot): %v", nodeName, nodeErr)
+
+				return false, nil // Continue polling, API might be unavailable during reboot
+			}
+
+			for _, condition := range node.Object.Status.Conditions {
+				if condition.Type == corev1.NodeReady {
+					if condition.Status == corev1.ConditionTrue {
+						glog.V(90).Infof("Node %s is Ready: %s", nodeName, condition.Reason)
+
+						return true, nil
+					}
+				}
+			}
+
+			glog.V(90).Infof("Node %s is still not Ready", nodeName)
+
+			return false, nil
+		})
+
+	if err != nil {
+		return fmt.Errorf("node %s did not become Ready within timeout: %w", nodeName, err)
+	}
+
+	glog.V(90).Infof("Node %s successfully came back online", nodeName)
+
+	return nil
+}
+
+// waitForAPIServerReady waits for the OpenShift API server to be available.
+func waitForAPIServerReady() error {
+	glog.V(90).Infof("Waiting for OpenShift API server to be available")
+
+	openshiftAPIDeploy, err := deployment.Pull(APIClient, "apiserver", "openshift-apiserver")
+	if err != nil {
+		return fmt.Errorf("failed to get OpenShift API deployment: %w", err)
+	}
+
 	err = openshiftAPIDeploy.WaitUntilCondition("Available", 5*time.Minute)
+	if err != nil {
+		return fmt.Errorf("OpenShift API server not available after node reboot: %w", err)
+	}
 
+	return nil
+}
+
+// cleanupRebootDeployment removes the hard reboot deployment.
+func cleanupRebootDeployment(nsName string) error {
+	createDeploy, err := deployment.Pull(APIClient, systemtestsparams.HardRebootDeploymentName, nsName)
 	if err != nil {
 		return err
 	}
 
 	err = createDeploy.DeleteAndWait(2 * time.Minute)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // KernelCrashKdump triggers a kernel crash dump which generates a vmcore dump.
