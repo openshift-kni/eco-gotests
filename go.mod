@@ -274,6 +274,7 @@ replace (
 	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20250102160645-f496851fbd0d // release-4.18
 	github.com/kubernetes-incubator/external-storage => github.com/libopenstorage/external-storage v5.2.1-0.20190425001840-d5e6a33a1729+incompatible
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.9.0
+	github.com/openshift-kni/eco-goinfra => github.com/klaskosk/eco-goinfra v0.0.0-20250627185109-9824960cb57f // oran-template-inventory
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20250123044544-55c9ecba501f // release-4.18
 	github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20250106212530-e5a400590fed // release-4.18
 	github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20250106212530-e5a400590fed // release-4.18

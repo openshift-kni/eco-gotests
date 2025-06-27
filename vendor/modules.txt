@@ -706,7 +706,7 @@ github.com/opencontainers/runtime-spec/specs-go
 ## explicit; go 1.22.0
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20250626183258-7f1329b28ce7
+# github.com/openshift-kni/eco-goinfra v0.0.0-20250626183258-7f1329b28ce7 => github.com/klaskosk/eco-goinfra v0.0.0-20250627185109-9824960cb57f
 ## explicit; go 1.24.4
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -757,6 +757,8 @@ github.com/openshift-kni/eco-goinfra/pkg/ocm
 github.com/openshift-kni/eco-goinfra/pkg/olm
 github.com/openshift-kni/eco-goinfra/pkg/oran
 github.com/openshift-kni/eco-goinfra/pkg/oran/api
+github.com/openshift-kni/eco-goinfra/pkg/oran/api/filter
+github.com/openshift-kni/eco-goinfra/pkg/oran/api/internal/artifacts
 github.com/openshift-kni/eco-goinfra/pkg/oran/api/internal/common
 github.com/openshift-kni/eco-goinfra/pkg/oran/api/internal/provisioning
 github.com/openshift-kni/eco-goinfra/pkg/pod
@@ -2183,6 +2185,7 @@ sigs.k8s.io/yaml/goyaml.v3
 # github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20250102160645-f496851fbd0d
 # github.com/kubernetes-incubator/external-storage => github.com/libopenstorage/external-storage v5.2.1-0.20190425001840-d5e6a33a1729+incompatible
 # github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.9.0
+# github.com/openshift-kni/eco-goinfra => github.com/klaskosk/eco-goinfra v0.0.0-20250627185109-9824960cb57f
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20250123044544-55c9ecba501f
 # github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20250106212530-e5a400590fed
 # github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20250106212530-e5a400590fed
