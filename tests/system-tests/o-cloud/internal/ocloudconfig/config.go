@@ -121,24 +121,6 @@ type OCloudConfig struct {
 	// HostName2 is the hostname of the second cluster.
 	HostName2 string `yaml:"hostname2" envconfig:"ECO_OCLOUD_HOSTNAME_2"`
 
-	// PTPVersionMajorOld old major version of the PTP operator.
-	PTPVersionMajorOld uint64 `yaml:"ptp_version_major_old" envconfig:"ECO_OCLOUD_PTP_VERSION_MAJOR_OLD"`
-	// PTPVersionMinorOld old minor version of the PTP operator.
-	PTPVersionMinorOld uint64 `yaml:"ptp_version_minor_old" envconfig:"ECO_OCLOUD_PTP_VERSION_MINOR_OLD"`
-	// PTPVersionPatchOld old patch version of the PTP operator.
-	PTPVersionPatchOld uint64 `yaml:"ptp_version_patch_old" envconfig:"ECO_OCLOUD_PTP_VERSION_PATCH_OLD"`
-	// PTPVersionPrereleaseOld old prerelease version of the PTP operator.
-	PTPVersionPrereleaseOld uint64 `yaml:"ptp_version_prerelease_old" envconfig:"ECO_OCLOUD_PTP_VERSION_PRERELEASE_OLD"`
-
-	// PTPVersionMajorNew new major version of the PTP operator.
-	PTPVersionMajorNew uint64 `yaml:"ptp_version_major_new" envconfig:"ECO_OCLOUD_PTP_VERSION_MAJOR_NEW"`
-	// PTPVersionMinorNew new minor version of the PTP operator.
-	PTPVersionMinorNew uint64 `yaml:"ptp_version_minor_new" envconfig:"ECO_OCLOUD_PTP_VERSION_MINOR_NEW"`
-	// PTPVersionPatchNew new patch version of the PTP operator.
-	PTPVersionPatchNew uint64 `yaml:"ptp_version_patch_new" envconfig:"ECO_OCLOUD_PTP_VERSION_PATCH_NEW"`
-	// PTPVersionPrereleaseNew new prerelease version of the PTP operator.
-	PTPVersionPrereleaseNew uint64 `yaml:"ptp_version_prerelease_new" envconfig:"ECO_OCLOUD_PTP_VERSION_PRERELEASE_NEW"`
-
 	// AuthfilePath path to the Authfile for Skopeo commands
 	AuthfilePath string `yaml:"authfile_path" envconfig:"ECO_OCLOUD_AUTHFILE_PATH"`
 }
