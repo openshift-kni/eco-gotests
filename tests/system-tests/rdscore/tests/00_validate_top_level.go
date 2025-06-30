@@ -231,6 +231,9 @@ var _ = Describe(
 				rdscorecommon.VerifyRootlessDPDKWorkloadsOnDifferentNodesMultipleIPVlans)
 
 			AfterEach(func(ctx SpecContext) {
+				By("Cleanup UnexpectedAdmission pods after KDump test")
+				rdscorecommon.CleanupUnexpectedAdmissionPods()
+
 				By("Ensure rootless DPDK server deployment was deleted")
 				rdscorecommon.CleanupRootlessDPDKServerDeployment()
 

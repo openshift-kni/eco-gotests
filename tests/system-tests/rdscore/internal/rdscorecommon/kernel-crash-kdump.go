@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/reboot"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/remote"
 
@@ -128,4 +129,97 @@ func VerifyKDumpOnWorkerMCP(ctx SpecContext) {
 // VerifyKDumpOnCNFMCP check KDump service on nodes in "CNF" MCP.
 func VerifyKDumpOnCNFMCP(ctx SpecContext) {
 	crashNodeKDump(RDSCoreConfig.KDumpCNFMCPNodeLabel)
+}
+
+// CleanupUnexpectedAdmissionPods cleans up pods with UnexpectedAdmissionError status
+// on the CNF nodes.
+func CleanupUnexpectedAdmissionPods() {
+	mcpNodeLabelList := []string{RDSCoreConfig.KDumpCPNodeLabel,
+		RDSCoreConfig.KDumpCNFMCPNodeLabel, RDSCoreConfig.KDumpWorkerMCPNodeLabel}
+
+	for _, mcpNodeLabel := range mcpNodeLabelList {
+		cleanupUnexpectedPods(mcpNodeLabel)
+	}
+}
+
+func cleanupUnexpectedPods(nodeLabel string) {
+	listOptions := metav1.ListOptions{
+		FieldSelector: "status.phase=Failed",
+	}
+
+	var (
+		nodeList []*nodes.Builder
+		podsList []*pod.Builder
+		err      error
+		ctx      SpecContext
+	)
+
+	By("Searching for pods with UnexpectedAdmissionError status")
+
+	Eventually(func() bool {
+		podsList, err = pod.ListInAllNamespaces(APIClient, listOptions)
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods: %v", err)
+
+			return false
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found %d pods matching search criteria",
+			len(podsList))
+
+		for _, failedPod := range podsList {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q in %q ns matches search criteria",
+				failedPod.Definition.Name, failedPod.Definition.Namespace)
+		}
+
+		return true
+	}).WithContext(ctx).WithPolling(5*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+		"Failed to search for pods with UnexpectedAdmissionError status")
+
+	if len(podsList) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("No pods with UnexpectedAdmissionError status found")
+
+		return
+	}
+
+	By("Retrieving nodes list")
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Find nodes matching label %q", nodeLabel)
+
+	Eventually(func() bool {
+		nodeList, err = nodes.List(
+			APIClient,
+			metav1.ListOptions{LabelSelector: nodeLabel},
+		)
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list nodes: %w", err)
+
+			return false
+		}
+
+		return len(nodeList) > 0
+	}).WithContext(ctx).WithTimeout(1*time.Minute).WithPolling(5*time.Second).Should(BeTrue(),
+		fmt.Sprintf("Failed to find node(s) matching label: %q", nodeLabel))
+
+	for _, _node := range nodeList {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node %q macthes label %q",
+			_node.Definition.Name, nodeLabel)
+	}
+
+	By("Filtering pods with UnexpectedAdmissionError that run on the target node(s)")
+
+	for _, failedPod := range podsList {
+		if failedPod.Definition.Status.Reason == "UnexpectedAdmissionError" {
+			for _, _node := range nodeList {
+				if _node.Definition.Name == failedPod.Definition.Spec.NodeName {
+					glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting pod %q in %q ns running on %q",
+						failedPod.Definition.Name, failedPod.Definition.Namespace, _node.Definition.Name)
+
+					_, err := failedPod.DeleteAndWait(5 * time.Minute)
+					Expect(err).ToNot(HaveOccurred(), "could not delete pod in UnexpectedAdmissionError state")
+				}
+			}
+		}
+	}
 }
