@@ -232,6 +232,10 @@ func (builder *ModuleBuilder) WithModuleLoaderContainer(
 		return builder
 	}
 
+	if builder.Definition.Spec.ModuleLoader == nil {
+		builder.Definition.Spec.ModuleLoader = &moduleV1Beta1.ModuleLoaderSpec{}
+	}
+
 	builder.Definition.Spec.ModuleLoader.Container = *container
 
 	return builder
@@ -464,6 +468,10 @@ func (builder *ModuleBuilder) withServiceAccount(srvAccountName string, accountT
 
 	switch accountType {
 	case "module":
+		if builder.Definition.Spec.ModuleLoader == nil {
+			builder.Definition.Spec.ModuleLoader = &moduleV1Beta1.ModuleLoaderSpec{}
+		}
+
 		builder.Definition.Spec.ModuleLoader.ServiceAccountName = srvAccountName
 	case "device":
 		if builder.Definition.Spec.DevicePlugin == nil {
