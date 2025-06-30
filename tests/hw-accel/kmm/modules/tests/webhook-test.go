@@ -222,6 +222,9 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something:latest"}
 				var KerMapList []v1beta1.KernelMapping
 				mappings := append(KerMapList, kerMap)
+				if module.Spec.ModuleLoader == nil {
+					module.Spec.ModuleLoader = &v1beta1.ModuleLoaderSpec{}
+				}
 				module.Spec.ModuleLoader.Container.KernelMappings = mappings
 
 				By("Create Module")
@@ -243,6 +246,9 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				kerMap := v1beta1.KernelMapping{Regexp: "^.+$", ContainerImage: "something"}
 				var KerMapList []v1beta1.KernelMapping
 				mappings := append(KerMapList, kerMap)
+				if module.Spec.ModuleLoader == nil {
+					module.Spec.ModuleLoader = &v1beta1.ModuleLoaderSpec{}
+				}
 				module.Spec.ModuleLoader.Container.KernelMappings = mappings
 
 				By("Create Module")
