@@ -272,9 +272,22 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Creating the tcpdump deployment for the first FRR packets capturing")
 
-	workerNodesList, err := getNodesNamesList(APIClient, RDSCoreConfig.WorkerLabelListOption)
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to retrieve worker nodes names list due to %v", err))
+	var workerNodesList []string
+
+	if len(RDSCoreConfig.FRRExpectedNodes) > 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Using expected nodes list %v", RDSCoreConfig.FRRExpectedNodes)
+		workerNodesList = RDSCoreConfig.FRRExpectedNodes
+	} else {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Trying to retrieve worker nodes names list from the label %v",
+			RDSCoreConfig.WorkerLabelListOption)
+
+		workerNodesList, err = getNodesNamesList(APIClient, RDSCoreConfig.WorkerLabelListOption)
+		Expect(err).ToNot(HaveOccurred(),
+			fmt.Sprintf("Failed to retrieve worker nodes names list due to %v", err))
+
+		Expect(len(workerNodesList)).ToNot(Equal(0), "No worker nodes found matching the label %v",
+			RDSCoreConfig.WorkerLabelListOption)
+	}
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Create tcpdump deployment for the nodes %v", workerNodesList)
 
