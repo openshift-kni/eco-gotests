@@ -29,16 +29,39 @@ func isClockSync(apiClient *clients.Settings) (bool, error) {
 
 	for _, pod := range podList {
 		if strings.Contains(pod.Object.Name, machineConfigDaemonPod) {
-			synccmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "timedatectl"}
-			cmd, err := pod.ExecCommand(synccmd)
+			const maxRetries = 6
 
-			if (len(cmd.String()) == 0) || (err != nil) {
-				return false, fmt.Errorf("failed to check clock sync status from machine config container, %w, %s",
-					err, cmd.String())
+			var cmd bytes.Buffer
+
+			var lastErr error
+
+			for iter := 0; iter < maxRetries; iter++ {
+				synccmd := []string{"chroot", "/rootfs", "/bin/sh", "-c", "timedatectl"}
+				cmd, lastErr = pod.ExecCommand(synccmd)
+
+				// Success condition: no error AND non-empty response AND contains sync message
+				if lastErr == nil && len(cmd.String()) > 0 && strings.Contains(cmd.String(), SyncMessage) {
+					return true, nil
+				}
+
+				if iter < maxRetries-1 {
+					time.Sleep(10 * time.Second)
+				}
+			}
+
+			// Check final result after all retries
+			if lastErr != nil {
+				return false, fmt.Errorf("failed to check clock sync status from machine config container after %d retries, %w, %s",
+					maxRetries, lastErr, cmd.String())
+			}
+
+			if len(cmd.String()) == 0 {
+				return false, fmt.Errorf("failed to check clock sync status from machine config container, "+
+					"empty output after %d retries", maxRetries)
 			}
 
 			if !strings.Contains(cmd.String(), SyncMessage) {
-				return false, fmt.Errorf("clock not in sync, %w", err)
+				return false, fmt.Errorf("clock not in sync after %d retries", maxRetries)
 			}
 
 			return true, nil
@@ -63,21 +86,29 @@ func isPtpClockSync(apiClient *clients.Settings) (bool, error) {
 
 			var cmd bytes.Buffer
 
+			var lastErr error
+
 			for iter := 0; iter < maxRetries; iter++ {
 				synccmd := []string{"curl", "-s", "http://localhost:9091/metrics"}
-				cmd, err = pod.ExecCommand(synccmd)
+				cmd, lastErr = pod.ExecCommand(synccmd)
 
-				if (len(cmd.String()) != 0) || (err == nil) {
+				// Success condition: no error AND non-empty response
+				if lastErr == nil && len(cmd.String()) > 0 {
 					break
 				}
 
 				if iter < maxRetries-1 {
-					time.Sleep(2 * time.Second)
+					time.Sleep(10 * time.Second)
 				}
 			}
 
-			if (len(cmd.String()) == 0) || (err != nil) {
-				return false, fmt.Errorf("failed to check PTP sync status, %w, %s", err, cmd.String())
+			// Check final result after all retries
+			if lastErr != nil {
+				return false, fmt.Errorf("failed to check PTP sync status, %w, %s", lastErr, cmd.String())
+			}
+
+			if len(cmd.String()) == 0 {
+				return false, fmt.Errorf("failed to check PTP sync status, empty response after %d retries", maxRetries)
 			}
 
 			if !ptpRe.MatchString(cmd.String()) {
