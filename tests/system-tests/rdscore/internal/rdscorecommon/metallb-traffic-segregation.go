@@ -224,9 +224,14 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Make sure that 1st external FRR container has learnt route to the 1st deployment")
 
-	ipRouteList := []string{
-		fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerOneIPv4),
-		fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerOneIPv6),
+	ipRouteList := []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv4 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerOneIPv4))
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv6 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerOneIPv6))
 	}
 
 	for _, ipRoute := range ipRouteList {
@@ -243,9 +248,14 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Make sure that 2nd external FRR container has learnt route to the 2nd deployment")
 
-	ipRouteList = []string{
-		fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerTwoIPv4),
-		fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerTwoIPv6),
+	ipRouteList = []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv4 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerTwoIPv4))
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv6 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerTwoIPv6))
 	}
 
 	for _, ipRoute := range ipRouteList {
@@ -309,7 +319,23 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("start run traffic at %v", timeStart)
 
-	for _, appURL := range []string{bgpOneAppURLIPv4, bgpOneAppURLIPv6} {
+	appURLList := []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv4 != "" {
+		appURLList = append(appURLList, bgpOneAppURLIPv4)
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv6 != "" {
+		appURLList = append(appURLList, bgpOneAppURLIPv6)
+	}
+
+	if len(appURLList) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			"No app URLs to check. Skipping...")
+		Skip("No app URLs to check")
+	}
+
+	for _, appURL := range appURLList {
 		err := verifyAppIsReachableFromFRRContainer(
 			RDSCoreConfig.HypervisorHost,
 			RDSCoreConfig.HypervisorUser,
@@ -323,8 +349,17 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Check the traffic flows for the first FRR through the expected interface")
 
-	for _, searchString := range []string{RDSCoreConfig.MetalLBLoadBalancerOneIPv4,
-		RDSCoreConfig.MetalLBLoadBalancerOneIPv6} {
+	var searchStringList []string
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv4 != "" {
+		searchStringList = append(searchStringList, RDSCoreConfig.MetalLBLoadBalancerOneIPv4)
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv6 != "" {
+		searchStringList = append(searchStringList, RDSCoreConfig.MetalLBLoadBalancerOneIPv6)
+	}
+
+	for _, searchString := range searchStringList {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Making sure that the traffic flows from the first FRR "+
 			"through the %s interface", RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntOne)
 
@@ -378,7 +413,23 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Assert that 2nd mockup app is reachable from the node with 2nd FRR container")
 
-	for _, appURL := range []string{bgpTwoAppURLIPv4, bgpTwoAppURLIPv6} {
+	appURLList = []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv4 != "" {
+		appURLList = append(appURLList, bgpTwoAppURLIPv4)
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv6 != "" {
+		appURLList = append(appURLList, bgpTwoAppURLIPv6)
+	}
+
+	if len(appURLList) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			"No app URLs to check. Skipping...")
+		Skip("No app URLs to check")
+	}
+
+	for _, appURL := range appURLList {
 		err := verifyAppIsReachableFromFRRContainer(
 			RDSCoreConfig.HypervisorHost,
 			RDSCoreConfig.HypervisorUser,
@@ -392,8 +443,17 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 
 	By("Check the traffic flows for the second FRR through the expected interface")
 
-	for _, searchString := range []string{RDSCoreConfig.MetalLBLoadBalancerTwoIPv4,
-		RDSCoreConfig.MetalLBLoadBalancerTwoIPv6} {
+	searchStringList = []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv4 != "" {
+		searchStringList = append(searchStringList, RDSCoreConfig.MetalLBLoadBalancerTwoIPv4)
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv6 != "" {
+		searchStringList = append(searchStringList, RDSCoreConfig.MetalLBLoadBalancerTwoIPv6)
+	}
+
+	for _, searchString := range searchStringList {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Making sure that the traffic flows from the second FRR "+
 			"through the %s interface", RDSCoreConfig.MetalLBTrafficSegregationTCPDumpIntTwo)
 
@@ -404,6 +464,8 @@ func VerifyMetallbIngressTrafficSegregation(ctx SpecContext) {
 }
 
 // VerifyMetallbMockupAppNotReachableFromOtherFRR test mockup app is not reachable from the not correct FRR container.
+//
+//nolint:funlen
 func VerifyMetallbMockupAppNotReachableFromOtherFRR(ctx SpecContext) {
 	By("Asserting if test URLs are provided")
 
@@ -428,9 +490,20 @@ func VerifyMetallbMockupAppNotReachableFromOtherFRR(ctx SpecContext) {
 
 	By("Make sure that 1st external FRR container has learnt route to the 1st deployment")
 
-	ipRouteList := []string{
-		fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerOneIPv4),
-		fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerOneIPv6),
+	ipRouteList := []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv4 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerOneIPv4))
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv6 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerOneIPv6))
+	}
+
+	if len(ipRouteList) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			"No IP routes to check. Skipping...")
+		Skip("No IP routes to check")
 	}
 
 	for _, ipRoute := range ipRouteList {
@@ -447,9 +520,20 @@ func VerifyMetallbMockupAppNotReachableFromOtherFRR(ctx SpecContext) {
 
 	By("Make sure that 2nd external FRR container has learnt route to the 2nd deployment")
 
-	ipRouteList = []string{
-		fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerTwoIPv4),
-		fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerTwoIPv6),
+	ipRouteList = []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv4 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/32", RDSCoreConfig.MetalLBLoadBalancerTwoIPv4))
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerTwoIPv6 != "" {
+		ipRouteList = append(ipRouteList, fmt.Sprintf("%s/128", RDSCoreConfig.MetalLBLoadBalancerTwoIPv6))
+	}
+
+	if len(ipRouteList) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			"No IP routes to check. Skipping...")
+		Skip("No IP routes to check")
 	}
 
 	for _, ipRoute := range ipRouteList {
@@ -470,7 +554,23 @@ func VerifyMetallbMockupAppNotReachableFromOtherFRR(ctx SpecContext) {
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("start run traffic at %v", timeStart)
 
-	for _, appURL := range []string{bgpOneAppURLIPv4, bgpOneAppURLIPv6} {
+	appURLList := []string{}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv4 != "" {
+		appURLList = append(appURLList, bgpOneAppURLIPv4)
+	}
+
+	if RDSCoreConfig.MetalLBLoadBalancerOneIPv6 != "" {
+		appURLList = append(appURLList, bgpOneAppURLIPv6)
+	}
+
+	if len(appURLList) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof(
+			"No app URLs to check. Skipping...")
+		Skip("No app URLs to check")
+	}
+
+	for _, appURL := range appURLList {
 		err := verifyAppIsReachableFromFRRContainer(
 			RDSCoreConfig.HypervisorHost,
 			RDSCoreConfig.HypervisorUser,
