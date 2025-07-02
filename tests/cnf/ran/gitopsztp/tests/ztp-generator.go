@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
@@ -45,45 +44,15 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 	// 54355 - Generation of CRs for a single site from ztp container
 	It("generates and installs time crs, manifests, and policies, and verifies they are present",
 		reportxml.ID("54355"), func() {
-			By("validating the image version for the site generator")
-			var ztpImageTag string
-
-			// Since brew is a lot faster than skopeo, we want to use it if its available
-			brew, err := ranhelper.ExecLocalCommand(time.Minute, "which", "brew")
-
-			if err != nil || brew == "" {
-				By("using skopeo to find the image tag")
-				cmd := fmt.Sprintf(
-					"skopeo list-tags docker://%s | grep %s", RANConfig.ZtpSiteGenerateImage, RANConfig.ZTPVersion) +
-					" | sort -V | tail -1 | tr -d '\"' | tr -d ','"
-
-				output, err := ranhelper.ExecLocalCommand(time.Minute, "bash", "-c", cmd)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get output from skopeo")
-
-				ztpImageTag = strings.TrimSpace(output)
-			} else {
-				By("using brew to find the image tag")
-				cmd := "brew list-builds --package=ztp-site-generate-container --state=COMPLETE --quiet" +
-					fmt.Sprintf(" | grep %s", RANConfig.ZTPVersion) +
-					" | sort -V | tail -1 | awk '{ print $1 }' | sed -nr 's/.*-(v.*)$/\\1/p'"
-
-				output, err := ranhelper.ExecLocalCommand(time.Minute, "bash", "-c", cmd)
-				Expect(err).ToNot(HaveOccurred(), "Failed to get output from brew")
-
-				ztpImageTag = strings.TrimSpace(output)
-			}
-
-			glog.V(tsparams.LogLevel).Infof("Detected ZTP image tag '%s'", ztpImageTag)
-
 			By("generating the install time CRs and manifests")
-			_, err = ranhelper.ExecLocalCommand(
+			_, err := ranhelper.ExecLocalCommand(
 				time.Minute,
 				"podman",
 				"run",
 				"--rm",
 				"-v",
 				fmt.Sprintf("%s/siteconfig/:/resources:Z", siteConfigPath),
-				fmt.Sprintf("%s:%s", RANConfig.ZtpSiteGenerateImage, ztpImageTag),
+				RANConfig.ZtpSiteGenerateImage,
 				"generator",
 				"install",
 				"-E",
@@ -112,7 +81,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 				"--rm",
 				"-v",
 				fmt.Sprintf("%s/policygentemplates/:/resources:Z", siteConfigPath),
-				fmt.Sprintf("%s:%s", RANConfig.ZtpSiteGenerateImage, ztpImageTag),
+				RANConfig.ZtpSiteGenerateImage,
 				"generator",
 				"config",
 				".")
@@ -138,7 +107,7 @@ var _ = Describe("ZTP Generator Tests", Label(tsparams.LabelGeneratorTestCases, 
 					fileBytes, err := os.ReadFile(filePath)
 					Expect(err).ToNot(HaveOccurred(), "Failed to read file %s", filePath)
 
-					fileContent := make(map[string]interface{})
+					fileContent := make(map[string]any)
 					err = yaml.Unmarshal(fileBytes, &fileContent)
 					Expect(err).ToNot(HaveOccurred(), "Failed to unmarshal file %s as yaml", filePath)
 

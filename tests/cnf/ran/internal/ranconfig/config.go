@@ -164,6 +164,11 @@ func (ranconfig *RANConfig) newHubConfig(configFile string) {
 		glog.V(ranparam.LogLevel).Infof("Failed to get ZTP version from hub: %v", err)
 	}
 
+	ranconfig.ZtpSiteGenerateImage, err = version.GetZTPSiteGenerateImage(ranconfig.HubConfig.HubAPIClient)
+	if err != nil {
+		glog.V(ranparam.LogLevel).Infof("Failed to get ZTP site generate image from hub: %v", err)
+	}
+
 	glog.V(ranparam.LogLevel).Infof("Found ZTP version on hub: %s", ranconfig.HubConfig.ZTPVersion)
 }
 
