@@ -51,6 +51,18 @@ var (
 	}
 )
 
+// validateRemoteIPAddress validates remote IP address is set.
+func validateRemoteIPAddress(ipv6 bool) {
+	glog.V(100).Infof("Validating remote IP address")
+
+	switch {
+	case ipv6 && RDSCoreConfig.EgressIPRemoteIPv6 == "":
+		Skip("Remote IPv6 address(EgressIPRemoteIPv6) is not set")
+	case !ipv6 && RDSCoreConfig.EgressIPRemoteIPv4 == "":
+		Skip("Remote IPv4 address(EgressIPRemoteIPv4) is not set")
+	}
+}
+
 // createAgnhostRBAC creates the SCC privileged, serviceAccount and RBAC.
 func createAgnhostRBAC(
 	apiClient *clients.Settings,
@@ -449,6 +461,10 @@ func getEgressIPList() ([]string, error) {
 }
 
 func verifyEgressIPConnectivityBalancedTraffic(isIPv6 bool) {
+	By("Validating remote IP address is set")
+
+	validateRemoteIPAddress(isIPv6)
+
 	By("Verifying egress IP connectivity balanced traffic; single namespace")
 
 	expectedIPs, err := getEgressIPList()
@@ -467,6 +483,10 @@ func verifyEgressIPConnectivityBalancedTraffic(isIPv6 bool) {
 }
 
 func verifyEgressIPConnectivityThreeNodes(isIPv6 bool) {
+	By("Validating remote IP address is set")
+
+	validateRemoteIPAddress(isIPv6)
+
 	By("Verifying egress IP connectivity for the mixed nodes and namespaces")
 
 	expectedIPs, err := getEgressIPList()
