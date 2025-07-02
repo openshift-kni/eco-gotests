@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/deployment"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
@@ -134,30 +134,41 @@ func GetOperatorVersionFromCsv(client *clients.Settings, operatorName, operatorN
 
 // GetZTPVersionFromArgoCd is used to fetch the version of the ztp-site-generate init container.
 func GetZTPVersionFromArgoCd(client *clients.Settings, name, namespace string) (string, error) {
-	ztpDeployment, err := deployment.Pull(client, name, namespace)
+	containerImage, err := GetZTPSiteGenerateImage(client)
 	if err != nil {
 		return "", err
 	}
 
-	for _, container := range ztpDeployment.Definition.Spec.Template.Spec.InitContainers {
+	colonSplit := strings.Split(containerImage, ":")
+	ztpVersion := colonSplit[len(colonSplit)-1]
+
+	if ztpVersion == "latest" {
+		glog.V(ranparam.LogLevel).Info("ztp-site-generate version tag was 'latest', returning empty version")
+
+		return "", nil
+	}
+
+	// The format here will be like vX.Y.Z so we need to remove the v at the start.
+	return ztpVersion[1:], nil
+}
+
+// GetZTPSiteGenerateImage returns the image used for the ztp-site-generate init container. It takes this from the Argo
+// CD resource.
+func GetZTPSiteGenerateImage(client *clients.Settings) (string, error) {
+	gitops, err := argocd.Pull(client, ranparam.OpenshiftGitOpsNamespace, ranparam.OpenshiftGitOpsNamespace)
+	if err != nil {
+		return "", err
+	}
+
+	for _, container := range gitops.Definition.Spec.Repo.InitContainers {
 		// Match both the `ztp-site-generator` and `ztp-site-generate` images since which one matches is version
 		// dependent.
 		if strings.Contains(container.Image, "ztp-site-gen") {
-			colonSplit := strings.Split(container.Image, ":")
-			ztpVersion := colonSplit[len(colonSplit)-1]
-
-			if ztpVersion == "latest" {
-				glog.V(ranparam.LogLevel).Info("ztp-site-generate version tag was 'latest', returning empty version")
-
-				return "", nil
-			}
-
-			// The format here will be like vX.Y.Z so we need to remove the v at the start.
-			return ztpVersion[1:], nil
+			return container.Image, nil
 		}
 	}
 
-	return "", errors.New("unable to identify ZTP version")
+	return "", errors.New("unable to identify ZTP site generate image")
 }
 
 // getInputIntegers returns the first two dot-separated integers in the input string. A nil return value indicates a
