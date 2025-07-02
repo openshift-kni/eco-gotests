@@ -17,6 +17,7 @@ type ModulesConfig struct {
 	DevicePluginImage    string `envconfig:"ECO_HWACCEL_KMM_DEVICE_PLUGIN_IMAGE"`
 	SubscriptionName     string `envconfig:"ECO_HWACCEL_KMM_SUBSCRIPTION_NAME"`
 	CatalogSourceName    string `envconfig:"ECO_HWACCEL_KMM_CATALOG_SOURCE_NAME"`
+	CatalogSourceChannel string `envconfig:"ECO_HWACCEL_KMM_CATALOG_SOURCE_CHANNEL"`
 	UpgradeTargetVersion string `envconfig:"ECO_HWACCEL_KMM_UPGRADE_TARGET_VERSION"`
 	SpokeKubeConfig      string `envconfig:"ECO_HWACCEL_KMM_SPOKE_KUBECONFIG"`
 	SpokeClusterName     string `envconfig:"ECO_HWACCEL_KMM_SPOKE_CLUSTER_NAME"`

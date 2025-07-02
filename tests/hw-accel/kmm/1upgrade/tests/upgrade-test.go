@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -27,12 +28,22 @@ var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite), func() {
 				Skip("No UpgradeTargetVersion defined. Skipping test ")
 			}
 
+			opNamespace := kmmparams.KmmOperatorNamespace
+			if strings.Contains(ModulesConfig.SubscriptionName, "hub") {
+				opNamespace = kmmparams.KmmHubOperatorNamespace
+			}
 			By("Getting KMM subscription")
-			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, kmmparams.KmmOperatorNamespace)
+			sub, err := olm.PullSubscription(APIClient, ModulesConfig.SubscriptionName, opNamespace)
 			Expect(err).ToNot(HaveOccurred(), "failed getting subscription")
 
+			By("Update subscription to use new channel, if defined")
+			if ModulesConfig.CatalogSourceChannel != "" {
+				glog.V(90).Infof("setting subscription channel to: %s", ModulesConfig.CatalogSourceChannel)
+				sub.Definition.Spec.Channel = ModulesConfig.CatalogSourceChannel
+			}
+
 			By("Update subscription to use new catalog source")
-			glog.V(90).Infof("SUB: %s", sub.Object.Spec.CatalogSource)
+			glog.V(90).Infof("Subscription's catalog source: %s", sub.Object.Spec.CatalogSource)
 			sub.Definition.Spec.CatalogSource = ModulesConfig.CatalogSourceName
 			_, err = sub.Update()
 			Expect(err).ToNot(HaveOccurred(), "failed updating subscription")
