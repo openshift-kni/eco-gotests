@@ -2,11 +2,13 @@ package await
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
+	. "github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmminittools"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -15,8 +17,12 @@ import (
 func OperatorUpgrade(apiClient *clients.Settings, semver string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-			csv, err := olm.ListClusterServiceVersionWithNamePattern(apiClient, "kernel",
-				kmmparams.KmmOperatorNamespace)
+			opNamespace := kmmparams.KmmOperatorNamespace
+			if strings.Contains(ModulesConfig.SubscriptionName, "hub") {
+				opNamespace = kmmparams.KmmHubOperatorNamespace
+			}
+
+			csv, err := olm.ListClusterServiceVersionWithNamePattern(apiClient, "kernel", opNamespace)
 
 			for _, c := range csv {
 				glog.V(kmmparams.KmmLogLevel).Infof("CSV: %s, Version: %s, Status: %s",
