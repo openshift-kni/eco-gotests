@@ -33,6 +33,8 @@ const (
 	LabelSiteconfigNegativeTestCases = "ztp-siteconfig-negative"
 	// LabelSiteconfigDayTwoConfigTestCase is the label for the siteconfig operator's day 2 configuration test.
 	LabelSiteconfigDayTwoConfigTestCase = "ztp-siteconfig-day-two"
+	// LabelIBBFe2e represents e2e label that can be used for test cases selection.
+	LabelIBBFe2e = "ibbf-end-to-end"
 
 	// LabelBiosDayZeroTests is the label for a particuarl set of test cases.
 	LabelBiosDayZeroTests = "ztp-bios-day-zero"
@@ -110,6 +112,8 @@ const (
 	ZtpTestPathDuplicateClusterName = "ztp-test/siteconfig-operator/duplicate-cluster-name"
 	// ZtpTestPathNewClusterLabel is the git path for the siteconfig operator new cluster label test.
 	ZtpTestPathNewClusterLabel = "ztp-test/siteconfig-operator/new-cluster-label"
+	// ZtpTestPathIBBFe2e is the git path for the IBBF end-to-end test.
+	ZtpTestPathIBBFe2e = "ztp-test/ibbf-test"
 	// ZtpKustomizationPath is the path to the kustomization file in the ztp test.
 	ZtpKustomizationPath = "/kustomization.yaml"
 
@@ -181,6 +185,9 @@ const (
 	RenderedManifestsFailMessage = "Rendered manifests failed dry-run validation"
 	// SiteconfigOperatorDefaultReconcileTime is the default time for siteconfig controller to reconcile.
 	SiteconfigOperatorDefaultReconcileTime = 5 * time.Minute
+
+	// TestCMName is the name of the  configmap used for preservation testing.
+	TestCMName = "testconfigmap"
 
 	// LogLevel is the verbosity of glog statements in this test suite.
 	LogLevel glog.Level = 90
