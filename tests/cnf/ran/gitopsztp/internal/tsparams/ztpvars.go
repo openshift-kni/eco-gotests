@@ -19,13 +19,6 @@ import (
 	placementrulev1 "open-cluster-management.io/multicloud-operators-subscription/pkg/apis/apps/placementrule/v1"
 )
 
-// ArgoCdGitDetails is the details for a single app in ArgoCD.
-type ArgoCdGitDetails struct {
-	Repo   string
-	Branch string
-	Path   string
-}
-
 var (
 	// Labels represents the range of labels that can be used for test cases selection.
 	Labels = append(ranparam.Labels, LabelSuite)
@@ -70,14 +63,6 @@ var (
 		{Cr: &imageregistryv1.ConfigList{}},
 		{Cr: &certificatesv1.CertificateSigningRequestList{}},
 	}
-
-	// ArgoCdApps is the slice of the Argo CD app names defined in this package.
-	ArgoCdApps = []string{
-		ArgoCdClustersAppName,
-		ArgoCdPoliciesAppName,
-	}
-	// ArgoCdAppDetails contains more details for each of the ArgoCdApps.
-	ArgoCdAppDetails = map[string]ArgoCdGitDetails{}
 
 	// ImageRegistryPolicies is a slice of all the policies the image registry test creates.
 	ImageRegistryPolicies = []string{
