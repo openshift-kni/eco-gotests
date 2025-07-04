@@ -11,7 +11,8 @@ import (
 // DefineRouteAndSleep creates route and appends sleep CMD.
 func DefineRouteAndSleep(dstNet, nextHop string) []string {
 	cmd := DefineRoute(dstNet, nextHop)
-	cmd[2] += " && sleep INF"
+	cmd[2] += ` && (echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || true); \
+trap : TERM INT; sleep infinity & wait`
 
 	return cmd
 }

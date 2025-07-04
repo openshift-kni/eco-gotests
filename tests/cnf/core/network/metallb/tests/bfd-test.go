@@ -393,8 +393,7 @@ func createBFDProfileAndVerifyIfItsReady(frrk8sPods []*pod.Builder) *metallb.BFD
 	By("Creating BFD profile")
 
 	bfdProfile, err := metallb.NewBFDBuilder(APIClient, "bfdprofile", NetConfig.MlbOperatorNamespace).
-		WithRcvInterval(300).WithTransmitInterval(300).WithEchoInterval(100).
-		WithEchoMode(true).WithPassiveMode(false).WithMinimumTTL(5).
+		WithRcvInterval(300).WithPassiveMode(false).WithMinimumTTL(5).
 		WithMultiplier(3).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create BFD profile")
 	Expect(bfdProfile.Exists()).To(BeTrue(), "BFD profile doesn't exist")
