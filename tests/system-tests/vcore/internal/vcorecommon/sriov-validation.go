@@ -151,7 +151,7 @@ func VerifySRIOVConfig(ctx SpecContext) {
 		sriovNet1Name,
 		vcoreparams.SRIOVNamespace,
 		net1ResourceName,
-		8,
+		5,
 		snnpPfname1,
 		VCoreConfig.VCorePpLabelMap)
 	if !sriovNetworkNodePolicy1.Exists() {
@@ -171,7 +171,7 @@ func VerifySRIOVConfig(ctx SpecContext) {
 		sriovNet2Name,
 		vcoreparams.SRIOVNamespace,
 		net1ResourceName,
-		8,
+		5,
 		snnpPfname2,
 		VCoreConfig.VCorePpLabelMap)
 	if !sriovNetworkNodePolicy2.Exists() {
