@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,15 +38,19 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	if !Label("ibbf-end-to-end").MatchesLabelFilter(GinkgoLabelFilter()) {
-		By("deleting and recreating test namespace to ensure blank state")
-		for _, client := range []*clients.Settings{HubAPIClient, Spoke1APIClient} {
-			err := namespace.NewBuilder(client, tsparams.TestNamespace).DeleteAndWait(5 * time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "Failed to delete ZTP test namespace")
+	// If we are specifically selecting the IBBF e2e test, then we should not run the BeforeEach. The spoke will not
+	// be present and the creation and deletion of the namespace will fail.
+	if strings.Contains(GinkgoLabelFilter(), tsparams.LabelIBBFe2e) {
+		return
+	}
 
-			_, err = namespace.NewBuilder(client, tsparams.TestNamespace).Create()
-			Expect(err).ToNot(HaveOccurred(), "Failed to create ZTP test namespace")
-		}
+	By("deleting and recreating test namespace to ensure blank state")
+	for _, client := range []*clients.Settings{HubAPIClient, Spoke1APIClient} {
+		err := namespace.NewBuilder(client, tsparams.TestNamespace).DeleteAndWait(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), "Failed to delete ZTP test namespace")
+
+		_, err = namespace.NewBuilder(client, tsparams.TestNamespace).Create()
+		Expect(err).ToNot(HaveOccurred(), "Failed to create ZTP test namespace")
 	}
 })
 
