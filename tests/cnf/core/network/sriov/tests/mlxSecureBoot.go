@@ -96,10 +96,6 @@ var _ = Describe("Mellanox Secure Boot", Ordered, Label(tsparams.LabelMlxSecureB
 				err = sriovenv.ConfigureSecureBoot(bmcClient, "disable")
 				Expect(err).ToNot(HaveOccurred(), "Failed to disable a secure boot")
 			}
-
-			By("Disabling Mellanox firmware and wait for the cluster becomes stable")
-			err = sriovenv.ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(workerNodeList, sriovInterfacesUnderTest[0], false, 0)
-			Expect(err).ToNot(HaveOccurred(), "Failed to configure Mellanox firmware")
 		})
 
 		It("End-to-End SR-IOV Configuration and Validation", reportxml.ID("77014"), func() {
@@ -120,7 +116,7 @@ var _ = Describe("Mellanox Secure Boot", Ordered, Label(tsparams.LabelMlxSecureB
 				sriovAndResourceNameSecureBoot,
 				NetConfig.SriovOperatorNamespace,
 				sriovAndResourceNameSecureBoot,
-				2,
+				5,
 				sriovInterfacesUnderTest[:1],
 				map[string]string{"kubernetes.io/hostname": workerNodeList[0].Definition.Name})
 
