@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
 	_ "github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/tests"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/rancluster"
@@ -35,21 +35,22 @@ var _ = BeforeSuite(func() {
 	if !rancluster.AreClustersPresent([]*clients.Settings{HubAPIClient, Spoke1APIClient}) {
 		Skip("not all of the required clusters are present")
 	}
-
-	err := gitdetails.GetArgoCdAppGitDetails()
-	Expect(err).ToNot(HaveOccurred(), "Failed to get current data from ArgoCD")
 })
 
 var _ = BeforeEach(func() {
-	if !Label("ibbf-end-to-end").MatchesLabelFilter(GinkgoLabelFilter()) {
-		By("deleting and recreating test namespace to ensure blank state")
-		for _, client := range []*clients.Settings{HubAPIClient, Spoke1APIClient} {
-			err := namespace.NewBuilder(client, tsparams.TestNamespace).DeleteAndWait(5 * time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "Failed to delete ZTP test namespace")
+	// If we are specifically selecting the IBBF e2e test, then we should not run the BeforeEach. The spoke will not
+	// be present and the creation and deletion of the namespace will fail.
+	if strings.Contains(GinkgoLabelFilter(), tsparams.LabelIBBFe2e) {
+		return
+	}
 
-			_, err = namespace.NewBuilder(client, tsparams.TestNamespace).Create()
-			Expect(err).ToNot(HaveOccurred(), "Failed to create ZTP test namespace")
-		}
+	By("deleting and recreating test namespace to ensure blank state")
+	for _, client := range []*clients.Settings{HubAPIClient, Spoke1APIClient} {
+		err := namespace.NewBuilder(client, tsparams.TestNamespace).DeleteAndWait(5 * time.Minute)
+		Expect(err).ToNot(HaveOccurred(), "Failed to delete ZTP test namespace")
+
+		_, err = namespace.NewBuilder(client, tsparams.TestNamespace).Create()
+		Expect(err).ToNot(HaveOccurred(), "Failed to create ZTP test namespace")
 	}
 })
 

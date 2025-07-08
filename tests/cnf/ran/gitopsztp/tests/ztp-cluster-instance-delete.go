@@ -1,11 +1,14 @@
 package tests
 
 import (
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2/types"
 	. "github.com/onsi/gomega"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/argocd"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
 	"github.com/openshift-kni/eco-goinfra/pkg/bmh"
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
@@ -27,9 +30,11 @@ import (
 
 var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 	Label(tsparams.LabelClusterInstanceDeleteTestCases), func() {
-		var earlyReturnSkip = true
+		var (
+			clustersApp             *argocd.ApplicationBuilder
+			originalClustersGitPath string
+		)
 
-		// These tests use the hub and spoke architecture.
 		BeforeEach(func() {
 			By("verifying that ZTP meets the minimum version")
 			versionInRange, err := version.IsVersionStringInRange(RANConfig.ZTPVersion, "4.17", "")
@@ -38,21 +43,30 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 			if !versionInRange {
 				Skip("ZTP Siteconfig operator tests require ZTP 4.17 or later")
 			}
+
+			By("saving the original clusters app source")
+			clustersApp, err = argocd.PullApplication(
+				HubAPIClient, tsparams.ArgoCdClustersAppName, ranparam.OpenshiftGitOpsNamespace)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app")
+
+			originalClustersGitPath, err = gitdetails.GetGitPath(clustersApp)
+			Expect(err).ToNot(HaveOccurred(), "Failed to get the original clusters app git path")
 		})
 
 		AfterEach(func() {
-			if earlyReturnSkip {
+			if CurrentSpecReport().State.Is(types.SpecStateSkipped) {
 				return
 			}
 
-			// Recreate the ClusterInstance custom resource.
 			By("resetting the clusters app back to the original settings")
-			err := gitdetails.SetGitDetailsInArgoCd(
-				tsparams.ArgoCdClustersAppName, tsparams.ArgoCdAppDetails[tsparams.ArgoCdClustersAppName],
-				true, false)
-			Expect(err).ToNot(HaveOccurred(), "Failed to reset clusters app git details")
+			clustersApp.Definition.Spec.Source.Path = originalClustersGitPath
+			updatedApp, err := clustersApp.Update(true)
+			Expect(err).ToNot(HaveOccurred(), "Failed to update clusters app back to the original settings")
 
-			// Test teardown expected results validation.
+			By("waiting for the clusters app to sync")
+			err = updatedApp.WaitForSourceUpdate(true, tsparams.ArgoCdChangeTimeout)
+			Expect(err).ToNot(HaveOccurred(), "Failed to wait for clusters app to sync")
+
 			By("checking the infra env manifests exists on hub")
 			_, err = assisted.PullInfraEnvInstall(HubAPIClient, RANConfig.Spoke1Name, RANConfig.Spoke1Name)
 			Expect(err).ToNot(HaveOccurred(), "Failed to find spoke infra env manifests")
@@ -89,9 +103,13 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 				Skip("This test only applies to standard or multi-node openshift spoke cluster")
 			}
 
-			earlyReturnSkip = false
+			// The clusters app is updated later on, but skip early if the git path does not exist to avoid
+			// extra cleanup.
+			By("checking if the ztp test path exists")
+			if !clustersApp.DoesGitPathExist(tsparams.ZtpTestPathDetachAIMNO) {
+				Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathDetachAIMNO))
+			}
 
-			// Test step 1-Delete default assisted installer template reference ConfigMap CRs after spoke cluster installed.
 			By("deleting default assisted installer template reference ConfigMap custom resources")
 
 			By("deleting default assisted installer cluster level templates ConfigMap CR")
@@ -110,26 +128,16 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 				Expect(err).ToNot(HaveOccurred(), "Failed to delete AI node level templates config map")
 			}
 
-			// Test step 1 expected result validation.
 			By("verifying installed spoke cluster should still be functional")
 			_, err = version.GetOCPVersion(Spoke1APIClient)
 			Expect(err).ToNot(HaveOccurred(), "Failed to get OCP version from spoke and verify spoke cluster access")
 
-			// Test step 2-Update the ztp-test git path to delete the ClusterInstance CR in root level kustimozation.yaml.
-			By("updating the Argo CD clusters app with the detach AI MNO cluster instance git path")
-			exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdClustersAppName,
-				tsparams.ZtpTestPathDetachAIMNO, true)
-			if !exists {
-				Skip(err.Error())
-			}
+			By("updating the clusters app git path")
+			err = gitdetails.UpdateAndWaitForSync(clustersApp, true, tsparams.ZtpTestPathDetachAIMNO)
+			Expect(err).ToNot(HaveOccurred(), "Failed to update the clusters app git path")
 
-			Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD clusters app with new git path")
+			validateAISpokeClusterInstallCRsRemoved()
 
-			// Test step 2 expected results validation.
-			ValidateAISpokeClusterInstallCRsRemoved()
-
-			// Test teardown.
-			// Recreate default assisted installer template reference ConfigMap CRs by deleting siteconfig operator pod.
 			By("deleting siteconfig operator pod running under rhacm namespace on hub cluster")
 
 			By("Get the siteconfig operator pod name with label " + tsparams.SiteconfigOperatorPodLabel)
@@ -185,26 +193,23 @@ var _ = Describe("ZTP Siteconfig Operator's Cluster Instance Delete Tests",
 				Skip("This test only applies to single-node openshift spoke cluster")
 			}
 
-			// Test step 1-Update the ztp-test git path to delete the ClusterInstance CR in root level kustimozation.yaml.
-			By("updating the Argo CD clusters app with the detach AI SNO cluster instance git path")
-			exists, err := gitdetails.UpdateArgoCdAppGitPath(tsparams.ArgoCdClustersAppName,
-				tsparams.ZtpTestPathDetachAISNO, true)
-			if !exists {
-				Skip(err.Error())
+			By("checking if the ztp test path exists")
+			if !clustersApp.DoesGitPathExist(tsparams.ZtpTestPathDetachAISNO) {
+				Skip(fmt.Sprintf("git path '%s' could not be found", tsparams.ZtpTestPathDetachAISNO))
 			}
 
-			earlyReturnSkip = false
-			Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD clusters app with new git path")
+			By("updating the clusters app git path")
+			err = gitdetails.UpdateAndWaitForSync(clustersApp, true, tsparams.ZtpTestPathDetachAISNO)
+			Expect(err).ToNot(HaveOccurred(), "Failed to update the clusters app git path")
 
-			// Test step 1 expected results validation.
-			ValidateAISpokeClusterInstallCRsRemoved()
+			validateAISpokeClusterInstallCRsRemoved()
 		})
 	})
 
-// ValidateAISpokeClusterInstallCRsRemoved verifies AI spoke cluster install CRs removed and spoke cluster accessible.
+// validateAISpokeClusterInstallCRsRemoved verifies AI spoke cluster install CRs removed and spoke cluster accessible.
 //
 //nolint:wsl
-func ValidateAISpokeClusterInstallCRsRemoved() {
+func validateAISpokeClusterInstallCRsRemoved() {
 	By("checking the infra env manifests removed on hub")
 	_, err := assisted.PullInfraEnvInstall(HubAPIClient, RANConfig.Spoke1Name, RANConfig.Spoke1Name)
 	Expect(err).To(HaveOccurred(), "Found spoke infra env manifests but expected to be removed")
