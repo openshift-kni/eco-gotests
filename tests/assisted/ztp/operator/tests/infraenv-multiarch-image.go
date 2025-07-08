@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	goVersion "github.com/hashicorp/go-version"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/assisted"
@@ -103,6 +104,17 @@ var _ = Describe(
 					Annotations["unsupported.agent-install.openshift.io/assisted-service-configmap"] =
 					assistedUnsupportedConfigMapName
 
+				hubversion, err := goVersion.NewVersion(ZTPConfig.HubOCPXYVersion)
+				Expect(err).ToNot(HaveOccurred(), "error parsing hub version")
+
+				var isoFileSuffix string
+
+				if hubversion.GreaterThanOrEqual(goVersion.Must(goVersion.NewVersion("4.19"))) {
+					isoFileSuffix = "rhcos-live-iso"
+				} else {
+					isoFileSuffix = "rhcos-live"
+				}
+
 				if mirrorRegistryRef != nil {
 					multiarchAgentServiceConfigBuilder.Definition.Spec.MirrorRegistryRef = mirrorRegistryRef
 				}
@@ -111,33 +123,33 @@ var _ = Describe(
 					Version:          ZTPConfig.HubOCPXYVersion,
 					Url: getArchURL(
 						"https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/"+
-							ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.x86_64.iso",
+							ZTPConfig.HubOCPXYVersion+"/latest/"+isoFileSuffix+".x86_64.iso",
 						"https://mirror.openshift.com/pub/openshift-v4/amd64/dependencies/rhcos/pre-release/latest-"+
-							ZTPConfig.HubOCPXYVersion+"/rhcos-live.x86_64.iso"),
+							ZTPConfig.HubOCPXYVersion+"/"+isoFileSuffix+".x86_64.iso"),
 					CPUArchitecture: models.ClusterCPUArchitectureX8664}).WithOSImage(agentInstallV1Beta1.OSImage{
 					OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
 					Version:          ZTPConfig.HubOCPXYVersion,
 					Url: getArchURL(
 						"https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/"+
-							ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.aarch64.iso",
+							ZTPConfig.HubOCPXYVersion+"/latest/"+isoFileSuffix+".aarch64.iso",
 						"https://mirror.openshift.com/pub/openshift-v4/aarch64/dependencies/rhcos/pre-release/latest-"+
-							ZTPConfig.HubOCPXYVersion+"/rhcos-live.aarch64.iso"),
+							ZTPConfig.HubOCPXYVersion+"/"+isoFileSuffix+".aarch64.iso"),
 					CPUArchitecture: models.ClusterCPUArchitectureArm64}).WithOSImage(agentInstallV1Beta1.OSImage{
 					OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
 					Version:          ZTPConfig.HubOCPXYVersion,
 					Url: getArchURL(
 						"https://mirror.openshift.com/pub/openshift-v4/ppc64le/dependencies/rhcos/"+
-							ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.ppc64le.iso",
+							ZTPConfig.HubOCPXYVersion+"/latest/"+isoFileSuffix+".ppc64le.iso",
 						"https://mirror.openshift.com/pub/openshift-v4/ppc64le/dependencies/rhcos/pre-release/latest-"+
-							ZTPConfig.HubOCPXYVersion+"/rhcos-live.ppc64le.iso"),
+							ZTPConfig.HubOCPXYVersion+"/"+isoFileSuffix+".ppc64le.iso"),
 					CPUArchitecture: models.ClusterCPUArchitecturePpc64le}).WithOSImage(agentInstallV1Beta1.OSImage{
 					OpenshiftVersion: ZTPConfig.HubOCPXYVersion,
 					Version:          ZTPConfig.HubOCPXYVersion,
 					Url: getArchURL(
 						"https://mirror.openshift.com/pub/openshift-v4/s390x/dependencies/rhcos/"+
-							ZTPConfig.HubOCPXYVersion+"/latest/rhcos-live.s390x.iso",
+							ZTPConfig.HubOCPXYVersion+"/latest/"+isoFileSuffix+".s390x.iso",
 						"https://mirror.openshift.com/pub/openshift-v4/s390x/dependencies/rhcos/pre-release/latest-"+
-							ZTPConfig.HubOCPXYVersion+"/rhcos-live.s390x.iso"),
+							ZTPConfig.HubOCPXYVersion+"/"+isoFileSuffix+".s390x.iso"),
 					CPUArchitecture: models.ClusterCPUArchitectureS390x}).WithUnauthenticatedRegistry("registry.redhat.io").
 					Create()
 				Expect(err).ToNot(HaveOccurred(),
