@@ -10,12 +10,14 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran-deployment/internal/version"
 )
 
-// RANConfig contains configuration for the RAN directory.
+// RANConfig contains configuration for the RAN Deployment directory.
 type RANConfig struct {
 	*cnfconfig.CNFConfig
 	*HubConfig
 	*Spoke1Config
 	*Spoke2Config
+	// Allow skipping TLS verification for the go-git client.
+	SkipTLSVerify bool `default:"false" envconfig:"ECO_CNF_RAN_SKIP_TLS_VERIFY"`
 }
 
 // HubConfig contains the configuration for the hub cluster, if present.
@@ -61,6 +63,10 @@ func NewRANConfig() *RANConfig {
 	ranConfig.newHubConfig()
 	ranConfig.newSpoke1Config()
 	ranConfig.newSpoke2Config()
+
+	if ranConfig.SkipTLSVerify {
+		glog.V(ranparam.LogLevel).Infof("Skip TLS verification is true")
+	}
 
 	return &ranConfig
 }
