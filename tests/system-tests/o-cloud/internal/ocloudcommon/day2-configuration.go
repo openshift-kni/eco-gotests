@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-goinfra/pkg/oran"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/version"
 
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/csv"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
@@ -71,19 +72,8 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 	sno1ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName1)
 	sno2ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName2)
 
-	verifyPtpOperatorVersionInSno(
-		sno1ApiClient,
-		OCloudConfig.PTPVersionMajorOld,
-		OCloudConfig.PTPVersionMinorOld,
-		OCloudConfig.PTPVersionPatchOld,
-		OCloudConfig.PTPVersionPrereleaseOld)
-
-	verifyPtpOperatorVersionInSno(
-		sno2ApiClient,
-		OCloudConfig.PTPVersionMajorOld,
-		OCloudConfig.PTPVersionMinorOld,
-		OCloudConfig.PTPVersionPatchOld,
-		OCloudConfig.PTPVersionPrereleaseOld)
+	oldPTPVersionSno1 := getPtpOperatorVersionInSno(sno1ApiClient)
+	oldPTPVersionSno2 := getPtpOperatorVersionInSno(sno2ApiClient)
 
 	upgradeOperatorImages()
 
@@ -101,20 +91,6 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace1.Object.Name, ctx, nil, nil)
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace2.Object.Name, ctx, nil, nil)
 
-	verifyPtpOperatorVersionInSno(
-		sno1ApiClient,
-		OCloudConfig.PTPVersionMajorNew,
-		OCloudConfig.PTPVersionMinorNew,
-		OCloudConfig.PTPVersionPatchNew,
-		OCloudConfig.PTPVersionPrereleaseNew)
-
-	verifyPtpOperatorVersionInSno(
-		sno2ApiClient,
-		OCloudConfig.PTPVersionMajorNew,
-		OCloudConfig.PTPVersionMinorNew,
-		OCloudConfig.PTPVersionPatchNew,
-		OCloudConfig.PTPVersionPrereleaseNew)
-
 	provisioningRequest1, err = oran.PullPR(HubAPIClient, provisioningRequest1.Object.Name)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to retrieve PR %s", provisioningRequest1.Object.Name))
 
@@ -126,6 +102,17 @@ func VerifySuccessfulOperatorUpgrade(ctx SpecContext) {
 
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest2)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest2.Object.Name)
+
+	newPTPVersionSno1 := getPtpOperatorVersionInSno(sno1ApiClient)
+	newPTPVersionSno2 := getPtpOperatorVersionInSno(sno2ApiClient)
+
+	Expect(oldPTPVersionSno1).NotTo(Equal(newPTPVersionSno1),
+		fmt.Sprintf("PTP operator has not being upgraded in SNO1: old version (%s) == new version (%s)",
+			oldPTPVersionSno1, newPTPVersionSno1))
+
+	Expect(oldPTPVersionSno2).NotTo(Equal(newPTPVersionSno2),
+		fmt.Sprintf("PTP operator has not being upgraded in SNO2: old version (%s) == new version (%s)",
+			oldPTPVersionSno2, newPTPVersionSno2))
 
 	err = os.RemoveAll("tmp/")
 	Expect(err).NotTo(HaveOccurred(), "Error removing directory tmp/")
@@ -194,19 +181,8 @@ func VerifyFailedOperatorUpgradeAllSnos(ctx SpecContext) {
 	sno1ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName1)
 	sno2ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName2)
 
-	verifyPtpOperatorVersionInSno(
-		sno1ApiClient,
-		OCloudConfig.PTPVersionMajorOld,
-		OCloudConfig.PTPVersionMinorOld,
-		OCloudConfig.PTPVersionPatchOld,
-		OCloudConfig.PTPVersionPrereleaseOld)
-
-	verifyPtpOperatorVersionInSno(
-		sno2ApiClient,
-		OCloudConfig.PTPVersionMajorOld,
-		OCloudConfig.PTPVersionMinorOld,
-		OCloudConfig.PTPVersionPatchOld,
-		OCloudConfig.PTPVersionPrereleaseOld)
+	oldPTPVersionSno1 := getPtpOperatorVersionInSno(sno1ApiClient)
+	oldPTPVersionSno2 := getPtpOperatorVersionInSno(sno2ApiClient)
 
 	VerifyAllPodsRunningInNamespace(sno1ApiClient, ocloudparams.PtpNamespace)
 	VerifyAllPodsRunningInNamespace(sno2ApiClient, ocloudparams.PtpNamespace)
@@ -257,6 +233,17 @@ func VerifyFailedOperatorUpgradeAllSnos(ctx SpecContext) {
 
 	VerifyProvisioningRequestTimeout(provisioningRequest2)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is timeout", provisioningRequest2.Object.Name)
+
+	newPTPVersionSno1 := getPtpOperatorVersionInSno(sno1ApiClient)
+	newPTPVersionSno2 := getPtpOperatorVersionInSno(sno2ApiClient)
+
+	Expect(oldPTPVersionSno1).To(Equal(newPTPVersionSno1),
+		fmt.Sprintf("PTP operator version has changed in SNO1: old version (%s) != new version (%s)",
+			oldPTPVersionSno1, newPTPVersionSno1))
+
+	Expect(oldPTPVersionSno2).To(Equal(newPTPVersionSno2),
+		fmt.Sprintf("PTP operator version has changed in SNO2: old version (%s) != new version (%s)",
+			oldPTPVersionSno2, newPTPVersionSno2))
 
 	err = os.RemoveAll("tmp/")
 	Expect(err).NotTo(HaveOccurred(), "Error removing directory /tmp")
@@ -325,19 +312,8 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 	sno1ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName1)
 	sno2ApiClient := CreateSnoAPIClient(OCloudConfig.ClusterName2)
 
-	verifyPtpOperatorVersionInSno(
-		sno1ApiClient,
-		OCloudConfig.PTPVersionMajorOld,
-		OCloudConfig.PTPVersionMinorOld,
-		OCloudConfig.PTPVersionPatchOld,
-		OCloudConfig.PTPVersionPrereleaseOld)
-
-	verifyPtpOperatorVersionInSno(
-		sno2ApiClient,
-		OCloudConfig.PTPVersionMajorOld,
-		OCloudConfig.PTPVersionMinorOld,
-		OCloudConfig.PTPVersionPatchOld,
-		OCloudConfig.PTPVersionPrereleaseOld)
+	oldPTPVersionSno1 := getPtpOperatorVersionInSno(sno1ApiClient)
+	oldPTPVersionSno2 := getPtpOperatorVersionInSno(sno2ApiClient)
 
 	VerifyAllPodsRunningInNamespace(sno1ApiClient, ocloudparams.PtpNamespace)
 	VerifyAllPodsRunningInNamespace(sno2ApiClient, ocloudparams.PtpNamespace)
@@ -368,13 +344,6 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace2.Object.Name, ctx, nil, nil)
 
-	verifyPtpOperatorVersionInSno(
-		sno2ApiClient,
-		OCloudConfig.PTPVersionMajorNew,
-		OCloudConfig.PTPVersionMinorNew,
-		OCloudConfig.PTPVersionPatchNew,
-		OCloudConfig.PTPVersionPrereleaseNew)
-
 	provisioningRequest1, err = oran.PullPR(HubAPIClient, provisioningRequest1.Object.Name)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to retrieve PR %s", provisioningRequest1.Object.Name))
 
@@ -386,6 +355,17 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest2)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest2.Object.Name)
+
+	newPTPVersionSno1 := getPtpOperatorVersionInSno(sno1ApiClient)
+	newPTPVersionSno2 := getPtpOperatorVersionInSno(sno2ApiClient)
+
+	Expect(oldPTPVersionSno1).To(Equal(newPTPVersionSno1),
+		fmt.Sprintf("PTP operator version has changed in SNO1: old version (%s) != new version (%s)",
+			oldPTPVersionSno1, newPTPVersionSno1))
+
+	Expect(oldPTPVersionSno2).NotTo(Equal(newPTPVersionSno2),
+		fmt.Sprintf("PTP operator has not being upgraded in SNO2: old version (%s) == new version (%s)",
+			oldPTPVersionSno2, newPTPVersionSno2))
 
 	err = os.RemoveAll("tmp/")
 	Expect(err).NotTo(HaveOccurred(), "Error removing directory /tmp")
@@ -400,34 +380,20 @@ func VerifyFailedOperatorUpgradeSubsetSnos(ctx SpecContext) {
 	wg4.Wait()
 }
 
-// verifyPtpOperatorVersionInSno verifies that the PTP operator is in the specified version.
-func verifyPtpOperatorVersionInSno(sno1ApiClient *clients.Settings,
-	major uint64, minor uint64, patch uint64, prerelease uint64) {
-	By(fmt.Sprintf("Verifing that PTP Operator version is %d.%d.%d-%d", major, minor, patch, prerelease))
+// getPtpOperatorVersionInSno returns the PTP operator version.
+func getPtpOperatorVersionInSno(apiClient *clients.Settings) version.OperatorVersion {
+	By("Retrieving the PTP Operator version")
 
-	csvName, err := csv.GetCurrentCSVNameFromSubscription(sno1ApiClient,
+	csvName, err := csv.GetCurrentCSVNameFromSubscription(apiClient,
 		ocloudparams.PtpOperatorSubscriptionName, ocloudparams.PtpNamespace)
 	Expect(err).NotTo(HaveOccurred(),
 		fmt.Sprintf("csv %s not found in namespace %s", csvName, ocloudparams.PtpNamespace))
 
-	csvObj, err := olm.PullClusterServiceVersion(sno1ApiClient, csvName, ocloudparams.PtpNamespace)
+	csvObj, err := olm.PullClusterServiceVersion(apiClient, csvName, ocloudparams.PtpNamespace)
 	Expect(err).NotTo(HaveOccurred(),
 		fmt.Sprintf("failed to pull %q csv from the %s namespace", csvName, ocloudparams.PtpNamespace))
 
-	versionOk := false
-	ptpVersion := csvObj.Object.Spec.Version
-
-	if ptpVersion.Major == major &&
-		ptpVersion.Minor == minor &&
-		ptpVersion.Patch == patch {
-		for _, pre := range csvObj.Object.Spec.Version.Pre {
-			if pre.VersionNum == prerelease {
-				versionOk = true
-			}
-		}
-	}
-
-	Expect(versionOk).To(BeTrue(), fmt.Sprintf("PTP version %s is not the expected one", ptpVersion))
+	return csvObj.Object.Spec.Version
 }
 
 // modifyDeploymentResources modifies the cpu and memory resources available for a given container, in a given
@@ -483,11 +449,6 @@ func upgradeOperatorImages() {
 		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for upgrade: %v", err))
-
-	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovUpgrade,
-		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
-	_, err = shell.ExecuteCmd(cmd)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for upgrade: %v", err))
 }
 
 // downgradeOperatorImages downgrades the operator images.
@@ -496,9 +457,4 @@ func downgradeOperatorImages() {
 		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
 	_, err := shell.ExecuteCmd(cmd)
 	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging redhat-operators image for downgrade: %v", err))
-
-	cmd = fmt.Sprintf(ocloudparams.SkopeoSriovDowngrade,
-		OCloudConfig.AuthfilePath, OCloudConfig.Registry5000, OCloudConfig.Registry5000)
-	_, err = shell.ExecuteCmd(cmd)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Error tagging far-edge-sriov-fec image for downgrade: %v", err))
 }
