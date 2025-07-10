@@ -405,11 +405,17 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 
 				By("Creating FRR Hub pod on worker node 0")
 				_ = createFrrHubPod(hubPodWorker0,
-					workerNodeList[0].Object.Name, hubConfigMap.Definition.Name, []string{}, hub0BRstaticIPAnnotation)
+					workerNodeList[0].Object.Name,
+					hubConfigMap.Definition.Name,
+					tsparams.IPForwardAndSleepCmd,
+					hub0BRstaticIPAnnotation)
 
 				By("Creating FRR Hub pod on worker node 1")
 				_ = createFrrHubPod(hubPodWorker1,
-					workerNodeList[1].Object.Name, hubConfigMap.Definition.Name, []string{}, hub1BRstaticIPAnnotation)
+					workerNodeList[1].Object.Name,
+					hubConfigMap.Definition.Name,
+					tsparams.IPForwardAndSleepCmd,
+					hub1BRstaticIPAnnotation)
 
 				By("Creating configmap and MetalLb Master pod")
 				frrPod := createMasterFrrPod(tsparams.LocalBGPASN, frrExternalMasterIPAddress, nodeAddrList,
@@ -479,11 +485,17 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 
 				By("Creating FRR Hub pod on worker node 0")
 				_ = createFrrHubPod(hubPodWorker0,
-					workerNodeList[0].Object.Name, hubConfigMap.Definition.Name, []string{}, hub0BRstaticIPAnnotation)
+					workerNodeList[0].Object.Name,
+					hubConfigMap.Definition.Name,
+					tsparams.IPForwardAndSleepCmd,
+					hub0BRstaticIPAnnotation)
 
 				By("Creating FRR Hub pod on worker node 1")
 				_ = createFrrHubPod(hubPodWorker1,
-					workerNodeList[1].Object.Name, hubConfigMap.Definition.Name, []string{}, hub1BRstaticIPAnnotation)
+					workerNodeList[1].Object.Name,
+					hubConfigMap.Definition.Name,
+					tsparams.IPForwardAndSleepCmd,
+					hub1BRstaticIPAnnotation)
 
 				By("Creating MetalLb Master pod configMap")
 				frrPod := createMasterFrrPod(tsparams.RemoteBGPASN, frrExternalMasterIPAddress, nodeAddrList,
@@ -578,12 +590,12 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 
 				By("Creating FRR Hub pod on worker node 0")
 				_ = createFrrHubPod(hubPodWorker0,
-					workerNodeList[0].Object.Name, createHubConfigMapSecInt.Definition.Name, []string{},
+					workerNodeList[0].Object.Name, createHubConfigMapSecInt.Definition.Name, tsparams.IPForwardAndSleepCmd,
 					hub0BRStaticSecIntIPAnnotation)
 
 				By("Creating FRR Hub pod on worker node 1")
 				_ = createFrrHubPod(hubPodWorker1,
-					workerNodeList[1].Object.Name, createHubConfigMapSecInt.Definition.Name, []string{},
+					workerNodeList[1].Object.Name, createHubConfigMapSecInt.Definition.Name, tsparams.IPForwardAndSleepCmd,
 					hub1SecIntIPAnnotation)
 
 				By("Creating MetalLb Master pod configMap")
