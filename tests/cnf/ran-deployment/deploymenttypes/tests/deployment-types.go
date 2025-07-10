@@ -233,12 +233,13 @@ func gitCloneToDirs(clustersApp,
 	Expect(err).ToNot(HaveOccurred(), "Failed to get policies app git source details")
 
 	siteconfigRepo, err = git.PlainClone(gitSiteConfigCloneDir, false, &git.CloneOptions{
-		URL:           clustersSource.RepoURL,
-		Tags:          git.NoTags,
-		ReferenceName: plumbing.ReferenceName(clustersSource.TargetRevision),
-		Depth:         1,
-		SingleBranch:  true,
-		Progress:      nil,
+		URL:             clustersSource.RepoURL,
+		Tags:            git.NoTags,
+		ReferenceName:   plumbing.ReferenceName(clustersSource.TargetRevision),
+		Depth:           1,
+		SingleBranch:    true,
+		Progress:        nil,
+		InsecureSkipTLS: RANConfig.SkipTLSVerify,
 	})
 	Expect(err).ToNot(HaveOccurred(), "Failed to git clone siteconfig repo %s branch %s to directory %s",
 		clustersSource.RepoURL, clustersSource.TargetRevision, gitSiteConfigCloneDir)
@@ -247,12 +248,13 @@ func gitCloneToDirs(clustersApp,
 	glog.V(tsparams.LogLevel).Infof("Path in worktree: %s", clustersSource.Path)
 
 	policiesRepo, err = git.PlainClone(gitPolicyTemplatesCloneDir, false, &git.CloneOptions{
-		URL:           policiesSource.RepoURL,
-		Tags:          git.NoTags,
-		ReferenceName: plumbing.ReferenceName(policiesSource.TargetRevision),
-		Depth:         1,
-		SingleBranch:  true,
-		Progress:      nil,
+		URL:             policiesSource.RepoURL,
+		Tags:            git.NoTags,
+		ReferenceName:   plumbing.ReferenceName(policiesSource.TargetRevision),
+		Depth:           1,
+		SingleBranch:    true,
+		Progress:        nil,
+		InsecureSkipTLS: RANConfig.SkipTLSVerify,
 	})
 	Expect(err).ToNot(HaveOccurred(), "Failed to git clone policies repo %s branch %s to directory %s",
 		policiesSource.RepoURL, policiesSource.TargetRevision, gitPolicyTemplatesCloneDir)

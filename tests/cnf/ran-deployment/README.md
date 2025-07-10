@@ -26,7 +26,6 @@ results can be aggregated in a "union" set of results.
 
 | Name                                                 | Description                                                 |
 |------------------------------------------------------|-------------------------------------------------------------|
-| [rancluster](internal/rancluster/rancluster.go)      | Helpers for viewing the state of a cluster itself           |
 | [ranconfig](internal/ranconfig/config.go)            | Configures environment variables and default values         |
 | [raninittools](internal/raninittools/raninitools.go) | Provides an APIClient for access to cluster                 |
 | [ranparam](internal/ranparam/const.go)               | Labels and other constants used in the test suites          |
@@ -49,6 +48,11 @@ Currently, only the TALM tests need more than the first spoke kubeconfig.
 * `KUBECONFIG`: Global input that refers to the first spoke cluster.
 * `ECO_CNF_RAN_KUBECONFIG_HUB`: For tests that need a hub cluster, this is the path to its kubeconfig.
 * `ECO_CNF_RAN_KUBECONFIG_SPOKE2`: For tests that need a second spoke cluster, this is the path to its kubeconfig.
+
+#### Other environment variables
+
+* `ECO_CNF_RAN_SKIP_TLS_VERIFY`: Boolean for allowing the go-git library to skip TLS certificate validation for internal repositories.
+  * Set to either `true` or `false`. Default is `false`.
 
 ### Running the RAN deployment test suites
 
