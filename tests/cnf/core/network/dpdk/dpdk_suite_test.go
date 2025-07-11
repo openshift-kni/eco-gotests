@@ -23,7 +23,7 @@ import (
 var (
 	_, currentFile, _, _ = runtime.Caller(0)
 	testNS               = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName)
-	perfProfileName      = "automationdpdk"
+	perfProfileName      = "performance"
 )
 
 func TestLB(t *testing.T) {
