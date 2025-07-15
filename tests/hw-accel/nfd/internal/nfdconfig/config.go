@@ -8,13 +8,14 @@ import (
 
 // NfdConfig contains environment information related to nfd tests.
 type NfdConfig struct {
-	SubscriptionName     string `envconfig:"ECO_HWACCEL_NFD_SUBSCRIPTION_NAME"`
-	Image                string `envconfig:"ECO_HWACCEL_NFD_CR_IMAGE"`
-	CatalogSource        string `envconfig:"ECO_HWACCEL_NFD_CATALOG_SOURCE"`
-	CustomCatalogSource  string `envconfig:"ECO_HWACCEL_NFD_CUSTOM_NFD_CATALOG_SOURCE"`
-	AwsTest              bool   `envconfig:"ECO_HWACCEL_NFD_AWS_TESTS"`
-	UpgradeTargetVersion string `envconfig:"ECO_HWACCEL_NFD_UPGRADE_TARGET_VERSION"`
-	CPUFlagsHelperImage  string `envconfig:"ECO_HWACCEL_NFD_CPU_FLAGS_HELPER_IMAGE"`
+	SubscriptionName         string `envconfig:"ECO_HWACCEL_NFD_SUBSCRIPTION_NAME"`
+	Image                    string `envconfig:"ECO_HWACCEL_NFD_CR_IMAGE"`
+	CatalogSource            string `envconfig:"ECO_HWACCEL_NFD_CATALOG_SOURCE"`
+	CustomCatalogSource      string `envconfig:"ECO_HWACCEL_NFD_CUSTOM_NFD_CATALOG_SOURCE"`
+	AwsTest                  bool   `envconfig:"ECO_HWACCEL_NFD_AWS_TESTS"`
+	UpgradeTargetVersion     string `envconfig:"ECO_HWACCEL_NFD_UPGRADE_TARGET_VERSION"`
+	CPUFlagsHelperImage      string `envconfig:"ECO_HWACCEL_NFD_CPU_FLAGS_HELPER_IMAGE"`
+	SkipDestructiveNodeTests bool   `envconfig:"ECO_HWACCEL_NFD_SKIP_DESTRUCTIVE_NODE_TESTS"`
 }
 
 // NewNfdConfig returns instance of NfdConfig type.
