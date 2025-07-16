@@ -5,6 +5,7 @@ import (
 	cguv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdtypes/v1alpha1"
+	"github.com/openshift-kni/eco-goinfra/pkg/schemes/ocm/kacv1"
 	siteconfigv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/siteconfig/v1alpha1"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
@@ -32,7 +33,9 @@ var (
 
 	// ReporterSpokeNamespacesToDump tells the reporter which namespaces on the spokes to collect pod logs from.
 	ReporterSpokeNamespacesToDump = map[string]string{
-		TestNamespace: "",
+		TestNamespace:                    "",
+		kacv1.KlusterletAddonNamespace:   "",
+		RANConfig.SriovOperatorNamespace: "",
 	}
 
 	// ReporterHubCRsToDump is the CRs the reporter should dump on the hub.
