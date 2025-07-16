@@ -85,13 +85,6 @@ var (
 	IBPGPProtocol = "iBGP"
 	// TestLabel represents node label for testing.
 	TestLabel = map[string]string{"test": "label"}
-	// IPForwardAndSleepCmd enables IPv4 forwarding and keep the container running command.
-	IPForwardAndSleepCmd = []string{
-		"/bin/bash",
-		"-c",
-		`echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || true; \
-trap : TERM INT; sleep infinity & wait`,
-	}
 	// MetalLbBgpMetrics represents the list of expected metallb metrics.
 	MetalLbBgpMetrics = []string{"frrk8s_bgp_keepalives_sent", "frrk8s_bgp_keepalives_received",
 		"frrk8s_bgp_notifications_sent", "frrk8s_bgp_opens_received", "frrk8s_bgp_opens_sent",

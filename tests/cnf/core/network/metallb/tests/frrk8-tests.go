@@ -407,14 +407,14 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				_ = createFrrHubPod(hubPodWorker0,
 					workerNodeList[0].Object.Name,
 					hubConfigMap.Definition.Name,
-					tsparams.IPForwardAndSleepCmd,
+					netparam.IPForwardAndSleepCmd,
 					hub0BRstaticIPAnnotation)
 
 				By("Creating FRR Hub pod on worker node 1")
 				_ = createFrrHubPod(hubPodWorker1,
 					workerNodeList[1].Object.Name,
 					hubConfigMap.Definition.Name,
-					tsparams.IPForwardAndSleepCmd,
+					netparam.IPForwardAndSleepCmd,
 					hub1BRstaticIPAnnotation)
 
 				By("Creating configmap and MetalLb Master pod")
@@ -487,14 +487,14 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				_ = createFrrHubPod(hubPodWorker0,
 					workerNodeList[0].Object.Name,
 					hubConfigMap.Definition.Name,
-					tsparams.IPForwardAndSleepCmd,
+					netparam.IPForwardAndSleepCmd,
 					hub0BRstaticIPAnnotation)
 
 				By("Creating FRR Hub pod on worker node 1")
 				_ = createFrrHubPod(hubPodWorker1,
 					workerNodeList[1].Object.Name,
 					hubConfigMap.Definition.Name,
-					tsparams.IPForwardAndSleepCmd,
+					netparam.IPForwardAndSleepCmd,
 					hub1BRstaticIPAnnotation)
 
 				By("Creating MetalLb Master pod configMap")
@@ -590,12 +590,12 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 
 				By("Creating FRR Hub pod on worker node 0")
 				_ = createFrrHubPod(hubPodWorker0,
-					workerNodeList[0].Object.Name, createHubConfigMapSecInt.Definition.Name, tsparams.IPForwardAndSleepCmd,
+					workerNodeList[0].Object.Name, createHubConfigMapSecInt.Definition.Name, netparam.IPForwardAndSleepCmd,
 					hub0BRStaticSecIntIPAnnotation)
 
 				By("Creating FRR Hub pod on worker node 1")
 				_ = createFrrHubPod(hubPodWorker1,
-					workerNodeList[1].Object.Name, createHubConfigMapSecInt.Definition.Name, tsparams.IPForwardAndSleepCmd,
+					workerNodeList[1].Object.Name, createHubConfigMapSecInt.Definition.Name, netparam.IPForwardAndSleepCmd,
 					hub1SecIntIPAnnotation)
 
 				By("Creating MetalLb Master pod configMap")

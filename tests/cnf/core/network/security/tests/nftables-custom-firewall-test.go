@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/frrconfig"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/security/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	ocpoperatorv1 "github.com/openshift/api/operator/v1"
@@ -337,7 +338,7 @@ func createFrrPodTest(
 					"testcmd -interface net1 -protocol tcp -port 8088 -listen"})
 	} else {
 		frrContainer = pod.NewContainerBuilder(
-			"frr", NetConfig.CnfNetTestContainer, []string{"/bin/bash", "-c", "sleep INF"})
+			"frr", NetConfig.CnfNetTestContainer, netparam.IPForwardAndSleepCmd)
 	}
 
 	frrContainer.WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
