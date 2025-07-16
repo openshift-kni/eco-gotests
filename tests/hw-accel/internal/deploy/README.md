@@ -26,92 +26,156 @@ The framework is built around two main interfaces:
 ### Operator-Specific Implementations
 - **`nfd-deployer.go`**: Node Feature Discovery operator
 - **`kmm-deployer.go`**: Kernel Module Management operator
+- **`amd-deployer.go`**: AMD GPU operator
 
-## Usage Examples
+### Factory Pattern (`factory.go`)
+- **`DeployerFactory`**: Centralized deployer creation with defaults
+- **`DeployerSet`**: Container for managing multiple deployers
+- **`DeployerType`**: Type-safe deployer identification
 
-### Basic NFD Deployment
+## Factory Pattern Usage (Recommended)
+
+The **DeployerFactory** provides the easiest way to create and manage deployers with sensible defaults.
+
+### Quick Start Example
+
 ```go
-// Create configuration
-config := NewOperatorConfig(
-    apiClient,
-    "openshift-nfd",
-    "nfd-operator-group", 
-    "nfd-subscription",
-    "certified-operators",
-    "openshift-marketplace",
-    "nfd",
-    "stable",
-    "nfd-operator",
-)
+// Create factory with Kubernetes API client
+factory := deploy.NewDeployerFactory(APIClient)
 
-// Create deployer
-nfdDeployer := NewNFDDeployer(config)
+// Create NFD deployer with default configuration
+nfdDeployer, err := factory.CreateNFDDeployer(nil)
+if err != nil {
+    return fmt.Errorf("failed to create NFD deployer: %w", err)
+}
 
-// Deploy operator
-err := nfdDeployer.Deploy()
+// Deploy the NFD operator
+err = nfdDeployer.Deploy()
+if err != nil {
+    return fmt.Errorf("failed to deploy NFD operator: %w", err)
+}
 
-// Wait for readiness
+// Wait for operator to be ready
 ready, err := nfdDeployer.IsReady(5 * time.Minute)
+if err != nil || !ready {
+    return fmt.Errorf("NFD operator not ready: %w", err)
+}
 
-// Deploy custom resource
-nfdConfig := NFDConfig{
+// Deploy NodeFeatureDiscovery custom resource
+nfdConfig := deploy.NFDConfig{
     EnableTopology: true,
-    Image: "registry.redhat.io/openshift4/ose-node-feature-discovery:latest",
+    Image:          "registry.redhat.io/openshift4/ose-node-feature-discovery:latest",
 }
+
 err = nfdDeployer.DeployCustomResource("nfd-instance", nfdConfig)
-```
-
-### Basic KMM Deployment
-```go
-// Create configuration
-config := NewOperatorConfig(
-    apiClient,
-    "openshift-kmm",
-    "kmm-operator-group",
-    "kmm-subscription", 
-    "certified-operators",
-    "openshift-marketplace",
-    "kernel-module-management",
-    "stable",
-    "kmm-operator",
-)
-
-// Create deployer
-kmmDeployer := NewKMMDeployer(config)
-
-// Deploy operator
-err := kmmDeployer.Deploy()
-
-// Deploy simple module
-nodeSelector := map[string]string{
-    "node-role.kubernetes.io/worker": "",
+if err != nil {
+    return fmt.Errorf("failed to deploy NFD custom resource: %w", err)
 }
-err = kmmDeployer.DeploySimpleModule(
-    "example-module",
-    ".*",
-    "example.com/kernel-module:latest", 
-    nodeSelector,
-)
+
+// Wait for custom resource to be ready
+crReady, err := nfdDeployer.IsCustomResourceReady("nfd-instance", 3*time.Minute)
+if err != nil || !crReady {
+    return fmt.Errorf("NFD custom resource not ready: %w", err)
+}
+
+// Cleanup when done
+defer func() {
+    nfdDeployer.DeleteCustomResource("nfd-instance")
+    nfdDeployer.Undeploy()
+}()
 ```
 
-### Polymorphic Usage
-```go
-// Use interface for uniform handling
-deployers := []OperatorDeployer{nfdDeployer, kmmDeployer}
+### Create Multiple Deployers
 
-for _, deployer := range deployers {
-    fmt.Printf("Deploying %s in %s\n", 
-        deployer.GetOperatorName(), 
-        deployer.GetNamespace())
-    
-    if err := deployer.Deploy(); err != nil {
-        log.Errorf("Failed to deploy %s: %v", deployer.GetOperatorName(), err)
+```go
+factory := deploy.NewDeployerFactory(APIClient)
+
+// Create all deployers with defaults
+deployers := factory.CreateAllDeployers()
+
+// Deploy all operators
+err := deployers.DeployAll()
+if err != nil {
+    return fmt.Errorf("failed to deploy all operators: %w", err)
+}
+
+// Wait for all to be ready
+// (individual readiness checks as needed)
+
+// Cleanup all
+defer deployers.UndeployAll()
+```
+
+### Custom Configuration
+
+```go
+factory := deploy.NewDeployerFactory(APIClient)
+
+// Override NFD configuration
+nfdConfig := &deploy.OperatorConfig{
+    Namespace: "custom-nfd-namespace",
+    Channel:   "alpha",
+}
+
+// Create NFD deployer with custom config
+nfdDeployer, err := factory.CreateNFDDeployer(nfdConfig)
+if err != nil {
+    return fmt.Errorf("failed to create NFD deployer: %w", err)
+}
+```
+
+## NFD Custom Resource Configuration
+
+### NFDConfig Structure
+```go
+type NFDConfig struct {
+    EnableTopology bool   `json:"enableTopology,omitempty"`
+    Image          string `json:"image,omitempty"`
+}
+```
+
+### NFD CR Deployment Examples
+
+#### Basic NFD Custom Resource
+```go
+// Simple configuration
+nfdConfig := deploy.NFDConfig{
+    EnableTopology: true,
+}
+
+err = nfdDeployer.DeployCustomResource("nfd-basic", nfdConfig)
+```
+
+#### NFD with Custom Image
+```go
+// Custom image configuration
+nfdConfig := deploy.NFDConfig{
+    EnableTopology: true,
+    Image:          "quay.io/openshift/origin-node-feature-discovery:latest",
+}
+
+err = nfdDeployer.DeployCustomResource("nfd-custom", nfdConfig)
+```
+
+#### Multiple NFD Instances
+```go
+// Deploy multiple NFD instances for different configurations
+configs := map[string]deploy.NFDConfig{
+    "nfd-prod": {
+        EnableTopology: true,
+        Image:          "registry.redhat.io/openshift4/ose-node-feature-discovery:latest",
+    },
+    "nfd-test": {
+        EnableTopology: false,
+        Image:          "quay.io/openshift/origin-node-feature-discovery:latest",
+    },
+}
+
+for name, config := range configs {
+    err := nfdDeployer.DeployCustomResource(name, config)
+    if err != nil {
+        log.Errorf("Failed to deploy %s: %v", name, err)
         continue
-    }
-    
-    ready, err := deployer.IsReady(5 * time.Minute)
-    if err != nil || !ready {
-        log.Errorf("Operator %s not ready: %v", deployer.GetOperatorName(), err)
     }
 }
 ```
@@ -128,54 +192,43 @@ for _, deployer := range deployers {
 - Uniform patterns across all operators
 - Interface-based polymorphism
 
+### ✅ **Factory Pattern Benefits**
+- Sensible defaults out of the box
+- Configuration override capabilities
+- Batch operations support
+- Type-safe deployer creation
+
 ### ✅ **Testability**
 - Easy mocking via interfaces
-- Comprehensive unit test coverage
 - Isolated testing of components
+- Consistent patterns for testing
 
 ### ✅ **Maintainability**
 - Clear code organization
 - Reduced duplication
 - Type-safe operations
 
-### ✅ **Reusability**
-- Common patterns abstracted
-- Consistent API across operators
-- Composable design
+## Default Configurations
 
-## Testing
+The factory provides default configurations for each operator:
 
-The framework includes comprehensive tests:
+### NFD Defaults
+- **Namespace**: `openshift-nfd`
+- **Channel**: `stable`
+- **Catalog**: `certified-operators`
+- **Package**: `nfd`
 
-- **Unit Tests**: `*_test.go` files for each component
-- **Integration Tests**: Complete workflow testing
-- **Benchmark Tests**: Performance validation
-- **Mock Support**: Easy testing with fake clients
+### KMM Defaults
+- **Namespace**: `openshift-kmm`
+- **Channel**: `stable`
+- **Catalog**: `certified-operators`
+- **Package**: `kernel-module-management`
 
-Run tests:
-```bash
-go test ./tests/hw-accel/internal/deploy/...
-```
-
-## Configuration Management
-
-### NFD Configuration
-```go
-type NFDConfig struct {
-    EnableTopology bool   // Enable topology updater
-    Image          string // Custom NFD image (optional)
-}
-```
-
-### KMM Configuration  
-```go
-type KMMConfig struct {
-    ModuleName     string            // Module name
-    KernelMapping  string            // Kernel version regex
-    ContainerImage string            // Module container image
-    NodeSelector   map[string]string // Node selection criteria
-}
-```
+### AMD GPU Defaults
+- **Namespace**: `openshift-operators` (global)
+- **Channel**: `alpha`
+- **Catalog**: `certified-operators`
+- **Package**: `amd-gpu-operator`
 
 ## Adding New Operators
 
@@ -183,42 +236,8 @@ To add a new operator:
 
 1. **Create deployer file**: `new-operator-deployer.go`
 2. **Implement interfaces**: `OperatorDeployer` and `CustomResourceDeployer`
-3. **Define config struct**: Operator-specific configuration
-4. **Create tests**: `new-operator-deployer_test.go`
-5. **Update examples**: Add usage examples
+3. **Add to factory**: Update `factory.go` with new deployer type and methods
+4. **Define config struct**: Operator-specific configuration (if needed)
+5. **Create tests**: `new-operator-deployer_test.go`
 
-Example structure:
-```go
-type NewOperatorDeployer struct {
-    BaseOperatorDeployer
-    CommonOps *CommonDeploymentOps
-}
-
-func (n *NewOperatorDeployer) Deploy() error { /* implementation */ }
-func (n *NewOperatorDeployer) IsReady(timeout time.Duration) (bool, error) { /* implementation */ }
-func (n *NewOperatorDeployer) Undeploy() error { /* implementation */ }
-func (n *NewOperatorDeployer) DeployCustomResource(name string, config interface{}) error { /* implementation */ }
-func (n *NewOperatorDeployer) DeleteCustomResource(name string) error { /* implementation */ }
-func (n *NewOperatorDeployer) IsCustomResourceReady(name string, timeout time.Duration) (bool, error) { /* implementation */ }
-```
-
-## Migration from Original Code
-
-The original `deploy-nfd.go` can be gradually migrated:
-
-1. **Replace direct usage**:
-   ```go
-   // Old
-   nfdResource := NewNfdAPIResource(...)
-   err := nfdResource.DeployNfd(...)
-   
-   // New
-   nfdDeployer := NewNFDDeployer(config)
-   err := nfdDeployer.Deploy()
-   ```
-
-2. **Update test code** to use new interfaces
-3. **Leverage polymorphism** for multi-operator scenarios
-4. **Remove old code** once migration is complete
-
-This interface-based approach provides a solid foundation for scalable, maintainable operator deployment automation. 
+This interface-based approach with factory pattern provides a solid foundation for scalable, maintainable operator deployment automation. 
