@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,53 +143,6 @@ func IsVfSupportedModel(vendorID, deviceID string) bool {
 	return false
 }
 
-func IsEnabledUnsupportedVendor(vendorID string, unsupportedNicIDMap map[string]string) bool {
-	for _, n := range unsupportedNicIDMap {
-		if IsValidPciString(n) {
-			ids := strings.Split(n, " ")
-			if vendorID == ids[0] {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func IsValidPciString(nicIDString string) bool {
-	ids := strings.Split(nicIDString, " ")
-
-	if len(ids) != 3 {
-		log.Info("IsValidPciString(): ", nicIDString)
-		return false
-	}
-
-	if len(ids[0]) != 4 {
-		log.Info("IsValidPciString():", "Invalid vendor PciId ", ids[0])
-		return false
-	}
-	if _, err := strconv.ParseInt(ids[0], 16, 32); err != nil {
-		log.Info("IsValidPciString():", "Invalid vendor PciId ", ids[0])
-	}
-
-	if len(ids[1]) != 4 {
-		log.Info("IsValidPciString():", "Invalid PciId of PF ", ids[1])
-		return false
-	}
-	if _, err := strconv.ParseInt(ids[1], 16, 32); err != nil {
-		log.Info("IsValidPciString():", "Invalid PciId of PF ", ids[1])
-	}
-
-	if len(ids[2]) != 4 {
-		log.Info("IsValidPciString():", "Invalid PciId of VF ", ids[2])
-		return false
-	}
-	if _, err := strconv.ParseInt(ids[2], 16, 32); err != nil {
-		log.Info("IsValidPciString():", "Invalid PciId of VF ", ids[2])
-	}
-
-	return true
-}
-
 func GetSupportedVfIds() []string {
 	var vfIds []string
 	for _, n := range NicIDMap {
@@ -232,15 +186,6 @@ func ContainsSwitchdevInterface(interfaces []Interface) bool {
 	return false
 }
 
-func FindInterface(interfaces Interfaces, name string) (iface Interface, err error) {
-	for _, i := range interfaces {
-		if i.Name == name {
-			return i, nil
-		}
-	}
-	return Interface{}, fmt.Errorf("unable to find interface: %v", name)
-}
-
 // GetEswitchModeFromSpec returns ESwitchMode from the interface spec, returns legacy if not set
 func GetEswitchModeFromSpec(ifaceSpec *Interface) string {
 	if ifaceSpec.EswitchMode == "" {
@@ -261,23 +206,23 @@ func NeedToUpdateSriov(ifaceSpec *Interface, ifaceStatus *InterfaceExt) bool {
 	if ifaceSpec.Mtu > 0 {
 		mtu := ifaceSpec.Mtu
 		if mtu > ifaceStatus.Mtu {
-			log.V(2).Info("NeedToUpdateSriov(): MTU needs update", "desired", mtu, "current", ifaceStatus.Mtu)
+			log.V(0).Info("NeedToUpdateSriov(): MTU needs update", "desired", mtu, "current", ifaceStatus.Mtu)
 			return true
 		}
 	}
 	currentEswitchMode := GetEswitchModeFromStatus(ifaceStatus)
 	desiredEswitchMode := GetEswitchModeFromSpec(ifaceSpec)
 	if currentEswitchMode != desiredEswitchMode {
-		log.V(2).Info("NeedToUpdateSriov(): EswitchMode needs update", "desired", desiredEswitchMode, "current", currentEswitchMode)
+		log.V(0).Info("NeedToUpdateSriov(): EswitchMode needs update", "desired", desiredEswitchMode, "current", currentEswitchMode)
 		return true
 	}
 	if ifaceSpec.NumVfs != ifaceStatus.NumVfs {
-		log.V(2).Info("NeedToUpdateSriov(): NumVfs needs update", "desired", ifaceSpec.NumVfs, "current", ifaceStatus.NumVfs)
+		log.V(0).Info("NeedToUpdateSriov(): NumVfs needs update", "desired", ifaceSpec.NumVfs, "current", ifaceStatus.NumVfs)
 		return true
 	}
 
 	if ifaceStatus.LinkAdminState == consts.LinkAdminStateDown {
-		log.V(2).Info("NeedToUpdateSriov(): PF link status needs update", "desired to include", "up", "current", ifaceStatus.LinkAdminState)
+		log.V(0).Info("NeedToUpdateSriov(): PF link status needs update", "desired to include", "up", "current", ifaceStatus.LinkAdminState)
 		return true
 	}
 
@@ -286,24 +231,24 @@ func NeedToUpdateSriov(ifaceSpec *Interface, ifaceStatus *InterfaceExt) bool {
 			for _, groupSpec := range ifaceSpec.VfGroups {
 				if IndexInRange(vfStatus.VfID, groupSpec.VfRange) {
 					if vfStatus.Driver == "" {
-						log.V(2).Info("NeedToUpdateSriov(): Driver needs update - has no driver",
+						log.V(0).Info("NeedToUpdateSriov(): Driver needs update - has no driver",
 							"desired", groupSpec.DeviceType)
 						return true
 					}
 					if groupSpec.DeviceType != "" && groupSpec.DeviceType != consts.DeviceTypeNetDevice {
 						if groupSpec.DeviceType != vfStatus.Driver {
-							log.V(2).Info("NeedToUpdateSriov(): Driver needs update",
+							log.V(0).Info("NeedToUpdateSriov(): Driver needs update",
 								"desired", groupSpec.DeviceType, "current", vfStatus.Driver)
 							return true
 						}
 					} else {
 						if StringInArray(vfStatus.Driver, vars.DpdkDrivers) {
-							log.V(2).Info("NeedToUpdateSriov(): Driver needs update",
+							log.V(0).Info("NeedToUpdateSriov(): Driver needs update",
 								"desired", groupSpec.DeviceType, "current", vfStatus.Driver)
 							return true
 						}
 						if vfStatus.Mtu != 0 && groupSpec.Mtu != 0 && vfStatus.Mtu != groupSpec.Mtu {
-							log.V(2).Info("NeedToUpdateSriov(): VF MTU needs update",
+							log.V(0).Info("NeedToUpdateSriov(): VF MTU needs update",
 								"vf", vfStatus.VfID, "desired", groupSpec.Mtu, "current", vfStatus.Mtu)
 							return true
 						}
@@ -313,20 +258,20 @@ func NeedToUpdateSriov(ifaceSpec *Interface, ifaceStatus *InterfaceExt) bool {
 							// Node GUID. We intentionally skip empty Node GUID in vfStatus because this may happen
 							// when the VF is allocated to a workload.
 							if vfStatus.GUID == consts.UninitializedNodeGUID {
-								log.V(2).Info("NeedToUpdateSriov(): VF GUID needs update",
+								log.V(0).Info("NeedToUpdateSriov(): VF GUID needs update",
 									"vf", vfStatus.VfID, "current", vfStatus.GUID)
 								return true
 							}
 						}
 						// this is needed to be sure the admin mac address is configured as expected
 						if ifaceSpec.ExternallyManaged {
-							log.V(2).Info("NeedToUpdateSriov(): need to update the device as it's externally manage",
+							log.V(0).Info("NeedToUpdateSriov(): need to update the device as it's externally manage",
 								"device", ifaceStatus.PciAddress)
 							return true
 						}
 					}
 					if groupSpec.VdpaType != vfStatus.VdpaType {
-						log.V(2).Info("NeedToUpdateSriov(): VF VdpaType mismatch",
+						log.V(0).Info("NeedToUpdateSriov(): VF VdpaType mismatch",
 							"desired", groupSpec.VdpaType, "current", vfStatus.VdpaType)
 						return true
 					}
@@ -482,6 +427,10 @@ func (p *SriovNetworkNodePolicy) ApplyBridgeConfig(state *SriovNetworkNodeState)
 					Name:       iface.Name,
 					Interface:  p.Spec.Bridge.OVS.Uplink.Interface,
 				}},
+			}
+			if p.Spec.Mtu > 0 {
+				mtu := p.Spec.Mtu
+				ovsBridge.Uplinks[0].Interface.MTURequest = &mtu
 			}
 			log.Info("Update bridge for interface", "name", iface.Name, "bridge", ovsBridge.Name)
 
@@ -1004,4 +953,44 @@ func GenerateBridgeName(iface *InterfaceExt) string {
 // NeedToUpdateBridges returns true if bridge for the host requires update
 func NeedToUpdateBridges(bridgeSpec, bridgeStatus *Bridges) bool {
 	return !reflect.DeepEqual(bridgeSpec, bridgeStatus)
+}
+
+// SetKeepUntilTime sets an annotation to hold the "keep until time" for the node’s state.
+// The "keep until time" specifies the earliest time at which the state object can be removed
+// if the daemon's pod is not found on the node.
+func (s *SriovNetworkNodeState) SetKeepUntilTime(t time.Time) {
+	ts := t.Format(time.RFC3339)
+	annotations := s.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[consts.NodeStateKeepUntilAnnotation] = ts
+	s.SetAnnotations(annotations)
+}
+
+// GetKeepUntilTime returns the value that is stored in the "keep until time" annotation.
+// The "keep until time" specifies the earliest time at which the state object can be removed
+// if the daemon's pod is not found on the node.
+// Return zero time instant if annotaion is not found on the object or if it has a wrong format.
+func (s *SriovNetworkNodeState) GetKeepUntilTime() time.Time {
+	t, err := time.Parse(time.RFC3339, s.GetAnnotations()[consts.NodeStateKeepUntilAnnotation])
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// ResetKeepUntilTime removes "keep until time" annotation from the state object.
+// The "keep until time" specifies the earliest time at which the state object can be removed
+// if the daemon's pod is not found on the node.
+// Returns true if the value was removed, false otherwise.
+func (s *SriovNetworkNodeState) ResetKeepUntilTime() bool {
+	annotations := s.GetAnnotations()
+	_, exist := annotations[consts.NodeStateKeepUntilAnnotation]
+	if !exist {
+		return false
+	}
+	delete(annotations, consts.NodeStateKeepUntilAnnotation)
+	s.SetAnnotations(annotations)
+	return true
 }

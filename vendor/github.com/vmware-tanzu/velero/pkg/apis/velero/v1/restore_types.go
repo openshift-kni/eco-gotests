@@ -26,7 +26,8 @@ import (
 type RestoreSpec struct {
 	// BackupName is the unique name of the Velero backup to restore
 	// from.
-	BackupName string `json:"backupName"`
+	// +optional
+	BackupName string `json:"backupName,omitempty"`
 
 	// ScheduleName is the unique name of the Velero schedule to restore
 	// from. If specified, and BackupName is empty, Velero will restore
@@ -115,7 +116,7 @@ type RestoreSpec struct {
 	ExistingResourcePolicy PolicyType `json:"existingResourcePolicy,omitempty"`
 
 	// ItemOperationTimeout specifies the time used to wait for RestoreItemAction operations
-	// The default value is 1 hour.
+	// The default value is 4 hour.
 	// +optional
 	ItemOperationTimeout metav1.Duration `json:"itemOperationTimeout,omitempty"`
 
@@ -136,6 +137,9 @@ type UploaderConfigForRestore struct {
 	// +optional
 	// +nullable
 	WriteSparseFiles *bool `json:"writeSparseFiles,omitempty"`
+	// ParallelFilesDownload is the concurrency number setting for restore.
+	// +optional
+	ParallelFilesDownload int `json:"parallelFilesDownload,omitempty"`
 }
 
 // RestoreHooks contains custom behaviors that should be executed during or post restore.
@@ -249,7 +253,7 @@ type InitRestoreHook struct {
 
 // RestorePhase is a string representation of the lifecycle phase
 // of a Velero restore
-// +kubebuilder:validation:Enum=New;FailedValidation;InProgress;WaitingForPluginOperations;WaitingForPluginOperationsPartiallyFailed;Completed;PartiallyFailed;Failed
+// +kubebuilder:validation:Enum=New;FailedValidation;InProgress;WaitingForPluginOperations;WaitingForPluginOperationsPartiallyFailed;Completed;PartiallyFailed;Failed;Finalizing;FinalizingPartiallyFailed
 type RestorePhase string
 
 const (
@@ -276,6 +280,19 @@ const (
 	// PartiallyFailed) and other plugin operations are still
 	// ongoing.  The restore is not complete yet.
 	RestorePhaseWaitingForPluginOperationsPartiallyFailed RestorePhase = "WaitingForPluginOperationsPartiallyFailed"
+
+	// RestorePhaseFinalizing means the restore of
+	// Kubernetes resources and other async plugin operations were successful and
+	// other plugin operations are now complete, but the restore is awaiting
+	// the completion of wrap-up tasks before the restore process enters terminal phase.
+	RestorePhaseFinalizing RestorePhase = "Finalizing"
+
+	// RestorePhaseFinalizingPartiallyFailed means the restore of
+	// Kubernetes resources and other async plugin operations were successful and
+	// other plugin operations are now complete, but one or more errors
+	// occurred during restore or async operation processing. The restore is awaiting
+	// the completion of wrap-up tasks before the restore process enters terminal phase.
+	RestorePhaseFinalizingPartiallyFailed RestorePhase = "FinalizingPartiallyFailed"
 
 	// RestorePhaseCompleted means the restore has run successfully
 	// without errors.

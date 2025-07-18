@@ -22,17 +22,25 @@ import (
 )
 
 // validateSubscription validates BMCEventSubscription resource for creation.
-func (s *BMCEventSubscription) validateSubscription() []error {
+//
+// Deprecated: This method is going to be removed in a next release.
+func (webhook *BMCEventSubscription) validateSubscription(bmces *BMCEventSubscription) []error {
 	var errs []error
 
-	if s.Spec.HostName == "" {
+	if bmces.Spec.HostName == "" {
 		errs = append(errs, errors.New("hostName cannot be empty"))
 	}
 
-	if s.Spec.Destination == "" {
+	if bmces.Spec.HTTPHeadersRef != nil {
+		if bmces.Spec.HTTPHeadersRef.Namespace != bmces.Namespace {
+			errs = append(errs, errors.New("httpHeadersRef secret must be in the same namespace as the BMCEventSubscription"))
+		}
+	}
+
+	if bmces.Spec.Destination == "" {
 		errs = append(errs, errors.New("destination cannot be empty"))
 	} else {
-		destinationURL, err := url.ParseRequestURI(s.Spec.Destination)
+		destinationURL, err := url.ParseRequestURI(bmces.Spec.Destination)
 
 		if err != nil {
 			errs = append(errs, fmt.Errorf("destination is invalid: %w", err))

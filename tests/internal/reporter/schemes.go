@@ -7,7 +7,7 @@ import (
 	sriovv1 "github.com/k8snetworkplumbingwg/sriov-network-operator/api/v1"
 	bmhv1alpha1 "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
-	nmstatev1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
+	nmstatev1beta1 "github.com/nmstate/kubernetes-nmstate/api/v1beta1"
 	cguv1alpha1 "github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-goinfra/pkg/schemes/argocd/argocdoperator"
@@ -46,7 +46,7 @@ var reporterSchemes = []clients.SchemeAttacher{
 	configv1.Install,
 	nadv1.AddToScheme,
 	nmstatev1.AddToScheme,
-	nmstatev1alpha1.AddToScheme,
+	nmstatev1beta1.AddToScheme,
 	sriovv1.AddToScheme,
 	machineconfigv1.Install,
 	performanceprofilev2.AddToScheme,

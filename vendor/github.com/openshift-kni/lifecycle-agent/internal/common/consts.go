@@ -18,6 +18,7 @@ package common
 
 import (
 	"math"
+	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -58,6 +59,7 @@ const (
 	SeedDataDir                       = "/var/seed_data"
 	KubeconfigCryptoDir               = "kubeconfig-crypto"
 	ClusterConfigDir                  = "cluster-configuration"
+	ContainersListFileName            = "containers.list"
 	SeedClusterInfoFileName           = "manifest.json"
 	SeedReconfigurationFileName       = "manifest.json"
 	ManifestsDir                      = "manifests"
@@ -126,8 +128,7 @@ const (
 	CaBundleDataKey                  = "ca-bundle.crt"
 	ClusterAdditionalTrustBundleName = "user-ca-bundle"
 
-	IBIPSFile                = "/var/tmp/pull-secret.json"
-	PostDeploymentScriptPath = "/var/tmp/post.sh"
+	IBIWorkspace = "var/tmp"
 
 	ContainerStoragePath = "/var/lib/containers"
 )
@@ -144,6 +145,13 @@ const (
 var (
 	BackupGvk  = schema.GroupVersionKind{Group: "velero.io", Kind: "Backup", Version: "v1"}
 	RestoreGvk = schema.GroupVersionKind{Group: "velero.io", Kind: "Restore", Version: "v1"}
+)
+
+var (
+	ContainersListFilePath      = filepath.Join(IBIWorkspace, ContainersListFileName)
+	IBIPostDeploymentScriptPath = filepath.Join(IBIWorkspace, "post.sh")
+	IBIPullSecretFilePath       = filepath.Join(IBIWorkspace, "pull-secret.json")
+	IBISeedInfoFilePath         = filepath.Join(IBIWorkspace, SeedClusterInfoFileName)
 )
 
 // CertPrefixes is the list of certificate prefixes to be backed up

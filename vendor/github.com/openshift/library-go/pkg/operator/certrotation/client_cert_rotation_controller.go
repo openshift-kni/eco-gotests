@@ -98,7 +98,10 @@ func NewCertRotationController(
 		WithPostStartHooks(
 			c.targetCertRecheckerPostRunHook,
 		).
-		ToController("CertRotationController", recorder.WithComponentSuffix("cert-rotation-controller").WithComponentSuffix(name))
+		ToController(
+			"CertRotationController", // don't change what is passed here unless you also remove the old FooDegraded condition
+			recorder.WithComponentSuffix("cert-rotation-controller").WithComponentSuffix(name),
+		)
 }
 
 func (c CertRotationController) Sync(ctx context.Context, syncCtx factory.SyncContext) error {
@@ -127,7 +130,7 @@ func (c CertRotationController) getSigningCertKeyPairLocation() string {
 
 func (c CertRotationController) SyncWorker(ctx context.Context) error {
 	signingCertKeyPair, _, err := c.RotatedSigningCASecret.EnsureSigningCertKeyPair(ctx)
-	if err != nil {
+	if err != nil || signingCertKeyPair == nil {
 		return err
 	}
 

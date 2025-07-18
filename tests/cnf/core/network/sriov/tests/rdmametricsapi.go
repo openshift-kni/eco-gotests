@@ -134,7 +134,7 @@ var _ = Describe("rdmaMetricsAPI", Ordered, Label(tsparams.LabelRdmaMetricsAPITe
 
 				By("Removing SR-IOV configuration")
 				err = netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 			})
 		})
 
@@ -195,7 +195,7 @@ var _ = Describe("rdmaMetricsAPI", Ordered, Label(tsparams.LabelRdmaMetricsAPITe
 			AfterAll(func() {
 				By("Removing SR-IOV configuration")
 				err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 				By("Cleaning test namespace")
 				err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(

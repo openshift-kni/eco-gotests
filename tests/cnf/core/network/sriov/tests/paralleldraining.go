@@ -82,7 +82,7 @@ var _ = Describe("ParallelDraining", Ordered, Label(tsparams.LabelParallelDraini
 
 			By("Removing SR-IOV configuration")
 			err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 			err = sriov.CleanAllPoolConfigs(APIClient, NetConfig.SriovOperatorNamespace)
 			Expect(err).ToNot(HaveOccurred(), "Failed to remove SriovNetworkPoolConfigs")

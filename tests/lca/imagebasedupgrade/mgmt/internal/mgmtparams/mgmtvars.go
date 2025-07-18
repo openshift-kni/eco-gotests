@@ -4,7 +4,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/ibuparams"
 	"github.com/openshift-kni/eco-gotests/tests/lca/internal/brutil"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
-	veleroScheme "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned/scheme"
+	veleroScheme "github.com/vmware-tanzu/velero/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,7 +15,7 @@ var (
 
 // WorkloadBackup represents ibu-workload backup.
 var WorkloadBackup = brutil.BackupRestoreObject{
-	Scheme: veleroScheme.Scheme,
+	Scheme: veleroScheme.VeleroScheme,
 	GVR:    velerov1.SchemeGroupVersion,
 	Object: &velerov1.Backup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,7 +43,7 @@ var WorkloadBackup = brutil.BackupRestoreObject{
 
 // WorkloadRestore represents ibu-workload restore.
 var WorkloadRestore = brutil.BackupRestoreObject{
-	Scheme: veleroScheme.Scheme,
+	Scheme: veleroScheme.VeleroScheme,
 	GVR:    velerov1.SchemeGroupVersion,
 	Object: &velerov1.Restore{
 		ObjectMeta: metav1.ObjectMeta{
@@ -61,7 +61,7 @@ var WorkloadRestore = brutil.BackupRestoreObject{
 
 // KlusterletBackup represents ibu klusterlet backup.
 var KlusterletBackup = brutil.BackupRestoreObject{
-	Scheme: veleroScheme.Scheme,
+	Scheme: veleroScheme.VeleroScheme,
 	GVR:    velerov1.SchemeGroupVersion,
 	Object: &velerov1.Backup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -92,7 +92,7 @@ var KlusterletBackup = brutil.BackupRestoreObject{
 
 // KlusterletRestore represents ibu klusterlet restore.
 var KlusterletRestore = brutil.BackupRestoreObject{
-	Scheme: veleroScheme.Scheme,
+	Scheme: veleroScheme.VeleroScheme,
 	GVR:    velerov1.SchemeGroupVersion,
 	Object: &velerov1.Restore{
 		ObjectMeta: metav1.ObjectMeta{

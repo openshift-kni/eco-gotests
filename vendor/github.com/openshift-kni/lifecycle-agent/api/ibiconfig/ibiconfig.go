@@ -79,6 +79,11 @@ type IBIPrepareConfig struct {
 	// Provide the device id like /dev/by-id/ata-xxxxx
 	InstallationDisk string `json:"installationDisk"`
 
+	// ReleaseRegistry is the container image registry that hosts the OpenShift
+	// release-image content and is used when precaching the cluster's container
+	// images during the preparation/installation step only.
+	ReleaseRegistry string `json:"releaseRegistry,omitempty"`
+
 	// PrecacheBestEffort is a flag to enable best effort precaching.
 	// +optional
 	PrecacheBestEffort bool `json:"precacheBestEffort,omitempty"`

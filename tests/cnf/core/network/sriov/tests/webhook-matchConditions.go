@@ -62,7 +62,7 @@ var _ = Describe("webhook-resource-injector", Ordered, Label(tsparams.LabelWebho
 		AfterAll(func() {
 			By("Removing SR-IOV configuration")
 			err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 			By("Cleaning test namespace")
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(

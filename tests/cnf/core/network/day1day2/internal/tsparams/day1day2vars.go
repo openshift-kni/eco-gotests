@@ -2,7 +2,7 @@ package tsparams
 
 import (
 	nmstatev1 "github.com/nmstate/kubernetes-nmstate/api/v1"
-	nmstatev1alpha1 "github.com/nmstate/kubernetes-nmstate/api/v1alpha1"
+	nmstatev1beta1 "github.com/nmstate/kubernetes-nmstate/api/v1beta1"
 
 	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
 	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
@@ -21,8 +21,8 @@ var (
 	ReporterCRDsToDump = []k8sreporter.CRData{
 		{Cr: &nmstatev1.NMStateList{}},
 		{Cr: &nmstatev1.NodeNetworkConfigurationPolicyList{}},
-		{Cr: &nmstatev1alpha1.NodeNetworkConfigurationEnactmentList{}},
-		{Cr: &nmstatev1alpha1.NodeNetworkStateList{}},
+		{Cr: &nmstatev1beta1.NodeNetworkConfigurationEnactmentList{}},
+		{Cr: &nmstatev1beta1.NodeNetworkStateList{}},
 	}
 
 	// ReporterNamespacesToDump tells to the reporter what namespaces to dump.

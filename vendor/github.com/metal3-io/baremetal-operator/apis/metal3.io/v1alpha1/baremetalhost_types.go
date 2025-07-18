@@ -477,6 +477,11 @@ type BareMetalHostSpec struct {
 	// eventually populated by inspection.
 	// +optional
 	Architecture string `json:"architecture,omitempty"`
+
+	// When set to true, power off of the node will be disabled,
+	// instead, a reboot will be used in place of power on/off
+	// +optional
+	DisablePowerOff bool `json:"disablePowerOff,omitempty"`
 }
 
 // AutomatedCleaningMode is the interface to enable/disable automated cleaning
@@ -1115,34 +1120,32 @@ func (host *BareMetalHost) OperationMetricForState(operation ProvisioningState) 
 // GetChecksum method returns the checksum of an image.
 func (image *Image) GetChecksum() (checksum, checksumType string, ok bool) {
 	if image == nil {
-		return
+		return "", "", false
 	}
 
 	if image.DiskFormat != nil && *image.DiskFormat == "live-iso" {
 		// Checksum is not required for live-iso
 		ok = true
-		return
+		return "", "", ok
 	}
 
 	if image.Checksum == "" {
 		// Return empty if checksum is not provided
-		return
+		return "", "", false
 	}
 
 	switch image.ChecksumType {
-	case "":
-		checksumType = string(MD5)
 	case MD5, SHA256, SHA512:
 		checksumType = string(image.ChecksumType)
-	case AutoChecksum:
+	case "", AutoChecksum:
 		// No type, let Ironic detect
 	default:
-		return
+		return "", "", false
 	}
 
 	checksum = image.Checksum
 	ok = true
-	return
+	return checksum, checksumType, ok
 }
 
 // +kubebuilder:object:root=true
