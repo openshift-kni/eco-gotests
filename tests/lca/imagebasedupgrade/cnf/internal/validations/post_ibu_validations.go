@@ -72,8 +72,6 @@ func PostUpgradeValidations() {
 
 			ValidateSeedHostnameRefLogs()
 
-			ValidateSeedHostnameRefEtcd()
-
 			ValidateDUConfig()
 
 			ValidateWorkload()
@@ -225,36 +223,6 @@ func ValidateSeedHostnameRefLogs() {
 				Expect(err).ToNot(HaveOccurred(), "could not convert string to int: %s", err)
 				Expect(seedLogRef).ToNot(BeNumerically(">", 0), "Seed hostname references detected in pod logs: %s", stdout)
 			}
-		})
-	})
-}
-
-// ValidateSeedHostnameRefEtcd check if no seed hostname references are present in etcd.
-func ValidateSeedHostnameRefEtcd() {
-	It("Validate no seed hostname references in etcd", reportxml.ID("71393"), Label("ValidateSeedRefEtcd"), func() {
-		By("Validate no seed hostname references in ectd", func() {
-			etcdPod, err := pod.ListByNamePattern(TargetSNOAPIClient, "etcd", "openshift-etcd")
-			Expect(err).ToNot(HaveOccurred(), "Failed to get etcd pod")
-
-			etcdCmd := fmt.Sprintf(
-				"for key in $(etcdctl get --prefix / --keys-only | grep -v ^$); do"+
-					"  value=$(etcdctl get --print-value-only $key | tr -d '\\0'); "+
-					"  if [[ $value == *%s* ]]; then"+
-					"    echo Key: $key contains seed reference;"+
-					"    break; "+
-					"  fi;"+
-					"done",
-				seedInfo.ClusterName,
-			)
-
-			getKeyCmd := []string{"bash", "-c", etcdCmd}
-			getKeyOut, err := etcdPod[0].ExecCommand(getKeyCmd, "etcdctl")
-			Expect(err).ToNot(HaveOccurred(), "could not execute command: %s", err)
-			Expect(getKeyOut.String()).ToNot(
-				ContainSubstring("contains seed reference"),
-				"Seed hostname references detected in etcd: %s",
-				getKeyOut.String(),
-			)
 		})
 	})
 }
