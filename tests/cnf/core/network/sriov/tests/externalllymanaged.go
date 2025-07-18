@@ -86,7 +86,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 			AfterAll(func() {
 				By("Removing SR-IOV configuration")
 				err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 				By("Verifying that VFs still exist")
 				err = sriovenv.WaitUntilVfsCreated(workerNodeList, sriovInterfacesUnderTest[0], 5, netparam.DefaultTimeout)
@@ -229,7 +229,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 				By("Removing SR-IOV configuration")
 				err = netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 				By("Checking that VF has initial configuration")
 				Eventually(func() []int {
@@ -327,7 +327,7 @@ var _ = Describe("ExternallyManaged", Ordered, Label(tsparams.LabelExternallyMan
 
 				By("Removing SR-IOV configuration")
 				err = netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+				Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 				By("Cleaning test namespace")
 				testNamespace, err := namespace.Pull(APIClient, tsparams.TestNamespaceName)
@@ -459,7 +459,7 @@ func removeSriovOperator(sriovNamespace *namespace.Builder) {
 	By("Clean all SR-IOV policies and networks")
 
 	err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-	Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 	By("Remove SR-IOV operator config")
 

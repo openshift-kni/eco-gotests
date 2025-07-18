@@ -108,6 +108,53 @@ type RegistrationHubConfiguration struct {
 	//  	he can set featuregate/Foo=false before upgrading. Let's say the cluster-admin wants featuregate/Foo=false.
 	// +optional
 	FeatureGates []FeatureGate `json:"featureGates,omitempty"`
+
+	// RegistrationDrivers represent the list of hub registration drivers that contain information used by hub to initialize the hub cluster
+	// A RegistrationDriverHub contains details of authentication type and the hub cluster ARN
+	// +optional
+	// +listType=map
+	// +listMapKey=authType
+	RegistrationDrivers []RegistrationDriverHub `json:"registrationDrivers,omitempty"`
+}
+
+type RegistrationDriverHub struct {
+
+	// Type of the authentication used by hub to initialize the Hub cluster. Possible values are csr and awsirsa.
+	// +required
+	// +kubebuilder:default:=csr
+	// +kubebuilder:validation:Enum=csr;awsirsa
+	AuthType string `json:"authType,omitempty"`
+
+	// CSR represents the configuration for csr driver.
+	// +optional
+	CSR *CSRConfig `json:"csr,omitempty"`
+
+	// AwsIrsa represents the configuration for awsisra driver.
+	// +optional
+	AwsIrsa *AwsIrsaConfig `json:"awsisra,omitempty"`
+}
+
+type CSRConfig struct {
+	// AutoApprovedIdentities represent a list of approved users
+	// +optional
+	AutoApprovedIdentities []string `json:"autoApprovedIdentities,omitempty"`
+}
+
+type AwsIrsaConfig struct {
+	// This represents the hub cluster ARN
+	// Example - arn:eks:us-west-2:12345678910:cluster/hub-cluster1
+	// +optional
+	// +kubebuilder:validation:Pattern=`^arn:aws:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$`
+	HubClusterArn string `json:"hubClusterArn,omitempty"`
+
+	// AutoApprovedIdentities represent a list of approved arn patterns
+	// +optional
+	AutoApprovedIdentities []string `json:"autoApprovedIdentities,omitempty"`
+
+	// List of tags to be added to AWS resources created by hub while processing awsirsa registration request
+	// Example - "product:v1:tenant:app-name=My-App"
+	// +optional
+	Tags []string `json:"tags,omitempty"`
 }
 
 type WorkConfiguration struct {

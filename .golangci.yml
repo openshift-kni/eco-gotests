@@ -89,6 +89,7 @@ linters:
             - gopkg.in/k8snetworkplumbingwg/multus-cni.v4/pkg/types
             - golang.org/x/crypto/ssh
             - github.com/klauspost/compress/zstd
+            - github.com/vmware-tanzu/velero/pkg/util
           deny:
             - pkg: github.com/onsi**
     funlen:

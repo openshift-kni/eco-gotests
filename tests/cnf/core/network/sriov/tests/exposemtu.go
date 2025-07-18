@@ -49,7 +49,7 @@ var _ = Describe("SRIOV: Expose MTU:", Ordered, Label(tsparams.LabelExposeMTUTes
 		AfterEach(func() {
 			By("Removing SR-IOV configuration")
 			err := netenv.RemoveSriovConfigurationAndWaitForSriovAndMCPStable()
-			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configration")
+			Expect(err).ToNot(HaveOccurred(), "Failed to remove SR-IOV configuration")
 
 			By("Cleaning test namespace")
 			err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(

@@ -411,19 +411,15 @@ func GetClusterAdditionalTrustBundleState(ctx context.Context, client client.Cli
 	return hasUserCaBundle, proxyConfigmapName, nil
 }
 
-func ShouldOverrideSeedRegistry(ctx context.Context, client runtimeclient.Client, mirrorRegistryConfigured bool, releaseRegistry string) (bool, error) {
-	mirroredRegistries, err := GetMirrorRegistrySourceRegistries(ctx, client)
-	if err != nil {
-		return false, err
+func ShouldOverrideSeedRegistry(seedMirrorRegistryConfigured bool, seedReleaseRegistry string, mirrorRegistrySources []string) (bool, error) {
+	mirrorRegistryConfigured := len(mirrorRegistrySources) > 0
+	// if the SNO doesn't have mirror registries configured:
+	//   - and seed SNO has mirror registries configured, then we should try to override the registry
+	//   - and seed SNO has no mirror registries configured, then we should not try to override the registry
+	if !mirrorRegistryConfigured {
+		return seedMirrorRegistryConfigured, nil
 	}
-	isMirrorRegistryConfigured := len(mirroredRegistries) > 0
-
-	// if snoa doesn't have mirror registry but seed have we should try to override registry
-	if !isMirrorRegistryConfigured && mirrorRegistryConfigured {
-		return true, err
-	}
-
-	return !lo.Contains(mirroredRegistries, releaseRegistry), nil
+	return !lo.Contains(mirrorRegistrySources, seedReleaseRegistry), nil
 }
 
 func GetIngressCertificateCN(ctx context.Context, client runtimeclient.Client) (string, error) {
