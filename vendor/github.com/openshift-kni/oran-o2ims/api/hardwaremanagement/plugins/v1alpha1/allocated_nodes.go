@@ -1,15 +1,7 @@
 /*
-Copyright (c) 2024 Red Hat, Inc.
+SPDX-FileCopyrightText: Red Hat
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
-compliance with the License. You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License is
-distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-implied. See the License for the specific language governing permissions and limitations under the
-License.
+SPDX-License-Identifier: Apache-2.0
 */
 
 package v1alpha1
@@ -26,11 +18,11 @@ type Interface struct {
 	MACAddress string `json:"macAddress"` // The MAC address of the interface
 }
 
-// NodeSpec describes a node presents a hardware server
-type NodeSpec struct {
-	// NodePool
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Node Pool",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	NodePool string `json:"nodePool"`
+// AllocatedNodeSpec describes a node presents a hardware server
+type AllocatedNodeSpec struct {
+	// NodeAllocationRequest
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Node Allocation Request",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	NodeAllocationRequest string `json:"nodeAllocationRequest"`
 
 	// GroupName
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Group Name",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
@@ -40,13 +32,17 @@ type NodeSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Hardware Profile",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	HwProfile string `json:"hwProfile"`
 
-	// HwMgrId is the identifier for the hardware manager instance.
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Hardware Manager ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
-	HwMgrId string `json:"hwMgrId,omitempty"`
+	// HardwarePluginRef is the identifier for the HardwarePlugin instance.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Hardware Plugin Reference",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	HardwarePluginRef string `json:"hardwarePluginRef,omitempty"`
 
 	// HwMgrNodeId is the node identifier from the hardware manager.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Hardware Manager Node ID",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	HwMgrNodeId string `json:"hwMgrNodeId,omitempty"`
+
+	// HwMgrNodeNs is the node namespace from the hardware manager.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Hardware Manager Node Namespace",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
+	HwMgrNodeNs string `json:"hwMgrNodeNs,omitempty"`
 
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	Extensions map[string]string `json:"extensions,omitempty"`
@@ -62,9 +58,9 @@ type BMC struct {
 	CredentialsName string `json:"credentialsName,omitempty"`
 }
 
-// NodeStatus describes the observed state of a request to allocate and prepare
+// AllocatedNodeStatus describes the observed state of a request to allocate and prepare
 // a node that will eventually be part of a deployment manager.
-type NodeStatus struct {
+type AllocatedNodeStatus struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=status
 	BMC *BMC `json:"bmc,omitempty"`
 
@@ -77,43 +73,43 @@ type NodeStatus struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=status
 	HwProfile string `json:"hwProfile,omitempty"`
 
-	// Conditions represent the observations of the NodeStatus's current state.
+	// Conditions represent the observations of the AllocatedNodeStatus's current state.
 	// Possible values of the condition type are `Provisioned`, `Unprovisioned`, `Updating` and `Failed`.
 	//+operator-sdk:csv:customresourcedefinitions:type=status
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// Node is the schema for an allocated node
+// AllocatedNode is the schema for an allocated node
 //
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:path=nodes,shortName=orannode
-// +kubebuilder:printcolumn:name="HwMgr Id",type="string",JSONPath=".spec.hwMgrId"
-// +kubebuilder:printcolumn:name="NodePool",type="string",JSONPath=".spec.nodePool"
-// +kubebuilder:printcolumn:name="HwMgr Node Id",type="string",JSONPath=".spec.hwMgrNodeId"
+// +kubebuilder:resource:path=allocatednodes,shortName=allocatednode
+// +kubebuilder:printcolumn:name="Plugin",type="string",JSONPath=".spec.hardwarePluginRef"
+// +kubebuilder:printcolumn:name="NodeAllocationRequest",type="string",JSONPath=".spec.nodeAllocationRequest"
+// +kubebuilder:printcolumn:name="HwMgr Node ID",type="string",JSONPath=".spec.hwMgrNodeId"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.conditions[-1:].reason"
-// +operator-sdk:csv:customresourcedefinitions:displayName="Node",resources={{Namespace, v1}}
-type Node struct {
+// +operator-sdk:csv:customresourcedefinitions:displayName="Allocated Node",resources={{Namespace, v1}}
+type AllocatedNode struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   NodeSpec   `json:"spec,omitempty"`
-	Status NodeStatus `json:"status,omitempty"`
+	Spec   AllocatedNodeSpec   `json:"spec,omitempty"`
+	Status AllocatedNodeStatus `json:"status,omitempty"`
 }
 
-// NodeList contains a list of provisioned node.
+// AllocatedNodeList contains a list of provisioned node.
 //
 // +kubebuilder:object:root=true
-type NodeList struct {
+type AllocatedNodeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Node `json:"items"`
+	Items           []AllocatedNode `json:"items"`
 }
 
 func init() {
 	SchemeBuilder.Register(
-		&Node{},
-		&NodeList{},
+		&AllocatedNode{},
+		&AllocatedNodeList{},
 	)
 }

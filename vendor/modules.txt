@@ -416,8 +416,8 @@ github.com/gogo/protobuf/sortkeys
 github.com/golang/glog
 github.com/golang/glog/internal/logsink
 github.com/golang/glog/internal/stackdump
-# github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-## explicit
+# github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
+## explicit; go 1.20
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.5.4
 ## explicit; go 1.17
@@ -709,7 +709,7 @@ github.com/opencontainers/runtime-spec/specs-go
 ## explicit; go 1.23.0
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades
 github.com/openshift-kni/cluster-group-upgrades-operator/pkg/api/clustergroupupgrades/v1alpha1
-# github.com/openshift-kni/eco-goinfra v0.0.0-20250716204848-5637213ebbbb
+# github.com/openshift-kni/eco-goinfra v0.0.0-20250716204848-5637213ebbbb => github.com/klaskosk/eco-goinfra v0.0.0-20250719205803-b0c01505cda4
 ## explicit; go 1.24.5
 github.com/openshift-kni/eco-goinfra/pkg/apiservers
 github.com/openshift-kni/eco-goinfra/pkg/argocd
@@ -889,10 +889,14 @@ github.com/openshift-kni/numaresources-operator/api/v1
 # github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin v0.0.0-20250128160241-57fbcf565b32
 ## explicit; go 1.22.0
 github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin/v1alpha1
-# github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250130153422-72163e75c543
+# github.com/openshift-kni/oran-o2ims/api/common v0.0.0-20250716190952-206606893d4d
 ## explicit; go 1.22.0
+github.com/openshift-kni/oran-o2ims/api/common
+# github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250716190952-206606893d4d
+## explicit; go 1.22.0
+github.com/openshift-kni/oran-o2ims/api/hardwaremanagement/plugins/v1alpha1
 github.com/openshift-kni/oran-o2ims/api/hardwaremanagement/v1alpha1
-# github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250123151805-c935b06062f9
+# github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250716190952-206606893d4d
 ## explicit; go 1.22.0
 github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1
 # github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible => github.com/openshift/api v0.0.0-20250529074221-97812373b6b4
@@ -2245,6 +2249,7 @@ sigs.k8s.io/yaml/goyaml.v2
 # github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20250625093820-3b2381406672
 # github.com/kubernetes-incubator/external-storage => github.com/libopenstorage/external-storage v5.2.1-0.20190425001840-d5e6a33a1729+incompatible
 # github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.9.0
+# github.com/openshift-kni/eco-goinfra => github.com/klaskosk/eco-goinfra v0.0.0-20250719205803-b0c01505cda4
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20250529074221-97812373b6b4
 # github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20250630191919-ed2ed7381926
 # github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20250630191919-ed2ed7381926
