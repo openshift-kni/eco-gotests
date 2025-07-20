@@ -127,7 +127,6 @@ func ModuleObjectDeleted(apiClient *clients.Settings, moduleName, nsName string,
 		})
 }
 
-/**
 // PreflightStageDone awaits preflightvalidationocp to be in stage Done.
 func PreflightStageDone(apiClient *clients.Settings, preflight, module, nsname string,
 	timeout time.Duration) error {
@@ -141,18 +140,23 @@ func PreflightStageDone(apiClient *clients.Settings, preflight, module, nsname s
 			}
 
 			preflightValidationOCP, err := pre.Get()
-
-			if err == nil {
-				status := preflightValidationOCP.Status.CRStatuses[module].VerificationStage
-				glog.V(kmmparams.KmmLogLevel).Infof("Stage: %s", status)
-
-				return status == "Done", nil
+			if err != nil {
+				return false, err
 			}
 
-			return false, err
+			// Search for the module in the new Modules array structure
+			for _, moduleStatus := range preflightValidationOCP.Status.Modules {
+				if moduleStatus.Name == module && moduleStatus.Namespace == nsname {
+					status := moduleStatus.VerificationStage
+					glog.V(kmmparams.KmmLogLevel).Infof("Stage: %s", status)
+					return status == "Done", nil
+				}
+			}
+
+			glog.V(kmmparams.KmmLogLevel).Infof("module %s not found in preflight validation status", module)
+			return false, nil
 		})
 }
-**/
 
 func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 	timeout time.Duration, selector map[string]string) error {

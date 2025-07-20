@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/go-version"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
+	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/olm"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
@@ -149,22 +150,30 @@ func ModuleLoadedMessage(module, nsname string) string {
 }
 
 // PreflightReason returns the reason of a preflightvalidationocp check.
-/**
+
 func PreflightReason(apiClient *clients.Settings, preflight, module, nsname string) (string, error) {
-	pre, _ := kmm.PullPreflightValidationOCP(apiClient, preflight, nsname)
-
-	preflightValidationOCP, err := pre.Get()
-
-	if err == nil {
-		reason := preflightValidationOCP.Status.CRStatuses[module].StatusReason
-		glog.V(kmmparams.KmmLogLevel).Infof("VerificationStatus: %s", reason)
-
-		return reason, nil
+	pre, err := kmm.PullPreflightValidationOCP(apiClient, preflight, nsname)
+	if err != nil {
+		return "", err
 	}
 
-	return "", err
+	preflightValidationOCP, err := pre.Get()
+	if err != nil {
+		return "", err
+	}
+
+	// Search for the module in the new Modules array structure
+	for _, moduleStatus := range preflightValidationOCP.Status.Modules {
+		if moduleStatus.Name == module && moduleStatus.Namespace == nsname {
+			reason := moduleStatus.StatusReason
+			glog.V(kmmparams.KmmLogLevel).Infof("VerificationStatus: %s", reason)
+			return reason, nil
+		}
+	}
+
+	glog.V(kmmparams.KmmLogLevel).Infof("module %s not found in preflight validation status", module)
+	return "", fmt.Errorf("module %s not found in namespace %s", module, nsname)
 }
-**/
 
 // ModuleUnloadedMessage returns message for a module unloaded event.
 func ModuleUnloadedMessage(module, nsname string) string {
