@@ -1,9 +1,16 @@
+/*
+SPDX-FileCopyrightText: Red Hat
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package v1alpha1
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/r3labs/diff/v3"
@@ -21,7 +28,7 @@ const (
 var (
 	// allowedClusterInstanceFields contains path patterns for fields that are allowed to be updated.
 	// The wildcard "*" is used to match any index in a list.
-	allowedClusterInstanceFields = [][]string{
+	AllowedClusterInstanceFields = [][]string{
 		// Cluster-level non-immutable fields
 		{"extraAnnotations"},
 		{"extraLabels"},
@@ -76,10 +83,10 @@ func ExtractMatchingInput(parentSchema []byte, subSchemaKey string) (any, error)
 	return matchingInput, nil
 }
 
-// disallowUnknownFieldsInSchema updates a schema by adding "additionalProperties": false
+// DisallowUnknownFieldsInSchema updates a schema by adding "additionalProperties": false
 // to all objects/arrays that define "properties". This ensures that any unknown fields
 // not defined in the schema will be disallowed during validation.
-func disallowUnknownFieldsInSchema(schema map[string]any) {
+func DisallowUnknownFieldsInSchema(schema map[string]any) {
 	// Check if the current schema level has "properties" defined
 	if properties, hasProperties := schema["properties"]; hasProperties {
 		// If "additionalProperties" is not already set, add it with the value false
@@ -91,7 +98,7 @@ func disallowUnknownFieldsInSchema(schema map[string]any) {
 		if propsMap, ok := properties.(map[string]any); ok {
 			for _, propValue := range propsMap {
 				if propSchema, ok := propValue.(map[string]any); ok {
-					disallowUnknownFieldsInSchema(propSchema)
+					DisallowUnknownFieldsInSchema(propSchema)
 				}
 			}
 		}
@@ -100,7 +107,7 @@ func disallowUnknownFieldsInSchema(schema map[string]any) {
 	// Recurse into each property defined under "items"
 	if items, hasItems := schema["items"]; hasItems {
 		if itemSchema, ok := items.(map[string]any); ok {
-			disallowUnknownFieldsInSchema(itemSchema)
+			DisallowUnknownFieldsInSchema(itemSchema)
 		}
 	}
 
@@ -201,7 +208,7 @@ func (r *ProvisioningRequest) ValidateClusterInstanceInputMatchesSchema(
 			"failed to extract %s subschema: %s", TemplateParamClusterInstance, err.Error())
 	}
 	// Any unknown fields not defined in the schema will be disallowed
-	disallowUnknownFieldsInSchema(clusterInstanceSubSchema)
+	DisallowUnknownFieldsInSchema(clusterInstanceSubSchema)
 
 	// Get the matching input for ClusterInstanceParameters
 	clusterInstanceMatchingInput, err := ExtractMatchingInput(
@@ -262,9 +269,9 @@ func (r *ProvisioningRequest) GetClusterTemplateRef(ctx context.Context, client 
 // that are considered immutable and should not be modified and a list of fields related
 // to node scaling, indicating nodes that were added or removed.
 func FindClusterInstanceImmutableFieldUpdates(
-	old, new map[string]any, ignoredFields [][]string) ([]string, []string, error) {
+	old, new map[string]any, ignoredFields [][]string, allowedFields [][]string) ([]string, []string, error) {
 
-	diffs, err := diff.Diff(old, new)
+	diffs, err := diff.Diff(old, new, diff.AllowTypeMismatch(true))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error comparing differences between old "+
 			"and new ClusterInstance input: %w", err)
@@ -273,6 +280,28 @@ func FindClusterInstanceImmutableFieldUpdates(
 	var updatedFields []string
 	var scalingNodes []string
 	for _, diff := range diffs {
+		if diff.Type == "update" {
+			if diff.From == nil || diff.To == nil {
+				continue
+			}
+			// Get value and type of the initial field.
+			from := reflect.ValueOf(diff.From).Interface()
+			fromValue := fmt.Sprintf("%v", from)
+			fromType := fmt.Sprintf("%T", from)
+			// Get value and type of the new field.
+			to := reflect.ValueOf(diff.To).Interface()
+			toValue := fmt.Sprintf("%v", to)
+			toType := fmt.Sprintf("%T", to)
+
+			// If the type has changed, also check the value. For the IMS usecase we do no support type
+			// changes, so this is the case of a mismatch from unmarshalling and it should be ignored if
+			// the value has been kept.
+			if fromType != toType {
+				if fromValue == toValue {
+					continue
+				}
+			}
+		}
 		/* Examples of diff result in json format
 
 		Label added at the cluster-level
@@ -305,7 +334,7 @@ func FindClusterInstanceImmutableFieldUpdates(
 		)
 
 		// Check if the path matches any allowed fields
-		if matchesAnyPattern(diff.Path, allowedClusterInstanceFields) {
+		if matchesAnyPattern(diff.Path, allowedFields) {
 			// Allowed field; skip
 			continue
 		}

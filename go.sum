@@ -337,8 +337,8 @@ github.com/golang/glog v1.2.5/go.mod h1:6AhwSGph0fcJtXVM/PEHPqZlFeoLxhs7/t5UDAwm
 github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
 github.com/golang/groupcache v0.0.0-20191227052852-215e87163ea7/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
 github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
-github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da h1:oI5xCqsCo564l8iNU+DwB5epxmsaqB+rhGL0m5jtYqE=
-github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
+github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 h1:f+oWsMOmNPc8JmEHVZIycC7hBoQxHH9pNKQORJNozsQ=
+github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8/go.mod h1:wcDNUvekVysuuOpQKo3191zZyTpiI6se1N1ULghS0sw=
 github.com/golang/mock v1.1.1/go.mod h1:oTYuIxOrZwtPieC+H1uAHpcLFnEyAGVDL/k47Jfbm0A=
 github.com/golang/mock v1.2.0/go.mod h1:oTYuIxOrZwtPieC+H1uAHpcLFnEyAGVDL/k47Jfbm0A=
 github.com/golang/mock v1.3.1/go.mod h1:sBzyDLLjw3U8JLTeZvSv8jJB+tU5PVekmnlKIyFUx0Y=
@@ -504,6 +504,8 @@ github.com/kevinmbeaulieu/eq-go v1.0.0/go.mod h1:G3S8ajA56gKBZm4UB9AOyoOS37JO3ro
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
+github.com/klaskosk/eco-goinfra v0.0.0-20250719205803-b0c01505cda4 h1:j5r3FTL1kKQu0cN29HMciBFeD2Bd54PsGwiVVYBx6r4=
+github.com/klaskosk/eco-goinfra v0.0.0-20250719205803-b0c01505cda4/go.mod h1:8LVNEHcIC6i3hpWuDJ5LfSi8+BUIBxBco1x8R76NF9w=
 github.com/klauspost/compress v1.13.6/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
 github.com/klauspost/compress v1.15.0/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
 github.com/klauspost/compress v1.15.1/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
@@ -683,8 +685,6 @@ github.com/opencontainers/runtime-spec v1.2.0 h1:z97+pHb3uELt/yiAWD691HNHQIF07bE
 github.com/opencontainers/runtime-spec v1.2.0/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20250715163214-56f0876892dc h1:ogWC9aTsa6pWZ/G/OYJR56di1EFL8HzhRqOIHov6+Fo=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20250715163214-56f0876892dc/go.mod h1:p1F+S+bwWMDd9QDixvaANQRbf/mT1dfMVvJ/DcYpA3M=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250716204848-5637213ebbbb h1:QB7uRWa8RueRevWCPuLPDtA3psl+ThD1KTDX+DLPz1Q=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250716204848-5637213ebbbb/go.mod h1:wuaC7wHv+YIogjPwPyfuenNhWmyLqfcgEXZbLUkD1VA=
 github.com/openshift-kni/k8sreporter v1.0.6 h1:aaxDzZx3s9bo1I3nopR63RGVZxcJgR94j5X87aDihYo=
 github.com/openshift-kni/k8sreporter v1.0.6/go.mod h1:tX6LOg0m0oXje7WNLFo8LKHC9Ix8VV0a7vUc6eyeFBQ=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20250715161102-71395a52711a h1:E24+fVTBNkO9AwFKMmsW7julvi8iHkTZo1bTpFXZEh0=
@@ -693,10 +693,12 @@ github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.202507150
 github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250715062915-7cc48e4830bd/go.mod h1:+h1icfaWdoypIJbkJlKDxAynE9SnPFOBHezdqR1VH1E=
 github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin v0.0.0-20250128160241-57fbcf565b32 h1:ufFJmCmIAN8uI1/BowCryt+tIEzaXC1KbJnRwO3UUFE=
 github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin v0.0.0-20250128160241-57fbcf565b32/go.mod h1:IUuPY/mlglIpTHV1MlYbBYPBTRgad5d328i5j/F4AbY=
-github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250130153422-72163e75c543 h1:kHrTMNWBjeV0tC16XniJkfTsWvzXwXJhcPtNQRni11Q=
-github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250130153422-72163e75c543/go.mod h1:WIYfQ7jH7QkTIzqVjMEClf1H47Prs6LuoPvSMxBBAGw=
-github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250123151805-c935b06062f9 h1:AP4psTmffaPv3IS/PkXIqRo2lmC0chWv33piK6m28sU=
-github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250123151805-c935b06062f9/go.mod h1:7dmhnmqiO1VP3SuqaAdnlFbBdeTLK3FI3vQHapVMNQg=
+github.com/openshift-kni/oran-o2ims/api/common v0.0.0-20250716190952-206606893d4d h1:gesPffOAzQOWNMvF3njwDqfb+0nLfJtc1WgOT2VkVxo=
+github.com/openshift-kni/oran-o2ims/api/common v0.0.0-20250716190952-206606893d4d/go.mod h1:lpsZQBKzYDIiv3l6DIGm9snagoqKQqz6cJoqSEj2LZo=
+github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250716190952-206606893d4d h1:Nf5iNuVfobvt+OMtP1hB7fnbRasPdGWWKnW4xoa5i6M=
+github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250716190952-206606893d4d/go.mod h1:FJdsfoSY26l65bsj/JCeqhNTE3hK73jZ5V4K3Z4t8N0=
+github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250716190952-206606893d4d h1:h0uBeZT+HEoJjElqMN5dlv2acMsN3RVM8jg0vXtNrws=
+github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250716190952-206606893d4d/go.mod h1:qbTWr1PyLQ6v1jnqyUO5H01f22m2t/1FYONq4GlsDEc=
 github.com/openshift/api v0.0.0-20250529074221-97812373b6b4 h1:jcY1inFa4gsygSbIId2jbCRGnGvEEcCmPZHaMc3PnT4=
 github.com/openshift/api v0.0.0-20250529074221-97812373b6b4/go.mod h1:yk60tHAmHhtVpJQo3TwVYq2zpuP70iJIFDCmeKMIzPw=
 github.com/openshift/client-go v0.0.0-20250425165505-5f55ff6979a1 h1:2HPG58V07TrrSGBviNPd0PY42vYHPPCIEwj/pb9nUlY=

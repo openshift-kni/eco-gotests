@@ -1,17 +1,7 @@
 /*
-Copyright 2023.
+SPDX-FileCopyrightText: Red Hat
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+SPDX-License-Identifier: Apache-2.0
 */
 
 package v1alpha1
@@ -58,12 +48,10 @@ type ProvisioningRequestSpec struct {
 	Extensions runtime.RawExtension `json:"extensions,omitempty"`
 }
 
-// NodePoolRef references a node pool.
-type NodePoolRef struct {
-	// Contains the name of the created NodePool.
-	Name string `json:"name,omitempty"`
-	// Contains the namespace of the created NodePool.
-	Namespace string `json:"namespace,omitempty"`
+// NodeAllocationRequestRef references a node allocation request.
+type NodeAllocationRequestRef struct {
+	// Contains the identifier of the created NodeAllocationRequest.
+	NodeAllocationRequestID string `json:"nodeAllocationRequestID,omitempty"`
 	// Represents the timestamp of the first status check for hardware provisioning
 	HardwareProvisioningCheckStart *metav1.Time `json:"hardwareProvisioningCheckStart,omitempty"`
 	// Represents the timestamp of the first status check for hardware configuring
@@ -88,8 +76,11 @@ type Extensions struct {
 	// ClusterDetails references to the ClusterInstance.
 	ClusterDetails *ClusterDetails `json:"clusterDetails,omitempty"`
 
-	// NodePoolRef references to the NodePool.
-	NodePoolRef *NodePoolRef `json:"nodePoolRef,omitempty"`
+	// NodeAllocationRequestRef references to the NodeAllocationRequest.
+	NodeAllocationRequestRef *NodeAllocationRequestRef `json:"nodeAllocationRequestRef,omitempty"`
+
+	// AllocatedNodeHostMap stores the mapping of AllocatedNode IDs to Hostnames
+	AllocatedNodeHostMap map[string]string `json:"allocatedNodeHostMap,omitempty"`
 
 	// Holds policies that are matched with the ManagedCluster created by the ProvisioningRequest.
 	Policies []PolicyDetails `json:"policies,omitempty"`
@@ -112,6 +103,12 @@ type PolicyDetails struct {
 type ProvisioningPhase string
 
 const (
+	// StatePending indicates that the provisioning process is either waiting to start
+	// or is preparing to apply new changes. This state is set when the ProvisioningRequest
+	// is observed with new spec changes, during validation and resource preparation,
+	// before the actual provisioning begins.
+	StatePending ProvisioningPhase = "pending"
+
 	// StateProgressing means the provisioning process is currently in progress.
 	// It could be in progress during hardware provisioning, cluster installation, or cluster configuration.
 	StateProgressing ProvisioningPhase = "progressing"
@@ -138,7 +135,7 @@ type ProvisionedResources struct {
 
 type ProvisioningStatus struct {
 	// The current state of the provisioning process.
-	// +kubebuilder:validation:Enum=progressing;fulfilled;failed;deleting
+	// +kubebuilder:validation:Enum=pending;progressing;fulfilled;failed;deleting
 	ProvisioningPhase ProvisioningPhase `json:"provisioningPhase,omitempty"`
 
 	// The details about the current state of the provisioning process.
@@ -164,17 +161,21 @@ type ProvisioningRequestStatus struct {
 	Extensions Extensions `json:"extensions,omitempty"`
 
 	ProvisioningStatus ProvisioningStatus `json:"provisioningStatus,omitempty"`
+
+	// ObservedGeneration is the most recent generation observed by the controller.
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster,shortName=oranpr
+//+kubebuilder:printcolumn:name="DisplayName",type="string",JSONPath=".spec.name"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 //+kubebuilder:printcolumn:name="ProvisionPhase",type="string",JSONPath=".status.provisioningStatus.provisioningPhase"
 //+kubebuilder:printcolumn:name="ProvisionDetails",type="string",JSONPath=".status.provisioningStatus.provisioningDetails"
 
 // ProvisioningRequest is the Schema for the provisioningrequests API
-// +operator-sdk:csv:customresourcedefinitions:displayName="ORAN O2IMS Provisioning Request",resources={{Namespace, v1},{ClusterInstance, siteconfig.open-cluster-management.io/v1alpha1}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="Provisioning Request",resources={{Namespace, v1},{ClusterInstance, siteconfig.open-cluster-management.io/v1alpha1}}
 type ProvisioningRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

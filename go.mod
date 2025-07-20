@@ -28,8 +28,8 @@ require (
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20250715161102-71395a52711a // release-4.19
 	github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250715062915-7cc48e4830bd // release-4.19
 	github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin v0.0.0-20250128160241-57fbcf565b32
-	github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250130153422-72163e75c543
-	github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250123151805-c935b06062f9
+	github.com/openshift-kni/oran-o2ims/api/hardwaremanagement v0.0.0-20250716190952-206606893d4d
+	github.com/openshift-kni/oran-o2ims/api/provisioning v0.0.0-20250716190952-206606893d4d
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/client-go v0.0.0-20250425165505-5f55ff6979a1 // release-4.19
 	github.com/openshift/cluster-nfd-operator v0.0.0-20250619073832-dbf21174e0c0 // release-4.19
@@ -112,7 +112,7 @@ require (
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
@@ -261,6 +261,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/moby/sys/capability v0.4.0 // indirect
+	github.com/openshift-kni/oran-o2ims/api/common v0.0.0-20250716190952-206606893d4d // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.2.2 // indirect
@@ -279,6 +280,7 @@ replace (
 	github.com/k8snetworkplumbingwg/sriov-network-operator => github.com/openshift/sriov-network-operator v0.0.0-20250625093820-3b2381406672 // release-4.19
 	github.com/kubernetes-incubator/external-storage => github.com/libopenstorage/external-storage v5.2.1-0.20190425001840-d5e6a33a1729+incompatible
 	github.com/metal3-io/baremetal-operator/pkg/hardwareutils => github.com/metal3-io/baremetal-operator/pkg/hardwareutils v0.9.0
+	github.com/openshift-kni/eco-goinfra => github.com/klaskosk/eco-goinfra v0.0.0-20250719205803-b0c01505cda4 // oran-metal3-changes // REMOVE BEFORE MERGE
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20250529074221-97812373b6b4 // release-4.19
 	github.com/openshift/assisted-service/api => github.com/openshift/assisted-service/api v0.0.0-20250630191919-ed2ed7381926 // release-4.19
 	github.com/openshift/assisted-service/models => github.com/openshift/assisted-service/models v0.0.0-20250630191919-ed2ed7381926 // release-4.19
