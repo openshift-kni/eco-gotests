@@ -22,8 +22,9 @@ import (
 	modulev1beta1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/kmm/v1beta1"
 	olmv1alpha1 "github.com/openshift-kni/eco-goinfra/pkg/schemes/olm/operators/v1alpha1"
 	lcav1 "github.com/openshift-kni/lifecycle-agent/api/imagebasedupgrade/v1"
-	pluginv1alpha1 "github.com/openshift-kni/oran-hwmgr-plugin/api/hwmgr-plugin/v1alpha1"
+	pluginsv1alpha1 "github.com/openshift-kni/oran-o2ims/api/hardwaremanagement/plugins/v1alpha1"
 	hardwaremanagementv1alpha1 "github.com/openshift-kni/oran-o2ims/api/hardwaremanagement/v1alpha1"
+	inventoryv1alpha1 "github.com/openshift-kni/oran-o2ims/api/inventory/v1alpha1"
 	provisioningv1alpha1 "github.com/openshift-kni/oran-o2ims/api/provisioning/v1alpha1"
 	configv1 "github.com/openshift/api/config/v1"
 	imageregistryv1 "github.com/openshift/api/imageregistry/v1"
@@ -67,9 +68,10 @@ var reporterSchemes = []clients.SchemeAttacher{
 	ibiv1alpha1.AddToScheme,
 	siteconfigv1alpha1.AddToScheme,
 	certificatesv1.AddToScheme,
-	pluginv1alpha1.AddToScheme,
+	pluginsv1alpha1.AddToScheme,
 	provisioningv1alpha1.AddToScheme,
 	hardwaremanagementv1alpha1.AddToScheme,
+	inventoryv1alpha1.AddToScheme,
 }
 
 func setReporterSchemes(scheme *runtime.Scheme) error {

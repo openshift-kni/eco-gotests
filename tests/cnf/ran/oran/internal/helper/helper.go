@@ -50,7 +50,7 @@ func NewNoTemplatePR(client runtimeclient.Client, templateVersion string) *oran.
 		WithTemplateParameter("clusterInstanceParameters", map[string]any{
 			"clusterName": RANConfig.Spoke1Name,
 			"nodes": []map[string]any{{
-				"hostName": RANConfig.Spoke1Hostname,
+				"hostName": "fake.apps." + RANConfig.Spoke1Hostname,
 				// 192.0.2.0 is a reserved test address so we never accidentally use a valid IP.
 				"bmcAddress": "redfish-VirtualMedia://192.0.2.0/redfish/v1/Systems/System.Embedded.1",
 				"bmcCredentialsDetails": map[string]any{
