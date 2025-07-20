@@ -194,12 +194,19 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			if err != nil {
 				Skip("could not detect cluster architecture")
 			}
-			preflightImage := get.PreflightImage(arch)
+			dtkImage := get.PreflightImage(arch)
+
+			By("Get kernel version from cluster")
+			kernelVersion, err := get.KernelFullVersion(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not get cluster kernel version")
+			}
 
 			By("Create preflightvalidationocp")
 			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
 				kmmparams.UseDtkModuleTestNamespace).
-				WithKernelVersion(preflightImage).
+				WithKernelVersion(kernelVersion).
+				WithDtkImage(dtkImage).
 				WithPushBuiltImage(false).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
@@ -231,12 +238,19 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			if err != nil {
 				Skip("could not detect cluster architecture")
 			}
-			preflightImage := get.PreflightImage(arch)
+			dtkImage := get.PreflightImage(arch)
+
+			By("Get kernel version from cluster")
+			kernelVersion, err := get.KernelFullVersion(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not get cluster kernel version")
+			}
 
 			By("Create preflightvalidationocp")
 			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
 				kmmparams.UseDtkModuleTestNamespace).
-				WithKernelVersion(preflightImage).
+				WithKernelVersion(kernelVersion).
+				WithDtkImage(dtkImage).
 				WithPushBuiltImage(true).
 				Create()
 			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
