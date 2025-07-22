@@ -307,7 +307,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				Eventually(func() string {
 					// Get the routes
 					frrNodeState, err := metallb.ListFrrNodeState(APIClient, client.ListOptions{
-						FieldSelector: fields.SelectorFromSet(fields.Set{"metadata.name": "worker-0"})})
+						FieldSelector: fields.SelectorFromSet(fields.Set{"metadata.name": workerNodeList[0].Object.Name})})
 					Expect(err).ToNot(HaveOccurred(), "Failed to verify BGP routes")
 
 					return frrNodeState[0].Object.Status.RunningConfig
@@ -327,7 +327,7 @@ var _ = Describe("FRR", Ordered, Label(tsparams.LabelFRRTestCases), ContinueOnFa
 				Eventually(func() string {
 					// Get the routes
 					frrNodeState, err := metallb.ListFrrNodeState(APIClient, client.ListOptions{
-						FieldSelector: fields.SelectorFromSet(fields.Set{"metadata.name": "worker-1"})})
+						FieldSelector: fields.SelectorFromSet(fields.Set{"metadata.name": workerNodeList[1].Object.Name})})
 					Expect(err).ToNot(HaveOccurred(), "Failed to verify BGP routes")
 
 					return frrNodeState[0].Object.Status.RunningConfig
