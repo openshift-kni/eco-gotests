@@ -114,12 +114,12 @@ var _ = Describe("ZTP Argo CD Node Deletion Tests", Label(tsparams.LabelArgoCdNo
 		// This time the path not being found is an error since if one path for the test is found, the other
 		// being missing is an actual issue, not just a skip because the test is not applicable.
 		By("updating the Argo CD app to apply the suppression to the spec")
-		exists := clustersApp.DoesGitPathExist(tsparams.ZtpTestPathNodeDeleteAddSuppression)
-		Expect(exists).To(BeTrue(), "Already applied node delete crAnnotation but cannot find node delete suppression path")
-
 		// Since UpdateAndWaitForSync appends the git path, we need to reset it first to the original path
 		// before appending the new path.
 		clustersApp.Definition.Spec.Source.Path = originalClustersGitPath
+		exists := clustersApp.DoesGitPathExist(tsparams.ZtpTestPathNodeDeleteAddSuppression)
+		Expect(exists).To(BeTrue(), "Already applied node delete crAnnotation but cannot find node delete suppression path")
+
 		err = gitdetails.UpdateAndWaitForSync(clustersApp, false, tsparams.ZtpTestPathNodeDeleteAddSuppression)
 		Expect(err).ToNot(HaveOccurred(), "Failed to update Argo CD git path")
 
