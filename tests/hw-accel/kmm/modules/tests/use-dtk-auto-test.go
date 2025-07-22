@@ -202,6 +202,11 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				Skip("could not get cluster kernel version")
 			}
 
+			By("Wait for module to be fully deployed before creating preflight")
+			err = await.ModuleDeployment(APIClient, moduleName, kmmparams.UseDtkModuleTestNamespace, 2*time.Minute,
+				GeneralConfig.WorkerLabelMap)
+			Expect(err).ToNot(HaveOccurred(), "error while waiting for module deployment")
+
 			By("Create preflightvalidationocp")
 			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
 				kmmparams.UseDtkModuleTestNamespace).

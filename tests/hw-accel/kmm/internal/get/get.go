@@ -167,6 +167,7 @@ func PreflightReason(apiClient *clients.Settings, preflight, module, nsname stri
 		if moduleStatus.Name == module && moduleStatus.Namespace == nsname {
 			reason := moduleStatus.StatusReason
 			glog.V(kmmparams.KmmLogLevel).Infof("VerificationStatus: %s", reason)
+			fmt.Printf("DEBUG: Actual preflight reason for %s/%s: '%s'\n", nsname, module, reason)
 			return reason, nil
 		}
 	}
