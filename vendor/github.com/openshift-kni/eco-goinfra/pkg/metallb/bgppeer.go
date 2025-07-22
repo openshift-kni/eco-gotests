@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypes"
+	"github.com/openshift-kni/eco-goinfra/pkg/metallb/mlbtypesv1beta2"
 	"github.com/openshift-kni/eco-goinfra/pkg/msg"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,8 +24,8 @@ const (
 // BGPPeerBuilder provides struct for the BGPPeer object containing connection to
 // the cluster and the BGPPeer definitions.
 type BGPPeerBuilder struct {
-	Definition *mlbtypes.BGPPeer
-	Object     *mlbtypes.BGPPeer
+	Definition *mlbtypesv1beta2.BGPPeer
+	Object     *mlbtypesv1beta2.BGPPeer
 	apiClient  *clients.Settings
 	errorMsg   string
 }
@@ -42,15 +42,15 @@ func NewBPGPeerBuilder(
 
 	builder := BGPPeerBuilder{
 		apiClient: apiClient,
-		Definition: &mlbtypes.BGPPeer{
+		Definition: &mlbtypesv1beta2.BGPPeer{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       bpgPeerKind,
-				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersion),
+				APIVersion: fmt.Sprintf("%s/%s", APIGroup, APIVersionv2),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
-			}, Spec: mlbtypes.BGPPeerSpec{
+			}, Spec: mlbtypesv1beta2.BGPPeerSpec{
 				MyASN:   asn,
 				ASN:     remoteASN,
 				Address: peerIP,
@@ -80,7 +80,7 @@ func NewBPGPeerBuilder(
 }
 
 // Get returns BGPPeer object if found.
-func (builder *BGPPeerBuilder) Get() (*mlbtypes.BGPPeer, error) {
+func (builder *BGPPeerBuilder) Get() (*mlbtypesv1beta2.BGPPeer, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func PullBGPPeer(apiClient *clients.Settings, name, nsname string) (*BGPPeerBuil
 
 	builder := BGPPeerBuilder{
 		apiClient: apiClient,
-		Definition: &mlbtypes.BGPPeer{
+		Definition: &mlbtypesv1beta2.BGPPeer{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: nsname,
@@ -265,6 +265,33 @@ func (builder *BGPPeerBuilder) Update(force bool) (*BGPPeerBuilder, error) {
 	return builder, err
 }
 
+// WithDynamicASN defines the dynamicASN as either internal (iBGP) or external (eBGP). Both remoteAS and dynamicASN
+// configure the remote ASN. They are mutually exclusive and only one can be used per remote peer.
+func (builder *BGPPeerBuilder) WithDynamicASN(dynamicASN mlbtypesv1beta2.DynamicASNMode) *BGPPeerBuilder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Creating BGPPeer %s in namespace %s using a dynamicASN: %s",
+		builder.Definition.Name, builder.Definition.Namespace, dynamicASN)
+
+	if dynamicASN != "internal" && dynamicASN != "external" {
+		glog.V(100).Infof("The dynamicASN of the BGPPeer is incorrect")
+
+		builder.errorMsg = "bgpPeer 'dynamicASN' must be either internal or external"
+	}
+
+	if builder.errorMsg != "" {
+		return builder
+	}
+
+	builder.Definition.Spec.ASN = 0
+	builder.Definition.Spec.DynamicASN = dynamicASN
+
+	return builder
+}
+
 // WithRouterID defines the routerID placed in the BGPPeer spec.
 func (builder *BGPPeerBuilder) WithRouterID(routerID string) *BGPPeerBuilder {
 	if valid, _ := builder.validate(); !valid {
@@ -367,7 +394,7 @@ func (builder *BGPPeerBuilder) WithHoldTime(holdTime metav1.Duration) *BGPPeerBu
 		"Creating BGPPeer %s in namespace %s with this holdTime: %s",
 		builder.Definition.Name, builder.Definition.Namespace, holdTime)
 
-	builder.Definition.Spec.HoldTime = holdTime
+	builder.Definition.Spec.HoldTime = &holdTime
 
 	return builder
 }
@@ -382,7 +409,7 @@ func (builder *BGPPeerBuilder) WithKeepalive(keepalive metav1.Duration) *BGPPeer
 		"Creating BGPPeer %s in namespace %s with this keepalive: %s",
 		builder.Definition.Name, builder.Definition.Namespace, keepalive)
 
-	builder.Definition.Spec.KeepaliveTime = keepalive
+	builder.Definition.Spec.KeepaliveTime = &keepalive
 
 	return builder
 }
@@ -407,8 +434,9 @@ func (builder *BGPPeerBuilder) WithNodeSelector(nodeSelector map[string]string) 
 		return builder
 	}
 
-	ndSelector := []mlbtypes.NodeSelector{{MatchLabels: nodeSelector}}
-	builder.Definition.Spec.NodeSelectors = ndSelector
+	builder.Definition.Spec.NodeSelectors = []metav1.LabelSelector{{
+		MatchLabels: nodeSelector,
+	}}
 
 	return builder
 }
@@ -481,7 +509,7 @@ func (builder *BGPPeerBuilder) WithOptions(options ...BGPPeerAdditionalOptions) 
 // GetBGPPeerGVR returns bgppeer's GroupVersionResource which could be used for Clean function.
 func GetBGPPeerGVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
-		Group: APIGroup, Version: APIVersion, Resource: "bgppeers",
+		Group: APIGroup, Version: APIVersionv2, Resource: "bgppeers",
 	}
 }
 
@@ -517,8 +545,9 @@ func (builder *BGPPeerBuilder) validate() (bool, error) {
 	return true, nil
 }
 
-func (builder *BGPPeerBuilder) convertToStructured(unsObject *unstructured.Unstructured) (*mlbtypes.BGPPeer, error) {
-	bgpPeer := &mlbtypes.BGPPeer{}
+func (builder *BGPPeerBuilder) convertToStructured(unsObject *unstructured.Unstructured) (
+	*mlbtypesv1beta2.BGPPeer, error) {
+	bgpPeer := &mlbtypesv1beta2.BGPPeer{}
 
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(unsObject.Object, bgpPeer)
 	if err != nil {
