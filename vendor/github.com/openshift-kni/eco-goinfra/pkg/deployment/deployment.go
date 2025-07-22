@@ -741,3 +741,18 @@ func (builder *Builder) WithToleration(toleration corev1.Toleration) *Builder {
 
 	return builder
 }
+
+// WithTerminationGracePeriodSeconds configures TerminationGracePeriodSeconds on the pod template of the deployment.
+func (builder *Builder) WithTerminationGracePeriodSeconds(terminationGracePeriodSeconds int64) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		return builder
+	}
+
+	glog.V(100).Infof(
+		"Applying terminationGracePeriodSeconds flag to the configuration of pod template of deployment: %s in namespace: %s",
+		builder.Definition.Name, builder.Definition.Namespace)
+
+	builder.Definition.Spec.Template.Spec.TerminationGracePeriodSeconds = &terminationGracePeriodSeconds
+
+	return builder
+}
