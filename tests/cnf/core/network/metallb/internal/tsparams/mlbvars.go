@@ -42,6 +42,8 @@ var (
 	MetalLbDsName = "speaker"
 	// MetalLbDefaultSpeakerLabel represents the default metalLb speaker label.
 	MetalLbDefaultSpeakerLabel = "component=speaker"
+	// HubMacVlanNADName represents default external NetworkAttachmentDefinition name.
+	HubMacVlanNADName = "nad-hub"
 	// ExternalMacVlanNADName represents default external NetworkAttachmentDefinition name.
 	ExternalMacVlanNADName = "external"
 	// SleepCMD represents shel sleep command.
@@ -60,6 +62,8 @@ var (
 	PrometheusMonitoringLabel = "openshift.io/cluster-monitoring"
 	// PrometheusMonitoringPodLabel represents monitoring pod label selector.
 	PrometheusMonitoringPodLabel = "app.kubernetes.io/name=prometheus"
+	// FRRK8sNodeLabel represents the default metalLb FRRK8S node label.
+	FRRK8sNodeLabel = "app=frr-k8s"
 	// EBGPProtocol represents external bgp protocol name.
 	EBGPProtocol = "eBGP"
 	// IBPGPProtocol represents internal bgp protocol name.

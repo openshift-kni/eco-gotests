@@ -7,6 +7,11 @@ const (
 	LabelBFDTestCases = "bfd"
 	// LabelBGPTestCases represents bgp label that can be used for test cases selection.
 	LabelBGPTestCases = "bgp"
+	// LabelDynamicRemoteASTestCases represents dynamic-remote-as label that can be used for test cases selection.
+	LabelDynamicRemoteASTestCases = "dynamic-remote-as"
+	// MlbAddressListError an error message when the ECO_CNF_CORE_NET_MLB_ADDR_LIST is incorrect.
+	MlbAddressListError = "An unexpected error occurred while " +
+		"determining the IP addresses from the ECO_CNF_CORE_NET_MLB_ADDR_LIST environment variable."
 	// LabelLayer2TestCases represents layer2 label that can be used for test cases selection.
 	LabelLayer2TestCases = "layer2"
 	// BGPPassword var is used to set password for BGP session between FRR speakers.
