@@ -244,18 +244,6 @@ var _ = Describe(
 
 		Context("Ungraceful Cluster Reboot", Label("ungraceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
-				By("Creating EgressService with ETP=Cluster and sourceIPBy=LoadBalancerIP")
-				rdscorecommon.VerifyEgressServiceWithClusterETPLoadbalancer(ctx)
-
-				By("Creating EgressService with ETP=Cluster and sourceIPBy=Network")
-				rdscorecommon.VerifyEgressServiceWithClusterETPNetwork(ctx)
-
-				By("Creating EgressService with ETP=Local and sourceIPBy=LoadBalancerIP")
-				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
-
-				By("Creating EgressService with ETP=Local and sourceIPBy=Network")
-				rdscorecommon.VerifyEgressServiceWithLocalETPSourceIPByNetwork(ctx)
-
 				By("Creating EgressIP workload config")
 				rdscorecommon.CreateEgressIPTestDeployment()
 
@@ -292,6 +280,22 @@ var _ = Describe(
 				By("Creating SR-IOV workload on different nodes and different SR-IOV networks")
 				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx)
 			})
+
+			It("Setups EgressService with Cluster ExternalTrafficPolicy",
+				Label("egress", "egress-etp-cluster", "egress-etp-cluster-loadbalancer"),
+				rdscorecommon.VerifyEgressServiceWithClusterETPLoadbalancer)
+
+			It("Setups EgressService with Cluster ExternalTrafficPolicy and sourceIPBy=Network",
+				Label("egress", "egress-etp-cluster", "egress-etp-cluster-network"),
+				rdscorecommon.VerifyEgressServiceWithClusterETPNetwork)
+
+			It("Setups EgressService with Local ExternalTrafficPolicy",
+				Label("egress", "egress-etp-local"),
+				rdscorecommon.VerifyEgressServiceWithLocalETP)
+
+			It("Setups EgressService with Local ExternalTrafficPolicy and sourceIPBy=Network",
+				Label("egress", "egress-etp-local", "egress-etp-local-network"),
+				rdscorecommon.VerifyEgressServiceWithLocalETPSourceIPByNetwork)
 
 			It("Verifies ungraceful cluster reboot",
 				Label("rds-core-hard-reboot"), reportxml.ID("30020"),
@@ -534,18 +538,6 @@ var _ = Describe(
 
 		Context("Graceful Cluster Reboot", Label("graceful-cluster-reboot"), func() {
 			BeforeAll(func(ctx SpecContext) {
-				By("Creating EgressService with ETP=Cluster and sourceIPBy=LoadBalancerIP")
-				rdscorecommon.VerifyEgressServiceWithClusterETPLoadbalancer(ctx)
-
-				By("Creating EgressService with ETP=Cluster and sourceIPBy=Network")
-				rdscorecommon.VerifyEgressServiceWithClusterETPNetwork(ctx)
-
-				By("Creating EgressService with ETP=Local and sourceIPBy=LoadBalancerIP")
-				rdscorecommon.VerifyEgressServiceWithLocalETP(ctx)
-
-				By("Creating EgressService with ETP=Local and sourceIPBy=Network")
-				rdscorecommon.VerifyEgressServiceWithLocalETPSourceIPByNetwork(ctx)
-
 				By("Creating EgressIP workload config")
 				rdscorecommon.CreateEgressIPTestDeployment()
 
@@ -582,6 +574,22 @@ var _ = Describe(
 				By("Creating SR-IOV workload on different nodes and different SR-IOV networks")
 				rdscorecommon.VerifySRIOVWorkloadsOnDifferentNodesDifferentNet(ctx)
 			})
+
+			It("Setups EgressService with Cluster ExternalTrafficPolicy",
+				Label("egress", "egress-etp-cluster", "egress-etp-cluster-loadbalancer"),
+				rdscorecommon.VerifyEgressServiceWithClusterETPLoadbalancer)
+
+			It("Setups EgressService with Cluster ExternalTrafficPolicy and sourceIPBy=Network",
+				Label("egress", "egress-etp-cluster", "egress-etp-cluster-network"),
+				rdscorecommon.VerifyEgressServiceWithClusterETPNetwork)
+
+			It("Setups EgressService with Local ExternalTrafficPolicy",
+				Label("egress", "egress-etp-local"),
+				rdscorecommon.VerifyEgressServiceWithLocalETP)
+
+			It("Setups EgressService with Local ExternalTrafficPolicy and sourceIPBy=Network",
+				Label("egress", "egress-etp-local", "egress-etp-local-network"),
+				rdscorecommon.VerifyEgressServiceWithLocalETPSourceIPByNetwork)
 
 			It("Verifies graceful cluster reboot",
 				Label("rds-core-soft-reboot"), reportxml.ID("30021"), rdscorecommon.VerifySoftReboot)
