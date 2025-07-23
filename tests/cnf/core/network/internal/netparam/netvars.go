@@ -37,4 +37,11 @@ var (
 	ClusterMonitoringNSLabel = map[string]string{"openshift.io/cluster-monitoring": "true"}
 	// MlxVendorID is the Mellanox Sriov Vendor ID.
 	MlxVendorID = "15b3"
+	// IPForwardAndSleepCmd defines a shell command to enable IPv4 forwarding and keep a process running indefinitely.
+	IPForwardAndSleepCmd = []string{
+		"/bin/bash",
+		"-c",
+		`echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || true; \
+trap : TERM INT; sleep infinity & wait`,
+	}
 )
