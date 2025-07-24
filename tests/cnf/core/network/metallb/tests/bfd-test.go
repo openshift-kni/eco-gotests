@@ -60,7 +60,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		err = metallbenv.IsEnvVarMetalLbIPinNodeExtNetRange(ipv4NodeAddrList, ipv4metalLbIPList, nil)
 		Expect(err).ToNot(HaveOccurred(), "Failed to validate metalLb exported ip address")
-		createExternalNad()
+		createExternalNad(tsparams.ExternalMacVlanNADName)
 	})
 
 	Context("single hop", Label("singlehop"), func() {
@@ -211,7 +211,7 @@ var _ = Describe("BFD", Ordered, Label(tsparams.LabelBFDTestCases), ContinueOnFa
 
 		DescribeTable("should provide fast link failure detection", reportxml.ID("47186"),
 			func(bgpProtocol, ipStack string, externalTrafficPolicy corev1.ServiceExternalTrafficPolicyType) {
-				createExternalNad()
+				createExternalNad(tsparams.ExternalMacVlanNADName)
 
 				By("Verifying that speaker route map is not empty")
 				Expect(speakerRoutesMap).ToNot(BeNil(), "Speaker route map is empty")

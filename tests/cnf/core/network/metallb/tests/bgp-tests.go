@@ -64,7 +64,7 @@ var _ = Describe("BGP", Ordered, Label(tsparams.LabelBGPTestCases), ContinueOnFa
 
 	BeforeEach(func() {
 		By("Creating External NAD")
-		createExternalNad()
+		createExternalNad(tsparams.ExternalMacVlanNADName)
 
 		By("Listing metalLb speakers pod")
 		var err error

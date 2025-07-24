@@ -34,6 +34,15 @@ type BGPPeerSpec struct {
 	// +kubebuilder:validation:Maximum=4294967295
 	ASN uint32 `json:"peerASN"`
 
+	// DynamicASN detects the AS number to use for the remote end of the session
+	// without explicitly setting it via the ASN field. Limited to:
+	// internal - if the neighbor's ASN is different than MyASN connection is denied.
+	// external - if the neighbor's ASN is the same as MyASN the connection is denied.
+	// ASN and DynamicASN are mutually exclusive and one of them must be specified.
+	// +kubebuilder:validation:Enum=internal;external
+	// +optional
+	DynamicASN DynamicASNMode `json:"dynamicASN,omitempty"`
+
 	// Address to dial when establishing the session.
 	Address string `json:"peerAddress"`
 
@@ -117,3 +126,14 @@ func (in *BGPPeer) DeepCopyObject() runtime.Object { //nolint:ireturn
 
 	return nil
 }
+
+// DynamicASNMode DynamicASN detects the AS number to use for the remote end of the session
+// without explicitly setting it via the ASN field.
+type DynamicASNMode string
+
+const (
+	// InternalASNMode - if the neighbor's ASN is different than MyASN connection is denied.
+	InternalASNMode DynamicASNMode = "internal"
+	// ExternalASNMode - if the neighbor's ASN is the same as MyASN the connection is denied.
+	ExternalASNMode DynamicASNMode = "external"
+)

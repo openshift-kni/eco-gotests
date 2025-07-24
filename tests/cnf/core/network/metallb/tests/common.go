@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/daemonset"
 	"github.com/openshift-kni/eco-goinfra/pkg/metallb"
 	"github.com/openshift-kni/eco-goinfra/pkg/nad"
+	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
 	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
@@ -90,15 +91,51 @@ func createConfigMap(
 	return masterConfigMap
 }
 
-func createExternalNad() {
+func createExternalNad(name string) {
 	By("Creating external BR-EX NetworkAttachmentDefinition")
 
 	macVlanPlugin, err := define.MasterNadPlugin(coreparams.OvnExternalBridge, "bridge", nad.IPAMStatic())
 	Expect(err).ToNot(HaveOccurred(), "Failed to define master nad plugin")
-	externalNad, err = nad.NewBuilder(APIClient, tsparams.ExternalMacVlanNADName, tsparams.TestNamespaceName).
+	externalNad, err = nad.NewBuilder(APIClient, name, tsparams.TestNamespaceName).
 		WithMasterPlugin(macVlanPlugin).Create()
 	Expect(err).ToNot(HaveOccurred(), "Failed to create external NetworkAttachmentDefinition")
 	Expect(externalNad.Exists()).To(BeTrue(), "Failed to detect external NetworkAttachmentDefinition")
+}
+
+func createHubConfigMap(name string) *configmap.Builder {
+	frrBFDConfig := frr.DefineBGPConfig(
+		tsparams.LocalBGPASN, tsparams.LocalBGPASN, []string{"10.10.0.10"}, false, false)
+	configMapData := frr.DefineBaseConfig(tsparams.DaemonsFile, frrBFDConfig, "")
+	hubConfigMap, err := configmap.NewBuilder(APIClient, name, tsparams.TestNamespaceName).WithData(configMapData).Create()
+	Expect(err).ToNot(HaveOccurred(), "Failed to create hub config map")
+
+	return hubConfigMap
+}
+
+func createFrrHubPod(name, nodeName, configmapName string, defaultCMD []string,
+	secondaryNetConfig []*types.NetworkSelectionElement) *pod.Builder {
+	frrPod := pod.NewBuilder(APIClient, name, tsparams.TestNamespaceName, NetConfig.FrrImage).
+		DefineOnNode(nodeName).
+		WithTolerationToMaster().
+		WithSecondaryNetwork(secondaryNetConfig).
+		RedefineDefaultCMD(defaultCMD)
+
+	By("Creating FRR container")
+
+	frrContainer := pod.NewContainerBuilder(
+		tsparams.FRRSecondContainerName, NetConfig.CnfNetTestContainer, tsparams.SleepCMD).
+		WithSecurityCapabilities([]string{"NET_ADMIN", "NET_RAW", "SYS_ADMIN"}, true)
+
+	frrCtr, err := frrContainer.GetContainerCfg()
+	Expect(err).ToNot(HaveOccurred(), "Failed to get container configuration")
+	frrPod.WithAdditionalContainer(frrCtr).WithLocalVolume(configmapName, "/etc/frr")
+
+	By("Creating FRR pod in the test namespace")
+
+	frrPod, err = frrPod.WithPrivilegedFlag().CreateAndWaitUntilRunning(5 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(), "Failed to create FRR test pod")
+
+	return frrPod
 }
 
 func createBGPPeerAndVerifyIfItsReady(
@@ -165,6 +202,15 @@ func verifyMetalLbBGPSessionsAreUPOnFrrPod(frrPod *pod.Builder, peerAddrList []s
 			time.Minute*3, tsparams.DefaultRetryInterval).
 			WithArguments(frrPod, peerAddress, "Established").Should(
 			BeTrue(), "Failed to receive BGP status UP")
+	}
+}
+
+func verifyMetalLbBGPSessionsAreDownOnFrrPod(frrPod *pod.Builder, peerAddrList []string) {
+	for _, peerAddress := range removePrefixFromIPList(peerAddrList) {
+		Consistently(frr.BGPNeighborshipHasState,
+			time.Minute, tsparams.DefaultRetryInterval).
+			WithArguments(frrPod, peerAddress, "Established").Should(
+			Not(BeTrue()), "Failed BGP status is Established")
 	}
 }
 
@@ -283,4 +329,29 @@ func metalLbDaemonSetShouldMatchConditionAndBeInReadyState(
 		return 0
 	}, tsparams.DefaultTimeout, tsparams.DefaultRetryInterval).Should(expectedCondition, errorMessage)
 	Expect(metalLbDs.IsReady(120*time.Second)).To(BeTrue(), "MetalLb daemonSet is not Ready")
+}
+
+func resetOperatorAndTestNS() {
+	By("Cleaning MetalLb operator namespace")
+
+	metalLbNs, err := namespace.Pull(APIClient, NetConfig.MlbOperatorNamespace)
+	Expect(err).ToNot(HaveOccurred(), "Failed to pull metalLb operator namespace")
+	err = metalLbNs.CleanObjects(
+		tsparams.DefaultTimeout,
+		metallb.GetBGPPeerGVR(),
+		metallb.GetBFDProfileGVR(),
+		metallb.GetBGPAdvertisementGVR(),
+		metallb.GetIPAddressPoolGVR(),
+		metallb.GetMetalLbIoGVR())
+	Expect(err).ToNot(HaveOccurred(), "Failed to remove object's from operator namespace")
+
+	By("Cleaning test namespace")
+
+	err = namespace.NewBuilder(APIClient, tsparams.TestNamespaceName).CleanObjects(
+		tsparams.DefaultTimeout,
+		pod.GetGVR(),
+		service.GetServiceGVR(),
+		configmap.GetGVR(),
+		nad.GetGVR())
+	Expect(err).ToNot(HaveOccurred(), "Failed to clean test namespace")
 }

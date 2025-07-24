@@ -45,6 +45,11 @@ type (
 			Bestpath bool `json:"bestpath,omitempty"`
 		} `json:"routes"`
 	}
+
+	// BGPConnectionInfo struct includes the RemoteAS.
+	BGPConnectionInfo struct {
+		RemoteAS int `json:"remoteAS"`
+	}
 )
 
 // DefineBaseConfig defines minimal required FRR configuration.
@@ -188,6 +193,86 @@ func GetBGPCommunityStatus(frrPod *pod.Builder, ipProtocolVersion string) (*bgpS
 	glog.V(90).Infof("Getting bgp community status from container on pod: %s", frrPod.Definition.Name)
 
 	return getBgpStatus(frrPod, fmt.Sprintf("show bgp %s community %s json", ipProtocolVersion, "65535:65282"))
+}
+
+// ValidateBGPRemoteAS validates the remoteAS value for the specified BGP peer across all Speaker pods.
+func ValidateBGPRemoteAS(speakerPods []*pod.Builder, bgpPeerIP string, expectedRemoteAS int) error {
+	glog.V(90).Infof("Validating the frr nodes receive the correct remote bgp peer AS : %d", expectedRemoteAS)
+
+	for _, speakerPod := range speakerPods {
+		// Run the "show bgp neighbor <bgpPeerIP> json" command on each pod
+		output, err := speakerPod.ExecCommand(append(netparam.VtySh,
+			fmt.Sprintf("show bgp neighbor %s json", bgpPeerIP)), "frr")
+		if err != nil {
+			return fmt.Errorf("error collecting BGP neighbor info from pod %s: %w",
+				speakerPod.Definition.Name, err)
+		}
+
+		// Parsing JSON
+		var bgpData map[string]BGPConnectionInfo
+		err = json.Unmarshal(output.Bytes(), &bgpData)
+
+		if err != nil {
+			return fmt.Errorf("error parsing BGP neighbor JSON for pod %s: %w", speakerPod.Definition.Name, err)
+		}
+
+		// Validate RemoteAS
+		for _, bgpInfo := range bgpData {
+			if bgpInfo.RemoteAS == expectedRemoteAS {
+				return nil // Match found
+			}
+		}
+	}
+
+	// If no matches are found across all pods
+	return fmt.Errorf("no BGP neighbor with RemoteAS %d found for peer %s", expectedRemoteAS, bgpPeerIP)
+}
+
+// DefineBGPConfigWithStaticRouteAndNetwork defines BGP config file with static route and network.
+func DefineBGPConfigWithStaticRouteAndNetwork(localBGPASN, remoteBGPASN int, hubPodIPs,
+	advertisedIPv4Routes, advertisedIPv6Routes, neighborsIPAddresses []string,
+	multiHop, bfd bool) string {
+	bgpConfig := tsparams.FRRBaseConfig +
+		fmt.Sprintf("ip route %s/32 %s\n", neighborsIPAddresses[1], hubPodIPs[0]) +
+		fmt.Sprintf("ip route %s/32 %s\n!\n", neighborsIPAddresses[0], hubPodIPs[1]) +
+		fmt.Sprintf("router bgp %d\n", localBGPASN) +
+		tsparams.FRRDefaultBGPPreConfig
+
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s remote-as %d\n  neighbor %s password %s\n",
+			ipAddress, remoteBGPASN, ipAddress, tsparams.BGPPassword)
+
+		if bfd {
+			bgpConfig += fmt.Sprintf("  neighbor %s bfd\n", ipAddress)
+		}
+
+		if multiHop {
+			bgpConfig += fmt.Sprintf("  neighbor %s ebgp-multihop 2\n", ipAddress)
+		}
+	}
+
+	bgpConfig += "!\naddress-family ipv4 unicast\n"
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+	}
+
+	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv4Routes[0])
+	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv4Routes[1])
+	bgpConfig += "exit-address-family\n"
+
+	// Add network commands only once for IPv6
+	bgpConfig += "!\naddress-family ipv6 unicast\n"
+	for _, ipAddress := range neighborsIPAddresses {
+		bgpConfig += fmt.Sprintf("  neighbor %s activate\n", ipAddress)
+	}
+
+	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv6Routes[0])
+	bgpConfig += fmt.Sprintf("  network %s\n", advertisedIPv6Routes[1])
+	bgpConfig += "exit-address-family\n"
+
+	bgpConfig += "!\nline vty\n!\nend\n"
+
+	return bgpConfig
 }
 
 func getBgpStatus(frrPod *pod.Builder, cmd string, containerName ...string) (*bgpStatus, error) {
