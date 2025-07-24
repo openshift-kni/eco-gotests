@@ -8,4 +8,6 @@ const (
 	Label = "nfd_upgrade"
 	// LogLevel glog verbose value.
 	LogLevel = 90
+	// NfdInstance name of the NFD instance.
+	NfdInstance = "nfd-instance"
 )
