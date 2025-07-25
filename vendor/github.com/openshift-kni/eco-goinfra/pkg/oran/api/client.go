@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/oran/api/internal/artifacts"
 	"github.com/openshift-kni/eco-goinfra/pkg/oran/api/internal/provisioning"
 )
 
@@ -16,6 +17,8 @@ type ClientType string
 const (
 	// ProvisioningClientType is the client type for the provisioning client.
 	ProvisioningClientType ClientType = "ProvisioningClient"
+	// ArtifactsClientType is the client type for the artifacts client.
+	ArtifactsClientType ClientType = "ArtifactsClient"
 )
 
 // ClientBuilder is a builder for creating clients that correspond to different parts of the O-RAN O2IMS API. Unlike
@@ -122,6 +125,37 @@ func (builder *ClientBuilder) BuildProvisioning() (*ProvisioningClient, error) {
 	}
 
 	return &ProvisioningClient{client}, nil
+}
+
+// BuildArtifacts creates a new ArtifactsClient using the configuration set on this builder. If the builder has an
+// error message, it will be returned here. This method does not modify the builder so the builder can be reused.
+//
+// Unlike the provisioning client, the artifacts client does not serve as a runtimeclient.Client.
+func (builder *ClientBuilder) BuildArtifacts() (*ArtifactsClient, error) {
+	if err := builder.validate(); err != nil {
+		return nil, err
+	}
+
+	var opts []artifacts.ClientOption
+
+	if builder.client != nil {
+		opts = append(opts, artifacts.WithHTTPClient(builder.client))
+	}
+
+	if builder.token != "" {
+		opts = append(opts, artifacts.WithRequestEditorFn(func(_ context.Context, req *http.Request) error {
+			req.Header.Set("Authorization", "Bearer "+builder.token)
+
+			return nil
+		}))
+	}
+
+	client, err := artifacts.NewClientWithResponses(builder.baseURL, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ArtifactsClient{client}, nil
 }
 
 // validate checks if the builder is valid and returns an error if not. A valid builder is defined as being non-nil,
