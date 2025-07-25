@@ -226,7 +226,6 @@ func VerifyODFStorageSystemConfig(ctx SpecContext) {
 
 	storageclusterObj, err = storageclusterObj.
 		WithAnnotations(annotations).
-		WithManageNodes(false).
 		WithManagedResources(managedResources).
 		WithMonDataDirHostPath("/var/lib/rook").
 		WithStorageDeviceSet(storageDeviceSet).Create()
