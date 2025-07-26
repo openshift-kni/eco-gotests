@@ -243,23 +243,6 @@ func (builder *StorageClusterBuilder) Update() (*StorageClusterBuilder, error) {
 	return builder, nil
 }
 
-// GetManageNodes fetches storageCluster manageNodes value.
-func (builder *StorageClusterBuilder) GetManageNodes() (bool, error) {
-	if valid, err := builder.validate(); !valid {
-		return false, err
-	}
-
-	glog.V(100).Infof("Getting storageCluster %s in namespace %s manageNodes configuration",
-		builder.Definition.Name, builder.Definition.Namespace)
-
-	if !builder.Exists() {
-		return false, fmt.Errorf("storageCluster object %s does not exist in namespace %s",
-			builder.Definition.Name, builder.Definition.Namespace)
-	}
-
-	return builder.Object.Spec.ManageNodes, nil
-}
-
 // GetManagedResources fetches storageCluster managedResources value.
 func (builder *StorageClusterBuilder) GetManagedResources() (*ocsoperatorv1.ManagedResourcesSpec, error) {
 	if valid, err := builder.validate(); !valid {
@@ -326,21 +309,6 @@ func (builder *StorageClusterBuilder) GetStorageDeviceSets() ([]ocsoperatorv1.St
 	}
 
 	return builder.Object.Spec.StorageDeviceSets, nil
-}
-
-// WithManageNodes sets the storageCluster's managedNodes value.
-func (builder *StorageClusterBuilder) WithManageNodes(expectedManagedNodesValue bool) *StorageClusterBuilder {
-	if valid, _ := builder.validate(); !valid {
-		return builder
-	}
-
-	glog.V(100).Infof(
-		"Setting storageCluster %s in namespace %s with managedNodes value: %t",
-		builder.Definition.Name, builder.Definition.Namespace, expectedManagedNodesValue)
-
-	builder.Definition.Spec.ManageNodes = expectedManagedNodesValue
-
-	return builder
 }
 
 // WithFlexibleScaling sets the storageCluster's flexibleScaling value.
