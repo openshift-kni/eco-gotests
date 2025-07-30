@@ -788,7 +788,6 @@ func isPciAddressAvailable(clientPod *pod.Builder) bool {
 	var err error
 
 	pciAddressList, err := getPCIAddressListFromSrIovNetworkName(podNetAnnotation)
-
 	if err != nil {
 		return false
 	}
@@ -802,8 +801,8 @@ func isPciAddressAvailable(clientPod *pod.Builder) bool {
 
 func getPCIAddressListFromSrIovNetworkName(podNetworkStatus string) ([]string, error) {
 	var podNetworkStatusType []podNetworkAnnotation
-	err := json.Unmarshal([]byte(podNetworkStatus), &podNetworkStatusType)
 
+	err := json.Unmarshal([]byte(podNetworkStatus), &podNetworkStatusType)
 	if err != nil {
 		return nil, err
 	}
@@ -918,7 +917,6 @@ func testRouteInjection(clientPod *pod.Builder, nextHopInterface string) {
 func discoverNICVendor(srIovInterfaceUnderTest, workerNodeName string) (string, error) {
 	upSrIovInterfaces, err := sriov.NewNetworkNodeStateBuilder(
 		APIClient, workerNodeName, NetConfig.SriovOperatorNamespace).GetUpNICs()
-
 	if err != nil {
 		return "", err
 	}

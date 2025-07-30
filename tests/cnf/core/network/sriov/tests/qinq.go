@@ -874,8 +874,8 @@ func disableQinQOnSwitch(switchCredentials *sriovenv.SwitchCredentials, switchIn
 		commands := []string{fmt.Sprintf("delete interfaces %s vlan-tagging", switchInterface)}
 		commands = append(commands, fmt.Sprintf("delete interfaces %s encapsulation extended-vlan-bridge",
 			switchInterface))
-		err = jnpr.Config(commands)
 
+		err = jnpr.Config(commands)
 		if err != nil {
 			return err
 		}
@@ -906,6 +906,7 @@ func defineAndCreateServerDPDKPod(
 	serverPodNetConfig []*multus.NetworkSelectionElement,
 	podCmd []string) *pod.Builder {
 	var rootUser int64
+
 	securityContext := corev1.SecurityContext{
 		RunAsUser: &rootUser,
 		Capabilities: &corev1.Capabilities{
@@ -945,6 +946,7 @@ func defineAndCreateClientDPDKPod(
 	nodeName string,
 	serverPodNetConfig []*multus.NetworkSelectionElement) *pod.Builder {
 	var rootUser = int64(0)
+
 	securityContext := corev1.SecurityContext{
 		RunAsUser: &rootUser,
 		Capabilities: &corev1.Capabilities{

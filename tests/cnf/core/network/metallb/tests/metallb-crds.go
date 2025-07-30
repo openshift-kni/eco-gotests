@@ -172,7 +172,6 @@ func addOrDeleteNodeSecIPAddViaFRRK8S(action string,
 
 	buffer, err := frrk8sPods[0].ExecCommand([]string{"ip", "add", action,
 		ipaddress, "dev", secInterface}, "frr")
-
 	if err != nil && strings.Contains(buffer.String(), "already assigned") {
 		glog.V(90).Infof("Warning: Address %s is already assigned to %s", ipaddress, secInterface)
 

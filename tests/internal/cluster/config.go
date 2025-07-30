@@ -64,7 +64,6 @@ func GetOCPNetworkOperatorConfig(clusterObj APIClientGetter) (*network.OperatorB
 	glog.V(90).Infof("Gathering OCP network from cluster at %s", apiClient.KubeconfigPath)
 
 	clusterNetwork, err := network.PullOperator(apiClient)
-
 	if err != nil {
 		return nil, err
 	}

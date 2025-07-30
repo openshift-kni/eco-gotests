@@ -35,7 +35,6 @@ func DoesClusterHasEnoughNodes(
 		apiClient,
 		metav1.ListOptions{LabelSelector: labels.Set(netConfig.WorkerLabelMap).String()},
 	)
-
 	if err != nil {
 		return err
 	}
@@ -48,7 +47,6 @@ func DoesClusterHasEnoughNodes(
 		apiClient,
 		metav1.ListOptions{LabelSelector: labels.Set(netConfig.ControlPlaneLabelMap).String()},
 	)
-
 	if err != nil {
 		return err
 	}
@@ -72,7 +70,6 @@ func IsSriovDeployed(apiClient *clients.Settings, netConfig *netconfig.NetworkCo
 	for _, sriovDaemonsetName := range netparam.OperatorSriovDaemonsets {
 		sriovDaemonset, err := daemonset.Pull(
 			apiClient, sriovDaemonsetName, netConfig.SriovOperatorNamespace)
-
 		if err != nil {
 			return fmt.Errorf("error to pull SR-IOV daemonset %s from the cluster", sriovDaemonsetName)
 		}
@@ -140,7 +137,6 @@ func DeployPerformanceProfile(
 	}
 
 	performanceProfiles, err := nto.ListProfiles(apiClient)
-
 	if err != nil {
 		return fmt.Errorf("fail to list PerformanceProfile objects on cluster due to: %w", err)
 	}
@@ -157,13 +153,11 @@ func DeployPerformanceProfile(
 		glog.V(90).Infof("PerformanceProfile doesn't exist on cluster. Removing all pre-existing profiles")
 
 		err := nto.CleanAllPerformanceProfiles(apiClient)
-
 		if err != nil {
 			return fmt.Errorf("fail to clean pre-existing performance profiles due to %w", err)
 		}
 
 		err = mcp.WaitToBeStableFor(time.Minute, netparam.MCOWaitTimeout)
-
 		if err != nil {
 			return err
 		}
@@ -173,7 +167,6 @@ func DeployPerformanceProfile(
 
 	_, err = nto.NewBuilder(apiClient, profileName, isolatedCPU, reservedCPU, netConfig.WorkerLabelMap).
 		WithHugePages("1G", []v2.HugePage{{Size: "1G", Count: hugePages1GCount}}).Create()
-
 	if err != nil {
 		return fmt.Errorf("fail to deploy PerformanceProfile due to: %w", err)
 	}
@@ -304,13 +297,11 @@ func SetStaticRoute(frrPod *pod.Builder, action, destIP, containerName string,
 // WaitForMcpStable waits for the stability of the MCP with the given name.
 func WaitForMcpStable(apiClient *clients.Settings, waitingTime, stableDuration time.Duration, mcpName string) error {
 	mcp, err := mco.Pull(apiClient, mcpName)
-
 	if err != nil {
 		return fmt.Errorf("fail to pull mcp %s from cluster due to: %s", mcpName, err.Error())
 	}
 
 	err = mcp.WaitToBeStableFor(stableDuration, waitingTime)
-
 	if err != nil {
 		return fmt.Errorf("cluster is not stable: %s", err.Error())
 	}

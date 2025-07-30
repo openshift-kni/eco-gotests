@@ -43,7 +43,7 @@ linters:
     - unparam
     - usetesting
     - varnamelen
-    - wsl
+    - wsl_v5
   disable:
     - ireturn
   settings:
@@ -137,8 +137,6 @@ linters:
         - github.com/openshift-kni/eco-gotests/tests/lca/imagebasedinstall/mgmt/internal/mgmtinittools
         - github.com/openshift-kni/eco-gotests/tests/system-tests/diskencryption/internal/diskencryptioninittools
         - github.com/openshift-kni/eco-gotests/tests/system-tests/o-cloud/internal/ocloudinittools
-    wsl:
-      strict-append: false
   exclusions:
     generated: lax
     presets:
