@@ -41,8 +41,9 @@ func (c *CSVUtils) GetCSVByPackageName(packageName string) (*olm.ClusterServiceV
 	}
 
 	for _, csv := range csvList {
-		if strings.Contains(strings.ToLower(csv.Object.Name), strings.ToLower(packageName)) ||
-			strings.Contains(strings.ToLower(csv.Object.Spec.DisplayName), strings.ToLower(packageName)) {
+		if (strings.Contains(strings.ToLower(csv.Object.Name), strings.ToLower(packageName)) ||
+			strings.Contains(strings.ToLower(csv.Object.Spec.DisplayName), strings.ToLower(packageName))) &&
+			csv.Object.Namespace == c.Namespace {
 			glog.V(c.LogLevel).Infof("Found CSV: %s for package %s", csv.Object.Name, packageName)
 
 			return csv, nil

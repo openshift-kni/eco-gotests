@@ -33,8 +33,8 @@ func GetDefaultNFDInstallConfig(
 		CatalogSource:          "redhat-operators",
 		CatalogSourceNamespace: "openshift-marketplace",
 		Channel:                "stable",
-
-		LogLevel: glog.Level(nfdparams.LogLevel),
+		TargetNamespaces:       []string{nfdparams.NFDNamespace},
+		LogLevel:               glog.Level(nfdparams.LogLevel),
 	}
 
 	if options != nil {
