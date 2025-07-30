@@ -3,6 +3,7 @@ package set
 import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	"gopkg.in/yaml.v2"
 )
 
@@ -29,11 +30,11 @@ type PCIDevice struct {
 type Sources struct {
 	CPU    *CPUConfig    `yaml:"cpu,omitempty"`
 	PCI    []PCIDevice   `yaml:"pci,omitempty"`
-	USB    []interface{} `yaml:"usb,omitempty"`    // Add the necessary struct for USB if needed
-	Custom []interface{} `yaml:"custom,omitempty"` // Add the necessary struct for Custom if needed
+	USB    []interface{} `yaml:"usb,omitempty"`
+	Custom []interface{} `yaml:"custom,omitempty"`
 }
 
-// CPUConfigLabels set cpu blacklist/whitelist.
+// CPUConfigLabels set cpu blacklist/whitelist using the new NFD CR utilities.
 func CPUConfigLabels(apiClient *clients.Settings,
 	blackListLabels,
 	whiteListLabels []string,
@@ -54,7 +55,14 @@ func CPUConfigLabels(apiClient *clients.Settings,
 		panic(err)
 	}
 
-	err = deploy.DeployNfdWithCustomConfig(namespace, enableTopology, string(modifiedCPUYAML), image)
+	nfdCRUtils := deploy.NewNFDCRUtils(apiClient, namespace, nfdparams.NfdInstance)
+
+	nfdConfig := deploy.NFDCRConfig{
+		EnableTopology: enableTopology,
+		Image:          image,
+	}
+
+	err = nfdCRUtils.DeployNFDCRWithWorkerConfig(nfdConfig, string(modifiedCPUYAML))
 	if err != nil {
 		panic(err)
 	}
