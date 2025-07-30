@@ -30,8 +30,8 @@ func ExecuteOnNodeWithDebugPod(cmdToExec []string, nodeName string) (string, err
 	}
 
 	glog.V(90).Infof("Exec cmd %v on pod %s", cmdToExec, mcPodList[0].Definition.Name)
-	buf, err := mcPodList[0].ExecCommand(cmdToExec)
 
+	buf, err := mcPodList[0].ExecCommand(cmdToExec)
 	if err != nil {
 		return "", fmt.Errorf("%w\n%s", err, buf.String())
 	}
@@ -61,7 +61,6 @@ func ExecuteOnNodeWithPrivilegedDebugPod(apiClient *clients.Settings,
 		func(context.Context) (bool, error) {
 			oldPods, err := pod.List(apiClient, SystemTestsTestConfig.MCONamespace,
 				metav1.ListOptions{LabelSelector: podSelector})
-
 			if err != nil {
 				glog.V(90).Infof("Error listing pods: %v", err)
 
@@ -73,7 +72,6 @@ func ExecuteOnNodeWithPrivilegedDebugPod(apiClient *clients.Settings,
 					_pod.Definition.Name, _pod.Definition.Namespace)
 
 				_, delErr := _pod.DeleteAndWait(15 * time.Second)
-
 				if delErr != nil {
 					glog.V(90).Infof("Failed to delete pod %q in %q namespace: %v",
 						_pod.Definition.Name, _pod.Definition.Namespace, delErr)
@@ -84,7 +82,6 @@ func ExecuteOnNodeWithPrivilegedDebugPod(apiClient *clients.Settings,
 
 			return true, nil
 		})
-
 	if err != nil {
 		glog.V(90).Infof("Failed to assert if previous %q pod exists", debugPodName)
 
@@ -96,13 +93,11 @@ func ExecuteOnNodeWithPrivilegedDebugPod(apiClient *clients.Settings,
 		WithLabel(debugPodLabel, nodeName).
 		WithNodeSelector(map[string]string{"kubernetes.io/hostname": nodeName}).
 		CreateAndWaitUntilRunning(1 * time.Minute)
-
 	if err != nil {
 		return "", err
 	}
 
 	buf, err := debugPod.ExecCommand(cmd)
-
 	if err != nil {
 		return "", err
 	}
@@ -137,7 +132,6 @@ func ExecCmdOnHost(remoteHostname, remoteHostUsername, remoteHostPass, cmd strin
 	glog.V(100).Infof("Dial SSH to the host %s", remoteHostname)
 
 	scpClient, err := ssh.NewClient(remoteHostname, sshConf, &ssh.ClientOption{})
-
 	if err != nil {
 		glog.V(100).Infof("Failed to build new ssh client due to: %v", err)
 
@@ -148,7 +142,6 @@ func ExecCmdOnHost(remoteHostname, remoteHostUsername, remoteHostPass, cmd strin
 	defer ss.Close()
 
 	out, err := ss.CombinedOutput(cmd)
-
 	if err != nil {
 		glog.V(100).Infof("Failed to run cmd %s on the host %s due to: %v",
 			cmd, remoteHostname, err)

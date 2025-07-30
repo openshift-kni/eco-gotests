@@ -31,7 +31,6 @@ func ValidateSriovInterfaces(workerNodeList []*nodes.Builder, requestedNumber in
 
 	availableUpSriovInterfaces, err := sriov.NewNetworkNodeStateBuilder(APIClient,
 		workerNodeList[0].Definition.Name, NetConfig.SriovOperatorNamespace).GetUpNICs()
-
 	if err != nil {
 		return fmt.Errorf("failed get SR-IOV devices from the node %s", workerNodeList[0].Definition.Name)
 	}
@@ -144,9 +143,9 @@ func IsSriovDeployed() error {
 
 	for _, sriovDaemonsetName := range tsparams.OperatorSriovDaemonsets {
 		glog.V(90).Infof("Validating daemonset %s exists and ready", sriovDaemonsetName)
+
 		sriovDaemonset, err := daemonset.Pull(
 			APIClient, sriovDaemonsetName, NetConfig.SriovOperatorNamespace)
-
 		if err != nil {
 			glog.V(90).Infof("Pulling daemonset %s failed", sriovDaemonsetName)
 
@@ -168,8 +167,8 @@ func IsSriovDeployed() error {
 func IsMellanoxDevice(intName, nodeName string) bool {
 	glog.V(90).Infof("Checking if specific interface %s on node %s is a Mellanox device.", intName, nodeName)
 	sriovNetworkState := sriov.NewNetworkNodeStateBuilder(APIClient, nodeName, NetConfig.SriovOperatorNamespace)
-	driverName, err := sriovNetworkState.GetDriverName(intName)
 
+	driverName, err := sriovNetworkState.GetDriverName(intName)
 	if err != nil {
 		glog.V(90).Infof("Failed to get driver name for interface %s on node %s: %w", intName, nodeName, err)
 
@@ -188,8 +187,8 @@ func ConfigureSriovMlnxFirmwareOnWorkers(
 
 		sriovNetworkState := sriov.NewNetworkNodeStateBuilder(
 			APIClient, workerNode.Object.Name, NetConfig.SriovOperatorNamespace)
-		pciAddress, err := sriovNetworkState.GetPciAddress(sriovInterfaceName)
 
+		pciAddress, err := sriovNetworkState.GetPciAddress(sriovInterfaceName)
 		if err != nil {
 			glog.V(90).Infof("Failed to get PCI address for the interface %s", sriovInterfaceName)
 
@@ -200,7 +199,6 @@ func ConfigureSriovMlnxFirmwareOnWorkers(
 			[]string{"bash", "-c",
 				fmt.Sprintf("mstconfig -y -d %s set SRIOV_EN=%t NUM_OF_VFS=%d && chroot /host reboot",
 					pciAddress, enableSriov, numVfs)})
-
 		if err != nil {
 			glog.V(90).Infof("Failed to configure SR-IOV firmware.")
 
@@ -286,10 +284,10 @@ func CreateAndWaitTestPodWithSecondaryNetwork(
 	glog.V(90).Infof("Creating a test pod name %s", podName)
 
 	secNetwork := pod.StaticIPAnnotationWithMacAddress(sriovResNameTest, testIPs, testMac)
+
 	testPod, err := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName, NetConfig.CnfNetTestContainer).
 		DefineOnNode(testNodeName).WithPrivilegedFlag().
 		WithSecondaryNetwork(secNetwork).CreateAndWaitUntilRunning(netparam.DefaultTimeout)
-
 	if err != nil {
 		glog.V(90).Infof("Failed to create pod %s with secondary network", podName)
 
@@ -320,7 +318,6 @@ func CreatePodsAndRunTraffic(
 		serverMac,
 		clientIPs,
 		serverIPs)
-
 	if err != nil {
 		glog.V(90).Infof("Failed to create test pods")
 
@@ -343,8 +340,8 @@ func ConfigureSriovMlnxFirmwareOnWorkersAndWaitMCP(
 	}
 
 	time.Sleep(10 * time.Second)
-	err = netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
 
+	err = netenv.WaitForMcpStable(APIClient, tsparams.MCOWaitTimeout, 1*time.Minute, NetConfig.CnfMcpLabel)
 	if err != nil {
 		glog.V(90).Infof("Machineconfigpool is not stable")
 

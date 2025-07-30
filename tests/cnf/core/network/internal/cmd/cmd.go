@@ -92,13 +92,11 @@ func RxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) error {
 		clientRxCmd, clientPod.Definition.Name)
 
 	err := clientPod.WaitUntilRunning(time.Minute)
-
 	if err != nil {
 		return fmt.Errorf("failed to wait until pod is running with error %w", err)
 	}
 
 	clientOut, err := clientPod.ExecCommand([]string{"/bin/bash", "-c", clientRxCmd})
-
 	if err.Error() != timeoutError {
 		return fmt.Errorf("failed to run the dpdk-pmd command on the client pod %s with output %s and %w",
 			clientRxCmd, clientOut.String(), err)
@@ -152,7 +150,6 @@ func getNumberOfPackets(line, firstFieldSubstr string) int {
 	}
 
 	numberOfPackets, err := strconv.Atoi(splitLine[1])
-
 	if err != nil {
 		glog.V(90).Infof("failed to convert string to integer %s", err)
 

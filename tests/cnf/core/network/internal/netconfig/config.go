@@ -52,13 +52,14 @@ func NewNetConfig() *NetworkConfig {
 	log.Print("Creating new NetworkConfig struct")
 
 	var netConf NetworkConfig
+
 	netConf.CoreConfig = coreconfig.NewCoreConfig()
 
 	_, filename, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(filename)
 	confFile := filepath.Join(baseDir, PathToDefaultCnfCoreNetParamsFile)
-	err := readFile(&netConf, confFile)
 
+	err := readFile(&netConf, confFile)
 	if err != nil {
 		log.Printf("Error to read config file %s", confFile)
 
@@ -66,7 +67,6 @@ func NewNetConfig() *NetworkConfig {
 	}
 
 	err = readEnv(&netConf)
-
 	if err != nil {
 		log.Print("Error to read environment variables")
 
@@ -114,7 +114,6 @@ func (netConfig *NetworkConfig) GetVLAN() (uint16, error) {
 	}
 
 	vlanInt, err := strconv.Atoi(netConfig.VLAN)
-
 	if err != nil {
 		return 0, err
 	}
@@ -241,8 +240,8 @@ func readFile(netConfig *NetworkConfig, cfgFile string) error {
 	}()
 
 	decoder := yaml.NewDecoder(openedCfgFile)
-	err = decoder.Decode(&netConfig)
 
+	err = decoder.Decode(&netConfig)
 	if err != nil {
 		return err
 	}

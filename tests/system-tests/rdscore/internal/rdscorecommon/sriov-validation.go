@@ -96,7 +96,6 @@ func getSRIOVOperatorConfig() (*srIovV1.SriovOperatorConfig, error) {
 			var getErr error
 
 			sriovConfig, getErr = sriovConfigBuiler.Get()
-
 			if getErr != nil {
 				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error retrieving SR-IOV Operator config: %v", getErr)
 
@@ -107,7 +106,6 @@ func getSRIOVOperatorConfig() (*srIovV1.SriovOperatorConfig, error) {
 
 			return true, nil
 		})
-
 	if err != nil {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Error retrieving SR-IOV Operator config: %v", err)
 

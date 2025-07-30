@@ -47,7 +47,6 @@ func Fetch(url, method string, skipCertVerify bool) (string, int, error) {
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
-
 	if err != nil {
 		glog.Warning(fmt.Sprintf("Error reading reply: %v\n", err))
 

@@ -115,7 +115,6 @@ func (n *NfdAPIResource) DeployNfd(waitTime int, addTopology bool, nfdInstanceIm
 	}
 
 	deploymentReady, err := n.IsDeploymentReady(time.Minute*time.Duration(waitTime), NfdController)
-
 	if err != nil {
 		glog.V(logLevel).Infof(
 			"Error %s not found\n cause: %s", NfdController, err.Error())
@@ -220,7 +219,6 @@ func (n *NfdAPIResource) IsDeploymentReady(waitTime time.Duration,
 
 			return true, nil
 		})
-
 	if timeOutError != nil {
 		return false, err
 	}
@@ -253,7 +251,6 @@ func (n *NfdAPIResource) deploy() error {
 
 func newNfdBuilder(namespace string, enableTopology bool, image string) (*nodefeature.Builder, error) {
 	clusters, err := olm.ListClusterServiceVersion(APIClient, namespace)
-
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +364,6 @@ func (n *NfdAPIResource) createNameSpaceIfNotExist() {
 
 func findCSV(namespace string) (string, error) {
 	clusterServices, err := olm.ListClusterServiceVersion(APIClient, namespace)
-
 	if err == nil && len(clusterServices) > 0 {
 		return clusterServices[0].Definition.Name, nil
 	}
@@ -401,8 +397,8 @@ func (n *NfdAPIResource) removeResource(resourceName string,
 		}
 
 		nfdbuilder.Definition.Finalizers = []string{}
-		_, updateErr := nfdbuilder.Update(true)
 
+		_, updateErr := nfdbuilder.Update(true)
 		if updateErr != nil {
 			return err
 		}
@@ -429,7 +425,6 @@ func (n *NfdAPIResource) removeResource(resourceName string,
 	}
 
 	err = deleteAndWait(builder, 60*time.Second)
-
 	if err != nil {
 		return err
 	}
@@ -439,8 +434,8 @@ func (n *NfdAPIResource) removeResource(resourceName string,
 
 func editAlmExample(almExample string) (string, error) {
 	var items []map[string]interface{}
-	err := json.Unmarshal([]byte(almExample), &items)
 
+	err := json.Unmarshal([]byte(almExample), &items)
 	if err != nil {
 		glog.Errorf("Failed to unmarshal JSON: %v", err)
 

@@ -123,7 +123,6 @@ func createRootlessDPDKServerDeployment(
 		defineTestServerPmdCmd(clientMac, fmt.Sprintf("${PCIDEVICE_OPENSHIFT_IO_%s}",
 			strings.ToUpper(sriovNodePolicyName)), txIPs),
 		serverDeploymentLabelMap)
-
 	if err != nil {
 		glog.V(100).Infof("Failed to create server deployment %s in namespace %s: %v",
 			serverDPDKDeploymentName, deploymentNamespace, err)
@@ -163,12 +162,10 @@ func cleanUpRootlessDPDKDeployment(
 	}
 
 	_, err := deployment.Pull(apiClient, deploymentName, nsName)
-
 	if err == nil {
 		glog.V(100).Infof("Ensure %s deployment does not exist in namespace %s", deploymentName, nsName)
 
 		err = apiobjectshelper.DeleteDeployment(apiClient, deploymentName, nsName)
-
 		if err != nil {
 			glog.V(100).Infof("Failed to delete deployment %s from nsname %s due to %v",
 				deploymentName, nsName, err)
@@ -179,7 +176,6 @@ func cleanUpRootlessDPDKDeployment(
 	}
 
 	err = apiobjectshelper.EnsureAllPodsRemoved(apiClient, nsName, podLabel)
-
 	if err != nil {
 		glog.V(100).Infof("Failed to delete pods in namespace %s with the label %s: %v", nsName, podLabel, err)
 
@@ -205,7 +201,6 @@ func defineAndCreateDPDKDeployment(
 	nodeSelector := map[string]string{"kubernetes.io/hostname": scheduleOnHost}
 
 	dpdkContainerCfg, err := defineDPDKContainer(deploymentName, containerCmd, securityContext)
-
 	if err != nil {
 		glog.V(100).Infof("Failed to set DPDK container %s due to %v", deploymentName, err)
 
@@ -229,7 +224,6 @@ func defineAndCreateDPDKDeployment(
 	}
 
 	_, err = dpdkDeployment.CreateAndWaitUntilReady(waitTimeout)
-
 	if err != nil {
 		glog.V(100).Infof("Failed to create DPDK deployment %s in namespace %s due to %v",
 			deploymentName, deploymentNamespace, err)
@@ -242,7 +236,6 @@ func defineAndCreateDPDKDeployment(
 		deploymentName, deploymentNamespace)
 
 	_pod, err := getDPDKPod(apiClient, deploymentName, deploymentNamespace)
-
 	if err != nil || _pod == nil {
 		glog.V(100).Infof("no running pods found for the deployment %s in namespace %s: %v",
 			deploymentName, deploymentNamespace, err)
@@ -267,7 +260,6 @@ func defineDPDKContainer(
 		WithResourceLimit(hugePages, memory, cpu).
 		WithResourceRequest(hugePages, memory, cpu).WithEnvVar("RUN_TYPE", "testcmd").
 		GetContainerCfg()
-
 	if err != nil {
 		glog.V(100).Infof("Failed to define server container %s due to %v", cName, err)
 
@@ -281,7 +273,6 @@ func retrieveClientDPDKPod(apiClient *clients.Settings, podNamePattern, podNames
 	glog.V(100).Infof("Retrieve client DPDK pod %s in namespace %s", podNamePattern, podNamespace)
 
 	podObj, err := getDPDKPod(apiClient, podNamePattern, podNamespace)
-
 	if err != nil {
 		glog.V(100).Infof("Failed to retrieve client pod %q in namespace %q: %v",
 			podNamePattern, podNamespace, err)
@@ -340,7 +331,6 @@ func getDPDKPod(apiClient *clients.Settings, podNamePattern, podNamespace string
 
 			return true, nil
 		})
-
 	if err != nil {
 		glog.V(100).Infof("Failed to retrieve pod %q in namespace %q: %v",
 			podNamePattern, podNamespace, err)
@@ -369,7 +359,6 @@ func rxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) error {
 		false,
 		func(ctx context.Context) (bool, error) {
 			clientOut, err = clientPod.ExecCommand([]string{"/bin/bash", "-c", clientRxCmd})
-
 			if err != nil {
 				if err.Error() != timeoutError {
 					glog.V(100).Infof("Failed to run the dpdk-pmd command %s; %v", clientRxCmd, err)
@@ -380,7 +369,6 @@ func rxTrafficOnClientPod(clientPod *pod.Builder, clientRxCmd string) error {
 
 			return true, nil
 		})
-
 	if err != nil {
 		if err.Error() != timeoutError {
 			glog.V(100).Infof("Failed to run the dpdk-pmd command %s on the client pod %s in namespace %s; %v",
@@ -431,7 +419,6 @@ func getCurrentLinkRx(runningPod *pod.Builder) (map[string]int, error) {
 
 			return true, nil
 		})
-
 	if err != nil {
 		glog.V(100).Infof("Failed to get links info from pod %s in namespace %s with error %v",
 			runningPod.Definition.Name, runningPod.Definition.Namespace, err)
@@ -498,7 +485,6 @@ func getNumberOfPackets(line, firstFieldSubstr string) int {
 	}
 
 	numberOfPackets, err := strconv.Atoi(splitLine[1])
-
 	if err != nil {
 		glog.V(90).Infof("failed to convert string to integer %s", err)
 
@@ -586,7 +572,6 @@ func getLinkRx(runningPod *pod.Builder, linkName string) (int, error) {
 
 			return true, nil
 		})
-
 	if err != nil {
 		glog.V(100).Infof("Failed to get link %s info from pod %s in namespace %s with error %v",
 			linkName, runningPod.Definition.Name, runningPod.Definition.Namespace, err)
@@ -609,8 +594,8 @@ func getLinkRx(runningPod *pod.Builder, linkName string) (int, error) {
 
 func getPCIAddressListFromSrIovNetworkName(podNetworkStatus, networkName string) ([]string, error) {
 	var podNetworkStatusType []podNetworkAnnotation
-	err := json.Unmarshal([]byte(podNetworkStatus), &podNetworkStatusType)
 
+	err := json.Unmarshal([]byte(podNetworkStatus), &podNetworkStatusType)
 	if err != nil {
 		glog.V(100).Infof("Failed to unmarshal pod network status %s with error %v", podNetworkStatus, err)
 
@@ -651,7 +636,6 @@ func isPCIAddressAvailable(clientPod *pod.Builder) bool {
 	var err error
 
 	pciAddressList, err := getPCIAddressListFromSrIovNetworkName(podNetAnnotation, dpdkNetworkOne)
-
 	if err != nil {
 		glog.V(100).Infof("Failed to get PCI address list from pod %s in namespace %s with error %v",
 			clientPod.Definition.Name, clientPod.Definition.Namespace, err)

@@ -54,6 +54,7 @@ func (tl *TolerationList) Decode(value string) error {
 				parsedToleration.Operator = corev1.TolerationOperator(strings.Split(parsedRecord, "=")[1])
 			}
 		}
+
 		tmpTolerationList = append(tmpTolerationList, parsedToleration)
 	}
 
@@ -536,6 +537,7 @@ func NewCoreConfig() *CoreConfig {
 	log.Print("Creating new CoreConfig struct")
 
 	var rdsCoreConf CoreConfig
+
 	rdsCoreConf.GeneralConfig = config.NewConfig()
 
 	var confFile string
@@ -558,7 +560,6 @@ func NewCoreConfig() *CoreConfig {
 	}
 
 	err = readEnv(&rdsCoreConf)
-
 	if err != nil {
 		log.Print("Error to read environment variables")
 
@@ -579,8 +580,8 @@ func readFile(rdsConfig *CoreConfig, cfgFile string) error {
 	}()
 
 	decoder := yaml.NewDecoder(openedCfgFile)
-	err = decoder.Decode(&rdsConfig)
 
+	err = decoder.Decode(&rdsConfig)
 	if err != nil {
 		return err
 	}
