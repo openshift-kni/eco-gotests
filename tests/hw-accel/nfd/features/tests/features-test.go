@@ -14,51 +14,73 @@ import (
 	"github.com/openshift-kni/eco-goinfra/pkg/machine"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	nfdDeploy "github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/helpers"
 	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/nfdconfig"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/nfddelete"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/nfdhelpers"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/set"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/wait"
+	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
 	"k8s.io/client-go/util/retry"
 )
 
 var _ = Describe("NFD", Ordered, func() {
 	nfdConfig := nfdconfig.NewNfdConfig()
-	nfdManager := nfdDeploy.NewNfdAPIResource(APIClient,
-		hwaccelparams.NFDNamespace,
-		"op-nfd",
-		"nfd",
-		nfdConfig.CatalogSource,
-		ts.CatalogSourceNamespace,
-		"nfd",
-		"stable")
+
+	var nfdInstaller *deploy.OperatorInstaller
+	var nfdCRUtils *set.NFDCRUtils
+
+	BeforeAll(func() {
+
+		var options *nfdhelpers.NFDInstallConfigOptions
+
+		if nfdConfig.CatalogSource != "" {
+			options = &nfdhelpers.NFDInstallConfigOptions{
+				CatalogSource: nfdhelpers.StringPtr(nfdConfig.CatalogSource),
+			}
+		}
+
+		installConfig := nfdhelpers.GetDefaultNFDInstallConfig(APIClient, options)
+
+		nfdInstaller = deploy.NewOperatorInstaller(installConfig)
+		nfdCRUtils = set.NewNFDCRUtils(APIClient, installConfig.Namespace, nfdparams.NfdInstance)
+	})
+
 	Context("Node featues", Label("discovery-of-labels"), func() {
 		var cpuFlags map[string][]string
 
 		AfterAll(func() {
-			By("Undeploy NFD instance")
-			err := nfdManager.UndeployNfd("nfd-instance")
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in Undeploy NFD %s", err))
 
+			err := nfdCRUtils.DeleteNFDCR()
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Undeploy NFD instance")
+			uninstallConfig := nfdhelpers.GetDefaultNFDUninstallConfig(
+				APIClient,
+				"nfd-operator-group",
+				"nfd-subscription")
+			nfdUninstaller := deploy.NewOperatorUninstaller(uninstallConfig)
+			err = nfdUninstaller.Uninstall()
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in Undeploy NFD %s", err))
 		})
+
 		BeforeAll(func() {
 			By("Clear labels")
 			err := nfddelete.NfdLabelsByKeys(APIClient, "nfd.node.kubernetes.io", "feature.node.kubernetes.io")
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in cleaning labels\n %s", err))
 
 			By("Creating nfd")
-			runNodeDiscoveryAndTestLabelExistence(nfdManager, nfdConfig, true)
+			runNodeDiscoveryAndTestLabelExistence(nfdInstaller, nfdCRUtils, nfdConfig, true)
 
-			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
+			labelExist, labelsError := wait.CheckLabel(APIClient, 15*time.Minute, "feature")
 			if !labelExist || labelsError != nil {
 				glog.Error("feature labels was not found in the given time error=%v", labelsError)
 			}
-
 		})
 
 		It("Check pods state", reportxml.ID("54548"), func() {
@@ -175,7 +197,8 @@ var _ = Describe("NFD", Ordered, func() {
 		It("Verify Feature List not contains items from Blacklist ", reportxml.ID("68298"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			By("delete old instance")
-			err := nfdManager.DeleteNFDCR("nfd-instance")
+
+			err := nfdCRUtils.DeleteNFDCR()
 			Expect(err).NotTo(HaveOccurred())
 
 			err = nfddelete.NfdLabelsByKeys(APIClient, "nfd.node.kubernetes.io", "feature.node.kubernetes.io")
@@ -189,9 +212,14 @@ var _ = Describe("NFD", Ordered, func() {
 				hwaccelparams.NFDNamespace,
 				nfdConfig.Image)
 
-			labelExist, labelsError := wait.ForLabel(APIClient, 15*time.Minute, "feature")
+			labelExist, labelsError := wait.CheckLabel(APIClient, 15*time.Minute, "feature")
 			if !labelExist || labelsError != nil {
 				glog.Error("feature labels was not found in the given time error=%v", labelsError)
+			}
+
+			err = nfdCRUtils.PrintCr()
+			if err != nil {
+				glog.Error("error in printing NFD CR: %v", err)
 			}
 
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
@@ -212,7 +240,8 @@ var _ = Describe("NFD", Ordered, func() {
 				Skip("CPUFlagsHelperImage is not set.")
 			}
 			By("delete old instance")
-			err := nfdManager.DeleteNFDCR("nfd-instance")
+
+			err := nfdCRUtils.DeleteNFDCR()
 			Expect(err).NotTo(HaveOccurred())
 
 			err = nfddelete.NfdLabelsByKeys(APIClient, "nfd.node.kubernetes.io", "feature.node.kubernetes.io")
@@ -226,10 +255,16 @@ var _ = Describe("NFD", Ordered, func() {
 				hwaccelparams.NFDNamespace,
 				nfdConfig.Image)
 
-			labelExist, labelsError := wait.ForLabel(APIClient, time.Minute*15, "feature")
+			labelExist, labelsError := wait.CheckLabel(APIClient, time.Minute*15, "feature")
 			if !labelExist || labelsError != nil {
 				glog.Error("feature labels was not found in the given time error=%v", labelsError)
 			}
+
+			err = nfdCRUtils.PrintCr()
+			if err != nil {
+				glog.Error("error in printing NFD CR: %v", err)
+			}
+
 			cpuFlags = get.CPUFlags(APIClient, hwaccelparams.NFDNamespace, nfdConfig.CPUFlagsHelperImage)
 			nodelabels, err := get.NodeFeatureLabels(APIClient, GeneralConfig.WorkerLabelMap)
 			Expect(err).NotTo(HaveOccurred())
@@ -300,11 +335,13 @@ var _ = Describe("NFD", Ordered, func() {
 			}()
 
 		})
+
 	})
 })
 
 func runNodeDiscoveryAndTestLabelExistence(
-	nfdManager *nfdDeploy.NfdAPIResource,
+	nfdInstaller *deploy.OperatorInstaller,
+	nfdCRUtils *set.NFDCRUtils,
 	nfdConfig *nfdconfig.NfdConfig,
 	enableTopology bool) {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -315,8 +352,25 @@ func runNodeDiscoveryAndTestLabelExistence(
 	})
 
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
-	err = nfdManager.DeployNfd(15*int(time.Minute), enableTopology, nfdConfig.Image)
-	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying %s", err))
+
+	err = nfdInstaller.Install()
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error in deploying NFD operator: %s", err))
+
+	ready, err := nfdInstaller.IsReady(15 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error checking NFD operator readiness: %s", err))
+	Expect(ready).To(BeTrue(), "NFD operator is not ready")
+
+	nfdCRConfig := set.NFDCRConfig{
+		EnableTopology: enableTopology,
+		Image:          nfdConfig.Image,
+	}
+	err = nfdCRUtils.DeployNFDCR(nfdCRConfig)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error deploying NFD CR: %s", err))
+
+	crReady, err := nfdCRUtils.IsNFDCRReady(10 * time.Minute)
+	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error checking NFD CR readiness: %s", err))
+	Expect(crReady).To(BeTrue(), "NFD CR is not ready")
+
 	By("Check that pods are in running state")
 
 	res, err := wait.ForPodsRunning(APIClient, 15*time.Minute, hwaccelparams.NFDNamespace)

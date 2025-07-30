@@ -19,8 +19,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// ForLabel check that all pods in namespace are in running state.
-func ForLabel(apiClient *clients.Settings, timeout time.Duration, label string) (bool, error) {
+// CheckLabel check that feature labels exist on worker nodes.
+func CheckLabel(apiClient *clients.Settings,
+	timeout time.Duration,
+	label string) (bool, error) {
+	glog.V(nfdparams.LogLevel).
+		Infof("Waiting for feature labels containing '%s' on worker nodes (timeout: %v)",
+			label,
+			timeout)
+
 	err := wait.PollUntilContextTimeout(
 		context.TODO(), 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			nodes, e := apiClient.CoreV1Interface.Nodes().List(
@@ -29,23 +36,38 @@ func ForLabel(apiClient *clients.Settings, timeout time.Duration, label string) 
 				return false, e
 			}
 
-			labelExist := false
 			workernodes := filterNodesByLabel(nodes, "worker")
+			if len(workernodes) == 0 {
+				glog.V(nfdparams.LogLevel).Infof("No worker nodes found")
+
+				return false, nil
+			}
+
+			nodesWithLabels := 0
+			totalWorkerNodes := len(workernodes)
 
 			for _, node := range workernodes {
-				labelKeys := getLabelKeys(node.Labels)
-				onelineLabels := strings.Join(labelKeys, ", ")
+				featureLabelCount, sampleLabels := countFeatureLabels(node.Labels, label)
+				hasFeatureLabels := featureLabelCount > 0
 
-				if strings.Contains(onelineLabels, label) {
-					labelExist = true
+				if hasFeatureLabels {
+					nodesWithLabels++
+
+					glog.V(nfdparams.LogLevel).Infof("Node %s has %d feature labels (examples: %v)",
+						node.Name, featureLabelCount, sampleLabels)
 				} else {
-					labelExist = false
-
-					break
+					glog.V(nfdparams.LogLevel).Infof("Node %s does not have feature labels yet", node.Name)
 				}
 			}
 
-			if labelExist {
+			glog.V(nfdparams.LogLevel).
+				Infof("Feature label progress: %d/%d worker nodes have labels",
+					nodesWithLabels,
+					totalWorkerNodes)
+
+			if nodesWithLabels == totalWorkerNodes {
+				glog.V(nfdparams.LogLevel).Infof("SUCCESS: All %d worker nodes have feature labels", totalWorkerNodes)
+
 				return true, nil
 			}
 
@@ -53,6 +75,8 @@ func ForLabel(apiClient *clients.Settings, timeout time.Duration, label string) 
 		})
 
 	if err != nil {
+		glog.V(nfdparams.LogLevel).Infof("Feature label wait failed: %v", err)
+
 		return false, err
 	}
 
@@ -104,7 +128,7 @@ func ForPodsRunning(apiClient *clients.Settings, timeout time.Duration, nsname s
 				if pod.State != string(corev1.PodRunning) {
 					glog.V(nfdparams.LogLevel).Infof("pod %s is in %s state", pod.Name, pod.State)
 
-					return false, nil // not ready yet
+					return false, nil
 				}
 			}
 
@@ -124,7 +148,6 @@ func filterNodesByLabel(nodes *corev1.NodeList, keyword string) []corev1.Node {
 	var filteredNodes []corev1.Node
 
 	for _, node := range nodes.Items {
-		// Check if any label key contains the keyword
 		for nodeLabel := range node.Labels {
 			if strings.Contains(nodeLabel, keyword) {
 				filteredNodes = append(filteredNodes, node)
@@ -137,11 +160,20 @@ func filterNodesByLabel(nodes *corev1.NodeList, keyword string) []corev1.Node {
 	return filteredNodes
 }
 
-func getLabelKeys(labels map[string]string) []string {
-	labelKeys := make([]string, 0, len(labels))
-	for k := range labels {
-		labelKeys = append(labelKeys, k)
+// countFeatureLabels counts how many labels contain the specified substring and returns sample labels for debugging.
+func countFeatureLabels(labels map[string]string, labelSubstring string) (int, []string) {
+	count := 0
+	sampleLabels := []string{}
+
+	for labelKey := range labels {
+		if strings.Contains(labelKey, labelSubstring) {
+			count++
+
+			if len(sampleLabels) < 3 {
+				sampleLabels = append(sampleLabels, labelKey)
+			}
+		}
 	}
 
-	return labelKeys
+	return count, sampleLabels
 }
