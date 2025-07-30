@@ -3,6 +3,7 @@ package set
 import (
 	"github.com/openshift-kni/eco-goinfra/pkg/clients"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
+
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	"gopkg.in/yaml.v2"
 )
@@ -58,6 +59,7 @@ func CPUConfigLabels(apiClient *clients.Settings,
 	nfdCRUtils := deploy.NewNFDCRUtils(apiClient, namespace, nfdparams.NfdInstance)
 
 	nfdConfig := deploy.NFDCRConfig{
+
 		EnableTopology: enableTopology,
 		Image:          image,
 	}

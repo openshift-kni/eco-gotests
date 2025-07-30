@@ -256,6 +256,12 @@ func (o *OperatorInstaller) createOperatorGroup() error {
 
 	operatorGroupBuilder.Definition.Spec.TargetNamespaces = o.config.TargetNamespaces
 
+	if operatorGroupBuilder.Exists() {
+		glog.V(o.config.LogLevel).Infof("OperatorGroup %s already exists", o.config.OperatorGroupName)
+
+		return nil
+	}
+
 	_, err := operatorGroupBuilder.Create()
 	if err != nil {
 		if strings.Contains(err.Error(), "is being terminated") ||

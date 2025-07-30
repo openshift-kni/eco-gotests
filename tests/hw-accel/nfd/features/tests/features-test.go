@@ -33,10 +33,10 @@ var _ = Describe("NFD", Ordered, func() {
 	nfdConfig := nfdconfig.NewNfdConfig()
 
 	var nfdInstaller *deploy.OperatorInstaller
+
 	var nfdCRUtils *deploy.NFDCRUtils
 
 	BeforeAll(func() {
-
 		var options *nfdhelpers.NFDInstallConfigOptions
 
 		if nfdConfig.CatalogSource != "" {
@@ -48,7 +48,9 @@ var _ = Describe("NFD", Ordered, func() {
 		installConfig := nfdhelpers.GetDefaultNFDInstallConfig(APIClient, options)
 
 		nfdInstaller = deploy.NewOperatorInstaller(installConfig)
+
 		nfdCRUtils = deploy.NewNFDCRUtils(APIClient, installConfig.Namespace, nfdparams.NfdInstance)
+
 	})
 
 	Context("Node featues", Label("discovery-of-labels"), func() {
@@ -341,7 +343,9 @@ var _ = Describe("NFD", Ordered, func() {
 
 func runNodeDiscoveryAndTestLabelExistence(
 	nfdInstaller *deploy.OperatorInstaller,
+
 	nfdCRUtils *deploy.NFDCRUtils,
+
 	nfdConfig *nfdconfig.NfdConfig,
 	enableTopology bool) {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -361,6 +365,7 @@ func runNodeDiscoveryAndTestLabelExistence(
 	Expect(ready).To(BeTrue(), "NFD operator is not ready")
 
 	nfdCRConfig := deploy.NFDCRConfig{
+
 		EnableTopology: enableTopology,
 		Image:          nfdConfig.Image,
 	}

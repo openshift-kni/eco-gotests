@@ -339,6 +339,29 @@ var _ = Describe(
 			}
 		})
 
+		It("upgrades the connected cluster to a newer z-stream", reportxml.ID("79176"), func() {
+			By("Check if the target cluster is connected")
+			connected, err := cluster.Connected(APIClient)
+
+			if !connected {
+				Skip("Target cluster is disconnected")
+			}
+
+			if err != nil {
+				Skip(fmt.Sprintf("Encountered an error while getting cluster connection info: %s", err.Error()))
+			}
+
+			By("Check if seed and target have the same minor version")
+			seedImageClusterVersionXY, err := ClusterVersionXY(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion)
+			Expect(err).NotTo(HaveOccurred(), "error retrieving the XY portion of the seed cluster version")
+
+			if seedImageClusterVersionXY != originalClusterVersionXY {
+				Skip("XY portion of the OCP version between seed and target clusters is different")
+			}
+
+			upgrade()
+		})
+
 		It("upgrades the connected cluster to a newer minor version", reportxml.ID("71362"), func() {
 			By("Check if the target cluster is connected")
 			connected, err := cluster.Connected(APIClient)
@@ -364,29 +387,6 @@ var _ = Describe(
 			originalYInt, _ := strconv.Atoi(strings.Split(originalClusterVersionXY, ".")[1])
 			if seedYInt-originalYInt == 2 {
 				Skip("The y-stream version of the seed is 2 releases apart from the target")
-			}
-
-			upgrade()
-		})
-
-		It("upgrades the connected cluster to a newer z-stream", reportxml.ID("79176"), func() {
-			By("Check if the target cluster is connected")
-			connected, err := cluster.Connected(APIClient)
-
-			if !connected {
-				Skip("Target cluster is disconnected")
-			}
-
-			if err != nil {
-				Skip(fmt.Sprintf("Encountered an error while getting cluster connection info: %s", err.Error()))
-			}
-
-			By("Check if seed and target have the same minor version")
-			seedImageClusterVersionXY, err := ClusterVersionXY(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion)
-			Expect(err).NotTo(HaveOccurred(), "error retrieving the XY portion of the seed cluster version")
-
-			if seedImageClusterVersionXY != originalClusterVersionXY {
-				Skip("XY portion of the OCP version between seed and target clusters is different")
 			}
 
 			upgrade()
