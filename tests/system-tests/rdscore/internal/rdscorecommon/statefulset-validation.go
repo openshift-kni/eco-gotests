@@ -330,3 +330,31 @@ func withNodeSelector(
 
 	return nil
 }
+
+func withPodAnnotations(
+	stBuilder *statefulset.Builder,
+	annotations map[string]string) error {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding annotations to statefulset %q in %q namespace",
+		stBuilder.Definition.Name, stBuilder.Definition.Namespace)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Annotations: %q", annotations)
+
+	if len(annotations) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'annotations' is not set")
+
+		return fmt.Errorf("option 'annotations' is not set")
+	}
+
+	if stBuilder.Definition.Spec.Template.Annotations == nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'annotations' is not set. Creating new map")
+
+		stBuilder.Definition.Spec.Template.Annotations = make(map[string]string)
+	}
+
+	for key, val := range annotations {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding annotation %q with value %q", key, val)
+
+		stBuilder.Definition.Spec.Template.Annotations[key] = val
+	}
+
+	return nil
+}
