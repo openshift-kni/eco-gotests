@@ -312,3 +312,21 @@ func withPreferredLabelPodAntiAffinity(
 
 	return nil
 }
+
+func withNodeSelector(
+	stBuilder *statefulset.Builder,
+	selector map[string]string) error {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding node selector to statefulset %q in %q namespace",
+		stBuilder.Definition.Name, stBuilder.Definition.Namespace)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("NodeSelector: %q", selector)
+
+	if len(selector) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'nodeSelector' is not set")
+
+		return fmt.Errorf("option 'nodeSelector' is not set")
+	}
+
+	stBuilder.Definition.Spec.Template.Spec.NodeSelector = selector
+
+	return nil
+}
