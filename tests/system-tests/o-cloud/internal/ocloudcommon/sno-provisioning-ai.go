@@ -25,7 +25,7 @@ func VerifySuccessfulSnoProvisioning(ctx SpecContext) {
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
-	node, nodePool, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
+	allocatedNode, nodeAR, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
 		provisioningRequest.Object.Name, OCloudConfig.ClusterName1, ctx)
 
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace.Object.Name, ctx, nil, nil)
@@ -34,7 +34,7 @@ func VerifySuccessfulSnoProvisioning(ctx SpecContext) {
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest.Object.Name)
 
-	DeprovisionAiSnoCluster(provisioningRequest, namespace, clusterInstance, node, nodePool, ctx, nil)
+	DeprovisionAiSnoCluster(provisioningRequest, namespace, clusterInstance, allocatedNode, nodeAR, ctx, nil)
 }
 
 // VerifyFailedSnoProvisioning verifies that the provisioning of a SNO cluster using
@@ -48,12 +48,12 @@ func VerifyFailedSnoProvisioning(ctx SpecContext) {
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
-	node, nodePool, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
+	allocatedNode, nodeAR, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
 		provisioningRequest.Object.Name, OCloudConfig.ClusterName1, ctx)
 
 	VerifyProvisioningRequestTimeout(provisioningRequest)
 
-	DeprovisionAiSnoCluster(provisioningRequest, namespace, clusterInstance, node, nodePool, ctx, nil)
+	DeprovisionAiSnoCluster(provisioningRequest, namespace, clusterInstance, allocatedNode, nodeAR, ctx, nil)
 }
 
 // VerifySimultaneousSnoProvisioningSameClusterTemplate verifies the successful provisioning of two SNO clusters
@@ -115,9 +115,9 @@ func VerifySimultaneousSnoDeprovisioningSameClusterTemplate(ctx SpecContext) {
 	Expect(pr1TemplateVersion).To(Equal(pr2TemplateVersion),
 		fmt.Sprintf("PR %s and %s are not using the same cluster template", prName1, prName2))
 
-	node1, nodePool1, namespace1, clusterInstance1 := VerifyAndRetrieveAssociatedCRsForAI(
+	allocatedNode1, nodeAllocationRequest1, namespace1, clusterInstance1 := VerifyAndRetrieveAssociatedCRsForAI(
 		prName1, OCloudConfig.ClusterName1, ctx)
-	node2, nodePool2, namespace2, clusterInstance2 := VerifyAndRetrieveAssociatedCRsForAI(
+	allocatedNode2, nodeAllocationRequest2, namespace2, clusterInstance2 := VerifyAndRetrieveAssociatedCRsForAI(
 		prName2, OCloudConfig.ClusterName2, ctx)
 
 	var waitGroup sync.WaitGroup
@@ -130,10 +130,10 @@ func VerifySimultaneousSnoDeprovisioningSameClusterTemplate(ctx SpecContext) {
 	go VerifyNamespaceDoesNotExist(namespace2, &waitGroup, ctx)
 	go VerifyClusterInstanceDoesNotExist(clusterInstance1, &waitGroup, ctx)
 	go VerifyClusterInstanceDoesNotExist(clusterInstance2, &waitGroup, ctx)
-	go VerifyOranNodeDoesNotExist(node1, &waitGroup, ctx)
-	go VerifyOranNodeDoesNotExist(node2, &waitGroup, ctx)
-	go VerifyOranNodePoolDoesNotExist(nodePool1, &waitGroup, ctx)
-	go VerifyOranNodePoolDoesNotExist(nodePool2, &waitGroup, ctx)
+	go VerifyAllocatedNodeDoesNotExist(allocatedNode1, &waitGroup, ctx)
+	go VerifyAllocatedNodeDoesNotExist(allocatedNode2, &waitGroup, ctx)
+	go VerifyNARDoesNotExist(nodeAllocationRequest1, &waitGroup, ctx)
+	go VerifyNARDoesNotExist(nodeAllocationRequest2, &waitGroup, ctx)
 
 	waitGroup.Wait()
 }
@@ -196,9 +196,9 @@ func VerifySimultaneousSnoDeprovisioningDifferentClusterTemplates(ctx SpecContex
 	Expect(pr1TemplateVersion).NotTo(Equal(pr2TemplateVersion),
 		fmt.Sprintf("PR %s and %s are using the same cluster template", prName1, prName2))
 
-	node1, nodePool1, ns1, clusterInstance1 := VerifyAndRetrieveAssociatedCRsForAI(
+	allocatedNode1, nodeAllocationRequest1, ns1, clusterInstance1 := VerifyAndRetrieveAssociatedCRsForAI(
 		prName1, OCloudConfig.ClusterName1, ctx)
-	node2, nodePool2, ns2, clusterInstance2 := VerifyAndRetrieveAssociatedCRsForAI(
+	allocatedNode2, nodeAllocationRequest2, ns2, clusterInstance2 := VerifyAndRetrieveAssociatedCRsForAI(
 		prName2, OCloudConfig.ClusterName2, ctx)
 
 	var waitGroup sync.WaitGroup
@@ -211,20 +211,20 @@ func VerifySimultaneousSnoDeprovisioningDifferentClusterTemplates(ctx SpecContex
 	go VerifyNamespaceDoesNotExist(ns2, &waitGroup, ctx)
 	go VerifyClusterInstanceDoesNotExist(clusterInstance1, &waitGroup, ctx)
 	go VerifyClusterInstanceDoesNotExist(clusterInstance2, &waitGroup, ctx)
-	go VerifyOranNodeDoesNotExist(node1, &waitGroup, ctx)
-	go VerifyOranNodeDoesNotExist(node2, &waitGroup, ctx)
-	go VerifyOranNodePoolDoesNotExist(nodePool1, &waitGroup, ctx)
-	go VerifyOranNodePoolDoesNotExist(nodePool2, &waitGroup, ctx)
+	go VerifyAllocatedNodeDoesNotExist(allocatedNode1, &waitGroup, ctx)
+	go VerifyAllocatedNodeDoesNotExist(allocatedNode2, &waitGroup, ctx)
+	go VerifyNARDoesNotExist(nodeAllocationRequest1, &waitGroup, ctx)
+	go VerifyNARDoesNotExist(nodeAllocationRequest2, &waitGroup, ctx)
 
 	waitGroup.Wait()
 }
 
 func getProvisioningRequestName(clusterName string) string {
-	nodePool, err := oran.PullNodePool(
+	nodeAllocationRequest, err := oran.PullNodeAllocationRequest(
 		HubAPIClient, clusterName, ocloudparams.OCloudHardwareManagerPluginNamespace)
-	Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to retrieve node pool %s", OCloudConfig.ClusterName1))
+	Expect(err).NotTo(HaveOccurred(), "Failed to retrieve node allocation request %s", OCloudConfig.ClusterName1)
 
-	for _, ownerReference := range nodePool.Object.OwnerReferences {
+	for _, ownerReference := range nodeAllocationRequest.Object.OwnerReferences {
 		if ownerReference.Kind == "ProvisioningRequest" {
 			return ownerReference.Name
 		}

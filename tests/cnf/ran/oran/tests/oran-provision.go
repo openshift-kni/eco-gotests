@@ -27,8 +27,6 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ContinueOnError is deliberately left out of this Ordered container. If the invalid ProvisioningRequest does not
-// become valid again, we cannot test provisioning with a valid ProvisioningRequest.
 var _ = Describe("ORAN Provision Tests", Label(tsparams.LabelProvision), Ordered, ContinueOnFailure, func() {
 	var o2imsAPIClient runtimeclient.Client
 
@@ -132,19 +130,20 @@ func saveSpoke1Secret(suffix, key, fileName string) error {
 	return os.WriteFile(fileName, value, 0644)
 }
 
-// verifySpokeProvisioning ensures that for a provisioned spoke, its NodePool exists, its BMC details are correct, the
-// pull-secret and extra-manifests exist, and finally that its policies are compliant, in that order. Errors are
-// accumulated for each validation and returned so that every one of the validations will run and be logged.
+// verifySpokeProvisioning ensures that for a provisioned spoke, its NodeAllocationRequest exists, its BMC details are
+// correct, the pull-secret and extra-manifests exist, and finally that its policies are compliant, in that order.
+// Errors are accumulated for each validation and returned so that every one of the validations will run and be logged.
 func verifySpokeProvisioning() error {
 	var accumulatedErrors []error
 
-	By("verifying a NodePool was created")
+	By("verifying a NodeAllocationRequest was created")
 
-	_, err := oran.PullNodePool(HubAPIClient, RANConfig.Spoke1Name, tsparams.HardwareManagerNamespace)
+	_, err := oran.PullNodeAllocationRequest(HubAPIClient, RANConfig.Spoke1Name, tsparams.HardwareManagerNamespace)
 	if err != nil {
-		glog.V(tsparams.LogLevel).Infof("Failed to verify a NodePool was created: %v", err)
+		glog.V(tsparams.LogLevel).Infof("Failed to verify a NodeAllocationRequest was created: %v", err)
 
-		accumulatedErrors = append(accumulatedErrors, fmt.Errorf("failed to verify a NodePool was created: %w", err))
+		accumulatedErrors = append(accumulatedErrors,
+			fmt.Errorf("failed to verify a NodeAllocationRequest was created: %w", err))
 	}
 
 	By("verifying the ClusterInstance has the correct BMC details")

@@ -145,6 +145,36 @@ func (builder *Builder) WithOptions(options ...AdditionalOptions) *Builder {
 	return builder
 }
 
+// WithPodAnnotations sets annotations on the pod template for pods managed by the statefulset.
+func (builder *Builder) WithPodAnnotations(annotations map[string]string) *Builder {
+	if valid, _ := builder.validate(); !valid {
+		glog.V(100).Infof("Failed to validate StatefulSet builder")
+
+		return builder
+	}
+
+	glog.V(100).Infof("Setting pod annotations %v for statefulset %s in namespace %s",
+		annotations, builder.Definition.Name, builder.Definition.Namespace)
+
+	if len(annotations) == 0 {
+		glog.V(100).Infof("The pod annotations are empty")
+
+		builder.errorMsg = "cannot accept nil or empty annotations"
+
+		return builder
+	}
+
+	if builder.Definition.Spec.Template.Annotations == nil {
+		builder.Definition.Spec.Template.Annotations = make(map[string]string)
+	}
+
+	for key, value := range annotations {
+		builder.Definition.Spec.Template.Annotations[key] = value
+	}
+
+	return builder
+}
+
 // Pull loads an existing statefulset into Builder struct.
 func Pull(apiClient *clients.Settings, name, nsname string) (*Builder, error) {
 	glog.V(100).Infof("Pulling existing statefulset name: %s under namespace: %s", name, nsname)

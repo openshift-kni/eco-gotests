@@ -1,4 +1,15 @@
+/*
+SPDX-FileCopyrightText: Red Hat
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package v1alpha1
+
+const (
+	ProvisioningRequestFinalizer = "provisioningrequest.clcm.openshift.io/finalizer"
+	ProvisioningRequestNameLabel = "provisioningrequest.clcm.openshift.io/name"
+)
 
 // ConditionType is a string representing the condition's type
 type ConditionType string
@@ -70,4 +81,16 @@ var CRconditionReasons = struct {
 	OutOfDate:       "OutOfDate",
 	TimedOut:        "TimedOut",
 	Unknown:         "Unknown",
+}
+
+// FatalPRconditionTypes is a list of ProvisioningRequest conditions
+// that are fatal and cannot be recovered on their own.
+var FatalPRconditionTypes = []ConditionType{
+	PRconditionTypes.HardwareProvisioned,
+	PRconditionTypes.HardwareNodeConfigApplied,
+	PRconditionTypes.HardwareConfigured,
+	PRconditionTypes.ClusterInstanceProcessed,
+	PRconditionTypes.ClusterProvisioned,
+	PRconditionTypes.ConfigurationApplied,
+	PRconditionTypes.UpgradeCompleted,
 }
