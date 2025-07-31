@@ -25,6 +25,14 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
+			It("Verifies whereabous plugins with Statefulset on the same node",
+				Label("statefulset", "statefulset-whereabouts", "statefulset-same-node"),
+				rdscorecommon.CreateStatefulsetOnSameNode)
+
+			It("Verifies whereabous plugins with Statefulset on different nodes",
+				Label("statefulset", "statefulset-whereabouts", "statefulset-different-nodes"),
+				rdscorecommon.CreateStatefulsetOnDifferentNode)
+
 			It("Verify EgressService with Cluster ExternalTrafficPolicy",
 				Label("egress", "egress-etp-cluster", "egress-etp-cluster-loadbalancer"),
 				reportxml.ID("76485"),
