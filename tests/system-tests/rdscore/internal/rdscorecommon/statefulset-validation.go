@@ -114,34 +114,34 @@ func defineStatefulsetContainer(cName, cImage string, cCmd []string, cRequests, 
 }
 
 func withRequiredLabelPodAffinity(
-	st *statefulset.Builder,
+	stBuilder *statefulset.Builder,
 	matchLabels map[string]string,
-	ns []string,
+	nsNames []string,
 	topologyKey string) error {
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding required pod affinity to statefulset %q",
-		st.Definition.Name)
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PodAffinity 'matchLabels': %q", matchLabels)
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PodAffinity 'namespaces': %q", ns)
+		stBuilder.Definition.Name)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("RequiredLabelPodAffinity 'matchLabels': %q", matchLabels)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("RequiredLabelPodAffinity 'namespaces': %q", nsNames)
 
 	if matchLabels == nil {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'matchLabels' is not set")
 
-		return fmt.Errorf("Option 'matchLabels' is not set")
+		return fmt.Errorf("option 'matchLabels' is not set")
 	}
 
 	if topologyKey == "" {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'topologyKey' is not set")
 
-		return fmt.Errorf("Option 'topologyKey' is not set")
+		return fmt.Errorf("option 'topologyKey' is not set")
 	}
 
-	if len(ns) == 0 {
+	if len(nsNames) == 0 {
 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'namespaces' is not set")
 
-		return fmt.Errorf("Option 'namespaces' is not set")
+		return fmt.Errorf("option 'namespaces' is not set")
 	}
 
-	st.Definition.Spec.Template.Spec.Affinity = &corev1.Affinity{
+	stBuilder.Definition.Spec.Template.Spec.Affinity = &corev1.Affinity{
 		PodAffinity: &corev1.PodAffinity{
 			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
 				{
@@ -149,7 +149,162 @@ func withRequiredLabelPodAffinity(
 						MatchLabels: matchLabels,
 					},
 					TopologyKey: topologyKey,
-					Namespaces:  ns,
+					Namespaces:  nsNames,
+				},
+			},
+		},
+	}
+
+	return nil
+}
+
+func withRequiredLabelPodAntiAffinity(
+	stBuilder *statefulset.Builder,
+	matchLabels map[string]string,
+	nsNames []string,
+	topologyKey string) error {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding required pod anti-affinity to statefulset %q",
+		stBuilder.Definition.Name)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("RequiredPodAntiAffinity 'matchLabels': %q", matchLabels)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("RequiredPodAntiAffinity 'namespaces': %q", nsNames)
+
+	if matchLabels == nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'matchLabels' is not set")
+
+		return fmt.Errorf("option 'matchLabels' is not set")
+	}
+
+	if topologyKey == "" {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'topologyKey' is not set")
+
+		return fmt.Errorf("option 'topologyKey' is not set")
+	}
+
+	if len(nsNames) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'namespaces' is not set")
+
+		return fmt.Errorf("option 'namespaces' is not set")
+	}
+
+	stBuilder.Definition.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{
+				{
+					LabelSelector: &metav1.LabelSelector{
+						MatchLabels: matchLabels,
+					},
+					TopologyKey: topologyKey,
+					Namespaces:  nsNames,
+				},
+			},
+		},
+	}
+
+	return nil
+}
+
+func withPreferredLabelPodAffinity(
+	stBuilder *statefulset.Builder,
+	matchLabels map[string]string,
+	nsNames []string,
+	topologyKey string,
+	weight int32) error {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding preferred pod affinity to statefulset %q",
+		stBuilder.Definition.Name)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PreferredPodAffinity 'matchLabels': %q", matchLabels)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PreferredPodAffinity 'namespaces': %q", nsNames)
+
+	if matchLabels == nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'matchLabels' is not set")
+
+		return fmt.Errorf("option 'matchLabels' is not set")
+	}
+
+	if topologyKey == "" {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'topologyKey' is not set")
+
+		return fmt.Errorf("option 'topologyKey' is not set")
+	}
+
+	if len(nsNames) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'namespaces' is not set")
+
+		return fmt.Errorf("option 'namespaces' is not set")
+	}
+
+	if weight < 0 || weight > 100 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'weight' is invalid: %d. Must be between 0 and 100", weight)
+
+		return fmt.Errorf("option 'weight' is invalid: %d. Must be between 0 and 100", weight)
+	}
+
+	stBuilder.Definition.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAffinity: &corev1.PodAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+				{
+					Weight: weight,
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: matchLabels,
+						},
+						TopologyKey: topologyKey,
+						Namespaces:  nsNames,
+					},
+				},
+			},
+		},
+	}
+
+	return nil
+}
+
+func withPreferredLabelPodAntiAffinity(
+	stBuilder *statefulset.Builder,
+	matchLabels map[string]string,
+	nsNames []string,
+	topologyKey string,
+	weight int32) error {
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Adding preferred pod anti-affinity to statefulset %q",
+		stBuilder.Definition.Name)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PreferredPodAntiAffinity 'matchLabels': %q", matchLabels)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PreferredPodAntiAffinity 'namespaces': %q", nsNames)
+
+	if matchLabels == nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'matchLabels' is not set")
+
+		return fmt.Errorf("option 'matchLabels' is not set")
+	}
+
+	if topologyKey == "" {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'topologyKey' is not set")
+
+		return fmt.Errorf("option 'topologyKey' is not set")
+	}
+
+	if len(nsNames) == 0 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'namespaces' is not set")
+
+		return fmt.Errorf("option 'namespaces' is not set")
+	}
+
+	if weight < 0 || weight > 100 {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Option 'weight' is invalid: %d. Must be between 0 and 100", weight)
+
+		return fmt.Errorf("option 'weight' is invalid: %d. Must be between 0 and 100", weight)
+	}
+
+	stBuilder.Definition.Spec.Template.Spec.Affinity = &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+				{
+					Weight: weight,
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: matchLabels,
+						},
+						TopologyKey: topologyKey,
+						Namespaces:  nsNames,
+					},
 				},
 			},
 		},
