@@ -362,6 +362,87 @@ var _ = Describe(
 			upgrade()
 		})
 
+		It("successfully performs IBU state transitions with seed image update", reportxml.ID("71366"), func() {
+			if !MGMTConfig.StateTransitions {
+				Skip("State transitions test is not enabled")
+			}
+
+			By("Check if seed and target have the same minor version")
+			seedImageClusterVersionXY, err := ClusterVersionXY(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion)
+			Expect(err).NotTo(HaveOccurred(), "error retrieving the XY portion of the seed cluster version")
+
+			if seedImageClusterVersionXY == originalClusterVersionXY {
+				Skip("XY portion of the OCP version between seed and target clusters is identical")
+			}
+
+			By("Check if seed and target have 2 y-stream versions apart")
+			seedYInt, _ := strconv.Atoi(strings.Split(seedImageClusterVersionXY, ".")[1])
+			originalYInt, _ := strconv.Atoi(strings.Split(originalClusterVersionXY, ".")[1])
+			if seedYInt-originalYInt == 2 {
+				Skip("The y-stream version of the seed is 2 releases apart from the target")
+			}
+
+			By("Pull the imagebasedupgrade from the cluster")
+			ibu, err := lca.PullImageBasedUpgrade(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling imagebasedupgrade resource from cluster")
+
+			By("Ensure IBU is in Idle state initially")
+			Expect(ibu.Object.Spec.Stage).To(Equal("Idle"), "error: ibu is not in Idle state")
+
+			By("Set seed image to the proper value - to pass the prep stage")
+			ibu, err = ibu.WithSeedImage(MGMTConfig.SeedImage).
+				WithSeedImageVersion(MGMTConfig.SeedClusterInfo.SeedClusterOCPVersion).Update()
+			Expect(err).NotTo(HaveOccurred(), "error updating ibu with image and version")
+
+			By("Setting the IBU stage to Prep")
+			_, err = ibu.WithStage("Prep").Update()
+			Expect(err).NotTo(HaveOccurred(), "error setting ibu to prep stage")
+
+			By("Wait until Prep stage has completed")
+			_, err = ibu.WaitUntilStageComplete("Prep")
+			Expect(err).NotTo(HaveOccurred(), "error waiting for prep stage to complete")
+
+			By("First transition: Idle to Prep")
+			_, err = ibu.WithStage("Prep").Update()
+			Expect(err).NotTo(HaveOccurred(), "error setting ibu to prep stage")
+
+			By("Wait until first Prep stage has completed")
+			_, err = ibu.WaitUntilStageComplete("Prep")
+			Expect(err).NotTo(HaveOccurred(), "error waiting for first prep stage to complete")
+
+			By("Second transition: Prep to Idle")
+			_, err = ibu.WithStage("Idle").Update()
+			Expect(err).NotTo(HaveOccurred(), "error setting ibu back to idle stage")
+
+			By("Wait until IBU returns to Idle state")
+			_, err = ibu.WaitUntilStageComplete("Idle")
+			Expect(err).NotTo(HaveOccurred(), "error waiting for idle stage to complete after prep")
+
+			temporarySeedImage := "dummy-image"
+
+			By("Update seed image with a different value")
+			_, err = ibu.WithSeedImage(temporarySeedImage).Update()
+			Expect(err).NotTo(HaveOccurred(), "error updating ibu with new seed image")
+
+			By("Verify the seed image was updated")
+			ibu, err = lca.PullImageBasedUpgrade(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling updated imagebasedupgrade resource")
+			Expect(ibu.Object.Spec.SeedImageRef.Image).To(Equal(temporarySeedImage),
+				"error: seed image was not updated correctly")
+
+			By("Update the seed image with the original value")
+			_, err = ibu.WithSeedImage(MGMTConfig.SeedImage).Update()
+			Expect(err).NotTo(HaveOccurred(), "error updating ibu with new seed image")
+
+			By("Verify the seed image was updated")
+			ibu, err = lca.PullImageBasedUpgrade(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "error pulling updated imagebasedupgrade resource")
+			Expect(ibu.Object.Spec.SeedImageRef.Image).To(Equal(MGMTConfig.SeedImage),
+				"error: seed image was not updated correctly")
+
+			upgrade()
+		})
+
 		It("upgrades the connected cluster to a newer minor version", reportxml.ID("71362"), func() {
 			By("Check if the target cluster is connected")
 			connected, err := cluster.Connected(APIClient)
