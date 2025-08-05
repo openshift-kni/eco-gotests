@@ -128,17 +128,15 @@ func SigningData(key string, value string) map[string][]byte {
 	return secretContents
 }
 
-// PreflightImage returns preflightvalidationocp image to be used based on architecture.
+// PreflightImage returns preflightvalidationocp DTK image to be used based on architecture.
 func PreflightImage(arch string) string {
-	if arch == "arm64" {
-		arch = "aarch64"
+	// Use specific DTK images with SHA for KMM 2.4 compatibility
+	if arch == "arm64" || arch == "aarch64" {
+		return kmmparams.PreflightDTKImageARM64
 	}
 
-	if arch == "amd64" {
-		arch = "x86_64"
-	}
-
-	return fmt.Sprintf(kmmparams.PreflightTemplateImage, arch)
+	// Default to x86_64/amd64
+	return kmmparams.PreflightDTKImageX86
 }
 
 // ModuleLoadedMessage returns message for a module loaded event.
@@ -150,7 +148,6 @@ func ModuleLoadedMessage(module, nsname string) string {
 }
 
 // PreflightReason returns the reason of a preflightvalidationocp check.
-
 func PreflightReason(apiClient *clients.Settings, preflight, module, nsname string) (string, error) {
 	pre, err := kmm.PullPreflightValidationOCP(apiClient, preflight, nsname)
 	if err != nil {

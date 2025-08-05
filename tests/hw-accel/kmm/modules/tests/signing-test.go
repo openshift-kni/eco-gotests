@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -194,75 +195,86 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			}
 			Expect(reasonSignListLength).To(Equal(foundEvents), "Expected number of events not found")
 		})
-		/*
-			It("should be able to run preflightvalidation with no push", reportxml.ID("56329"), func() {
-				By("Detecting cluster architecture")
+		It("should be able to run preflightvalidation with no push", reportxml.ID("56329"), func() {
+			By("Get kernel version from cluster")
+			kernelVersion, err := get.KernelFullVersion(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not get cluster kernel version")
+			}
 
-				arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
-				if err != nil {
-					Skip("could not detect cluster architecture")
-				}
-				preflightImage := get.PreflightImage(arch)
+			By("Detecting cluster architecture")
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+			dtkImage := get.PreflightImage(arch)
 
-				By("Create preflightvalidationocp")
-				pre, err := kmm.NewPreflightValidationBuilder(APIClient, kmmparams.PreflightName,
-					kmmparams.ModuleBuildAndSignNamespace).
-					WithKernelVersion("test").
-					WithPushBuiltImage(false).
-					Create()
-				Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+			By("Create preflightvalidationocp")
+			pre, err := kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.ModuleBuildAndSignNamespace).
+				WithKernelVersion(kernelVersion).
+				WithDtkImage(dtkImage).
+				WithPushBuiltImage(false).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
-				By("Await build pod to complete build")
-				err = await.BuildPodCompleted(APIClient, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "error while building module")
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
-				By("Await preflightvalidationocp checks")
-				err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
-					kmmparams.ModuleBuildAndSignNamespace, time.Minute)
-				Expect(err).To(HaveOccurred(), "preflightvalidationocp did not complete")
+			By("Await preflightvalidationocp checks")
+			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace, time.Minute)
+			Expect(err).To(HaveOccurred(), "preflightvalidationocp did not complete")
 
-				By("Get status of the preflightvalidationocp checks")
-				status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
-					kmmparams.ModuleBuildAndSignNamespace)
-				Expect(strings.Contains(status, "Failed to verify signing for module")).
-					To(BeTrue(), "expected message not found")
+			By("Get status of the preflightvalidationocp checks")
+			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace)
+			Expect(strings.Contains(status, "Failed to verify signing for module")).
+				To(BeTrue(), "expected message not found")
 
-				By("Delete preflight validation")
-				_, err = pre.Delete()
-				Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
-			})
+			By("Delete preflight validation")
+			_, err = pre.Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidation")
+		})
 
-			It("should be able to run preflightvalidation and push to registry", reportxml.ID("56327"), func() {
-				By("Detecting cluster architecture")
+		It("should be able to run preflightvalidation and push to registry", reportxml.ID("56327"), func() {
+			By("Get kernel version from cluster")
+			kernelVersion, err := get.KernelFullVersion(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not get cluster kernel version")
+			}
 
-				arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
-				if err != nil {
-					Skip("could not detect cluster architecture")
-				}
-				preflightImage := get.PreflightImage(arch)
+			By("Detecting cluster architecture")
+			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
+			if err != nil {
+				Skip("could not detect cluster architecture")
+			}
+			dtkImage := get.PreflightImage(arch)
 
-				By("Create preflightvalidationocp")
-				_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
-					kmmparams.ModuleBuildAndSignNamespace).
-					WithReleaseImage(preflightImage).
-					WithPushBuiltImage(true).
-					Create()
-				Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
+			By("Create preflightvalidationocp")
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.ModuleBuildAndSignNamespace).
+				WithKernelVersion(kernelVersion).
+				WithDtkImage(dtkImage).
+				WithPushBuiltImage(true).
+				Create()
+			Expect(err).ToNot(HaveOccurred(), "error while creating preflight")
 
-				By("Await build pod to complete build")
-				err = await.BuildPodCompleted(APIClient, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute)
-				Expect(err).ToNot(HaveOccurred(), "error while building module")
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, kmmparams.ModuleBuildAndSignNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
-				By("Await preflightvalidationocp checks")
-				err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
-					kmmparams.ModuleBuildAndSignNamespace, 3*time.Minute)
-				Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
+			By("Await preflightvalidationocp checks")
+			err = await.PreflightStageDone(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace, 3*time.Minute)
+			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
-				By("Get status of the preflightvalidationocp checks")
-				status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
-					kmmparams.ModuleBuildAndSignNamespace)
-				Expect(strings.Contains(status, "Verification successful (sign completes and image pushed)")).
-					To(BeTrue(), "expected message not found")
-			})*/
+			By("Get status of the preflightvalidationocp checks")
+			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
+				kmmparams.ModuleBuildAndSignNamespace)
+			Expect(strings.Contains(status, "Verification successful (sign completes and image pushed)")).
+				To(BeTrue(), "expected message not found")
+		})
 	})
 })
