@@ -13,12 +13,76 @@ import (
 	. "github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreinittools"
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 
+	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-goinfra/pkg/statefulset"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const (
+	// WhereaboutsReconcilerSchedule is the schedule for the whereabouts reconciler.
+	WhereaboutsReconcilerSchedule = "*/3 * * * *"
+	// WhereaboutsReconcilerKey is the key for the whereabouts reconciler.
+	WhereaboutsReconcilerKey = "reconciler_cron_expression"
+	// WhereaboutsReconcilerNamespace is the namespace for the whereabouts reconciler.
+	WhereaboutsReconcilerNamespace = "openshift-multus"
+	// WhereaboutsReconcilcerCMName is the name of the whereabouts reconciler configmap.
+	WhereaboutsReconcilcerCMName = "whereabouts-config"
+)
+
+// configureWhereaboutsIPReconciler configures whereabouts IP reconciler to run every 3 minutes.
+func configureWhereaboutsIPReconciler() {
+	By(fmt.Sprintf("Checking if configmap %q exists in %q namespace",
+		WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace))
+
+	var ctx SpecContext
+
+	cmWhereabouts, err := configmap.Pull(APIClient, WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace)
+
+	if err == nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Configmap %q exists in %q namespace, updating it",
+			WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace)
+
+		if oldSchedule, ok := cmWhereabouts.Object.Data[WhereaboutsReconcilerKey]; ok {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Key %q already exists in configmap %q in %q namespace, updating it",
+				WhereaboutsReconcilerKey, WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace)
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Old schedule: %q", oldSchedule)
+
+			cmWhereabouts.Object.Data[WhereaboutsReconcilerKey] = WhereaboutsReconcilerSchedule
+		} else {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Key %q does not exist in configmap %q in %q namespace, adding it",
+				WhereaboutsReconcilerKey, WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace)
+
+			cmWhereabouts.Object.Data[WhereaboutsReconcilerKey] = WhereaboutsReconcilerSchedule
+		}
+
+		By(fmt.Sprintf("Updating configmap %q in %q namespace",
+			WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace))
+
+		Eventually(func() error {
+			_, err := cmWhereabouts.Update()
+
+			return err
+		}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(1*time.Minute).Should(Succeed(),
+			"Failed to update configmap %q in %q namespace", WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace)
+	} else {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Configmap %q does not exist in %q namespace, creating it",
+			WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace)
+
+		By(fmt.Sprintf("Creating configmap %q in %q namespace",
+			WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace))
+
+		By(fmt.Sprintf("Configuring whereabouts reconciler with configmap %q in %q namespace",
+			WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace))
+
+		createConfigMap(WhereaboutsReconcilcerCMName, WhereaboutsReconcilerNamespace, map[string]string{
+			WhereaboutsReconcilerKey: WhereaboutsReconcilerSchedule,
+		})
+	}
+}
 
 // CreateStatefulsetOnSameNode creates a statefulset on the same node.
 //
@@ -33,6 +97,8 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 		myStatefulsetOneRBACRole    = "system:openshift:scc:nonroot-v2"
 		myStatefulsetOneTopologyKey = "kubernetes.io/hostname"
 	)
+
+	configureWhereaboutsIPReconciler()
 
 	// check if service exists and delete it if it does
 	By(fmt.Sprintf("Checking that service %q doesn't exist in %q namespace",
@@ -251,6 +317,8 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 		myStatefulsetTwoRBACRole    = "system:openshift:scc:nonroot-v2"
 		myStatefulsetTwoTopologyKey = "kubernetes.io/hostname"
 	)
+
+	configureWhereaboutsIPReconciler()
 
 	// check if service exists and delete it if it does
 	By(fmt.Sprintf("Checking that service %q doesn't exist in %q namespace",
