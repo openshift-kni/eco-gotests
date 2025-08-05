@@ -107,11 +107,16 @@ var _ = Describe("nftables", Ordered, Label(tsparams.LabelNftablesTestCases), Co
 		By("Remove the static route to the external Pod network on each worker node")
 		addDeleteStaticRouteOnWorkerNodes(testPodList, routeMap, "del", hubIPv4Network)
 
-		By(fmt.Sprintf("Disables nftables on %s if active", cnfWorkerNodeList[0].Definition.Name))
-		disableNftablesIfActive(cnfWorkerNodeList[0].Definition.Name)
+		By("Remove nftables entries from machineconfiguration nodeDisruptionPolicy")
+		removeMachineConfigurationNodeDisruptionPolicy()
 
-		err = netenv.WaitForMcpStable(APIClient, 35*time.Minute, 1*time.Minute, NetConfig.CnfMcpLabel)
-		Expect(err).ToNot(HaveOccurred(), "Failed to wait for MCP to be stable")
+		By(fmt.Sprintf("Remove machine-configuration %s", mcNftablesName))
+		err := mco.NewMCBuilder(APIClient, mcNftablesName).Delete()
+		Expect(err).ToNot(HaveOccurred(), "Failed to delete the machineConfig")
+
+		By(fmt.Sprintf("Disables nftables on %s if active", cnfWorkerNodeList[0].Definition.Name))
+		disableNftablesIfActiveAndReboot(cnfWorkerNodeList[0].Definition.Name)
+
 	})
 
 	Context("custom firewall", func() {
@@ -250,6 +255,22 @@ func updateMachineConfigurationNodeDisruptionPolicy() {
 	}, client.RawPatch(apimachinerytype.MergePatchType, jsonBytes))
 	Expect(err).ToNot(HaveOccurred(),
 		"Failed to update the machineconfiguration cluster file")
+}
+
+func removeMachineConfigurationNodeDisruptionPolicy() {
+	By("should remove nftables entries from nodeDisruptionPolicy in machineconfiguration cluster")
+
+	// Use a targeted JSON patch to remove only the files and units arrays
+	// This avoids validation issues with other fields like sshkey
+	jsonBytes := []byte(`{"spec":{"nodeDisruptionPolicy":{"files":[],"units":[]}}}`)
+
+	err := APIClient.Patch(context.TODO(), &ocpoperatorv1.MachineConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+	}, client.RawPatch(apimachinerytype.MergePatchType, jsonBytes))
+	Expect(err).ToNot(HaveOccurred(),
+		"Failed to remove nftables entries from nodeDisruptionPolicy in machineconfiguration cluster")
 }
 
 func setupRemoteMultiHopTest(
@@ -480,13 +501,15 @@ func activateNftablesIfInactive(nodeName string) {
 	}
 }
 
-func disableNftablesIfActive(nodeName string) {
+func disableNftablesIfActiveAndReboot(nodeName string) {
 	// Get the current status of the nftables service
 	statuses, err := cluster.ExecCmdWithStdout(APIClient,
 		"systemctl is-active nftables.service | cat -",
 		metav1.ListOptions{LabelSelector: fmt.Sprintf("kubernetes.io/hostname=%s", nodeName)})
 	Expect(err).ToNot(HaveOccurred(), "Failed to check nftables service status")
 	Expect(statuses).ToNot(BeEmpty(), "Failed to find statuses for nftables service")
+
+	needsReboot := false
 
 	// Iterate through the statuses of the nodes
 	for nodeName, status := range statuses {
@@ -500,7 +523,15 @@ func disableNftablesIfActive(nodeName string) {
 
 			// Verify that nftables is now inactive
 			verifyNftablesStatus("inactive", nodeName)
+
+			needsReboot = true
 		}
+	}
+
+	// Only reboot if nftables was active and we stopped it (to clean up potential iptables flush)
+	if needsReboot {
+		// Reboot the node to ensure clean state after stopping nftables
+		rebootNodeAndWaitForMcpStable(nodeName)
 	}
 }
 
