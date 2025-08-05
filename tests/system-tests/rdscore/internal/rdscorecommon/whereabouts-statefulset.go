@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
+
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -20,6 +22,36 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// AddrInfo represents the address information for a network interface.
+type AddrInfo struct {
+	Family            string `json:"family,omitempty"`
+	Local             string `json:"local,omitempty"`
+	Prefixlen         int    `json:"prefixlen,omitempty"`
+	Broadcast         string `json:"broadcast,omitempty"`
+	Scope             string `json:"scope,omitempty"`
+	Label             string `json:"label,omitempty"`
+	ValidLifeTime     uint32 `json:"valid_life_time,omitempty"`
+	PreferredLifeTime uint32 `json:"preferred_life_time,omitempty"`
+}
+
+// NetworkInterface represents the overall structure of a single network interface.
+type NetworkInterface struct {
+	Ifindex     int        `json:"ifindex,omitempty"`
+	LinkIndex   int        `json:"link_index,omitempty"`
+	Ifname      string     `json:"ifname,omitempty"`
+	Flags       []string   `json:"flags,omitempty"`
+	MTU         int        `json:"mtu,omitempty"`
+	Qdisc       string     `json:"qdisc,omitempty"`
+	Operstate   string     `json:"operstate,omitempty"`
+	Group       string     `json:"group,omitempty"`
+	Txqlen      int        `json:"txqlen,omitempty"`
+	LinkType    string     `json:"link_type,omitempty"`
+	Address     string     `json:"address,omitempty"`
+	Broadcast   string     `json:"broadcast,omitempty"`
+	LinkNetnsid int        `json:"link_netnsid,omitempty"`
+	AddrInfo    []AddrInfo `json:"addr_info,omitempty"`
+}
 
 const (
 	// WhereaboutsReconcilerSchedule is the schedule for the whereabouts reconciler.
@@ -302,6 +334,77 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 		return false
 	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 		"Statefulset %q in %q namespace is not ready", myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
+
+	By("Checking if pods are running")
+
+	pods := findPodWithSelector(RDSCoreConfig.WhereaboutNS, myStatefulsetOneLabel)
+
+	Expect(pods).ToNot(BeEmpty(), "No pods found with selector %q in %q namespace",
+		myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS)
+
+	var activePods []*pod.Builder
+
+	for _, _pod := range pods {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q in %q namespace is in phase %q",
+			_pod.Object.Name, _pod.Object.Namespace, _pod.Object.Status.Phase)
+
+		if _pod.Object.Status.Phase == corev1.PodRunning {
+			activePods = append(activePods, _pod)
+		}
+	}
+
+	Expect(len(activePods)).To(Equal(int(myStatefulsetOneReplicas)),
+		"Number of active pods is not equal to number of replicas")
+
+	By("Checking pods IP addresses")
+
+	// NOTE: net1 is the name of the network interface in the pod, make it configurable?
+	cmdGetIPAddr := []string{"/bin/sh", "-c", "ip -j addr show dev net1"}
+
+	podWhereaboutsIPs := make(map[string][]NetworkInterface)
+
+	for _, _pod := range activePods {
+		var networkInterface []NetworkInterface
+
+		Eventually(func() bool {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Executing command %q within pod %q in %q namespace",
+				cmdGetIPAddr, _pod.Object.Name, _pod.Object.Namespace)
+
+			addrBuffInfo, err := _pod.ExecCommand(cmdGetIPAddr, _pod.Definition.Spec.Containers[0].Name)
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to execute command within pod %q in %q namespace: %s",
+					_pod.Object.Name, _pod.Object.Namespace, err)
+
+				return false
+			}
+
+			if addrBuffInfo.Len() == 0 {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Empty output from command within pod %q in %q namespace",
+					_pod.Object.Name, _pod.Object.Namespace)
+
+				return false
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Unmarshalling IP addresses")
+
+			err = json.Unmarshal(addrBuffInfo.Bytes(), &networkInterface)
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to unmarshal IP addresses for pod %q in %q namespace: %s",
+					_pod.Object.Name, _pod.Object.Namespace, err)
+
+				return false
+			}
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("IP addresses: %+v", networkInterface)
+
+			podWhereaboutsIPs[_pod.Object.Name] = networkInterface
+
+			return true
+		}).WithContext(ctx).WithPolling(10*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+			"Failed to get IP addresses for pod %q in %q namespace", _pod.Object.Name, _pod.Object.Namespace)
+	}
 }
 
 // CreateStatefulsetOnDifferentNode creates a statefulset on the different node.
