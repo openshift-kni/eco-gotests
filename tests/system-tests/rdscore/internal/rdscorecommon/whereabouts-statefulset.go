@@ -66,6 +66,29 @@ const (
 	WhereaboutsReconcilcerCMName = "whereabouts-config"
 )
 
+// getActivePods gets the active pods with the given label and namespace.
+func getActivePods(podLabel, namespace string) []*pod.Builder {
+	By("Checking if pods are running")
+
+	pods := findPodWithSelector(namespace, podLabel)
+
+	Expect(pods).ToNot(BeEmpty(), "No pods found with selector %q in %q namespace",
+		podLabel, namespace)
+
+	var activePods []*pod.Builder
+
+	for _, _pod := range pods {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q in %q namespace is in phase %q",
+			_pod.Object.Name, _pod.Object.Namespace, _pod.Object.Status.Phase)
+
+		if _pod.Object.Status.Phase == corev1.PodRunning {
+			activePods = append(activePods, _pod)
+		}
+	}
+
+	return activePods
+}
+
 // configureWhereaboutsIPReconciler configures whereabouts IP reconciler to run every 3 minutes.
 func configureWhereaboutsIPReconciler() {
 	By(fmt.Sprintf("Checking if configmap %q exists in %q namespace",
@@ -120,7 +143,7 @@ func configureWhereaboutsIPReconciler() {
 
 // CreateStatefulsetOnSameNode creates a statefulset on the same node.
 //
-//nolint:funlen,gocognit
+//nolint:funlen
 func CreateStatefulsetOnSameNode(ctx SpecContext) {
 	const (
 		myHeadlessSvcOne            = "rds-st-one-headless-1"
@@ -339,21 +362,23 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 
 	By("Checking if pods are running")
 
-	pods := findPodWithSelector(RDSCoreConfig.WhereaboutNS, myStatefulsetOneLabel)
+	activePods := getActivePods(myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS)
 
-	Expect(pods).ToNot(BeEmpty(), "No pods found with selector %q in %q namespace",
-		myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS)
+	// pods := findPodWithSelector(RDSCoreConfig.WhereaboutNS, myStatefulsetOneLabel)
 
-	var activePods []*pod.Builder
+	// Expect(pods).ToNot(BeEmpty(), "No pods found with selector %q in %q namespace",
+	// 	myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS)
 
-	for _, _pod := range pods {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q in %q namespace is in phase %q",
-			_pod.Object.Name, _pod.Object.Namespace, _pod.Object.Status.Phase)
+	// var activePods []*pod.Builder
 
-		if _pod.Object.Status.Phase == corev1.PodRunning {
-			activePods = append(activePods, _pod)
-		}
-	}
+	// for _, _pod := range pods {
+	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q in %q namespace is in phase %q",
+	// 		_pod.Object.Name, _pod.Object.Namespace, _pod.Object.Status.Phase)
+
+	// 	if _pod.Object.Status.Phase == corev1.PodRunning {
+	// 		activePods = append(activePods, _pod)
+	// 	}
+	// }
 
 	Expect(len(activePods)).To(Equal(int(myStatefulsetOneReplicas)),
 		"Number of active pods is not equal to number of replicas")
@@ -688,4 +713,11 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 		return false
 	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 		"Statefulset %q in %q namespace is not ready", myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
+
+	By("Checking if pods are running")
+
+	activePods := getActivePods(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS)
+
+	Expect(len(activePods)).To(Equal(int(myStatefulsetTwoReplicas)),
+		"Number of active pods is not equal to number of replicas")
 }
