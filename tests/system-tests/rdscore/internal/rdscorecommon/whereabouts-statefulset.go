@@ -1,7 +1,9 @@
 package rdscorecommon
 
 import (
+	"bytes"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -118,7 +120,7 @@ func configureWhereaboutsIPReconciler() {
 
 // CreateStatefulsetOnSameNode creates a statefulset on the same node.
 //
-//nolint:funlen
+//nolint:funlen,gocognit
 func CreateStatefulsetOnSameNode(ctx SpecContext) {
 	const (
 		myHeadlessSvcOne            = "rds-st-one-headless-1"
@@ -404,6 +406,67 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 			return true
 		}).WithContext(ctx).WithPolling(10*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
 			"Failed to get IP addresses for pod %q in %q namespace", _pod.Object.Name, _pod.Object.Namespace)
+	}
+
+	podOneName := activePods[0].Object.Name
+	podTwoName := activePods[len(activePods)-1].Object.Name
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one %q", podOneName)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two %q", podTwoName)
+
+	podsMapping := make(map[string]string)
+
+	podsMapping[podOneName] = podTwoName
+	podsMapping[podTwoName] = podOneName
+
+	for podIndex, _pod := range activePods {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Running from %q to %q",
+			_pod.Object.Name, podsMapping[_pod.Object.Name])
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q IP addresses: %+v",
+			podsMapping[_pod.Object.Name], podWhereaboutsIPs[podsMapping[_pod.Object.Name]])
+
+		for _, dstAddr := range podWhereaboutsIPs[podsMapping[_pod.Object.Name]][0].AddrInfo {
+			if dstAddr.Family == "inet6" && dstAddr.Scope == "link" {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping link-local address %q", dstAddr.Local)
+
+				continue
+			}
+
+			randomNumber := rand.Intn(3000)
+
+			msgOne := fmt.Sprintf("Hello from %q to %q with random number %d",
+				_pod.Object.Name, podsMapping[_pod.Object.Name], randomNumber)
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending data from %q to %q",
+				_pod.Object.Name, dstAddr.Local)
+
+			targetAddr := fmt.Sprintf("%s %d", dstAddr.Local, parsedPort)
+
+			sendDataOneCmd := []string{"/bin/bash", "-c",
+				fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
+
+			var podOneResult bytes.Buffer
+
+			timeStart := time.Now()
+
+			Eventually(func() bool {
+				podOneResult.Reset()
+
+				podOneResult, err = _pod.ExecCommand(sendDataOneCmd, _pod.Definition.Spec.Containers[0].Name)
+
+				return err == nil
+			}).WithContext(ctx).WithPolling(10*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+				"Failed to send data from pod %q to %q", _pod.Object.Name, targetAddr)
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q result: %s", _pod.Object.Name, podOneResult.String())
+
+			targetPod := activePods[len(activePods)-(podIndex+1)]
+
+			By(fmt.Sprintf("Verifying message in pod %q", targetPod.Object.Name))
+
+			verifyMsgInPodLogs(targetPod, msgOne, targetPod.Definition.Spec.Containers[0].Name, timeStart)
+		}
 	}
 }
 
