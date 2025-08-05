@@ -270,6 +270,8 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 		myStatefulsetOneSA          = "rds-st-one-sa"
 		myStatefulsetOneRBACRole    = "system:openshift:scc:nonroot-v2"
 		myStatefulsetOneTopologyKey = "kubernetes.io/hostname"
+		// interfaceName is the name of the network interface inside the pod
+		interfaceName = "net1"
 	)
 
 	configureWhereaboutsIPReconciler()
@@ -486,53 +488,7 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 
 	By("Checking pods IP addresses")
 
-	// NOTE: net1 is the name of the network interface in the pod, make it configurable?
-	// cmdGetIPAddr := []string{"/bin/sh", "-c", "ip -j addr show dev net1"}
-
-	podWhereaboutsIPs := getPodWhereaboutsIPs(activePods, "net1")
-
-	// for _, _pod := range activePods {
-	// 	var networkInterface []NetworkInterface
-
-	// 	Eventually(func() bool {
-	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Executing command %q within pod %q in %q namespace",
-	// 			cmdGetIPAddr, _pod.Object.Name, _pod.Object.Namespace)
-
-	// 		addrBuffInfo, err := _pod.ExecCommand(cmdGetIPAddr, _pod.Definition.Spec.Containers[0].Name)
-
-	// 		if err != nil {
-	// 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to execute command within pod %q in %q namespace: %s",
-	// 				_pod.Object.Name, _pod.Object.Namespace, err)
-
-	// 			return false
-	// 		}
-
-	// 		if addrBuffInfo.Len() == 0 {
-	// 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Empty output from command within pod %q in %q namespace",
-	// 				_pod.Object.Name, _pod.Object.Namespace)
-
-	// 			return false
-	// 		}
-
-	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Unmarshalling IP addresses")
-
-	// 		err = json.Unmarshal(addrBuffInfo.Bytes(), &networkInterface)
-
-	// 		if err != nil {
-	// 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to unmarshal IP addresses for pod %q in %q namespace: %s",
-	// 				_pod.Object.Name, _pod.Object.Namespace, err)
-
-	// 			return false
-	// 		}
-
-	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("IP addresses: %+v", networkInterface)
-
-	// 		podWhereaboutsIPs[_pod.Object.Name] = networkInterface
-
-	// 		return true
-	// 	}).WithContext(ctx).WithPolling(10*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
-	// 		"Failed to get IP addresses for pod %q in %q namespace", _pod.Object.Name, _pod.Object.Namespace)
-	// }
+	podWhereaboutsIPs := getPodWhereaboutsIPs(activePods, interfaceName)
 
 	podOneName := activePods[0].Object.Name
 	podTwoName := activePods[len(activePods)-1].Object.Name
@@ -544,56 +500,6 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 
 	podsMapping[podOneName] = podTwoName
 	podsMapping[podTwoName] = podOneName
-
-	// for podIndex, _pod := range activePods {
-	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Running from %q to %q",
-	// 		_pod.Object.Name, podsMapping[_pod.Object.Name])
-
-	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q IP addresses: %+v",
-	// 		podsMapping[_pod.Object.Name], podWhereaboutsIPs[podsMapping[_pod.Object.Name]])
-
-	// 	for _, dstAddr := range podWhereaboutsIPs[podsMapping[_pod.Object.Name]][0].AddrInfo {
-	// 		if dstAddr.Family == "inet6" && dstAddr.Scope == "link" {
-	// 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping link-local address %q", dstAddr.Local)
-
-	// 			continue
-	// 		}
-
-	// 		randomNumber := rand.Intn(3000)
-
-	// 		msgOne := fmt.Sprintf("Hello from %q to %q with random number %d",
-	// 			_pod.Object.Name, podsMapping[_pod.Object.Name], randomNumber)
-
-	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending data from %q to %q",
-	// 			_pod.Object.Name, dstAddr.Local)
-
-	// 		targetAddr := fmt.Sprintf("%s %d", dstAddr.Local, parsedPort)
-
-	// 		sendDataOneCmd := []string{"/bin/bash", "-c",
-	// 			fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
-
-	// 		var podOneResult bytes.Buffer
-
-	// 		timeStart := time.Now()
-
-	// 		Eventually(func() bool {
-	// 			podOneResult.Reset()
-
-	// 			podOneResult, err = _pod.ExecCommand(sendDataOneCmd, _pod.Definition.Spec.Containers[0].Name)
-
-	// 			return err == nil
-	// 		}).WithContext(ctx).WithPolling(10*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
-	// 			"Failed to send data from pod %q to %q", _pod.Object.Name, targetAddr)
-
-	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q result: %s", _pod.Object.Name, podOneResult.String())
-
-	// 		targetPod := activePods[len(activePods)-(podIndex+1)]
-
-	// 		By(fmt.Sprintf("Verifying message in pod %q", targetPod.Object.Name))
-
-	// 		verifyMsgInPodLogs(targetPod, msgOne, targetPod.Definition.Spec.Containers[0].Name, timeStart)
-	// 	}
-	// }
 
 	verifyInterPodCommunication(activePods, podWhereaboutsIPs, podsMapping, parsedPort)
 }
@@ -610,6 +516,8 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 		myStatefulsetTwoSA          = "rds-st-two-sa"
 		myStatefulsetTwoRBACRole    = "system:openshift:scc:nonroot-v2"
 		myStatefulsetTwoTopologyKey = "kubernetes.io/hostname"
+		// interfaceName is the name of the network interface inside the pod
+		interfaceName = "net1"
 	)
 
 	configureWhereaboutsIPReconciler()
@@ -826,10 +734,7 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 
 	By("Checking pods IP addresses")
 
-	// NOTE: net1 is the name of the network interface in the pod, make it configurable?
-	// cmdGetIPAddr := []string{"/bin/sh", "-c", "ip -j addr show dev net1"}
-
-	podWhereaboutsIPs := getPodWhereaboutsIPs(activePods, "net1")
+	podWhereaboutsIPs := getPodWhereaboutsIPs(activePods, interfaceName)
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PodWhereaboutsIPs: %+v", podWhereaboutsIPs)
 
 	podOneName := activePods[0].Object.Name
