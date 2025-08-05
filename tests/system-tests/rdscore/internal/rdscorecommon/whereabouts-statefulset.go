@@ -66,6 +66,77 @@ const (
 	WhereaboutsReconcilcerCMName = "whereabouts-config"
 )
 
+func setupHeadlessService(svcName, namespace, svcLabel, svcPort string) {
+	By(fmt.Sprintf("Checking that service %q doesn't exist in %q namespace",
+		svcName, namespace))
+
+	var ctx SpecContext
+
+	svcOne, err := service.Pull(APIClient, svcName, namespace)
+
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to get service %q in %q namespace: %s",
+			svcName, namespace, err)
+	} else {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting service %q in %q namespace",
+			svcName, namespace)
+
+		delError := svcOne.Delete()
+
+		Expect(delError).ToNot(HaveOccurred(), "Failed to delete service %q in %q namespace",
+			svcName, namespace)
+	}
+
+	// create a headless service
+	By(fmt.Sprintf("Creating headless service %q in %q namespace",
+		svcName, namespace))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining headless service selector")
+
+	svcLabelsMap := map[string]string{
+		strings.Split(svcLabel, "=")[0]: strings.Split(svcLabel, "=")[1],
+	}
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining headless service port")
+
+	parsedPort, err := strconv.Atoi(svcPort)
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to parse port number: %v", svcPort))
+
+	svcPortCr := corev1.ServicePort{
+		Port:     int32(parsedPort),
+		Protocol: corev1.ProtocolTCP,
+	}
+
+	svcOne = defineHeadlessService(svcName, namespace, svcLabelsMap, svcPortCr)
+
+	By("Setting ipFamilyPolicy to 'RequireDualStack'")
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Setting ipFamilyPolicy to 'RequireDualStack'")
+
+	svcOne = svcOne.WithIPFamily([]corev1.IPFamily{"IPv4", "IPv6"},
+		corev1.IPFamilyPolicyRequireDualStack)
+
+	By(fmt.Sprintf("Creating headless service %q in %q namespace",
+		svcName, namespace))
+
+	Eventually(func() error {
+		svcOne, err = svcOne.Create()
+
+		if err != nil {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to create headless service %q in %q namespace: %s",
+				svcName, namespace, err)
+		}
+
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Headless service %q in %q namespace created",
+			svcName, namespace)
+
+		return err
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(1*time.Minute).Should(Succeed(),
+		"Failed to create headless service %q in %q namespace", svcName, namespace)
+}
+
 func verifyInterPodCommunication(
 	activePods []*pod.Builder,
 	podWhereaboutsIPs map[string][]NetworkInterface,
@@ -277,23 +348,10 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 	configureWhereaboutsIPReconciler()
 
 	// check if service exists and delete it if it does
-	By(fmt.Sprintf("Checking that service %q doesn't exist in %q namespace",
-		myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS))
-
-	svcOne, err := service.Pull(APIClient, myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS)
-
-	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to get service %q in %q namespace: %s",
-			myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS, err)
-	} else {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting service %q in %q namespace",
-			myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS)
-
-		delError := svcOne.Delete()
-
-		Expect(delError).ToNot(HaveOccurred(), "Failed to delete service %q in %q namespace",
-			myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS)
-	}
+	setupHeadlessService(myHeadlessSvcOne,
+		RDSCoreConfig.WhereaboutNS,
+		myStatefulsetOneLabel,
+		RDSCoreConfig.WhereaboutsSTOnePort)
 
 	// check if statefulset exists and delete it if it does
 	By(fmt.Sprintf("Checking that statefulset %q doesn't exist in %q namespace",
@@ -334,10 +392,6 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 			"Pods from %q statefulset in %q namespace are not deleted", myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
 	}
 
-	// create a headless service
-	By(fmt.Sprintf("Creating headless service %q in %q namespace",
-		myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS))
-
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining headless service selector")
 
 	svcLabelsMap := map[string]string{
@@ -349,28 +403,6 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 	parsedPort, err := strconv.Atoi(RDSCoreConfig.WhereaboutsSTOnePort)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to parse port number: %v", RDSCoreConfig.WhereaboutsSTOnePort))
-
-	svcPort := corev1.ServicePort{
-		Port:     int32(parsedPort),
-		Protocol: corev1.ProtocolTCP,
-	}
-
-	svcOne = defineHeadlessService(myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS,
-		svcLabelsMap, svcPort)
-
-	By("Setting ipFamilyPolicy to 'RequireDualStack'")
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Setting ipFamilyPolicy to 'RequireDualStack'")
-
-	svcOne = svcOne.WithIPFamily([]corev1.IPFamily{"IPv4", "IPv6"},
-		corev1.IPFamilyPolicyRequireDualStack)
-
-	Eventually(func() error {
-		svcOne, err = svcOne.Create()
-
-		return err
-	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(1*time.Minute).Should(Succeed(),
-		"Failed to create headless service %q in %q namespace", myHeadlessSvcOne, RDSCoreConfig.WhereaboutNS)
 
 	// define statefulset container
 	By("Defining statefulset container")
@@ -523,23 +555,10 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 	configureWhereaboutsIPReconciler()
 
 	// check if service exists and delete it if it does
-	By(fmt.Sprintf("Checking that service %q doesn't exist in %q namespace",
-		myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS))
-
-	svcOne, err := service.Pull(APIClient, myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS)
-
-	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to get service %q in %q namespace: %s",
-			myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS, err)
-	} else {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting service %q in %q namespace",
-			myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS)
-
-		delError := svcOne.Delete()
-
-		Expect(delError).ToNot(HaveOccurred(), "Failed to delete service %q in %q namespace",
-			myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS)
-	}
+	setupHeadlessService(myHeadlessSvcTwo,
+		RDSCoreConfig.WhereaboutNS,
+		myStatefulsetTwoLabel,
+		RDSCoreConfig.WhereaboutsSTTwoPort)
 
 	// check if statefulset exists and delete it if it does
 	By(fmt.Sprintf("Checking that statefulset %q doesn't exist in %q namespace",
@@ -580,10 +599,6 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 			"Pods from %q statefulset in %q namespace are not deleted", myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
 	}
 
-	// create a headless service
-	By(fmt.Sprintf("Creating headless service %q in %q namespace",
-		myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS))
-
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining headless service selector")
 
 	svcLabelsMap := map[string]string{
@@ -595,28 +610,6 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 	parsedPort, err := strconv.Atoi(RDSCoreConfig.WhereaboutsSTTwoPort)
 	Expect(err).ToNot(HaveOccurred(),
 		fmt.Sprintf("Failed to parse port number: %v", RDSCoreConfig.WhereaboutsSTTwoPort))
-
-	svcPort := corev1.ServicePort{
-		Port:     int32(parsedPort),
-		Protocol: corev1.ProtocolTCP,
-	}
-
-	svcOne = defineHeadlessService(myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS,
-		svcLabelsMap, svcPort)
-
-	By("Setting ipFamilyPolicy to 'RequireDualStack'")
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Setting ipFamilyPolicy to 'RequireDualStack'")
-
-	svcOne = svcOne.WithIPFamily([]corev1.IPFamily{"IPv4", "IPv6"},
-		corev1.IPFamilyPolicyRequireDualStack)
-
-	Eventually(func() error {
-		svcOne, err = svcOne.Create()
-
-		return err
-	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(1*time.Minute).Should(Succeed(),
-		"Failed to create headless service %q in %q namespace", myHeadlessSvcTwo, RDSCoreConfig.WhereaboutNS)
 
 	// define statefulset container
 	By("Defining statefulset container")
