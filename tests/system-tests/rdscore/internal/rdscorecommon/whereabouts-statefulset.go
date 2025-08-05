@@ -545,55 +545,57 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 	podsMapping[podOneName] = podTwoName
 	podsMapping[podTwoName] = podOneName
 
-	for podIndex, _pod := range activePods {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Running from %q to %q",
-			_pod.Object.Name, podsMapping[_pod.Object.Name])
+	// for podIndex, _pod := range activePods {
+	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Running from %q to %q",
+	// 		_pod.Object.Name, podsMapping[_pod.Object.Name])
 
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q IP addresses: %+v",
-			podsMapping[_pod.Object.Name], podWhereaboutsIPs[podsMapping[_pod.Object.Name]])
+	// 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q IP addresses: %+v",
+	// 		podsMapping[_pod.Object.Name], podWhereaboutsIPs[podsMapping[_pod.Object.Name]])
 
-		for _, dstAddr := range podWhereaboutsIPs[podsMapping[_pod.Object.Name]][0].AddrInfo {
-			if dstAddr.Family == "inet6" && dstAddr.Scope == "link" {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping link-local address %q", dstAddr.Local)
+	// 	for _, dstAddr := range podWhereaboutsIPs[podsMapping[_pod.Object.Name]][0].AddrInfo {
+	// 		if dstAddr.Family == "inet6" && dstAddr.Scope == "link" {
+	// 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Skipping link-local address %q", dstAddr.Local)
 
-				continue
-			}
+	// 			continue
+	// 		}
 
-			randomNumber := rand.Intn(3000)
+	// 		randomNumber := rand.Intn(3000)
 
-			msgOne := fmt.Sprintf("Hello from %q to %q with random number %d",
-				_pod.Object.Name, podsMapping[_pod.Object.Name], randomNumber)
+	// 		msgOne := fmt.Sprintf("Hello from %q to %q with random number %d",
+	// 			_pod.Object.Name, podsMapping[_pod.Object.Name], randomNumber)
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending data from %q to %q",
-				_pod.Object.Name, dstAddr.Local)
+	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Sending data from %q to %q",
+	// 			_pod.Object.Name, dstAddr.Local)
 
-			targetAddr := fmt.Sprintf("%s %d", dstAddr.Local, parsedPort)
+	// 		targetAddr := fmt.Sprintf("%s %d", dstAddr.Local, parsedPort)
 
-			sendDataOneCmd := []string{"/bin/bash", "-c",
-				fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
+	// 		sendDataOneCmd := []string{"/bin/bash", "-c",
+	// 			fmt.Sprintf("echo '%s' | nc %s", msgOne, targetAddr)}
 
-			var podOneResult bytes.Buffer
+	// 		var podOneResult bytes.Buffer
 
-			timeStart := time.Now()
+	// 		timeStart := time.Now()
 
-			Eventually(func() bool {
-				podOneResult.Reset()
+	// 		Eventually(func() bool {
+	// 			podOneResult.Reset()
 
-				podOneResult, err = _pod.ExecCommand(sendDataOneCmd, _pod.Definition.Spec.Containers[0].Name)
+	// 			podOneResult, err = _pod.ExecCommand(sendDataOneCmd, _pod.Definition.Spec.Containers[0].Name)
 
-				return err == nil
-			}).WithContext(ctx).WithPolling(10*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
-				"Failed to send data from pod %q to %q", _pod.Object.Name, targetAddr)
+	// 			return err == nil
+	// 		}).WithContext(ctx).WithPolling(10*time.Second).WithTimeout(1*time.Minute).Should(BeTrue(),
+	// 			"Failed to send data from pod %q to %q", _pod.Object.Name, targetAddr)
 
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q result: %s", _pod.Object.Name, podOneResult.String())
+	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod %q result: %s", _pod.Object.Name, podOneResult.String())
 
-			targetPod := activePods[len(activePods)-(podIndex+1)]
+	// 		targetPod := activePods[len(activePods)-(podIndex+1)]
 
-			By(fmt.Sprintf("Verifying message in pod %q", targetPod.Object.Name))
+	// 		By(fmt.Sprintf("Verifying message in pod %q", targetPod.Object.Name))
 
-			verifyMsgInPodLogs(targetPod, msgOne, targetPod.Definition.Spec.Containers[0].Name, timeStart)
-		}
-	}
+	// 		verifyMsgInPodLogs(targetPod, msgOne, targetPod.Definition.Spec.Containers[0].Name, timeStart)
+	// 	}
+	// }
+
+	verifyInterPodCommunication(activePods, podWhereaboutsIPs, podsMapping, parsedPort)
 }
 
 // CreateStatefulsetOnDifferentNode creates a statefulset on the different node.
