@@ -377,6 +377,65 @@ func getActivePods(podLabel, namespace string) []*pod.Builder {
 	return activePods
 }
 
+func ensurePodConnectivityAfterPodTermination(stLabel, namespace, targetPort string, stReplicas int) {
+	By("Getting list of active pods")
+
+	activePods := getActivePods(stLabel, namespace)
+
+	Expect(len(activePods)).To(Equal(stReplicas),
+		"Number of active pods is not equal to number of replicas")
+
+	By("Generating random pod index")
+
+	randomPodIndex := rand.Intn(len(activePods))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Random pod index: %d pod name: %q",
+		randomPodIndex, activePods[randomPodIndex].Object.Name)
+
+	terminatedPod := activePods[randomPodIndex]
+
+	terminatedPodUID := terminatedPod.Object.UID
+
+	By(fmt.Sprintf("Terminating pod %q in %q namespace with UUID: %q",
+		terminatedPod.Object.Name, terminatedPod.Object.Namespace, terminatedPod.Object.UID))
+
+	terminatedPod, err := terminatedPod.Delete()
+
+	Expect(err).ToNot(HaveOccurred(), "Failed to delete pod %q in %q namespace",
+		terminatedPod.Definition.Name, terminatedPod.Definition.Namespace)
+
+	By("Waiting for new pod to be created")
+
+	var ctx SpecContext
+
+	Eventually(func() bool {
+		activePods := getActivePods(stLabel, namespace)
+
+		for _, _pod := range activePods {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod %q in %q namespace with UUID: %q",
+				_pod.Object.Name, _pod.Object.Namespace, _pod.Object.UID)
+
+			if _pod.Object.UID == terminatedPodUID {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod's UUID matches the one of the terminated pod")
+
+				return false
+			}
+		}
+
+		return len(activePods) == stReplicas
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+		"New pod is not created")
+
+	By("Verifying inter pod connectivity after pod termination")
+
+	parsedPort, err := strconv.Atoi(targetPort)
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to parse port number: %v", targetPort))
+
+	VerifyPodConnectivity(stLabel, namespace, interfaceName, parsedPort)
+}
+
 // configureWhereaboutsIPReconciler configures whereabouts IP reconciler to run every 3 minutes.
 func configureWhereaboutsIPReconciler() {
 	By(fmt.Sprintf("Checking if configmap %q exists in %q namespace",
@@ -675,123 +734,20 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 	VerifyPodConnectivity(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS, interfaceName, parsedPort)
 }
 
-// EnsurePodConnectivityAfterPodTermination ensures pod connectivity after pod termination.
-func EnsurePodConnectivityAfterPodTermination(ctx SpecContext) {
+// EnsurePodConnectivityBetweenDifferentNodesAfterPodTermination ensures inter pod connectivity
+// between different nodes after one of the pods is terminated.
+func EnsurePodConnectivityBetweenDifferentNodesAfterPodTermination(ctx SpecContext) {
 	CreateStatefulsetOnDifferentNode(ctx)
 
-	// By("Getting list of active pods")
-
-	// activePods := getActivePods(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS)
-
-	// Expect(len(activePods)).To(Equal(int(myStatefulsetTwoReplicas)),
-	// 	"Number of active pods is not equal to number of replicas")
-
-	// By("Generating random pod index")
-
-	// randomPodIndex := rand.Intn(len(activePods))
-
-	// glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Random pod index: %d pod name: %q",
-	// 	randomPodIndex, activePods[randomPodIndex].Object.Name)
-
-	// terminatedPod := activePods[randomPodIndex]
-
-	// terminatedPodUID := terminatedPod.Object.UID
-
-	// By(fmt.Sprintf("Terminating pod %q in %q namespace with UUID: %q",
-	// 	terminatedPod.Object.Name, terminatedPod.Object.Namespace, terminatedPod.Object.UID))
-
-	// terminatedPod, err := terminatedPod.Delete()
-
-	// Expect(err).ToNot(HaveOccurred(), "Failed to delete pod %q in %q namespace",
-	// 	terminatedPod.Definition.Name, terminatedPod.Definition.Namespace)
-
-	// By("Waiting for new pod to be created")
-
-	// Eventually(func() bool {
-	// 	activePods := getActivePods(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS)
-
-	// 	for _, _pod := range activePods {
-	// 		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod %q in %q namespace with UUID: %q",
-	// 			_pod.Object.Name, _pod.Object.Namespace, _pod.Object.UID)
-
-	// 		if _pod.Object.UID == terminatedPodUID {
-	// 			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod's UUID matches the one of the terminated pod")
-
-	// 			return false
-	// 		}
-	// 	}
-
-	// 	return len(activePods) == int(myStatefulsetTwoReplicas)
-	// }).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-	// 	"New pod is not created")
-
-	// By("Verifying inter pod connectivity after pod termination")
-
-	// parsedPort, err := strconv.Atoi(RDSCoreConfig.WhereaboutsSTTwoPort)
-
-	// Expect(err).ToNot(HaveOccurred(),
-	// 	fmt.Sprintf("Failed to parse port number: %v", RDSCoreConfig.WhereaboutsSTTwoPort))
-
-	// VerifyPodConnectivity(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS, interfaceName, parsedPort)
 	ensurePodConnectivityAfterPodTermination(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS,
 		RDSCoreConfig.WhereaboutsSTTwoPort, myStatefulsetTwoReplicas)
 }
 
-func ensurePodConnectivityAfterPodTermination(stLabel, namespace, targetPort string, stReplicas int) {
-	By("Getting list of active pods")
+// EnsurePodConnectivityOnSameNodeAfterPodTermination ensures inter pod connectivity
+// on the same node after one of the pods is terminated.
+func EnsurePodConnectivityOnSameNodeAfterPodTermination(ctx SpecContext) {
+	CreateStatefulsetOnSameNode(ctx)
 
-	activePods := getActivePods(stLabel, namespace)
-
-	Expect(len(activePods)).To(Equal(stReplicas),
-		"Number of active pods is not equal to number of replicas")
-
-	By("Generating random pod index")
-
-	randomPodIndex := rand.Intn(len(activePods))
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Random pod index: %d pod name: %q",
-		randomPodIndex, activePods[randomPodIndex].Object.Name)
-
-	terminatedPod := activePods[randomPodIndex]
-
-	terminatedPodUID := terminatedPod.Object.UID
-
-	By(fmt.Sprintf("Terminating pod %q in %q namespace with UUID: %q",
-		terminatedPod.Object.Name, terminatedPod.Object.Namespace, terminatedPod.Object.UID))
-
-	terminatedPod, err := terminatedPod.Delete()
-
-	Expect(err).ToNot(HaveOccurred(), "Failed to delete pod %q in %q namespace",
-		terminatedPod.Definition.Name, terminatedPod.Definition.Namespace)
-
-	By("Waiting for new pod to be created")
-
-	var ctx SpecContext
-
-	Eventually(func() bool {
-		activePods := getActivePods(stLabel, namespace)
-
-		for _, _pod := range activePods {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod %q in %q namespace with UUID: %q",
-				_pod.Object.Name, _pod.Object.Namespace, _pod.Object.UID)
-
-			if _pod.Object.UID == terminatedPodUID {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod's UUID matches the one of the terminated pod")
-
-				return false
-			}
-		}
-
-		return len(activePods) == stReplicas
-	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-		"New pod is not created")
-
-	By("Verifying inter pod connectivity after pod termination")
-
-	parsedPort, err := strconv.Atoi(targetPort)
-
-	Expect(err).ToNot(HaveOccurred(),
-		fmt.Sprintf("Failed to parse port number: %v", targetPort))
-
-	VerifyPodConnectivity(stLabel, namespace, interfaceName, parsedPort)
+	ensurePodConnectivityAfterPodTermination(myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS,
+		RDSCoreConfig.WhereaboutsSTOnePort, myStatefulsetOneReplicas)
 }

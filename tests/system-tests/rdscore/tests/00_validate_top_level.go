@@ -25,14 +25,17 @@ var _ = Describe(
 	ContinueOnFailure,
 	Label("rds-core-workflow"), func() {
 		Context("Configured Cluster", Label("clean-cluster"), func() {
-			It("Verifies whereabous plugins with Statefulset on the same node",
+			It("Verifies connectivity between pods from statefuleset running on the same node after pod's termination",
 				Label("statefulset", "statefulset-whereabouts", "statefulset-same-node"),
-				rdscorecommon.CreateStatefulsetOnSameNode)
+				MustPassRepeatedly(3),
+				reportxml.ID("82790"),
+				rdscorecommon.EnsurePodConnectivityOnSameNodeAfterPodTermination)
 
-			It("Verifies connectivity between pods from statefuleset running on different nodes after pod termination",
+			It("Verifies connectivity between pods from statefuleset running on different nodes after pod's termination",
 				Label("statefulset", "statefulset-whereabouts", "statefulset-different-nodes"),
 				MustPassRepeatedly(3),
-				rdscorecommon.EnsurePodConnectivityAfterPodTermination)
+				reportxml.ID("82769"),
+				rdscorecommon.EnsurePodConnectivityBetweenDifferentNodesAfterPodTermination)
 
 			It("Verify EgressService with Cluster ExternalTrafficPolicy",
 				Label("egress", "egress-etp-cluster", "egress-etp-cluster-loadbalancer"),
