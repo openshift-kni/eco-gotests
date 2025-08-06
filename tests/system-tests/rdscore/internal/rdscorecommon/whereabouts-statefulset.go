@@ -64,7 +64,67 @@ const (
 	WhereaboutsReconcilerNamespace = "openshift-multus"
 	// WhereaboutsReconcilcerCMName is the name of the whereabouts reconciler configmap.
 	WhereaboutsReconcilcerCMName = "whereabouts-config"
+
+	myHeadlessSvcOne            = "rds-st-one-headless-1"
+	myStatefulsetOne            = "rds-st-one"
+	myStatefulsetOneLabel       = "app=rds-st-one"
+	myStatefulsetOneReplicas    = 2
+	myStatefulsetOneSA          = "rds-st-one-sa"
+	myStatefulsetOneRBACRole    = "system:openshift:scc:nonroot-v2"
+	myStatefulsetOneTopologyKey = "kubernetes.io/hostname"
+	// interfaceName is the name of the network interface inside the pod
+	interfaceName = "net1"
+
+	myHeadlessSvcTwo            = "rds-st-two-headless-2"
+	myStatefulsetTwo            = "rds-st-two"
+	myStatefulsetTwoLabel       = "app=rds-st-two"
+	myStatefulsetTwoReplicas    = 2
+	myStatefulsetTwoSA          = "rds-st-two-sa"
+	myStatefulsetTwoRBACRole    = "system:openshift:scc:nonroot-v2"
+	myStatefulsetTwoTopologyKey = "kubernetes.io/hostname"
 )
+
+func cleanupStatefulset(stName, namespace, stLabel string) {
+	By(fmt.Sprintf("Checking that statefulset %q doesn't exist in %q namespace",
+		stName, namespace))
+
+	var ctx SpecContext
+
+	stOne, err := statefulset.Pull(APIClient, stName, namespace)
+
+	if err != nil {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to get statefulset %q in %q namespace: %s",
+			stName, namespace, err)
+	} else {
+		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting statefulset %q in %q namespace",
+			stName, namespace)
+
+		delError := stOne.Delete()
+
+		Expect(delError).ToNot(HaveOccurred(), "Failed to delete statefulset %q in %q namespace",
+			stName, namespace)
+
+		// wait for pods to be deleted
+		By(fmt.Sprintf("Waiting for pods from %q statefulset in %q namespace to be deleted",
+			stName, namespace))
+
+		Eventually(func() bool {
+			pods, err := pod.List(APIClient, RDSCoreConfig.WhereaboutNS, metav1.ListOptions{
+				LabelSelector: stLabel,
+			})
+
+			if err != nil {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods from %q statefulset in %q namespace: %s",
+					stName, namespace, err)
+
+				return false
+			}
+
+			return len(pods) == 0
+		}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+			"Pods from %q statefulset in %q namespace are not deleted", stName, namespace)
+	}
+}
 
 func setupHeadlessService(svcName, namespace, svcLabel, svcPort string) {
 	By(fmt.Sprintf("Checking that service %q doesn't exist in %q namespace",
@@ -333,17 +393,6 @@ func configureWhereaboutsIPReconciler() {
 //
 //nolint:funlen
 func CreateStatefulsetOnSameNode(ctx SpecContext) {
-	const (
-		myHeadlessSvcOne            = "rds-st-one-headless-1"
-		myStatefulsetOne            = "rds-st-one"
-		myStatefulsetOneLabel       = "app=rds-st-one"
-		myStatefulsetOneReplicas    = 2
-		myStatefulsetOneSA          = "rds-st-one-sa"
-		myStatefulsetOneRBACRole    = "system:openshift:scc:nonroot-v2"
-		myStatefulsetOneTopologyKey = "kubernetes.io/hostname"
-		// interfaceName is the name of the network interface inside the pod
-		interfaceName = "net1"
-	)
 
 	configureWhereaboutsIPReconciler()
 
@@ -354,43 +403,8 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 		RDSCoreConfig.WhereaboutsSTOnePort)
 
 	// check if statefulset exists and delete it if it does
-	By(fmt.Sprintf("Checking that statefulset %q doesn't exist in %q namespace",
-		myStatefulsetOne, RDSCoreConfig.WhereaboutNS))
 
-	stOne, err := statefulset.Pull(APIClient, myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
-
-	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to get statefulset %q in %q namespace: %s",
-			myStatefulsetOne, RDSCoreConfig.WhereaboutNS, err)
-	} else {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting statefulset %q in %q namespace",
-			myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
-
-		delError := stOne.Delete()
-
-		Expect(delError).ToNot(HaveOccurred(), "Failed to delete statefulset %q in %q namespace",
-			myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
-
-		// wait for pods to be deleted
-		By(fmt.Sprintf("Waiting for pods from %q statefulset in %q namespace to be deleted",
-			myStatefulsetOne, RDSCoreConfig.WhereaboutNS))
-
-		Eventually(func() bool {
-			pods, err := pod.List(APIClient, RDSCoreConfig.WhereaboutNS, metav1.ListOptions{
-				LabelSelector: myStatefulsetOneLabel,
-			})
-
-			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods from %q statefulset in %q namespace: %s",
-					myStatefulsetOne, RDSCoreConfig.WhereaboutNS, err)
-
-				return false
-			}
-
-			return len(pods) == 0
-		}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-			"Pods from %q statefulset in %q namespace are not deleted", myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
-	}
+	cleanupStatefulset(myStatefulsetOne, RDSCoreConfig.WhereaboutNS, myStatefulsetOneLabel)
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining headless service selector")
 
@@ -421,7 +435,7 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 	// define statefulset
 	By("Defining statefulset")
 
-	stOne = statefulset.NewBuilder(APIClient, myStatefulsetOne, RDSCoreConfig.WhereaboutNS, svcLabelsMap, stContainerCfg)
+	stOne := statefulset.NewBuilder(APIClient, myStatefulsetOne, RDSCoreConfig.WhereaboutNS, svcLabelsMap, stContainerCfg)
 
 	nadMap := map[string]string{
 		"k8s.v1.cni.cncf.io/networks": RDSCoreConfig.WhereaboutsSTOneNAD,
@@ -540,17 +554,6 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 //
 //nolint:funlen
 func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
-	const (
-		myHeadlessSvcTwo            = "rds-st-two-headless-2"
-		myStatefulsetTwo            = "rds-st-two"
-		myStatefulsetTwoLabel       = "app=rds-st-two"
-		myStatefulsetTwoReplicas    = 2
-		myStatefulsetTwoSA          = "rds-st-two-sa"
-		myStatefulsetTwoRBACRole    = "system:openshift:scc:nonroot-v2"
-		myStatefulsetTwoTopologyKey = "kubernetes.io/hostname"
-		// interfaceName is the name of the network interface inside the pod
-		interfaceName = "net1"
-	)
 
 	configureWhereaboutsIPReconciler()
 
@@ -560,44 +563,7 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 		myStatefulsetTwoLabel,
 		RDSCoreConfig.WhereaboutsSTTwoPort)
 
-	// check if statefulset exists and delete it if it does
-	By(fmt.Sprintf("Checking that statefulset %q doesn't exist in %q namespace",
-		myStatefulsetTwo, RDSCoreConfig.WhereaboutNS))
-
-	stOne, err := statefulset.Pull(APIClient, myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
-
-	if err != nil {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to get statefulset %q in %q namespace: %s",
-			myStatefulsetTwo, RDSCoreConfig.WhereaboutNS, err)
-	} else {
-		glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Deleting statefulset %q in %q namespace",
-			myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
-
-		delError := stOne.Delete()
-
-		Expect(delError).ToNot(HaveOccurred(), "Failed to delete statefulset %q in %q namespace",
-			myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
-
-		// wait for pods to be deleted
-		By(fmt.Sprintf("Waiting for pods from %q statefulset in %q namespace to be deleted",
-			myStatefulsetTwo, RDSCoreConfig.WhereaboutNS))
-
-		Eventually(func() bool {
-			pods, err := pod.List(APIClient, RDSCoreConfig.WhereaboutNS, metav1.ListOptions{
-				LabelSelector: myStatefulsetTwoLabel,
-			})
-
-			if err != nil {
-				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Failed to list pods from %q statefulset in %q namespace: %s",
-					myStatefulsetTwo, RDSCoreConfig.WhereaboutNS, err)
-
-				return false
-			}
-
-			return len(pods) == 0
-		}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-			"Pods from %q statefulset in %q namespace are not deleted", myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
-	}
+	cleanupStatefulset(myStatefulsetTwo, RDSCoreConfig.WhereaboutNS, myStatefulsetTwoLabel)
 
 	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Defining headless service selector")
 
@@ -628,7 +594,7 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 	// define statefulset
 	By("Defining statefulset")
 
-	stOne = statefulset.NewBuilder(APIClient, myStatefulsetTwo, RDSCoreConfig.WhereaboutNS, svcLabelsMap, stContainerCfg)
+	stOne := statefulset.NewBuilder(APIClient, myStatefulsetTwo, RDSCoreConfig.WhereaboutNS, svcLabelsMap, stContainerCfg)
 
 	nadMap := map[string]string{
 		"k8s.v1.cni.cncf.io/networks": RDSCoreConfig.WhereaboutsSTTwoNAD,
