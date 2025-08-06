@@ -834,3 +834,21 @@ func EnsurePodConnectivityOnSameNodeAfterPodTermination(ctx SpecContext) {
 	ensurePodConnectivityAfterPodTermination(myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS,
 		RDSCoreConfig.WhereaboutsSTOnePort, myStatefulsetOneReplicas)
 }
+
+// EnsurePodConnectivityBetweenDifferentNodesAfterNodeDrain ensures inter pod connectivity
+// between different nodes after one of the nodes is drained.
+func EnsurePodConnectivityBetweenDifferentNodesAfterNodeDrain(ctx SpecContext) {
+	CreateStatefulsetOnDifferentNode(ctx)
+
+	ensurePodConnectivityAfterNodeDrain(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS,
+		RDSCoreConfig.WhereaboutsSTTwoPort, myStatefulsetTwoReplicas)
+}
+
+// EnsurePodConnectivityOnSameNodeAfterNodeDrain ensures inter pod connectivity
+// on the same node after one of the nodes is drained.
+func EnsurePodConnectivityOnSameNodeAfterNodeDrain(ctx SpecContext) {
+	CreateStatefulsetOnSameNode(ctx)
+
+	ensurePodConnectivityAfterNodeDrain(myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS,
+		RDSCoreConfig.WhereaboutsSTOnePort, myStatefulsetOneReplicas)
+}
