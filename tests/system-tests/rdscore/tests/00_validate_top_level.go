@@ -29,9 +29,10 @@ var _ = Describe(
 				Label("statefulset", "statefulset-whereabouts", "statefulset-same-node"),
 				rdscorecommon.CreateStatefulsetOnSameNode)
 
-			It("Verifies whereabous plugins with Statefulset on different nodes",
+			It("Verifies connectivity between pods from statefuleset running on different nodes after pod termination",
 				Label("statefulset", "statefulset-whereabouts", "statefulset-different-nodes"),
-				rdscorecommon.CreateStatefulsetOnDifferentNode)
+				MustPassRepeatedly(3),
+				rdscorecommon.EnsurePodConnectivityAfterPodTermination)
 
 			It("Verify EgressService with Cluster ExternalTrafficPolicy",
 				Label("egress", "egress-etp-cluster", "egress-etp-cluster-loadbalancer"),
