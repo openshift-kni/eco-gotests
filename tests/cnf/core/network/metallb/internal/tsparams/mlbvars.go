@@ -22,6 +22,7 @@ var (
 		"openshift-performance-addon-operator": "performance",
 		NetConfig.MlbOperatorNamespace:         "metallb-system",
 		TestNamespaceName:                      "other",
+		"openshift-nmstate":                    "nmstate operator",
 	}
 
 	// ReporterCRDsToDump tells to the reporter what CRs to dump.

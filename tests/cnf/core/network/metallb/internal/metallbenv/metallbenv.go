@@ -78,6 +78,11 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, node
 		if err != nil {
 			return fmt.Errorf("failed to delete existing MetalLB daemonset: %w", err)
 		}
+
+		err = waitForDsDeletion(tsparams.MetalLbDsName, NetConfig.MlbOperatorNamespace, 30*time.Second)
+		if err != nil {
+			return fmt.Errorf("failed to wait for speaker daemonset deletion")
+		}
 	}
 
 	glog.V(90).Infof("Creating a new MetalLB speaker daemonSet.")
@@ -149,6 +154,22 @@ func CreateNewMetalLbDaemonSetAndWaitUntilItsRunning(timeout time.Duration, node
 	glog.V(90).Infof("FRR webhook server is ready, MetalLB setup complete.")
 
 	return nil
+}
+
+func waitForDsDeletion(dsName, dsNamespace string, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.TODO(), 3*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			_, err := daemonset.Pull(APIClient, dsName, dsNamespace)
+			if err != nil {
+				glog.V(90).Infof("daemonset %s does not exist in namespace %s", dsName, dsNamespace)
+
+				return true, nil
+			}
+
+			glog.V(90).Infof("daemonset %s exists in namespace %s, waiting for deletion...", dsName, dsNamespace)
+
+			return false, nil
+		})
 }
 
 // GetMetalLbIPByIPStack returns metalLb IP addresses  from env var typo:ECO_CNF_CORE_NET_MLB_ADDR_LIST
