@@ -426,6 +426,36 @@ func configureWhereaboutsIPReconciler() {
 	}
 }
 
+// VerifyPodConnectivity verifies inter pod connectivity.
+func VerifyPodConnectivity(stLabel, namespace, interfaceName string, targetPort int) {
+	By("Verifying inter pod connectivity")
+
+	By("Checking if pods are running and active")
+
+	activePods := getActivePods(stLabel, namespace)
+
+	Expect(len(activePods)).To(Equal(int(myStatefulsetTwoReplicas)),
+		"Number of active pods is not equal to number of replicas")
+
+	By("Checking pods IP addresses")
+
+	podWhereaboutsIPs := getPodWhereaboutsIPs(activePods, interfaceName)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PodWhereaboutsIPs: %+v", podWhereaboutsIPs)
+
+	podOneName := activePods[0].Object.Name
+	podTwoName := activePods[len(activePods)-1].Object.Name
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one %q", podOneName)
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two %q", podTwoName)
+
+	podsMapping := make(map[string]string)
+
+	podsMapping[podOneName] = podTwoName
+	podsMapping[podTwoName] = podOneName
+
+	verifyInterPodCommunication(activePods, podWhereaboutsIPs, podsMapping, targetPort)
+}
+
 // CreateStatefulsetOnSameNode creates a statefulset on the same node.
 //
 //nolint:funlen
@@ -532,29 +562,7 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 
 	createStatefulsetAndWaitReplicasReady(myStatefulsetOne, RDSCoreConfig.WhereaboutNS, stOne)
 
-	By("Checking if pods are running")
-
-	activePods := getActivePods(myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS)
-
-	Expect(len(activePods)).To(Equal(int(myStatefulsetOneReplicas)),
-		"Number of active pods is not equal to number of replicas")
-
-	By("Checking pods IP addresses")
-
-	podWhereaboutsIPs := getPodWhereaboutsIPs(activePods, interfaceName)
-
-	podOneName := activePods[0].Object.Name
-	podTwoName := activePods[len(activePods)-1].Object.Name
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one %q", podOneName)
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two %q", podTwoName)
-
-	podsMapping := make(map[string]string)
-
-	podsMapping[podOneName] = podTwoName
-	podsMapping[podTwoName] = podOneName
-
-	verifyInterPodCommunication(activePods, podWhereaboutsIPs, podsMapping, parsedPort)
+	VerifyPodConnectivity(myStatefulsetOneLabel, RDSCoreConfig.WhereaboutNS, interfaceName, parsedPort)
 }
 
 // CreateStatefulsetOnDifferentNode creates a statefulset on the different node.
@@ -661,28 +669,5 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 
 	createStatefulsetAndWaitReplicasReady(myStatefulsetTwo, RDSCoreConfig.WhereaboutNS, stOne)
 
-	By("Checking if pods are running")
-
-	activePods := getActivePods(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS)
-
-	Expect(len(activePods)).To(Equal(int(myStatefulsetTwoReplicas)),
-		"Number of active pods is not equal to number of replicas")
-
-	By("Checking pods IP addresses")
-
-	podWhereaboutsIPs := getPodWhereaboutsIPs(activePods, interfaceName)
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("PodWhereaboutsIPs: %+v", podWhereaboutsIPs)
-
-	podOneName := activePods[0].Object.Name
-	podTwoName := activePods[len(activePods)-1].Object.Name
-
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod one %q", podOneName)
-	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Pod two %q", podTwoName)
-
-	podsMapping := make(map[string]string)
-
-	podsMapping[podOneName] = podTwoName
-	podsMapping[podTwoName] = podOneName
-
-	verifyInterPodCommunication(activePods, podWhereaboutsIPs, podsMapping, parsedPort)
+	VerifyPodConnectivity(myStatefulsetTwoLabel, RDSCoreConfig.WhereaboutNS, interfaceName, parsedPort)
 }
