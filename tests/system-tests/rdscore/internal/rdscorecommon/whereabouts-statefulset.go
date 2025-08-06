@@ -72,7 +72,7 @@ const (
 	myStatefulsetOneSA          = "rds-st-one-sa"
 	myStatefulsetOneRBACRole    = "system:openshift:scc:nonroot-v2"
 	myStatefulsetOneTopologyKey = "kubernetes.io/hostname"
-	// interfaceName is the name of the network interface inside the pod
+	// interfaceName is the name of the network interface inside the pod.
 	interfaceName = "net1"
 
 	myHeadlessSvcTwo            = "rds-st-two-headless-2"
@@ -124,6 +124,43 @@ func cleanupStatefulset(stName, namespace, stLabel string) {
 		}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
 			"Pods from %q statefulset in %q namespace are not deleted", stName, namespace)
 	}
+}
+
+func createStatefulsetAndWaitReplicasReady(stName, namespace string, stBuilder *statefulset.Builder) {
+	By(fmt.Sprintf("Creating statefulset %q in %q namespace", stName, namespace))
+
+	var ctx SpecContext
+
+	Eventually(func() bool {
+		_, err := stBuilder.Create()
+
+		return err == nil
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+		"Failed to create statefulset %q in %q namespace", stName, namespace)
+
+	By(fmt.Sprintf("Waiting for statefulset %q in %q namespace to be ready",
+		stName, namespace))
+
+	Eventually(func() bool {
+		exists := stBuilder.Exists()
+
+		if exists {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Statefulset ReadyReplicas: %d",
+				stBuilder.Object.Status.ReadyReplicas)
+
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Statefulset Spec.Replicas: %d",
+				*stBuilder.Definition.Spec.Replicas)
+
+			if stBuilder.Definition.Spec.Replicas != nil {
+				return stBuilder.Object.Status.ReadyReplicas == *stBuilder.Definition.Spec.Replicas
+			}
+
+			return stBuilder.Object.Status.ReadyReplicas != 0
+		}
+
+		return false
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+		"Statefulset %q in %q namespace is not ready", stName, namespace)
 }
 
 func setupHeadlessService(svcName, namespace, svcLabel, svcPort string) {
@@ -393,6 +430,7 @@ func configureWhereaboutsIPReconciler() {
 //
 //nolint:funlen
 func CreateStatefulsetOnSameNode(ctx SpecContext) {
+	By("Setting up statefulset with pods running on the same node")
 
 	configureWhereaboutsIPReconciler()
 
@@ -492,38 +530,7 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 
 	stOne.Definition.Spec.Template.Spec.ServiceAccountName = myStatefulsetOneSA
 
-	By(fmt.Sprintf("Creating statefulset %q in %q namespace", myStatefulsetOne, RDSCoreConfig.WhereaboutNS))
-
-	Eventually(func() bool {
-		stOne, err = stOne.Create()
-
-		return err == nil
-	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-		"Failed to create statefulset %q in %q namespace", myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
-
-	By(fmt.Sprintf("Waiting for statefulset %q in %q namespace to be ready",
-		myStatefulsetOne, RDSCoreConfig.WhereaboutNS))
-
-	Eventually(func() bool {
-		exists := stOne.Exists()
-
-		if exists {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Statefulset ReadyReplicas: %d",
-				stOne.Object.Status.ReadyReplicas)
-
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Statefulset Spec.Replicas: %d",
-				*stOne.Definition.Spec.Replicas)
-
-			if stOne.Definition.Spec.Replicas != nil {
-				return stOne.Object.Status.ReadyReplicas == *stOne.Definition.Spec.Replicas
-			}
-
-			return stOne.Object.Status.ReadyReplicas != 0
-		}
-
-		return false
-	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-		"Statefulset %q in %q namespace is not ready", myStatefulsetOne, RDSCoreConfig.WhereaboutNS)
+	createStatefulsetAndWaitReplicasReady(myStatefulsetOne, RDSCoreConfig.WhereaboutNS, stOne)
 
 	By("Checking if pods are running")
 
@@ -554,6 +561,7 @@ func CreateStatefulsetOnSameNode(ctx SpecContext) {
 //
 //nolint:funlen
 func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
+	By("Setting up statefulset with pods running on different nodes")
 
 	configureWhereaboutsIPReconciler()
 
@@ -651,38 +659,7 @@ func CreateStatefulsetOnDifferentNode(ctx SpecContext) {
 
 	stOne.Definition.Spec.Template.Spec.ServiceAccountName = myStatefulsetTwoSA
 
-	By(fmt.Sprintf("Creating statefulset %q in %q namespace", myStatefulsetTwo, RDSCoreConfig.WhereaboutNS))
-
-	Eventually(func() bool {
-		stOne, err = stOne.Create()
-
-		return err == nil
-	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-		"Failed to create statefulset %q in %q namespace", myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
-
-	By(fmt.Sprintf("Waiting for statefulset %q in %q namespace to be ready",
-		myStatefulsetTwo, RDSCoreConfig.WhereaboutNS))
-
-	Eventually(func() bool {
-		exists := stOne.Exists()
-
-		if exists {
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Statefulset ReadyReplicas: %d",
-				stOne.Object.Status.ReadyReplicas)
-
-			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Statefulset Spec.Replicas: %d",
-				*stOne.Definition.Spec.Replicas)
-
-			if stOne.Definition.Spec.Replicas != nil {
-				return stOne.Object.Status.ReadyReplicas == *stOne.Definition.Spec.Replicas
-			}
-
-			return stOne.Object.Status.ReadyReplicas != 0
-		}
-
-		return false
-	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
-		"Statefulset %q in %q namespace is not ready", myStatefulsetTwo, RDSCoreConfig.WhereaboutNS)
+	createStatefulsetAndWaitReplicasReady(myStatefulsetTwo, RDSCoreConfig.WhereaboutNS, stOne)
 
 	By("Checking if pods are running")
 
