@@ -517,6 +517,15 @@ func ensurePodConnectivityAfterNodeDrain(stLabel, namespace, targetPort string, 
 		fmt.Sprintf("Failed to parse port number: %v", targetPort))
 
 	VerifyPodConnectivity(stLabel, namespace, interfaceName, parsedPort)
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Uncordoning node %q", nodeToDrain)
+
+	Eventually(func() error {
+		err = nodeObj.Uncordon()
+
+		return err
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(3*time.Minute).Should(Succeed(),
+		"Failed to uncordon %q", nodeToDrain)
 }
 
 // configureWhereaboutsIPReconciler configures whereabouts IP reconciler to run every 3 minutes.
