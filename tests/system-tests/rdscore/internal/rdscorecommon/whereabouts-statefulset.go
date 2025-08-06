@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscoreparams"
 
 	"github.com/openshift-kni/eco-goinfra/pkg/configmap"
+	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/service"
 	"github.com/openshift-kni/eco-goinfra/pkg/statefulset"
@@ -403,6 +404,88 @@ func ensurePodConnectivityAfterPodTermination(stLabel, namespace, targetPort str
 
 	Expect(err).ToNot(HaveOccurred(), "Failed to delete pod %q in %q namespace",
 		terminatedPod.Definition.Name, terminatedPod.Definition.Namespace)
+
+	By("Waiting for new pod to be created")
+
+	var ctx SpecContext
+
+	Eventually(func() bool {
+		activePods := getActivePods(stLabel, namespace)
+
+		for _, _pod := range activePods {
+			glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod %q in %q namespace with UUID: %q",
+				_pod.Object.Name, _pod.Object.Namespace, _pod.Object.UID)
+
+			if _pod.Object.UID == terminatedPodUID {
+				glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Found pod's UUID matches the one of the terminated pod")
+
+				return false
+			}
+		}
+
+		return len(activePods) == stReplicas
+	}).WithContext(ctx).WithPolling(15*time.Second).WithTimeout(5*time.Minute).Should(BeTrue(),
+		"New pod is not created")
+
+	By("Verifying inter pod connectivity after pod termination")
+
+	parsedPort, err := strconv.Atoi(targetPort)
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to parse port number: %v", targetPort))
+
+	VerifyPodConnectivity(stLabel, namespace, interfaceName, parsedPort)
+}
+
+func ensurePodConnectivityAfterNodeDrain(stLabel, namespace, targetPort string, stReplicas int) {
+	By("Getting list of active pods")
+
+	activePods := getActivePods(stLabel, namespace)
+
+	Expect(len(activePods)).To(Equal(stReplicas),
+		"Number of active pods is not equal to number of replicas")
+
+	By("Generating random pod index")
+
+	randomPodIndex := rand.Intn(len(activePods))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Random pod index: %d pod name: %q",
+		randomPodIndex, activePods[randomPodIndex].Object.Name)
+
+	terminatedPod := activePods[randomPodIndex]
+
+	nodeToDrain := terminatedPod.Object.Spec.NodeName
+
+	terminatedPodUID := terminatedPod.Object.UID
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Node to drain: %q", nodeToDrain)
+
+	By(fmt.Sprintf("Pulling in node %q", nodeToDrain))
+
+	nodeObj, err := nodes.Pull(APIClient, nodeToDrain)
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to retrieve node %s object due to: %v", nodeToDrain, err))
+
+	By(fmt.Sprintf("Cordoning node %q", nodeToDrain))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Cordoning node %q", nodeToDrain)
+
+	err = nodeObj.Cordon()
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to cordon node %s due to: %v", nodeToDrain, err))
+
+	By(fmt.Sprintf("Draining node %q", nodeToDrain))
+
+	glog.V(rdscoreparams.RDSCoreLogLevel).Infof("Draining node %q", nodeToDrain)
+
+	time.Sleep(5 * time.Second)
+
+	err = nodeObj.Drain()
+
+	Expect(err).ToNot(HaveOccurred(),
+		fmt.Sprintf("Failed to drain node %s due to: %v", nodeToDrain, err))
 
 	By("Waiting for new pod to be created")
 
