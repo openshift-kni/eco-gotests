@@ -141,7 +141,8 @@ type KeyManagementServiceSpec struct {
 
 // ManagedResourcesSpec defines how to reconcile auxiliary resources
 type ManagedResourcesSpec struct {
-	CephCluster           ManageCephCluster           `json:"cephCluster,omitempty"`
+	CephCluster ManageCephCluster `json:"cephCluster,omitempty"`
+	// +kubebuilder:deprecatedversion:warning="ocs operator has stopped managing the rook config override configMap, this field will be removed in future."
 	CephConfig            ManageCephConfig            `json:"cephConfig,omitempty"`
 	CephDashboard         ManageCephDashboard         `json:"cephDashboard,omitempty"`
 	CephBlockPools        ManageCephBlockPools        `json:"cephBlockPools,omitempty"`
@@ -619,7 +620,7 @@ type TopologyLabelValues []string
 // across all nodes in the StorageCluster
 type NodeTopologyMap struct {
 	// Labels is a map of topology label keys
-	// (e.g. "failure-domain.kubernetes.io") to a set of values for those
+	// (e.g. "topology.kubernetes.io/zone") to a set of values for those
 	// keys.
 	// +optional
 	// +nullable
