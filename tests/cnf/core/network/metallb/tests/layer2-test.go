@@ -206,9 +206,15 @@ func getLBServiceAnnouncingNodeName() string {
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("Failed to get events in namespace %s", tsparams.TestNamespaceName))
 
 	var allEvents []string
-
+	//nolint:varnamelen
 	sort.Slice(serviceEvents, func(i int, j int) bool {
-		return serviceEvents[i].Object.FirstTimestamp.Before(&serviceEvents[j].Object.FirstTimestamp)
+		// Primary sort: LastTimestamp
+		if serviceEvents[i].Object.LastTimestamp.Time.Equal(serviceEvents[j].Object.LastTimestamp.Time) {
+			// Secondary sort: FirstTimestamp
+			return serviceEvents[i].Object.FirstTimestamp.Time.Before(serviceEvents[j].Object.FirstTimestamp.Time)
+		}
+
+		return serviceEvents[i].Object.LastTimestamp.Time.Before(serviceEvents[j].Object.LastTimestamp.Time)
 	})
 	Expect(len(serviceEvents)).To(BeNumerically(">", 0), "No events were found")
 
