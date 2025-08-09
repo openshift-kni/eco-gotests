@@ -57,7 +57,6 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 	glog.V(vcoreparams.VCoreLogLevel).Info("Check if redis already installed")
 
 	redisStatefulset, err := statefulset.Pull(APIClient, redisStatefulsetName, redisNamespace)
-
 	if err == nil && redisStatefulset.IsReady(time.Second) {
 		glog.V(vcoreparams.VCoreLogLevel).Infof("redis statefulset %s in namespace %s exists and ready",
 			redisStatefulsetName, redisNamespace)
@@ -93,7 +92,6 @@ func VerifyRedisDeploymentProcedure(ctx SpecContext) {
 		glog.V(100).Infof("Ensure local directory %s exists", vcoreparams.ConfigurationFolderPath)
 
 		err = os.Mkdir(vcoreparams.ConfigurationFolderPath, 0755)
-
 		if err != nil {
 			glog.V(100).Infof("Failed to create directory %s, it is already exists",
 				vcoreparams.ConfigurationFolderPath)

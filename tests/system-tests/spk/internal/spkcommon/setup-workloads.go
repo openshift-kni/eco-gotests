@@ -210,7 +210,6 @@ func deleteSVC(svcName, svcNS string) {
 		svcName, svcNS)
 
 	svcDemo, err := service.Pull(APIClient, svcName, svcNS)
-
 	if err != nil && svcDemo == nil {
 		glog.V(spkparams.SPKLogLevel).Infof("Service %q not found in %q namespace",
 			svcName, svcNS)

@@ -81,7 +81,6 @@ func Service(apiClient *clients.Settings) error {
 		upgradeparams.DeploymentName, upgradeparams.TestNamespaceName)
 
 	svcDemo, err := service.Pull(apiClient, upgradeparams.DeploymentName, upgradeparams.TestNamespaceName)
-
 	if err != nil && svcDemo == nil {
 		glog.V(90).Infof("Service %q not found in %q namespace",
 			upgradeparams.DeploymentName, upgradeparams.TestNamespaceName)
@@ -107,7 +106,6 @@ func Namespace(apiClient *clients.Settings) error {
 	glog.V(90).Infof("Deleting namespace %q", upgradeparams.TestNamespaceName)
 
 	nsDemo, err := namespace.Pull(apiClient, upgradeparams.TestNamespaceName)
-
 	if err != nil && nsDemo == nil {
 		glog.V(90).Infof("Namespace %q not found", upgradeparams.TestNamespaceName)
 

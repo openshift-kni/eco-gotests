@@ -94,7 +94,6 @@ func NewSession(host, user, password string) (*JunosSession, error) {
 
 			return true, nil
 		})
-
 	if err != nil {
 		return nil, err
 	}
@@ -294,8 +293,8 @@ func (j *JunosSession) runCommand(command string) (string, error) {
 
 func (j *JunosSession) doesSessionExist() bool {
 	glog.V(90).Infof("Checking that the SSH session %d exists", j.Session.SessionID)
-	reply, err := j.getChassisInventory()
 
+	reply, err := j.getChassisInventory()
 	if err != nil || reply == "" {
 		return false
 	}
