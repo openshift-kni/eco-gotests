@@ -498,6 +498,7 @@ var _ = Describe("rootless", Ordered, Label(tsparams.LabelSuite), ContinueOnFail
 				WithLabel("test", "dpdk").
 				WithSecondaryNetwork(clientPodNetConfig).
 				WithHugePages().
+				WithTerminationGracePeriodSeconds(90).
 				CreateAndWaitUntilReady(tsparams.WaitTimeout)
 			Expect(err).ToNot(HaveOccurred(), "Fail to create deployment")
 			deploymentPod := fetchNewDeploymentPod("deployment-one")
@@ -686,7 +687,8 @@ func defineAndCreateDPDKPod(
 
 	dpdkPod := pod.NewBuilder(APIClient, podName, tsparams.TestNamespaceName,
 		NetConfig.DpdkTestContainer).WithSecondaryNetwork(serverPodNetConfig).
-		DefineOnNode(nodeName).RedefineDefaultContainer(*dpdkContainerCfg).WithHugePages()
+		DefineOnNode(nodeName).RedefineDefaultContainer(*dpdkContainerCfg).WithHugePages().
+		WithTerminationGracePeriodSeconds(90)
 
 	if podSC != nil {
 		dpdkPod = dpdkPod.WithSecurityContext(podSC)
