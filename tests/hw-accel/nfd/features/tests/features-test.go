@@ -1,17 +1,17 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openshift-kni/eco-goinfra/pkg/machine"
+	Nodes "github.com/openshift-kni/eco-goinfra/pkg/nodes"
 	"github.com/openshift-kni/eco-goinfra/pkg/pod"
 	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/deploy"
@@ -26,6 +26,8 @@ import (
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/wait"
 	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -275,7 +277,92 @@ var _ = Describe("NFD", Ordered, func() {
 			}
 
 		})
+		It("Check if NFD Feature is deleted when node is deleted", reportxml.ID("68304"), func() {
+			skipIfConfigNotSet(nfdConfig)
 
+			if nfdConfig.SkipDestructiveNodeTests {
+				Skip("Skipping destructive node deletion test. Set ECO_HWACCEL_NFD_SKIP_DESTRUCTIVE_NODE_TESTS=false to enable.")
+			}
+
+			By("Get initial node features")
+			initialNodeFeatures, err := get.GetNodeFeatures(APIClient)
+			glog.V(ts.LogLevel).Infof("Initial node features: %v", initialNodeFeatures)
+			Expect(err).NotTo(HaveOccurred(), "Failed to get initial node features")
+
+			initialFeatureCount := len(initialNodeFeatures)
+			glog.V(ts.LogLevel).Infof("Initial node features count: %d", initialFeatureCount)
+
+			By("Get current nodes")
+			nodes, err := Nodes.List(APIClient, metav1.ListOptions{
+				LabelSelector: labels.Set(GeneralConfig.WorkerLabelMap).String(),
+			})
+			Expect(err).NotTo(HaveOccurred(), "Failed to get nodes")
+			glog.V(ts.LogLevel).Infof("Current nodes count: %d", len(nodes))
+			if len(nodes) == 0 {
+				Skip("No worker nodes found to test node deletion")
+			}
+
+			// Select the first worker node for deletion
+			nodeToDelete := nodes[0]
+			glog.V(ts.LogLevel).Infof("Selected node for deletion: %s", nodeToDelete.Object.Name)
+
+			By("Delete the selected node")
+			err = nodeToDelete.Delete()
+			Expect(err).NotTo(HaveOccurred(), "Failed to delete node %s", nodeToDelete.Definition.Name)
+
+			By("Wait for node deletion to complete")
+			err = retry.OnError(retry.DefaultRetry, func(err error) bool {
+				return true // Retry on any error
+			}, func() error {
+				_, err := APIClient.CoreV1Interface.Nodes().Get(
+					context.Background(),
+					nodeToDelete.Definition.Name,
+					metav1.GetOptions{})
+				if err != nil {
+					// Node is deleted, which is what we want
+					return nil
+				}
+
+				return fmt.Errorf("node %s still exists", nodeToDelete.Definition.Name)
+			})
+
+			Expect(err).NotTo(HaveOccurred(), "Node deletion did not complete within expected time")
+
+			By("Wait for NFD features to be cleaned up")
+			err = retry.OnError(retry.DefaultRetry, func(err error) bool {
+				return true // Retry on any error
+			}, func() error {
+				currentNodeFeatures, err := get.GetNodeFeatures(APIClient)
+				if err != nil {
+					return err
+				}
+
+				currentFeatureCount := len(currentNodeFeatures)
+				glog.V(ts.LogLevel).Infof("Current node features count: %d", currentFeatureCount)
+
+				// Check if the number of features decreased (indicating cleanup)
+				if currentFeatureCount < initialFeatureCount {
+					return nil // Success - features were cleaned up
+				}
+
+				return fmt.Errorf("node features not yet cleaned up. Expected less than %d, got %d",
+					initialFeatureCount, currentFeatureCount)
+			})
+			glog.V(ts.LogLevel).Infof("NFD features cleanup check completed: %v", err)
+			Expect(err).NotTo(HaveOccurred(), "NFD features were not cleaned up after node deletion%v", err)
+
+			By("Verify the deleted node's features are no longer present")
+			finalNodeFeatures, err := get.GetNodeFeatures(APIClient)
+			Expect(err).NotTo(HaveOccurred(), "Failed to get final node features")
+
+			// Check that no features exist for the deleted node
+			for _, feature := range finalNodeFeatures {
+				Expect(feature.Name).NotTo(Equal(nodeToDelete.Definition.Name),
+					"Found features for deleted node %s", nodeToDelete.Definition.Name)
+			}
+
+			glog.V(ts.LogLevel).Infof("Successfully verified NFD features cleanup after node deletion")
+		})
 		It("Add day2 workers", reportxml.ID("54539"), func() {
 			skipIfConfigNotSet(nfdConfig)
 			if !nfdConfig.AwsTest {
