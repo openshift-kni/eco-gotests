@@ -451,7 +451,6 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 		VersionedParams(&corev1.PodExecOptions{
 			Container: cName,
 			Command:   command,
-			Stdin:     true,
 			Stdout:    true,
 			Stderr:    true,
 			TTY:       true,
@@ -464,7 +463,6 @@ func (builder *Builder) ExecCommand(command []string, containerName ...string) (
 	}
 
 	err = exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
-		Stdin:  os.Stdin,
 		Stdout: &buffer,
 		Stderr: os.Stderr,
 		Tty:    true,
