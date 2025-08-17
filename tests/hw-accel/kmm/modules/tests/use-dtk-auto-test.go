@@ -228,11 +228,9 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
 			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
-			By("Await build pod to complete build (if any)")
-			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 1*time.Minute)
-			if err != nil {
-				glog.V(kmmparams.KmmLogLevel).Infof("No build pod found or completed: %s", err)
-			}
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Get status of the preflightvalidationocp checks")
 			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
@@ -273,11 +271,9 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 				kmmparams.UseDtkModuleTestNamespace, 3*time.Minute)
 			Expect(err).NotTo(HaveOccurred(), "preflightvalidationocp did not complete")
 
-			By("Await build pod to complete build (if any)")
-			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 1*time.Minute)
-			if err != nil {
-				glog.V(kmmparams.KmmLogLevel).Infof("No build pod found or completed: %s", err)
-			}
+			By("Await build pod to complete build")
+			err = await.BuildPodCompleted(APIClient, kmmparams.UseDtkModuleTestNamespace, 5*time.Minute)
+			Expect(err).ToNot(HaveOccurred(), "error while building module")
 
 			By("Get status of the preflightvalidationocp checks")
 			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
