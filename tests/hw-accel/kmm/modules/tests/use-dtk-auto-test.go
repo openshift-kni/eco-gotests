@@ -237,7 +237,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			By("Get status of the preflightvalidationocp checks")
 			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
 				kmmparams.UseDtkModuleTestNamespace)
-			Expect(strings.Contains(status, "Verification successful (build compiles)") || strings.Contains(status, "verified image exists")).
+			Expect(strings.Contains(status, "Verification successful (build compiles)")).
 				To(BeTrue(), "expected message not found")
 
 			By("Delete preflight validation")
@@ -282,7 +282,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			By("Get status of the preflightvalidationocp checks")
 			status, _ := get.PreflightReason(APIClient, kmmparams.PreflightName, moduleName,
 				kmmparams.UseDtkModuleTestNamespace)
-			Expect(strings.Contains(status, "Verification successful (build compiles and image pushed)") || strings.Contains(status, "verified image exists")).
+			Expect(strings.Contains(status, "Verification successful (build compiles and image pushed)")).
 				To(BeTrue(), "expected message not found")
 		})
 	})
