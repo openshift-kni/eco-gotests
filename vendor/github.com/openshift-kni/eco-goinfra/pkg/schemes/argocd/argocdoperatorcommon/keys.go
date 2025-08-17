@@ -81,7 +81,7 @@ const (
 	ArgoCDKeyIngressSSLRedirect = "nginx.ingress.kubernetes.io/force-ssl-redirect"
 
 	// ArgoCDKeyIngressSSLPassthrough is the ssl passthrough key for labels.
-	ArgoCDKeyIngressSSLPassthrough = "nginx.ingress.kubernetes.io/ssl-passthrough"
+	ArgoCDKeyIngressSSLPassthrough = "nginx.ingress.kubernetes.io/ssl-passthrough" // #nosec G101
 
 	// ArgoCDKeyKustomizeBuildOptions is the configuration key for the kustomize build options.
 	ArgoCDKeyKustomizeBuildOptions = "kustomize.buildOptions"
@@ -183,10 +183,6 @@ const (
 	// to be used for the Argo-CD extension image
 	ArgoCDExtensionImageEnvName = "ARGOCD_EXTENSION_IMAGE"
 
-	// ArgoCDKeycloakImageEnvName is the environment variable used to get the image
-	// to used for the Keycloak container.
-	ArgoCDKeycloakImageEnvName = "ARGOCD_KEYCLOAK_IMAGE"
-
 	// ArgoCDRedisHAProxyImageEnvName is the environment variable used to get the image
 	// to used for the Redis HA Proxy container.
 	ArgoCDRedisHAProxyImageEnvName = "ARGOCD_REDIS_HA_PROXY_IMAGE"
@@ -210,7 +206,7 @@ const (
 	ArgoCDDefaultServer = "https://kubernetes.default.svc"
 
 	// ArgoCDSecretTypeLabel is needed for cluster secrets
-	ArgoCDSecretTypeLabel = "argocd.argoproj.io/secret-type"
+	ArgoCDSecretTypeLabel = "argocd.argoproj.io/secret-type" // #nosec G101
 
 	// ArgoCDManagedByLabel is needed to identify namespace managed by an instance on ArgoCD
 	ArgoCDManagedByLabel = "argocd.argoproj.io/managed-by"
@@ -228,7 +224,7 @@ const (
 	ArgoCDServerClusterRoleEnvName = "SERVER_CLUSTER_ROLE"
 
 	// ArgoCDDexSecretKey is used to reference Dex secret from Argo CD secret into Argo CD configmap
-	ArgoCDDexSecretKey = "oidc.dex.clientSecret"
+	ArgoCDDexSecretKey = "oidc.dex.clientSecret" // #nosec G101
 
 	// Label Selector is an env variable for ArgoCD instance reconcilliation.
 	ArgoCDLabelSelectorKey = "ARGOCD_LABEL_SELECTOR"

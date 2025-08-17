@@ -7,4 +7,6 @@ const (
 	APIVersion = "v2"
 	// NodeConfigsResource represents sriovfecnodeconfigs resource.
 	NodeConfigsResource = "sriovfecnodeconfigs"
+	// ClusterConfigsResource represents sriovfecclusterconfigs resource.
+	ClusterConfigsResource = "sriovfecclusterconfigs"
 )

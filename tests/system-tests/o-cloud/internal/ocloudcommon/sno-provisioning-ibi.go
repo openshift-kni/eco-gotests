@@ -76,7 +76,7 @@ func VerifySuccessfulIbiSnoProvisioning(ctx SpecContext) {
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
-	node, nodePool, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
+	allocatedNode, nodeAR, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
 		OCloudConfig.ClusterName2,
 		OCloudConfig.ClusterName2,
 		OCloudConfig.ClusterName2,
@@ -89,7 +89,8 @@ func VerifySuccessfulIbiSnoProvisioning(ctx SpecContext) {
 	VerifyProvisioningRequestIsFulfilled(provisioningRequest)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s is fulfilled", provisioningRequest.Object.Name)
 
-	deprovisionIbiSnoCluster(provisioningRequest, namespace, node, nodePool, bareMetalHost, imageClusterInstall, ctx)
+	deprovisionIbiSnoCluster(
+		provisioningRequest, namespace, allocatedNode, nodeAR, bareMetalHost, imageClusterInstall, ctx)
 }
 
 // VerifyFailedIbiSnoProvisioning verifies the failed provisioning of a SNO cluster using
@@ -117,7 +118,7 @@ func VerifyFailedIbiSnoProvisioning(ctx SpecContext) {
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters2)
 
-	node, nodePool, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
+	allocatedNode, nodeAR, namespace, bareMetalHost, imageClusterInstall := verifyAndRetrieveAssociatedCRsForIBI(
 		OCloudConfig.ClusterName2,
 		OCloudConfig.ClusterName2,
 		OCloudConfig.ClusterName2,
@@ -127,7 +128,8 @@ func VerifyFailedIbiSnoProvisioning(ctx SpecContext) {
 	VerifyProvisioningRequestTimeout(provisioningRequest)
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Provisioning request %s has timed out", provisioningRequest.Object.Name)
 
-	deprovisionIbiSnoCluster(provisioningRequest, namespace, node, nodePool, bareMetalHost, imageClusterInstall, ctx)
+	deprovisionIbiSnoCluster(
+		provisioningRequest, namespace, allocatedNode, nodeAR, bareMetalHost, imageClusterInstall, ctx)
 }
 
 // installBaseImage boots a given spoke cluster from CD using the specified base image and virtual media ID,
@@ -180,7 +182,7 @@ func generateBaseImage(ctx SpecContext) {
 		ocloudparams.PolicyTemplateParameters,
 		ocloudparams.ClusterInstanceParameters1)
 
-	node, nodePool, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
+	allocatedNode, nodeAR, namespace, clusterInstance := VerifyAndRetrieveAssociatedCRsForAI(
 		provisioningRequest.Object.Name, OCloudConfig.ClusterName1, ctx)
 
 	VerifyAllPoliciesInNamespaceAreCompliant(namespace.Object.Name, ctx, nil, nil)
@@ -281,7 +283,8 @@ func generateBaseImage(ctx SpecContext) {
 	Expect(err).NotTo(HaveOccurred(),
 		fmt.Sprintf("Error copying rhcos-ibi.iso image to %s: %v", OCloudConfig.IbiBaseImagePath, err))
 
-	DeprovisionAiSnoCluster(provisioningRequest, namespace, clusterInstance, node, nodePool, ctx, nil)
+	DeprovisionAiSnoCluster(
+		provisioningRequest, namespace, clusterInstance, allocatedNode, nodeAR, ctx, nil)
 }
 
 // verifyBareMetalHostDoesNotExist verifies that a given ORAN node does not exist.
@@ -319,8 +322,8 @@ func verifyImageClusterInstallDoesNotExist(
 func deprovisionIbiSnoCluster(
 	provisioningRequest *oran.ProvisioningRequestBuilder,
 	namespace *namespace.Builder,
-	node *oran.NodeBuilder,
-	nodePool *oran.NodePoolBuilder,
+	allocatedNode *oran.AllocatedNodeBuilder,
+	nodeAllocationRequest *oran.NARBuilder,
 	bareMetalHost *bmh.BmhBuilder,
 	imageClusterInstall *ibi.ImageClusterInstallBuilder,
 	ctx SpecContext) {
@@ -332,8 +335,8 @@ func deprovisionIbiSnoCluster(
 
 	go VerifyProvisioningRequestIsDeleted(provisioningRequest, &tearDownWg, ctx)
 	go VerifyNamespaceDoesNotExist(namespace, &tearDownWg, ctx)
-	go VerifyOranNodeDoesNotExist(node, &tearDownWg, ctx)
-	go VerifyOranNodePoolDoesNotExist(nodePool, &tearDownWg, ctx)
+	go VerifyAllocatedNodeDoesNotExist(allocatedNode, &tearDownWg, ctx)
+	go VerifyNARDoesNotExist(nodeAllocationRequest, &tearDownWg, ctx)
 	go verifyBareMetalHostDoesNotExist(bareMetalHost, &tearDownWg, ctx)
 	go verifyImageClusterInstallDoesNotExist(imageClusterInstall, &tearDownWg, ctx)
 
@@ -351,8 +354,8 @@ func verifyAndRetrieveAssociatedCRsForIBI(
 	hostName string,
 	ctx SpecContext,
 ) (
-	*oran.NodeBuilder,
-	*oran.NodePoolBuilder,
+	*oran.AllocatedNodeBuilder,
+	*oran.NARBuilder,
 	*namespace.Builder,
 	*bmh.BmhBuilder,
 	*ibi.ImageClusterInstallBuilder,
@@ -385,11 +388,11 @@ func verifyAndRetrieveAssociatedCRsForIBI(
 	glog.V(ocloudparams.OCloudLogLevel).Infof("Cluster installation %s has succeeded ", nodeID)
 
 	namespace := VerifyNamespaceExists(nsName)
-	node := VerifyOranNodeExistsInNamespace(nodeID, ocloudparams.OCloudHardwareManagerPluginNamespace)
-	nodePool := VerifyOranNodePoolExistsInNamespace(
+	allocatedNode := VerifyAllocatedNodeExistsInNamespace(nodeID, ocloudparams.OCloudHardwareManagerPluginNamespace)
+	nodeAllocationRequest := VerifyNARExistsInNamespace(
 		nodePoolName, ocloudparams.OCloudHardwareManagerPluginNamespace)
 
-	return node, nodePool, namespace, bareMetalHost, imageClusterInstall
+	return allocatedNode, nodeAllocationRequest, namespace, bareMetalHost, imageClusterInstall
 }
 
 // baseImageExists returns true if the IBI base image exists false otherwise.
