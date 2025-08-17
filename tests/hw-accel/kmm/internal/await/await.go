@@ -29,7 +29,6 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 
 			if buildPod[nsname] == "" {
 				pods, err := pod.List(apiClient, nsname, metav1.ListOptions{FieldSelector: "status.phase=Running"})
-
 				if err != nil {
 					glog.V(kmmparams.KmmLogLevel).Infof("build list error: %s", err)
 				}
@@ -99,7 +98,6 @@ func ModuleUndeployed(apiClient *clients.Settings, nsName string, timeout time.D
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			pods, err := pod.List(apiClient, nsName, metav1.ListOptions{})
-
 			if err != nil {
 				glog.V(kmmparams.KmmLogLevel).Infof("pod list error: %s\n", err)
 
@@ -118,7 +116,6 @@ func ModuleObjectDeleted(apiClient *clients.Settings, moduleName, nsName string,
 	return wait.PollUntilContextTimeout(
 		context.TODO(), time.Second, timeout, true, func(ctx context.Context) (bool, error) {
 			_, err := kmm.Pull(apiClient, moduleName, nsName)
-
 			if err != nil {
 				glog.V(kmmparams.KmmLogLevel).Infof("error while pulling the module; most likely it is deleted")
 			}
@@ -161,13 +158,11 @@ func deploymentPerLabel(apiClient *clients.Settings, moduleName, label string,
 			var err error
 
 			nodeBuilder, err := nodes.List(apiClient, metav1.ListOptions{LabelSelector: labels.Set(selector).String()})
-
 			if err != nil {
 				glog.V(kmmparams.KmmLogLevel).Infof("could not discover %v nodes", selector)
 			}
 
 			nodesForSelector, err := get.NumberOfNodesForSelector(apiClient, selector)
-
 			if err != nil {
 				glog.V(kmmparams.KmmLogLevel).Infof("nodes list error: %s", err)
 

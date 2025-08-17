@@ -13,7 +13,6 @@ func GetCurrentCSVNameFromSubscription(apiClient *clients.Settings,
 		subscriptionName, subscriptionNamespace)
 
 	subscriptionObj, err := olm.PullSubscription(apiClient, subscriptionName, subscriptionNamespace)
-
 	if err != nil {
 		glog.V(100).Infof("error pulling subscription %s from cluster in namespace %s",
 			subscriptionName, subscriptionNamespace)

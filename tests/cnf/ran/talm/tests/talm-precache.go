@@ -609,7 +609,6 @@ func checkPrecachePodLog(client *clients.Settings) error {
 
 			return false, nil
 		})
-
 	if err != nil && plog != "" {
 		glog.V(tsparams.LogLevel).Infof("generated pod logs: ", plog)
 	}
