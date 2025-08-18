@@ -584,6 +584,18 @@ func getLinkRx(runningPod *pod.Builder, linkName string) (int, error) {
 				return false, nil
 			}
 
+			glog.V(100).Infof("Validating output of link %s info from pod %s in namespace %s",
+				linkName, runningPod.Definition.Name, runningPod.Definition.Namespace)
+
+			_, err = link.NewBuilder(linkRawInfo)
+
+			if err != nil {
+				glog.V(100).Infof("Failed to parse %q link's info from pod %s in namespace %s with error %v",
+					linkName, runningPod.Definition.Name, runningPod.Definition.Namespace, err)
+
+				return false, nil
+			}
+
 			return true, nil
 		})
 
@@ -596,6 +608,7 @@ func getLinkRx(runningPod *pod.Builder, linkName string) (int, error) {
 	}
 
 	linkInfo, err := link.NewBuilder(linkRawInfo)
+
 	if err != nil {
 		glog.V(100).Infof("Failed to collect link %s info from pod %s in namespace %s with error %v",
 			linkName, runningPod.Definition.Name, runningPod.Definition.Namespace, err)
