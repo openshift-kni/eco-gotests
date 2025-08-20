@@ -33,10 +33,10 @@ var _ = Describe("NFD", Ordered, func() {
 	nfdConfig := nfdconfig.NewNfdConfig()
 
 	var nfdInstaller *deploy.OperatorInstaller
-	var nfdCRUtils *set.NFDCRUtils
+
+	var nfdCRUtils *deploy.NFDCRUtils
 
 	BeforeAll(func() {
-
 		var options *nfdhelpers.NFDInstallConfigOptions
 
 		if nfdConfig.CatalogSource != "" {
@@ -48,7 +48,9 @@ var _ = Describe("NFD", Ordered, func() {
 		installConfig := nfdhelpers.GetDefaultNFDInstallConfig(APIClient, options)
 
 		nfdInstaller = deploy.NewOperatorInstaller(installConfig)
-		nfdCRUtils = set.NewNFDCRUtils(APIClient, installConfig.Namespace, nfdparams.NfdInstance)
+
+		nfdCRUtils = deploy.NewNFDCRUtils(APIClient, installConfig.Namespace, nfdparams.NfdInstance)
+
 	})
 
 	Context("Node featues", Label("discovery-of-labels"), func() {
@@ -341,7 +343,9 @@ var _ = Describe("NFD", Ordered, func() {
 
 func runNodeDiscoveryAndTestLabelExistence(
 	nfdInstaller *deploy.OperatorInstaller,
-	nfdCRUtils *set.NFDCRUtils,
+
+	nfdCRUtils *deploy.NFDCRUtils,
+
 	nfdConfig *nfdconfig.NfdConfig,
 	enableTopology bool) {
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -360,7 +364,8 @@ func runNodeDiscoveryAndTestLabelExistence(
 	Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("error checking NFD operator readiness: %s", err))
 	Expect(ready).To(BeTrue(), "NFD operator is not ready")
 
-	nfdCRConfig := set.NFDCRConfig{
+	nfdCRConfig := deploy.NFDCRConfig{
+
 		EnableTopology: enableTopology,
 		Image:          nfdConfig.Image,
 	}

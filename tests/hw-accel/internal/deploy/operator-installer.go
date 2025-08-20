@@ -33,6 +33,7 @@ type OperatorInstallConfig struct {
 	Channel                string
 	SkipNamespaceCreation  bool
 	SkipOperatorGroup      bool
+	TargetNamespaces       []string // Custom targetNamespaces for OperatorGroup
 	LogLevel               glog.Level
 }
 
@@ -252,6 +253,8 @@ func (o *OperatorInstaller) createOperatorGroup() error {
 
 	operatorGroupBuilder := olm.NewOperatorGroupBuilder(
 		o.config.APIClient, o.config.OperatorGroupName, o.config.Namespace)
+
+	operatorGroupBuilder.Definition.Spec.TargetNamespaces = o.config.TargetNamespaces
 
 	if operatorGroupBuilder.Exists() {
 		glog.V(o.config.LogLevel).Infof("OperatorGroup %s already exists", o.config.OperatorGroupName)
