@@ -38,6 +38,7 @@ var (
 	ReporterNamespacesToDump = map[string]string{
 		NetConfig.SriovOperatorNamespace: NetConfig.SriovOperatorNamespace,
 		TestNamespaceName:                "other",
+		"openshift-nmstate":              "nmstate operator",
 	}
 	// ClientIPv4IPAddress represents the full test client IPv4 address.
 	ClientIPv4IPAddress = "192.168.0.1/24"

@@ -29,5 +29,6 @@ var (
 	ReporterNamespacesToDump = map[string]string{
 		NetConfig.NMStateOperatorNamespace: NetConfig.NMStateOperatorNamespace,
 		TestNamespaceName:                  "other",
+		"openshift-nmstate":                "nmstate operator",
 	}
 )
