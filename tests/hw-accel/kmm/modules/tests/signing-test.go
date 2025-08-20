@@ -54,12 +54,12 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 			crb := define.ModuleCRB(*svcAccount, kmodName)
 			err = crb.Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")
-			/*
-				By("Delete preflightvalidationocp")
-				_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
-					kmmparams.ModuleBuildAndSignNamespace).Delete()
-				Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
-			*/
+
+			By("Delete preflightvalidationocp")
+			_, err = kmm.NewPreflightValidationOCPBuilder(APIClient, kmmparams.PreflightName,
+				kmmparams.ModuleBuildAndSignNamespace).Delete()
+			Expect(err).ToNot(HaveOccurred(), "error deleting preflightvalidationocp")
+
 			By("Delete Namespace")
 			err = namespace.NewBuilder(APIClient, kmmparams.ModuleBuildAndSignNamespace).Delete()
 			Expect(err).ToNot(HaveOccurred(), "error creating test namespace")

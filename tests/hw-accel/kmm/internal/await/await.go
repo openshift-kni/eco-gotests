@@ -28,7 +28,7 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 			var err error
 
 			if buildPod[nsname] == "" {
-				// Search across all pod phases; preflight pull pods may finish quickly.
+				// Search across all pod phases to catch build pods that may complete quickly
 				pods, err := pod.List(apiClient, nsname, metav1.ListOptions{})
 
 				if err != nil {
@@ -36,10 +36,9 @@ func BuildPodCompleted(apiClient *clients.Settings, nsname string, timeout time.
 				}
 
 				for _, podObj := range pods {
-					// Detect both build pods and preflight pull pods.
-					if strings.Contains(podObj.Object.Name, "-build") || strings.Contains(podObj.Object.Name, "-pull-pod") {
+					if strings.Contains(podObj.Object.Name, "-build") {
 						buildPod[nsname] = podObj.Object.Name
-						glog.V(kmmparams.KmmLogLevel).Infof("Detected build/pull pod '%s'\n", podObj.Object.Name)
+						glog.V(kmmparams.KmmLogLevel).Infof("Build pod '%s' found\n", podObj.Object.Name)
 					}
 				}
 			}
