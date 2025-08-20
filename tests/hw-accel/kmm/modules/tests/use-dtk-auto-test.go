@@ -76,13 +76,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 		It("should use DTK_AUTO parameter", reportxml.ID("54283"), func() {
 
-			By("Detecting cluster architecture")
-			arch, err := get.ClusterArchitecture(APIClient, GeneralConfig.WorkerLabelMap)
-			if err != nil {
-				Skip("could not detect cluster architecture")
-			}
-			dtkImage := get.PreflightImage(arch)
-
 			configmapContents := define.MultiStageConfigMapContent(kmodName)
 
 			By("Create ConfigMap")
@@ -106,7 +99,6 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelSani
 
 			kernelMapping.WithContainerImage(image).
 				WithBuildArg(kmmparams.BuildArgName, buildArgValue).
-				WithBuildArg("DTK_AUTO", dtkImage).
 				WithBuildDockerCfgFile(dockerfileConfigMap.Object.Name)
 			kerMapOne, err := kernelMapping.BuildKernelMappingConfig()
 			Expect(err).ToNot(HaveOccurred(), "error creating kernel mapping")
