@@ -160,7 +160,14 @@ var _ = Describe(
 				var kmmKernelMappingsList []kmmv1beta1.KernelMapping
 				kmmMappings := append(kmmKernelMappingsList, kmmKernelMappings)
 
+				By("Initialize kmmModule")
 				kmmModule := kmm.NewModuleBuilder(APIClient, kmmModuleName, kmmModuleNamespaceName)
+
+				By("Initialize kmmModule.Definition.Spec.ModuleLoader if it is nil")
+				if kmmModule.Definition.Spec.ModuleLoader == nil {
+					kmmModule.Definition.Spec.ModuleLoader = &kmmv1beta1.ModuleLoaderSpec{}
+				}
+
 				kmmModule.Definition.Spec.ModuleLoader.ServiceAccountName = kmmModuleServiceAccoutName
 				kmmModule.Definition.Spec.ModuleLoader.Container.Modprobe.ModuleName = kmmModuleNamespaceName
 				kmmModule.Definition.Spec.ModuleLoader.Container.ImagePullPolicy = "Always"
