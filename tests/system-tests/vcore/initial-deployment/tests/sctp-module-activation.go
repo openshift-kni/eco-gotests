@@ -6,17 +6,17 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/internal/ocpcli"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/clusteroperator"
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clusteroperator"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/mco"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/nodes"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/reportxml"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
 var _ = Describe(

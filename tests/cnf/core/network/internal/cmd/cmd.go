@@ -5,11 +5,11 @@ import (
 	"net"
 	"strings"
 
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/core/network/internal/netparam"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/pod"
 )
 
 // ICMPConnectivityCheck checks ping against provided IPs from the client pod.

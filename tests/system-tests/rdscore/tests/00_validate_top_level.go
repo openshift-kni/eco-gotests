@@ -3,7 +3,7 @@ package rds_core_system_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/rdscore/internal/rdscorecommon"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/rdscore/internal/rdscorecommon"
 )
 
 var _ = Describe(
