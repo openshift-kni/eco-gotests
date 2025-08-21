@@ -23,14 +23,14 @@ jobs:
       - name: Check for eco-goinfra module updates
         id: new_mods
         env:
-          ECO_GOTESTS_CLONE_URL: git@github.com:openshift-kni/eco-gotests.git
+          ECO_GOTESTS_CLONE_URL: git@github.com:rh-ecosystem-edge/eco-gotests.git
         run: |
           git remote set-url origin $ECO_GOTESTS_CLONE_URL
           git pull origin
           if [[ ! `git branch -a | grep eco-goinfra-dep-bump` ]]; then
             git config user.name 'GitHub Actions'
             git config user.email 'noreply@example.com'
-            go get github.com/openshift-kni/eco-goinfra
+            go get github.com/rh-ecosystem-edge/eco-goinfra
             go mod tidy
             go mod vendor
           fi
@@ -45,7 +45,7 @@ jobs:
       - name: Push changes to new branch
         if: steps.new_mods.outputs.changed == 'true'
         run: |
-          export MODULE=$(go list -m -f '{{.Version}}' github.com/openshift-kni/eco-goinfra)
+          export MODULE=$(go list -m -f '{{.Version}}' github.com/rh-ecosystem-edge/eco-goinfra)
           git checkout -b eco-goinfra-dep-bump-$MODULE
           git add go.mod go.sum vendor
           git commit -m "deps: bumping eco-goinfra module to ${MODULE}"
