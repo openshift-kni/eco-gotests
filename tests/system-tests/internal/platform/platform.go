@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/infrastructure"
-	"github.com/openshift-kni/eco-goinfra/pkg/ingress"
-	"github.com/openshift-kni/eco-gotests/tests/internal/cluster"
 	configv1 "github.com/openshift/api/config/v1"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/infrastructure"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/ingress"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/internal/cluster"
 )
 
 // GetOCPVersion retrieves the OCP clusterversion object from an arbitrary cluster and get current ocp version value.

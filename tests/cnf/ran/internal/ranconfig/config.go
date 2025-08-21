@@ -2,8 +2,8 @@ package ranconfig
 
 import (
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/internal/cnfconfig"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/internal/cnfconfig"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/ranparam"
 )
 
 // RANConfig contains configuration for the RAN directory.

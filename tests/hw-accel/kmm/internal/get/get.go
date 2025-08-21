@@ -4,12 +4,12 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/kmm"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/kmm/internal/kmmparams"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/nodes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )

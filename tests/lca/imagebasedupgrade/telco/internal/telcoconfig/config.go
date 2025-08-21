@@ -2,8 +2,8 @@ package telcoconfig
 
 import (
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/internal/ibuconfig"
-	"github.com/openshift-kni/eco-gotests/tests/lca/imagebasedupgrade/telco/internal/telcoparams"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/lca/imagebasedupgrade/internal/ibuconfig"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/lca/imagebasedupgrade/telco/internal/telcoparams"
 )
 
 // TelcoConfig type contains telco configuration.
