@@ -1288,8 +1288,6 @@ github.com/onsi/gomega v1.34.2 h1:pNCwDkzrsv7MS9kpaQvVb1aVLahQXyJ/Tv5oAZMI3i8=
 github.com/onsi/gomega v1.34.2/go.mod h1:v1xfxRgk0KIsG+QOdm7p8UosrOzPYRo60fd3B/1Dukc=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240918194836-a0a3f896c283 h1:KGQuA0R53YMHkUVWVK5NcFKixjTXB/vaQswcwt3Pdy0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20240918194836-a0a3f896c283/go.mod h1:TYB+3zGmMhqOmyZ6FCbtNZSndvRDcfh16U7wgYGpe/8=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250401173334-fc57085aa877 h1:QeauldauMdaOZVizKdiLUN1fZGMSJD3QRe9IUSm17DE=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250401173334-fc57085aa877/go.mod h1:6d3OZBxd6JN3xkknYiSLpRAcRVO6jcZZN4+LScvhUPE=
 github.com/openshift-kni/k8sreporter v1.0.6 h1:aaxDzZx3s9bo1I3nopR63RGVZxcJgR94j5X87aDihYo=
 github.com/openshift-kni/k8sreporter v1.0.6/go.mod h1:tX6LOg0m0oXje7WNLFo8LKHC9Ix8VV0a7vUc6eyeFBQ=
 github.com/openshift-kni/lifecycle-agent v0.0.0-20241002223755-1e32b456449f h1:2k35EoDXvfOx/pgQKaBp2DkbBvMUBi+LuGATTH0El+U=
@@ -1365,6 +1363,8 @@ github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoG
 github.com/red-hat-storage/odf-operator v0.0.0-20240717091720-abe8dbc878d3 h1:XgzSOC4//4Ip5HjSkSM7rL2W7B+tNMxXEhv+HUO0bPE=
 github.com/red-hat-storage/odf-operator v0.0.0-20240717091720-abe8dbc878d3/go.mod h1:uesbNa14YX5DkZKmB1c9NiAdQnxGkGT5TGtlM1Cqg7s=
 github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
+github.com/rh-ecosystem-edge/eco-goinfra v0.0.0-20250821185902-0405ffef31bf h1:cPMKlBwsuoKehKnz+Xv4Loo3teiMXKxGlJS9koKY71I=
+github.com/rh-ecosystem-edge/eco-goinfra v0.0.0-20250821185902-0405ffef31bf/go.mod h1:9gUwjsHxYcU8/GUFtU5MI5fluCmkoLvbteONau2CDKw=
 github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20240925181841-898c27853e89 h1:J8wb1aU7globChbOrZdygjJUBXefv032W168wzi1HC4=
 github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20240925181841-898c27853e89/go.mod h1:0mxXbAaG90Eh2A3w73YGN97QiWxj4gnaQFGu1pHDkO4=
 github.com/robfig/cron v1.2.0 h1:ZjScXvvxeQ63Dbyxy76Fj3AT3Ut0aKsyd2/tl3DTMuQ=
