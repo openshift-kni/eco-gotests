@@ -17,7 +17,7 @@ import (
 
 const (
 	cacheDir  = "eco-gotests"
-	remoteURL = "https://github.com/openshift-kni/eco-gotests.git"
+	remoteURL = "https://github.com/rh-ecosystem-edge/eco-gotests.git"
 )
 
 var (
