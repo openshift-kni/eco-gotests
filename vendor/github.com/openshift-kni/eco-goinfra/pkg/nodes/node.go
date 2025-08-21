@@ -317,6 +317,37 @@ func (builder *Builder) ExternalIPv4Network() (string, error) {
 	return extNetwork.IPv4, nil
 }
 
+// ExternalIPv6Network returns nodes external ipv6 address.
+func (builder *Builder) ExternalIPv6Network() (string, error) {
+	if valid, err := builder.validate(); !valid {
+		return "", err
+	}
+
+	glog.V(100).Infof("Collecting node's external ipv6 addresses")
+
+	if builder.Object == nil {
+		return "", fmt.Errorf("cannot collect external networks when node object is nil")
+	}
+
+	if _, ok := builder.Object.Annotations[ovnExternalAddresses]; !ok {
+		return "", fmt.Errorf("node %s does not have external addresses annotation", builder.Definition.Name)
+	}
+
+	var extNetwork ExternalNetworks
+	err := json.Unmarshal([]byte(builder.Object.Annotations[ovnExternalAddresses]), &extNetwork)
+
+	if err != nil {
+		return "",
+			fmt.Errorf("error to unmarshal node %s, annotation %s due to %w", builder.Object.Name, ovnExternalAddresses, err)
+	}
+
+	if extNetwork.IPv6 == "" {
+		return "", fmt.Errorf("node %s does not have external ipv6 addresses", builder.Definition.Name)
+	}
+
+	return extNetwork.IPv6, nil
+}
+
 // IsReady check if the Node is Ready.
 func (builder *Builder) IsReady() (bool, error) {
 	if valid, err := builder.validate(); !valid {
