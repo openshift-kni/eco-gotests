@@ -3,14 +3,14 @@ package tests
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/siteconfig"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/siteconfig"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/gitopsztp/internal/gitdetails"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/version"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/reportxml"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/gitopsztp/internal/tsparams"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/version"
 
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/raninittools"
 )
 
 var _ = Describe("ZTP Siteconfig Operator's Negative Tests",

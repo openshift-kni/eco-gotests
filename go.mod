@@ -1,4 +1,4 @@
-module github.com/openshift-kni/eco-gotests
+module github.com/rh-ecosystem-edge/eco-gotests
 
 go 1.24.1
 
@@ -23,7 +23,6 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20250114063637-129b149f6ce9
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/openshift-kni/eco-goinfra v0.0.0-20250324132615-67ce644b5c5a // relase-4.18
 	github.com/openshift-kni/k8sreporter v1.0.6
 	github.com/openshift-kni/lifecycle-agent v0.0.0-20250120220331-9547280df193 // release-4.18
 	github.com/openshift-kni/numaresources-operator v0.4.18-0.2024100201.0.20250114093602-01c00730991d // release-4.18
@@ -248,6 +247,8 @@ require (
 )
 
 require gopkg.in/yaml.v3 v3.0.1
+
+require github.com/rh-ecosystem-edge/eco-goinfra v0.0.0-20250821185848-43745f5d5e72
 
 replace (
 	github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
