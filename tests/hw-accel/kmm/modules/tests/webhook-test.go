@@ -3,14 +3,14 @@ package tests
 import (
 	"fmt"
 
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/kmm/modules/internal/tsparams"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/kmm"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/kmm"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/namespace"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/reportxml"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/internal/inittools"
 )
 
 var _ = Describe("KMM", Ordered, Label(tsparams.LabelSuite, tsparams.LabelSanity), func() {
