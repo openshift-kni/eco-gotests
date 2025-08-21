@@ -198,7 +198,7 @@ var _ = Describe("KMM", Ordered, Label(kmmparams.LabelSuite, kmmparams.LabelLong
 
 		})
 
-		It("should be able to run preflightvalidation for realtime kernel", reportxml.ID("RT001"), func() {
+		It("should be able to run preflightvalidation for realtime kernel", reportxml.ID("84177"), func() {
 			By("Get kernel version from cluster")
 			kernelVersion, err := get.KernelFullVersion(APIClient, GeneralConfig.WorkerLabelMap)
 			if err != nil {
