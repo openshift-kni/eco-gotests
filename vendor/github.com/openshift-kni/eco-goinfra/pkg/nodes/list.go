@@ -88,6 +88,31 @@ func ListExternalIPv4Networks(apiClient *clients.Settings, options ...metav1.Lis
 	return ipV4ExternalAddresses, nil
 }
 
+// ListExternalIPv6Networks returns a list of node's external ipv6 addresses.
+func ListExternalIPv6Networks(apiClient *clients.Settings, options ...metav1.ListOptions) ([]string, error) {
+	glog.V(100).Infof("Collecting node's external ipv6 addresses")
+
+	var ipV6ExternalAddresses []string
+
+	nodeBuilders, err := List(apiClient, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range nodeBuilders {
+		extNodeNetwork, err := node.ExternalIPv6Network()
+		if err != nil {
+			glog.V(100).Infof("Failed to collect external ip address from node %s", node.Object.Name)
+
+			return nil, fmt.Errorf(
+				"error getting external IPv6 address from node %s due to %w", node.Definition.Name, err)
+		}
+		ipV6ExternalAddresses = append(ipV6ExternalAddresses, extNodeNetwork)
+	}
+
+	return ipV6ExternalAddresses, nil
+}
+
 // WaitForAllNodesAreReady waits for all nodes to be Ready for a time duration up to the timeout.
 func WaitForAllNodesAreReady(apiClient *clients.Settings,
 	timeout time.Duration,
