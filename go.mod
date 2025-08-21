@@ -1,4 +1,4 @@
-module github.com/openshift-kni/eco-gotests
+module github.com/rh-ecosystem-edge/eco-gotests
 
 go 1.22
 
@@ -18,7 +18,6 @@ require (
 	github.com/nmstate/kubernetes-nmstate/api v0.0.0-20240605150941-df565dd7bf35
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
-	github.com/openshift-kni/eco-goinfra v0.0.0-20250722174856-2009f5776832 // release-4.16
 	github.com/openshift-kni/k8sreporter v1.0.5
 	github.com/openshift/api v3.9.1-0.20191111211345-a27ff30ebf09+incompatible
 	github.com/openshift/assisted-service/api v0.0.0
@@ -49,6 +48,7 @@ require (
 	github.com/openshift/installer v0.0.0-00010101000000-000000000000
 	github.com/povsister/scp v0.0.0-20210427074412-33febfd9f13e
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.73.2
+	github.com/rh-ecosystem-edge/eco-goinfra v0.0.0-20250821190015-13d026fb5b7f
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware-tanzu/velero v1.13.2
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57

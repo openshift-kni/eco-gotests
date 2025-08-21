@@ -3,8 +3,8 @@ package tsparams
 import (
 	"fmt"
 
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
 	"github.com/openshift-kni/k8sreporter"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/ranparam"
 	v1 "k8s.io/api/core/v1"
 )
 

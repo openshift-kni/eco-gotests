@@ -5,20 +5,20 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/namespace"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/bfd/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netenv"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netparam"
-	"github.com/openshift-kni/eco-gotests/tests/internal/params"
-	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/namespace"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/reportxml"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/core/network/bfd/internal/tsparams"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/core/network/internal/netenv"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/core/network/internal/netparam"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/internal/params"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/internal/reporter"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	_ "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/bfd/tests"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/core/network/internal/netinittools"
+	_ "github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/core/network/bfd/tests"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/core/network/internal/netinittools"
 )
 
 var (

@@ -6,21 +6,21 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/reportxml"
 
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/apiobjectshelper"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/internal/apiobjectshelper"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/console"
-	"github.com/openshift-kni/eco-goinfra/pkg/mco"
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/ocpcli"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/console"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/mco"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/pod"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/internal/ocpcli"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	clusterlogging "github.com/openshift-kni/eco-goinfra/pkg/clusterlogging"
-	. "github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
+	clusterlogging "github.com/rh-ecosystem-edge/eco-goinfra/pkg/clusterlogging"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/vcore/internal/vcoreinittools"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/vcore/internal/vcoreparams"
 )
 
 var (

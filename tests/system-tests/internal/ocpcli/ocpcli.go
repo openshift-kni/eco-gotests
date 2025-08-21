@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/files"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/platform"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/shell"
-	"github.com/openshift-kni/eco-gotests/tests/system-tests/internal/template"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/internal/files"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/internal/platform"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/internal/shell"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/system-tests/internal/template"
 	"github.com/walle/targz"
 )
 
