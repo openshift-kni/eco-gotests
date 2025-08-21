@@ -11,10 +11,10 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/nodes"
-	"github.com/openshift-kni/eco-goinfra/pkg/pod"
-	. "github.com/openshift-kni/eco-gotests/tests/internal/inittools"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/nodes"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/pod"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/internal/inittools"
 )
 
 // PullTestImageOnNodes pulls given image on range of relevant nodes based on nodeSelector.

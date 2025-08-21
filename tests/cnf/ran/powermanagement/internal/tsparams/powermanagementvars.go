@@ -1,7 +1,7 @@
 package tsparams
 
 import (
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranparam"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/ranparam"
 )
 
 var (

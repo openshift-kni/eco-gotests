@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/containernshide/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/reportxml"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/containernshide/internal/tsparams"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/cluster"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/raninittools"
 )
 
 var _ = Describe("Container Namespace Hiding", Label(tsparams.LabelContainerNSHideTestCases), func() {

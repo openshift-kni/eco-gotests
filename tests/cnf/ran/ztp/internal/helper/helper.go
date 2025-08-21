@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/ocm"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/ocm"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/ztp/internal/tsparams"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 

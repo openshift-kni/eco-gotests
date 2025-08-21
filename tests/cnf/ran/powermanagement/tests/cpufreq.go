@@ -9,13 +9,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/nto" //nolint:misspell
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/cluster"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/ranhelper"
-	. "github.com/openshift-kni/eco-gotests/tests/cnf/ran/internal/raninittools"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
-	"github.com/openshift-kni/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	performancev2 "github.com/openshift/cluster-node-tuning-operator/pkg/apis/performanceprofile/v2"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/nto" //nolint:misspell
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/cluster"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/ranhelper"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/internal/raninittools"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/powermanagement/internal/helper"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/cnf/ran/powermanagement/internal/tsparams"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/cpuset"
 )

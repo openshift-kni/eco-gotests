@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/internal/hwaccelparams"
-	ts "github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/get"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/search"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/internal/wait"
-	"github.com/openshift-kni/eco-gotests/tests/hw-accel/nfd/nfdparams"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/internal/hwaccelparams"
+	ts "github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/nfd/features/internal/tsparams"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/nfd/internal/get"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/nfd/internal/search"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/nfd/internal/wait"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/hw-accel/nfd/nfdparams"
 	"k8s.io/client-go/util/retry"
 )
 

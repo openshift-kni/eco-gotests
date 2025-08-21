@@ -6,12 +6,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/openshift-kni/eco-goinfra/pkg/clients"
-	"github.com/openshift-kni/eco-goinfra/pkg/reportxml"
-	"github.com/openshift-kni/eco-gotests/tests/internal/reporter"
-	. "github.com/openshift-kni/eco-gotests/tests/rhwa/internal/rhwainittools"
-	"github.com/openshift-kni/eco-gotests/tests/rhwa/nmo-operator/internal/nmoparams"
-	_ "github.com/openshift-kni/eco-gotests/tests/rhwa/nmo-operator/tests"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/clients"
+	"github.com/rh-ecosystem-edge/eco-goinfra/pkg/reportxml"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/internal/reporter"
+	. "github.com/rh-ecosystem-edge/eco-gotests/tests/rhwa/internal/rhwainittools"
+	"github.com/rh-ecosystem-edge/eco-gotests/tests/rhwa/nmo-operator/internal/nmoparams"
+	_ "github.com/rh-ecosystem-edge/eco-gotests/tests/rhwa/nmo-operator/tests"
 )
 
 var _, currentFile, _, _ = runtime.Caller(0)
