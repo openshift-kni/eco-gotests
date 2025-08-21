@@ -530,8 +530,6 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/image-spec v1.1.0-rc4 h1:oOxKUJWnFC4YGHCCMNql1x4YaDfYBTS5Y4x/Cgeo1E0=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20230810161322-3ef5efb0de85 h1:j1yPV4NOpTXhn/C0faq7Lu4mHmbngbyVaO5JDE4SmUU=
 github.com/openshift-kni/cluster-group-upgrades-operator v0.0.0-20230810161322-3ef5efb0de85/go.mod h1:56E+O17XBxULAIOtc2qAtILRfICfzUEaqlE9yUia/Eg=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250204152516-85f50f310d14 h1:PeNC30QwlFvtw2yGqpVIALQ3aXn0rjMv5U1Zn/AokrI=
-github.com/openshift-kni/eco-goinfra v0.0.0-20250204152516-85f50f310d14/go.mod h1:ElIow5w4NIAqqF0Zm1NzQHWVzznv9dfyYEuYkqaiymc=
 github.com/openshift-kni/k8sreporter v1.0.5 h1:1GYBc/BTZyVoXilHef43v9A8BSzw700zAPZ6zsZvo6Y=
 github.com/openshift-kni/k8sreporter v1.0.5/go.mod h1:fg8HI9yxiKAi6UzR6NTtrmQmA2WKzUqmkRUHwQ1+Bj8=
 github.com/openshift/api v0.0.0-20231117205818-971e4ba78c9a h1:p/TXj7qipRh0/CMN4dfBvJ3FePanXQ9Lfv/L17IxUaU=
@@ -590,6 +588,8 @@ github.com/prometheus/common v0.44.0 h1:+5BrQJwiBB9xsMygAB3TNvpQKOwlkc25LbISbrdO
 github.com/prometheus/common v0.44.0/go.mod h1:ofAIvZbQ1e/nugmZGz4/qCb9Ap1VoSTIO7x0VV9VvuY=
 github.com/prometheus/procfs v0.11.1 h1:xRC8Iq1yyca5ypa9n1EZnWZkt7dwcoRPQwX/5gwaUuI=
 github.com/prometheus/procfs v0.11.1/go.mod h1:eesXgaPo1q7lBpVMoMy0ZOFTth9hBn4W/y0/p/ScXhY=
+github.com/rh-ecosystem-edge/eco-goinfra v0.0.0-20250821190036-30f9bcfbf755 h1:Mi33rmsT7TZRj0GT0xUqGVft8pLvv2qh+ErfuRC9hxs=
+github.com/rh-ecosystem-edge/eco-goinfra v0.0.0-20250821190036-30f9bcfbf755/go.mod h1:krt3k+RxUhkHRMNhc2GSoqZ8sYWZ/2lQoqQn1peEWkQ=
 github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20231116085833-96c2cd1e77e9 h1:y+1zsMDx78wSe7hB+zRZpd9HqARNI6GdWWQLgioKOIE=
 github.com/rh-ecosystem-edge/kernel-module-management v0.0.0-20231116085833-96c2cd1e77e9/go.mod h1:0HoCUEWFUR3aZZMqyGu766PmZVf9oJ/AoHjdettyowU=
 github.com/robfig/cron v1.2.0 h1:ZjScXvvxeQ63Dbyxy76Fj3AT3Ut0aKsyd2/tl3DTMuQ=
