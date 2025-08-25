@@ -164,11 +164,13 @@ func PreflightReason(apiClient *clients.Settings, preflight, module, nsname stri
 		if moduleStatus.Name == module && moduleStatus.Namespace == nsname {
 			reason := moduleStatus.StatusReason
 			glog.V(kmmparams.KmmLogLevel).Infof("VerificationStatus: %s", reason)
+
 			return reason, nil
 		}
 	}
 
 	glog.V(kmmparams.KmmLogLevel).Infof("module %s not found in preflight validation status", module)
+
 	return "", fmt.Errorf("module %s not found in namespace %s", module, nsname)
 }
 
